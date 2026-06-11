@@ -32,8 +32,12 @@
 
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/line_search.hpp>
+#include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
+
+#include <Eigen/Cholesky>
 
 #include <array>
 
@@ -171,6 +175,299 @@ chainPrimitiveFrictionToAffineBodies(
   Eigen::Matrix3d variation = Eigen::Matrix3d::Zero();
   variation(row, col) = 1.0;
   return variation;
+}
+
+[[nodiscard]] AffineBodyState affineBodyStateFromVectorPreservingMetadata(
+    const AffineVector12d& vector, const AffineBodyState& base)
+{
+  AffineBodyState state = base;
+  state.translation = vector.head<3>();
+  for (int col = 0; col < 3; ++col) {
+    state.linearMap.col(col) = vector.segment<3>(3 + 3 * col);
+  }
+  return state;
+}
+
+struct AffinePointTriangleMicroSolveEvaluation
+{
+  double value = 0.0;
+  AffineVector12d gradient = AffineVector12d::Zero();
+  AffineMatrix12d hessian = AffineMatrix12d::Zero();
+  double squaredDistance = 0.0;
+  bool valid = false;
+  bool barrierActive = false;
+};
+
+struct AffinePointTrianglePairMicroSolveEvaluation
+{
+  double value = 0.0;
+  AffineVector24d gradient = AffineVector24d::Zero();
+  AffineMatrix24d hessian = AffineMatrix24d::Zero();
+  double squaredDistance = 0.0;
+  bool valid = false;
+  bool barrierActive = false;
+};
+
+[[nodiscard]] bool hasValidMicroSolveOptions(
+    const AffinePointTriangleMicroSolveOptions& options)
+{
+  return hasValidBarrierOptions(options.barrier)
+         && std::isfinite(options.inertialWeight)
+         && options.inertialWeight > 0.0
+         && std::isfinite(options.orthogonalityStiffness)
+         && options.orthogonalityStiffness >= 0.0
+         && std::isfinite(options.gradientTolerance)
+         && options.gradientTolerance >= 0.0
+         && std::isfinite(options.maxStepNorm) && options.maxStepNorm > 0.0
+         && options.maxIterations > 0 && options.maxLineSearchIterations > 0;
+}
+
+[[nodiscard]] bool hasValidRuntimeStepOptions(
+    const AffinePointTriangleRuntimeStepOptions& options)
+{
+  return hasValidMicroSolveOptions(options.solve)
+         && std::isfinite(options.timeStep) && options.timeStep > 0.0
+         && options.gravity.allFinite();
+}
+
+[[nodiscard]] bool hasValidRuntimeState(const AffineBodyState& state)
+{
+  return hasValidState(state) && state.linearVelocity.allFinite()
+         && state.affineVelocity.allFinite();
+}
+
+[[nodiscard]] AffineVector24d packAffineBodyStates(
+    const AffineBodyState& bodyA, const AffineBodyState& bodyB)
+{
+  AffineVector24d vector;
+  vector.head<12>() = affineBodyStateToVector(bodyA);
+  vector.tail<12>() = affineBodyStateToVector(bodyB);
+  return vector;
+}
+
+[[nodiscard]] AffineBodyState makeAffineRuntimeTarget(
+    const AffineBodyState& state,
+    const double timeStep,
+    const Eigen::Vector3d& gravity)
+{
+  AffineBodyState target = state;
+  if (state.dynamic) {
+    target.translation
+        += timeStep * (state.linearVelocity + timeStep * gravity);
+    target.linearMap += timeStep * state.affineVelocity;
+  }
+  return target;
+}
+
+void updateAffineRuntimeVelocity(
+    AffineBodyState& state,
+    const AffineBodyState& initial,
+    const double timeStep)
+{
+  if (!initial.dynamic) {
+    state.linearVelocity = initial.linearVelocity;
+    state.affineVelocity = initial.affineVelocity;
+    return;
+  }
+
+  state.linearVelocity = (state.translation - initial.translation) / timeStep;
+  state.affineVelocity = (state.linearMap - initial.linearMap) / timeStep;
+}
+
+[[nodiscard]] AffinePointTriangleMicroSolveEvaluation
+evaluateAffinePointTriangleMicroSolve(
+    const AffineVector12d& vector,
+    const AffineVector12d& target,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options)
+{
+  AffinePointTriangleMicroSolveEvaluation evaluation;
+  if (!vector.allFinite() || !target.allFinite()) {
+    return evaluation;
+  }
+
+  AffineBodyState pointBody = affineBodyStateFromVector(vector);
+  pointBody.dynamic = true;
+  AffineBodyState staticTriangleBody = triangleBody;
+  staticTriangleBody.dynamic = false;
+
+  const AffineVector12d inertialDisplacement = vector - target;
+  evaluation.value
+      = 0.5 * options.inertialWeight * inertialDisplacement.squaredNorm();
+  evaluation.gradient = options.inertialWeight * inertialDisplacement;
+  evaluation.hessian = options.inertialWeight * AffineMatrix12d::Identity();
+
+  const auto barrier = affinePointTriangleBarrier(
+      pointBody,
+      point,
+      staticTriangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.barrier);
+  evaluation.value += barrier.value;
+  evaluation.gradient += barrier.gradient.head<12>();
+  evaluation.hessian += barrier.hessian.topLeftCorner<12, 12>();
+  evaluation.squaredDistance = barrier.primitive.squaredDistance;
+  evaluation.barrierActive = barrier.active;
+
+  if (options.orthogonalityStiffness > 0.0) {
+    const auto orthogonality = affineOrthogonalityEnergy(
+        pointBody, options.orthogonalityStiffness, true);
+    evaluation.value += orthogonality.value;
+    evaluation.gradient += orthogonality.gradient;
+    evaluation.hessian += orthogonality.hessian;
+  }
+
+  evaluation.hessian = 0.5
+                       * (evaluation.hessian
+                          + AffineMatrix12d(evaluation.hessian.transpose()));
+  evaluation.valid = std::isfinite(evaluation.value)
+                     && evaluation.gradient.allFinite()
+                     && evaluation.hessian.allFinite()
+                     && std::isfinite(evaluation.squaredDistance);
+  return evaluation;
+}
+
+[[nodiscard]] AffineVector12d makeAffineMicroSolveStep(
+    const AffinePointTriangleMicroSolveEvaluation& evaluation,
+    const double maxStepNorm)
+{
+  AffineVector12d step = -evaluation.gradient;
+
+  Eigen::LDLT<AffineMatrix12d> solver(evaluation.hessian);
+  if (solver.info() == Eigen::Success && solver.isPositive()) {
+    const AffineVector12d newtonStep = solver.solve(-evaluation.gradient);
+    if (newtonStep.allFinite() && evaluation.gradient.dot(newtonStep) < 0.0) {
+      step = newtonStep;
+    }
+  }
+
+  const double norm = step.norm();
+  if (std::isfinite(norm) && norm > maxStepNorm) {
+    step *= maxStepNorm / norm;
+  }
+  return step.allFinite() ? step : AffineVector12d::Zero();
+}
+
+[[nodiscard]] AffinePointTrianglePairMicroSolveEvaluation
+evaluateAffinePointTrianglePairMicroSolve(
+    const AffineVector24d& vector,
+    const AffineVector24d& target,
+    const AffineBodyState& pointMetadata,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleMetadata,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options)
+{
+  AffinePointTrianglePairMicroSolveEvaluation evaluation;
+  if (!vector.allFinite() || !target.allFinite()) {
+    return evaluation;
+  }
+
+  const AffineBodyState pointBody = affineBodyStateFromVectorPreservingMetadata(
+      vector.head<12>(), pointMetadata);
+  const AffineBodyState triangleBody
+      = affineBodyStateFromVectorPreservingMetadata(
+          vector.tail<12>(), triangleMetadata);
+  const AffineVector24d inertialDisplacement = vector - target;
+  if (pointBody.dynamic) {
+    evaluation.value += 0.5 * options.inertialWeight
+                        * inertialDisplacement.head<12>().squaredNorm();
+    evaluation.gradient.head<12>()
+        = options.inertialWeight * inertialDisplacement.head<12>();
+    evaluation.hessian.topLeftCorner<12, 12>()
+        = options.inertialWeight * AffineMatrix12d::Identity();
+  }
+  if (triangleBody.dynamic) {
+    evaluation.value += 0.5 * options.inertialWeight
+                        * inertialDisplacement.tail<12>().squaredNorm();
+    evaluation.gradient.tail<12>()
+        = options.inertialWeight * inertialDisplacement.tail<12>();
+    evaluation.hessian.bottomRightCorner<12, 12>()
+        = options.inertialWeight * AffineMatrix12d::Identity();
+  }
+
+  const auto barrier = affinePointTriangleBarrier(
+      pointBody,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.barrier);
+  evaluation.value += barrier.value;
+  if (pointBody.dynamic) {
+    evaluation.gradient.head<12>() += barrier.gradient.head<12>();
+    evaluation.hessian.topLeftCorner<12, 12>()
+        += barrier.hessian.topLeftCorner<12, 12>();
+  }
+  if (triangleBody.dynamic) {
+    evaluation.gradient.tail<12>() += barrier.gradient.tail<12>();
+    evaluation.hessian.bottomRightCorner<12, 12>()
+        += barrier.hessian.bottomRightCorner<12, 12>();
+  }
+  if (pointBody.dynamic && triangleBody.dynamic) {
+    evaluation.hessian.topRightCorner<12, 12>()
+        += barrier.hessian.topRightCorner<12, 12>();
+    evaluation.hessian.bottomLeftCorner<12, 12>()
+        += barrier.hessian.bottomLeftCorner<12, 12>();
+  }
+  evaluation.squaredDistance = barrier.primitive.squaredDistance;
+  evaluation.barrierActive = barrier.active;
+
+  if (options.orthogonalityStiffness > 0.0) {
+    if (pointBody.dynamic) {
+      const auto orthogonality = affineOrthogonalityEnergy(
+          pointBody, options.orthogonalityStiffness, true);
+      evaluation.value += orthogonality.value;
+      evaluation.gradient.head<12>() += orthogonality.gradient;
+      evaluation.hessian.topLeftCorner<12, 12>() += orthogonality.hessian;
+    }
+    if (triangleBody.dynamic) {
+      const auto orthogonality = affineOrthogonalityEnergy(
+          triangleBody, options.orthogonalityStiffness, true);
+      evaluation.value += orthogonality.value;
+      evaluation.gradient.tail<12>() += orthogonality.gradient;
+      evaluation.hessian.bottomRightCorner<12, 12>() += orthogonality.hessian;
+    }
+  }
+
+  evaluation.hessian = 0.5
+                       * (evaluation.hessian
+                          + AffineMatrix24d(evaluation.hessian.transpose()));
+  evaluation.valid = std::isfinite(evaluation.value)
+                     && evaluation.gradient.allFinite()
+                     && evaluation.hessian.allFinite()
+                     && std::isfinite(evaluation.squaredDistance);
+  return evaluation;
+}
+
+[[nodiscard]] AffineVector24d makeAffinePairMicroSolveStep(
+    const AffinePointTrianglePairMicroSolveEvaluation& evaluation,
+    const double maxStepNorm)
+{
+  AffineVector24d step = -evaluation.gradient;
+
+  Eigen::LDLT<AffineMatrix24d> solver(evaluation.hessian);
+  if (solver.info() == Eigen::Success && solver.isPositive()) {
+    const AffineVector24d newtonStep = solver.solve(-evaluation.gradient);
+    if (newtonStep.allFinite() && evaluation.gradient.dot(newtonStep) < 0.0) {
+      step = newtonStep;
+    }
+  }
+
+  const double norm = step.norm();
+  if (std::isfinite(norm) && norm > maxStepNorm) {
+    step *= maxStepNorm / norm;
+  }
+  return step.allFinite() ? step : AffineVector24d::Zero();
 }
 
 } // namespace
@@ -641,6 +938,365 @@ AffineOrthogonalityEnergyResult affineOrthogonalityEnergy(
     result.hessian
         = newton_barrier::projectSymmetricMatrixToPsd<12>(result.hessian);
   }
+  return result;
+}
+
+AffinePointTriangleMicroSolveResult affinePointTriangleMicroSolve(
+    const AffineBodyState& initialPointBody,
+    const AffineBodyState& inertialTarget,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options)
+{
+  AffinePointTriangleMicroSolveResult result;
+  result.state = initialPointBody;
+  if (!hasValidMicroSolveOptions(options) || !hasValidState(initialPointBody)
+      || !hasValidState(inertialTarget) || !hasValidState(triangleBody)
+      || !point.allFinite() || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const AffineVector12d target = affineBodyStateToVector(inertialTarget);
+  AffineVector12d vector = affineBodyStateToVector(initialPointBody);
+  auto evaluation = evaluateAffinePointTriangleMicroSolve(
+      vector,
+      target,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+  if (!evaluation.valid) {
+    return result;
+  }
+
+  result.valid = true;
+  result.initialValue = evaluation.value;
+  result.initialGradientNorm = evaluation.gradient.norm();
+  result.initialSquaredDistance = evaluation.squaredDistance;
+
+  const double tolerance = newton_barrier::sanitizeProjectedNewtonTolerance(
+      options.gradientTolerance);
+  const double sufficientDecreaseFactor
+      = newton_barrier::sanitizeSufficientDecreaseFactor(
+          options.sufficientDecreaseFactor);
+  const double backtrackingScale
+      = newton_barrier::sanitizeBacktrackingScale(options.backtrackingScale);
+
+  for (int iteration = 0; iteration < options.maxIterations; ++iteration) {
+    const double gradientNorm = evaluation.gradient.norm();
+    if (newton_barrier::projectedNewtonResidualConverged(
+            gradientNorm, tolerance)) {
+      result.converged = true;
+      break;
+    }
+
+    const AffineVector12d step
+        = makeAffineMicroSolveStep(evaluation, options.maxStepNorm);
+    const double directionalDerivative = evaluation.gradient.dot(step);
+    if (!(step.squaredNorm() > 0.0) || !(directionalDerivative < 0.0)) {
+      break;
+    }
+
+    bool accepted = false;
+    double stepScale = 1.0;
+    for (int lineSearch = 0; lineSearch < options.maxLineSearchIterations;
+         ++lineSearch) {
+      const AffineVector12d candidateVector = vector + stepScale * step;
+      const auto candidate = evaluateAffinePointTriangleMicroSolve(
+          candidateVector,
+          target,
+          point,
+          triangleBody,
+          triangleA,
+          triangleB,
+          triangleC,
+          options);
+      if (candidate.valid
+          && newton_barrier::satisfiesSufficientDecrease(
+              evaluation.value,
+              candidate.value,
+              stepScale * directionalDerivative,
+              sufficientDecreaseFactor)) {
+        vector = candidateVector;
+        evaluation = candidate;
+        accepted = true;
+        break;
+      }
+
+      stepScale *= backtrackingScale;
+    }
+
+    if (!accepted) {
+      break;
+    }
+
+    result.iterations = iteration + 1;
+  }
+
+  result.state
+      = affineBodyStateFromVectorPreservingMetadata(vector, initialPointBody);
+  result.finalValue = evaluation.value;
+  result.finalGradientNorm = evaluation.gradient.norm();
+  result.finalSquaredDistance = evaluation.squaredDistance;
+  result.barrierActive = evaluation.barrierActive;
+  if (!result.converged) {
+    result.converged = newton_barrier::projectedNewtonResidualConverged(
+        result.finalGradientNorm, tolerance);
+  }
+  return result;
+}
+
+AffinePointTriangleRuntimeStepResult affinePointTriangleRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options)
+{
+  AffinePointTriangleRuntimeStepResult result;
+  result.initialState = initialPointBody;
+  result.inertialTarget = initialPointBody;
+  if (!hasValidRuntimeStepOptions(options)
+      || !hasValidRuntimeState(initialPointBody) || !hasValidState(triangleBody)
+      || !point.allFinite() || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const double dt = options.timeStep;
+  result.inertialTarget
+      = makeAffineRuntimeTarget(initialPointBody, dt, options.gravity);
+
+  result.solve = affinePointTriangleMicroSolve(
+      initialPointBody,
+      result.inertialTarget,
+      point,
+      triangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve);
+  if (!result.solve.valid) {
+    return result;
+  }
+
+  AffineBodyState stepped = result.solve.state;
+  updateAffineRuntimeVelocity(stepped, initialPointBody, dt);
+  result.solve.state = stepped;
+  result.displacementNorm
+      = (stepped.translation - initialPointBody.translation).norm();
+  result.linearSpeed = stepped.linearVelocity.norm();
+  result.affineVelocityNorm = stepped.affineVelocity.norm();
+  result.valid = stepped.translation.allFinite()
+                 && stepped.linearMap.allFinite()
+                 && stepped.linearVelocity.allFinite()
+                 && stepped.affineVelocity.allFinite()
+                 && std::isfinite(result.displacementNorm)
+                 && std::isfinite(result.linearSpeed)
+                 && std::isfinite(result.affineVelocityNorm);
+  result.converged = result.solve.converged;
+  return result;
+}
+
+AffinePointTrianglePairMicroSolveResult affinePointTrianglePairMicroSolve(
+    const AffineBodyState& initialPointBody,
+    const AffineBodyState& pointInertialTarget,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& initialTriangleBody,
+    const AffineBodyState& triangleInertialTarget,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options)
+{
+  AffinePointTrianglePairMicroSolveResult result;
+  result.pointState = initialPointBody;
+  result.triangleState = initialTriangleBody;
+  if (!hasValidMicroSolveOptions(options) || !hasValidState(initialPointBody)
+      || !hasValidState(pointInertialTarget)
+      || !hasValidState(initialTriangleBody)
+      || !hasValidState(triangleInertialTarget) || !point.allFinite()
+      || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const AffineVector24d target
+      = packAffineBodyStates(pointInertialTarget, triangleInertialTarget);
+  AffineVector24d vector
+      = packAffineBodyStates(initialPointBody, initialTriangleBody);
+  auto evaluation = evaluateAffinePointTrianglePairMicroSolve(
+      vector,
+      target,
+      initialPointBody,
+      point,
+      initialTriangleBody,
+      triangleA,
+      triangleB,
+      triangleC,
+      options);
+  if (!evaluation.valid) {
+    return result;
+  }
+
+  result.valid = true;
+  result.initialValue = evaluation.value;
+  result.initialGradientNorm = evaluation.gradient.norm();
+  result.initialSquaredDistance = evaluation.squaredDistance;
+
+  const double tolerance = newton_barrier::sanitizeProjectedNewtonTolerance(
+      options.gradientTolerance);
+  const double sufficientDecreaseFactor
+      = newton_barrier::sanitizeSufficientDecreaseFactor(
+          options.sufficientDecreaseFactor);
+  const double backtrackingScale
+      = newton_barrier::sanitizeBacktrackingScale(options.backtrackingScale);
+
+  for (int iteration = 0; iteration < options.maxIterations; ++iteration) {
+    const double gradientNorm = evaluation.gradient.norm();
+    if (newton_barrier::projectedNewtonResidualConverged(
+            gradientNorm, tolerance)) {
+      result.converged = true;
+      break;
+    }
+
+    const AffineVector24d step
+        = makeAffinePairMicroSolveStep(evaluation, options.maxStepNorm);
+    const double directionalDerivative = evaluation.gradient.dot(step);
+    if (!(step.squaredNorm() > 0.0) || !(directionalDerivative < 0.0)) {
+      break;
+    }
+
+    bool accepted = false;
+    double stepScale = 1.0;
+    for (int lineSearch = 0; lineSearch < options.maxLineSearchIterations;
+         ++lineSearch) {
+      const AffineVector24d candidateVector = vector + stepScale * step;
+      const auto candidate = evaluateAffinePointTrianglePairMicroSolve(
+          candidateVector,
+          target,
+          initialPointBody,
+          point,
+          initialTriangleBody,
+          triangleA,
+          triangleB,
+          triangleC,
+          options);
+      if (candidate.valid
+          && newton_barrier::satisfiesSufficientDecrease(
+              evaluation.value,
+              candidate.value,
+              stepScale * directionalDerivative,
+              sufficientDecreaseFactor)) {
+        vector = candidateVector;
+        evaluation = candidate;
+        accepted = true;
+        break;
+      }
+
+      stepScale *= backtrackingScale;
+    }
+
+    if (!accepted) {
+      break;
+    }
+
+    result.iterations = iteration + 1;
+  }
+
+  result.pointState = affineBodyStateFromVectorPreservingMetadata(
+      vector.head<12>(), initialPointBody);
+  result.triangleState = affineBodyStateFromVectorPreservingMetadata(
+      vector.tail<12>(), initialTriangleBody);
+  result.finalValue = evaluation.value;
+  result.finalGradientNorm = evaluation.gradient.norm();
+  result.finalSquaredDistance = evaluation.squaredDistance;
+  result.barrierActive = evaluation.barrierActive;
+  if (!result.converged) {
+    result.converged = newton_barrier::projectedNewtonResidualConverged(
+        result.finalGradientNorm, tolerance);
+  }
+  return result;
+}
+
+AffinePointTrianglePairRuntimeStepResult affinePointTrianglePairRuntimeStep(
+    const AffineBodyState& initialPointBody,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& initialTriangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleRuntimeStepOptions& options)
+{
+  AffinePointTrianglePairRuntimeStepResult result;
+  result.initialPointState = initialPointBody;
+  result.initialTriangleState = initialTriangleBody;
+  result.pointInertialTarget = initialPointBody;
+  result.triangleInertialTarget = initialTriangleBody;
+  if (!hasValidRuntimeStepOptions(options)
+      || !hasValidRuntimeState(initialPointBody)
+      || !hasValidRuntimeState(initialTriangleBody) || !point.allFinite()
+      || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const double dt = options.timeStep;
+  result.pointInertialTarget
+      = makeAffineRuntimeTarget(initialPointBody, dt, options.gravity);
+  result.triangleInertialTarget
+      = makeAffineRuntimeTarget(initialTriangleBody, dt, options.gravity);
+
+  result.solve = affinePointTrianglePairMicroSolve(
+      initialPointBody,
+      result.pointInertialTarget,
+      point,
+      initialTriangleBody,
+      result.triangleInertialTarget,
+      triangleA,
+      triangleB,
+      triangleC,
+      options.solve);
+  if (!result.solve.valid) {
+    return result;
+  }
+
+  updateAffineRuntimeVelocity(result.solve.pointState, initialPointBody, dt);
+  updateAffineRuntimeVelocity(
+      result.solve.triangleState, initialTriangleBody, dt);
+  result.pointDisplacementNorm
+      = (result.solve.pointState.translation - initialPointBody.translation)
+            .norm();
+  result.triangleDisplacementNorm = (result.solve.triangleState.translation
+                                     - initialTriangleBody.translation)
+                                        .norm();
+  result.maxLinearSpeed = std::max(
+      result.solve.pointState.linearVelocity.norm(),
+      result.solve.triangleState.linearVelocity.norm());
+  result.maxAffineVelocityNorm = std::max(
+      result.solve.pointState.affineVelocity.norm(),
+      result.solve.triangleState.affineVelocity.norm());
+  result.valid = result.solve.pointState.translation.allFinite()
+                 && result.solve.pointState.linearMap.allFinite()
+                 && result.solve.pointState.linearVelocity.allFinite()
+                 && result.solve.pointState.affineVelocity.allFinite()
+                 && result.solve.triangleState.translation.allFinite()
+                 && result.solve.triangleState.linearMap.allFinite()
+                 && result.solve.triangleState.linearVelocity.allFinite()
+                 && result.solve.triangleState.affineVelocity.allFinite()
+                 && std::isfinite(result.pointDisplacementNorm)
+                 && std::isfinite(result.triangleDisplacementNorm)
+                 && std::isfinite(result.maxLinearSpeed)
+                 && std::isfinite(result.maxAffineVelocityNorm);
+  result.converged = result.solve.converged;
   return result;
 }
 

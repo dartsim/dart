@@ -74,13 +74,59 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_DeformableFemBarStep/.*",
         output_name="dashboard_deformable_world.json",
     ),
-    # Augmented VBD rigid (PLAN-104): end-to-end World step of rigid chains
-    # routed through the AVBD contact projection for fixed-joint and
-    # revolute-motor rows.
+    # Augmented VBD (PLAN-104): end-to-end World step of the empty and first
+    # non-empty 2D source-demo baselines plus 2D/3D dynamic/static friction,
+    # 3D ground, stacking, and breakable source rows and narrow public rigid
+    # fixed/revolute/prismatic/breakable/spherical rows and articulated
+    # revolute/prismatic/breakable motor, same-multibody/world-anchored one-DOF
+    # breakable motors, and breakable rows routed through the AVBD projection
+    # paths, with narrow and paper-scale high mass-ratio articulated-chain
+    # smoke rows.
     BenchmarkSpec(
         surface="avbd-world",
         target="bm_avbd_rigid_fixed_joint",
-        benchmark_filter="BM_AvbdRigid(FixedJoint|RevoluteMotor)Step/.*",
+        benchmark_filter=(
+            "BM_AvbdEmptyWorldStep$|"
+            "BM_AvbdDemo2dMotorStep$|"
+            "BM_AvbdDemo2dHangingRopeStep$|"
+            "BM_AvbdDemo2dFractureStep$|"
+            "BM_AvbdDemo2dGroundStep$|"
+            "BM_AvbdDemo2dDynamicFrictionStep$|"
+            "BM_AvbdDemo2dStaticFrictionStep$|"
+            "BM_AvbdDemo2dPyramidStep$|"
+            "BM_AvbdDemo2dCardsStep$|"
+            "BM_AvbdDemo2dStackStep$|"
+            "BM_AvbdDemo2dStackRatioStep$|"
+            "BM_AvbdDemo2dRodStep$|"
+            "BM_AvbdDemo2dSoftBodyStep$|"
+            "BM_AvbdDemo2dJointGridStep$|"
+            "BM_AvbdDemo2dRopeStep$|"
+            "BM_AvbdDemo2dHeavyRopeStep$|"
+            "BM_AvbdDemo2dSpringStep$|"
+            "BM_AvbdDemo2dSpringRatioStep$|"
+            "BM_AvbdDemo2dNetStep$|"
+            "BM_AvbdDemo3dGroundStep$|"
+            "BM_AvbdDemo3dDynamicFrictionStep$|"
+            "BM_AvbdDemo3dStaticFrictionStep$|"
+            "BM_AvbdDemo3dPyramidStep$|"
+            "BM_AvbdDemo3dRopeStep$|"
+            "BM_AvbdDemo3dHeavyRopeStep$|"
+            "BM_AvbdDemo3dSpringStep$|"
+            "BM_AvbdDemo3dSpringRatioStep$|"
+            "BM_AvbdDemo3dStackStep$|"
+            "BM_AvbdDemo3dStackRatioStep$|"
+            "BM_AvbdDemo3dSoftBodyStep$|"
+            "BM_AvbdDemo3dBridgeStep$|"
+            "BM_AvbdDemo3dBreakableStep$|"
+            "BM_AvbdArticulatedHighRatioChainStep$|"
+            "BM_AvbdPaperScaleHighRatioChainStep$|"
+            "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
+            "|SphericalBreakableJoint)"
+            "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
+            "|PrismaticBreakable|Prismatic|Breakable)Motor"
+            "|BreakableJoint|WorldSphericalBreakableJoint"
+            "|SphericalPairBreakableJoint))Step/.*"
+        ),
         output_name="dashboard_avbd_world.json",
     ),
 ]

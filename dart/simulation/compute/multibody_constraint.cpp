@@ -33,6 +33,7 @@
 #include "dart/simulation/compute/multibody_constraint.hpp"
 
 #include "dart/simulation/common/exceptions.hpp"
+#include "dart/simulation/comps/frame_types.hpp"
 #include "dart/simulation/comps/joint.hpp"
 #include "dart/simulation/comps/link.hpp"
 #include "dart/simulation/comps/multibody.hpp"
@@ -84,6 +85,16 @@ void applyPositionLimits(
   }
 }
 
+void markMultibodyLinkFrameCachesDirty(
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
+{
+  for (const auto linkEntity : structure.links) {
+    if (auto* cache = registry.try_get<comps::FrameCache>(linkEntity)) {
+      cache->needTransformUpdate = true;
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -113,6 +124,7 @@ void integrateMultibodyPositions(
       expectedDof);
 
   Eigen::Index velocityOffset = 0;
+  bool wroteJointPosition = false;
   for (const auto linkEntity : structure.links) {
     const auto& link = registry.get<comps::Link>(linkEntity);
     if (link.parentJoint == entt::null) {
@@ -124,6 +136,7 @@ void integrateMultibodyPositions(
     if (dof == 0) {
       continue;
     }
+    wroteJointPosition = true;
 
     joint.acceleration = joint.velocity;
     joint.velocity = nextVelocity.segment(velocityOffset, dof);
@@ -158,6 +171,10 @@ void integrateMultibodyPositions(
     joint.position += joint.velocity * timeStep;
     applyPositionLimits(joint, 0, joint.position.size());
     updateAccelerationFromVelocityDelta();
+  }
+
+  if (wroteJointPosition) {
+    markMultibodyLinkFrameCachesDirty(registry, structure);
   }
 }
 

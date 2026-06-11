@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::comps {
 struct MultibodyStructure;
@@ -101,6 +102,30 @@ struct VariationalLoopConstraint
   Eigen::Matrix3d rotationB
       = Eigen::Matrix3d::Identity(); ///< endpoint-B offset
                                      ///< rotation (rigid).
+  Eigen::Matrix3d linearAxes
+      = Eigen::Matrix3d::Identity(); ///< world-frame linear row axes.
+  Eigen::Matrix3d angularAxes
+      = Eigen::Matrix3d::Identity();   ///< world-frame angular row axes.
+  std::uint8_t linearAxisMask = 0x7u;  ///< active columns in linearAxes.
+  std::uint8_t angularAxisMask = 0x7u; ///< active columns in angularAxes.
+  bool linearMotor = false;            ///< true: project one linear motor.
+  Eigen::Vector3d linearMotorAxis
+      = Eigen::Vector3d::UnitX(); ///< world-frame motor row axis.
+  double linearMotorReferencePosition
+      = 0.0; ///< start-step relative linear coordinate.
+  double linearMotorTargetSpeed = 0.0; ///< target relative speed (m/s).
+  double linearMotorMaxForce
+      = std::numeric_limits<double>::infinity(); ///< motor row force bound.
+  bool angularMotor = false; ///< true: project one angular motor.
+  Eigen::Vector3d angularMotorAxis
+      = Eigen::Vector3d::UnitZ(); ///< world-frame motor row axis.
+  double angularMotorReferencePosition
+      = 0.0; ///< start-step relative angular coordinate.
+  double angularMotorTargetSpeed = 0.0; ///< target relative speed (rad/s).
+  double angularMotorMaxTorque
+      = std::numeric_limits<double>::infinity(); ///< motor row torque bound.
+  entt::entity sourceJoint = entt::null;         ///< private AVBD source joint.
+  double breakForce = 0.0; ///< >0 marks sourceJoint broken.
 };
 
 /// **EXPERIMENTAL SPIKE (PLAN-082 contact-roadmap gate 2).** Kinematics of the
@@ -494,6 +519,10 @@ public:
   /// Pre-reserve per-multibody variational state storage before baked steps.
   void prepare(World& world);
   void execute(World& world, ComputeExecutor& executor) override;
+
+private:
+  std::size_t m_maxIterations{100};
+  double m_tolerance{1e-10};
 };
 
 } // namespace dart::simulation::compute

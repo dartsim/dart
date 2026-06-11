@@ -30,6 +30,8 @@
  */
 
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
+#include <dart/simulation/detail/newton_barrier/articulation_constraint.hpp>
+#include <dart/simulation/detail/newton_barrier/change_of_variable.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/projected_newton.hpp>
 #include <dart/simulation/detail/newton_barrier/psd_projection.hpp>
@@ -316,6 +318,31 @@ PointTransformDerivatives pointTransformDerivatives(
   return derivatives;
 }
 
+Matrix3x6d directionTransformJacobian(
+    const Eigen::Vector3d& localDirection, const RigidIpcPose& pose)
+{
+  Matrix3x6d jacobian = Matrix3x6d::Zero();
+  const Eigen::Vector3d rotation = pose.rotation;
+  for (int axis = 0; axis < 3; ++axis) {
+    Eigen::Vector3d plus = rotation;
+    Eigen::Vector3d minus = rotation;
+    plus[axis] += kRotationDerivativeStep;
+    minus[axis] -= kRotationDerivativeStep;
+    jacobian.col(3 + axis) = (transformWithRotation(localDirection, plus)
+                              - transformWithRotation(localDirection, minus))
+                             / (2.0 * kRotationDerivativeStep);
+  }
+  return jacobian;
+}
+
+Eigen::Matrix3d crossProductMatrix(const Eigen::Vector3d& vector)
+{
+  Eigen::Matrix3d matrix;
+  matrix << 0.0, -vector.z(), vector.y(), vector.z(), 0.0, -vector.x(),
+      -vector.y(), vector.x(), 0.0;
+  return matrix;
+}
+
 template <int Columns>
 RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
     const Eigen::Matrix<double, 2, Columns>& projection,
@@ -447,6 +474,8 @@ void initializeGlobalAssembly(
       = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dofCount));
   assembly.hessian.resize(
       static_cast<Eigen::Index>(dofCount), static_cast<Eigen::Index>(dofCount));
+  assembly.equalityResidual.resize(0);
+  assembly.equalityJacobian.resize(0, static_cast<Eigen::Index>(dofCount));
 }
 
 void scatterReducedBarrier(
@@ -813,6 +842,140 @@ void addBodyDynamicsTerm(
   ++assembly.activeDynamicsTerms;
 }
 
+void scatterArticulationJacobianBlock(
+    const RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const std::size_t rowOffset,
+    const std::size_t body,
+    const Matrix3x6d& jacobian)
+{
+  if (body >= assembly.bodyDofOffsets.size()) {
+    return;
+  }
+  const std::size_t colOffset = assembly.bodyDofOffsets[body];
+  if (colOffset == RigidIpcBarrierAssembly::npos) {
+    return;
+  }
+
+  constexpr double kEntryTolerance = 1e-15;
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 6; ++col) {
+      const double value = jacobian(row, col);
+      if (std::abs(value) <= kEntryTolerance) {
+        continue;
+      }
+      triplets.emplace_back(
+          static_cast<Eigen::Index>(rowOffset + row),
+          static_cast<Eigen::Index>(colOffset + col),
+          value);
+    }
+  }
+}
+
+void addArticulationConstraintRows(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<double>& residuals,
+    std::vector<Eigen::Triplet<double>>& jacobianTriplets,
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcArticulationConstraintInput& input)
+{
+  if (!input.active || input.bodyA >= surfaces.size()
+      || input.bodyB >= surfaces.size()
+      || (!surfaces[input.bodyA].dynamic && !surfaces[input.bodyB].dynamic)
+      || !input.localPointA.allFinite() || !input.localPointB.allFinite()
+      || !input.localAxisA.allFinite() || !input.localAxisB.allFinite()) {
+    return;
+  }
+
+  const RigidIpcBarrierSurface& surfaceA = surfaces[input.bodyA];
+  const RigidIpcBarrierSurface& surfaceB = surfaces[input.bodyB];
+  const std::size_t rowOffset = residuals.size();
+
+  Matrix3x6d jacobianA = Matrix3x6d::Zero();
+  Matrix3x6d jacobianB = Matrix3x6d::Zero();
+  Eigen::Vector3d residual = Eigen::Vector3d::Zero();
+  switch (input.type) {
+    case RigidIpcArticulationConstraintType::PointConnection: {
+      const Eigen::Vector3d pointA
+          = transformRigidIpcPoint(input.localPointA, surfaceA.pose);
+      const Eigen::Vector3d pointB
+          = transformRigidIpcPoint(input.localPointB, surfaceB.pose);
+      const auto pointConstraint
+          = newton_barrier::pointConnectionConstraint(pointA, pointB);
+      residual = pointConstraint.residual;
+      jacobianA = pointTransformDerivatives(input.localPointA, surfaceA.pose)
+                      .jacobian;
+      jacobianB = -pointTransformDerivatives(input.localPointB, surfaceB.pose)
+                       .jacobian;
+      break;
+    }
+    case RigidIpcArticulationConstraintType::HingeAxis: {
+      const Eigen::Vector3d axisA
+          = transformWithRotation(input.localAxisA, surfaceA.pose.rotation);
+      const Eigen::Vector3d axisB
+          = transformWithRotation(input.localAxisB, surfaceB.pose.rotation);
+      const auto hingeConstraint
+          = newton_barrier::hingeAxisConstraint(axisA, axisB);
+      residual = hingeConstraint.residual;
+      const Eigen::Matrix3d skewA = crossProductMatrix(axisA);
+      const Eigen::Matrix3d skewB = crossProductMatrix(axisB);
+      jacobianA = -skewB
+                  * directionTransformJacobian(input.localAxisA, surfaceA.pose);
+      jacobianB
+          = skewA * directionTransformJacobian(input.localAxisB, surfaceB.pose);
+      break;
+    }
+  }
+
+  if (!residual.allFinite() || !jacobianA.allFinite()
+      || !jacobianB.allFinite()) {
+    return;
+  }
+
+  for (int row = 0; row < 3; ++row) {
+    residuals.push_back(residual[row]);
+  }
+  scatterArticulationJacobianBlock(
+      assembly, jacobianTriplets, rowOffset, input.bodyA, jacobianA);
+  scatterArticulationJacobianBlock(
+      assembly, jacobianTriplets, rowOffset, input.bodyB, jacobianB);
+  assembly.activeArticulationConstraints.push_back(
+      RigidIpcArticulationConstraint{
+          input.type, input.bodyA, input.bodyB, residual});
+}
+
+void addArticulationConstraintRows(
+    RigidIpcBarrierAssembly& assembly,
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcArticulationConstraintInput> constraints)
+{
+  if (constraints.empty()) {
+    assembly.equalityResidual.resize(0);
+    assembly.equalityJacobian.resize(0, assembly.gradient.size());
+    return;
+  }
+
+  std::vector<double> residuals;
+  residuals.reserve(3 * constraints.size());
+  std::vector<Eigen::Triplet<double>> jacobianTriplets;
+  jacobianTriplets.reserve(12 * constraints.size());
+  for (const RigidIpcArticulationConstraintInput& constraint : constraints) {
+    addArticulationConstraintRows(
+        assembly, residuals, jacobianTriplets, surfaces, constraint);
+  }
+
+  assembly.equalityResidual
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(residuals.size()));
+  for (std::size_t row = 0; row < residuals.size(); ++row) {
+    assembly.equalityResidual[static_cast<Eigen::Index>(row)] = residuals[row];
+  }
+  assembly.equalityJacobian.resize(
+      assembly.equalityResidual.size(), assembly.gradient.size());
+  assembly.equalityJacobian.setFromTriplets(
+      jacobianTriplets.begin(), jacobianTriplets.end());
+  assembly.equalityJacobian.makeCompressed();
+}
+
 void assertMatchingSurfaceTopology(
     const RigidIpcBarrierSurface& start, const RigidIpcBarrierSurface& end)
 {
@@ -889,9 +1052,13 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 {
   assert(assembly.hessian.rows() == assembly.gradient.size());
   assert(assembly.hessian.cols() == assembly.gradient.size());
+  assert(assembly.equalityJacobian.cols() == assembly.gradient.size());
+  assert(assembly.equalityJacobian.rows() == assembly.equalityResidual.size());
 
   RigidIpcProjectedNewtonStep result;
   const Eigen::Index dofs = assembly.gradient.size();
+  const Eigen::Index equalityRows = assembly.equalityResidual.size();
+  const bool hasEqualityRows = equalityRows > 0;
   result.delta = Eigen::VectorXd::Zero(dofs);
   result.stats.dofs = static_cast<std::size_t>(dofs);
   result.stats.gradientNorm = assembly.gradient.norm();
@@ -903,12 +1070,14 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     return result;
   }
 
-  if (!assembly.gradient.allFinite()) {
+  if (!assembly.gradient.allFinite()
+      || (hasEqualityRows && !assembly.equalityResidual.allFinite())) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
     return result;
   }
 
-  if (newton_barrier::projectedNewtonResidualConverged(
+  if (!hasEqualityRows
+      && newton_barrier::projectedNewtonResidualConverged(
           result.stats.gradientNorm, options.gradientTolerance)) {
     result.status = RigidIpcProjectedNewtonStatus::Converged;
     result.success = true;
@@ -926,14 +1095,35 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
     return result;
   }
 
-  Eigen::LDLT<Eigen::MatrixXd> solver(denseHessian);
-  if (solver.info() != Eigen::Success || !solver.isPositive()) {
-    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
-    return result;
-  }
+  Eigen::VectorXd rawStep;
+  if (hasEqualityRows) {
+    const auto changeOfVariable = newton_barrier::makeEqualityChangeOfVariable(
+        assembly.equalityJacobian, assembly.equalityResidual);
+    if (!changeOfVariable.valid) {
+      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+      return result;
+    }
 
-  Eigen::VectorXd rawStep = solver.solve(-assembly.gradient);
-  if (solver.info() != Eigen::Success || !rawStep.allFinite()) {
+    rawStep = newton_barrier::solveEqualityConstrainedQuadraticReduced(
+        denseHessian, assembly.gradient, changeOfVariable);
+    if (!rawStep.allFinite()) {
+      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+      return result;
+    }
+  } else {
+    Eigen::LDLT<Eigen::MatrixXd> solver(denseHessian);
+    if (solver.info() != Eigen::Success || !solver.isPositive()) {
+      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+      return result;
+    }
+
+    rawStep = solver.solve(-assembly.gradient);
+    if (solver.info() != Eigen::Success) {
+      result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+      return result;
+    }
+  }
+  if (!rawStep.allFinite()) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
     return result;
   }
@@ -974,7 +1164,8 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
   result.stats.stepScale = stepScale;
   result.stats.stepNorm = result.delta.norm();
   result.stats.gradientDotStep = assembly.gradient.dot(result.delta);
-  if (!(result.stats.gradientDotStep < 0.0)) {
+  if ((!hasEqualityRows && !(result.stats.gradientDotStep < 0.0))
+      || !std::isfinite(result.stats.gradientDotStep)) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
     result.delta.setZero();
     result.stats.stepNorm = 0.0;
@@ -1023,10 +1214,17 @@ void recordSolveAssemblyStats(
   if (initial) {
     result.stats.initialValue = result.assembly.value;
     result.stats.initialGradientNorm = result.assembly.gradient.norm();
+    result.stats.initialEqualityResidualNorm
+        = result.assembly.equalityResidual.norm();
   }
   result.stats.finalValue = result.assembly.value;
   result.stats.finalGradientNorm = result.assembly.gradient.norm();
-  result.stats.finalMomentumBalance = result.stats.finalGradientNorm;
+  result.stats.finalEqualityResidualNorm
+      = result.assembly.equalityResidual.norm();
+  result.stats.finalMomentumBalance = std::max(
+      result.stats.finalGradientNorm, result.stats.finalEqualityResidualNorm);
+  result.stats.activeArticulationConstraints
+      = result.assembly.activeArticulationConstraints.size();
   result.stats.activeFrictionConstraints
       = result.assembly.activeFrictionConstraints.size();
 }
@@ -1059,6 +1257,8 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     std::span<const RigidIpcBarrierSurface> surfaces,
     std::span<const RigidIpcBarrierSurface> laggedSurfaces,
     std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
     const RigidIpcBarrierOptions& barrierOptions,
     const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcAssemblyScratch& scratch);
@@ -1828,6 +2028,7 @@ RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
       surfaces,
       std::span<const RigidIpcBarrierSurface>{},
       dynamicsTerms,
+      std::span<const RigidIpcArticulationConstraintInput>{},
       options,
       RigidIpcFrictionOptions{},
       scratch);
@@ -1845,6 +2046,27 @@ RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
       surfaces,
       laggedSurfaces,
       dynamicsTerms,
+      std::span<const RigidIpcArticulationConstraintInput>{},
+      barrierOptions,
+      frictionOptions,
+      scratch);
+}
+
+RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions)
+{
+  RigidIpcAssemblyScratch scratch;
+  return assembleRigidIpcObjectiveSystemWithScratch(
+      surfaces,
+      laggedSurfaces,
+      dynamicsTerms,
+      articulationConstraints,
       barrierOptions,
       frictionOptions,
       scratch);
@@ -1854,6 +2076,8 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     std::span<const RigidIpcBarrierSurface> surfaces,
     std::span<const RigidIpcBarrierSurface> laggedSurfaces,
     std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
     const RigidIpcBarrierOptions& barrierOptions,
     const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcAssemblyScratch& scratch)
@@ -1891,6 +2115,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     addBodyDynamicsTerm(
         assembly, triplets, body, surfaces[body], dynamicsTerms[body]);
   }
+  addArticulationConstraintRows(assembly, surfaces, articulationConstraints);
 
   if (!triplets.empty()) {
     Eigen::SparseMatrix<double> dynamicsHessian(
@@ -2387,6 +2612,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             result.surfaces,
             laggedSurfaces,
             options.dynamicsTerms,
+            options.articulationConstraints,
             energyOnly,
             noFriction,
             assemblyScratch);
@@ -2395,6 +2621,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             result.surfaces,
             laggedSurfaces,
             options.dynamicsTerms,
+            options.articulationConstraints,
             unitBarrier,
             noFriction,
             assemblyScratch);
@@ -2492,6 +2719,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           result.surfaces,
           laggedSurfaces,
           options.dynamicsTerms,
+          options.articulationConstraints,
           barrierOptions,
           frictionOptions,
           assemblyScratch);
@@ -2517,6 +2745,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
               result.surfaces,
               laggedSurfaces,
               options.dynamicsTerms,
+              options.articulationConstraints,
               barrierOptions,
               frictionOptions,
               assemblyScratch);
@@ -2624,7 +2853,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       bool acceptedCandidate = false;
-      if (newtonOptions.useSufficientDecreaseLineSearch) {
+      if (newtonOptions.useSufficientDecreaseLineSearch
+          && result.assembly.equalityResidual.size() == 0) {
         const double currentValue = result.assembly.value;
         const double directionalDerivative = step.stats.gradientDotStep;
         if (!std::isfinite(currentValue)
@@ -2670,6 +2900,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                   candidateSurfaces,
                   laggedSurfaces,
                   options.dynamicsTerms,
+                  options.articulationConstraints,
                   barrierOptions,
                   frictionOptions,
                   assemblyScratch);
@@ -2738,10 +2969,17 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
             result.surfaces,
             laggedSurfaces,
             options.dynamicsTerms,
+            options.articulationConstraints,
             barrierOptions,
             frictionOptions,
             assemblyScratch);
         recordSolveAssemblyStats(result, false);
+        if (result.assembly.equalityResidual.size() > 0
+            && result.assembly.equalityResidual.norm()
+                   > std::max(0.0, options.equalityTolerance)) {
+          result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
+          return;
+        }
         result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
         result.converged = true;
         break;
@@ -2760,6 +2998,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
         result.surfaces,
         laggedSurfaces,
         options.dynamicsTerms,
+        options.articulationConstraints,
         barrierOptions,
         frictionOptions,
         assemblyScratch);

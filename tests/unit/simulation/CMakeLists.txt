@@ -109,6 +109,9 @@ if(DART_SIMULATION_BUILD_TESTS)
       set_tests_properties(test_world PROPERTIES TIMEOUT 3600)
       target_compile_definitions(test_world PRIVATE DART_CODECOV=1)
     endif()
+    if(TARGET test_boxed_lcp_contact)
+      target_compile_definitions(test_boxed_lcp_contact PRIVATE DART_CODECOV=1)
+    endif()
   endif()
 
   # Differentiable simulation (PLAN-110 WS1). The zero-cost parity test uses only
@@ -177,6 +180,13 @@ if(DART_SIMULATION_BUILD_TESTS)
       LIBRARY ${PROJECT_NAME}-simulation-cuda
       LABEL simulation-cuda
     )
+    dart_add_simulation_test(
+      test_lcp_jacobi_batch_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_lcp_jacobi_batch_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-cuda
+      LABEL simulation-cuda
+    )
+    set_tests_properties(test_lcp_jacobi_batch_cuda PROPERTIES TIMEOUT 3600)
   endif()
 
   # In-tree tests that poke ECS internals include <entt/entt.hpp> directly.

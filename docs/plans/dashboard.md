@@ -64,10 +64,12 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
-  example as the template when the next algorithm family is selected. For
-  solver or multi-physics papers, first apply the solver-family intake
-  checklist in [`solver-family-intake.md`](solver-family-intake.md)
+- Next step: The DART 7 LCP evidence campaign is complete in
+  [#2962](https://github.com/dartsim/dart/pull/2962); use its LCP contract,
+  tests, benchmark packets, and `lcp_physics` example as the template when the
+  next algorithm family is selected. For solver or multi-physics papers, first
+  apply the solver-family intake checklist in
+  [`solver-family-intake.md`](solver-family-intake.md)
   so the work routes to an existing family, shares common collision,
   kinematics, and optimization components, and defines apples-to-apples
   evidence plus a user-facing configuration shape.
@@ -278,28 +280,27 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
-  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
-  oracles, and the first `abd-alg-affine-body` benchmark packet is now an
-  in-progress primitive/oracle manifest row. The current packet does not need a
-  two-body affine contact micro-solve before Phase 3; defer that solved-state
-  row until a broader ABD packet needs runtime residual evidence. Use the PLAN-083
-  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
-  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, PPF cubic-barrier/strain-limiting, and VBD/OGC-adjacent obligations in
-  the right owners; use
-  [`ppf-contact-solver-intake.md`](083-unified-newton-barrier-multibody/ppf-contact-solver-intake.md)
-  for PPF's paper, repository, API, diagnostics, examples, and GPU-platform
-  lessons. Implementation-roadmap Phase 2 shared solver contracts landed in PR
-  #2951. Implementation-roadmap Phases 3-8 landed together in PR #2960 because
-  the remaining internal slices were small enough for one reviewer-facing PR.
-  Follow-up local work measures the private GPU PSD projection packet, adds the
-  Fig. 17 barrier-force diagnostic, and aligns articulation-only figure rows
-  with landed Phase 3 private diagnostics, but the Phase 8 audit records that
-  PLAN-083 is not complete while planned manifest, CPU corpus, and non-PSD GPU
-  parity rows remain, so dev-task retirement needs maintainer direction before
-  deletion.
+  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+  Phase 6 CPU corpus follow-up on
+  `simx/plan083-phase6-abd-runtime-evidence`. PR #2960 landed
+  implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
+  projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
+  articulation-only figure rows with landed private diagnostics; PR #2970
+  landed runtime wiring for point/fixed and hinge constraints, opt-in BDF-2,
+  deformable fixed obstacles, and the reduced hanging-bridge py-demo; PR #2971
+  landed reduced CPU packets for lying-flat, hanging-bridge, pulley, umbrella,
+  terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy,
+  precession, reduced timing-breakdown, reduced Table 2, the sparse equality
+  change-of-variable rigid IPC path, and the reduced affine point-triangle
+  micro-solve diagnostic. The current follow-up adds reduced ABD runtime-step
+  evidence for `abd-vs-rigid-cards` and reduced two-body ABD pair runtime-step
+  evidence for `abd-vs-rigid-wreck`, plus reduced ABD chain-net runtime-step
+  packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`, without
+  claiming card-stack, wrecking-ball, or chain-net assets, rigid IPC comparison
+  timing, GPU parity, or paper-scale parity. The completion audit still records
+  PLAN-083 as incomplete while
+  planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so dev-task
+  retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

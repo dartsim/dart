@@ -29,6 +29,8 @@
         curvature term needed to match PLAN-082 rigid IPC.
   - [x] Add the first ABD benchmark packet shape with a matched rigid IPC
         point-triangle oracle row and orthogonality-energy row.
+  - [x] Add a reduced affine point-triangle solved-state micro-solve diagnostic
+        and benchmark row without claiming an ABD runtime solver.
   - [x] Add reduced friction equivalence rows through affine tangent stencils
         for point-point, point-edge, edge-edge, and point-triangle primitives.
   - [x] Promote the first packet into the PLAN-083 manifest as an in-progress
@@ -166,6 +168,54 @@
         remain.
   - [ ] Retire the temporary dev-task folder only after maintainer direction;
         material planned work remains.
+- [x] Runtime wiring follow-up: consume landed Newton-barrier contracts from
+      rigid IPC runtime paths without opening per-slice PRs.
+  - [x] Route point-connection/fixed-joint and hinge-axis constraints through
+        the rigid IPC `World::step` projected-Newton loop.
+  - [x] Add opt-in BDF-2 integration to the rigid IPC contact stage while
+        keeping semi-implicit stepping as the default.
+  - [x] Route deformable surfaces as fixed mixed-domain obstacles through the
+        rigid IPC contact solve.
+  - [x] Add a reduced hanging-bridge py-demo smoke scene that steps through
+        `World::step` and supports headless capture.
+- [ ] CPU corpus evidence follow-up: add reduced scene packets without claiming
+      paper-scale reproduction.
+  - [x] Add the first reduced hanging-bridge CPU scene packet benchmark and
+        writer for the runtime smoke path.
+  - [x] Add a reduced lying-flat deformable-cloth/static-obstacle CPU scene
+        packet and runtime status panel while keeping paper-scale mixed
+        coupling future work.
+  - [x] Add a reduced pulley hinged-wheel CPU scene packet and runtime status
+        panel while keeping force comparison and rope/rod coupling future work.
+  - [x] Add a reduced umbrella hinged-rib CPU scene packet and runtime status
+        panel while keeping cloth, sliding, and paper-scale rod coupling future
+        work.
+  - [x] Add a reduced nunchaku hinge CPU scene packet and runtime status panel
+        for the public revolute-joint path.
+  - [x] Add a reduced terrain vehicle CPU scene packet and runtime status panel
+        for chassis/passive wheel hinges over flat terrain.
+  - [x] Add a reduced windmill hinge/contact CPU scene packet and runtime
+        status panel while keeping Bullet/reference comparison future work.
+  - [x] Add a reduced Candy deformable-cloth/static-shell CPU scene packet and
+        runtime status panel while keeping affine packing, twisted shell, and
+        self-contact parity future work.
+  - [x] Add a reduced precession wheel CPU scene packet and runtime status
+        panel while keeping angular-velocity sweeps future work.
+  - [x] Add a reduced ragdoll CPU scene packet and runtime status panel while
+        keeping cone-twist joints and 60-ragdoll scale future work.
+  - [x] Add a reduced nunchaku scaling CPU packet for sizes 20, 40, 60, 80,
+        and 100 while keeping cone-twist and coupled contact scaling future
+        work.
+  - [x] Add a reduced timing-breakdown CPU packet that aggregates runnable
+        reduced corpus rows while keeping paper subphase timing future work.
+  - [x] Add a reduced Table 2 setup/statistics CPU packet for runnable reduced
+        rows while keeping missing mixed/ABD rows future work.
+  - [x] Add a sparse equality change-of-variable internal contract with rank,
+        residual, sparse free-coordinate basis, and KKT solve-equivalence tests
+        and route the rigid IPC equality step through it while keeping
+        paper-scale pulley/sliding scenes future work.
+  - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
+        mixed-domain stepping, and comparison baselines exist.
 
 ## Goal
 
@@ -180,11 +230,14 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the launchable planned py-demo placeholders and checked corpus manifest.
+  the reduced lying-flat, hanging-bridge, pulley, umbrella, terrain vehicle,
+  ragdoll, nunchaku, windmill, Candy, and precession smoke scenes, the reduced
+  timing-breakdown and Table 2 packets, launchable planned py-demo placeholders,
+  and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
-- No ABD runtime stage.
+- No public or `World`-integrated ABD runtime stage.
 - No GPU speedup claim.
 
 ## Key Decisions
@@ -217,25 +270,35 @@ storage, or backend resources as public API.
   variant names such as rigid IPC, deformable IPC, and ABD remain internal
   provenance until shared behavior is proven.
 - The first `abd-alg-affine-body` micro-packet is primitive/oracle evidence and
-  does not need a two-body affine contact micro-solve before Phase 3. Add a
-  solved-state micro-solve only when the next broader ABD packet needs runtime
-  residuals rather than primitive, friction, or orthogonality rows.
+  now includes a reduced point-triangle solved-state diagnostic row with
+  residual/convergence counters plus reduced runtime-step packets for the
+  cards, wrecking-ball, and chain-net ABD rows. Broader ABD packets still need
+  scene-level runtime residuals, scene assets, and comparison baselines before
+  any paper-scale ABD row moves.
 
 ## Immediate Next Steps
 
-1. Use merged PR #2960 as the baseline for implementation-roadmap Phases 3-8;
-   do not reopen the old phase-scoped stack.
-2. Get maintainer direction before retiring
+1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
+   work; do not reopen the old phase-scoped stack.
+2. Continue Phase 6 CPU corpus evidence on
+   `simx/plan083-phase6-abd-runtime-evidence` by adding reduced packets only
+   where runtime evidence exists; do not mark paper-scale rows complete without
+   paper-scale scene assets and comparison evidence.
+   The reduced packets may move only row-specific runtime smoke evidence;
+   analytical force comparison, paper-scale rope/rod coupling, affine packing,
+   twisted shell, self-contact parity, and ABD comparison baselines remain
+   planned.
+3. Use the reduced ABD runtime-step packets only as internal runtime evidence;
+   broader ABD CPU packets still require scene-level runtime residuals, scene
+   assets, and comparison baselines.
+4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
    called complete yet.
-3. Keep the two-body affine contact micro-solve deferred until the
-   `abd-alg-affine-body` row expands beyond the primitive/oracle micro-packet
-   and needs a solved-state residual or runtime stepping diagnostic.
-4. Promote only the smallest proven shared contract, with cross-variant tests
+5. Promote only the smallest proven shared contract, with cross-variant tests
    showing identical behavior; keep variant-specific terms in their owner plans.
-5. Keep runtime stepping and non-PSD GPU claims out of scope until the
-   row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
+6. Keep paper-scale runtime stepping and non-PSD GPU claims out of scope until
+   the row-specific CPU corpus packets and Phase 7 GPU parity evidence exist.
 
 ## Validation Gates For Current Slices
 
@@ -400,6 +463,26 @@ Implementation-roadmap Phase 7 branch-local evidence:
 - `pixi run lint`
 - `pixi run build`
 - `pixi run -e cuda test-cuda`
+
+Runtime-wiring branch-local evidence:
+
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `pixi run test-py`
+- `ctest --test-dir build/default/cpp/Release -R 'test_world|test_rigid_ipc_barrier' --output-on-failure`
+- `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
+- `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
+- `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run bm-plan083-cpu-lying-flat-packet`
+- `pixi run bm-plan083-cpu-pulley-packet`
+- `pixi run bm-plan083-cpu-umbrella-packet`
+- `pixi run bm-plan083-cpu-candy-packet`
+- `pixi run bm-plan083-cpu-nunchaku-packet`
+- `pixi run bm-plan083-cpu-nunchaku-scaling-packet`
+- `pixi run bm-plan083-cpu-ragdoll-packet`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
 
 ## Owner Docs
 

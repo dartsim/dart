@@ -39,6 +39,7 @@
 #include "dart/simulation/comps/deformable_body.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/frame_types.hpp"
+#include "dart/simulation/comps/joint.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/compute_graph.hpp"
@@ -59,8 +60,10 @@
 #include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/detail/entity_conversion.hpp"
 #include "dart/simulation/detail/newton_barrier/friction_kernel.hpp"
+#include "dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp"
 #include "dart/simulation/detail/newton_barrier/projected_newton.hpp"
 #include "dart/simulation/detail/newton_barrier/psd_backend.hpp"
+#include "dart/simulation/detail/newton_barrier/restitution_damping.hpp"
 #include "dart/simulation/detail/rigid_ipc_barrier.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -105,6 +108,30 @@ namespace fem = dart::simulation::detail::deformable_elasticity;
 namespace nb = dart::simulation::detail::newton_barrier;
 namespace sxdetail = dart::simulation::detail;
 
+struct RigidIpcBdf2StepState
+{
+  bool active = false;
+  bool hasPreviousPosition = false;
+  sxdetail::RigidIpcVector6d previousPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+};
+
+struct RigidIpcBdf2HistoryEntry
+{
+  entt::entity entity = entt::null;
+  bool hasPreviousPosition = false;
+  sxdetail::RigidIpcVector6d previousPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentPosition
+      = sxdetail::RigidIpcVector6d::Zero();
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+};
+
 struct RigidIpcRuntimeBody
 {
   entt::entity entity = entt::null;
@@ -114,6 +141,7 @@ struct RigidIpcRuntimeBody
   sxdetail::RigidIpcPose initialPose;
   sxdetail::RigidIpcVector6d initialVelocity
       = sxdetail::RigidIpcVector6d::Zero();
+  RigidIpcBdf2StepState bdf2StepState;
   sxdetail::RigidIpcBarrierSurface surface;
   sxdetail::RigidIpcBodyDynamicsTerm dynamicsTerm;
 };
@@ -125,6 +153,10 @@ struct RigidIpcContactStage::Scratch
   std::vector<sxdetail::RigidIpcBarrierSurface> surfaces;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> dynamicsTerms;
   std::vector<sxdetail::RigidIpcBodyDynamicsTerm> solveDynamicsTerms;
+  std::vector<sxdetail::RigidIpcArticulationConstraintInput>
+      articulationConstraints;
+  std::vector<RigidIpcBdf2HistoryEntry> bdf2Histories;
+  std::vector<nb::MixedDomainSurface> mixedDomainSurfaces;
   std::vector<entt::entity> tracedEntities;
   std::vector<entt::entity> blockedEntities;
   std::vector<entt::entity> writebackEntities;
@@ -153,6 +185,17 @@ namespace {
 
 constexpr double kDefaultRigidIpcContactStageActivationDistance = 1e-2;
 
+[[nodiscard]] bool isValidRigidIpcTimeIntegration(
+    const RigidIpcTimeIntegration integration) noexcept
+{
+  switch (integration) {
+    case RigidIpcTimeIntegration::SemiImplicit:
+    case RigidIpcTimeIntegration::Bdf2:
+      return true;
+  }
+  return false;
+}
+
 [[nodiscard]] RigidIpcContactStageOptions
 makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
 {
@@ -175,6 +218,9 @@ makeRigidIpcContactStageOptionsForMaxIterations(const std::size_t maxIterations)
   if (!std::isfinite(options.frictionConvergenceTolerance)
       || options.frictionConvergenceTolerance < 0.0) {
     options.frictionConvergenceTolerance = 0.0;
+  }
+  if (!isValidRigidIpcTimeIntegration(options.timeIntegration)) {
+    options.timeIntegration = RigidIpcTimeIntegration::SemiImplicit;
   }
   return options;
 }
@@ -760,7 +806,9 @@ void KinematicsStage::prepare(World& world)
     return;
   }
 
-  m_cachedGraph->rebuild();
+  if (!m_cachedGraph->isTopologyCurrent()) {
+    m_cachedGraph->rebuild();
+  }
 }
 
 //==============================================================================
@@ -1109,9 +1157,18 @@ struct RigidBodyForceBatch
   std::vector<double> torque;
 };
 
+enum class RigidBodyForceAssemblyMode
+{
+  AllBodies,
+  AdvanceableOnly,
+};
+
 //==============================================================================
 void assembleRigidBodyForces(
-    const World& world, bool includeGravity, RigidBodyForceBatch& batch)
+    const World& world,
+    bool includeGravity,
+    RigidBodyForceBatch& batch,
+    RigidBodyForceAssemblyMode mode = RigidBodyForceAssemblyMode::AllBodies)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view
@@ -1121,13 +1178,19 @@ void assembleRigidBodyForces(
   const Eigen::Vector3d gravity
       = includeGravity ? world.getGravity() : Eigen::Vector3d::Zero();
   for (const auto entity : view) {
+    const bool prescribedBody
+        = isPrescribedRigidBodyIntegrationBody(registry, entity);
+    if (mode == RigidBodyForceAssemblyMode::AdvanceableOnly && prescribedBody) {
+      continue;
+    }
+
     batch.entities.push_back(entity);
 
     const auto& applied = registry.get<comps::Force>(entity);
     Eigen::Vector3d assembledForce = applied.force;
     Eigen::Vector3d assembledTorque = applied.torque;
 
-    if (isPrescribedRigidBodyIntegrationBody(registry, entity)) {
+    if (prescribedBody) {
       assembledForce.setZero();
       assembledTorque.setZero();
     } else if (includeGravity) {
@@ -1312,6 +1375,24 @@ bool hasPrescribedRigidBodyContactResponse(
 {
   return registry.all_of<comps::StaticBodyTag>(entity)
          || registry.all_of<comps::KinematicBodyTag>(entity);
+}
+
+//==============================================================================
+bool shouldSkipRigidBodyContactQuery(const detail::WorldRegistry& registry)
+{
+  const auto collisionGeometryView = registry.view<comps::CollisionGeometry>();
+  for (const entt::entity entity : collisionGeometryView) {
+    if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
+      continue;
+    }
+
+    if (registry.all_of<comps::RigidBodyTag>(entity)
+        || registry.all_of<comps::Link>(entity)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 //==============================================================================
@@ -7829,6 +7910,7 @@ void resetRigidIpcRuntimeBodyPreservingSurface(
   body.surfaceIndex = std::numeric_limits<std::size_t>::max();
   body.initialPose = sxdetail::RigidIpcPose{};
   body.initialVelocity.setZero();
+  body.bdf2StepState = RigidIpcBdf2StepState{};
   body.dynamicsTerm = sxdetail::RigidIpcBodyDynamicsTerm{};
 
   body.surface.body = 0u;
@@ -7866,6 +7948,7 @@ void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
   target.surfaceIndex = source.surfaceIndex;
   target.initialPose = source.initialPose;
   target.initialVelocity = source.initialVelocity;
+  target.bdf2StepState = source.bdf2StepState;
   copyRigidIpcSurfacePreservingCapacity(source.surface, target.surface);
   target.dynamicsTerm = source.dynamicsTerm;
 }
@@ -7919,6 +8002,71 @@ comps::Transform toTransform(const sxdetail::RigidIpcPose& pose)
   transform.position = pose.position;
   transform.orientation = quaternionFromRotationVector(pose.rotation);
   return transform;
+}
+
+//==============================================================================
+sxdetail::RigidIpcVector6d poseVector(const sxdetail::RigidIpcPose& pose)
+{
+  sxdetail::RigidIpcVector6d vector;
+  vector.head<3>() = pose.position;
+  vector.tail<3>() = pose.rotation;
+  return vector;
+}
+
+//==============================================================================
+sxdetail::RigidIpcPose poseFromVector(const sxdetail::RigidIpcVector6d& vector)
+{
+  sxdetail::RigidIpcPose pose;
+  pose.position = vector.head<3>();
+  pose.rotation = vector.tail<3>();
+  return pose;
+}
+
+//==============================================================================
+RigidIpcBdf2HistoryEntry* findRigidIpcBdf2History(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories, const entt::entity entity)
+{
+  auto it = std::find_if(
+      histories.begin(), histories.end(), [entity](const auto& history) {
+        return history.entity == entity;
+      });
+  return it == histories.end() ? nullptr : std::addressof(*it);
+}
+
+//==============================================================================
+RigidIpcBdf2HistoryEntry& findOrCreateRigidIpcBdf2History(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories, const entt::entity entity)
+{
+  if (auto* history = findRigidIpcBdf2History(histories, entity);
+      history != nullptr) {
+    return *history;
+  }
+
+  RigidIpcBdf2HistoryEntry history;
+  history.entity = entity;
+  histories.push_back(history);
+  return histories.back();
+}
+
+//==============================================================================
+void pruneRigidIpcBdf2Histories(
+    std::vector<RigidIpcBdf2HistoryEntry>& histories,
+    const std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  histories.erase(
+      std::remove_if(
+          histories.begin(),
+          histories.end(),
+          [&bodies](const RigidIpcBdf2HistoryEntry& history) {
+            return history.entity == entt::null
+                   || std::none_of(
+                       bodies.begin(), bodies.end(), [&](const auto& body) {
+                         return body.entity == history.entity
+                                && body.hasSupportedSurface
+                                && body.surface.dynamic;
+                       });
+          }),
+      histories.end());
 }
 
 //==============================================================================
@@ -8204,6 +8352,106 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 }
 
 //==============================================================================
+sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcBdf2DynamicsTerm(
+    const World& world,
+    const entt::entity entity,
+    const sxdetail::RigidIpcPose& pose,
+    RigidIpcBdf2HistoryEntry& history,
+    RigidIpcBdf2StepState& stepState)
+{
+  sxdetail::RigidIpcBodyDynamicsTerm term;
+
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  const bool isStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool isKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  const bool prescribedMotion = isStatic || isKinematic;
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  const auto& force = registry.get<comps::Force>(entity);
+
+  sxdetail::RigidIpcVector6d currentPosition = poseVector(pose);
+  sxdetail::RigidIpcVector6d currentVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
+  currentVelocity.head<3>() = velocity.linear;
+  currentVelocity.tail<3>() = velocity.angular;
+
+  constexpr double kHistoryPoseTolerance = 1e-8;
+  if ((history.currentPosition - currentPosition).norm()
+      > kHistoryPoseTolerance) {
+    history.hasPreviousPosition = false;
+    history.previousPosition.setZero();
+  }
+  if (!history.currentPosition.allFinite()) {
+    history.hasPreviousPosition = false;
+  }
+
+  nb::Bdf2StepHistory<6> bdf2History;
+  bdf2History.active = !prescribedMotion;
+  bdf2History.hasPreviousPosition
+      = history.hasPreviousPosition && history.previousPosition.allFinite();
+  bdf2History.previousPosition = history.previousPosition;
+  bdf2History.currentPosition = currentPosition;
+  bdf2History.currentVelocity = currentVelocity;
+
+  const auto inertial = nb::makeBdf2InertialTerm<6>(
+      bdf2History, /*mass=*/1.0, world.getTimeStep());
+  if (!inertial.active || !std::isfinite(mass.mass) || mass.mass <= 0.0
+      || !mass.inertia.allFinite()) {
+    return term;
+  }
+
+  term.active = true;
+  term.targetPose = poseFromVector(inertial.targetPosition);
+  term.diagonalWeights.head<3>().setConstant(mass.mass * inertial.scalarWeight);
+  term.diagonalWeights.tail<3>()
+      = (mass.inertia.diagonal().array().max(0.0) * inertial.scalarWeight)
+            .matrix();
+  term.generalizedForce.head<3>() = force.force;
+  term.generalizedForce.tail<3>() = force.torque;
+  if (!prescribedMotion) {
+    term.generalizedForce.head<3>() += mass.mass * world.getGravity();
+  }
+
+  stepState.active = true;
+  stepState.hasPreviousPosition = bdf2History.hasPreviousPosition;
+  stepState.previousPosition = bdf2History.previousPosition;
+  stepState.currentPosition = bdf2History.currentPosition;
+  stepState.currentVelocity = bdf2History.currentVelocity;
+  return term;
+}
+
+//==============================================================================
+void applyRigidIpcBdf2DynamicsTerms(
+    const World& world,
+    std::vector<RigidIpcBdf2HistoryEntry>& histories,
+    std::vector<RigidIpcRuntimeBody>& bodies,
+    RigidIpcSolverStats& stats)
+{
+  pruneRigidIpcBdf2Histories(histories, bodies);
+
+  for (RigidIpcRuntimeBody& body : bodies) {
+    if (!body.hasSupportedSurface || !body.surface.dynamic) {
+      continue;
+    }
+
+    RigidIpcBdf2HistoryEntry& history
+        = findOrCreateRigidIpcBdf2History(histories, body.entity);
+    history.entity = body.entity;
+    body.bdf2StepState = RigidIpcBdf2StepState{};
+    body.dynamicsTerm = makeRuntimeRigidIpcBdf2DynamicsTerm(
+        world, body.entity, body.initialPose, history, body.bdf2StepState);
+    if (!body.dynamicsTerm.active || !body.bdf2StepState.active) {
+      continue;
+    }
+    if (body.bdf2StepState.hasPreviousPosition) {
+      ++stats.bdf2SecondOrderDynamicsTerms;
+    } else {
+      ++stats.bdf2RestartedDynamicsTerms;
+    }
+  }
+}
+
+//==============================================================================
 void collectRigidIpcRuntimeBodies(
     const World& world,
     RigidIpcSolverStats& stats,
@@ -8290,6 +8538,159 @@ void collectRigidIpcRuntimeBodies(
 }
 
 //==============================================================================
+bool appendRigidIpcDeformableSurface(
+    entt::entity entity,
+    const comps::DeformableNodeState& state,
+    const comps::DeformableMeshTopology& topology,
+    double frictionCoefficient,
+    RigidIpcSolverStats& stats,
+    std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  if (state.positions.empty() || topology.surfaceTriangles.empty()) {
+    return false;
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(topology.surfaceTriangles.size());
+  for (const auto& triangle : topology.surfaceTriangles) {
+    if (triangle.nodeA >= state.positions.size()
+        || triangle.nodeB >= state.positions.size()
+        || triangle.nodeC >= state.positions.size()
+        || triangle.nodeA == triangle.nodeB || triangle.nodeA == triangle.nodeC
+        || triangle.nodeB == triangle.nodeC) {
+      continue;
+    }
+    const Eigen::Vector3d& a = state.positions[triangle.nodeA];
+    const Eigen::Vector3d& b = state.positions[triangle.nodeB];
+    const Eigen::Vector3d& c = state.positions[triangle.nodeC];
+    if (!a.allFinite() || !b.allFinite() || !c.allFinite()
+        || (b - a).cross(c - a).squaredNorm() <= 0.0) {
+      continue;
+    }
+    triangles.emplace_back(
+        static_cast<int>(triangle.nodeA),
+        static_cast<int>(triangle.nodeB),
+        static_cast<int>(triangle.nodeC));
+  }
+
+  if (triangles.empty()) {
+    return false;
+  }
+
+  bodies.emplace_back();
+  RigidIpcRuntimeBody& body = bodies.back();
+  resetRigidIpcRuntimeBodyPreservingSurface(body);
+  body.entity = entity;
+  body.hasSupportedSurface = true;
+  body.surfaceIndex = stats.surfaceCount;
+  body.surface.body = bodies.size() - 1u;
+  body.surface.pose = sxdetail::RigidIpcPose{};
+  body.surface.vertices = state.positions;
+  body.surface.triangles = std::move(triangles);
+  body.surface.dynamic = false;
+  body.surface.kinematic = false;
+  body.surface.frictionCoefficient = std::isfinite(frictionCoefficient)
+                                         ? std::max(0.0, frictionCoefficient)
+                                         : 0.0;
+  ++stats.surfaceCount;
+  ++stats.mixedDomainDeformableSurfaceCount;
+  return true;
+}
+
+//==============================================================================
+void appendRigidIpcDeformableSurfaces(
+    const World& world,
+    RigidIpcSolverStats& stats,
+    std::vector<RigidIpcRuntimeBody>& bodies)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  auto view = registry.view<
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableMeshTopology,
+      comps::DeformableMaterial>();
+
+  for (const auto entity : view) {
+    const auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& topology = view.get<comps::DeformableMeshTopology>(entity);
+    const auto& material = view.get<comps::DeformableMaterial>(entity);
+    appendRigidIpcDeformableSurface(
+        entity, state, topology, material.frictionCoefficient, stats, bodies);
+  }
+}
+
+//==============================================================================
+std::vector<Eigen::Vector3d> rigidIpcSurfaceWorldVertices(
+    const sxdetail::RigidIpcBarrierSurface& surface,
+    const sxdetail::RigidIpcPose& pose)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(surface.vertices.size());
+  for (const Eigen::Vector3d& vertex : surface.vertices) {
+    vertices.push_back(sxdetail::transformRigidIpcPoint(vertex, pose));
+  }
+  return vertices;
+}
+
+//==============================================================================
+void collectRigidIpcMixedDomainCandidateStats(
+    const dart::simulation::detail::WorldRegistry& registry,
+    const std::vector<RigidIpcRuntimeBody>& bodies,
+    const double activationDistance,
+    RigidIpcSolverStats& stats,
+    std::vector<nb::MixedDomainSurface>& surfaces)
+{
+  if (stats.mixedDomainDeformableSurfaceCount == 0u) {
+    stats.mixedDomainSurfaceCount = 0u;
+    stats.mixedDomainCandidateCount = 0u;
+    stats.mixedDomainActiveBarrierCount = 0u;
+    stats.mixedDomainBarrierValue = 0.0;
+    return;
+  }
+
+  surfaces.clear();
+  surfaces.reserve(bodies.size());
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    const RigidIpcRuntimeBody& body = bodies[i];
+    if (!body.hasSupportedSurface) {
+      continue;
+    }
+
+    const bool deformableSurface
+        = body.entity != entt::null
+          && registry.all_of<comps::DeformableBodyTag>(body.entity);
+    nb::MixedDomainSurface surface;
+    surface.domain = deformableSurface ? nb::MixedDomainType::Deformable
+                                       : nb::MixedDomainType::Rigid;
+    surface.domainInstance = i;
+    surface.active = true;
+    surface.dynamic = body.surface.dynamic;
+    surface.frictionCoefficient = body.surface.frictionCoefficient;
+    surface.startVertices = rigidIpcSurfaceWorldVertices(
+        body.surface,
+        body.surface.kinematic ? body.surface.kinematicStartPose
+                               : body.surface.pose);
+    surface.endVertices
+        = rigidIpcSurfaceWorldVertices(body.surface, body.surface.pose);
+    surface.triangles = body.surface.triangles;
+    surfaces.push_back(std::move(surface));
+  }
+
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = activationDistance;
+  options.exactDistanceFilter = true;
+  const nb::MixedDomainCandidateSet candidateSet
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+  const nb::MixedDomainBarrierDiagnostics diagnostics
+      = nb::evaluateMixedDomainBarrierDiagnostics(
+          surfaces, candidateSet, activationDistance);
+  stats.mixedDomainSurfaceCount = candidateSet.stats.surfaceCount;
+  stats.mixedDomainCandidateCount = candidateSet.candidates.size();
+  stats.mixedDomainActiveBarrierCount = diagnostics.activeBarrierCount;
+  stats.mixedDomainBarrierValue = diagnostics.value;
+}
+
+//==============================================================================
 std::size_t findRuntimeBodyIndex(
     const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
 {
@@ -8299,6 +8700,118 @@ std::size_t findRuntimeBodyIndex(
     }
   }
   return bodies.size();
+}
+
+//==============================================================================
+std::size_t findSolverBodyIndex(
+    const std::vector<RigidIpcRuntimeBody>& bodies, const entt::entity entity)
+{
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    if (bodies[i].entity == entity) {
+      return i;
+    }
+  }
+  return bodies.size();
+}
+
+//==============================================================================
+bool appendRigidIpcHingeAxisConstraint(
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const Eigen::Vector3d& parentLocalAxis,
+    const Eigen::Quaterniond& targetParentToChild,
+    std::vector<sxdetail::RigidIpcArticulationConstraintInput>& constraints)
+{
+  if (!parentLocalAxis.allFinite() || parentLocalAxis.squaredNorm() <= 0.0
+      || !targetParentToChild.coeffs().allFinite()
+      || targetParentToChild.norm() == 0.0) {
+    return false;
+  }
+
+  const Eigen::Vector3d localAxisA = parentLocalAxis.normalized();
+  const Eigen::Vector3d localAxisB
+      = targetParentToChild.conjugate() * localAxisA;
+  if (!localAxisB.allFinite() || localAxisB.squaredNorm() <= 0.0) {
+    return false;
+  }
+
+  sxdetail::RigidIpcArticulationConstraintInput hinge;
+  hinge.type = sxdetail::RigidIpcArticulationConstraintType::HingeAxis;
+  hinge.bodyA = bodyA;
+  hinge.bodyB = bodyB;
+  hinge.localAxisA = localAxisA;
+  hinge.localAxisB = localAxisB.normalized();
+  constraints.push_back(hinge);
+  return true;
+}
+
+//==============================================================================
+void collectRigidIpcArticulationConstraints(
+    const World& world,
+    const std::vector<RigidIpcRuntimeBody>& solverBodies,
+    std::vector<sxdetail::RigidIpcArticulationConstraintInput>& constraints)
+{
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  constraints.clear();
+
+  auto view
+      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
+  for (const auto jointEntity : view) {
+    const auto& joint = view.get<comps::Joint>(jointEntity);
+    const auto& config
+        = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+    if (!config.enabled || joint.broken || joint.breakForce > 0.0
+        || joint.parentLink == entt::null || joint.childLink == entt::null
+        || (joint.type != comps::JointType::Fixed
+            && joint.type != comps::JointType::Revolute)
+        || !config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
+        || !config.angularAxes.allFinite()
+        || !config.targetRelativeOrientation.coeffs().allFinite()
+        || config.targetRelativeOrientation.norm() == 0.0) {
+      continue;
+    }
+
+    const std::size_t bodyA
+        = findSolverBodyIndex(solverBodies, joint.parentLink);
+    const std::size_t bodyB
+        = findSolverBodyIndex(solverBodies, joint.childLink);
+    if (bodyA >= solverBodies.size() || bodyB >= solverBodies.size()) {
+      continue;
+    }
+
+    sxdetail::RigidIpcArticulationConstraintInput point;
+    point.type = sxdetail::RigidIpcArticulationConstraintType::PointConnection;
+    point.bodyA = bodyA;
+    point.bodyB = bodyB;
+    point.localPointA = config.localAnchorA;
+    point.localPointB = config.localAnchorB;
+    constraints.push_back(point);
+
+    if (joint.type != comps::JointType::Revolute) {
+      const Eigen::Quaterniond targetParentToChild
+          = config.targetRelativeOrientation.normalized();
+      appendRigidIpcHingeAxisConstraint(
+          bodyA,
+          bodyB,
+          config.angularAxes.col(0),
+          targetParentToChild,
+          constraints);
+      appendRigidIpcHingeAxisConstraint(
+          bodyA,
+          bodyB,
+          config.angularAxes.col(1),
+          targetParentToChild,
+          constraints);
+      continue;
+    }
+
+    appendRigidIpcHingeAxisConstraint(
+        bodyA,
+        bodyB,
+        config.angularAxes.col(2),
+        config.targetRelativeOrientation.normalized(),
+        constraints);
+  }
 }
 
 //==============================================================================
@@ -8321,18 +8834,50 @@ void clearKinematicBodyStepTraces(
 void applyRigidIpcPoseToRuntimeBody(
     World& world,
     const RigidIpcRuntimeBody& body,
-    const sxdetail::RigidIpcPose& pose)
+    const sxdetail::RigidIpcPose& pose,
+    std::vector<RigidIpcBdf2HistoryEntry>* bdf2Histories)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   auto& transform = registry.get<comps::Transform>(body.entity);
   auto& velocity = registry.get<comps::Velocity>(body.entity);
 
   const double timeStep = world.getTimeStep();
+  const sxdetail::RigidIpcVector6d acceptedPosition = poseVector(pose);
+  sxdetail::RigidIpcVector6d acceptedVelocity
+      = sxdetail::RigidIpcVector6d::Zero();
   transform.position = pose.position;
   transform.orientation = quaternionFromRotationVector(pose.rotation);
   if (timeStep > 0.0 && std::isfinite(timeStep)) {
-    velocity.linear = (pose.position - body.initialPose.position) / timeStep;
-    velocity.angular = (pose.rotation - body.initialPose.rotation) / timeStep;
+    acceptedVelocity.head<3>()
+        = (pose.position - body.initialPose.position) / timeStep;
+    acceptedVelocity.tail<3>()
+        = (pose.rotation - body.initialPose.rotation) / timeStep;
+    if (bdf2Histories != nullptr && body.bdf2StepState.active) {
+      nb::Bdf2StepHistory<6> history;
+      history.active = true;
+      history.hasPreviousPosition = body.bdf2StepState.hasPreviousPosition;
+      history.previousPosition = body.bdf2StepState.previousPosition;
+      history.currentPosition = body.bdf2StepState.currentPosition;
+      history.currentVelocity = body.bdf2StepState.currentVelocity;
+      const auto update
+          = nb::makeBdf2VelocityUpdate<6>(history, acceptedPosition, timeStep);
+      if (update.active && update.velocity.allFinite()) {
+        acceptedVelocity = update.velocity;
+      }
+    }
+    velocity.linear = acceptedVelocity.head<3>();
+    velocity.angular = acceptedVelocity.tail<3>();
+  }
+
+  if (bdf2Histories != nullptr && body.bdf2StepState.active
+      && acceptedPosition.allFinite() && acceptedVelocity.allFinite()) {
+    RigidIpcBdf2HistoryEntry& history
+        = findOrCreateRigidIpcBdf2History(*bdf2Histories, body.entity);
+    history.entity = body.entity;
+    history.hasPreviousPosition = true;
+    history.previousPosition = body.bdf2StepState.currentPosition;
+    history.currentPosition = acceptedPosition;
+    history.currentVelocity = acceptedVelocity;
   }
 
   auto& props = registry.get<comps::FreeFrameProperties>(body.entity);
@@ -8382,6 +8927,7 @@ void applyRigidIpcRuntimeResult(
     World& world,
     const std::vector<RigidIpcRuntimeBody>& bodies,
     const sxdetail::RigidIpcProjectedNewtonSolveResult& result,
+    std::vector<RigidIpcBdf2HistoryEntry>* bdf2Histories,
     std::vector<entt::entity>& writebackEntities,
     std::vector<entt::entity>& orderedEntities,
     std::vector<int>& visitState)
@@ -8410,7 +8956,7 @@ void applyRigidIpcRuntimeResult(
         continue;
       }
       applyRigidIpcPoseToRuntimeBody(
-          world, body, result.surfaces[body.surfaceIndex].pose);
+          world, body, result.surfaces[body.surfaceIndex].pose, bdf2Histories);
     }
   }
 }
@@ -8484,6 +9030,9 @@ void blockedKinematicEntitiesAfterRejectedRigidIpcSolve(
     blockBodyPair(constraint.bodyA, constraint.bodyB);
   }
   for (const auto& constraint : result.assembly.activeFrictionConstraints) {
+    blockBodyPair(constraint.bodyA, constraint.bodyB);
+  }
+  for (const auto& constraint : result.assembly.activeArticulationConstraints) {
     blockBodyPair(constraint.bodyA, constraint.bodyB);
   }
   if (result.lineSearch.limited || !result.lineSearch.allowsPositiveStep()) {
@@ -8668,7 +9217,11 @@ void RigidBodyVelocityStage::prepare(World& world)
     m_scratch = std::make_unique<Scratch>();
   }
 
-  assembleRigidBodyForces(world, true, m_scratch->forces);
+  assembleRigidBodyForces(
+      world,
+      true,
+      m_scratch->forces,
+      RigidBodyForceAssemblyMode::AdvanceableOnly);
 }
 
 //==============================================================================
@@ -8681,7 +9234,8 @@ void RigidBodyVelocityStage::execute(
     m_scratch = std::make_unique<Scratch>();
   }
   auto& forces = m_scratch->forces;
-  assembleRigidBodyForces(world, true, forces);
+  assembleRigidBodyForces(
+      world, true, forces, RigidBodyForceAssemblyMode::AdvanceableOnly);
 
   for (std::size_t i = 0; i < forces.entities.size(); ++i) {
     const auto entity = forces.entities[i];
@@ -8747,38 +9301,55 @@ struct RigidBodyContactStage::AvbdScratch
   {
     dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
     pointJoints.clear();
+    distanceSprings.clear();
     buildScratch.rowCounters.clear();
+    buildScratch.contactRowOrder.clear();
     normalInventory.records().clear();
     frictionInventory.records().clear();
     jointLinearInventory.records().clear();
     jointAngularInventory.records().clear();
     motorInventory.records().clear();
+    distanceSpringInventory.records().clear();
+    solveScratch.clear();
   }
 
   void reserve(
       std::size_t bodyCapacity,
       std::size_t contactCapacity,
-      std::size_t jointCapacity)
+      std::size_t jointCapacity,
+      std::size_t distanceSpringCapacity)
   {
     dvbd::reserveAvbdRigidWorldContactSnapshot(
-        snapshot, bodyCapacity, contactCapacity, jointCapacity, jointCapacity);
+        snapshot,
+        bodyCapacity,
+        contactCapacity,
+        jointCapacity,
+        jointCapacity,
+        distanceSpringCapacity);
     pointJoints.reserve(jointCapacity);
-    buildScratch.rowCounters.reserve(std::max(contactCapacity, jointCapacity));
+    distanceSprings.reserve(distanceSpringCapacity);
+    buildScratch.rowCounters.reserve(
+        std::max(
+            contactCapacity, std::max(jointCapacity, distanceSpringCapacity)));
+    buildScratch.contactRowOrder.reserve(contactCapacity);
     dvbd::reserveAvbdRigidWorldContactSolveScratch(
         solveScratch,
         contactCapacity,
         jointCapacity,
         jointCapacity,
-        bodyCapacity);
+        bodyCapacity,
+        distanceSpringCapacity);
     normalInventory.reserve(contactCapacity);
     frictionInventory.reserve(2u * contactCapacity);
     jointLinearInventory.reserve(3u * jointCapacity);
     jointAngularInventory.reserve(3u * jointCapacity);
     motorInventory.reserve(jointCapacity);
+    distanceSpringInventory.reserve(distanceSpringCapacity);
   }
 
   dvbd::AvbdRigidWorldContactSnapshot snapshot;
   std::vector<dvbd::AvbdRigidWorldPointJointInput> pointJoints;
+  std::vector<dvbd::AvbdRigidWorldDistanceSpringInput> distanceSprings;
   dvbd::AvbdRigidWorldContactBuildScratch buildScratch;
   dvbd::AvbdRigidWorldContactSolveScratch solveScratch;
   dvbd::AvbdScalarRowInventory normalInventory;
@@ -8786,6 +9357,7 @@ struct RigidBodyContactStage::AvbdScratch
   dvbd::AvbdScalarRowInventory jointLinearInventory;
   dvbd::AvbdScalarRowInventory jointAngularInventory;
   dvbd::AvbdScalarRowInventory motorInventory;
+  dvbd::AvbdScalarRowInventory distanceSpringInventory;
 };
 
 //==============================================================================
@@ -8852,41 +9424,97 @@ void RigidBodyContactStage::prepare(World& world)
   if (m_contactScratch == nullptr) {
     m_contactScratch = std::make_unique<ContactScratch>();
   }
+  auto& constraints = m_contactScratch->constraints;
+  constraints.clear();
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
-  m_contactScratch->constraints.reserve(contacts.size());
+  std::size_t collisionShapeCount = 0;
+  const auto& registry = dart::simulation::detail::registryOf(world);
+  const auto geometryView = registry.view<comps::CollisionGeometry>();
+  for (const entt::entity entity : geometryView) {
+    collisionShapeCount
+        += geometryView.get<comps::CollisionGeometry>(entity).shapes.size();
+  }
+  constexpr std::size_t kContactConstraintCapacityPerShape = 4u;
+  const std::size_t contactConstraintCapacity
+      = collisionShapeCount <= std::numeric_limits<std::size_t>::max()
+                                   / kContactConstraintCapacityPerShape
+            ? collisionShapeCount * kContactConstraintCapacityPerShape
+            : std::numeric_limits<std::size_t>::max();
+  constraints.reserve(contactConstraintCapacity);
+
+  const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
+  const std::size_t contactCount
+      = skipContactQuery ? 0u
+                         : world.queryContacts(CollisionQueryOptions{}).size();
 
   if (m_avbdScratch == nullptr) {
     m_avbdScratch = std::make_unique<AvbdScratch>();
   }
-  auto& registry = dart::simulation::detail::registryOf(world);
   const std::size_t jointCapacity
       = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
             .size_hint();
-  const std::size_t bodyCapacity = 2u * (contacts.size() + jointCapacity);
-  m_avbdScratch->reserve(bodyCapacity, contacts.size(), jointCapacity);
+  std::size_t distanceSpringCapacity = 0u;
+  for ([[maybe_unused]] const entt::entity entity :
+       registry.view<dvbd::AvbdRigidWorldDistanceSpringConfig>()) {
+    ++distanceSpringCapacity;
+  }
+  const std::size_t bodyCapacity
+      = 2u * (contactCount + jointCapacity + distanceSpringCapacity);
+  m_avbdScratch->reserve(
+      bodyCapacity, contactCount, jointCapacity, distanceSpringCapacity);
 }
 
 //==============================================================================
 void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   auto& registry = dart::simulation::detail::registryOf(world);
 
   const auto projectAvbdRigidPointJoints = [&]() {
+    const bool hasPointJointConfigs
+        = dvbd::hasAvbdRigidWorldPointJointConfigs(registry);
+    const bool hasDistanceSpringConfigs
+        = dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry);
+    if (!hasPointJointConfigs && !hasDistanceSpringConfigs) {
+      return false;
+    }
+
     if (m_avbdScratch == nullptr) {
       m_avbdScratch = std::make_unique<AvbdScratch>();
     }
     auto& scratch = *m_avbdScratch;
-    dvbd::extractAvbdRigidWorldPointJointInputs(registry, scratch.pointJoints);
-    if (scratch.pointJoints.empty()) {
+    if (hasPointJointConfigs) {
+      dvbd::extractAvbdRigidWorldPointJointInputsInto(
+          registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
+    } else {
+      scratch.pointJoints.clear();
+    }
+    if (hasDistanceSpringConfigs) {
+      dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
+          registry, scratch.distanceSprings, /*includeWorldAnchors=*/false);
+    } else {
+      scratch.distanceSprings.clear();
+    }
+    if (scratch.pointJoints.empty() && scratch.distanceSprings.empty()) {
       return false;
     }
 
     dvbd::clearAvbdRigidWorldContactSnapshot(scratch.snapshot);
-    const std::size_t appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
-        registry, scratch.pointJoints, scratch.snapshot, scratch.buildScratch);
-    if (appendedJoints == 0u) {
+    const std::size_t appendedJoints
+        = scratch.pointJoints.empty() ? 0u
+                                      : dvbd::appendAvbdRigidWorldPointJoints(
+                                            registry,
+                                            scratch.pointJoints,
+                                            scratch.snapshot,
+                                            scratch.buildScratch);
+    const std::size_t appendedDistanceSprings
+        = scratch.distanceSprings.empty()
+              ? 0u
+              : dvbd::appendAvbdRigidWorldDistanceSprings(
+                    registry,
+                    scratch.distanceSprings,
+                    scratch.snapshot,
+                    scratch.buildScratch);
+    if (appendedJoints == 0u && appendedDistanceSprings == 0u) {
       return false;
     }
 
@@ -8905,13 +9533,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             scratch.jointLinearInventory,
             scratch.jointAngularInventory,
             scratch.motorInventory,
+            scratch.distanceSpringInventory,
             timeStep,
             scratch.solveScratch,
             solveOptions);
     (void)dvbd::markAvbdRigidWorldFracturedPointJoints(
         registry, scratch.snapshot, solveResult.fracturedJointIndices);
     if (solveResult.jointLinearRows == 0u && solveResult.jointAngularRows == 0u
-        && solveResult.motorRows == 0u) {
+        && solveResult.motorRows == 0u
+        && solveResult.distanceSpringRows == 0u) {
       return false;
     }
 
@@ -8921,6 +9551,18 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return projection.bodies != 0u;
   };
 
+  if (shouldSkipRigidBodyContactQuery(registry)) {
+    if (projectAvbdRigidPointJoints()) {
+      return;
+    }
+
+    if (m_avbdScratch != nullptr) {
+      m_avbdScratch->clear();
+    }
+    return;
+  }
+
+  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;
@@ -8955,12 +9597,38 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         scratch.snapshot,
         scratch.buildScratch,
         contactOptions);
-    dvbd::extractAvbdRigidWorldPointJointInputs(registry, scratch.pointJoints);
-    const std::size_t appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
-        registry, scratch.pointJoints, scratch.snapshot, scratch.buildScratch);
+    std::size_t appendedJoints = 0u;
+    std::size_t appendedDistanceSprings = 0u;
+    if (dvbd::hasAvbdRigidWorldPointJointConfigs(registry)) {
+      dvbd::extractAvbdRigidWorldPointJointInputsInto(
+          registry, scratch.pointJoints, /*includeWorldAnchors=*/false);
+      if (!scratch.pointJoints.empty()) {
+        appendedJoints = dvbd::appendAvbdRigidWorldPointJoints(
+            registry,
+            scratch.pointJoints,
+            scratch.snapshot,
+            scratch.buildScratch);
+      }
+    } else {
+      scratch.pointJoints.clear();
+    }
+    if (dvbd::hasAvbdRigidWorldDistanceSpringConfigs(registry)) {
+      dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
+          registry, scratch.distanceSprings, /*includeWorldAnchors=*/false);
+      if (!scratch.distanceSprings.empty()) {
+        appendedDistanceSprings = dvbd::appendAvbdRigidWorldDistanceSprings(
+            registry,
+            scratch.distanceSprings,
+            scratch.snapshot,
+            scratch.buildScratch);
+      }
+    } else {
+      scratch.distanceSprings.clear();
+    }
 
     if (scratch.snapshot.contacts.size() == contacts.size()
-        && (!scratch.snapshot.contacts.empty() || appendedJoints != 0u)) {
+        && (!scratch.snapshot.contacts.empty() || appendedJoints != 0u
+            || appendedDistanceSprings != 0u)) {
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
           registry, scratch.snapshot, timeStep);
@@ -8975,6 +9643,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       solveOptions.friction.alpha = avbdConfig->alpha;
       solveOptions.friction.beta = avbdConfig->beta;
       solveOptions.friction.maxStiffness = contactOptions.maxStiffness;
+      solveOptions.distanceSpring.beta = avbdConfig->beta;
+      solveOptions.distanceSpring.maxStiffness = contactOptions.maxStiffness;
       solveOptions.descent.iterations = m_iterations;
       solveOptions.descent.regularization = 1e-12;
 
@@ -8986,6 +9656,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
               scratch.jointLinearInventory,
               scratch.jointAngularInventory,
               scratch.motorInventory,
+              scratch.distanceSpringInventory,
               timeStep,
               scratch.solveScratch,
               solveOptions);
@@ -8993,8 +9664,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
           registry, scratch.snapshot, solveResult.fracturedJointIndices);
       if (solveResult.normalRows != 0u || solveResult.frictionRows != 0u
           || solveResult.jointLinearRows != 0u
-          || solveResult.jointAngularRows != 0u
-          || solveResult.motorRows != 0u) {
+          || solveResult.jointAngularRows != 0u || solveResult.motorRows != 0u
+          || solveResult.distanceSpringRows != 0u) {
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, scratch.snapshot, timeStep);
@@ -9265,7 +9936,11 @@ ComputeStageMetadata RigidIpcContactStage::getMetadata() const noexcept
        {"rigid_body.velocity", ComputeAccessMode::ReadWrite},
        {"rigid_body.mass", ComputeAccessMode::Read},
        {"rigid_body.force", ComputeAccessMode::Read},
+       {"rigid_body.joint", ComputeAccessMode::Read},
        {"rigid_body.kinematic_step_trace", ComputeAccessMode::ReadWrite},
+       {"deformable_body.state", ComputeAccessMode::Read},
+       {"deformable_body.model", ComputeAccessMode::Read},
+       {"deformable_body.topology", ComputeAccessMode::Read},
        {"collision_geometry", ComputeAccessMode::Read}}};
 }
 
@@ -9283,6 +9958,7 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->surfaces.reserve(bodyCount);
   m_scratch->dynamicsTerms.reserve(bodyCount);
   m_scratch->solveDynamicsTerms.reserve(bodyCount);
+  m_scratch->articulationConstraints.reserve(bodyCount);
   m_scratch->tracedEntities.reserve(kinematicCount);
   m_scratch->blockedEntities.reserve(kinematicCount);
   m_scratch->writebackEntities.reserve(bodyCount);
@@ -9315,6 +9991,19 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
   collectRigidIpcRuntimeBodies(world, m_lastStats, scratch.runtimeBodies);
+  appendRigidIpcDeformableSurfaces(world, m_lastStats, scratch.runtimeBodies);
+  collectRigidIpcMixedDomainCandidateStats(
+      dart::simulation::detail::registryOf(world),
+      scratch.runtimeBodies,
+      m_options.activationDistance,
+      m_lastStats,
+      scratch.mixedDomainSurfaces);
+  if (m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2) {
+    applyRigidIpcBdf2DynamicsTerms(
+        world, scratch.bdf2Histories, scratch.runtimeBodies, m_lastStats);
+  } else {
+    scratch.bdf2Histories.clear();
+  }
   const auto& runtimeBodies = scratch.runtimeBodies;
 
   if (runtimeBodies.empty()) {
@@ -9343,7 +10032,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   auto& surfaces = scratch.surfaces;
   auto& dynamicsTerms = scratch.dynamicsTerms;
   auto& solveDynamicsTerms = scratch.solveDynamicsTerms;
+  auto& articulationConstraints = scratch.articulationConstraints;
   solveDynamicsTerms.assign(dynamicsTerms.begin(), dynamicsTerms.end());
+  collectRigidIpcArticulationConstraints(
+      world, solverBodies, articulationConstraints);
 
   // Adaptive barrier-stiffness inputs: the world AABB diagonal over all
   // collision surfaces and the average dynamic-body mass. These drive the IPC
@@ -9410,6 +10102,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.friction.staticFrictionDisplacement
       = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
   options.dynamicsTerms = std::move(solveDynamicsTerms);
+  options.articulationConstraints = articulationConstraints;
   options.maxIterations = m_options.maxIterations;
   options.frictionIterations = m_options.frictionIterations;
   options.frictionConvergenceTolerance = m_options.frictionConvergenceTolerance;
@@ -9459,6 +10152,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.activeConstraints = result.assembly.activeConstraints.size();
   m_lastStats.activeFrictionConstraints
       = result.assembly.activeFrictionConstraints.size();
+  m_lastStats.activeArticulationConstraints
+      = result.assembly.activeArticulationConstraints.size();
   m_lastStats.activeDynamicsTerms = result.assembly.activeDynamicsTerms;
   m_lastStats.solverIterations = result.stats.iterations;
   m_lastStats.frictionIterations = result.stats.frictionIterations;
@@ -9468,6 +10163,10 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   m_lastStats.finalValue = result.stats.finalValue;
   m_lastStats.initialGradientNorm = result.stats.initialGradientNorm;
   m_lastStats.finalGradientNorm = result.stats.finalGradientNorm;
+  m_lastStats.initialEqualityResidualNorm
+      = result.stats.initialEqualityResidualNorm;
+  m_lastStats.finalEqualityResidualNorm
+      = result.stats.finalEqualityResidualNorm;
   m_lastStats.finalMomentumBalance = result.stats.finalMomentumBalance;
   m_lastStats.lastStepNorm = result.stats.lastStepNorm;
   m_lastStats.barrierStiffness = result.stats.barrierStiffness;
@@ -9553,6 +10252,9 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       world,
       runtimeBodies,
       result,
+      m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2
+          ? std::addressof(scratch.bdf2Histories)
+          : nullptr,
       scratch.writebackEntities,
       scratch.orderedEntities,
       scratch.visitState);

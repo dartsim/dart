@@ -35,6 +35,7 @@
 #include <dart/simulation/detail/deformable_contact/tangent_stencil.hpp>
 #include <dart/simulation/detail/newton_barrier/articulation_constraint.hpp>
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/change_of_variable.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp>
@@ -51,6 +52,8 @@
 #include <limits>
 #include <type_traits>
 #include <vector>
+
+#include <cmath>
 
 namespace dc = dart::simulation::detail::deformable_contact;
 namespace nb = dart::simulation::detail::newton_barrier;
@@ -142,6 +145,134 @@ Eigen::Matrix<double, Outputs, Inputs> finiteDifferenceJacobian(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, EqualityChangeOfVariableDetectsRankAndResidual)
+{
+  Eigen::SparseMatrix<double> jacobian(3, 4);
+  jacobian.insert(0, 0) = 2.0;
+  jacobian.insert(0, 2) = 0.25;
+  jacobian.insert(1, 1) = 3.0;
+  jacobian.insert(1, 3) = -0.5;
+  jacobian.insert(2, 0) = 4.0;
+  jacobian.insert(2, 1) = -3.0;
+  jacobian.insert(2, 2) = 0.5;
+  jacobian.insert(2, 3) = 0.5;
+  jacobian.makeCompressed();
+
+  Eigen::Vector3d residual;
+  residual << -4.0, 6.0, -14.0;
+
+  const auto change = nb::makeEqualityChangeOfVariable(jacobian, residual);
+  ASSERT_TRUE(change.valid);
+  EXPECT_EQ(change.rank, 2);
+  EXPECT_FALSE(change.fullRowRank);
+  EXPECT_EQ(change.independentRows.size(), 2u);
+  EXPECT_EQ(change.constrainedColumns.size(), 2u);
+  EXPECT_EQ(change.freeColumns.size(), 2u);
+
+  const Eigen::MatrixXd denseJacobian(jacobian);
+  EXPECT_NEAR(
+      (denseJacobian * change.particularStep + residual).norm(), 0.0, 1e-12);
+  expectMatrixNear(
+      denseJacobian * change.nullspaceBasis,
+      Eigen::MatrixXd::Zero(3, 2),
+      1e-12);
+  EXPECT_NEAR(change.residualNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, EqualityChangeOfVariableKeepsFreeSparseBasis)
+{
+  Eigen::SparseMatrix<double> jacobian(2, 5);
+  jacobian.insert(0, 0) = 4.0;
+  jacobian.insert(0, 2) = 0.25;
+  jacobian.insert(1, 1) = 5.0;
+  jacobian.insert(1, 3) = -0.5;
+  jacobian.insert(1, 4) = 0.125;
+  jacobian.makeCompressed();
+
+  Eigen::Vector2d residual;
+  residual << -2.0, 3.0;
+
+  const auto change = nb::makeEqualityChangeOfVariable(jacobian, residual);
+  ASSERT_TRUE(change.valid);
+  ASSERT_EQ(change.rank, 2);
+  ASSERT_EQ(change.freeColumns.size(), 3u);
+  ASSERT_EQ(change.nullspaceBasis.cols(), 3);
+
+  for (int col = 0; col < static_cast<int>(change.freeColumns.size()); ++col) {
+    const int freeDof = change.freeColumns[col];
+    EXPECT_NEAR(change.nullspaceBasis(freeDof, col), 1.0, 1e-14);
+    for (int other = 0; other < static_cast<int>(change.freeColumns.size());
+         ++other) {
+      if (other == col) {
+        continue;
+      }
+      EXPECT_NEAR(
+          change.nullspaceBasis(change.freeColumns[other], col), 0.0, 1e-14);
+    }
+  }
+
+  int nonzeros = 0;
+  for (int row = 0; row < change.nullspaceBasis.rows(); ++row) {
+    for (int col = 0; col < change.nullspaceBasis.cols(); ++col) {
+      if (std::abs(change.nullspaceBasis(row, col)) > 1e-14) {
+        ++nonzeros;
+      }
+    }
+  }
+  EXPECT_LE(
+      nonzeros,
+      static_cast<int>(
+          change.freeColumns.size() * (change.constrainedColumns.size() + 1)));
+
+  const Eigen::MatrixXd denseJacobian(jacobian);
+  expectMatrixNear(
+      denseJacobian * change.nullspaceBasis,
+      Eigen::MatrixXd::Zero(2, 3),
+      1e-12);
+}
+
+//==============================================================================
+TEST(NewtonBarrierPrimitives, EqualityChangeOfVariableMatchesKktSolve)
+{
+  Eigen::SparseMatrix<double> jacobian(2, 4);
+  jacobian.insert(0, 0) = 2.0;
+  jacobian.insert(0, 2) = 0.25;
+  jacobian.insert(1, 1) = 3.0;
+  jacobian.insert(1, 3) = -0.5;
+  jacobian.makeCompressed();
+
+  Eigen::Vector2d residual;
+  residual << -1.0, 0.75;
+
+  Eigen::Matrix4d hessian;
+  hessian << 5.0, 0.2, 0.1, 0.0, 0.2, 4.0, 0.0, -0.1, 0.1, 0.0, 3.0, 0.25, 0.0,
+      -0.1, 0.25, 2.5;
+  Eigen::Vector4d gradient;
+  gradient << -0.7, 0.4, 0.2, -0.3;
+
+  const auto change = nb::makeEqualityChangeOfVariable(jacobian, residual);
+  ASSERT_TRUE(change.valid);
+  const Eigen::VectorXd reducedStep
+      = nb::solveEqualityConstrainedQuadraticReduced(hessian, gradient, change);
+
+  Eigen::Matrix<double, 6, 6> kkt = Eigen::Matrix<double, 6, 6>::Zero();
+  kkt.topLeftCorner<4, 4>() = hessian;
+  kkt.topRightCorner<4, 2>() = Eigen::MatrixXd(jacobian).transpose();
+  kkt.bottomLeftCorner<2, 4>() = Eigen::MatrixXd(jacobian);
+
+  Eigen::Matrix<double, 6, 1> rhs;
+  rhs.head<4>() = -gradient;
+  rhs.tail<2>() = -residual;
+  const Eigen::Matrix<double, 6, 1> kktSolution = kkt.fullPivLu().solve(rhs);
+  const Eigen::Vector4d kktStep = kktSolution.head<4>();
+
+  expectMatrixNear(reducedStep, kktStep, 1e-12);
+  EXPECT_NEAR(
+      (Eigen::MatrixXd(jacobian) * reducedStep + residual).norm(), 0.0, 1e-12);
+}
 
 //==============================================================================
 TEST(NewtonBarrierPrimitives, ArticulationPointConnectionAndFixedPoint)

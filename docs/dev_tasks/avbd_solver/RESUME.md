@@ -2,6 +2,102 @@
 
 ## Last Session Summary
 
+Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
+persistence coverage now exercises fixed, revolute, prismatic, and spherical
+public articulated facades for both same-multibody link pairs and world-link
+endpoints. The C++ serialization test and
+`test_simulation_world_articulated_avbd_stiffness_roundtrip_from_python` set
+finite start/linear/angular AVBD stiffness, save/load the world, mutate the
+restored stiffness values, and verify they remain visible after entering
+simulation mode. A focused variational-integration test now also verifies
+restored stiffness for those endpoint/type combinations feeds the private
+point-joint configs rebuilt at simulation entry. This is narrow public facade
+serialization/extraction coverage; it does not close broader articulated
+lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
+
+Latest local follow-up: CUDA boxed-LCP PGS dense world-contact tests now keep
+the largest 128-box fixture as a cheap shape gate while bounding the default
+runtime-contract CUDA sweeps to smaller dense packets. #2973's CUDA failure
+timed out in the pre-existing `test_lcp_jacobi_batch_cuda` dense PGS suite;
+`main` passed the same binary but only with about 1099 seconds of runtime. This
+is CI-runtime calibration only; it does not close any AVBD solver, CPU-win,
+GPU, or paper-number gate.
+
+Latest local follow-up: the large BoxedLcp dense/articulated scaling packets in
+`test_boxed_lcp_contact` are now opt-in behind
+`DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS`, while representative
+default coverage still includes dense-contact shape smoke and small/mid-size
+articulated public-step cases. This keeps routine CI from spending minutes in
+the dense fallback path while preserving the larger packets for dedicated
+evidence/performance runs. `pixi run lint`, focused CTest, and the dartpy world
+test passed locally. This is CI-runtime calibration only; it does not close any
+AVBD solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: dartpy public articulated fixed, spherical, cardinal
+one-DOF motor, and non-cardinal one-DOF motor break/reset coverage now rechecks
+endpoint shape, joint type, DOF count, and motor axis after reset re-engages the
+rows for same-multibody, world-link, and movable-pair cases; the non-cardinal
+direct cases now also recheck that shape while broken rows are being skipped
+before reset. Broken-state binary round-trip tests now also recheck the
+restored facade shape after reset re-engages same-multibody/world-link fixed,
+spherical, and one-DOF rows. The focused selected pytest filters passed. This
+is only a narrow public facade lifecycle assertion slice; it does not close
+broader articulated fracture, motor lifecycle, source-corpus, CPU-win, GPU, or
+paper-number gates.
+
+Latest local follow-up: small AVBD rigid world-contact snapshots no longer
+reserve the endpoint entity-index hash map while the body count is within the
+small-row linear-scan capacity. Focused `test_avbd_rigid_block` snapshot-index
+validation passed, and a selected local Motor benchmark smoke moved from the
+earlier about 9.3 us mean to about 8.0 us mean CPU time under host load around 7. This is only no-contact source-row overhead evidence; it does not close any
+source-row CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: C++ and dartpy public articulated facade coverage now
+verifies that `World::clear()` / `World.clear()` invalidates existing
+articulated link/joint handles, drops the public point-joint facades, and resets
+the generated `joint_###` name sequence before a rebuilt world creates a fresh
+empty-name facade. This is only a narrow public facade lifecycle/name-counter
+guard; it does not close broader articulated motor lifecycle, fracture corpus,
+CPU-win, GPU, or paper-number gates.
+
+Latest local follow-up: Linux Release CI now runs the ASAN build with
+`DART_PARALLEL_JOBS=4` after the hosted runner killed the ASAN compilation with
+exit 137 while rebuilding the full test target set. This is CI resource
+calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: the AVBD-only contact regressions in
+`test_boxed_lcp_contact` are excluded on MSVC after both target-level `/Od` and
+a source-local optimization guard still hit C1001 in MSVC 19.44. The ordinary
+BoxedLcp contact tests remain active on Windows, and the AVBD regressions remain
+active on Linux/macOS. This is CI portability only; it does not close any AVBD
+solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: the IPC bake allocation regression now compares the
+unsupported plane scene against the same IPC contact-query-only setup with
+supported collision geometry instead of against the sequential solver's
+allocation baseline. This keeps the guard focused on accidental IPC query
+prewarm work after the sequential prepare path was tightened. This is CI-test
+calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+paper-number gate.
+
+Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
+19.44 internal compiler error in the primitive endpoint-row helper by using an
+explicit `PrimitiveRowKey` struct instead of a nested
+`std::pair<AvbdContactEndpointId, AvbdContactEndpointId>` alias in that
+section. The focused Linux target rebuild and full `test_boxed_lcp_contact`
+binary passed locally. This is CI portability only; it does not close any AVBD
+solver, CPU-win, GPU, or paper-number gate.
+
+Latest local follow-up: `RigidBodyContactStage::prepare()` now checks the same
+no-dynamic-collision-geometry predicate as execute before sizing contact
+scratch, avoiding a redundant `World::queryContacts()` call for no-collision
+source rows such as the 2D Motor row. Focused world/contact-stage tests and
+step-profiling tests passed, and a selected Motor benchmark smoke moved from
+about 13.5 us to about 9.2 us median CPU under changing host load. This is
+no-contact prepare-overhead evidence only; it does not close the Motor CPU-win,
+GPU, or paper-number gates.
+
 Latest local follow-up: point-pair and angular constraint caches now use exact
 component equality for repeated local anchors and target orientations instead
 of zero-tolerance approximate comparisons. This keeps the block-solver cache-hit
@@ -1602,6 +1698,21 @@ complete.
 
 ## Current Branch
 
+Current reality (2026-06-11): this checkout is
+`avbd/articulated-stiffness-roundtrip` for PR #2975, with `origin/main` at
+`37cb7371db6` (#2973) merged locally to resolve the PR conflict. Keep this
+branch scoped to articulated stiffness round-trip coverage; source-row
+performance work belongs on `avbd/source-row-perf-slice`. The earlier
+split-stack notes below are historical context from PRs #2967/#2968 and the raw
+checkpoint branch.
+
+Current reality (2026-06-10): the active split stack is PR #2967
+(`avbd/tests-benchmarks`, base `main`) plus PR #2968 (`avbd/python-demos`, base
+`avbd/tests-benchmarks`), and this checkout is `avbd/python-demos`. The older
+checkpoint branch description below is historical context for the raw
+33-hour checkpoint and should not be treated as the current checkout without
+re-verifying `git status --short --branch` and the open PR heads.
+
 `feature/avbd-articulated-masked-rows` - staged local slice based on cached
 `origin/main` at `dbac6c63e9f`, including the scalar-row foundation,
 mass-spring AVBD row
@@ -2058,9 +2169,9 @@ parity claim.
 
 ## Immediate Next Step
 
-The local branch and cached `origin/main` are both at `f1fa9f386f9` after the
-requested latest-main merge was refreshed through HTTPS and applied as a
-fast-forward. The earlier SSH fetch path failed in this environment with
+Finish the PR #2975 latest-main merge by running the focused stiffness
+round-trip tests plus `pixi run lint`, then push the normal merge commit and
+monitor CI. The earlier SSH fetch path failed in this environment with
 `ssh: connect to host github.com port 22: Network is unreachable`, so keep using
 HTTPS when a fresh main refresh is needed here. The pre-merge backup stashes
 remain present and should not be dropped without maintainer approval. The

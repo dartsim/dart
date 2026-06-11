@@ -7,11 +7,87 @@ order. Add a scene by importing its ``SCENE`` constant and appending it here.
 from __future__ import annotations
 
 from .runner import PythonDemoScene
+from .scenes.avbd_empty_baseline import SCENE as AVBD_EMPTY_BASELINE
+from .scenes.avbd_demo2d_cards import SCENE as AVBD_DEMO2D_CARDS
+from .scenes.avbd_demo2d_dynamic_friction import (
+    SCENE as AVBD_DEMO2D_DYNAMIC_FRICTION,
+)
+from .scenes.avbd_demo2d_fracture import SCENE as AVBD_DEMO2D_FRACTURE
+from .scenes.avbd_demo2d_ground import SCENE as AVBD_DEMO2D_GROUND
+from .scenes.avbd_demo2d_heavy_rope import SCENE as AVBD_DEMO2D_HEAVY_ROPE
+from .scenes.avbd_demo2d_hanging_rope import SCENE as AVBD_DEMO2D_HANGING_ROPE
+from .scenes.avbd_demo2d_joint_grid import SCENE as AVBD_DEMO2D_JOINT_GRID
+from .scenes.avbd_demo2d_motor import SCENE as AVBD_DEMO2D_MOTOR
+from .scenes.avbd_demo2d_net import SCENE as AVBD_DEMO2D_NET
+from .scenes.avbd_demo2d_pyramid import SCENE as AVBD_DEMO2D_PYRAMID
+from .scenes.avbd_demo2d_rod import SCENE as AVBD_DEMO2D_ROD
+from .scenes.avbd_demo2d_rope import SCENE as AVBD_DEMO2D_ROPE
+from .scenes.avbd_demo2d_soft_body import SCENE as AVBD_DEMO2D_SOFT_BODY
+from .scenes.avbd_demo2d_spring import SCENE as AVBD_DEMO2D_SPRING
+from .scenes.avbd_demo2d_spring_ratio import SCENE as AVBD_DEMO2D_SPRING_RATIO
+from .scenes.avbd_demo2d_static_friction import (
+    SCENE as AVBD_DEMO2D_STATIC_FRICTION,
+)
+from .scenes.avbd_demo2d_stack import SCENE as AVBD_DEMO2D_STACK
+from .scenes.avbd_demo2d_stack_ratio import SCENE as AVBD_DEMO2D_STACK_RATIO
+from .scenes.avbd_demo3d_bridge import SCENE as AVBD_DEMO3D_BRIDGE
+from .scenes.avbd_demo3d_breakable import SCENE as AVBD_DEMO3D_BREAKABLE
+from .scenes.avbd_demo3d_dynamic_friction import (
+    SCENE as AVBD_DEMO3D_DYNAMIC_FRICTION,
+)
+from .scenes.avbd_demo3d_ground import SCENE as AVBD_DEMO3D_GROUND
+from .scenes.avbd_demo3d_heavy_rope import SCENE as AVBD_DEMO3D_HEAVY_ROPE
+from .scenes.avbd_demo3d_pyramid import SCENE as AVBD_DEMO3D_PYRAMID
+from .scenes.avbd_demo3d_rope import SCENE as AVBD_DEMO3D_ROPE
+from .scenes.avbd_demo3d_spring import SCENE as AVBD_DEMO3D_SPRING
+from .scenes.avbd_demo3d_spring_ratio import SCENE as AVBD_DEMO3D_SPRING_RATIO
+from .scenes.avbd_demo3d_static_friction import SCENE as AVBD_DEMO3D_STATIC_FRICTION
+from .scenes.avbd_demo3d_stack import SCENE as AVBD_DEMO3D_STACK
+from .scenes.avbd_demo3d_stack_ratio import SCENE as AVBD_DEMO3D_STACK_RATIO
+from .scenes.avbd_demo3d_soft_body import SCENE as AVBD_DEMO3D_SOFT_BODY
+from .scenes.avbd_articulated_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_fixed_pair_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_FIXED_PAIR_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_high_ratio_chain import (
+    PAPER_SCALE_SCENE as AVBD_PAPER_SCALE_HIGH_RATIO_CHAIN,
+    SCENE as AVBD_ARTICULATED_HIGH_RATIO_CHAIN,
+)
+from .scenes.avbd_articulated_motor_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_MOTOR_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_prismatic_motor import (
+    SCENE as AVBD_ARTICULATED_PRISMATIC_MOTOR,
+)
+from .scenes.avbd_articulated_prismatic_pair_motor_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_PRISMATIC_PAIR_MOTOR_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_prismatic_motor_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_PRISMATIC_MOTOR_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_revolute_motor import (
+    SCENE as AVBD_ARTICULATED_REVOLUTE_MOTOR,
+)
+from .scenes.avbd_articulated_spherical_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_SPHERICAL_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_spherical_pair_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_SPHERICAL_PAIR_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_world_revolute_motor_breakable_joint import (
+    SCENE as AVBD_ARTICULATED_WORLD_REVOLUTE_MOTOR_BREAKABLE_JOINT,
+)
 from .scenes.avbd_rigid_breakable_joint import SCENE as AVBD_RIGID_BREAKABLE_JOINT
 from .scenes.avbd_rigid_fixed_joint_contact import (
     SCENE as AVBD_RIGID_FIXED_JOINT_CONTACT,
 )
+from .scenes.avbd_rigid_prismatic_motor import SCENE as AVBD_RIGID_PRISMATIC_MOTOR
 from .scenes.avbd_rigid_revolute_motor import SCENE as AVBD_RIGID_REVOLUTE_MOTOR
+from .scenes.avbd_rigid_spherical_breakable_joint import (
+    SCENE as AVBD_RIGID_SPHERICAL_BREAKABLE_JOINT,
+)
 from .scenes.articulated import SCENE as ARTICULATED
 from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
@@ -175,12 +251,59 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         ARTICULATED,
         FLOATING_BASE,
         # AVBD rigid constraints (PLAN-104) start with fixed-joint rows in
-        # contact, a bounded revolute motor, and a public breakable-joint
-        # lifecycle. Broader articulated joints and soft/rigid coupling remain
-        # tracked by the AVBD dev task.
+        # contact, bounded revolute/prismatic motors, and public breakable-joint
+        # lifecycles on free rigid bodies and articulated link/world endpoints.
+        # Broader source-demo and soft/rigid coupling coverage remain tracked by
+        # the AVBD dev task.
+        AVBD_EMPTY_BASELINE,
+        AVBD_DEMO2D_GROUND,
+        AVBD_DEMO2D_MOTOR,
+        AVBD_DEMO2D_DYNAMIC_FRICTION,
+        AVBD_DEMO2D_STATIC_FRICTION,
+        AVBD_DEMO2D_PYRAMID,
+        AVBD_DEMO2D_CARDS,
+        AVBD_DEMO2D_STACK,
+        AVBD_DEMO2D_STACK_RATIO,
+        AVBD_DEMO2D_ROD,
+        AVBD_DEMO2D_SOFT_BODY,
+        AVBD_DEMO2D_JOINT_GRID,
+        AVBD_DEMO2D_ROPE,
+        AVBD_DEMO2D_HEAVY_ROPE,
+        AVBD_DEMO2D_HANGING_ROPE,
+        AVBD_DEMO2D_SPRING,
+        AVBD_DEMO2D_SPRING_RATIO,
+        AVBD_DEMO2D_NET,
+        AVBD_DEMO2D_FRACTURE,
+        AVBD_DEMO3D_GROUND,
+        AVBD_DEMO3D_DYNAMIC_FRICTION,
+        AVBD_DEMO3D_STATIC_FRICTION,
+        AVBD_DEMO3D_PYRAMID,
+        AVBD_DEMO3D_ROPE,
+        AVBD_DEMO3D_HEAVY_ROPE,
+        AVBD_DEMO3D_SPRING,
+        AVBD_DEMO3D_SPRING_RATIO,
+        AVBD_DEMO3D_STACK,
+        AVBD_DEMO3D_STACK_RATIO,
+        AVBD_DEMO3D_SOFT_BODY,
+        AVBD_DEMO3D_BRIDGE,
+        AVBD_DEMO3D_BREAKABLE,
         AVBD_RIGID_FIXED_JOINT_CONTACT,
         AVBD_RIGID_REVOLUTE_MOTOR,
+        AVBD_RIGID_PRISMATIC_MOTOR,
+        AVBD_ARTICULATED_REVOLUTE_MOTOR,
+        AVBD_ARTICULATED_PRISMATIC_MOTOR,
+        AVBD_ARTICULATED_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_PRISMATIC_PAIR_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_PRISMATIC_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_WORLD_REVOLUTE_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_HIGH_RATIO_CHAIN,
+        AVBD_PAPER_SCALE_HIGH_RATIO_CHAIN,
         AVBD_RIGID_BREAKABLE_JOINT,
+        AVBD_RIGID_SPHERICAL_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_FIXED_PAIR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_SPHERICAL_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_SPHERICAL_PAIR_BREAKABLE_JOINT,
         # High-value DART 6 examples that should return as World-native demos.
         # These lightweight placeholders keep the roadmap visible without
         # keeping legacy DART 6 scene implementations in the catalog.

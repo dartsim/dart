@@ -90,7 +90,13 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //   15: World solver-family metadata serialized after the differentiable flag
 //      (rigid-body solver, contact method, contact-gradient mode, and
 //      multibody integration method).
-constexpr std::uint32_t kBinaryFormatVersion = 15;
+//   16: World stores persistent ignored collision pairs after solver-family
+//      metadata.
+//   17: Joint stores public AVBD point-joint stiffness facade fields.
+//   18: World stores variational multibody solve budget metadata.
+//   19: Private AVBD rigid-world point-joint and distance-spring configs are
+//      serializable.
+constexpr std::uint32_t kBinaryFormatVersion = 19;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

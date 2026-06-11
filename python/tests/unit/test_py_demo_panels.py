@@ -554,16 +554,6 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "planned_operational_space_control",
         "planned_collision_sandbox",
         "planned_mobile_manipulation",
-        "plan083_lying_flat",
-        "plan083_hanging_bridge",
-        "plan083_pulley_system",
-        "plan083_umbrella",
-        "plan083_terrain_vehicle",
-        "plan083_ragdolls",
-        "plan083_nunchaku",
-        "plan083_windmill",
-        "plan083_candy",
-        "plan083_precession",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
         "diff_throw_to_target",
@@ -1481,8 +1471,14 @@ def test_planned_world_port_placeholders_expose_status_panels() -> None:
 
 
 def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
+    runtime_scene_ids = set()
+
     for scene in plan083_unified_newton_barrier.PLAN083_SCENES:
         setup = scene.build()
+        if setup.info.get("runtime_smoke_scene"):
+            runtime_scene_ids.add(scene.id)
+            continue
+
         builder = _FakePanelBuilder()
 
         assert [panel.title for panel in setup.panels] == [scene.title]
@@ -1500,6 +1496,242 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
         )
         assert any(event.startswith("text:benchmark: ") for event in builder.events)
         assert any(event.startswith("text:limitation: ") for event in builder.events)
+
+    assert runtime_scene_ids == {
+        "plan083_candy",
+        "plan083_hanging_bridge",
+        "plan083_lying_flat",
+        "plan083_nunchaku",
+        "plan083_precession",
+        "plan083_pulley_system",
+        "plan083_ragdolls",
+        "plan083_terrain_vehicle",
+        "plan083_umbrella",
+        "plan083_windmill",
+    }
+
+
+def test_plan083_hanging_bridge_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_hanging_bridge"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Hanging Bridge"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:point connections: 4" in builder.events
+    assert (
+        "text:benchmark: pixi run bm-plan083-cpu-hanging-bridge-packet"
+        in builder.events
+    )
+    assert any(event.startswith("text:world time: ") for event in builder.events)
+
+
+def test_plan083_nunchaku_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_nunchaku"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Nunchaku"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:revolute joints: 1" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-nunchaku-packet" in builder.events
+    assert any(event.startswith("text:swinging tip radius: ") for event in builder.events)
+
+
+def test_plan083_windmill_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_windmill"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Windmill"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:revolute joints: 1" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-windmill-packet" in builder.events
+    assert any(event.startswith("text:blade tip radius: ") for event in builder.events)
+
+
+def test_plan083_umbrella_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_umbrella"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Umbrella"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:revolute joints: 1" in builder.events
+    assert "text:point connections: 2" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-umbrella-packet" in builder.events
+    assert any(event.startswith("text:canopy span: ") for event in builder.events)
+
+
+def test_plan083_candy_exposes_runtime_status_panel() -> None:
+    _require_simulation_symbols("DeformableBodyOptions", "World")
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_candy"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Candy"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["deformable_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: deformable IPC World.step" in builder.events
+    assert "text:deformable bodies: 1" in builder.events
+    assert "text:nodes: 25" in builder.events
+    assert "text:surface triangles: 32" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-candy-packet" in builder.events
+    assert any(event.startswith("text:mean cloth height: ") for event in builder.events)
+
+
+def test_plan083_lying_flat_exposes_runtime_status_panel() -> None:
+    _require_simulation_symbols("DeformableBodyOptions", "World")
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_lying_flat"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Lying Flat"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["deformable_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: deformable IPC World.step" in builder.events
+    assert "text:rigid obstacles: 4" in builder.events
+    assert "text:deformable bodies: 1" in builder.events
+    assert "text:nodes: 24" in builder.events
+    assert "text:surface triangles: 30" in builder.events
+    assert (
+        "text:benchmark: pixi run bm-plan083-cpu-lying-flat-packet"
+        in builder.events
+    )
+    assert any(event.startswith("text:mean cloth height: ") for event in builder.events)
+
+
+def test_plan083_terrain_vehicle_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_terrain_vehicle"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Terrain Vehicle"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:passive wheels: 4" in builder.events
+    assert "text:revolute joints: 4" in builder.events
+    assert (
+        "text:benchmark: pixi run bm-plan083-cpu-terrain-vehicle-packet"
+        in builder.events
+    )
+    assert any(event.startswith("text:chassis height: ") for event in builder.events)
+    assert any(
+        event.startswith("text:min wheel clearance: ") for event in builder.events
+    )
+
+
+def test_plan083_precession_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_precession"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Precession"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:rolling wheels: 1" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-precession-packet" in builder.events
+    assert any(
+        event.startswith("text:wheel ground clearance: ") for event in builder.events
+    )
+    assert any(event.startswith("text:spin rate: ") for event in builder.events)
+
+
+def test_plan083_ragdolls_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_ragdolls"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Ragdolls"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:reduced ragdoll bodies: 6" in builder.events
+    assert "text:revolute joints: 5" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-ragdoll-packet" in builder.events
+    assert any(event.startswith("text:min leg clearance: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:

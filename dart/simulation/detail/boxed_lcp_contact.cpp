@@ -144,17 +144,22 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
     const std::vector<Contact>& contacts,
     double timeStep)
 {
-  (void)timeStep; // Reserved for future per-step bias (e.g. Baumgarte scaling).
   BoxedLcpContactSnapshot snapshot;
   if (contacts.empty()) {
     return snapshot;
   }
 
-  // Velocity-level bias: only restitution contributes here. Position-level
-  // penetration correction is handled separately by the positional projection
-  // step (resolveRigidBodyContactPositions), consistent with the sequential-
-  // impulse path which uses positional correction rather than a velocity bias.
+  // Velocity-level bias combines restitution with a Baumgarte-style
+  // penetration recovery for slow resting contacts. High-speed inelastic
+  // impacts stay restitution-only so penetration bias does not inject extra
+  // rebound velocity. The positional projection step still removes any
+  // residual penetration after the impulse solve; the slow-contact velocity
+  // bias prevents taller coupled stacks from accumulating downward drift
+  // between projections.
   constexpr double restitutionThreshold = 1e-3;
+  constexpr double penetrationSlop = 1e-4;
+  constexpr double baumgarteFactor = 0.2;
+  constexpr double baumgarteApproachThreshold = -0.25;
 
   // Collect rigid-body/rigid-body normal contacts and the dynamic bodies they
   // touch. Each dynamic body owns a 6-column block in J ([v; ω]).
@@ -180,6 +185,8 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
       continue;
     }
 
+    const bool kinematicA = registry.all_of<comps::KinematicBodyTag>(entityA);
+    const bool kinematicB = registry.all_of<comps::KinematicBodyTag>(entityB);
     const bool staticA
         = hasPrescribedRigidBodyContactResponse(registry, entityA);
     const bool staticB
@@ -227,8 +234,18 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
         = (restitution > 0.0 && approach < -restitutionThreshold)
               ? -restitution * approach
               : 0.0;
+    // Kinematic bodies follow the sequential-impulse compatibility path here:
+    // their prescribed motion is ignored by the LCP contact solve, and initial
+    // penetration does not inject a velocity-level push from the kinematic
+    // body.
+    const double baumgarteVelocity
+        = (timeStep > 0.0 && !kinematicA && !kinematicB
+           && approach > baumgarteApproachThreshold)
+              ? baumgarteFactor * std::max(0.0, contact.depth - penetrationSlop)
+                    / timeStep
+              : 0.0;
 
-    normal.bias = restitutionVelocity;
+    normal.bias = std::max(restitutionVelocity, baumgarteVelocity);
 
     registerBody(entityA, staticA);
     registerBody(entityB, staticB);

@@ -32,6 +32,9 @@
 
 #include <dart/config.hpp>
 
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
 #include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
 #include <dart/simulation/world.hpp>
@@ -84,6 +87,33 @@ TEST(WorldStepProfileIntegration, EnabledStepRecordsPipelineStages)
   const std::string summary = profile.toSummaryText();
   EXPECT_NE(summary.find("kinematics"), std::string::npos);
   EXPECT_NE(summary.find("World Step Profile"), std::string::npos);
+}
+
+TEST(WorldStepProfileIntegration, StaticOnlyRigidWorldSkipsRigidDynamicsStages)
+{
+  sx::World world;
+
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", options);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+  const Eigen::Vector3d initialTranslation = ground.getTranslation();
+
+  world.setStepProfilingEnabled(true);
+  world.step();
+
+  EXPECT_EQ(world.getFrame(), 1u);
+  EXPECT_DOUBLE_EQ(world.getTime(), world.getTimeStep());
+  EXPECT_TRUE(ground.getTranslation().isApprox(initialTranslation));
+
+  const auto& profile = world.getLastStepProfile();
+  ASSERT_FALSE(profile.isEmpty());
+  EXPECT_EQ(profile.getStage("rigid_body_velocity"), nullptr);
+  EXPECT_EQ(profile.getStage("rigid_body_contact"), nullptr);
+  EXPECT_EQ(profile.getStage("rigid_body_position"), nullptr);
+  ASSERT_NE(profile.getStage("kinematics"), nullptr);
 }
 
 TEST(WorldStepProfileIntegration, EnabledDeformableStepRecordsDomainStage)

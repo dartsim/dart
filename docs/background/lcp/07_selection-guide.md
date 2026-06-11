@@ -10,7 +10,7 @@
 
 - **Real-time/Interactive?** → PGS/PSOR (`PgsSolver` w/ relaxation)
 - **High accuracy needed?** → Newton Methods or Pivoting (Dantzig/Lemke available now)
-- **Large problem ($n > 1000$)?** → PGS or NNCG
+- **Large problem ($n > 1000$)?** → PGS, APGD, or NNCG
 - **Ill-conditioned?** → Pivoting (Dantzig/Lemke) or Interior Point
 - **Contact problem?** → BGS or Dantzig
 - **Default** → Start with Dantzig or PGS (Lemke for standard LCP)
@@ -48,7 +48,8 @@ Fallback: Dantzig if iterative solve stalls
 
 **Recommended**: Newton > Pivoting > Interior Point
 **Currently Available**: Minimum Map Newton ✅, Fischer-Burmeister Newton ✅,
-Penalized FB Newton ✅ (standard LCP only), Dantzig ✅, Lemke ✅
+Penalized FB Newton ✅ (standard LCP only), Boxed Semi-Smooth Newton ✅
+(boxed/findex), Dantzig ✅, Lemke ✅
 
 **Rationale**:
 
@@ -183,15 +184,20 @@ Try:
 4. External QP solver (if A is symmetric PD)
 ```
 
-### 6. Parallel/GPU Computing
+### 6. Parallel-Style Computing
 
 **Recommended**: Jacobi > Blocked Jacobi > Red-Black GS
-**Currently Available**: Jacobi, Blocked Jacobi, Red-Black GS (single-threaded baselines)
+**Currently Available**: Jacobi with opt-in CPU worker threads, Blocked Jacobi,
+Red-Black GS
 
 **Rationale**:
 
 - Embarrassingly parallel updates
-- GPU-friendly operations
+- GPU-suitable update pattern; DART 7 evidence currently covers CPU Jacobi
+  worker-thread correctness/comparison and fixed-iteration CUDA Jacobi and PGS
+  batch slices for standard, boxed, friction-index, and grouped variable-size
+  separated and stack world-contact packets, not general CUDA solver execution
+  across the full solver manifest
 - No data dependencies
 
 **Future Configuration**:
@@ -228,7 +234,7 @@ Slower          ─────────────────────�
 Pivoting ─> Newton ─> Interior Point ─> NNCG ─> BGS ─> PGS ─> Jacobi
 (exact)     (1e-10)   (1e-8)           (1e-6)  (1e-4) (1e-3) (1e-2)
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD), Shock Propagation
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, APGD, TGS, NNCG, Newton (standard LCP), Boxed Semi-Smooth Newton, Interior Point, MPRGP (standard SPD), Shock Propagation, ADMM, SAP
 ```
 
 ### Robustness vs Efficiency
@@ -239,18 +245,18 @@ Slower      ──────────────────────�
 
 Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
-✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, NNCG, Newton (standard LCP), Interior Point, MPRGP (standard SPD), Shock Propagation
+✅ Available:  Direct 2D/3D, Dantzig, Lemke, Baraff, PGS/PSOR/Symmetric PSOR, Jacobi, Blocked Jacobi, Red-Black GS, Staggering, BGS, PGS-SM, APGD, TGS, NNCG, Newton (standard LCP), Boxed Semi-Smooth Newton, Interior Point, MPRGP (standard SPD), Shock Propagation, ADMM, SAP
 ```
 
 ## Problem Size Guidelines
 
-| Problem Size          | Recommended Method          | Currently Available                                         |
-| --------------------- | --------------------------- | ----------------------------------------------------------- |
-| $n < 10$              | Direct 2D/3D or Pivoting    | Direct ✅, Dantzig ✅, Lemke ✅                             |
-| $10 \leq n < 100$     | Pivoting or Newton          | Dantzig ✅, Lemke ✅, Newton ✅ (standard)                  |
-| $100 \leq n < 1000$   | PGS, BGS, PGS-SM, or Newton | PGS ✅, BGS ✅, PGS-SM ✅, Dantzig ✅, Newton ✅ (standard) |
-| $1000 \leq n < 10000$ | NNCG or PGS                 | PGS ✅, NNCG ✅                                             |
-| $n \geq 10000$        | NNCG or specialized         | NNCG ✅, PGS ✅ (approx)                                    |
+| Problem Size          | Recommended Method          | Currently Available                                       |
+| --------------------- | --------------------------- | --------------------------------------------------------- |
+| $n < 10$              | Direct 2D/3D or Pivoting    | Direct ✅, Dantzig ✅, Lemke ✅                           |
+| $10 \leq n < 100$     | Pivoting or Newton          | Dantzig ✅, Lemke ✅, Newton ✅ (standard)                |
+| $100 \leq n < 1000$   | PGS, BGS, PGS-SM, or Newton | PGS ✅, BGS ✅, PGS-SM ✅, APGD ✅, Dantzig ✅, Newton ✅ |
+| $1000 \leq n < 10000$ | NNCG, APGD, or PGS          | PGS ✅, APGD ✅, NNCG ✅                                  |
+| $n \geq 10000$        | NNCG or specialized         | NNCG ✅, PGS/APGD ✅ (approx)                             |
 
 ## Conditioning Guidelines
 
@@ -267,24 +273,42 @@ Pivoting ─> Interior Point ─> Newton ─> BGS ─> PGS ─> Jacobi
 
 Available solvers:
 
-- ✅ **Dantzig**: BLCP with bounds, friction support
-- ✅ **Lemke**: Standard LCP
-- ✅ **Baraff**: Incremental pivoting for symmetric PSD standard LCPs
-- ✅ **Direct 2D/3D**: Enumeration solver for tiny standard LCPs
-- ✅ **Interior Point**: Primal-dual method for robust standard LCP solves
-- ✅ **MPRGP**: QP-based solver for standard SPD LCPs
-- ✅ **PGS/PSOR**: Iterative boxed LCP with friction index fallback (tune
+The backticked names in this block are checked against
+`tests/common/lcpsolver/lcp_solver_manifest.hpp` by
+`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest`.
+
+<!-- dart-lcp-solver-manifest: begin -->
+
+- ✅ `Dantzig`: BLCP with bounds, friction support
+- ✅ `Lemke`: Standard LCP
+- ✅ `Baraff`: Incremental pivoting for symmetric PSD standard LCPs
+- ✅ `Direct`: Direct 2D/3D enumeration solver for tiny standard LCPs
+- ✅ `Pgs`: Iterative PGS/PSOR boxed LCP with friction index fallback (tune
   `LcpOptions::relaxation`)
-- ✅ **Symmetric PSOR**: Forward/backward sweep variant for reduced bias
-- ✅ **Jacobi**: Projected Jacobi baseline (parallel-friendly)
-- ✅ **Blocked Jacobi**: Parallel block updates for contact-style problems
-- ✅ **Red-Black GS**: Two-color Gauss-Seidel variant for parallel-style updates
-- ✅ **Staggering**: Normal/friction block staggering for contact structure
-- ✅ **Shock Propagation**: Layered contact solve for gravity-dominated scenes
-- ✅ **BGS**: Blocked Gauss-Seidel for per-contact blocks
-- ✅ **PGS-SM**: Subspace minimization hybrid for medium problems
-- ✅ **Newton (Minimum Map, FB, Penalized FB)**: Standard LCP only
-- ✅ **NNCG**: Conjugate-gradient acceleration on PGS sweeps
+- ✅ `SymmetricPsor`: Forward/backward sweep variant for reduced bias
+- ✅ `Jacobi`: Projected Jacobi baseline (parallel-friendly)
+- ✅ `RedBlackGaussSeidel`: Two-color Gauss-Seidel variant for parallel-style
+  updates
+- ✅ `BlockedJacobi`: Parallel block updates for contact-style problems
+- ✅ `BGS`: Blocked Gauss-Seidel for per-contact blocks
+- ✅ `NNCG`: Conjugate-gradient acceleration on PGS sweeps
+- ✅ `SubspaceMinimization`: PGS-SM hybrid for medium problems
+- ✅ `Apgd`: Nesterov-accelerated PGS-style projection
+- ✅ `Tgs`: Temporal Gauss-Seidel style boxed-LCP projection
+- ✅ `MinimumMapNewton`: Minimum-map Newton solve for standard LCPs
+- ✅ `FischerBurmeisterNewton`: Fischer-Burmeister Newton solve for standard
+  LCPs
+- ✅ `PenalizedFischerBurmeisterNewton`: Penalized Fischer-Burmeister Newton
+  solve for standard LCPs
+- ✅ `InteriorPoint`: Primal-dual method for robust standard LCP solves
+- ✅ `MPRGP`: QP-based solver for standard SPD LCPs
+- ✅ `ShockPropagation`: Layered contact solve for gravity-dominated scenes
+- ✅ `Staggering`: Normal/friction block staggering for contact structure
+- ✅ `Admm`: Operator-splitting boxed-LCP solve
+- ✅ `Sap`: Regularized SAP-inspired boxed-LCP solve
+- ✅ `BoxedSemiSmoothNewton`: Newton-style boxed/findex solve
+
+<!-- dart-lcp-solver-manifest: end -->
 
 **Best Practices Now**:
 
@@ -482,14 +506,14 @@ Current (with Dantzig/PGS/BGS/Lemke/Newton/Interior Point):
 
 ### Current State (With Interior Point)
 
-| Scenario        | Primary  | Backup                        | Notes              |
-| --------------- | -------- | ----------------------------- | ------------------ |
-| Real-time       | PGS/PSOR | -                             | 50-100 iterations  |
-| Contact         | BGS      | PGS                           | Per-contact blocks |
-| High accuracy   | Newton   | Dantzig                       | 5-20 iterations    |
-| Large-scale     | NNCG     | PGS                           | >1000 variables    |
-| Ill-conditioned | Dantzig  | Interior Point                | Most robust        |
-| Parallel        | Jacobi   | Blocked Jacobi / Red-Black GS | GPU-friendly       |
+| Scenario        | Primary  | Backup                        | Notes                                                                                                                                |
+| --------------- | -------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Real-time       | PGS/PSOR | -                             | 50-100 iterations                                                                                                                    |
+| Contact         | BGS      | PGS                           | Per-contact blocks                                                                                                                   |
+| High accuracy   | Newton   | Dantzig                       | 5-20 iterations                                                                                                                      |
+| Large-scale     | NNCG     | PGS                           | >1000 variables                                                                                                                      |
+| Ill-conditioned | Dantzig  | Interior Point                | Most robust                                                                                                                          |
+| Parallel        | Jacobi   | Blocked Jacobi / Red-Black GS | CPU worker-thread and fixed-iteration CUDA batch evidence, including grouped variable-size separated and stack world-contact packets |
 
 ---
 
