@@ -38,6 +38,8 @@
 #include <dart/simulation/export.hpp>
 #include <dart/simulation/fwd.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <entt/entity/entity.hpp> // entt::entity and entt::null for the
@@ -296,7 +298,16 @@ struct MultibodyLinkContactRow
 /// inverse mass, the operator the contact impulses act through.
 struct MultibodyLinkContactProblem
 {
-  std::vector<MultibodyLinkContactRow> rows;
+  using RowAllocator = common::StlAllocator<MultibodyLinkContactRow>;
+
+  MultibodyLinkContactProblem() = default;
+
+  explicit MultibodyLinkContactProblem(common::MemoryAllocator& allocator)
+    : rows(RowAllocator{allocator})
+  {
+  }
+
+  std::vector<MultibodyLinkContactRow, RowAllocator> rows;
   Eigen::MatrixXd inverseMass; ///< joint-space M^-1 (size DOF x DOF)
 };
 

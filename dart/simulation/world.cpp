@@ -167,7 +167,9 @@ void reserveDeformableDynamicsRegistryStorage(
     std::size_t deformableBodyCount,
     common::MemoryAllocator& allocator);
 void reserveMultibodyDynamicsRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount);
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    common::MemoryAllocator& allocator);
 } // namespace compute
 
 struct World::CollisionQueryCache
@@ -2918,7 +2920,8 @@ void World::reserveRegistryStorageForSimulation()
   const auto multibodyCount
       = existingComponentStorageSize<comps::MultibodyStructure>(registry);
   if (multibodyCount > 0u) {
-    compute::reserveMultibodyDynamicsRegistryStorage(registry, multibodyCount);
+    compute::reserveMultibodyDynamicsRegistryStorage(
+        registry, multibodyCount, m_memoryManager.getFreeAllocator());
   }
   if (m_multibodyIntegrationMethod == MultibodyIntegrationMethod::Variational
       && multibodyCount > 0u) {

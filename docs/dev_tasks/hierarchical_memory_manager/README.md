@@ -733,6 +733,12 @@ Follow-up progress after PR #2956:
   then verifies same-shape steps do not grow World-base allocator counts or ECS
   capacities, clears to zero registry capacity, and rebuilds the same storage
   shape.
+- The semi-implicit `MultibodyDynamicsScratch` follow-up now constructs its
+  DART-owned dynamics-tree, link-index, RNEA, link-contact, constrained-DOF,
+  constrained-target, contact-row, and body-Jacobian containers from the World
+  free allocator when the component is bake-created or first needed by a World
+  stage. Eigen-owned matrices/vectors remain tracked as the solver-private
+  storage limitation called out below.
 - `MemoryAllocatorDebugger` now records the requested alignment alongside live
   byte counts for aligned allocations and rejects mismatched aligned
   deallocations without forwarding them to the wrapped allocator, closing one

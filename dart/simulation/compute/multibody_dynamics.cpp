@@ -323,10 +323,11 @@ struct JointBiasTerm
 // Velocity-product bias terms cJ = Sdot qdot for a joint, mapped into the child
 // link frame by the post-joint offset adjoint (the same transform applied to
 // the motion subspace).
+template <typename JointBiasTermVector>
 void setJointBiasTerms(
     const comps::Joint& joint,
     const Matrix6& offsetAdjoint,
-    std::vector<JointBiasTerm>& terms)
+    JointBiasTermVector& terms)
 {
   terms.clear();
   switch (joint.type) {
@@ -372,6 +373,15 @@ void setJointBiasTerms(
 // multibody construction order, which is guaranteed parent-before-child.
 struct LinkDynamics
 {
+  using BiasTermAllocator = common::StlAllocator<JointBiasTerm>;
+
+  LinkDynamics() = default;
+
+  explicit LinkDynamics(common::MemoryAllocator& allocator)
+    : biasTerms(BiasTermAllocator{allocator})
+  {
+  }
+
   int parentIndex = -1; // -1 for the fixed base (root)
   entt::entity jointEntity = entt::null;
   std::size_t dof = 0;
@@ -379,7 +389,8 @@ struct LinkDynamics
   Matrix6 parentToChild = Matrix6::Identity();      // X = Ad(T^{-1})
   Matrix6 childToParentForce = Matrix6::Identity(); // X^T
   Subspace subspace{6, 0};                          // S in child frame
-  std::vector<JointBiasTerm> biasTerms; // cJ = Sdot qdot (child frame)
+  std::vector<JointBiasTerm, BiasTermAllocator>
+      biasTerms; // cJ = Sdot qdot (child frame)
   Matrix6 inertia = Matrix6::Zero();
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 };
@@ -389,11 +400,41 @@ struct LinkDynamics
 // plus the joint owning each link and the total movable DOF count.
 struct DynamicsTree
 {
-  std::vector<LinkDynamics> links;
-  std::vector<entt::entity> jointOf;
+  using LinkAllocator = common::StlAllocator<LinkDynamics>;
+  using JointAllocator = common::StlAllocator<entt::entity>;
+
+  DynamicsTree() = default;
+
+  explicit DynamicsTree(common::MemoryAllocator& allocator)
+    : memoryAllocator(&allocator),
+      links(LinkAllocator{allocator}),
+      jointOf(JointAllocator{allocator})
+  {
+  }
+
+  void resizeLinks(std::size_t count)
+  {
+    while (links.size() < count) {
+      if (memoryAllocator != nullptr) {
+        links.emplace_back(*memoryAllocator);
+      } else {
+        links.emplace_back();
+      }
+    }
+    links.resize(count);
+  }
+
+  common::MemoryAllocator* memoryAllocator = nullptr;
+  std::vector<LinkDynamics, LinkAllocator> links;
+  std::vector<entt::entity, JointAllocator> jointOf;
   std::size_t dofCount = 0;
   Eigen::VectorXd armature; // Rotor inertia per generalized coordinate.
 };
+
+std::span<const LinkDynamics> linkSpan(const DynamicsTree& tree) noexcept
+{
+  return {tree.links.data(), tree.links.size()};
+}
 
 //==============================================================================
 // Internal handoff between the split semi-implicit multibody velocity, contact,
@@ -409,16 +450,17 @@ struct PendingMultibodyVelocity
 //==============================================================================
 // Build the per-link spatial dynamics for a multibody at its current
 // configuration. Links are in construction order (parent-before-child).
+template <typename LinkIndexVector>
 void buildDynamicsTreeInto(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     DynamicsTree& tree,
-    std::vector<std::pair<entt::entity, std::size_t>>& indexOf,
+    LinkIndexVector& indexOf,
     Subspace& jointFrameSubspace)
 {
   const auto& linkEntities = structure.links;
 
-  tree.links.resize(linkEntities.size());
+  tree.resizeLinks(linkEntities.size());
   tree.jointOf.resize(linkEntities.size());
   std::fill(
       tree.jointOf.begin(),
@@ -520,8 +562,8 @@ DynamicsTree buildDynamicsTree(
 // J_i = X_i J_parent, with the link's own joint columns set to its motion
 // subspace S_i (already expressed in the link frame). Each Jacobian is 6 x
 // dofCount, [angular; linear] in the link's own frame.
-void linkBodyJacobiansInto(
-    const DynamicsTree& tree, std::vector<Eigen::MatrixXd>& jacobian)
+template <typename JacobianVector>
+void linkBodyJacobiansInto(const DynamicsTree& tree, JacobianVector& jacobian)
 {
   const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
   jacobian.resize(tree.links.size());
@@ -570,15 +612,15 @@ std::size_t linkIndexOf(
 // Recursive Newton-Euler inverse dynamics over a precomputed tree.
 // Returns generalized forces for the supplied qddot and qdot.
 void recursiveNewtonEulerInto(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
     const Eigen::VectorXd& qddot,
     const Eigen::VectorXd& qdot,
     Eigen::VectorXd& tau,
-    std::vector<Vector6>& velocity,
-    std::vector<Vector6>& acceleration,
-    std::vector<Vector6>& force)
+    auto& velocity,
+    auto& acceleration,
+    auto& force)
 {
   const auto count = links.size();
   velocity.resize(count);
@@ -650,7 +692,7 @@ struct MassAndBias
 };
 
 void computeMassAndBiasInto(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     std::size_t dofCount,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& qdot,
@@ -659,9 +701,9 @@ void computeMassAndBiasInto(
     Eigen::VectorXd& zero,
     Eigen::VectorXd& unit,
     Eigen::VectorXd& response,
-    std::vector<Vector6>& rneaVelocity,
-    std::vector<Vector6>& rneaAcceleration,
-    std::vector<Vector6>& rneaForce)
+    auto& rneaVelocity,
+    auto& rneaAcceleration,
+    auto& rneaForce)
 {
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
@@ -722,7 +764,7 @@ void computeMassAndBiasInto(
 }
 
 MassAndBias computeMassAndBias(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     std::size_t dofCount,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& qdot,
@@ -754,8 +796,32 @@ MassAndBias computeMassAndBias(
 //==============================================================================
 struct MultibodyDynamicsScratch
 {
+  using LinkIndex = std::pair<entt::entity, std::size_t>;
+  using LinkIndexAllocator = common::StlAllocator<LinkIndex>;
+  using SpatialVectorAllocator = common::StlAllocator<Vector6>;
+  using LinkContactAllocator = common::StlAllocator<LinkContact>;
+  using ConstrainedDofAllocator = common::StlAllocator<Eigen::Index>;
+  using ConstrainedTargetAllocator = common::StlAllocator<double>;
+  using BodyJacobianAllocator = common::StlAllocator<Eigen::MatrixXd>;
+
+  MultibodyDynamicsScratch() = default;
+
+  explicit MultibodyDynamicsScratch(common::MemoryAllocator& allocator)
+    : tree(allocator),
+      linkIndexOf(LinkIndexAllocator{allocator}),
+      rneaVelocity(SpatialVectorAllocator{allocator}),
+      rneaAcceleration(SpatialVectorAllocator{allocator}),
+      rneaForce(SpatialVectorAllocator{allocator}),
+      linkContacts(LinkContactAllocator{allocator}),
+      constrainedDof(ConstrainedDofAllocator{allocator}),
+      constrainedTarget(ConstrainedTargetAllocator{allocator}),
+      contactProblem(allocator),
+      bodyJacobian(BodyJacobianAllocator{allocator})
+  {
+  }
+
   DynamicsTree tree;
-  std::vector<std::pair<entt::entity, std::size_t>> linkIndexOf;
+  std::vector<LinkIndex, LinkIndexAllocator> linkIndexOf;
   Subspace jointFrameSubspace;
   Eigen::VectorXd qdot;
   Eigen::VectorXd appliedForce;
@@ -766,20 +832,30 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd rhs;
   Eigen::VectorXd qddot;
   Eigen::VectorXd nextVelocity;
-  std::vector<Vector6> rneaVelocity;
-  std::vector<Vector6> rneaAcceleration;
-  std::vector<Vector6> rneaForce;
-  std::vector<LinkContact> linkContacts;
-  std::vector<Eigen::Index> constrainedDof;
-  std::vector<double> constrainedTarget;
+  std::vector<Vector6, SpatialVectorAllocator> rneaVelocity;
+  std::vector<Vector6, SpatialVectorAllocator> rneaAcceleration;
+  std::vector<Vector6, SpatialVectorAllocator> rneaForce;
+  std::vector<LinkContact, LinkContactAllocator> linkContacts;
+  std::vector<Eigen::Index, ConstrainedDofAllocator> constrainedDof;
+  std::vector<double, ConstrainedTargetAllocator> constrainedTarget;
   MultibodyLinkContactProblem contactProblem;
   std::size_t activeContactRowCount = 0;
-  std::vector<Eigen::MatrixXd> bodyJacobian;
+  std::vector<Eigen::MatrixXd, BodyJacobianAllocator> bodyJacobian;
   Eigen::MatrixXd pointJacobian;
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
   Eigen::VectorXd contactImpulseDelta;
 };
+
+MultibodyDynamicsScratch& getOrEmplaceMultibodyDynamicsScratch(
+    World& world, detail::WorldRegistry& registry, entt::entity entity)
+{
+  if (auto* scratch = registry.try_get<MultibodyDynamicsScratch>(entity)) {
+    return *scratch;
+  }
+  return registry.emplace<MultibodyDynamicsScratch>(
+      entity, world.getMemoryManager().getFreeAllocator());
+}
 
 //==============================================================================
 void gatherMultibodyVelocityInto(
@@ -903,7 +979,7 @@ bool computeUnconstrainedMultibodyVelocityInto(
   }
 
   computeMassAndBiasInto(
-      scratch.tree.links,
+      linkSpan(scratch.tree),
       scratch.tree.dofCount,
       gravity,
       scratch.qdot,
@@ -1032,9 +1108,10 @@ double linkContactRelativeVelocity(
 }
 
 //==============================================================================
+template <typename BodyJacobianVector>
 void pointLinearJacobianInto(
     const DynamicsTree& tree,
-    const std::vector<Eigen::MatrixXd>& bodyJacobian,
+    const BodyJacobianVector& bodyJacobian,
     std::size_t linkIndex,
     const Eigen::Vector3d& point,
     Eigen::MatrixXd& pointJacobian)
@@ -1053,9 +1130,9 @@ void pointLinearJacobianInto(
   const auto& linkJacobian = bodyJacobian[linkIndex];
   for (Eigen::Index column = 0; column < dofCount; ++column) {
     const Eigen::Vector3d angular
-        = rotation * linkJacobian.col(column).head<3>();
+        = rotation * linkJacobian.col(column).template head<3>();
     const Eigen::Vector3d linear
-        = rotation * linkJacobian.col(column).tail<3>();
+        = rotation * linkJacobian.col(column).template tail<3>();
     pointJacobian.col(column) = linear - arm.cross(angular);
   }
 }
@@ -1190,7 +1267,7 @@ bool prepareMultibodyContactDynamicsInto(
   const auto dof = static_cast<Eigen::Index>(scratch.tree.dofCount);
   problem.inverseMass.resize(dof, dof);
   computeMassAndBiasInto(
-      scratch.tree.links,
+      linkSpan(scratch.tree),
       scratch.tree.dofCount,
       Eigen::Vector3d::Zero(),
       nextVelocity,
@@ -1388,7 +1465,7 @@ void solveMultibodyLinkContacts(
     const comps::MultibodyStructure& structure,
     Eigen::VectorXd& nextVelocity,
     double timeStep,
-    const std::vector<LinkContact>& linkContacts,
+    std::span<const LinkContact> linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
   if (!assembleMultibodyLinkContactProblemInto(
@@ -1854,7 +1931,7 @@ void simulateMultibody(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const std::vector<LinkContact>& linkContacts,
+    std::span<const LinkContact> linkContacts,
     MultibodyDynamicsScratch& scratch)
 {
   if (!computeUnconstrainedMultibodyVelocityInto(
@@ -2034,7 +2111,7 @@ bool treeSupportsAnalyticDerivatives(
 // spatial convention; crm = motionCross, crf = forceCross; ∂X_i/∂q_i =
 // -crm(S_i) X_i. O(dof²): a down/up sweep per source coordinate.
 InverseDynamicsDerivatives rneaDerivatives(
-    const std::vector<LinkDynamics>& links,
+    std::span<const LinkDynamics> links,
     const Vector6& baseAcceleration,
     std::size_t dofCount,
     const Eigen::VectorXd& qddot,
@@ -2267,7 +2344,7 @@ void computeMultibodyInverseDynamicsInto(
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
   recursiveNewtonEulerInto(
-      storage.tree.links,
+      linkSpan(storage.tree),
       baseAcceleration,
       storage.tree.dofCount,
       desiredAcceleration,
@@ -2379,7 +2456,7 @@ MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
   }
 
   const MassAndBias mb = computeMassAndBias(
-      tree.links, tree.dofCount, gravity, qdot, tree.armature);
+      linkSpan(tree), tree.dofCount, gravity, qdot, tree.armature);
 
   terms.massMatrix = mb.massMatrix;
   terms.gravityForces = mb.gravityOnly;
@@ -2435,7 +2512,7 @@ InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
   baseAcceleration.tail<3>() = -gravity;
 
   return rneaDerivatives(
-      tree.links,
+      linkSpan(tree),
       baseAcceleration,
       tree.dofCount,
       generalizedAcceleration,
@@ -2510,7 +2587,8 @@ void MultibodyForwardDynamicsStage::execute(
 
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, scratch.linkContacts);
 
@@ -2553,7 +2631,8 @@ void MultibodyVelocityStage::execute(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto& pendingVelocity
         = registry.get_or_emplace<PendingMultibodyVelocity>(entity);
     if (!computeUnconstrainedMultibodyVelocityInto(
@@ -2595,7 +2674,8 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, scratch.linkContacts);
     if (scratch.linkContacts.empty()) {
@@ -2654,7 +2734,8 @@ void MultibodyPositionStage::execute(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     Eigen::VectorXd* nextVelocity = nullptr;
     if (auto* pendingVelocity
         = registry.try_get<PendingMultibodyVelocity>(entity);
@@ -2687,7 +2768,9 @@ void MultibodyPositionStage::execute(
 
 //==============================================================================
 void reserveMultibodyDynamicsRegistryStorage(
-    detail::WorldRegistry& registry, std::size_t multibodyCount)
+    detail::WorldRegistry& registry,
+    std::size_t multibodyCount,
+    common::MemoryAllocator& allocator)
 {
   auto& pendingVelocityStorage = registry.storage<PendingMultibodyVelocity>();
   auto& dynamicsScratchStorage = registry.storage<MultibodyDynamicsScratch>();
@@ -2701,7 +2784,11 @@ void reserveMultibodyDynamicsRegistryStorage(
   auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto* existingScratch = registry.try_get<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = existingScratch != nullptr
+              ? *existingScratch
+              : registry.emplace<MultibodyDynamicsScratch>(entity, allocator);
     buildDynamicsTreeInto(
         registry,
         structure,
@@ -2748,7 +2835,7 @@ void reserveMultibodyDynamicsRegistryStorage(
     if (dof > 0) {
       gatherMultibodyVelocityInto(registry, scratch.tree, scratch.qdot);
       computeMassAndBiasInto(
-          scratch.tree.links,
+          linkSpan(scratch.tree),
           scratch.tree.dofCount,
           Eigen::Vector3d::Zero(),
           scratch.qdot,
@@ -2907,7 +2994,7 @@ bool UnifiedConstraintStage::assembleProblemIntoScratch(
     }
     auto& stagedVelocity = scratch.multibodyVelocities[stagedBlockCount];
     auto& dynamicsScratch
-        = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     auto* pendingVelocity = registry.try_get<PendingMultibodyVelocity>(entity);
     if (pendingVelocity != nullptr && pendingVelocity->active) {
       stagedVelocity = pendingVelocity->velocity;
@@ -3083,7 +3170,8 @@ bool tryResolveSequentialMultibodyContacts(
   std::size_t crossMultibodyLinkContactCount = 0;
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
-    auto& scratch = registry.get_or_emplace<MultibodyDynamicsScratch>(entity);
+    auto& scratch
+        = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
     collectMultibodyLinkContactsInto(
         registry, structure, contacts, scratch.linkContacts);
     for (const auto& contact : scratch.linkContacts) {
