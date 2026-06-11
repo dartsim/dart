@@ -8,33 +8,17 @@
  * Solver-agnostic LCP comparison harness coverage.
  */
 
+#include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 #include "tests/common/lcpsolver/lcp_test_fixtures.hpp"
 #include "tests/common/lcpsolver/lcp_test_harness.hpp"
-
-#include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
-#include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
-#include <dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.hpp>
-#include <dart/math/lcp/other/interior_point_solver.hpp>
-#include <dart/math/lcp/other/mprgp_solver.hpp>
-#include <dart/math/lcp/other/shock_propagation_solver.hpp>
-#include <dart/math/lcp/other/staggering_solver.hpp>
-#include <dart/math/lcp/pivoting/baraff_solver.hpp>
-#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
-#include <dart/math/lcp/pivoting/direct_solver.hpp>
-#include <dart/math/lcp/pivoting/lemke_solver.hpp>
-#include <dart/math/lcp/projection/bgs_solver.hpp>
-#include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
-#include <dart/math/lcp/projection/jacobi_solver.hpp>
-#include <dart/math/lcp/projection/nncg_solver.hpp>
-#include <dart/math/lcp/projection/pgs_solver.hpp>
-#include <dart/math/lcp/projection/red_black_gauss_seidel_solver.hpp>
-#include <dart/math/lcp/projection/subspace_minimization_solver.hpp>
-#include <dart/math/lcp/projection/symmetric_psor_solver.hpp>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <iterator>
+#include <string_view>
 
 namespace {
 
@@ -42,6 +26,13 @@ using dart::math::LcpOptions;
 using dart::math::LcpSolver;
 using dart::math::LcpSolverStatus;
 using dart::test::LcpFixture;
+
+template <std::size_t N>
+bool contains(
+    const std::array<std::string_view, N>& names, const std::string_view name)
+{
+  return std::ranges::find(names, name) != names.end();
+}
 
 void ExpectSolverPassesFixture(
     LcpSolver& solver,
@@ -72,6 +63,81 @@ void ExpectSolverPassesFixture(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(LcpComparisonHarness, ManifestMatchesFixtureCoverage)
+{
+  constexpr std::array<std::string_view, 24> kStandardCoverage{
+      "Dantzig",
+      "Lemke",
+      "Baraff",
+      "Direct",
+      "Pgs",
+      "SymmetricPsor",
+      "Jacobi",
+      "RedBlackGaussSeidel",
+      "BlockedJacobi",
+      "BGS",
+      "NNCG",
+      "SubspaceMinimization",
+      "Apgd",
+      "Tgs",
+      "MinimumMapNewton",
+      "FischerBurmeisterNewton",
+      "PenalizedFischerBurmeisterNewton",
+      "InteriorPoint",
+      "MPRGP",
+      "ShockPropagation",
+      "Staggering",
+      "Admm",
+      "Sap",
+      "BoxedSemiSmoothNewton"};
+  constexpr std::array<std::string_view, 16> kBoxedCoverage{
+      "Dantzig",
+      "Pgs",
+      "SymmetricPsor",
+      "Jacobi",
+      "RedBlackGaussSeidel",
+      "BlockedJacobi",
+      "BGS",
+      "NNCG",
+      "SubspaceMinimization",
+      "Apgd",
+      "Tgs",
+      "ShockPropagation",
+      "Staggering",
+      "Admm",
+      "Sap",
+      "BoxedSemiSmoothNewton"};
+  constexpr std::array<std::string_view, 16> kFrictionIndexCoverage{
+      "Dantzig",
+      "Pgs",
+      "SymmetricPsor",
+      "Jacobi",
+      "RedBlackGaussSeidel",
+      "BlockedJacobi",
+      "BGS",
+      "NNCG",
+      "SubspaceMinimization",
+      "Apgd",
+      "Tgs",
+      "ShockPropagation",
+      "Staggering",
+      "Admm",
+      "Sap",
+      "BoxedSemiSmoothNewton"};
+
+  for (const auto& solver : dart::test::kLcpSolverManifest) {
+    EXPECT_EQ(solver.supportsStandard, contains(kStandardCoverage, solver.name))
+        << solver.name;
+    EXPECT_EQ(solver.supportsBoxed, contains(kBoxedCoverage, solver.name))
+        << solver.name;
+    EXPECT_EQ(
+        solver.supportsFrictionIndex,
+        contains(kFrictionIndexCoverage, solver.name))
+        << solver.name;
+  }
+}
 
 //==============================================================================
 TEST(LcpComparisonHarness, DantzigOnStandardAndBoxedFixtures)
@@ -149,15 +215,11 @@ TEST(LcpComparisonHarness, MprgpOnStandardFixtures)
 }
 
 //==============================================================================
-TEST(LcpComparisonHarness, ShockPropagationOnStandardFixtures)
+TEST(LcpComparisonHarness, ShockPropagationOnStandardAndBoxedFixtures)
 {
   dart::math::ShockPropagationSolver solver;
 
   for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
-    if (fixture.kind != dart::test::LcpFixtureKind::Standard) {
-      continue;
-    }
-
     const int n = static_cast<int>(std::ssize(fixture.problem.b));
 
     dart::math::ShockPropagationSolver::Parameters params;
@@ -265,6 +327,40 @@ TEST(LcpComparisonHarness, SymmetricPsorOnStandardAndBoxedFixtures)
 TEST(LcpComparisonHarness, RedBlackGaussSeidelOnStandardAndBoxedFixtures)
 {
   dart::math::RedBlackGaussSeidelSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, ApgdOnStandardAndBoxedFixtures)
+{
+  dart::math::ApgdSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 1e-2;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, TgsOnStandardAndBoxedFixtures)
+{
+  dart::math::TgsSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
@@ -434,6 +530,62 @@ TEST(LcpComparisonHarness, SubspaceMinimizationOnStandardAndBoxedFixtures)
 }
 
 //==============================================================================
+TEST(LcpComparisonHarness, AdmmOnStandardAndBoxedFixtures)
+{
+  dart::math::AdmmSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 1e-3;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-3, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SapOnStandardAndBoxedFixtures)
+{
+  dart::math::SapSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 1e-3;
+
+  dart::math::SapSolver::Parameters params;
+  params.regularization = 1e-6;
+  params.maxLineSearchIterations = 32;
+  options.customOptions = &params;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-3, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, BoxedSemiSmoothNewtonOnStandardAndBoxedFixtures)
+{
+  dart::math::BoxedSemiSmoothNewtonSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 100;
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.complementarityTolerance = 1e-6;
+
+  for (const auto& fixture : dart::test::getStandardBoxedFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
+  }
+}
+
+//==============================================================================
 TEST(LcpComparisonHarness, DantzigOnFrictionIndexFixtures)
 {
   dart::math::DantzigSolver solver;
@@ -504,6 +656,40 @@ TEST(LcpComparisonHarness, SymmetricPsorOnFrictionIndexFixtures)
 TEST(LcpComparisonHarness, RedBlackGaussSeidelOnFrictionIndexFixtures)
 {
   dart::math::RedBlackGaussSeidelSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, ApgdOnFrictionIndexFixtures)
+{
+  dart::math::ApgdSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 20000;
+  options.absoluteTolerance = 1e-4;
+  options.relativeTolerance = 1e-2;
+  options.complementarityTolerance = 2e-2;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, TgsOnFrictionIndexFixtures)
+{
+  dart::math::TgsSolver solver;
   LcpOptions options = solver.getDefaultOptions();
   options.warmStart = false;
   options.validateSolution = false;
@@ -609,6 +795,62 @@ TEST(LcpComparisonHarness, SubspaceMinimizationOnFrictionIndexFixtures)
 
   for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
     ExpectSolverPassesFixture(solver, fixture, options, 2e-2, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, AdmmOnFrictionIndexFixtures)
+{
+  dart::math::AdmmSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 2e-3;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-3, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, SapOnFrictionIndexFixtures)
+{
+  dart::math::SapSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 5000;
+  options.absoluteTolerance = 1e-5;
+  options.relativeTolerance = 1e-3;
+  options.complementarityTolerance = 2e-3;
+
+  dart::math::SapSolver::Parameters params;
+  params.regularization = 1e-6;
+  params.maxLineSearchIterations = 32;
+  options.customOptions = &params;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 2e-3, true);
+  }
+}
+
+//==============================================================================
+TEST(LcpComparisonHarness, BoxedSemiSmoothNewtonOnFrictionIndexFixtures)
+{
+  dart::math::BoxedSemiSmoothNewtonSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.maxIterations = 100;
+  options.absoluteTolerance = 1e-8;
+  options.relativeTolerance = 1e-6;
+  options.complementarityTolerance = 1e-6;
+
+  for (const auto& fixture : dart::test::getFrictionIndexFixtures()) {
+    ExpectSolverPassesFixture(solver, fixture, options, 1e-6, false);
   }
 }
 

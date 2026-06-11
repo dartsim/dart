@@ -31,12 +31,14 @@
  */
 
 #include "tests/common/lcpsolver/lcp_problem_factory.hpp"
-
-#include <dart/math/lcp/all.hpp>
+#include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 
 #include <gtest/gtest.h>
 
-#include <memory>
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -45,126 +47,82 @@ using namespace dart::test;
 
 namespace {
 
-struct SolverTestCase
-{
-  std::string name;
-  std::unique_ptr<LcpSolver> solver;
-  bool supportsStandard;
-  bool supportsBoxed;
-  bool supportsFindex;
-};
-
-std::vector<SolverTestCase> createAllSolvers()
-{
-  std::vector<SolverTestCase> solvers;
-
-  solvers.push_back(
-      {"Dantzig", std::make_unique<DantzigSolver>(), true, true, true});
-  solvers.push_back(
-      {"Lemke", std::make_unique<LemkeSolver>(), true, false, false});
-  solvers.push_back(
-      {"Baraff", std::make_unique<BaraffSolver>(), true, false, false});
-  solvers.push_back(
-      {"Direct", std::make_unique<DirectSolver>(), true, false, false});
-
-  solvers.push_back({"Pgs", std::make_unique<PgsSolver>(), true, true, true});
-  solvers.push_back(
-      {"SymmetricPsor",
-       std::make_unique<SymmetricPsorSolver>(),
-       true,
-       true,
-       true});
-  solvers.push_back(
-      {"Jacobi", std::make_unique<JacobiSolver>(), true, true, true});
-  solvers.push_back(
-      {"RedBlackGaussSeidel",
-       std::make_unique<RedBlackGaussSeidelSolver>(),
-       true,
-       true,
-       true});
-  solvers.push_back(
-      {"BlockedJacobi",
-       std::make_unique<BlockedJacobiSolver>(),
-       true,
-       true,
-       true});
-  solvers.push_back({"Bgs", std::make_unique<BgsSolver>(), true, true, true});
-  solvers.push_back({"Nncg", std::make_unique<NncgSolver>(), true, true, true});
-  solvers.push_back(
-      {"SubspaceMinimization",
-       std::make_unique<SubspaceMinimizationSolver>(),
-       true,
-       true,
-       true});
-  solvers.push_back({"Apgd", std::make_unique<ApgdSolver>(), true, true, true});
-  solvers.push_back({"Tgs", std::make_unique<TgsSolver>(), true, true, true});
-
-  solvers.push_back(
-      {"MinimumMapNewton",
-       std::make_unique<MinimumMapNewtonSolver>(),
-       true,
-       false,
-       false});
-  solvers.push_back(
-      {"FischerBurmeisterNewton",
-       std::make_unique<FischerBurmeisterNewtonSolver>(),
-       true,
-       false,
-       false});
-  solvers.push_back(
-      {"PenalizedFischerBurmeisterNewton",
-       std::make_unique<PenalizedFischerBurmeisterNewtonSolver>(),
-       true,
-       false,
-       false});
-
-  solvers.push_back(
-      {"InteriorPoint",
-       std::make_unique<InteriorPointSolver>(),
-       true,
-       false,
-       false});
-  solvers.push_back(
-      {"Mprgp", std::make_unique<MprgpSolver>(), true, false, false});
-  solvers.push_back(
-      {"ShockPropagation",
-       std::make_unique<ShockPropagationSolver>(),
-       true,
-       true,
-       true});
-  solvers.push_back(
-      {"Staggering", std::make_unique<StaggeringSolver>(), true, true, true});
-  solvers.push_back({"Admm", std::make_unique<AdmmSolver>(), true, true, true});
-  solvers.push_back({"Sap", std::make_unique<SapSolver>(), true, true, true});
-  solvers.push_back(
-      {"BoxedSemiSmoothNewton",
-       std::make_unique<BoxedSemiSmoothNewtonSolver>(),
-       true,
-       true,
-       true});
-
-  return solvers;
-}
-
-bool canSolve(const SolverTestCase& solver, const FactoryProblem& problem)
+LcpProblemSupport supportFor(const ProblemCategory category)
 {
   using enum ProblemCategory;
 
-  switch (problem.category) {
+  switch (category) {
     case Standard:
-      return solver.supportsStandard;
+      return LcpProblemSupport::Standard;
     case Boxed:
-      return solver.supportsBoxed;
+      return LcpProblemSupport::Boxed;
     case BoxedFriction:
-      return solver.supportsFindex;
+      return LcpProblemSupport::FrictionIndex;
   }
-  return false;
+  return LcpProblemSupport::Standard;
+}
+
+bool canSolve(
+    const LcpSolverManifestEntry& solver, const FactoryProblem& problem)
+{
+  return supportsProblem(solver, supportFor(problem.category));
 }
 
 bool producedIterate(const LcpResult& result)
 {
   return result.status == LcpSolverStatus::Success
          || result.status == LcpSolverStatus::MaxIterations;
+}
+
+std::filesystem::path dartSourcePath()
+{
+  return std::filesystem::path(DART_SOURCE_DIR);
+}
+
+std::vector<std::string> readDocumentedSolverManifestNames()
+{
+  const auto path
+      = dartSourcePath() / "docs/background/lcp/07_selection-guide.md";
+  std::ifstream input(path);
+  if (!input) {
+    return {};
+  }
+
+  constexpr std::string_view kBegin
+      = "<!-- dart-lcp-solver-manifest: begin -->";
+  constexpr std::string_view kEnd = "<!-- dart-lcp-solver-manifest: end -->";
+
+  bool inManifestBlock = false;
+  std::vector<std::string> names;
+  std::string line;
+  while (std::getline(input, line)) {
+    if (line == kBegin) {
+      inManifestBlock = true;
+      continue;
+    }
+    if (line == kEnd) {
+      break;
+    }
+    if (!inManifestBlock) {
+      continue;
+    }
+
+    if (line.rfind("- ", 0) != 0) {
+      continue;
+    }
+
+    const auto firstTick = line.find('`');
+    if (firstTick == std::string::npos) {
+      continue;
+    }
+    const auto secondTick = line.find('`', firstTick + 1);
+    if (secondTick == std::string::npos) {
+      continue;
+    }
+    names.push_back(line.substr(firstTick + 1, secondTick - firstTick - 1));
+  }
+
+  return names;
 }
 
 void expectWithinEffectiveBounds(
@@ -197,26 +155,47 @@ void expectWithinEffectiveBounds(
 
 class AllSolversSmokeTest : public ::testing::Test
 {
-protected:
-  void SetUp() override
-  {
-    mSolvers = createAllSolvers();
-  }
-
-  std::vector<SolverTestCase> mSolvers;
 };
+
+TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
+{
+  EXPECT_EQ(kLcpSolverManifest.size(), 24u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Standard), 24u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Boxed), 16u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::FrictionIndex), 16u);
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    ASSERT_NE(solver, nullptr) << solverCase.name;
+    EXPECT_EQ(solver->getName(), std::string(solverCase.name))
+        << solverCase.name;
+  }
+}
+
+TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
+{
+  const auto documentedNames = readDocumentedSolverManifestNames();
+  ASSERT_EQ(documentedNames.size(), kLcpSolverManifest.size());
+
+  for (std::size_t i = 0; i < kLcpSolverManifest.size(); ++i) {
+    EXPECT_EQ(documentedNames[i], std::string(kLcpSolverManifest[i].name))
+        << "docs/background/lcp/07_selection-guide.md entry " << i;
+  }
+}
 
 TEST_F(AllSolversSmokeTest, EmptyProblemSucceeds)
 {
   auto problem = LcpProblemFactory::empty();
 
-  for (auto& solver : mSolvers) {
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
     Eigen::VectorXd x;
-    auto result = solver.solver->solve(
-        problem.problem, x, solver.solver->getDefaultOptions());
+    auto result
+        = solver->solve(problem.problem, x, solver->getDefaultOptions());
     EXPECT_TRUE(result.succeeded())
-        << solver.name << " failed on empty problem: " << result.message;
-    EXPECT_EQ(x.size(), 0) << solver.name << " should return empty solution";
+        << solverCase.name << " failed on empty problem: " << result.message;
+    EXPECT_EQ(x.size(), 0) << solverCase.name
+                           << " should return empty solution";
   }
 }
 
@@ -224,16 +203,19 @@ TEST_F(AllSolversSmokeTest, Trivial1dDoesNotCrash)
 {
   auto problem = LcpProblemFactory::trivial1d();
 
-  for (auto& solver : mSolvers) {
-    if (!canSolve(solver, problem)) {
+  for (const auto& solverCase : kLcpSolverManifest) {
+    if (!canSolve(solverCase, problem)) {
       continue;
     }
 
+    const auto solver = solverCase.create();
     Eigen::VectorXd x;
-    auto result = solver.solver->solve(
-        problem.problem, x, solver.solver->getDefaultOptions());
-    EXPECT_EQ(x.size(), 1) << solver.name << " should return size-1 solution";
-    EXPECT_TRUE(x.allFinite()) << solver.name << " produced non-finite values";
+    auto result
+        = solver->solve(problem.problem, x, solver->getDefaultOptions());
+    EXPECT_EQ(x.size(), 1) << solverCase.name
+                           << " should return size-1 solution";
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
   }
 }
 
@@ -241,18 +223,20 @@ TEST_F(AllSolversSmokeTest, Standard2dDoesNotCrash)
 {
   auto problem = LcpProblemFactory::standard2dSpd();
 
-  for (auto& solver : mSolvers) {
-    if (!canSolve(solver, problem)) {
+  for (const auto& solverCase : kLcpSolverManifest) {
+    if (!canSolve(solverCase, problem)) {
       continue;
     }
 
+    const auto solver = solverCase.create();
     Eigen::VectorXd x;
-    LcpOptions options = solver.solver->getDefaultOptions();
+    LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
-    auto result = solver.solver->solve(problem.problem, x, options);
+    auto result = solver->solve(problem.problem, x, options);
 
-    EXPECT_EQ(x.size(), 2) << solver.name;
-    EXPECT_TRUE(x.allFinite()) << solver.name << " produced non-finite values";
+    EXPECT_EQ(x.size(), 2) << solverCase.name;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
   }
 }
 
@@ -260,27 +244,29 @@ TEST_F(AllSolversSmokeTest, BoxedProblemHandledCorrectly)
 {
   auto problem = LcpProblemFactory::boxed2dActiveUpper();
 
-  for (auto& solver : mSolvers) {
-    if (!solver.supportsBoxed) {
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    if (!solverCase.supportsBoxed) {
       Eigen::VectorXd x;
-      auto result = solver.solver->solve(
-          problem.problem, x, solver.solver->getDefaultOptions());
+      auto result
+          = solver->solve(problem.problem, x, solver->getDefaultOptions());
       EXPECT_TRUE(
           result.status == LcpSolverStatus::Success
           || result.status == LcpSolverStatus::MaxIterations)
-          << solver.name << " should handle boxed: " << result.message;
+          << solverCase.name << " should handle boxed: " << result.message;
       continue;
     }
 
     Eigen::VectorXd x;
-    LcpOptions options = solver.solver->getDefaultOptions();
+    LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
-    auto result = solver.solver->solve(problem.problem, x, options);
+    auto result = solver->solve(problem.problem, x, options);
 
     EXPECT_TRUE(
         result.succeeded() || result.status == LcpSolverStatus::MaxIterations)
-        << solver.name << " failed on boxed: " << result.message;
-    EXPECT_TRUE(x.allFinite()) << solver.name << " produced non-finite values";
+        << solverCase.name << " failed on boxed: " << result.message;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
   }
 }
 
@@ -288,20 +274,22 @@ TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
 {
   auto problem = LcpProblemFactory::singleContactFriction();
 
-  for (auto& solver : mSolvers) {
-    if (!solver.supportsFindex) {
+  for (const auto& solverCase : kLcpSolverManifest) {
+    if (!solverCase.supportsFrictionIndex) {
       continue;
     }
 
+    const auto solver = solverCase.create();
     Eigen::VectorXd x;
-    LcpOptions options = solver.solver->getDefaultOptions();
+    LcpOptions options = solver->getDefaultOptions();
     options.maxIterations = 1000;
-    auto result = solver.solver->solve(problem.problem, x, options);
+    auto result = solver->solve(problem.problem, x, options);
 
     // Smoke test: just verify no crash and finite output
     // Some iterative solvers may not converge on friction problems
-    EXPECT_EQ(x.size(), problem.problem.b.size()) << solver.name;
-    EXPECT_TRUE(x.allFinite()) << solver.name << " produced non-finite values";
+    EXPECT_EQ(x.size(), problem.problem.b.size()) << solverCase.name;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
   }
 }
 

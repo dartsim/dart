@@ -10,9 +10,9 @@
 
 Newton methods solve LCPs by reformulating them as nonsmooth root-finding problems and applying generalized Newton iteration. They offer superlinear to quadratic convergence but require globalization for robustness.
 
-Minimum Map Newton, Fischer-Burmeister Newton, and Penalized Fischer-Burmeister
-Newton are implemented in DART. Other Newton methods are documented here for
-future reference.
+Minimum Map Newton, Fischer-Burmeister Newton, Penalized Fischer-Burmeister
+Newton, and Boxed Semi-Smooth Newton are implemented in DART. Other Newton
+methods are documented here for future reference.
 
 ## Common Framework
 
@@ -54,6 +54,11 @@ $$\Delta x_{\mathcal{F}} = -H_{\mathcal{F}} = -x_{\mathcal{F}} \quad \text{(dire
 #include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
 
 dart::math::MinimumMapNewtonSolver solver;
+dart::math::MinimumMapNewtonSolver::Parameters params;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
+solver.setParameters(params);
+
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 options.warmStart = false;
@@ -122,6 +127,11 @@ where $y_i = (Ax - b)_i$.
 #include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
 
 dart::math::FischerBurmeisterNewtonSolver solver;
+dart::math::FischerBurmeisterNewtonSolver::Parameters params;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
+solver.setParameters(params);
+
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 options.warmStart = false;
@@ -212,6 +222,8 @@ dart::math::LcpOptions options = solver.getDefaultOptions();
 
 dart::math::PenalizedFischerBurmeisterNewtonSolver::Parameters params;
 params.lambda = 0.5;
+params.maxPgsWarmStartIterations = 5;          // optional; default is 0
+params.maxGradientDescentWarmStartSteps = 5;  // optional; default is 0
 options.customOptions = &params;
 
 auto result = solver.solve(problem, x, options);
@@ -269,7 +281,36 @@ $$\phi_t = \frac{1}{2} \|H(x_{\text{new}})\|^2$$
 
 ### Nonsmooth Gradient Descent (Warm Start)
 
-Used to compute good starting iterate for Newton methods.
+DART 7 implements this as an opt-in initializer for the native standard-LCP
+paths of `MinimumMapNewtonSolver`, `FischerBurmeisterNewtonSolver`, and
+`PenalizedFischerBurmeisterNewtonSolver`. Set
+`maxGradientDescentWarmStartSteps > 0` in the solver parameters to run
+projected gradient steps before Newton iteration. The initializer uses the
+solver's own reformulation merit and separate backtracking parameters
+(`maxGradientDescentLineSearchSteps`, `gradientDescentStepReduction`,
+`gradientDescentSufficientDecrease`, and `gradientDescentMinStep`). Defaults
+leave existing behavior unchanged. These standard Newton solvers still delegate
+boxed or friction-index problems to the boxed-capable pivoting solver; use
+`BoxedSemiSmoothNewtonSolver` for native boxed/findex Newton steps.
+
+The same standard Newton solvers also expose an opt-in PGS seed through
+`maxPgsWarmStartIterations`. When enabled, DART runs bounded PGS iterations
+first, accepts the seed only if it lowers the solver-specific Newton merit, and
+then optionally applies the projected gradient-descent initializer. The PGS seed
+uses `pgsWarmStartRelaxation` and clears `customOptions` before calling
+`PgsSolver`, so Newton-specific parameter structs are not reinterpreted by the
+projection solver. `BM_LcpNewtonWarmStart/StandardActiveSet/*` compares no
+warm start, PGS-only, gradient-descent-only, and PGS-then-gradient modes on the
+same standard active-set transition packets.
+`BM_LcpNewtonWarmStartBatch(Serial|Parallel)/StandardActiveSet/*` applies the
+same mode matrix to batch-size-4 packets, including DART 7 `ParallelExecutor`
+rows. CUDA-enabled benchmark rows for these standard Newton paths are CPU
+solver rows in a CUDA-enabled build, not CUDA LCP kernel execution.
+`BM_LcpContactNormalStandardSweep` adds contact-derived standard-LCP evidence
+for these standard Newton solvers by extracting only the normal rows from DART
+7 separated sphere-ground, coupled vertical-stack, and articulated
+unified-contact snapshots. This does not claim native boxed or friction-index
+Newton support for these three standard-only solvers.
 
 ```
 function gradient_descent(x, max_iter):
@@ -330,6 +371,48 @@ Properties:
 | Minimum Map        | Nonsmooth everywhere | Simple (blocks)     | General use  |
 | Fischer-Burmeister | Smooth except origin | Medium              | Well-studied |
 | Penalized FB       | Less smooth          | Complex             | Tunable      |
+| Boxed Semi-Smooth  | Projection branches  | Medium              | Boxed/findex |
+
+## 4. Boxed Semi-Smooth Newton ✅ (Implemented)
+
+DART 7 also includes `dart::math::BoxedSemiSmoothNewtonSolver`, which applies a
+semi-smooth Newton step to the boxed natural residual:
+
+$$H(x) = x - \Pi_{[l,u]}(x - (Ax-b))$$
+
+For friction-index rows, the effective lower and upper bounds depend on the
+normal impulse. The DART implementation includes that moving-bound derivative in
+the generalized Jacobian, so coupled friction-index cases are handled by the
+Newton system rather than treated as fixed boxes.
+
+```cpp
+#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
+
+dart::math::BoxedSemiSmoothNewtonSolver solver;
+dart::math::LcpOptions options = solver.getDefaultOptions();
+options.maxIterations = 50;
+
+solver.solve(problem, x, options);
+```
+
+Use this solver when a boxed or friction-index problem needs a higher-accuracy
+Newton-style solve and the active set is expected to be stable enough for
+linearization. Keep pivoting or robust projection methods as fallbacks for
+highly degenerate contact systems.
+
+DART 7 benchmark evidence includes
+`BM_LcpBoxedSemiSmoothNewtonLineSearchSweep`, which runs this solver on
+standard, boxed, and friction-index fixtures with default line search, an
+expanded line-search step budget, and a gentler step-reduction policy. Focused
+default, SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
+`contract_ok=1`, `maxLineSearchSteps=10/20`, `stepReduction=0.5/0.8`,
+friction-index `contact_count=8`, observed solver iterations `2/7/8/9`, and
+backend build-state counters. The CUDA-enabled rows are CPU
+BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
+execution. Additional `BM_LcpContactSolverComparisonSweep` rows run
+BoxedSemiSmoothNewton on DART 7 separated sphere-ground, coupled vertical-stack,
+and articulated unified-contact friction-index fixtures, so contact-derived
+evidence is reported separately from the synthetic line-search parameter sweep.
 
 ## Implementation Strategy
 
@@ -347,8 +430,9 @@ Properties:
 
 ### Phase 3: Supporting Methods
 
-7. Nonsmooth gradient descent
-8. Warm start from PGS
+7. Nonsmooth gradient descent (implemented as an opt-in standard-LCP
+   initializer)
+8. Warm start from PGS (implemented as an opt-in standard-LCP initializer)
 
 ### Phase 4: Fischer-Burmeister + Penalized FB
 

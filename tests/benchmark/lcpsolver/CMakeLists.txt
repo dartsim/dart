@@ -31,6 +31,56 @@ target_link_libraries(
   benchmark::benchmark
   benchmark::benchmark_main
 )
+if(DART_ENABLE_SIMD)
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_ENABLE_SIMD=1
+  )
+else()
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_ENABLE_SIMD=0
+  )
+endif()
+if(DART_SIMD_FORCE_SCALAR)
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_SIMD_FORCE_SCALAR=1
+  )
+else()
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_SIMD_FORCE_SCALAR=0
+  )
+endif()
+if(DART_ENABLE_EXPERIMENTAL_CUDA)
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA=1
+  )
+else()
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_DART_ENABLE_EXPERIMENTAL_CUDA=0
+  )
+endif()
+if(TARGET dart-simulation)
+  target_link_libraries(BM_LCP_COMPARE dart-simulation)
+  if(TARGET EnTT::EnTT)
+    target_link_libraries(BM_LCP_COMPARE EnTT::EnTT)
+  endif()
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION=1
+  )
+endif()
+if(TARGET dart-simulation-cuda)
+  target_link_libraries(BM_LCP_COMPARE dart-simulation-cuda)
+  target_compile_definitions(
+    BM_LCP_COMPARE
+    PRIVATE DART_BM_LCP_COMPARE_HAS_SIMULATION_CUDA=1
+  )
+endif()
 set_target_properties(BM_LCP_COMPARE PROPERTIES FOLDER "Benchmarks")
 
 # Row swapping benchmark: Pointer vs Eigen comparison

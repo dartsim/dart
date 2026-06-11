@@ -35,9 +35,12 @@
 #include "dart/math/lcp/lcp_validation.hpp"
 
 #include <algorithm>
+#include <atomic>
+#include <barrier>
 #include <iterator>
 #include <limits>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <cmath>
@@ -154,6 +157,11 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     result.message = "Division epsilon must be positive";
     return result;
   }
+  if (params->workerThreads <= 0) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Worker thread count must be positive";
+    return result;
+  }
 
   std::vector<int> redIndices;
   std::vector<int> blackIndices;
@@ -235,33 +243,114 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     x[i] = projectValue(i, xRead, value);
   };
 
+  auto updateColorRange = [&](const std::vector<int>& indices,
+                              const int begin,
+                              const int end,
+                              const Eigen::VectorXd& xRead) {
+    for (int offset = begin; offset < end; ++offset) {
+      updateIndex(indices[static_cast<std::size_t>(offset)], xRead);
+    }
+  };
+
   Eigen::VectorXd xOld;
   Eigen::VectorXd xMixed;
 
-  for (int iter = 0; iter < maxIterations && !converged; ++iter) {
-    iterationsUsed = iter + 1;
+  const int largestColorSize
+      = static_cast<int>(std::max(redIndices.size(), blackIndices.size()));
+  const int requestedWorkers = std::max(1, params->workerThreads);
+  const int workerCount = std::min(requestedWorkers, largestColorSize);
 
-    xOld = x;
+  if (workerCount > 1) {
+    std::atomic<bool> stopWorkers{false};
+    std::barrier phaseBarrier(workerCount + 1);
+    std::vector<std::thread> workers;
+    workers.reserve(static_cast<std::size_t>(workerCount));
 
-    for (const int i : redIndices) {
-      updateIndex(i, xOld);
+    bool useRedIndices = true;
+
+    for (int worker = 0; worker < workerCount; ++worker) {
+      workers.emplace_back([&, worker]() {
+        while (true) {
+          phaseBarrier.arrive_and_wait();
+          if (stopWorkers.load(std::memory_order_acquire)) {
+            break;
+          }
+
+          const auto& indices = useRedIndices ? redIndices : blackIndices;
+          const auto& xRead = useRedIndices ? xOld : xMixed;
+          const int colorSize = static_cast<int>(indices.size());
+          const int chunkSize = (colorSize + workerCount - 1) / workerCount;
+          const int begin = worker * chunkSize;
+          const int end = std::min(colorSize, begin + chunkSize);
+          updateColorRange(indices, begin, end, xRead);
+          phaseBarrier.arrive_and_wait();
+        }
+      });
     }
 
-    xMixed = xOld;
-    for (const int i : redIndices) {
-      xMixed[i] = x[i];
+    auto runThreadedColor = [&](const bool redPhase) {
+      useRedIndices = redPhase;
+      phaseBarrier.arrive_and_wait();
+      phaseBarrier.arrive_and_wait();
+    };
+
+    for (int iter = 0; iter < maxIterations && !converged; ++iter) {
+      iterationsUsed = iter + 1;
+
+      xOld = x;
+
+      runThreadedColor(true);
+
+      xMixed = xOld;
+      for (const int i : redIndices) {
+        xMixed[i] = x[i];
+      }
+
+      runThreadedColor(false);
+
+      if (!updateMetrics()) {
+        stopWorkers.store(true, std::memory_order_release);
+        phaseBarrier.arrive_and_wait();
+        for (auto& worker : workers) {
+          worker.join();
+        }
+        return result;
+      }
+
+      if (residual <= tol && complementarity <= compTol) {
+        converged = true;
+      }
     }
 
-    for (const int i : blackIndices) {
-      updateIndex(i, xMixed);
+    stopWorkers.store(true, std::memory_order_release);
+    phaseBarrier.arrive_and_wait();
+    for (auto& worker : workers) {
+      worker.join();
     }
+  } else {
+    for (int iter = 0; iter < maxIterations && !converged; ++iter) {
+      iterationsUsed = iter + 1;
 
-    if (!updateMetrics()) {
-      return result;
-    }
+      xOld = x;
 
-    if (residual <= tol && complementarity <= compTol) {
-      converged = true;
+      updateColorRange(
+          redIndices, 0, static_cast<int>(redIndices.size()), xOld);
+
+      xMixed = xOld;
+      for (const int i : redIndices) {
+        xMixed[i] = x[i];
+      }
+
+      updateColorRange(
+          blackIndices, 0, static_cast<int>(blackIndices.size()), xMixed);
+
+      if (!updateMetrics()) {
+        return result;
+      }
+
+      if (residual <= tol && complementarity <= compTol) {
+        converged = true;
+      }
     }
   }
 

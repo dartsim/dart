@@ -52,19 +52,38 @@ enum class ConstraintState
   Interior
 };
 
-ConstraintState classifyPoint(
-    double x, double grad, double lo, double hi, double tol)
+ConstraintState classifyProjectionBranch(
+    double candidate, double lo, double hi, double tol)
 {
-  const bool atLo = std::isfinite(lo) && std::abs(x - lo) <= tol;
-  const bool atHi = std::isfinite(hi) && std::abs(x - hi) <= tol;
-
-  if (atLo && grad > tol) {
+  if (std::isfinite(lo) && candidate <= lo + tol) {
     return ConstraintState::AtLower;
   }
-  if (atHi && grad < -tol) {
+  if (std::isfinite(hi) && candidate >= hi - tol) {
     return ConstraintState::AtUpper;
   }
   return ConstraintState::Interior;
+}
+
+double frictionBoundDerivative(
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    const Eigen::VectorXd& x,
+    Eigen::Index i)
+{
+  const int ref = findex[i];
+  if (ref < 0) {
+    return 0.0;
+  }
+
+  const double scale = x[ref];
+  if (scale > 0.0) {
+    return std::abs(hi[i]);
+  }
+  if (scale < 0.0) {
+    return -std::abs(hi[i]);
+  }
+
+  return 0.0;
 }
 
 double project(double val, double lo, double hi)
@@ -218,12 +237,20 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       const double candidate = x[i] - w[i];
       const ConstraintState state
-          = classifyPoint(candidate, w[i], loEff[i], hiEff[i], absTol);
+          = classifyProjectionBranch(candidate, loEff[i], hiEff[i], absTol);
 
       switch (state) {
         case ConstraintState::AtLower:
+          J(i, i) = 1.0;
+          if (findex[i] >= 0) {
+            J(i, findex[i]) += frictionBoundDerivative(hi, findex, x, i);
+          }
+          break;
         case ConstraintState::AtUpper:
           J(i, i) = 1.0;
+          if (findex[i] >= 0) {
+            J(i, findex[i]) -= frictionBoundDerivative(hi, findex, x, i);
+          }
           break;
         case ConstraintState::Interior:
           for (const auto j : std::views::iota(Eigen::Index{0}, n)) {
