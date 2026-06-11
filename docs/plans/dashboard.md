@@ -287,10 +287,12 @@ its own line so status updates remain git-history friendly.
   landed point/fixed and hinge constraints into rigid IPC `World::step`, adds
   opt-in BDF-2 stepping, routes deformable surfaces as fixed mixed-domain
   contact obstacles, and runs a reduced hanging-bridge py-demo through
-  `World::step` plus headless capture. The completion audit still records
-  PLAN-083 as incomplete while planned manifest, CPU corpus, and non-PSD GPU
-  parity rows remain, so dev-task retirement needs maintainer direction before
-  deletion.
+  `World::step` plus headless capture. The follow-on
+  `feature/newton-barrier-corpus-evidence` branch adds reduced hanging-bridge,
+  nunchaku, and windmill CPU packets without claiming paper-scale parity. The
+  completion audit still records PLAN-083 as incomplete while planned manifest,
+  CPU corpus, and non-PSD GPU parity rows remain, so dev-task retirement needs
+  maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

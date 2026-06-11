@@ -81,3 +81,34 @@ def test_nunchaku_demo_steps_rigid_ipc_world() -> None:
     final = np.asarray(swinging.transform, dtype=float).reshape(4, 4)
     assert np.all(np.isfinite(final))
     assert not np.allclose(final[:3, :3], initial[:3, :3])
+
+
+def test_windmill_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(scene for scene in PLAN083_SCENES if scene.id == "plan083_windmill")
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    blade = setup.info["blade"]
+    striker = setup.info["striker"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert sx_world.num_rigid_body_joints == 1
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-windmill-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_blade = np.asarray(blade.transform, dtype=float).reshape(4, 4).copy()
+    initial_striker = np.asarray(striker.translation, dtype=float).reshape(3).copy()
+    for _ in range(24):
+        setup.pre_step()
+
+    final_blade = np.asarray(blade.transform, dtype=float).reshape(4, 4)
+    final_striker = np.asarray(striker.translation, dtype=float).reshape(3)
+    assert np.all(np.isfinite(final_blade))
+    assert np.all(np.isfinite(final_striker))
+    assert not np.allclose(final_blade[:3, :3], initial_blade[:3, :3])
+    assert final_striker[2] < initial_striker[2]

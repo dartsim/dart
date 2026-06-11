@@ -63,6 +63,30 @@ def _nunchaku_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _windmill_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_windmill_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_windmill_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 4.0,
+        "cpu_time": 4.0,
+        "time_unit": "ms",
+        "body_count": 3,
+        "dynamic_body_count": 2,
+        "revolute_joint_count": 1,
+        "active_constraints": 4,
+        "active_friction_constraints": 2,
+        "active_articulation_constraints": 2,
+        "failed_steps": 0,
+        "final_equality_residual_norm": 1e-10,
+        "blade_tip_radius_m": 0.36,
+        "striker_height_m": 0.95,
+        "striker_blade_clearance_m": 0.01,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     module = _load_module()
 
@@ -100,6 +124,26 @@ def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku() -> None:
     assert row["revolute_joint_count"] == 1
     assert row["active_articulation_constraints"] == 2
     assert row["wall_time_ns"] == 3.0e6
+
+
+def test_plan083_cpu_scene_packet_accepts_reduced_windmill() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _windmill_packet(),
+        max_equality_residual=1e-8,
+        scene="windmill",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-20"
+    assert row["scene_id"] == "plan083_windmill"
+    assert row["paper_scale"] is False
+    assert row["body_count"] == 3
+    assert row["dynamic_body_count"] == 2
+    assert row["revolute_joint_count"] == 1
+    assert row["active_articulation_constraints"] == 2
+    assert row["wall_time_ns"] == 4.0e6
 
 
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
@@ -147,4 +191,15 @@ def test_plan083_cpu_scene_packet_rejects_nunchaku_without_hinge() -> None:
             _nunchaku_packet(revolute_joint_count=0),
             max_equality_residual=1e-8,
             scene="nunchaku_single",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_windmill_penetration() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="penetrated"):
+        module.make_packet(
+            _windmill_packet(striker_blade_clearance_m=-1e-3),
+            max_equality_residual=1e-8,
+            scene="windmill",
         )

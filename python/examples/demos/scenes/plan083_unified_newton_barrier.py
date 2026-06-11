@@ -16,6 +16,9 @@ _BRIDGE_POST_HALF_EXTENTS = np.array([0.05, 0.2, 0.08])
 _BRIDGE_TRAVELER_HALF_EXTENTS = np.array([0.07, 0.07, 0.07])
 _BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
 _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
+_WINDMILL_HUB_HALF_EXTENTS = np.array([0.05, 0.05, 0.05])
+_WINDMILL_BLADE_HALF_EXTENTS = np.array([0.045, 0.22, 0.025])
+_WINDMILL_STRIKER_HALF_EXTENTS = np.array([0.09, 0.09, 0.09])
 
 
 @dataclass(frozen=True)
@@ -327,11 +330,129 @@ def _build_nunchaku_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_windmill_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    hub = world.add_rigid_body("plan083_windmill_hub", position=(0.0, 0.0, 0.65))
+    hub.is_static = True
+    hub.set_collision_shape(dart.CollisionShape.box(_WINDMILL_HUB_HALF_EXTENTS))
+
+    blade = world.add_rigid_body(
+        "plan083_windmill_blade",
+        position=(0.0, 0.0, 0.65),
+        angular_velocity=(0.0, 1.2, 0.0),
+    )
+    blade.mass = 0.25
+    blade.is_kinematic = True
+    blade.friction = 0.6
+    blade.set_collision_shape(
+        dart.CollisionShape.box(
+            _WINDMILL_BLADE_HALF_EXTENTS,
+            _translation(0.0, 0.0, 0.18),
+        )
+    )
+
+    striker = world.add_rigid_body(
+        "plan083_windmill_falling_box",
+        position=(0.0, 0.0, 0.955),
+        linear_velocity=(0.0, 0.0, -0.25),
+    )
+    striker.mass = 0.18
+    striker.friction = 0.6
+    striker.set_collision_shape(dart.CollisionShape.box(_WINDMILL_STRIKER_HALF_EXTENTS))
+
+    world.add_rigid_body_revolute_joint(
+        "plan083_windmill_hinge",
+        hub,
+        blade,
+        axis=(0.0, 1.0, 0.0),
+    )
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_windmill_runtime")
+    bridge.add_rigid_body_visual(
+        hub,
+        dart.BoxShape(_full(_WINDMILL_HUB_HALF_EXTENTS)),
+        (0.36, 0.38, 0.42),
+        name="plan083_windmill_hub_visual",
+    )
+    bridge.add_rigid_body_visual(
+        blade,
+        dart.BoxShape(_full(_WINDMILL_BLADE_HALF_EXTENTS)),
+        (0.25, 0.62, 0.72),
+        name="plan083_windmill_blade_visual",
+        local_transform=_translation(0.0, 0.0, 0.18),
+    )
+    bridge.add_rigid_body_visual(
+        striker,
+        dart.BoxShape(_full(_WINDMILL_STRIKER_HALF_EXTENTS)),
+        (0.86, 0.42, 0.28),
+        name="plan083_windmill_striker_visual",
+    )
+    bridge.sync()
+
+    blade_tip_history: deque[float] = deque(maxlen=120)
+    striker_height_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        blade_transform = np.asarray(blade.transform, dtype=float).reshape(4, 4)
+        local_tip = np.array([0.0, 0.0, 0.36, 1.0])
+        tip = blade_transform @ local_tip
+        hub_position = np.asarray(hub.translation, dtype=float).reshape(3)
+        striker_position = np.asarray(striker.translation, dtype=float).reshape(3)
+        tip_radius = float(np.linalg.norm(tip[:3] - hub_position))
+        blade_tip_history.append(tip_radius)
+        striker_height_history.append(float(striker_position[2]))
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"revolute joints: {world.num_rigid_body_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"blade tip radius: {tip_radius:.3f} m")
+        builder.text(f"striker height: {striker_position[2]:.3f} m")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if blade_tip_history:
+            builder.separator()
+            builder.plot_lines("Blade tip radius", list(blade_tip_history))
+            builder.plot_lines("Striker height", list(striker_height_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "hub": hub,
+            "blade": blade,
+            "striker": striker,
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
     elif target.scene_id == "plan083_nunchaku":
         build = lambda target=target: _build_nunchaku_runtime(target)
+    elif target.scene_id == "plan083_windmill":
+        build = lambda target=target: _build_windmill_runtime(target)
     else:
         build = lambda target=target: _build_placeholder(target)
 
@@ -434,12 +555,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Windmill",
         row_ids=("unb-fig-20",),
         category="PLAN-083 Constraints Corpus",
-        summary="Planned windmill comparison against a Bullet/reference baseline.",
-        target="Paper Fig. 20 hinge/contact comparison scene.",
+        summary="Reduced windmill hinge/contact smoke scene running through World::step.",
+        target="Paper Fig. 20 hinge/contact comparison scene; reduced to a hinged blade and falling striker for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_windmill --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_windmill --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=windmill",
-        limitation="Waiting for Bullet/reference comparison packet approval.",
+        benchmark_command="pixi run bm-plan083-cpu-windmill-packet",
+        limitation="Reduced hinge/contact smoke and CPU packet only; Bullet/reference comparison and cube piles remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_candy",

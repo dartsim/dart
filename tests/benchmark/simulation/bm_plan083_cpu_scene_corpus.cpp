@@ -66,6 +66,9 @@ const Eigen::Vector3d kBridgeBoardHalfExtents(0.10, 0.16, 0.025);
 const Eigen::Vector3d kBridgePostHalfExtents(0.05, 0.20, 0.08);
 const Eigen::Vector3d kBridgeTravelerHalfExtents(0.07, 0.07, 0.07);
 const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
+const Eigen::Vector3d kWindmillHubHalfExtents(0.05, 0.05, 0.05);
+const Eigen::Vector3d kWindmillBladeHalfExtents(0.045, 0.22, 0.025);
+const Eigen::Vector3d kWindmillStrikerHalfExtents(0.09, 0.09, 0.09);
 
 sx::CollisionShape makeOffsetBox(
     const Eigen::Vector3d& halfExtents, const Eigen::Vector3d& localOffset)
@@ -243,6 +246,83 @@ struct NunchakuFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct WindmillFixture
+{
+  WindmillFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions hubOptions;
+    hubOptions.isStatic = true;
+    hubOptions.position = Eigen::Vector3d(0.0, 0.0, 0.65);
+    hub.emplace(world.addRigidBody("plan083_windmill_hub", hubOptions));
+    hub->setCollisionShape(
+        sx::CollisionShape::makeBox(kWindmillHubHalfExtents));
+
+    sx::RigidBodyOptions bladeOptions;
+    bladeOptions.mass = 0.25;
+    bladeOptions.position = hubOptions.position;
+    bladeOptions.angularVelocity = Eigen::Vector3d(0.0, 1.2, 0.0);
+    blade.emplace(world.addRigidBody("plan083_windmill_blade", bladeOptions));
+    blade->setFriction(0.6);
+    blade->setCollisionShape(makeOffsetBox(
+        kWindmillBladeHalfExtents, Eigen::Vector3d(0.0, 0.0, 0.18)));
+
+    sx::RigidBodyOptions strikerOptions;
+    strikerOptions.mass = 0.18;
+    strikerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.955);
+    strikerOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -0.25);
+    striker.emplace(
+        world.addRigidBody("plan083_windmill_falling_box", strikerOptions));
+    striker->setFriction(0.6);
+    striker->setCollisionShape(
+        sx::CollisionShape::makeBox(kWindmillStrikerHalfExtents));
+
+    (void)world.addRigidBodyRevoluteJoint(
+        "plan083_windmill_hinge", *hub, *blade, Eigen::Vector3d::UnitY());
+
+    snapshotBody(snapshots, *hub);
+    snapshotBody(snapshots, *blade);
+    snapshotBody(snapshots, *striker);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double bladeTipRadius() const
+  {
+    const Eigen::Vector3d localTip(0.0, 0.0, 0.36);
+    return (blade->getTransform() * localTip - hub->getTranslation()).norm();
+  }
+
+  double strikerBladeClearance() const
+  {
+    const double bladeTop
+        = (blade->getTransform() * Eigen::Vector3d(0.0, 0.0, 0.18)).z()
+          + kWindmillBladeHalfExtents.z();
+    const double strikerBottom
+        = striker->getTranslation().z() - kWindmillStrikerHalfExtents.z();
+    return strikerBottom - bladeTop;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> hub;
+  std::optional<sx::RigidBody> blade;
+  std::optional<sx::RigidBody> striker;
+  std::vector<BodySnapshot> snapshots;
+};
+
 } // namespace
 
 //==============================================================================
@@ -346,6 +426,63 @@ static void BM_Plan083CpuScene_nunchaku_single_reduced_world_step(
       = fixture.swinging->getAngularVelocity().z();
 }
 BENCHMARK(BM_Plan083CpuScene_nunchaku_single_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_windmill_reduced_world_step(
+    benchmark::State& state)
+{
+  WindmillFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 2u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.blade->getTransform().data());
+    benchmark::DoNotOptimize(fixture.striker->getTranslation().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_20"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["revolute_joint_count"]
+      = static_cast<double>(fixture.world.getRigidBodyJointCount());
+  state.counters["active_constraints"]
+      = static_cast<double>(lastStats.activeConstraints);
+  state.counters["active_friction_constraints"]
+      = static_cast<double>(lastStats.activeFrictionConstraints);
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["blade_tip_radius_m"] = fixture.bladeTipRadius();
+  state.counters["striker_height_m"] = fixture.striker->getTranslation().z();
+  state.counters["striker_blade_clearance_m"] = fixture.strikerBladeClearance();
+}
+BENCHMARK(BM_Plan083CpuScene_windmill_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

@@ -814,7 +814,11 @@ def test_plan083_cpu_corpus_placeholders_expose_status_panels() -> None:
         assert any(event.startswith("text:benchmark: ") for event in builder.events)
         assert any(event.startswith("text:limitation: ") for event in builder.events)
 
-    assert runtime_scene_ids == {"plan083_hanging_bridge", "plan083_nunchaku"}
+    assert runtime_scene_ids == {
+        "plan083_hanging_bridge",
+        "plan083_nunchaku",
+        "plan083_windmill",
+    }
 
 
 def test_plan083_hanging_bridge_exposes_runtime_status_panel() -> None:
@@ -862,6 +866,28 @@ def test_plan083_nunchaku_exposes_runtime_status_panel() -> None:
     assert "text:revolute joints: 1" in builder.events
     assert "text:benchmark: pixi run bm-plan083-cpu-nunchaku-packet" in builder.events
     assert any(event.startswith("text:swinging tip radius: ") for event in builder.events)
+
+
+def test_plan083_windmill_exposes_runtime_status_panel() -> None:
+    scene = next(
+        scene
+        for scene in plan083_unified_newton_barrier.PLAN083_SCENES
+        if scene.id == "plan083_windmill"
+    )
+    setup = scene.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == ["PLAN-083 Windmill"]
+    assert setup.info["runtime_smoke_scene"] is True
+    assert setup.info["rigid_body_solver"] == "ipc"
+
+    setup.panels[0].build(builder, object())
+
+    assert "text:status: reduced runtime smoke scene" in builder.events
+    assert "text:solver: rigid IPC World.step" in builder.events
+    assert "text:revolute joints: 1" in builder.events
+    assert "text:benchmark: pixi run bm-plan083-cpu-windmill-packet" in builder.events
+    assert any(event.startswith("text:blade tip radius: ") for event in builder.events)
 
 
 def test_ipc_deformable_scene_exposes_diagnostics_panel() -> None:

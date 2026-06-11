@@ -34,11 +34,15 @@ DEFAULT_SCENE = "hanging_bridge"
 SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
+    "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
 SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
+    ),
+    "windmill": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/windmill_benchmark.json"
     ),
 }
 SCENE_PACKET_OUTPUTS = {
@@ -46,6 +50,7 @@ SCENE_PACKET_OUTPUTS = {
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
     ),
+    "windmill": Path(".benchmark_results/plan083/cpu_scene_corpus/windmill.json"),
 }
 DEFAULT_MAX_EQUALITY_RESIDUAL = 1e-8
 
@@ -240,6 +245,14 @@ def make_packet(
             final_residual=final_residual,
             max_equality_residual=max_equality_residual,
         )
+    if scene == "windmill":
+        return _make_windmill_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
     raise Plan083CpuScenePacketError(f"unsupported scene: {scene}")
 
 
@@ -355,6 +368,76 @@ def _make_nunchaku_packet(
             "limitation_status": (
                 "Reduced single-hinge runtime smoke packet only; cone-twist "
                 "ranges, sparse N-by-N scaling, and Fig. 25 remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_windmill_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 3:
+        raise Plan083CpuScenePacketError(f"expected 3 rigid bodies, got {body_count}")
+    if dynamic_body_count != 2:
+        raise Plan083CpuScenePacketError(
+            f"expected 2 dynamic rigid bodies, got {dynamic_body_count}"
+        )
+    if revolute_joint_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 revolute joint, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 2:
+        raise Plan083CpuScenePacketError(
+            "expected revolute-joint articulation rows for the reduced windmill"
+        )
+
+    blade_tip_radius = _finite_number(row, "blade_tip_radius_m")
+    if blade_tip_radius <= 0.0:
+        raise Plan083CpuScenePacketError("windmill blade tip radius is not positive")
+
+    striker_clearance = _finite_number(row, "striker_blade_clearance_m")
+    if striker_clearance < -1e-5:
+        raise Plan083CpuScenePacketError(
+            "windmill striker penetrated the reduced blade smoke scene"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-20",
+            "scene_id": "plan083_windmill",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_constraints": int(_finite_number(row, "active_constraints")),
+            "active_friction_constraints": int(
+                _finite_number(row, "active_friction_constraints")
+            ),
+            "active_articulation_constraints": active_articulation_constraints,
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "blade_tip_radius_m": blade_tip_radius,
+            "striker_height_m": _finite_number(row, "striker_height_m"),
+            "striker_blade_clearance_m": striker_clearance,
+            "limitation_status": (
+                "Reduced hinge/contact smoke packet only; Bullet/reference "
+                "comparison, cube piles, and paper-scale timing remain planned."
             ),
         },
         "benchmarks": rows,
