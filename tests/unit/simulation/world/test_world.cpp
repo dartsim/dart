@@ -4201,6 +4201,39 @@ void expectVariationalContactDualStateBaked(
   EXPECT_EQ(dualStateCount, kCompliantVariationalContactRobotCount);
 }
 
+void expectVariationalContactConfigUsesAllocator(
+    const dart::simulation::detail::WorldRegistry& registry,
+    dart::common::MemoryAllocator& allocator)
+{
+  namespace common = dart::common;
+  namespace sx = dart::simulation;
+
+  const common::StlAllocator<std::size_t> expectedLinkAllocator{allocator};
+  const common::StlAllocator<Eigen::Vector3d> expectedPointAllocator{allocator};
+
+  std::size_t contactCount = 0;
+  for (const auto entity : registry.view<sx::comps::VariationalContact>()) {
+    const auto& contact = registry.get<sx::comps::VariationalContact>(entity);
+    EXPECT_EQ(
+        contact.pointLinkIndices.size(),
+        kCompliantVariationalContactPointsPerRobot);
+    EXPECT_GE(
+        contact.pointLinkIndices.capacity(),
+        kCompliantVariationalContactPointsPerRobot);
+    EXPECT_EQ(contact.pointLinkIndices.get_allocator(), expectedLinkAllocator);
+    EXPECT_EQ(
+        contact.pointLocalPositions.size(),
+        kCompliantVariationalContactPointsPerRobot);
+    EXPECT_GE(
+        contact.pointLocalPositions.capacity(),
+        kCompliantVariationalContactPointsPerRobot);
+    EXPECT_EQ(
+        contact.pointLocalPositions.get_allocator(), expectedPointAllocator);
+    ++contactCount;
+  }
+  EXPECT_EQ(contactCount, kCompliantVariationalContactRobotCount);
+}
+
 void expectVariationalLoopClosureScratchBaked(
     const dart::simulation::detail::WorldRegistry& registry)
 {
@@ -4249,6 +4282,19 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   sx::World world(options);
   configureVariationalContactDualStateSliderScene(world);
   auto& registry = sx::detail::registryOf(world);
+  auto& worldFreeAllocator = world.getMemoryManager().getFreeAllocator();
+  expectVariationalContactConfigUsesAllocator(registry, worldFreeAllocator);
+  for (auto entity : registry.view<sx::comps::VariationalContact>()) {
+    auto& contact = registry.get<sx::comps::VariationalContact>(entity);
+    sx::comps::VariationalContact::LinkIndexVector linkIndices;
+    linkIndices.assign(
+        contact.pointLinkIndices.begin(), contact.pointLinkIndices.end());
+    contact.pointLinkIndices = std::move(linkIndices);
+    sx::comps::VariationalContact::PointVector localPositions;
+    localPositions.assign(
+        contact.pointLocalPositions.begin(), contact.pointLocalPositions.end());
+    contact.pointLocalPositions = std::move(localPositions);
+  }
   for (auto entity : registry.view<
                      sx::comps::MultibodyStructure,
                      sx::comps::VariationalContact>()) {
@@ -4256,8 +4302,7 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   }
   auto& worldFreeList = world.getMemoryManager().getFreeListAllocator();
   const auto worldAllocationsBeforeBake = worldFreeList.getAllocationCount();
-  const common::StlAllocator<double> expectedDualAllocator{
-      world.getMemoryManager().getFreeAllocator()};
+  const common::StlAllocator<double> expectedDualAllocator{worldFreeAllocator};
 
   world.enterSimulationMode();
 
@@ -4267,6 +4312,7 @@ TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
   ASSERT_TRUE(capacities.contains(dualStorageId));
   EXPECT_GE(
       capacities.at(dualStorageId), kCompliantVariationalContactRobotCount);
+  expectVariationalContactConfigUsesAllocator(registry, worldFreeAllocator);
   expectVariationalContactDualStateBaked(registry, &expectedDualAllocator);
   EXPECT_GE(
       worldFreeList.getAllocationCount(),
@@ -4308,6 +4354,8 @@ TEST(World, VariationalContactDualStateRegistryStorageRebuildsAfterClear)
     world.enterSimulationMode();
 
     const auto& registry = sx::detail::registryOf(world);
+    expectVariationalContactConfigUsesAllocator(
+        registry, world.getMemoryManager().getFreeAllocator());
     const auto capacities = registryStorageCapacities(registry);
     const auto dualStorageId
         = entt::type_hash<sx::comps::VariationalContactDualState>::value();

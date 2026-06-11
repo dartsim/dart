@@ -104,6 +104,14 @@ allocator-aware trivial vectors without breaking the component's aggregate
 state-component contract. Focused world reservation/rebuild tests and
 variational contact save/load/contact tests pass.
 
+The current continuation extends the same allocator ownership to the
+`VariationalContact` property component: point-link-index and local-position
+vectors now use `StlAllocator`, public ground-contact setup constructs them
+with the World free allocator, and the variational World stage rebinds
+loaded/pre-existing configs before baking solver scratch. The existing
+contact-heavy variational gate now checks both config vectors and dual vectors
+use the World allocator after bake.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry

@@ -52,6 +52,37 @@ namespace dart::simulation {
 
 namespace {
 
+comps::VariationalContact makeVariationalContact(
+    common::MemoryAllocator& allocator)
+{
+  comps::VariationalContact contact;
+  contact.pointLinkIndices = comps::VariationalContact::LinkIndexVector{
+      common::StlAllocator<std::size_t>{allocator}};
+  contact.pointLocalPositions = comps::VariationalContact::PointVector{
+      common::StlAllocator<Eigen::Vector3d>{allocator}};
+  return contact;
+}
+
+void ensureVariationalContactAllocator(
+    comps::VariationalContact& contact, common::MemoryAllocator& allocator)
+{
+  const common::StlAllocator<std::size_t> targetLinkAllocator{allocator};
+  if (contact.pointLinkIndices.get_allocator() != targetLinkAllocator) {
+    comps::VariationalContact::LinkIndexVector linkIndices{targetLinkAllocator};
+    linkIndices.assign(
+        contact.pointLinkIndices.begin(), contact.pointLinkIndices.end());
+    contact.pointLinkIndices = std::move(linkIndices);
+  }
+
+  const common::StlAllocator<Eigen::Vector3d> targetPointAllocator{allocator};
+  if (contact.pointLocalPositions.get_allocator() != targetPointAllocator) {
+    comps::VariationalContact::PointVector localPositions{targetPointAllocator};
+    localPositions.assign(
+        contact.pointLocalPositions.begin(), contact.pointLocalPositions.end());
+    contact.pointLocalPositions = std::move(localPositions);
+  }
+}
+
 template <typename Component, typename Registry>
 bool hasOtherEntityWithName(
     const Registry& registry,
@@ -698,7 +729,8 @@ void Multibody::setGroundContact(
 {
   auto& registry = dart::simulation::detail::registryOf(*m_world);
   auto& contact = registry.emplace_or_replace<comps::VariationalContact>(
-      detail::toRegistryEntity(m_entity));
+      detail::toRegistryEntity(m_entity),
+      makeVariationalContact(m_world->getMemoryManager().getFreeAllocator()));
   contact.planeNormal = planeNormal;
   contact.planePoint = planePoint;
   contact.stiffness = stiffness;
@@ -741,6 +773,8 @@ void Multibody::addGroundContactPoint(
       it == structure.links.end(),
       InvalidArgumentException,
       "addGroundContactPoint: link is not part of this multibody");
+  ensureVariationalContactAllocator(
+      *contact, m_world->getMemoryManager().getFreeAllocator());
   contact->pointLinkIndices.push_back(
       static_cast<std::size_t>(it - structure.links.begin()));
   contact->pointLocalPositions.push_back(localPoint);

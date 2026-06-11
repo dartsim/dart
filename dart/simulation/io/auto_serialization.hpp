@@ -59,12 +59,30 @@ void autoDeserialize(std::istream& in, T& value);
 namespace detail {
 
 template <typename T>
-inline constexpr bool IsVector3dList
-    = std::same_as<T, std::vector<Eigen::Vector3d>>;
+struct IsVector3dListHelper : std::false_type
+{
+};
+template <typename Allocator>
+struct IsVector3dListHelper<std::vector<Eigen::Vector3d, Allocator>>
+  : std::true_type
+{
+};
 
 template <typename T>
-inline constexpr bool IsVector3iList
-    = std::same_as<T, std::vector<Eigen::Vector3i>>;
+inline constexpr bool IsVector3dList = IsVector3dListHelper<T>::value;
+
+template <typename T>
+struct IsVector3iListHelper : std::false_type
+{
+};
+template <typename Allocator>
+struct IsVector3iListHelper<std::vector<Eigen::Vector3i, Allocator>>
+  : std::true_type
+{
+};
+
+template <typename T>
+inline constexpr bool IsVector3iList = IsVector3iListHelper<T>::value;
 
 template <typename T>
 struct IsEntityVectorHelper : std::false_type
@@ -97,8 +115,9 @@ inline void readVector3i(std::istream& in, Eigen::Vector3i& vec)
   vec = Eigen::Vector3i(x, y, z);
 }
 
+template <typename Allocator>
 inline void writeVector3dList(
-    std::ostream& out, const std::vector<Eigen::Vector3d>& values)
+    std::ostream& out, const std::vector<Eigen::Vector3d, Allocator>& values)
 {
   const std::size_t count = values.size();
   writePOD(out, count);
@@ -107,8 +126,9 @@ inline void writeVector3dList(
   }
 }
 
+template <typename Allocator>
 inline void readVector3dList(
-    std::istream& in, std::vector<Eigen::Vector3d>& values)
+    std::istream& in, std::vector<Eigen::Vector3d, Allocator>& values)
 {
   std::size_t count = 0;
   readPOD(in, count);
@@ -118,8 +138,9 @@ inline void readVector3dList(
   }
 }
 
+template <typename Allocator>
 inline void writeVector3iList(
-    std::ostream& out, const std::vector<Eigen::Vector3i>& values)
+    std::ostream& out, const std::vector<Eigen::Vector3i, Allocator>& values)
 {
   const std::size_t count = values.size();
   writePOD(out, count);
@@ -128,8 +149,9 @@ inline void writeVector3iList(
   }
 }
 
+template <typename Allocator>
 inline void readVector3iList(
-    std::istream& in, std::vector<Eigen::Vector3i>& values)
+    std::istream& in, std::vector<Eigen::Vector3i, Allocator>& values)
 {
   std::size_t count = 0;
   readPOD(in, count);

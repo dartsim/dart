@@ -737,6 +737,11 @@ Follow-up progress after PR #2956:
   dual-state components are rebound to that allocator before sizing, and the
   existing binary state serialization path accepts allocator-aware trivial
   vectors.
+- The sibling `VariationalContact` persistent contact-point configuration now
+  uses allocator-aware point-index and local-position vectors. Public
+  `Multibody::setGroundContact()`/`addGroundContactPoint()` construction uses
+  the World free allocator, and the variational World stage rebinds
+  loaded/pre-existing contact configs before building baked contact scratch.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`
@@ -923,8 +928,8 @@ Remaining Phase 4/5 follow-up items for the next PR:
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.
 - Continue production `WorldRegistry` bake/build sizing guidance beyond the
-  current compliant-contact allocator-aware dual-state clear/rebuild gate,
-  especially for differently shaped solver-owned ECS storages and rebuild
+  current compliant-contact allocator-aware config/dual-state clear/rebuild
+  gate, especially for differently shaped solver-owned ECS storages and rebuild
   boundaries.
 - Re-run allocator comparative evidence when allocator, STL, or frame policy
   changes; keep the current foonathan/memory and standard-baseline evidence

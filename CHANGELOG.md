@@ -654,6 +654,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     free allocator when baked or first created by the World stage; pre-existing
     dual-state components are rebound before sizing, and binary state
     serialization handles allocator-aware trivial vectors.
+    The sibling variational ground-contact config now stores contact-point link
+    indices and local positions in World allocator-backed vectors and rebinds
+    loaded/default-constructed configs before baked contact scratch is built.
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.

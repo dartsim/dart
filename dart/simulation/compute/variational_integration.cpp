@@ -70,6 +70,28 @@ void ensureVariationalContactDualStateAllocator(
   dualState.duals = std::move(duals);
 }
 
+void ensureVariationalContactAllocator(
+    comps::VariationalContact& contact,
+    dart::common::MemoryAllocator& allocator)
+{
+  const dart::common::StlAllocator<std::size_t> targetLinkAllocator{allocator};
+  if (contact.pointLinkIndices.get_allocator() != targetLinkAllocator) {
+    comps::VariationalContact::LinkIndexVector linkIndices{targetLinkAllocator};
+    linkIndices.assign(
+        contact.pointLinkIndices.begin(), contact.pointLinkIndices.end());
+    contact.pointLinkIndices = std::move(linkIndices);
+  }
+
+  const dart::common::StlAllocator<Eigen::Vector3d> targetPointAllocator{
+      allocator};
+  if (contact.pointLocalPositions.get_allocator() != targetPointAllocator) {
+    comps::VariationalContact::PointVector localPositions{targetPointAllocator};
+    localPositions.assign(
+        contact.pointLocalPositions.begin(), contact.pointLocalPositions.end());
+    contact.pointLocalPositions = std::move(localPositions);
+  }
+}
+
 // The shared 6D spatial-algebra primitives (skew/adjoint/spatialInertia) and
 // the Vector6/Matrix6/Subspace aliases live in
 // detail/multibody_spatial_algebra.hpp, shared with
@@ -3746,11 +3768,11 @@ void reserveMultibodyVariationalRegistryStorage(
       reserveVariationalAndersonScratch(tree, 5, scratch.anderson);
     }
 
-    const auto* contactConfig
-        = registry.try_get<comps::VariationalContact>(entity);
+    auto* contactConfig = registry.try_get<comps::VariationalContact>(entity);
     if (contactConfig == nullptr || contactConfig->pointLinkIndices.empty()) {
       continue;
     }
+    ensureVariationalContactAllocator(*contactConfig, allocator);
 
     configureGroundContactScratch(*contactConfig, scratch);
     if (scratch.groundContact.stiffness <= 0.0
@@ -3863,13 +3885,14 @@ void MultibodyVariationalIntegrationStage::execute(
     // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
     // duals persist in VariationalContactDualState and advance on an outer-loop
     // cadence after the step. Absent => contact-free.
-    const auto* contactConfig
-        = registry.try_get<comps::VariationalContact>(entity);
+    auto* contactConfig = registry.try_get<comps::VariationalContact>(entity);
     VariationalGroundContactSolver* groundContactSolver = nullptr;
     VariationalGroundContactSolver* alSolver = nullptr;
     std::size_t dualUpdateCadence = 0;
     VariationalContactHook contactHook;
     if (contactConfig != nullptr) {
+      ensureVariationalContactAllocator(
+          *contactConfig, world.getMemoryManager().getFreeAllocator());
       configureGroundContactScratch(*contactConfig, scratch);
       const auto& contact = scratch.groundContact;
       if (contact.stiffness > 0.0 && !contact.points.empty()) {
