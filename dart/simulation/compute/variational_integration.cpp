@@ -3976,6 +3976,7 @@ void reserveMultibodyVariationalRegistryStorage(
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     scratch.tree.setAllocator(allocator);
+    scratch.inverseDynamics.setAllocator(allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4122,6 +4123,7 @@ void MultibodyVariationalIntegrationStage::execute(
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     scratch.tree.setAllocator(worldFreeAllocator);
+    scratch.inverseDynamics.setAllocator(worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {

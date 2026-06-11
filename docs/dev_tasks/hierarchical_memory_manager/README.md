@@ -696,7 +696,9 @@ Follow-up progress after PR #2956:
   map nodes stay alive rather than being cleared/reallocated in the step loop.
   The follow-up branch now also constructs the baked tree scratch pimpl, link
   vector, per-link child lists, and link-index map from the World free
-  allocator.
+  allocator. The same follow-up line routes the nested inverse-dynamics scratch
+  pimpl and dynamics-tree vector payloads through that allocator for baked
+  variational stages.
   Velocity-actuator projection now follows the same baked projection path:
   bake-time sizing counts actuator target rows, the projection loop writes those
   rows directly into the reusable residual/Jacobian, and per-joint projection
@@ -723,8 +725,9 @@ Follow-up progress after PR #2956:
   capacity, and rebuild with the same storage shape.
 - The existing variational loop-closure chain now has a matching clear/rebuild
   gate that asserts the baked `MultibodyVariationalScratch` tree, step,
-  linear-solve, projection, and Anderson storage dimensions, then rebuilds the
-  same shape with identical registry capacities under the World allocator root.
+  inverse-dynamics, linear-solve, projection, and Anderson storage dimensions,
+  then rebuilds the same shape with identical registry capacities under the
+  World allocator root.
 - Existing boxed-LCP multibody contact scenes now have clear/rebuild coverage
   for semi-implicit multibody contact storage using stacked and multi-island
   fallback shapes. The gate bakes active contact rows, verifies same-shape

@@ -56,6 +56,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <new>
 #include <span>
 #include <utility>
 #include <vector>
@@ -2256,11 +2257,23 @@ struct MultibodyLinkContactAssemblyScratch::Impl
 //==============================================================================
 struct MultibodyInverseDynamicsScratch::Impl
 {
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
   MultibodyDynamicsScratch scratch;
 };
 
 //==============================================================================
-MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch() = default;
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch()
+  : MultibodyInverseDynamicsScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
 
 //==============================================================================
 MultibodyInverseDynamicsScratch::~MultibodyInverseDynamicsScratch() = default;
@@ -2274,13 +2287,54 @@ MultibodyInverseDynamicsScratch& MultibodyInverseDynamicsScratch::operator=(
     MultibodyInverseDynamicsScratch&&) noexcept = default;
 
 //==============================================================================
+void MultibodyInverseDynamicsScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyInverseDynamicsScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyInverseDynamicsScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
+
+//==============================================================================
 void reserveMultibodyInverseDynamicsScratch(
     MultibodyInverseDynamicsScratch& scratch,
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure)
 {
   if (scratch.m_impl == nullptr) {
-    scratch.m_impl = std::make_unique<MultibodyInverseDynamicsScratch::Impl>();
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
   }
 
   auto& storage = scratch.m_impl->scratch;
@@ -2310,7 +2364,15 @@ void computeMultibodyInverseDynamicsInto(
     Eigen::VectorXd& result)
 {
   if (scratch.m_impl == nullptr) {
-    scratch.m_impl = std::make_unique<MultibodyInverseDynamicsScratch::Impl>();
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
   }
 
   if (structure.links.empty()) {

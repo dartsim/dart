@@ -211,6 +211,14 @@ before tree construction; one-shot helpers keep the default allocator fallback.
 The existing loop-closure clear/rebuild gate now asserts the baked tree scratch
 uses the World allocator.
 
+The next continuation applies the same allocator contract to the nested
+`MultibodyInverseDynamicsScratch` inside `MultibodyVariationalScratch`. The
+scratch now accepts a `MemoryAllocator`, allocates its pimpl through that
+allocator, and constructs the private `MultibodyDynamicsScratch` vector payloads
+from the same root. The variational bake/stage path sets it to the World free
+allocator before reservation, and the existing loop-closure clear/rebuild gate
+asserts the allocator alongside the tree scratch without adding a new scene.
+
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and
 complementary contact-family production gates for direct-sparse self-contact,

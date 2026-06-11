@@ -4303,6 +4303,7 @@ void expectVariationalLoopClosureScratchBaked(
         = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
     if (expectedTreeAllocator != nullptr) {
       EXPECT_EQ(&scratch.tree.getAllocator(), expectedTreeAllocator);
+      EXPECT_EQ(&scratch.inverseDynamics.getAllocator(), expectedTreeAllocator);
     }
     EXPECT_EQ(scratch.tree.linkCount(), kLinkCount);
     EXPECT_EQ(scratch.tree.dofCount(), kDofCount);

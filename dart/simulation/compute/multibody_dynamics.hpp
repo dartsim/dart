@@ -52,6 +52,7 @@
 #include <vector>
 
 namespace dart::common {
+class MemoryAllocator;
 class MemoryManager;
 } // namespace dart::common
 
@@ -117,6 +118,7 @@ class DART_SIMULATION_API MultibodyInverseDynamicsScratch final
 {
 public:
   MultibodyInverseDynamicsScratch();
+  explicit MultibodyInverseDynamicsScratch(common::MemoryAllocator& allocator);
   ~MultibodyInverseDynamicsScratch();
 
   MultibodyInverseDynamicsScratch(const MultibodyInverseDynamicsScratch&)
@@ -127,10 +129,20 @@ public:
   MultibodyInverseDynamicsScratch& operator=(
       MultibodyInverseDynamicsScratch&&) noexcept;
 
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
 private:
   struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
 
-  std::unique_ptr<Impl> m_impl;
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
 
   friend DART_SIMULATION_API void reserveMultibodyInverseDynamicsScratch(
       MultibodyInverseDynamicsScratch& scratch,
