@@ -497,6 +497,16 @@ Evidence recorded for this slice:
   `pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 24 --width 960 --height 540 --show-ui`
   wrote a nonblank 960x540 screenshot with 2751 unique RGB values, one dropped
   UI warmup frame, docked workspace detection, and 23 PNG frames.
+- Latest collision-query capture-metrics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds -q`
+  reported `1 passed`. The row now exposes `SceneSetup.info["capture_metrics"]`
+  with the same baseline, option-filtered, pair-ignored, active counts,
+  ignored-pair state, and lane statuses that the panel and replay snapshots use.
+  A short docked capture
+  `pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 8 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_collision_query_metrics`
+  wrote eight scene-metrics events, mirrored the
+  `rigid_rigid/rigid_link/same_links/cross_links` lane set into the manifest,
+  and produced nonblank docked screenshot evidence with 2749 unique RGB values.
 - Latest workflow-route navigation follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_skips_non_numbered_world_rows python/tests/unit/gui/test_gui_scene.py::test_gui_stub_surface_is_backend_hidden python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `9 passed`. It exposes `PanelContext.request_scene_switch(scene_id)`

@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -444,6 +444,35 @@ class _RigidCollisionQueryOptions:
             "last_metrics": self._serialize_metrics(self._last_metrics),
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        metrics = self._serialize_metrics(self._last_metrics)
+        return {
+            "active_contact_count": int(metrics["active_contact_count"]),
+            "baseline_contact_count": int(metrics["baseline_contact_count"]),
+            "filtered_contact_count": int(metrics["filtered_contact_count"]),
+            "ignored_contact_count": int(metrics["ignored_contact_count"]),
+            "ignored_pair_count": int(metrics["ignored_pair_count"]),
+            "ignored_pair_key": str(metrics["ignored_pair_key"]),
+            "include_link_pairs": bool(self.include_link_pairs),
+            "include_rigid_body_link_pairs": bool(
+                self.include_rigid_body_link_pairs
+            ),
+            "include_rigid_body_pairs": bool(self.include_rigid_body_pairs),
+            "include_same_multibody_link_pairs": bool(
+                self.include_same_multibody_link_pairs
+            ),
+            "lanes": metrics["lanes"],
+            "option_contact_count": int(metrics["option_contact_count"]),
+            "option_filtered_contact_count": int(
+                metrics["option_filtered_contact_count"]
+            ),
+            "row": "rigid_collision_query_options",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.include_rigid_body_pairs = bool(
@@ -678,6 +707,7 @@ def build() -> SceneSetup:
             "replay_capture_state": query.capture_replay_state,
             "replay_restore_state": query.restore_replay_state,
             "replay_sync": query._sync,
+            CAPTURE_METRICS_INFO_KEY: query.capture_metrics,
         },
     )
 

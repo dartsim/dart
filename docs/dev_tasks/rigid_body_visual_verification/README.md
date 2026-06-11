@@ -66,7 +66,7 @@
 - [x] Collision ignored-pair follow-up: the same query-options row now
       separates unignored baseline contacts, option-filtered contacts,
       pair-ignored contacts, and final active contacts, with replayed
-      ignored-pair controls and a docked nonblank capture.
+      ignored-pair controls, capture metrics, and a docked nonblank capture.
 - [x] Collision-casts slice: `rigid_collision_casts` exposes public
       `CollisionGroup.raycast_result()` nearest/all-hit behavior and
       `CollisionGroup.sphere_cast_result()` /

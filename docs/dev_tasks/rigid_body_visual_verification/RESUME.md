@@ -78,8 +78,12 @@ lanes, and records replay snapshots for the query controls.
 The current collision ignored-pair follow-up extends that same row instead of
 adding a new verifier row. It separates body-kind option filtering from
 persistent pair ignores, records the ignored-pair selector in replay snapshots,
-and the docked capture wrote a nonblank 960x540 screenshot, 23 PNG frames, one
-dropped UI warmup frame, and docked workspace evidence.
+exposes the same query counts and lane statuses through
+`SceneSetup.info["capture_metrics"]`, and the docked capture wrote a nonblank
+960x540 screenshot, 23 PNG frames, one dropped UI warmup frame, and docked
+workspace evidence. A later 8-frame capture wrote eight scene-metrics events
+for the same row and mirrored the rigid/link/cross-link lane set into the
+manifest.
 
 The collision-casts slice, `rigid_collision_casts`, is implemented and visually
 captured. It uses public `CollisionGroup.raycast_result()` and

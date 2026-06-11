@@ -2099,6 +2099,26 @@ def test_rigid_collision_query_options_filter_body_kinds() -> None:
     assert controller.world.num_ignored_collision_pairs == 1
     assert controller._ignored_count_history[-1] == pytest.approx(1.0)
 
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_collision_query_options"
+    assert capture_metrics["ignored_pair_key"] == "rigid_link"
+    assert capture_metrics["ignored_pair_count"] == 1
+    assert capture_metrics["ignored_contact_count"] == 1
+    assert capture_metrics["active_contact_count"] == 3
+    assert capture_metrics["option_contact_count"] == 4
+    assert capture_metrics["baseline_contact_count"] == 4
+    assert set(capture_metrics["lanes"]) == {
+        "rigid_rigid",
+        "rigid_link",
+        "same_links",
+        "cross_links",
+    }
+    capture_lane = capture_metrics["lanes"]["rigid_link"]
+    assert capture_lane["pair_ignored"] is True
+    assert capture_lane["option_filtered"] is False
+    assert capture_lane["option_count"] == 1
+    assert capture_lane["active_count"] == 0
+
 
 def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:
     import numpy as np
