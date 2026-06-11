@@ -699,10 +699,12 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_lcp_jacobi_batch_cuda \
   --target test_contact_candidate_filter_cuda \
   --target test_ccd_line_search_cuda \
+  --target test_barrier_friction_kernel_cuda \
   --target bm_cuda_rigid_body_state_batch \
   --target bm_plan083_gpu_psd_projection \
   --target bm_plan083_gpu_contact_candidates \
   --target bm_plan083_gpu_ccd_line_search \
+  --target bm_plan083_gpu_barrier_friction \
   --target bm_vbd_cuda
 """,
 ], depends-on = [
@@ -1168,6 +1170,9 @@ python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_contact_c
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_ccd_line_search" \
   --benchmark_filter='BM_Plan083CcdLineSearch(Cpu|Cuda)/4096(/real_time)?$' \
   --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_barrier_friction" \
+  --benchmark_filter='BM_Plan083BarrierFrictionLocal(Cpu|Cuda)/4096(/real_time)?$' \
+  --benchmark_min_time=0.001s
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
   --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
   --benchmark_min_time=0.001s
@@ -1548,6 +1553,11 @@ bm-plan083-gpu-contact-candidates-packet = { cmd = "python scripts/write_plan083
   ] },
 ] }
 bm-plan083-gpu-ccd-line-search-packet = { cmd = "python scripts/write_plan083_gpu_ccd_line_search_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-gpu-barrier-friction-packet = { cmd = "python scripts/write_plan083_gpu_barrier_friction_packet.py", depends-on = [
   { task = "build-cuda", args = [
     "Release",
   ] },

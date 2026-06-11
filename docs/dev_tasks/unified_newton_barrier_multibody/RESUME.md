@@ -319,21 +319,22 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-ccd-line-search-packet` - continues private GPU parity
-evidence after the contact-candidate packet branch. This branch adds a private
-endpoint-linear point-triangle CCD/line-search packet, CUDA unit test, benchmark
-smoke, and packet writer for static-triangle fixtures only. Keep the packet row
-`in-progress`: edge-edge CCD, rigid curved trajectories, runtime candidate
-sets, and scene-level line-search feasibility remain future evidence.
+`simx/plan083-gpu-barrier-friction-packet` - continues private GPU parity
+evidence after the CCD/line-search packet branch. This branch adds a private
+scalar barrier/friction local-kernel packet, CUDA unit test, benchmark smoke,
+and packet writer for clamped-log scalar barrier derivatives plus smoothed
+friction norm/work only. Keep the packet row `in-progress`: primitive distance
+gradients, tangent-basis construction, Hessian assembly, PSD coupling, runtime
+contact rows, and speedup remain future evidence.
 
 ## Immediate Next Step
 
-Finish and review `simx/plan083-gpu-ccd-line-search-packet`, then continue the
-remaining private GPU rows in roadmap order: barrier/friction local kernels,
-assembly/linear solve, and scene-level parity. Leave the dev-task folder active
-because PLAN-083 acceptance criteria are still unmet; if the task later moves
-out of this folder, get maintainer direction before deleting it and keep the
-remaining planned CPU/GPU/scene rows in durable sidecars.
+Finish and review `simx/plan083-gpu-barrier-friction-packet`, then continue the
+remaining private GPU rows in roadmap order: assembly/linear solve and
+scene-level parity. Leave the dev-task folder active because PLAN-083
+acceptance criteria are still unmet; if the task later moves out of this
+folder, get maintainer direction before deleting it and keep the remaining
+planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

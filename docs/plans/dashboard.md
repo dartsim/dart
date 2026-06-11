@@ -281,8 +281,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  private GPU CCD/line-search follow-up on
-  `simx/plan083-gpu-ccd-line-search-packet`. PR #2960 landed
+  private GPU barrier/friction follow-up on
+  `simx/plan083-gpu-barrier-friction-packet`. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -299,10 +299,13 @@ its own line so status updates remain git-history friendly.
   or paper-scale parity. PR #2978 adds a private point-triangle
   contact-stencil filter packet with exact CPU/GPU parity for preassembled
   stencils, while keeping broad-phase, edge-edge, runtime scene filtering, and
-  speedup as future evidence. The current follow-up adds endpoint-linear
+  speedup as future evidence. PR #2979 adds endpoint-linear
   point-triangle CCD/line-search parity for static-triangle fixtures, while
   keeping edge-edge CCD, rigid curved trajectories, runtime candidate sets, and
-  scene-level line-search feasibility as future evidence. The completion audit
+  scene-level line-search feasibility as future evidence. The current follow-up
+  adds scalar barrier/friction local-kernel parity, while keeping primitive
+  gradients, tangent-basis construction, Hessian assembly, PSD coupling,
+  runtime contact rows, and speedup as future evidence. The completion audit
   still records PLAN-083 as incomplete while planned manifest and non-PSD GPU
   parity rows remain, so dev-task retirement needs maintainer direction before
   deletion.

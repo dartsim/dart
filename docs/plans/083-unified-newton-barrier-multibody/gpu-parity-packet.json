@@ -16,9 +16,9 @@
   "summary": {
     "row_count": 6,
     "status_counts": {
-      "in-progress": 2,
+      "in-progress": 3,
       "measured": 1,
-      "planned": 3
+      "planned": 2
     }
   },
   "rows": [
@@ -91,9 +91,9 @@
       "row_id": "barrier-friction-local-kernels",
       "roadmap_item": "barrier/friction local kernels",
       "owner": "PLAN-083 + PLAN-081 + PLAN-082",
-      "status": "planned",
+      "status": "in-progress",
       "cpu_evidence_command": "pixi run bm --target bm_ipc_barrier_kernel --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/barrier_cpu.json --benchmark_out_format=json && pixi run bm --target bm_ipc_tangent_stencil --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/friction_cpu.json --benchmark_out_format=json",
-      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU barrier/friction local kernel has landed",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-barrier-friction-packet",
       "parity_evidence_artifact": ".benchmark_results/plan083/gpu/barrier_friction_parity.json",
       "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/barrier_friction_benchmark.json",
       "same_scene_policy": "Use identical primitive distances, tangent bases, lagged normal forces, and friction displacements on CPU and GPU.",
@@ -101,8 +101,27 @@
       "timing_policy": "Report setup, transfer, barrier kernel, friction kernel, PSD/local projection timing where used, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over DART CPU local-kernel timing before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Waiting for a first GPU IPC consumer to make the existing detail/newton_barrier scalar cores host/device-portable in place.",
-      "notes_or_gap": "No mirrored device Newton-barrier implementation is created until that real GPU consumer exists."
+      "limitation_status": "Private scalar barrier/friction local-kernel parity packet exists, but it covers clamped-log scalar barrier derivatives plus smoothed friction norm/work only. Primitive distance gradients, tangent-basis construction, Hessian assembly, PSD coupling, runtime contact rows, and the speedup gate remain future evidence.",
+      "notes_or_gap": "The packet measured max_result_abs_error=5.551115123125783e-17 for 65536 scalar samples on 2026-06-11, but speedup was 0.3880583801255994x against the CPU local-kernel row, so this remains in-progress rather than measured.",
+      "same_scene_cpu_gpu": true,
+      "sample_count": 65536,
+      "active_barrier_count": 52428,
+      "active_friction_count": 65536,
+      "dynamic_friction_count": 21846,
+      "max_barrier_value": 5.691895854036562,
+      "max_friction_work": 1.02,
+      "max_result_abs_error": 5.551115123125783e-17,
+      "result_abs_error_tolerance": 1e-10,
+      "speedup": 0.3880583801255994,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 974875.0,
+        "host_to_device": 441273.0,
+        "kernel": 403104.0,
+        "solve": 0.0,
+        "device_to_host": 1101109.0,
+        "readback": 0.0
+      }
     },
     {
       "row_id": "psd-projection",
