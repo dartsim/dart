@@ -790,6 +790,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "ill_conditioned_standard": 24,
         "near_singular_standard": 24,
         "boxed_active_bounds": 24,
+        "mass_ratio_boxed": 24,
         "friction_index_contact": 24,
         "moderate_scale_standard": 24,
     }
@@ -798,6 +799,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "ill_conditioned_standard": 24,
         "near_singular_standard": 24,
         "boxed_active_bounds": 16,
+        "mass_ratio_boxed": 16,
         "friction_index_contact": 16,
         "moderate_scale_standard": 24,
     }
@@ -806,8 +808,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "ill_conditioned_standard": "Standard",
         "near_singular_standard": "Standard",
         "boxed_active_bounds": "Boxed",
+        "mass_ratio_boxed": "Boxed",
         "friction_index_contact": "FrictionIndex",
         "moderate_scale_standard": "Standard",
+    }
+    expected_case_tolerances = {
+        "mass_ratio_boxed": 5e-4,
     }
     problem_rows = info["standalone_problem_rows"]
     problem_summary_rows = info["standalone_problem_summary_rows"]
@@ -846,7 +852,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["delegated_contract_ok_count"] == (
             expected_count - expected_native_problem_counts[case_name]
         )
-        assert summary_row["max_solution_error"] <= 2e-4
+        assert summary_row["max_solution_error"] <= expected_case_tolerances.get(
+            case_name, 2e-4
+        )
         assert summary_row["fastest_solver"] in solver_by_name
         assert summary_row["fastest_elapsed_us"] >= 0.0
         assert summary_row["fastest_native_solver"] in solver_by_name
@@ -854,7 +862,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
         expected_native_case_count = (
-            4 + int(manifest_row["boxed"]) + int(manifest_row["findex"])
+            4 + 2 * int(manifest_row["boxed"]) + int(manifest_row["findex"])
         )
         assert profile_row["problem_count"] == len(expected_problem_counts)
         assert profile_row["native_case_count"] == expected_native_case_count
@@ -868,7 +876,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
             profile_row["delegated_contract_ok_count"]
             == len(expected_problem_counts) - expected_native_case_count
         )
-        assert profile_row["max_solution_error"] <= 2e-4
+        assert profile_row["max_solution_error"] <= max(
+            expected_case_tolerances.values(), default=2e-4
+        )
         assert profile_row["total_elapsed_us"] >= 0.0
         assert profile_row["slowest_case"] in expected_problem_counts
     assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (

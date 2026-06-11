@@ -915,6 +915,22 @@ def _make_boxed_active_bounds_case() -> tuple[dart.LcpProblem, np.ndarray]:
     return dart.LcpProblem(A, A @ expected - w, lo, hi), expected
 
 
+def _make_mass_ratio_boxed_case() -> tuple[dart.LcpProblem, np.ndarray]:
+    scales = np.array([0.02, 0.05, 0.30, 1.0, 5.0, 25.0, 80.0, 160.0])
+    A = np.diag(scales).astype(float)
+    for index in range(scales.size - 1):
+        coupling = 0.01 * math.sqrt(scales[index] * scales[index + 1])
+        A[index, index + 1] = coupling
+        A[index + 1, index] = coupling
+
+    lo = np.array([-0.40, -0.25, 0.00, -0.10, 0.10, 0.20, 0.50, 0.80])
+    hi = np.array([0.20, 0.30, 0.60, 0.20, 0.80, 0.90, 1.10, 1.40])
+    expected = np.array([-0.40, -0.05, 0.25, 0.20, 0.45, 0.90, 0.75, 1.40])
+    w = np.array([0.03, 0.0, 0.0, -0.04, 0.0, -0.20, 0.0, -0.50])
+
+    return dart.LcpProblem(A, A @ expected - w, lo, hi), expected
+
+
 def _make_friction_index_contact_case() -> tuple[dart.LcpProblem, np.ndarray]:
     A = np.array(
         [
@@ -979,6 +995,15 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         challenge="mixed lower, interior, and upper active sets",
         make_problem=_make_boxed_active_bounds_case,
         tolerance=2e-4,
+    ),
+    _StandaloneProblemCase(
+        name="mass_ratio_boxed",
+        label="Mass-ratio boxed",
+        surface="boxed",
+        support_key="boxed",
+        challenge="large mass-ratio conditioning with active bounds",
+        make_problem=_make_mass_ratio_boxed_case,
+        tolerance=5e-4,
     ),
     _StandaloneProblemCase(
         name="friction_index_contact",
