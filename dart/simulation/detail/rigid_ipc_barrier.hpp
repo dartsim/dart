@@ -36,6 +36,9 @@
 #include <dart/simulation/detail/rigid_ipc_ccd.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
@@ -377,11 +380,17 @@ struct RigidIpcProjectedNewtonSolveResult
 
 struct RigidIpcProjectedNewtonSolveScratch
 {
-  std::vector<RigidIpcBarrierSurface> laggedSurfaces;
-  std::vector<RigidIpcBarrierSurface> lineSearchStartSurfaces;
-  std::vector<RigidIpcBarrierSurface> candidateSurfaces;
-  std::vector<RigidIpcBarrierSurface> acceptedSurfaces;
-  std::vector<RigidIpcBarrierSurface> bestDecreasingSurfaces;
+  using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
+
+  RigidIpcProjectedNewtonSolveScratch() = default;
+  explicit RigidIpcProjectedNewtonSolveScratch(
+      dart::common::MemoryAllocator& allocator);
+
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> laggedSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> lineSearchStartSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> candidateSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> acceptedSurfaces;
+  std::vector<RigidIpcBarrierSurface, SurfaceAllocator> bestDecreasingSurfaces;
 };
 
 /// Evaluates the IPC point-triangle barrier after rigid pose interpolation.

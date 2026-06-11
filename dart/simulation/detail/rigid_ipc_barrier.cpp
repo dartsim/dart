@@ -989,7 +989,7 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 }
 
 void applyRigidIpcNewtonDelta(
-    std::vector<RigidIpcBarrierSurface>& surfaces,
+    auto& surfaces,
     const RigidIpcBarrierAssembly& assembly,
     const Eigen::VectorXd& delta)
 {
@@ -2279,6 +2279,16 @@ double minActiveSquaredDistance(const RigidIpcBarrierAssembly& assembly)
 
 } // namespace
 
+RigidIpcProjectedNewtonSolveScratch::RigidIpcProjectedNewtonSolveScratch(
+    dart::common::MemoryAllocator& allocator)
+  : laggedSurfaces(SurfaceAllocator{allocator}),
+    lineSearchStartSurfaces(SurfaceAllocator{allocator}),
+    candidateSurfaces(SurfaceAllocator{allocator}),
+    acceptedSurfaces(SurfaceAllocator{allocator}),
+    bestDecreasingSurfaces(SurfaceAllocator{allocator})
+{
+}
+
 RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options)
@@ -2304,15 +2314,11 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   result.stats = RigidIpcProjectedNewtonSolveStats{};
   result.surfaces.assign(surfaces.begin(), surfaces.end());
 
-  std::vector<RigidIpcBarrierSurface>& laggedSurfaces = scratch.laggedSurfaces;
-  std::vector<RigidIpcBarrierSurface>& lineSearchStartSurfaces
-      = scratch.lineSearchStartSurfaces;
-  std::vector<RigidIpcBarrierSurface>& candidateSurfaces
-      = scratch.candidateSurfaces;
-  std::vector<RigidIpcBarrierSurface>& acceptedSurfaces
-      = scratch.acceptedSurfaces;
-  std::vector<RigidIpcBarrierSurface>& bestDecreasingSurfaces
-      = scratch.bestDecreasingSurfaces;
+  auto& laggedSurfaces = scratch.laggedSurfaces;
+  auto& lineSearchStartSurfaces = scratch.lineSearchStartSurfaces;
+  auto& candidateSurfaces = scratch.candidateSurfaces;
+  auto& acceptedSurfaces = scratch.acceptedSurfaces;
+  auto& bestDecreasingSurfaces = scratch.bestDecreasingSurfaces;
   laggedSurfaces.assign(surfaces.begin(), surfaces.end());
   lineSearchStartSurfaces.reserve(surfaces.size());
   candidateSurfaces.reserve(surfaces.size());
@@ -2335,14 +2341,13 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       break;
     }
   }
-  const auto applyKinematicLag
-      = [&surfaces](std::vector<RigidIpcBarrierSurface>& lag) {
-          for (std::size_t i = 0; i < lag.size(); ++i) {
-            if (surfaces[i].kinematic) {
-              lag[i].pose = surfaces[i].kinematicStartPose;
-            }
-          }
-        };
+  const auto applyKinematicLag = [&surfaces](auto& lag) {
+    for (std::size_t i = 0; i < lag.size(); ++i) {
+      if (surfaces[i].kinematic) {
+        lag[i].pose = surfaces[i].kinematicStartPose;
+      }
+    }
+  };
   if (hasKinematic) {
     applyKinematicLag(laggedSurfaces);
   }
@@ -2423,9 +2428,9 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   // relative floor (filled once the initial gradient norm is known below).
   RigidIpcProjectedNewtonOptions newtonOptions = options.newton;
 
-  const auto makeKinematicLineSearchStart
-      = [&]() -> const std::vector<RigidIpcBarrierSurface>& {
-    lineSearchStartSurfaces = result.surfaces;
+  const auto makeKinematicLineSearchStart = [&]() {
+    lineSearchStartSurfaces.assign(
+        result.surfaces.begin(), result.surfaces.end());
     for (std::size_t i = 0; i < lineSearchStartSurfaces.size(); ++i) {
       if (surfaces[i].kinematic) {
         lineSearchStartSurfaces[i].pose = surfaces[i].kinematicStartPose;
@@ -2465,7 +2470,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           return bodyAIsKinematic || bodyBIsKinematic;
         };
   const auto kinematicCandidateAllowsFullStep
-      = [&](const std::vector<RigidIpcBarrierSurface>& candidateSurfaces) {
+      = [&](const auto& candidateSurfaces) {
           if (!hasKinematic || !options.useLineSearch) {
             return true;
           }
@@ -2563,7 +2568,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       if (options.useLineSearch) {
-        candidateSurfaces = result.surfaces;
+        candidateSurfaces.assign(
+            result.surfaces.begin(), result.surfaces.end());
         applyRigidIpcNewtonDelta(
             candidateSurfaces, result.assembly, step.delta);
         // The Newton delta only moves dynamic surfaces, so candidateSurfaces
@@ -2653,7 +2659,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
         for (std::size_t backtrack = 0;
              backtrack <= newtonOptions.maxBacktrackingIterations;
              ++backtrack) {
-          candidateSurfaces = result.surfaces;
+          candidateSurfaces.assign(
+              result.surfaces.begin(), result.surfaces.end());
           applyRigidIpcNewtonDelta(
               candidateSurfaces, result.assembly, trialScale * step.delta);
           if (!kinematicCandidateAllowsFullStep(candidateSurfaces)) {
@@ -2724,7 +2731,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           scaleRigidIpcNewtonStep(step, trialScale);
           result.lastStep = step;
         }
-        result.surfaces = acceptedSurfaces;
+        result.surfaces.assign(
+            acceptedSurfaces.begin(), acceptedSurfaces.end());
       }
 
       if (!acceptedCandidate) {
@@ -2752,7 +2760,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       return;
     }
 
-    laggedSurfaces = result.surfaces;
+    laggedSurfaces.assign(result.surfaces.begin(), result.surfaces.end());
     if (hasKinematic) {
       applyKinematicLag(laggedSurfaces);
     }

@@ -172,7 +172,8 @@ struct RigidIpcContactStage::Scratch
       contactPowerSum(common::StlAllocator<double>{allocator}),
       sawNonStationaryContactBody(
           common::StlAllocator<std::uint8_t>{allocator}),
-      stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator})
+      stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator}),
+      solveScratch(allocator)
   {
   }
 

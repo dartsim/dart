@@ -32,6 +32,8 @@
 #include <dart/simulation/detail/deformable_contact/barrier_kernel.hpp>
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
+#include <dart/common/memory_manager.hpp>
+
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
@@ -1696,6 +1698,36 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveFollowsBodyDynamicsTerm)
   EXPECT_EQ(result.assembly.activeDynamicsTerms, 1u);
   EXPECT_NEAR(result.surfaces.front().pose.position.x(), 0.5, 1e-12);
   EXPECT_NEAR(result.stats.finalGradientNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeSolve = freeList.getAllocationCount();
+
+  {
+    expdetail::RigidIpcBarrierSurface surface;
+    surface.dynamic = false;
+    const std::array<expdetail::RigidIpcBarrierSurface, 1> surfaces{surface};
+
+    expdetail::RigidIpcProjectedNewtonSolveOptions options;
+    expdetail::RigidIpcProjectedNewtonSolveResult result;
+    expdetail::RigidIpcProjectedNewtonSolveScratch scratch(
+        memoryManager.getFreeAllocator());
+
+    expdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+        surfaces, options, result, scratch);
+
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeSolve)
+        << "allocator-aware rigid IPC projected-Newton scratch should reserve "
+           "surface work vectors from the provided free allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeSolve);
 }
 
 //==============================================================================

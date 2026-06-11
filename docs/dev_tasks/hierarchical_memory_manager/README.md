@@ -763,9 +763,13 @@ Follow-up progress after PR #2956:
   solver-body, surface, kinematic-trace, writeback-order, and resting-contact
   scratch vectors through the borrowed World free allocator. A focused IPC
   prepare test verifies those vector reserves increase the provided free-list
-  allocation count and release when the custom stage is destroyed. Solver
-  option/result vectors and nested surface mesh payloads remain separate
-  follow-up work because they cross the detail solver API boundary.
+  allocation count and release when the custom stage is destroyed. The
+  projected-Newton solve scratch now also has allocator-aware construction for
+  its surface work vectors, and the stage passes the same allocator into that
+  nested solver scratch; a focused detail-solver test verifies those reserves
+  use and release the provided free allocator. Solver option/result vectors and
+  nested surface mesh payloads remain separate follow-up work because they cross
+  the detail solver API boundary.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test
