@@ -664,6 +664,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     allocator-backed variational scratch as well, so the World-stage path reuses
     row descriptors, scalar-row inventories, and hook constraint storage without
     copying that hook state into default-heap vectors on same-shape steps.
+    Variational velocity-actuator projection now counts rows during bake, writes
+    actuator targets directly into the reusable projection residual/Jacobian, and
+    applies projection retractions through existing scratch instead of allocating
+    a per-step constraint vector or per-joint retract result.
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.

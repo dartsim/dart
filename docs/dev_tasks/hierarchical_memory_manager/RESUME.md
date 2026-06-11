@@ -127,6 +127,13 @@ axis-row vectors, descriptor staging lists, and scalar-row inventories;
 shapes; and the compliant contact hook reads the baked scratch directly instead
 of copying constraints into a default-heap vector.
 
+The latest continuation closes the sibling velocity-actuator projection
+allocation path. Variational velocity-actuated revolute/prismatic joints now
+contribute projection row counts during bake, the projection loop writes their
+target rows directly into the reusable residual/Jacobian storage, and projection
+retractions reuse existing scratch instead of building a per-step constraint
+vector or returning a temporary per-joint retract vector.
+
 The next follow-up slice adds a focused `WorldRegistry` rebuild-boundary gate
 for contact-heavy solver-owned ECS storage. It reuses the existing compliant
 variational contact slider setup, verifies baked contact scratch and registry

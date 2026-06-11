@@ -599,8 +599,8 @@ Current Phase 4 scratch-reuse coverage shipped by this PR includes:
   fallback friction sweeps.
 - Variational multibody scratch for baked loop-closure, hard AVBD point-joint,
   finite-stiffness AVBD point-joint compliant-loop constraints,
-  compliant/augmented-Lagrangian ground contact, and the scalar
-  single-prismatic compliant-contact fast path.
+  velocity-actuator projection rows, compliant/augmented-Lagrangian ground
+  contact, and the scalar single-prismatic compliant-contact fast path.
 - Default projected-Newton deformable scratch for obstacle lists, static and
   moving rigid surface snapshots, surface-contact candidates, boundary masks,
   friction buffers, sparse/matrix-free solver storage, FEM blocks, static
@@ -687,6 +687,11 @@ Follow-up progress after PR #2956:
   topology vector, link-index map, per-link child lists, and link-frame
   subspace matrices instead of constructing fresh containers; the same-shape
   map nodes stay alive rather than being cleared/reallocated in the step loop.
+  Velocity-actuator projection now follows the same baked projection path:
+  bake-time sizing counts actuator target rows, the projection loop writes those
+  rows directly into the reusable residual/Jacobian, and per-joint projection
+  retractions write through existing scratch instead of allocating a temporary
+  constraint list or return-by-value retract result.
   The existing World baked-step global-heap gate now includes an active
   loop-closure chain, covering the variational tree/projection scratch path at
   World level without broadening production scene scope.

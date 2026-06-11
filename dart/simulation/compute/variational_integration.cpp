@@ -223,16 +223,6 @@ void jointRetractInto(
   }
 }
 
-Eigen::VectorXd jointRetract(
-    const comps::Joint& joint,
-    const Eigen::VectorXd& q,
-    const Eigen::VectorXd& delta)
-{
-  Eigen::VectorXd result(q.size());
-  jointRetractInto(joint, q, delta, result);
-  return result;
-}
-
 // The generalized-coordinate tangent `tau` with `jointRetract(q, tau) == qNext`
 // (so the generalized velocity is `tau / dt`). Inverse of jointRetract.
 void jointLogDifferenceInto(
@@ -1279,46 +1269,66 @@ void gatherState(
   }
 }
 
-struct VariationalVelocityConstraint
+bool isVariationalVelocityProjectionJoint(const comps::Joint& joint)
 {
-  Eigen::Index dof = 0;
-  double targetPosition = 0.0;
-};
+  return joint.actuatorType == comps::ActuatorType::Velocity
+         && (joint.type == comps::JointType::Revolute
+             || joint.type == comps::JointType::Prismatic);
+}
 
-std::vector<VariationalVelocityConstraint> buildVariationalVelocityConstraints(
-    const detail::WorldRegistry& registry,
-    const VarTree& tree,
-    const Eigen::VectorXd& position,
-    double timeStep)
+Eigen::Index variationalVelocityProjectionRowCount(
+    const detail::WorldRegistry& registry, const VarTree& tree)
 {
-  std::vector<VariationalVelocityConstraint> constraints;
+  Eigen::Index rows = 0;
   for (const auto& link : tree.links) {
     if (link.dof == 0) {
       continue;
     }
     const auto& joint = registry.get<comps::Joint>(link.joint);
-    if (joint.actuatorType != comps::ActuatorType::Velocity) {
+    if (!isVariationalVelocityProjectionJoint(joint)) {
       continue;
     }
-    if (joint.type != comps::JointType::Revolute
-        && joint.type != comps::JointType::Prismatic) {
+    rows += static_cast<Eigen::Index>(link.dof);
+  }
+  return rows;
+}
+
+Eigen::Index writeVariationalVelocityProjectionRows(
+    const detail::WorldRegistry& registry,
+    const VarTree& tree,
+    const Eigen::VectorXd& position,
+    const Eigen::VectorXd& nextPosition,
+    double timeStep,
+    Eigen::Index firstRow,
+    Eigen::VectorXd& residual,
+    Eigen::MatrixXd& jacobian)
+{
+  Eigen::Index row = firstRow;
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    if (!isVariationalVelocityProjectionJoint(joint)) {
       continue;
     }
 
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    Eigen::VectorXd command = Eigen::VectorXd::Zero(n);
-    if (joint.commandVelocity.size() == n
-        && joint.commandVelocity.allFinite()) {
-      command = joint.commandVelocity;
-    }
-    const Eigen::VectorXd target
-        = jointRetract(joint, position.segment(seg, n), timeStep * command);
+    const bool useCommand = joint.commandVelocity.size() == n
+                            && joint.commandVelocity.allFinite();
     for (Eigen::Index d = 0; d < n; ++d) {
-      constraints.push_back({seg + d, target[d]});
+      if (row >= residual.size()) {
+        return row;
+      }
+      const Eigen::Index dof = seg + d;
+      const double command = useCommand ? joint.commandVelocity[d] : 0.0;
+      residual[row] = nextPosition[dof] - (position[dof] + timeStep * command);
+      jacobian(row, dof) = 1.0;
+      ++row;
     }
   }
-  return constraints;
+  return row;
 }
 
 //==============================================================================
@@ -1938,15 +1948,6 @@ void reserveConstraintProjectionScratch(
   scratch.hardConstraintRhs.resize(rows);
   scratch.hardConstraintLambda.resize(rows);
   scratch.projectionLambda.resize(rows);
-}
-
-void reserveConstraintProjectionScratch(
-    const VarTree& tree,
-    const std::vector<VariationalLoopConstraint>& constraints,
-    VariationalConstraintProjectionScratch& scratch)
-{
-  reserveConstraintProjectionScratch(
-      tree, constraintRowCount(constraints), scratch);
 }
 
 void bodyJacobiansInto(
@@ -3007,8 +3008,14 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   auto& projectionScratchStorage = projectionScratch != nullptr
                                        ? *projectionScratch
                                        : localProjectionScratch;
+  const Eigen::Index loopProjectionRows
+      = constraints.empty() ? 0 : constraintRowCount(constraints);
+  const Eigen::Index velocityProjectionRows
+      = variationalVelocityProjectionRowCount(registry, tree);
   reserveConstraintProjectionScratch(
-      tree, constraints, projectionScratchStorage);
+      tree,
+      loopProjectionRows + velocityProjectionRows,
+      projectionScratchStorage);
 
   Eigen::VectorXd& position = stepScratchStorage.position;
   Eigen::VectorXd& velocity = stepScratchStorage.velocity;
@@ -3409,9 +3416,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
   // inverse-mass apply. Velocity actuators become coordinate targets
   // q^{k+1} = retract(q^k, dt * qdot_command) for the supported one-DOF
   // articulated joints, matching the existing velocity-level actuator contract.
-  const auto velocityConstraints
-      = buildVariationalVelocityConstraints(registry, tree, position, timeStep);
-  if (!constraints.empty() || !velocityConstraints.empty()) {
+  if (!constraints.empty() || velocityProjectionRows > 0) {
     constexpr double constraintTolerance = 1e-10;
     constexpr int maxProjectionIterations = 32;
     bool projectionLambdaInitialized = false;
@@ -3426,10 +3431,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       treeConfigurationChanged = true;
       bodyJacobiansInto(tree, projectionScratchStorage.jacobians);
       const auto dof = static_cast<Eigen::Index>(tree.dofCount);
-      const Eigen::Index loopRows
-          = constraints.empty() ? 0 : constraintRowCount(constraints);
-      const Eigen::Index rows
-          = loopRows + static_cast<Eigen::Index>(velocityConstraints.size());
+      const Eigen::Index rows = loopProjectionRows + velocityProjectionRows;
       auto& projectionBounds = projectionScratchStorage.projectionBounds;
       if (constraints.empty()) {
         projectionBounds.clear();
@@ -3459,16 +3461,15 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
 
       Eigen::VectorXd& g = projectionScratchStorage.residual;
       Eigen::MatrixXd& jacobian = projectionScratchStorage.jacobian;
-      Eigen::Index row = loopRows;
-      for (const auto& velocityConstraint : velocityConstraints) {
-        if (velocityConstraint.dof < 0 || velocityConstraint.dof >= dof) {
-          continue;
-        }
-        g[row] = nextPosition[velocityConstraint.dof]
-                 - velocityConstraint.targetPosition;
-        jacobian(row, velocityConstraint.dof) = 1.0;
-        ++row;
-      }
+      writeVariationalVelocityProjectionRows(
+          registry,
+          tree,
+          position,
+          nextPosition,
+          timeStep,
+          loopProjectionRows,
+          g,
+          jacobian);
       if (g.norm() <= constraintTolerance) {
         break;
       }
@@ -3555,10 +3556,12 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         const auto& joint = registry.get<comps::Joint>(link.joint);
         const auto seg = static_cast<Eigen::Index>(link.dofOffset);
         const auto n = static_cast<Eigen::Index>(link.dof);
-        nextPosition.segment(seg, n) = jointRetract(
+        jointRetractInto(
             joint,
             nextPosition.segment(seg, n),
-            projectionScratchStorage.correction.segment(seg, n));
+            projectionScratchStorage.correction.segment(seg, n),
+            anderson.trialPosition.segment(seg, n));
+        nextPosition.segment(seg, n) = anderson.trialPosition.segment(seg, n);
       }
     }
     if (projectionLambdaInitialized
@@ -3869,12 +3872,16 @@ void reserveMultibodyVariationalRegistryStorage(
         compliantScratch->clear();
       }
     }
-    const Eigen::Index projectionRows = constraintRowCount(scratch.constraints);
+    const Eigen::Index loopProjectionRows
+        = constraintRowCount(scratch.constraints);
     scratch.constraints.clear();
 
     const VarTree& tree
         = buildVarTreeIntoScratch(scratch.tree, registry, structure);
     if (tree.dofCount > 0u) {
+      const Eigen::Index projectionRows
+          = loopProjectionRows
+            + variationalVelocityProjectionRowCount(registry, tree);
       reserveVariationalStepScratch(tree, scratch.step);
       reserveVariationalLinearSolveScratch(tree, scratch.linearSolve);
       reserveMultibodyInverseDynamicsScratch(
