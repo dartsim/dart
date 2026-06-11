@@ -354,6 +354,8 @@ class DART_SIMULATION_API MultibodyVariationalTreeScratch final
 {
 public:
   MultibodyVariationalTreeScratch();
+  explicit MultibodyVariationalTreeScratch(
+      dart::common::MemoryAllocator& allocator);
   ~MultibodyVariationalTreeScratch();
 
   MultibodyVariationalTreeScratch(const MultibodyVariationalTreeScratch&)
@@ -364,13 +366,23 @@ public:
   MultibodyVariationalTreeScratch& operator=(
       MultibodyVariationalTreeScratch&&) noexcept;
 
+  void setAllocator(dart::common::MemoryAllocator& allocator);
+  [[nodiscard]] const dart::common::MemoryAllocator& getAllocator()
+      const noexcept;
   [[nodiscard]] std::size_t linkCount() const noexcept;
   [[nodiscard]] std::size_t dofCount() const noexcept;
 
 private:
   struct Impl;
+  struct ImplDeleter
+  {
+    dart::common::MemoryAllocator* allocator = nullptr;
 
-  std::unique_ptr<Impl> m_impl;
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  dart::common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
 
   friend struct MultibodyVariationalTreeScratchAccess;
 };

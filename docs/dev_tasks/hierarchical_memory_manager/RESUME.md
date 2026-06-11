@@ -202,6 +202,15 @@ reuse the existing unordered-map nodes instead of clearing and repopulating the
 map. The World baked-step global-heap gate now includes the active loop-closure
 chain shape.
 
+The current continuation keeps that variational tree scratch inside the World
+allocator hierarchy. `MultibodyVariationalTreeScratch` now accepts a
+`MemoryAllocator`, allocates its pimpl through that allocator, and constructs the
+tree link vector, per-link child lists, and link-index map with allocator-aware
+STL storage. The World bake/stage path sets it to the World free allocator
+before tree construction; one-shot helpers keep the default allocator fallback.
+The existing loop-closure clear/rebuild gate now asserts the baked tree scratch
+uses the World allocator.
+
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and
 complementary contact-family production gates for direct-sparse self-contact,

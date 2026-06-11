@@ -4287,7 +4287,8 @@ void expectVariationalStateUsesAllocator(
 }
 
 void expectVariationalLoopClosureScratchBaked(
-    const dart::simulation::detail::WorldRegistry& registry)
+    const dart::simulation::detail::WorldRegistry& registry,
+    const dart::common::MemoryAllocator* expectedTreeAllocator = nullptr)
 {
   namespace sx = dart::simulation;
 
@@ -4300,6 +4301,9 @@ void expectVariationalLoopClosureScratchBaked(
        registry.view<sx::compute::MultibodyVariationalScratch>()) {
     const auto& scratch
         = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
+    if (expectedTreeAllocator != nullptr) {
+      EXPECT_EQ(&scratch.tree.getAllocator(), expectedTreeAllocator);
+    }
     EXPECT_EQ(scratch.tree.linkCount(), kLinkCount);
     EXPECT_EQ(scratch.tree.dofCount(), kDofCount);
     EXPECT_EQ(scratch.step.position.size(), kDofCount);
@@ -4538,7 +4542,8 @@ TEST(World, VariationalLoopClosureRegistryStorageRebuildsAfterClear)
     if (stateCapacity != capacities.end()) {
       EXPECT_GE(stateCapacity->second, 1u);
     }
-    expectVariationalLoopClosureScratchBaked(registry);
+    auto& worldFreeAllocator = world.getMemoryManager().getFreeAllocator();
+    expectVariationalLoopClosureScratchBaked(registry, &worldFreeAllocator);
 
     const auto allocationsAfterBake = allocator.allocationCount;
     const auto deallocationsAfterBake = allocator.deallocationCount;

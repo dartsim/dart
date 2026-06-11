@@ -649,7 +649,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the registry on every projection iteration. The variational
     stage now also keeps its tree topology, link-index map, and child-list
     storage in baked scratch across same-shape steps, preserving same-shape
-    link-index map nodes instead of repopulating them in the step loop.
+    link-index map nodes instead of repopulating them in the step loop. That
+    baked variational tree scratch now constructs its pimpl, link vector,
+    per-link child lists, and link-index map from the World free allocator.
     Contact-heavy variational dual-state vectors now also borrow the World
     free allocator when baked or first created by the World stage; pre-existing
     dual-state components are rebound before sizing, and binary state

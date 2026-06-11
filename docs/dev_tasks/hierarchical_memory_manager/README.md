@@ -216,9 +216,11 @@
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
       evaluates pure compliant ground contact from baked ground-contact scratch,
       reserves augmented-Lagrangian solver scratch only for positive dual-update
-      cadence contact, and bakes those vectors before contact-heavy steps. It
-      now routes the single-prismatic compliant ground-contact stage path through
-      a scalar scratch-free solver fast path. A stronger compliant-contact global-heap
+      cadence contact, and bakes those vectors before contact-heavy steps. Its
+      baked tree topology/link-index/child-list scratch now also borrows the
+      World free allocator. It now routes the single-prismatic compliant
+      ground-contact stage path through a scalar scratch-free solver fast path.
+      A stronger compliant-contact global-heap
       probe now covers the baked multi-slider World-surface path without
       step-loop heap allocations. The boxed-LCP
       unified constraint stage now reuses stage-owned assembly containers and
@@ -692,6 +694,9 @@ Follow-up progress after PR #2956:
   topology vector, link-index map, per-link child lists, and link-frame
   subspace matrices instead of constructing fresh containers; the same-shape
   map nodes stay alive rather than being cleared/reallocated in the step loop.
+  The follow-up branch now also constructs the baked tree scratch pimpl, link
+  vector, per-link child lists, and link-index map from the World free
+  allocator.
   Velocity-actuator projection now follows the same baked projection path:
   bake-time sizing counts actuator target rows, the projection loop writes those
   rows directly into the reusable residual/Jacobian, and per-joint projection
@@ -773,6 +778,12 @@ Follow-up progress after PR #2956:
   `dualUpdateCadence` configurations. Existing compliant-contact World gates now
   assert the no-solver pure-compliant path, and the contact-heavy dual-state gate
   still asserts solver dual scratch for AL contact.
+- `MultibodyVariationalTreeScratch` is now allocator-aware. The World stage sets
+  it to the World free allocator before bake/step tree construction, so the
+  pimpl object, link vector, per-link child lists, and link-index map belong to
+  the same hierarchy as the surrounding variational scratch; one-shot helpers
+  keep the default allocator fallback. The existing loop-closure clear/rebuild
+  gate now asserts the baked scratch uses the World allocator.
 - The semi-implicit one-slider multibody path now has the same clear/rebuild
   proof for baked private multibody dynamics storage. The gate covers the
   all-storage capacity map created by `reserveMultibodyDynamicsRegistryStorage`

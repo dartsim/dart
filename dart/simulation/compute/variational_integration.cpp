@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <new>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -265,6 +266,16 @@ Eigen::VectorXd jointLogDifference(
 // (parent-before-child).
 struct VarLink
 {
+  using ChildAllocator = dart::common::StlAllocator<int>;
+  using ChildVector = std::vector<int, ChildAllocator>;
+
+  VarLink() : VarLink(dart::common::MemoryAllocator::GetDefault()) {}
+
+  explicit VarLink(dart::common::MemoryAllocator& allocator)
+    : children(ChildAllocator{allocator})
+  {
+  }
+
   int parent = -1;
   entt::entity joint = entt::null;
   std::size_t dof = 0;
@@ -279,7 +290,7 @@ struct VarLink
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
   Vector6 externalForce
       = Vector6::Zero(); // body-frame wrench [angular; linear]
-  std::vector<int> children;
+  ChildVector children;
   // Per-residual-evaluation scratch.
   Eigen::Isometry3d deltaTransform = Eigen::Isometry3d::Identity();
   Eigen::Isometry3d nextRelative
@@ -288,13 +299,42 @@ struct VarLink
   Vector6 momentum = Vector6::Zero();
 };
 
+using VarLinkAllocator = dart::common::StlAllocator<VarLink>;
+using VarLinkVector = std::vector<VarLink, VarLinkAllocator>;
+using LinkIndexMapEntry = std::pair<const entt::entity, std::size_t>;
+using LinkIndexMapAllocator = dart::common::StlAllocator<LinkIndexMapEntry>;
+using LinkIndexMap = std::unordered_map<
+    entt::entity,
+    std::size_t,
+    std::hash<entt::entity>,
+    std::equal_to<entt::entity>,
+    LinkIndexMapAllocator>;
+
 struct VarTree
 {
-  std::vector<VarLink> links;
+  VarTree() : VarTree(dart::common::MemoryAllocator::GetDefault()) {}
+
+  explicit VarTree(dart::common::MemoryAllocator& allocator)
+    : links(VarLinkAllocator{allocator}), allocator(&allocator)
+  {
+  }
+
+  VarLinkVector links;
+  dart::common::MemoryAllocator* allocator = nullptr;
   std::size_t dofCount = 0;
 };
 
-void resetVarLinkForBuild(VarLink& link)
+LinkIndexMap makeLinkIndexMap(dart::common::MemoryAllocator& allocator)
+{
+  return LinkIndexMap{
+      0,
+      std::hash<entt::entity>{},
+      std::equal_to<entt::entity>{},
+      LinkIndexMapAllocator{allocator}};
+}
+
+void resetVarLinkForBuild(
+    VarLink& link, dart::common::MemoryAllocator& allocator)
 {
   link.parent = -1;
   link.joint = entt::null;
@@ -306,7 +346,12 @@ void resetVarLinkForBuild(VarLink& link)
   link.currentRelative.setIdentity();
   link.worldTransform.setIdentity();
   link.externalForce.setZero();
-  link.children.clear();
+  const VarLink::ChildAllocator targetChildAllocator{allocator};
+  if (link.children.get_allocator() != targetChildAllocator) {
+    link.children = VarLink::ChildVector{targetChildAllocator};
+  } else {
+    link.children.clear();
+  }
   link.deltaTransform.setIdentity();
   link.nextRelative.setIdentity();
   link.averageVelocity.setZero();
@@ -365,13 +410,16 @@ void buildVarTreeInto(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     VarTree& tree,
-    std::unordered_map<entt::entity, std::size_t>& indexOf)
+    LinkIndexMap& indexOf)
 {
   const auto& linkEntities = structure.links;
   tree.links.resize(linkEntities.size());
   tree.dofCount = 0;
+  dart::common::MemoryAllocator& allocator
+      = tree.allocator != nullptr ? *tree.allocator
+                                  : dart::common::MemoryAllocator::GetDefault();
   for (auto& link : tree.links) {
-    resetVarLinkForBuild(link);
+    resetVarLinkForBuild(link, allocator);
   }
 
   // O(1) link-index lookup so building the tree stays O(n); keep the map nodes
@@ -440,7 +488,8 @@ VarTree buildVarTree(
     const comps::MultibodyStructure& structure)
 {
   VarTree tree;
-  std::unordered_map<entt::entity, std::size_t> indexOf;
+  LinkIndexMap indexOf
+      = makeLinkIndexMap(dart::common::MemoryAllocator::GetDefault());
   buildVarTreeInto(registry, structure, tree, indexOf);
   return tree;
 }
@@ -2299,12 +2348,27 @@ void evaluateContactForceInto(
 //==============================================================================
 struct MultibodyVariationalTreeScratch::Impl
 {
+  explicit Impl(dart::common::MemoryAllocator& allocator)
+    : tree(allocator), linkIndexOf(makeLinkIndexMap(allocator))
+  {
+  }
+
   VarTree tree;
-  std::unordered_map<entt::entity, std::size_t> linkIndexOf;
+  LinkIndexMap linkIndexOf;
 };
 
 //==============================================================================
-MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch() = default;
+MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch()
+  : MultibodyVariationalTreeScratch(dart::common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch(
+    dart::common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
 
 //==============================================================================
 MultibodyVariationalTreeScratch::~MultibodyVariationalTreeScratch() = default;
@@ -2316,6 +2380,39 @@ MultibodyVariationalTreeScratch::MultibodyVariationalTreeScratch(
 //==============================================================================
 MultibodyVariationalTreeScratch& MultibodyVariationalTreeScratch::operator=(
     MultibodyVariationalTreeScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyVariationalTreeScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : dart::common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyVariationalTreeScratch::setAllocator(
+    dart::common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const dart::common::MemoryAllocator&
+MultibodyVariationalTreeScratch::getAllocator() const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : dart::common::MemoryAllocator::GetDefault();
+}
 
 //==============================================================================
 std::size_t MultibodyVariationalTreeScratch::linkCount() const noexcept
@@ -2335,8 +2432,15 @@ struct MultibodyVariationalTreeScratchAccess
   static auto& ensure(MultibodyVariationalTreeScratch& scratch)
   {
     if (scratch.m_impl == nullptr) {
-      scratch.m_impl
-          = std::make_unique<MultibodyVariationalTreeScratch::Impl>();
+      auto& allocator = scratch.m_allocator != nullptr
+                            ? *scratch.m_allocator
+                            : dart::common::MemoryAllocator::GetDefault();
+      auto* impl = allocator.construct<MultibodyVariationalTreeScratch::Impl>(
+          allocator);
+      if (impl == nullptr) {
+        throw std::bad_alloc();
+      }
+      scratch.m_impl.reset(impl);
     }
     return *scratch.m_impl;
   }
@@ -3871,6 +3975,7 @@ void reserveMultibodyVariationalRegistryStorage(
 
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    scratch.tree.setAllocator(allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4016,6 +4121,7 @@ void MultibodyVariationalIntegrationStage::execute(
     ensureMultibodyVariationalStateAllocator(state, worldFreeAllocator);
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
+    scratch.tree.setAllocator(worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {
