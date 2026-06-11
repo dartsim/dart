@@ -64,10 +64,12 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
-  example as the template when the next algorithm family is selected. For
-  solver or multi-physics papers, first apply the solver-family intake
-  checklist in [`solver-family-intake.md`](solver-family-intake.md)
+- Next step: The DART 7 LCP evidence campaign is complete in
+  [#2962](https://github.com/dartsim/dart/pull/2962); use its LCP contract,
+  tests, benchmark packets, and `lcp_physics` example as the template when the
+  next algorithm family is selected. For solver or multi-physics papers, first
+  apply the solver-family intake checklist in
+  [`solver-family-intake.md`](solver-family-intake.md)
   so the work routes to an existing family, shares common collision,
   kinematics, and optimization components, and defines apples-to-apples
   evidence plus a user-facing configuration shape.
