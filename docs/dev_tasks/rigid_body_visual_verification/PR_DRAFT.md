@@ -111,6 +111,8 @@
   - `3 passed`
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_step_diagnostics_reports_profile_and_memory_counters python/tests/integration/test_demos_cycle.py::test_rigid_contact_scale_budget_orders_contact_loads -q`
   - `2 passed`
+- `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release-docking/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_py_demo_capture_records_numbered_rigid_workflow_metrics_artifacts python/tests/unit/test_py_demo_panels.py::test_numbered_rigid_workflow_factory_combines_panels -q`
+  - `2 passed`
 - `pixi run py-demo-capture -- --scene rigid_step_diagnostics --frames 8 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_step_metrics`
   - nonblank 960x540 screenshot, 7 PNG frames, 8 scene-metrics events,
     manifest lanes `single/contact/stack`

@@ -8314,6 +8314,72 @@ def test_py_demo_capture_records_ui_force_drag_artifacts(
     assert event_names[-1] == "artifacts_written"
 
 
+def test_py_demo_capture_records_numbered_rigid_workflow_metrics_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+
+    import dartpy as dart
+
+    if not getattr(dart.gui, "is_docking_available", lambda: False)():
+        pytest.skip("GUI build does not include ImGui docking support")
+    _require_simulation_symbols("World", "RigidBodySolver", "CollisionShape")
+
+    monkeypatch.setenv("LIBGL_ALWAYS_SOFTWARE", "1")
+    monkeypatch.setenv("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
+    capture_py_demo = _capture_py_demo_module()
+    output = tmp_path / "numbered_workflow_capture"
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_contact_scale_budget",
+            "--show-ui",
+            "--frames",
+            "8",
+            "--width",
+            "640",
+            "--height",
+            "360",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["scene"] == "rigid_contact_scale_budget"
+    assert manifest["ui_ready"]["required"] is True
+    assert pathlib.Path(manifest["artifacts"]["screenshot"]).is_file()
+
+    evidence = manifest["visual_evidence"]
+    for image_key in ("screenshot", "first_frame"):
+        image_evidence = evidence[image_key]
+        assert image_evidence["width"] == 640
+        assert image_evidence["height"] == 360
+        assert image_evidence["nonzero_pixels"] > 0
+        assert image_evidence["unique_rgb_count"] > 1
+        assert image_evidence["docked_workspace"] is True
+
+    scene_metrics = manifest["scene_metrics"]
+    assert scene_metrics["event_count"] > 0
+    assert pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).is_file()
+    latest = scene_metrics["latest"]
+    assert latest["scene"] == "rigid_contact_scale_budget"
+    metrics = latest["metrics"]
+    assert metrics["row"] == "rigid_contact_scale_budget"
+    assert set(metrics["lanes"]) == {"single", "medium", "dense"}
+    for lane_key, lane_metrics in metrics["lanes"].items():
+        assert lane_metrics["target_contacts"] >= 1.0, lane_key
+        assert lane_metrics["body_count"] >= 1.0, lane_key
+        assert lane_metrics["status"] in {
+            "over budget",
+            "profiling unavailable",
+            "within budget",
+        }
+
+
 def test_scripted_demo_switch_restores_previous_scene_on_factory_error(
     tmp_path: pathlib.Path,
 ) -> None:

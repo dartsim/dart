@@ -273,6 +273,15 @@ Evidence recorded for this slice:
   (`single/contact/stack` and `single/medium/dense`) into `manifest.json`, and
   produced nonblank docked screenshots with 2186 and 2120 unique screenshot
   colors.
+- Latest numbered workflow capture-composition follow-up:
+  `PYTHONPATH=build/default/cpp/Release-docking/python:build/default/cpp/Release-docking/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_py_demo_capture_records_numbered_rigid_workflow_metrics_artifacts python/tests/unit/test_py_demo_panels.py::test_numbered_rigid_workflow_factory_combines_panels -q`
+  reported `2 passed`. The real docked capture now exercises the numbered
+  `rigid_contact_scale_budget` workflow path, verifies nonblank docked
+  screenshot and first-frame evidence, requires `scene_metrics` in the
+  manifest, and checks the latest metrics row exports the
+  `single/medium/dense` lane set. The companion no-GUI guard keeps the actual
+  composed panels ordered as `Rigid Workflow`, `Rigid Contact Scale Budget`,
+  then `Replay`.
 - Latest capture-evidence hardening follow-up: `py-demo-capture` manifests now
   record requested width/height/frames, converted frame count, and screenshot
   plus first UI-ready-frame evidence: dimensions, nonzero pixels, unique RGB

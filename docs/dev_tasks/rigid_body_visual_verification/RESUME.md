@@ -807,6 +807,15 @@ reported `2 passed`. Short real `py-demo-capture --show-ui` runs for both rows
 wrote eight scene-metrics events each and mirrored the expected lane sets into
 the manifests.
 
+Fresh numbered workflow capture hardening on 2026-06-11: the capture test now
+uses the docking build to run a real `rigid_contact_scale_budget --show-ui`
+capture through the numbered World Rigid Body workflow. The new guard checks
+the nonblank docked screenshot and first frame, confirms a `scene_metrics`
+manifest summary exists, and verifies the latest metrics row exports
+`single/medium/dense`. A companion factory-composition guard verifies the
+actual numbered row gets `Rigid Workflow`, `Rigid Contact Scale Budget`, and
+`Replay` panels in order.
+
 Fresh post-push replay-contract refresh on 2026-06-11: the branch was committed
 as `245095f1164` and pushed to
 `origin/feature/rigid-body-gui-visual-verification`. The first full

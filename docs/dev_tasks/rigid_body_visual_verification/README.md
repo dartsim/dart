@@ -33,6 +33,11 @@
       after adding metrics for `rigid_step_diagnostics` and
       `rigid_contact_scale_budget`, and short real captures for both rows wrote
       eight scene-metrics events apiece.
+- [x] Numbered workflow capture hardening: a real docked
+      `rigid_contact_scale_budget` capture now verifies the numbered workflow
+      path produces nonblank docked UI artifacts and `scene_metrics` lanes, and
+      a factory-composition guard keeps the injected `Rigid Workflow`, scene,
+      and `Replay` panels together.
 - [x] Material-response slice: `rigid_restitution_ladder` shows matched
       low/medium/high restitution bounce lanes with solver/executor, launch
       height, rebound, contact, energy-trend, and timing diagnostics.

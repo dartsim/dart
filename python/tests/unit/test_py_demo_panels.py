@@ -1503,6 +1503,21 @@ def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
     assert panels is None
 
 
+def test_numbered_rigid_workflow_factory_combines_panels() -> None:
+    _require_simulation_symbols("World")
+
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(
+        rigid_contact_scale_budget.SCENE
+    )()
+
+    assert panels is not None
+    assert [panel.title for panel in panels] == [
+        "Rigid Workflow",
+        "Rigid Contact Scale Budget",
+        "Replay",
+    ]
+
+
 def test_rigid_body_panel_resets_baseline_scene() -> None:
     _require_simulation_symbols("World")
     setup = rigid_body.build()
