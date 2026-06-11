@@ -159,6 +159,9 @@ find docs/dev_tasks -maxdepth 2 -type d -print
        home (a `docs/design/` doc, a `docs/plans/` entry, or the dashboard) so they
        survive folder deletion. If such work genuinely cannot be completed now,
        **ask the human before retiring the folder** so it can be revisited later.
+       Open-ended checklist items such as "continue expanding" need an explicit
+       stopping condition or scope cap before cleanup; record the achieved scope
+       and move further expansion to the durable follow-up home.
 2. [ ] **Extract key insights** → Add brief section to the existing relevant `docs/onboarding/` (or `docs/design/` / `docs/plans/`) doc
 3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
 4. [ ] **Include in completion PR** → Same PR that finishes the implementation
