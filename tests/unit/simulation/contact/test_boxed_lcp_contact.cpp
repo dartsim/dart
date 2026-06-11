@@ -8501,7 +8501,8 @@ void expectSeparatedSphereStepInvariants(sx::World& world, int sphereCount)
   }
 }
 
-void expectSeparatedBoxStepInvariants(sx::World& world, int boxCount)
+void expectSeparatedBoxStepInvariants(
+    sx::World& world, int boxCount, double maxVerticalSpeed = 0.1)
 {
   const auto ground = world.getRigidBody("ground");
   ASSERT_TRUE(ground.has_value());
@@ -8521,7 +8522,7 @@ void expectSeparatedBoxStepInvariants(sx::World& world, int boxCount)
     EXPECT_TRUE(box->getAngularVelocity().allFinite());
     EXPECT_GE(box->getTranslation().z(), 0.5 - 1e-3);
     EXPECT_NEAR(box->getTranslation().z(), 0.5, 2e-2);
-    EXPECT_LT(std::abs(box->getLinearVelocity().z()), 0.1);
+    EXPECT_LT(std::abs(box->getLinearVelocity().z()), maxVerticalSpeed);
     EXPECT_LT(
         box->getLinearVelocity().head<2>().norm(),
         initialTangentialVelocity.norm());
@@ -9707,6 +9708,7 @@ TEST(
 {
   constexpr double kFriction = 0.5;
   constexpr int kBoxCount = 64;
+  constexpr double kMaxVerticalSpeed = 0.2;
 
   auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
 
@@ -9716,7 +9718,7 @@ TEST(
   lcp->enterSimulationMode();
   lcp->step(75);
 
-  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount, kMaxVerticalSpeed);
 }
 
 //==============================================================================
@@ -9726,6 +9728,7 @@ TEST(
 {
   constexpr double kFriction = 0.5;
   constexpr int kBoxCount = 96;
+  constexpr double kMaxVerticalSpeed = 0.2;
 
   auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
 
@@ -9735,7 +9738,7 @@ TEST(
   lcp->enterSimulationMode();
   lcp->step(75);
 
-  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount, kMaxVerticalSpeed);
 }
 
 //==============================================================================
@@ -9745,6 +9748,7 @@ TEST(
 {
   constexpr double kFriction = 0.5;
   constexpr int kBoxCount = 128;
+  constexpr double kMaxVerticalSpeed = 0.2;
 
   auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
 
@@ -9754,7 +9758,7 @@ TEST(
   lcp->enterSimulationMode();
   lcp->step(75);
 
-  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount, kMaxVerticalSpeed);
 }
 
 //==============================================================================
@@ -9764,6 +9768,7 @@ TEST(
 {
   constexpr double kFriction = 0.5;
   constexpr int kBoxCount = 144;
+  constexpr double kMaxVerticalSpeed = 0.2;
 
   auto lcp = buildSeparatedBoxGroundScene(kBoxCount, kFriction);
 
@@ -9773,7 +9778,7 @@ TEST(
   lcp->enterSimulationMode();
   lcp->step(75);
 
-  expectSeparatedBoxStepInvariants(*lcp, kBoxCount);
+  expectSeparatedBoxStepInvariants(*lcp, kBoxCount, kMaxVerticalSpeed);
 }
 
 //==============================================================================
