@@ -10,12 +10,12 @@ Corpus matrix:
 ## Current Status
 
 - Latest local follow-up: C++ and dartpy public articulated facade coverage now
-  verifies that `World::clear()` / `World.clear()` drops existing articulated
-  point-joint facades and resets the generated `joint_###` name sequence before
-  a rebuilt world creates a fresh empty-name facade. This is only a narrow
-  public facade lifecycle/name-counter guard; it does not close broader
-  articulated motor lifecycle, fracture corpus, CPU-win, GPU, or paper-number
-  gates.
+  verifies that `World::clear()` / `World.clear()` invalidates existing
+  articulated link/joint handles, drops the public point-joint facades, and
+  resets the generated `joint_###` name sequence before a rebuilt world creates
+  a fresh empty-name facade. This is only a narrow public facade
+  lifecycle/name-counter guard; it does not close broader articulated motor
+  lifecycle, fracture corpus, CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: Linux Release CI now runs the ASAN build with
   `DART_PARALLEL_JOBS=4` after the hosted runner killed the ASAN compilation
   with exit 137 while rebuilding the full test target set. This is CI resource

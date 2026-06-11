@@ -15316,10 +15316,16 @@ TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
   auto firstGenerated = world.addArticulatedFixedJoint("", base, child);
   EXPECT_EQ(firstGenerated.getName(), "joint_001");
   EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+  EXPECT_TRUE(base.isValid());
+  EXPECT_TRUE(child.isValid());
+  EXPECT_TRUE(firstGenerated.isValid());
 
   world.clear();
   EXPECT_EQ(world.getArticulatedJointCount(), 0u);
   EXPECT_FALSE(world.hasArticulatedJoint("joint_001"));
+  EXPECT_FALSE(base.isValid());
+  EXPECT_FALSE(child.isValid());
+  EXPECT_FALSE(firstGenerated.isValid());
 
   auto rebuiltRobot = world.addMultibody("rebuilt_robot");
   auto rebuiltBase = rebuiltRobot.addLink("base");

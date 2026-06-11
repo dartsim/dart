@@ -1299,10 +1299,16 @@ def test_simulation_world_clear_resets_articulated_generated_names():
     first_generated = world.add_articulated_fixed_joint("", base, body)
     assert first_generated.name == "joint_001"
     assert world.num_articulated_joints == 1
+    assert base.is_valid
+    assert body.is_valid
+    assert first_generated.is_valid
 
     world.clear()
     assert world.num_articulated_joints == 0
     assert not world.has_articulated_joint("joint_001")
+    assert not base.is_valid
+    assert not body.is_valid
+    assert not first_generated.is_valid
 
     rebuilt = world.add_multibody("clear_generated_joint_rebuilt")
     rebuilt_base = rebuilt.add_link("base")
