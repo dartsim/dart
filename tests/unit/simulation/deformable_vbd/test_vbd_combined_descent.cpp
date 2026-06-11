@@ -1082,6 +1082,10 @@ TEST(VbdCombinedDescent, AvbdSelfContactFrictionRowsReduceTangentialMotion)
     vbd::AvbdPointAttachmentOptions attachmentOptions;
     vbd::AvbdSpringFiniteStiffnessOptions springOptions;
     vbd::AvbdSelfContactFrictionOptions frictionOptions;
+    auto* noHalfSpaceFrictionRows
+        = static_cast<std::vector<vbd::AvbdHalfSpaceFrictionRow>*>(nullptr);
+    auto* noSelfContactRows
+        = static_cast<std::vector<vbd::AvbdSelfContactNormalRow>*>(nullptr);
 
     vbd::blockDescentMassSpringAvbdRows(
         positions,
@@ -1100,9 +1104,9 @@ TEST(VbdCombinedDescent, AvbdSelfContactFrictionRowsReduceTangentialMotion)
         contactOptions,
         attachmentOptions,
         springOptions,
+        noHalfSpaceFrictionRows,
         nullptr,
-        nullptr,
-        nullptr,
+        noSelfContactRows,
         nullptr,
         nullptr,
         enableFriction ? &frictionRows : nullptr,

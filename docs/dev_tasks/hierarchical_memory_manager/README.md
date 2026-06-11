@@ -817,11 +817,12 @@ Follow-up progress after PR #2956:
   baked-step guards still pass without adding a new production scene.
 - `DeformableVbdScratch` now also constructs AVBD scalar-row inventories,
   descriptor metadata vectors, static-contact feature ID buffers, and friction
-  warm-start lookup vectors from the World free allocator. The solve row arrays
-  still use the existing vector types because the row kernels consume those
-  public scratch contracts directly; moving them needs a separate kernel
-  signature pass. The follow-up branch also routes the static contact-plane
-  buffer and AVBD attachment fixed-mask scratch through the World allocator by
+  warm-start lookup vectors from the World free allocator. The AVBD solve row
+  arrays now use the same allocator-backed scratch after the mass-spring,
+  half-space contact, attachment, self-contact friction, and tet finite-stiffness
+  row kernels accepted allocator-aware vector contracts. The follow-up branch
+  also routes the static contact-plane buffer and AVBD attachment fixed-mask
+  scratch through the World allocator by
   narrowing the mixed deformable block-descent contact-plane contract to a
   read-only span and making the AVBD mass-spring row fixed-mask argument
   allocator-agnostic. Chebyshev history scratch for the mixed VBD driver now

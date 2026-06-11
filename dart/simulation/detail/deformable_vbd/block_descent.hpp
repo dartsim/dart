@@ -352,9 +352,9 @@ inline double massSpringObjective(
 /// Find the finite-stiffness row for `springIndex`. World-generated rows are
 /// stored in spring order, but the fallback scan keeps the standalone driver
 /// robust for tests that pass sparse or reordered row arrays.
+template <typename SpringRows>
 inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
-    const std::vector<AvbdSpringFiniteStiffnessRow>& rows,
-    std::uint32_t springIndex)
+    const SpringRows& rows, std::uint32_t springIndex)
 {
   if (springIndex < rows.size() && rows[springIndex].spring == springIndex) {
     return &rows[springIndex];
@@ -371,10 +371,10 @@ inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
 /// Find the finite-stiffness material row for `tetIndex`. Rows generated from a
 /// tetrahedral mesh are normally stored in tet order, but tests and future row
 /// generation can pass sparse or reordered arrays.
+template <typename TetRows>
 inline const AvbdTetMaterialFiniteStiffnessRow*
 findAvbdTetMaterialFiniteStiffnessRow(
-    const std::vector<AvbdTetMaterialFiniteStiffnessRow>& rows,
-    std::uint32_t tetIndex)
+    const TetRows& rows, std::uint32_t tetIndex)
 {
   if (tetIndex < rows.size() && rows[tetIndex].tet == tetIndex) {
     return &rows[tetIndex];
@@ -393,6 +393,7 @@ findAvbdTetMaterialFiniteStiffnessRow(
 /// then the row stiffness is increased toward the material stiffness after the
 /// sweep based on the observed spring constraint error. These rows
 /// intentionally carry no dual value.
+template <typename SpringRows = std::vector<AvbdSpringFiniteStiffnessRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -401,7 +402,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
     std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
-    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    SpringRows& springRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
@@ -508,7 +509,14 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// switch between static and dynamic Coulomb modes. Full contact-manifold
 /// friction persistence, broader self-contact friction envelopes, tetrahedral
 /// row mixing, and parallel dual scheduling remain later slices.
-template <typename FixedMask>
+template <
+    typename FixedMask,
+    typename ContactRows = std::vector<AvbdHalfSpaceContactRow>,
+    typename AttachmentRows = std::vector<AvbdPointAttachmentRow>,
+    typename SpringRows = std::vector<AvbdSpringFiniteStiffnessRow>,
+    typename FrictionRows = std::vector<AvbdHalfSpaceFrictionRow>,
+    typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
+    typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -517,21 +525,21 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
-    std::vector<AvbdHalfSpaceContactRow>& contactRows,
-    std::vector<AvbdPointAttachmentRow>& attachmentRows,
-    std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
+    ContactRows& contactRows,
+    AttachmentRows& attachmentRows,
+    SpringRows& springRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
     const AvbdHalfSpaceContactOptions& contactOptions,
     const AvbdPointAttachmentOptions& attachmentOptions,
     const AvbdSpringFiniteStiffnessOptions& springOptions,
-    std::vector<AvbdHalfSpaceFrictionRow>* frictionRows = nullptr,
+    FrictionRows* frictionRows = nullptr,
     const AvbdHalfSpaceFrictionOptions* frictionOptions = nullptr,
-    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    SelfContactRows* selfContactRows = nullptr,
     const SelfContactAdjacency* selfContact = nullptr,
     const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
-    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    SelfContactFrictionRows* selfContactFrictionRows = nullptr,
     const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
@@ -1072,6 +1080,10 @@ inline BlockDescentStats blockDescentTetMesh(
 /// self-contact rows let pure-tet scenes share the same hard normal/friction
 /// row path as the mass-spring envelope; when they are absent, the existing
 /// lagged VBD self-contact penalty remains available.
+template <
+    typename TetRows = std::vector<AvbdTetMaterialFiniteStiffnessRow>,
+    typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
+    typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
 inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -1081,15 +1093,15 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     double mu,
     double lambda,
     double timeStep,
-    std::vector<AvbdTetMaterialFiniteStiffnessRow>& tetRows,
+    TetRows& tetRows,
     const VertexColoring& coloring,
     const TetAdjacency& adjacency,
     const BlockDescentOptions& options,
     const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions,
     const SelfContactAdjacency* selfContact = nullptr,
-    std::vector<AvbdSelfContactNormalRow>* selfContactRows = nullptr,
+    SelfContactRows* selfContactRows = nullptr,
     const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
-    std::vector<AvbdSelfContactFrictionRow>* selfContactFrictionRows = nullptr,
+    SelfContactFrictionRows* selfContactFrictionRows = nullptr,
     const AvbdSelfContactFrictionOptions* selfContactFrictionOptions = nullptr)
 {
   BlockDescentStats stats;
@@ -1715,6 +1727,7 @@ inline BlockDescentStats blockDescentMassSpringGround(
 /// dual pass updates the row lambda/stiffness after every sweep. Row
 /// generation, persistent row-ID mapping, friction, and multi-contact manifolds
 /// are layered on top of this primitive.
+template <typename ContactRows = std::vector<AvbdHalfSpaceContactRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdGround(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -1723,7 +1736,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
     std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
-    std::vector<AvbdHalfSpaceContactRow>& contactRows,
+    ContactRows& contactRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,
@@ -1808,6 +1821,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
 /// is the first non-contact hard-row kernel slice: a full 3D attachment is
 /// represented by scalar rows, usually one per world axis, so row identity,
 /// warm starting, force bounds, and stiffness growth remain per scalar row.
+template <typename AttachmentRows = std::vector<AvbdPointAttachmentRow>>
 inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -1816,7 +1830,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
     std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
-    std::vector<AvbdPointAttachmentRow>& attachmentRows,
+    AttachmentRows& attachmentRows,
     const VertexColoring& coloring,
     const SpringAdjacency& adjacency,
     const BlockDescentOptions& options,

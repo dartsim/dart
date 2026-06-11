@@ -52,6 +52,9 @@ namespace {
 
 using Vec3 = Eigen::Vector3d;
 
+template <typename T>
+using AllocatorVector = std::vector<T, common::StlAllocator<T>>;
+
 double planeEnergy(const Vec3& x, const vbd::ContactPlane& plane)
 {
   const double penetration = plane.offset - plane.normal.dot(x);
@@ -590,6 +593,10 @@ TEST(VbdContact, ParticleRestsOnGround)
 //==============================================================================
 TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
 {
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  const auto allocationsBefore = allocator.getAllocationCount();
+
   std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
   std::vector<double> masses = {1.0};
   std::vector<std::uint8_t> fixed = {0u};
@@ -608,7 +615,13 @@ TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
   contact.state.stiffness = 50.0;
   contact.state.lambda = 0.0;
   contact.previousConstraintValue = 0.0;
-  std::vector<vbd::AvbdHalfSpaceContactRow> contacts = {contact};
+  AllocatorVector<vbd::AvbdHalfSpaceContactRow> contacts(
+      common::StlAllocator<vbd::AvbdHalfSpaceContactRow>{allocator});
+  contacts.push_back(contact);
+  EXPECT_GT(allocator.getAllocationCount(), allocationsBefore);
+  EXPECT_EQ(
+      contacts.get_allocator(),
+      common::StlAllocator<vbd::AvbdHalfSpaceContactRow>{allocator});
 
   vbd::BlockDescentOptions options;
   options.iterations = 4;
@@ -640,6 +653,9 @@ TEST(VbdContact, AvbdGroundContactUpdatesDualStateDuringSolve)
 //==============================================================================
 TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
 {
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+
   std::vector<Vec3> positions = {Vec3(0.0, -0.1, 0.0)};
   std::vector<double> masses = {1.0};
   std::vector<std::uint8_t> fixed = {0u};
@@ -648,11 +664,18 @@ TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
   const auto coloring = vbd::colorSprings(1, springs);
   const auto adjacency = vbd::SpringAdjacency::build(1, springs);
 
-  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
-  std::vector<vbd::AvbdPointAttachmentRow> attachments;
-  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
-  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows;
+  AllocatorVector<vbd::AvbdHalfSpaceContactRow> contacts(
+      common::StlAllocator<vbd::AvbdHalfSpaceContactRow>{allocator});
+  AllocatorVector<vbd::AvbdPointAttachmentRow> attachments(
+      common::StlAllocator<vbd::AvbdPointAttachmentRow>{allocator});
+  AllocatorVector<vbd::AvbdSpringFiniteStiffnessRow> springRows(
+      common::StlAllocator<vbd::AvbdSpringFiniteStiffnessRow>{allocator});
+  AllocatorVector<vbd::AvbdHalfSpaceFrictionRow> frictionRows(
+      common::StlAllocator<vbd::AvbdHalfSpaceFrictionRow>{allocator});
   frictionRows.emplace_back();
+  EXPECT_EQ(
+      frictionRows.get_allocator(),
+      common::StlAllocator<vbd::AvbdHalfSpaceFrictionRow>{allocator});
   frictionRows[0].vertex = 0;
   frictionRows[0].stepStartPosition = positions[0];
   frictionRows[0].axis = Vec3::UnitX();

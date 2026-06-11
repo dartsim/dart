@@ -1135,6 +1135,8 @@ struct DeformableVbdScratch
   using AvbdFrictionWarmStartVector = std::vector<
       AvbdFrictionWarmStartRecord<Row>,
       common::StlAllocator<AvbdFrictionWarmStartRecord<Row>>>;
+  template <typename Row>
+  using AvbdRowVector = std::vector<Row, common::StlAllocator<Row>>;
   using SpringVector = std::
       vector<dvbd::SpringElement, common::StlAllocator<dvbd::SpringElement>>;
   using TetAllocator = common::StlAllocator<dvbd::TetMeshElement>;
@@ -1155,9 +1157,13 @@ struct DeformableVbdScratch
       avbdContactDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdContactInventory(allocator),
+      avbdContactRows(
+          common::StlAllocator<dvbd::AvbdHalfSpaceContactRow>{allocator}),
       avbdFrictionDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdFrictionInventory(allocator),
+      avbdFrictionRows(
+          common::StlAllocator<dvbd::AvbdHalfSpaceFrictionRow>{allocator}),
       previousAvbdFrictionWarmStarts(
           common::StlAllocator<
               AvbdFrictionWarmStartRecord<dvbd::AvbdHalfSpaceFrictionRow>>{
@@ -1165,9 +1171,13 @@ struct DeformableVbdScratch
       avbdSelfContactDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdSelfContactInventory(allocator),
+      avbdSelfContactRows(
+          common::StlAllocator<dvbd::AvbdSelfContactNormalRow>{allocator}),
       avbdSelfContactFrictionDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdSelfContactFrictionInventory(allocator),
+      avbdSelfContactFrictionRows(
+          common::StlAllocator<dvbd::AvbdSelfContactFrictionRow>{allocator}),
       previousAvbdSelfContactFrictionWarmStarts(
           common::StlAllocator<
               AvbdFrictionWarmStartRecord<dvbd::AvbdSelfContactFrictionRow>>{
@@ -1175,12 +1185,19 @@ struct DeformableVbdScratch
       avbdAttachmentDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdAttachmentInventory(allocator),
+      avbdAttachmentRows(
+          common::StlAllocator<dvbd::AvbdPointAttachmentRow>{allocator}),
       avbdSpringDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdSpringInventory(allocator),
+      avbdSpringRows(
+          common::StlAllocator<dvbd::AvbdSpringFiniteStiffnessRow>{allocator}),
       avbdTetDescriptors(
           common::StlAllocator<dvbd::AvbdScalarRowDescriptor>{allocator}),
       avbdTetInventory(allocator),
+      avbdTetRows(
+          common::StlAllocator<dvbd::AvbdTetMaterialFiniteStiffnessRow>{
+              allocator}),
       avbdSolveFixed(common::StlAllocator<std::uint8_t>{allocator}),
       selfContactCandidates(allocator),
       selfContactSweepScratch(allocator),
@@ -1208,29 +1225,29 @@ struct DeformableVbdScratch
   ContactFeatureIdVector contactFeatureIds;
   AvbdDescriptorVector avbdContactDescriptors;
   dvbd::AvbdScalarRowInventory avbdContactInventory;
-  std::vector<dvbd::AvbdHalfSpaceContactRow> avbdContactRows;
+  AvbdRowVector<dvbd::AvbdHalfSpaceContactRow> avbdContactRows;
   AvbdDescriptorVector avbdFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdFrictionInventory;
-  std::vector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
+  AvbdRowVector<dvbd::AvbdHalfSpaceFrictionRow> avbdFrictionRows;
   AvbdFrictionWarmStartVector<dvbd::AvbdHalfSpaceFrictionRow>
       previousAvbdFrictionWarmStarts;
   AvbdDescriptorVector avbdSelfContactDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactInventory;
-  std::vector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
+  AvbdRowVector<dvbd::AvbdSelfContactNormalRow> avbdSelfContactRows;
   AvbdDescriptorVector avbdSelfContactFrictionDescriptors;
   dvbd::AvbdScalarRowInventory avbdSelfContactFrictionInventory;
-  std::vector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
+  AvbdRowVector<dvbd::AvbdSelfContactFrictionRow> avbdSelfContactFrictionRows;
   AvbdFrictionWarmStartVector<dvbd::AvbdSelfContactFrictionRow>
       previousAvbdSelfContactFrictionWarmStarts;
   AvbdDescriptorVector avbdAttachmentDescriptors;
   dvbd::AvbdScalarRowInventory avbdAttachmentInventory;
-  std::vector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
+  AvbdRowVector<dvbd::AvbdPointAttachmentRow> avbdAttachmentRows;
   AvbdDescriptorVector avbdSpringDescriptors;
   dvbd::AvbdScalarRowInventory avbdSpringInventory;
-  std::vector<dvbd::AvbdSpringFiniteStiffnessRow> avbdSpringRows;
+  AvbdRowVector<dvbd::AvbdSpringFiniteStiffnessRow> avbdSpringRows;
   AvbdDescriptorVector avbdTetDescriptors;
   dvbd::AvbdScalarRowInventory avbdTetInventory;
-  std::vector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
+  AvbdRowVector<dvbd::AvbdTetMaterialFiniteStiffnessRow> avbdTetRows;
   ByteVector avbdSolveFixed;
   // Self-contact candidate set + per-vertex incident lists, rebuilt each step
   // (lagged) from the body's swept start-to-warm-start surface motion.
@@ -1277,9 +1294,8 @@ void clearDeformableAvbdWarmStartRows(DeformableVbdScratch& scratch)
 }
 
 //==============================================================================
-template <typename Row>
 void rebuildAvbdFrictionWarmStartLookup(
-    auto& lookup, const auto& descriptors, const std::vector<Row>& rows)
+    auto& lookup, const auto& descriptors, const auto& rows)
 {
   lookup.clear();
   const std::size_t rowCount = std::min(descriptors.size(), rows.size());
@@ -6040,7 +6056,7 @@ void runVbdDeformableSolve(
   dvbd::BlockDescentStats result;
   const auto projectAvbdSelfContactFrictionWarmStarts =
       [](dvbd::AvbdScalarRowInventory& inventory,
-         std::vector<dvbd::AvbdSelfContactFrictionRow>& rows,
+         auto& rows,
          const auto& previousRows) {
         for (std::size_t i = 0; i + 1 < inventory.size() && i + 1 < rows.size();
              i += 2) {

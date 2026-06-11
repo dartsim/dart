@@ -613,13 +613,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     sweep-item, and sweep-link buffers in the World allocator-backed solver
     scratch. VBD/AVBD deformable scratch now also constructs AVBD scalar-row
     inventories, descriptor metadata, static-contact feature IDs, and friction
-    warm-start lookup buffers from the World allocator. Static contact-plane
-    scratch and AVBD attachment fixed-mask scratch now borrow that allocator as
-    well, and Chebyshev history scratch preserves caller-provided allocator
-    storage while preserving the existing solver row vector contracts. Baked VBD
-    spring/tet topology element lists now also use the World allocator through
-    span-based read-only topology inputs, and cached VBD coloring plus
-    spring/tetrahedron/self-contact incident adjacency now preserve
+    warm-start lookup buffers from the World allocator, and its AVBD solve row
+    arrays now use allocator-backed scratch through allocator-aware row-kernel
+    contracts. Static contact-plane scratch and AVBD attachment fixed-mask
+    scratch now borrow that allocator as well, and Chebyshev history scratch
+    preserves caller-provided allocator storage. Baked VBD spring/tet topology
+    element lists now also use the World allocator through span-based read-only
+    topology inputs, and cached VBD coloring plus spring/tetrahedron/self-contact
+    incident adjacency now preserve
     caller-provided allocators for their nested vectors.
     The variational multibody stage now reuses baked inverse-dynamics scratch
     for its initial-guess bias query instead of calling the public
