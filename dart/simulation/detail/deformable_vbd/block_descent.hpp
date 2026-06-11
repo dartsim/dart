@@ -1368,6 +1368,9 @@ inline VertexBlock assembleDeformableVertexBlock(
 /// stiffness-proportional damping opposing the per-step displacement; it
 /// requires `stepStartPositions` (the positions x^t at the start of the step)
 /// and is a no-op when that is null or the coefficient is zero.
+template <
+    typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
+    typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats blockDescentDeformable(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -1387,8 +1390,8 @@ inline BlockDescentStats blockDescentDeformable(
     std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
     const SelfContactAdjacency* selfContact = nullptr,
-    std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
-    std::vector<Eigen::Vector3d>* chebyshevBeforeSweepScratch = nullptr)
+    ChebyshevTwoStepsBackVector* chebyshevTwoStepsBackScratch = nullptr,
+    ChebyshevBeforeSweepVector* chebyshevBeforeSweepScratch = nullptr)
 {
   BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
@@ -1450,22 +1453,22 @@ inline BlockDescentStats blockDescentDeformable(
 
   const double convergenceSquared
       = options.convergenceDisplacement * options.convergenceDisplacement;
-  std::vector<Eigen::Vector3d> localTwoStepsBack;
-  std::vector<Eigen::Vector3d> localBeforeSweep;
-  std::vector<Eigen::Vector3d>& twoStepsBack
+  ChebyshevTwoStepsBackVector localTwoStepsBack;
+  ChebyshevBeforeSweepVector localBeforeSweep;
+  ChebyshevTwoStepsBackVector& twoStepsBack
       = chebyshevTwoStepsBackScratch != nullptr ? *chebyshevTwoStepsBackScratch
                                                 : localTwoStepsBack;
-  std::vector<Eigen::Vector3d>& beforeSweep
+  ChebyshevBeforeSweepVector& beforeSweep
       = chebyshevBeforeSweepScratch != nullptr ? *chebyshevBeforeSweepScratch
                                                : localBeforeSweep;
   if (options.useChebyshev) {
-    twoStepsBack = positions;
+    twoStepsBack.assign(positions.begin(), positions.end());
   }
   double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
     if (options.useChebyshev) {
-      beforeSweep = positions;
+      beforeSweep.assign(positions.begin(), positions.end());
     }
     double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
@@ -1490,7 +1493,7 @@ inline BlockDescentStats blockDescentDeformable(
           }
         }
       }
-      twoStepsBack = beforeSweep;
+      twoStepsBack.assign(beforeSweep.begin(), beforeSweep.end());
     }
     if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
       break;

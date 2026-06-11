@@ -172,6 +172,9 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 /// blockDescentDeformable, which does honor them. Active self-contact also
 /// falls back to the serial driver because the lagged VT/EE contact stencils
 /// are not part of the cached spring/tet coloring.
+template <
+    typename ChebyshevTwoStepsBackVector = std::vector<Eigen::Vector3d>,
+    typename ChebyshevBeforeSweepVector = std::vector<Eigen::Vector3d>>
 inline BlockDescentStats parallelBlockDescentDeformable(
     std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
@@ -192,8 +195,8 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     std::span<const ContactPlane> contactPlanes = {},
     double contactFriction = 0.0,
     const SelfContactAdjacency* selfContact = nullptr,
-    std::vector<Eigen::Vector3d>* chebyshevTwoStepsBackScratch = nullptr,
-    std::vector<Eigen::Vector3d>* chebyshevBeforeSweepScratch = nullptr)
+    ChebyshevTwoStepsBackVector* chebyshevTwoStepsBackScratch = nullptr,
+    ChebyshevBeforeSweepVector* chebyshevBeforeSweepScratch = nullptr)
 {
   if (threadCount <= 1 || (selfContact != nullptr && selfContact->active())) {
     return blockDescentDeformable(

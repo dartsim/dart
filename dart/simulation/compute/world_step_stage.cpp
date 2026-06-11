@@ -1123,6 +1123,8 @@ struct DeformableVbdScratch
       = std::vector<dvbd::ContactPlane, ContactPlaneAllocator>;
   using ByteVector
       = std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>;
+  using Vector3Vector
+      = std::vector<Eigen::Vector3d, common::StlAllocator<Eigen::Vector3d>>;
   using AvbdDescriptorVector = std::vector<
       dvbd::AvbdScalarRowDescriptor,
       common::StlAllocator<dvbd::AvbdScalarRowDescriptor>>;
@@ -1169,7 +1171,9 @@ struct DeformableVbdScratch
       avbdTetInventory(allocator),
       avbdSolveFixed(common::StlAllocator<std::uint8_t>{allocator}),
       selfContactCandidates(allocator),
-      selfContactSweepScratch(allocator)
+      selfContactSweepScratch(allocator),
+      chebyshevTwoStepsBack(common::StlAllocator<Eigen::Vector3d>{allocator}),
+      chebyshevBeforeSweep(common::StlAllocator<Eigen::Vector3d>{allocator})
   {
   }
 
@@ -1218,8 +1222,8 @@ struct DeformableVbdScratch
   dc::ContactCandidateSet selfContactCandidates;
   dc::detail::ContactCandidateSweepScratch selfContactSweepScratch;
   dvbd::SelfContactAdjacency selfContactAdjacency;
-  std::vector<Eigen::Vector3d> chebyshevTwoStepsBack;
-  std::vector<Eigen::Vector3d> chebyshevBeforeSweep;
+  Vector3Vector chebyshevTwoStepsBack;
+  Vector3Vector chebyshevBeforeSweep;
   std::size_t cachedNodeCount = 0;
   std::size_t cachedEdgeCount = 0;
   std::size_t cachedTetCount = 0;

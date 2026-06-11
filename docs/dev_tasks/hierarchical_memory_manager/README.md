@@ -818,7 +818,9 @@ Follow-up progress after PR #2956:
   buffer and AVBD attachment fixed-mask scratch through the World allocator by
   narrowing the mixed deformable block-descent contact-plane contract to a
   read-only span and making the AVBD mass-spring row fixed-mask argument
-  allocator-agnostic.
+  allocator-agnostic. Chebyshev history scratch for the mixed VBD driver now
+  follows the same route: the driver preserves caller-provided scratch
+  allocators while standalone one-shot callers keep default local storage.
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
