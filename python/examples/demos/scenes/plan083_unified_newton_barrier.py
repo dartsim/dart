@@ -19,6 +19,9 @@ _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
 _TERRAIN_HALF_EXTENTS = np.array([0.70, 0.45, 0.025])
 _TERRAIN_CHASSIS_HALF_EXTENTS = np.array([0.22, 0.12, 0.04])
 _TERRAIN_WHEEL_RADIUS = 0.06
+_PRECESSION_GROUND_HALF_EXTENTS = np.array([0.55, 0.45, 0.025])
+_PRECESSION_WHEEL_RADIUS = 0.16
+_PRECESSION_WHEEL_HALF_HEIGHT = 0.035
 _TERRAIN_WHEEL_OFFSETS = (
     np.array([-0.16, -0.14, -0.10]),
     np.array([-0.16, 0.14, -0.10]),
@@ -52,6 +55,11 @@ def _translation(x: float, y: float, z: float) -> np.ndarray:
 
 def _full(half_extents: np.ndarray) -> np.ndarray:
     return 2.0 * np.asarray(half_extents, dtype=float)
+
+
+def _quat_x(angle: float) -> tuple[float, float, float, float]:
+    half = 0.5 * angle
+    return (float(np.cos(half)), float(np.sin(half)), 0.0, 0.0)
 
 
 def _target_info(target: Plan083SceneTarget) -> dict[str, object]:
@@ -571,11 +579,112 @@ def _build_terrain_vehicle_runtime(target: Plan083SceneTarget) -> SceneSetup:
     )
 
 
+def _build_precession_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    ground = world.add_rigid_body(
+        "plan083_precession_ground", position=(0.0, 0.0, -0.025)
+    )
+    ground.is_static = True
+    ground.friction = 0.8
+    ground.set_collision_shape(dart.CollisionShape.box(_PRECESSION_GROUND_HALF_EXTENTS))
+
+    wheel = world.add_rigid_body(
+        "plan083_precession_wheel",
+        position=(-0.18, 0.0, _PRECESSION_WHEEL_RADIUS),
+        orientation=_quat_x(-0.5 * np.pi),
+        linear_velocity=(0.28, 0.0, 0.0),
+        angular_velocity=(0.0, 8.0, 1.2),
+    )
+    wheel.mass = 0.22
+    wheel.is_kinematic = True
+    wheel.friction = 0.9
+    wheel.set_collision_shape(
+        dart.CollisionShape.cylinder(
+            _PRECESSION_WHEEL_RADIUS,
+            _PRECESSION_WHEEL_HALF_HEIGHT,
+        )
+    )
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_precession_runtime")
+    bridge.add_rigid_body_visual(
+        ground,
+        dart.BoxShape(_full(_PRECESSION_GROUND_HALF_EXTENTS)),
+        (0.34, 0.43, 0.32),
+        name="plan083_precession_ground_visual",
+    )
+    bridge.add_rigid_body_visual(
+        wheel,
+        dart.CylinderShape(
+            _PRECESSION_WHEEL_RADIUS,
+            2.0 * _PRECESSION_WHEEL_HALF_HEIGHT,
+        ),
+        (0.22, 0.52, 0.78),
+        name="plan083_precession_wheel_visual",
+    )
+    bridge.sync()
+
+    wheel_height_history: deque[float] = deque(maxlen=120)
+    spin_rate_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        wheel_position = np.asarray(wheel.translation, dtype=float).reshape(3)
+        wheel_velocity = np.asarray(wheel.angular_velocity, dtype=float).reshape(3)
+        ground_clearance = float(wheel_position[2] - _PRECESSION_WHEEL_RADIUS)
+        spin_rate = float(np.linalg.norm(wheel_velocity))
+        wheel_height_history.append(float(wheel_position[2]))
+        spin_rate_history.append(spin_rate)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text("rolling wheels: 1")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"wheel height: {wheel_position[2]:.3f} m")
+        builder.text(f"wheel ground clearance: {ground_clearance:.4f} m")
+        builder.text(f"spin rate: {spin_rate:.3f} rad/s")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if wheel_height_history:
+            builder.separator()
+            builder.plot_lines("Wheel height", list(wheel_height_history))
+            builder.plot_lines("Spin rate", list(spin_rate_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "ground": ground,
+            "wheel": wheel,
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
     elif target.scene_id == "plan083_nunchaku":
         build = lambda target=target: _build_nunchaku_runtime(target)
+    elif target.scene_id == "plan083_precession":
+        build = lambda target=target: _build_precession_runtime(target)
     elif target.scene_id == "plan083_terrain_vehicle":
         build = lambda target=target: _build_terrain_vehicle_runtime(target)
     elif target.scene_id == "plan083_windmill":
@@ -706,12 +815,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Precession",
         row_ids=("unb-fig-23",),
         category="PLAN-083 Robot Corpus",
-        summary="Planned rolling unicycle precession scene.",
-        target="Paper Fig. 23 / Table 2 precession benchmark scene.",
+        summary="Reduced precession wheel smoke scene running through World::step.",
+        target="Paper Fig. 23 / Table 2 precession benchmark scene; reduced to a single rolling wheel and flat terrain contact for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_precession --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_precession --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=precession",
-        limitation="Waiting for rolling-contact runtime scene and matched angular-velocity sweep.",
+        benchmark_command="pixi run bm-plan083-cpu-precession-packet",
+        limitation="Reduced rolling-wheel smoke and CPU packet only; angular-velocity sweep, rolling-contact model, and Table 2 timing remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_abd_complex_geometry",

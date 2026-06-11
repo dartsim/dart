@@ -34,6 +34,7 @@ DEFAULT_SCENE = "hanging_bridge"
 SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
+    "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
@@ -41,6 +42,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single_benchmark.json"
+    ),
+    "precession": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/precession_benchmark.json"
     ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle_benchmark.json"
@@ -54,6 +58,7 @@ SCENE_PACKET_OUTPUTS = {
     "nunchaku_single": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_single.json"
     ),
+    "precession": Path(".benchmark_results/plan083/cpu_scene_corpus/precession.json"),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json"
     ),
@@ -246,6 +251,14 @@ def make_packet(
         )
     if scene == "nunchaku_single":
         return _make_nunchaku_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "precession":
+        return _make_precession_packet(
             row,
             rows,
             timing_ns=timing_ns,
@@ -525,6 +538,73 @@ def _make_terrain_vehicle_packet(
                 "Reduced chassis/passive-wheel terrain smoke packet only; "
                 "paper-scale terrain mesh, navigation controls, and Table 2 "
                 "timings remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_precession_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    active_constraints = int(_finite_number(row, "active_constraints"))
+    active_friction_constraints = int(
+        _finite_number(row, "active_friction_constraints")
+    )
+    if body_count != 2:
+        raise Plan083CpuScenePacketError(f"expected 2 rigid bodies, got {body_count}")
+    if dynamic_body_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 dynamic rigid body, got {dynamic_body_count}"
+        )
+    if active_constraints <= 0:
+        raise Plan083CpuScenePacketError(
+            "expected active wheel-ground contact rows for the reduced precession scene"
+        )
+    if active_friction_constraints <= 0:
+        raise Plan083CpuScenePacketError(
+            "expected active wheel-ground friction rows for the reduced precession scene"
+        )
+
+    ground_clearance = _finite_number(row, "wheel_ground_clearance_m")
+    if ground_clearance < -1e-5:
+        raise Plan083CpuScenePacketError(
+            "precession wheel penetrated the reduced ground smoke scene"
+        )
+
+    spin_rate = _finite_number(row, "spin_rate_rad_s")
+    if spin_rate <= 1e-9:
+        raise Plan083CpuScenePacketError("precession spin rate was lost")
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-23",
+            "scene_id": "plan083_precession",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "active_constraints": active_constraints,
+            "active_friction_constraints": active_friction_constraints,
+            "solver_iterations": int(_finite_number(row, "solver_iterations")),
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "wheel_height_m": _finite_number(row, "wheel_height_m"),
+            "wheel_ground_clearance_m": ground_clearance,
+            "spin_rate_rad_s": spin_rate,
+            "limitation_status": (
+                "Reduced rolling-wheel runtime smoke packet only; angular-velocity "
+                "sweep, rolling-contact model, and Table 2 timing remain planned."
             ),
         },
         "benchmarks": rows,

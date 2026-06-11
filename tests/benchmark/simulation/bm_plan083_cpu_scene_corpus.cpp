@@ -61,6 +61,7 @@ namespace {
 
 constexpr std::array<double, 4> kBridgeBoardX{-0.45, -0.15, 0.15, 0.45};
 constexpr double kMaxReducedEqualityResidual = 1e-8;
+constexpr double kPi = 3.141592653589793238462643383279502884;
 
 const Eigen::Vector3d kBridgeBoardHalfExtents(0.10, 0.16, 0.025);
 const Eigen::Vector3d kBridgePostHalfExtents(0.05, 0.20, 0.08);
@@ -72,6 +73,9 @@ const Eigen::Vector3d kWindmillStrikerHalfExtents(0.09, 0.09, 0.09);
 const Eigen::Vector3d kTerrainHalfExtents(0.70, 0.45, 0.025);
 const Eigen::Vector3d kTerrainChassisHalfExtents(0.22, 0.12, 0.04);
 constexpr double kTerrainWheelRadius = 0.06;
+const Eigen::Vector3d kPrecessionGroundHalfExtents(0.55, 0.45, 0.025);
+constexpr double kPrecessionWheelRadius = 0.16;
+constexpr double kPrecessionWheelHalfHeight = 0.035;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -416,6 +420,62 @@ struct TerrainVehicleFixture
   std::vector<BodySnapshot> snapshots;
 };
 
+struct PrecessionFixture
+{
+  PrecessionFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.025);
+    ground.emplace(
+        world.addRigidBody("plan083_precession_ground", groundOptions));
+    ground->setFriction(0.8);
+    ground->setCollisionShape(
+        sx::CollisionShape::makeBox(kPrecessionGroundHalfExtents));
+
+    sx::RigidBodyOptions wheelOptions;
+    wheelOptions.mass = 0.22;
+    wheelOptions.position = Eigen::Vector3d(-0.18, 0.0, kPrecessionWheelRadius);
+    wheelOptions.orientation = Eigen::Quaterniond(
+        Eigen::AngleAxisd(-kPi / 2.0, Eigen::Vector3d::UnitX()));
+    wheelOptions.linearVelocity = Eigen::Vector3d(0.28, 0.0, 0.0);
+    wheelOptions.angularVelocity = Eigen::Vector3d(0.0, 8.0, 1.2);
+    wheel.emplace(world.addRigidBody("plan083_precession_wheel", wheelOptions));
+    wheel->setFriction(0.9);
+    wheel->setCollisionShape(
+        sx::CollisionShape::makeSphere(kPrecessionWheelRadius));
+
+    snapshotBody(snapshots, *ground);
+    snapshotBody(snapshots, *wheel);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double wheelGroundClearance() const
+  {
+    return wheel->getTranslation().z() - kPrecessionWheelRadius;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> ground;
+  std::optional<sx::RigidBody> wheel;
+  std::vector<BodySnapshot> snapshots;
+};
+
 } // namespace
 
 //==============================================================================
@@ -634,6 +694,59 @@ static void BM_Plan083CpuScene_terrain_vehicle_reduced_world_step(
       = fixture.minWheelGroundClearance();
 }
 BENCHMARK(BM_Plan083CpuScene_terrain_vehicle_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_precession_reduced_world_step(
+    benchmark::State& state)
+{
+  PrecessionFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeConstraints >= 1u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.wheel->getTransform().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_23"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["active_constraints"]
+      = static_cast<double>(lastStats.activeConstraints);
+  state.counters["active_friction_constraints"]
+      = static_cast<double>(lastStats.activeFrictionConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["wheel_height_m"] = fixture.wheel->getTranslation().z();
+  state.counters["wheel_ground_clearance_m"] = fixture.wheelGroundClearance();
+  state.counters["spin_rate_rad_s"]
+      = fixture.wheel->getAngularVelocity().norm();
+}
+BENCHMARK(BM_Plan083CpuScene_precession_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

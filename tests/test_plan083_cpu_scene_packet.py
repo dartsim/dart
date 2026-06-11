@@ -111,6 +111,29 @@ def _terrain_vehicle_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _precession_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_precession_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_precession_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 6.0,
+        "cpu_time": 6.0,
+        "time_unit": "ms",
+        "body_count": 2,
+        "dynamic_body_count": 1,
+        "active_constraints": 8,
+        "active_friction_constraints": 8,
+        "solver_iterations": 3,
+        "failed_steps": 0,
+        "final_equality_residual_norm": 0.0,
+        "wheel_height_m": 0.16,
+        "wheel_ground_clearance_m": 0.0,
+        "spin_rate_rad_s": 8.1,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     module = _load_module()
 
@@ -191,6 +214,26 @@ def test_plan083_cpu_scene_packet_accepts_reduced_terrain_vehicle() -> None:
     assert row["wall_time_ns"] == 5.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_precession() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _precession_packet(),
+        max_equality_residual=1e-8,
+        scene="precession",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-23"
+    assert row["scene_id"] == "plan083_precession"
+    assert row["paper_scale"] is False
+    assert row["body_count"] == 2
+    assert row["dynamic_body_count"] == 1
+    assert row["active_constraints"] == 8
+    assert row["active_friction_constraints"] == 8
+    assert row["wall_time_ns"] == 6.0e6
+
+
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
     module = _load_module()
 
@@ -258,4 +301,15 @@ def test_plan083_cpu_scene_packet_rejects_terrain_vehicle_without_wheels() -> No
             _terrain_vehicle_packet(wheel_count=3),
             max_equality_residual=1e-8,
             scene="terrain_vehicle",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_precession_without_spin() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="spin rate"):
+        module.make_packet(
+            _precession_packet(spin_rate_rad_s=0.0),
+            max_equality_residual=1e-8,
+            scene="precession",
         )

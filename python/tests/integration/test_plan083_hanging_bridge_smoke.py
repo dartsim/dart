@@ -157,3 +157,36 @@ def test_terrain_vehicle_demo_steps_rigid_ipc_world() -> None:
         wheel[0] > initial_wheel[0]
         for wheel, initial_wheel in zip(final_wheels, initial_wheels)
     )
+
+
+def test_precession_demo_steps_rigid_ipc_world() -> None:
+    sx = _sx()
+    from examples.demos.scenes.plan083_unified_newton_barrier import PLAN083_SCENES
+
+    scene = next(
+        scene for scene in PLAN083_SCENES if scene.id == "plan083_precession"
+    )
+    setup = scene.build()
+    sx_world = setup.info["sx_world"]
+    wheel = setup.info["wheel"]
+
+    assert setup.info["runtime_smoke_scene"] is True
+    assert sx_world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert setup.info["plan083_benchmark_command"] == (
+        "pixi run bm-plan083-cpu-precession-packet"
+    )
+    assert setup.pre_step is not None
+
+    initial_time = sx_world.time
+    initial_translation = np.asarray(wheel.translation, dtype=float).reshape(3).copy()
+    initial_transform = np.asarray(wheel.transform, dtype=float).reshape(4, 4).copy()
+    for _ in range(24):
+        setup.pre_step()
+
+    final_translation = np.asarray(wheel.translation, dtype=float).reshape(3)
+    final_transform = np.asarray(wheel.transform, dtype=float).reshape(4, 4)
+    assert sx_world.time > initial_time
+    assert np.all(np.isfinite(final_translation))
+    assert np.all(np.isfinite(final_transform))
+    assert final_translation[0] > initial_translation[0]
+    assert not np.allclose(final_transform[:3, :3], initial_transform[:3, :3])

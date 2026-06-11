@@ -220,11 +220,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_precession --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_precession --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/precession/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=precession",
+      "benchmark_command": "pixi run bm-plan083-cpu-precession-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/precession.json",
-      "expected_invariant": "Rolling unicycle precession rows stay stable across angular-velocity sweeps.",
-      "limitation_status": "Launchable placeholder only; waiting for rolling-contact runtime scene.",
-      "notes_or_gap": "Paper angular-velocity sweep remains planned."
+      "expected_invariant": "Reduced rolling-wheel contact scene stays finite, non-penetrating, and spinning while stepping through the rigid IPC World path.",
+      "limitation_status": "Reduced rolling-wheel smoke and CPU packet only; angular-velocity sweep, rolling-contact model, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced precession wheel scene through World::step, and bm-plan083-cpu-precession-packet validates the reduced benchmark packet. Paper angular-velocity sweep remains planned."
     },
     {
       "row_id": "unb-fig-24",
