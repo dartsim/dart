@@ -34,6 +34,7 @@
 
 #include "dart/simulation/comps/all.hpp"
 #include "dart/simulation/compute/variational_integration.hpp"
+#include "dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp"
 #include "dart/simulation/io/binary_io.hpp"
 #include "dart/simulation/io/category_serializer.hpp"
 
@@ -137,6 +138,54 @@ Eigen::VectorXd symmetricUpperBound(const Eigen::VectorXd& upperBound)
   return upperBound.cwiseAbs();
 }
 
+void writeMatrix3d(std::ostream& output, const Eigen::Matrix3d& matrix)
+{
+  for (Eigen::Index row = 0; row < 3; ++row) {
+    for (Eigen::Index col = 0; col < 3; ++col) {
+      writePOD(output, matrix(row, col));
+    }
+  }
+}
+
+void readMatrix3d(std::istream& input, Eigen::Matrix3d& matrix)
+{
+  for (Eigen::Index row = 0; row < 3; ++row) {
+    for (Eigen::Index col = 0; col < 3; ++col) {
+      readPOD(input, matrix(row, col));
+    }
+  }
+}
+
+void writeQuaterniond(std::ostream& output, const Eigen::Quaterniond& q)
+{
+  writePOD(output, q.w());
+  writePOD(output, q.x());
+  writePOD(output, q.y());
+  writePOD(output, q.z());
+}
+
+void readQuaterniond(std::istream& input, Eigen::Quaterniond& q)
+{
+  double w = 1.0;
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+  readPOD(input, w);
+  readPOD(input, x);
+  readPOD(input, y);
+  readPOD(input, z);
+  q = Eigen::Quaterniond(w, x, y, z);
+}
+
+void resetJointAvbdStiffnessState(comps::Joint& joint)
+{
+  joint.hasAvbdStiffnessState = false;
+  joint.avbdStartStiffness = 1.0;
+  joint.avbdLinearStiffness = std::numeric_limits<double>::infinity();
+  joint.avbdAngularStiffness = std::numeric_limits<double>::infinity();
+  joint.avbdMaxStiffness = std::numeric_limits<double>::infinity();
+}
+
 void deserializeJointV1(std::istream& input, comps::Joint& joint)
 {
   readPOD(input, joint.type);
@@ -175,6 +224,7 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
   joint.commandVelocity = Eigen::VectorXd::Zero(dof);
   joint.breakForce = 0.0;
   joint.broken = false;
+  resetJointAvbdStiffnessState(joint);
 
   const double infinity = std::numeric_limits<double>::infinity();
   if (joint.limits.lower.size() != dof) {
@@ -217,6 +267,7 @@ void deserializeJointV2ToV13(
 
   joint.breakForce = 0.0;
   joint.broken = false;
+  resetJointAvbdStiffnessState(joint);
 
   readVectorXd(input, joint.limits.lower);
   readVectorXd(input, joint.limits.upper);
@@ -257,6 +308,61 @@ void deserializeJointV2ToV13(
     joint.rigidBodyFixedJointLocalAnchorChild.setZero();
     joint.rigidBodyFixedJointTargetRelativeOrientation.setIdentity();
   }
+}
+
+void deserializeJointV14ToV16(std::istream& input, comps::Joint& joint)
+{
+  readPOD(input, joint.type);
+  readPOD(input, joint.actuatorType);
+  readString(input, joint.name);
+  readVectorXd(input, joint.position);
+  readVectorXd(input, joint.velocity);
+  readVectorXd(input, joint.acceleration);
+  readVectorXd(input, joint.torque);
+
+  readVectorXd(input, joint.springStiffness);
+  readVectorXd(input, joint.dampingCoefficient);
+  readVectorXd(input, joint.restPosition);
+  readVectorXd(input, joint.armature);
+  readVectorXd(input, joint.coulombFriction);
+  readVectorXd(input, joint.commandVelocity);
+
+  readPOD(input, joint.breakForce);
+  readPOD(input, joint.broken);
+  resetJointAvbdStiffnessState(joint);
+
+  readVectorXd(input, joint.limits.lower);
+  readVectorXd(input, joint.limits.upper);
+  readVectorXd(input, joint.limits.velocityLower);
+  readVectorXd(input, joint.limits.velocityUpper);
+  readVectorXd(input, joint.limits.effortLower);
+  readVectorXd(input, joint.limits.effortUpper);
+
+  readVector3d(input, joint.axis);
+  readVector3d(input, joint.axis2);
+  readPOD(input, joint.pitch);
+
+  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
+  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
+  readPOD(input, parentLink);
+  readPOD(input, childLink);
+  joint.parentLink = static_cast<entt::entity>(parentLink);
+  joint.childLink = static_cast<entt::entity>(childLink);
+
+  readPOD(input, joint.hasRigidBodyFixedJointAnchors);
+  readVector3d(input, joint.rigidBodyFixedJointLocalAnchorParent);
+  readVector3d(input, joint.rigidBodyFixedJointLocalAnchorChild);
+
+  double w = 1.0;
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+  readPOD(input, w);
+  readPOD(input, x);
+  readPOD(input, y);
+  readPOD(input, z);
+  joint.rigidBodyFixedJointTargetRelativeOrientation
+      = Eigen::Quaterniond(w, x, y, z);
 }
 
 void initializeCollisionShapeDefaults(CollisionShape& shape)
@@ -475,6 +581,10 @@ private:
       deserializeJointV2ToV13(input, component, formatVersion);
       return;
     }
+    if (formatVersion < 17u) {
+      deserializeJointV14ToV16(input, component);
+      return;
+    }
 
     loadComponent(input, component);
   }
@@ -487,6 +597,142 @@ void registerJointSerializer(SerializerRegistry& registry)
   }
 
   registry.registerSerializer(std::make_unique<JointComponentSerializer>());
+}
+
+class AvbdRigidWorldPointJointConfigComponentSerializer final
+  : public TypedComponentSerializer<::dart::simulation::detail::deformable_vbd::
+                                        AvbdRigidWorldPointJointConfig>
+{
+public:
+  using Component = ::dart::simulation::detail::deformable_vbd::
+      AvbdRigidWorldPointJointConfig;
+
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return "dart::simulation::detail::deformable_vbd::"
+           "AvbdRigidWorldPointJointConfig";
+  }
+
+protected:
+  void saveComponent(
+      std::ostream& output,
+      const Component& config,
+      const EntityMap& entityMap) const override
+  {
+    (void)entityMap;
+    writePOD(output, config.enabled);
+    writeVector3d(output, config.localAnchorA);
+    writeVector3d(output, config.localAnchorB);
+    writeQuaterniond(output, config.targetRelativeOrientation);
+    writeMatrix3d(output, config.linearAxes);
+    writeMatrix3d(output, config.angularAxes);
+    writePOD(output, config.linearAxisMask);
+    writePOD(output, config.angularAxisMask);
+    writePOD(output, config.startStiffness);
+    writePOD(output, config.linearMaterialStiffness);
+    writePOD(output, config.angularMaterialStiffness);
+    writePOD(output, config.maxStiffness);
+  }
+
+  void loadComponent(std::istream& input, Component& config) const override
+  {
+    readPOD(input, config.enabled);
+    readVector3d(input, config.localAnchorA);
+    readVector3d(input, config.localAnchorB);
+    readQuaterniond(input, config.targetRelativeOrientation);
+    readMatrix3d(input, config.linearAxes);
+    readMatrix3d(input, config.angularAxes);
+    readPOD(input, config.linearAxisMask);
+    readPOD(input, config.angularAxisMask);
+    readPOD(input, config.startStiffness);
+    readPOD(input, config.linearMaterialStiffness);
+    readPOD(input, config.angularMaterialStiffness);
+    readPOD(input, config.maxStiffness);
+  }
+};
+
+void registerAvbdRigidWorldPointJointConfigSerializer(
+    SerializerRegistry& registry)
+{
+  AvbdRigidWorldPointJointConfigComponentSerializer serializerProbe;
+  if (registry.getSerializer(serializerProbe.getTypeName()) != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(
+      std::make_unique<AvbdRigidWorldPointJointConfigComponentSerializer>());
+}
+
+class AvbdRigidWorldDistanceSpringConfigComponentSerializer final
+  : public TypedComponentSerializer<::dart::simulation::detail::deformable_vbd::
+                                        AvbdRigidWorldDistanceSpringConfig>
+{
+public:
+  using Component = ::dart::simulation::detail::deformable_vbd::
+      AvbdRigidWorldDistanceSpringConfig;
+
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return "dart::simulation::detail::deformable_vbd::"
+           "AvbdRigidWorldDistanceSpringConfig";
+  }
+
+protected:
+  void saveComponent(
+      std::ostream& output,
+      const Component& config,
+      const EntityMap& entityMap) const override
+  {
+    const auto bodyA
+        = config.bodyA != entt::null
+              ? static_cast<std::uint32_t>(entityMap.at(config.bodyA))
+              : static_cast<std::uint32_t>(entt::null);
+    const auto bodyB
+        = config.bodyB != entt::null
+              ? static_cast<std::uint32_t>(entityMap.at(config.bodyB))
+              : static_cast<std::uint32_t>(entt::null);
+
+    writePOD(output, config.enabled);
+    writePOD(output, bodyA);
+    writePOD(output, bodyB);
+    writeVector3d(output, config.localAnchorA);
+    writeVector3d(output, config.localAnchorB);
+    writePOD(output, config.restLength);
+    writePOD(output, config.startStiffness);
+    writePOD(output, config.materialStiffness);
+    writePOD(output, config.maxStiffness);
+  }
+
+  void loadComponent(std::istream& input, Component& config) const override
+  {
+    std::uint32_t bodyA = static_cast<std::uint32_t>(entt::null);
+    std::uint32_t bodyB = static_cast<std::uint32_t>(entt::null);
+
+    readPOD(input, config.enabled);
+    readPOD(input, bodyA);
+    readPOD(input, bodyB);
+    config.bodyA = static_cast<entt::entity>(bodyA);
+    config.bodyB = static_cast<entt::entity>(bodyB);
+    readVector3d(input, config.localAnchorA);
+    readVector3d(input, config.localAnchorB);
+    readPOD(input, config.restLength);
+    readPOD(input, config.startStiffness);
+    readPOD(input, config.materialStiffness);
+    readPOD(input, config.maxStiffness);
+  }
+};
+
+void registerAvbdRigidWorldDistanceSpringConfigSerializer(
+    SerializerRegistry& registry)
+{
+  AvbdRigidWorldDistanceSpringConfigComponentSerializer serializerProbe;
+  if (registry.getSerializer(serializerProbe.getTypeName()) != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(
+      std::make_unique<
+          AvbdRigidWorldDistanceSpringConfigComponentSerializer>());
 }
 
 class CollisionGeometryComponentSerializer final
@@ -630,6 +876,8 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerLinkSerializer(registry);
   registerJointSerializer(registry);
+  registerAvbdRigidWorldPointJointConfigSerializer(registry);
+  registerAvbdRigidWorldDistanceSpringConfigSerializer(registry);
 
   registerComponentIfNeeded<comps::Transform>(registry);
   registerComponentIfNeeded<comps::Velocity>(registry);
@@ -846,6 +1094,22 @@ void SerializerRegistry::loadAllEntities(
     auto& comp = frameStateView.get<comps::FrameState>(entity);
     if (comp.parentFrame != entt::null) {
       comp.parentFrame = entityMap.at(comp.parentFrame);
+    }
+  }
+
+  auto distanceSpringView
+      = registry.view<::dart::simulation::detail::deformable_vbd::
+                          AvbdRigidWorldDistanceSpringConfig>();
+  for (auto entity : distanceSpringView) {
+    auto& comp
+        = distanceSpringView.get<::dart::simulation::detail::deformable_vbd::
+                                     AvbdRigidWorldDistanceSpringConfig>(
+            entity);
+    if (comp.bodyA != entt::null) {
+      comp.bodyA = entityMap.at(comp.bodyA);
+    }
+    if (comp.bodyB != entt::null) {
+      comp.bodyB = entityMap.at(comp.bodyB);
     }
   }
 }

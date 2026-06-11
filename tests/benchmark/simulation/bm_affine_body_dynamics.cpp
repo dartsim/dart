@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/rigid_ipc_barrier.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 
 namespace sxdetail = dart::simulation::detail;
@@ -87,6 +88,43 @@ void consumeOrthogonality(sxdetail::AffineOrthogonalityEnergyResult& result)
   benchmark::DoNotOptimize(result.gradient);
   benchmark::DoNotOptimize(result.hessian);
   benchmark::ClobberMemory();
+}
+
+//==============================================================================
+void consumeMicroSolve(sxdetail::AffinePointTriangleMicroSolveResult& result)
+{
+  benchmark::DoNotOptimize(result.finalValue);
+  benchmark::DoNotOptimize(result.finalGradientNorm);
+  benchmark::DoNotOptimize(result.finalSquaredDistance);
+  benchmark::DoNotOptimize(result.state.translation);
+  benchmark::ClobberMemory();
+}
+
+//==============================================================================
+void recordMicroSolveCounters(
+    benchmark::State& state,
+    const sxdetail::AffinePointTriangleMicroSolveResult& result,
+    const sxdetail::AffinePointTriangleMicroSolveOptions& options)
+{
+  state.counters["row_abd_alg_affine_body"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["affine_dynamic_body_count"] = 1.0;
+  state.counters["static_triangle_body_count"] = 1.0;
+  state.counters["point_triangle_pair_count"] = 1.0;
+  state.counters["valid_solve"] = result.valid ? 1.0 : 0.0;
+  state.counters["converged"] = result.converged ? 1.0 : 0.0;
+  state.counters["barrier_active"] = result.barrierActive ? 1.0 : 0.0;
+  state.counters["solver_iterations"] = static_cast<double>(result.iterations);
+  state.counters["initial_objective"] = result.initialValue;
+  state.counters["final_objective"] = result.finalValue;
+  state.counters["objective_decrease"]
+      = result.initialValue - result.finalValue;
+  state.counters["initial_gradient_norm"] = result.initialGradientNorm;
+  state.counters["final_gradient_norm"] = result.finalGradientNorm;
+  state.counters["initial_squared_distance"] = result.initialSquaredDistance;
+  state.counters["final_squared_distance"] = result.finalSquaredDistance;
+  state.counters["squared_activation_distance"]
+      = options.barrier.squaredActivationDistance;
 }
 
 //==============================================================================
@@ -169,3 +207,55 @@ static void BM_AffineBodyOrthogonalityEnergy(benchmark::State& state)
   }
 }
 BENCHMARK(BM_AffineBodyOrthogonalityEnergy);
+
+//==============================================================================
+static void BM_AffineBodyPointTriangleMicroSolve(benchmark::State& state)
+{
+  sxdetail::AffineBodyState initialPointBody
+      = makeAffineBody(Eigen::Vector3d(0.0, 0.0, 0.08));
+  initialPointBody.linearMap
+      = Eigen::AngleAxisd(0.08, Eigen::Vector3d::UnitX()).toRotationMatrix();
+
+  sxdetail::AffineBodyState inertialTarget = initialPointBody;
+  inertialTarget.translation = Eigen::Vector3d(0.0, 0.0, 0.02);
+  inertialTarget.linearMap(0, 1) += 0.04;
+  inertialTarget.linearMap(1, 2) -= 0.03;
+
+  sxdetail::AffineBodyState triangleBody;
+  triangleBody.dynamic = false;
+
+  const Eigen::Vector3d point(0.2, 0.15, 0.0);
+  const Eigen::Vector3d triangleA(0.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleB(1.0, 0.0, 0.0);
+  const Eigen::Vector3d triangleC(0.0, 1.0, 0.0);
+
+  sxdetail::AffinePointTriangleMicroSolveOptions options;
+  options.barrier = activeAffineBarrierOptions();
+  options.barrier.squaredActivationDistance = 0.25;
+  options.barrier.stiffness = 0.04;
+  options.inertialWeight = 1.0;
+  options.orthogonalityStiffness = 0.5;
+  options.gradientTolerance = 1e-8;
+  options.maxIterations = 32;
+  options.maxLineSearchIterations = 24;
+  options.maxStepNorm = 0.2;
+
+  sxdetail::AffinePointTriangleMicroSolveResult result;
+  sxdetail::AffinePointTriangleMicroSolveResult lastResult;
+  for (auto _ : state) {
+    result = sxdetail::affinePointTriangleMicroSolve(
+        initialPointBody,
+        inertialTarget,
+        point,
+        triangleBody,
+        triangleA,
+        triangleB,
+        triangleC,
+        options);
+    lastResult = result;
+    consumeMicroSolve(result);
+  }
+
+  recordMicroSolveCounters(state, lastResult, options);
+}
+BENCHMARK(BM_AffineBodyPointTriangleMicroSolve);

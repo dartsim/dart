@@ -90,6 +90,7 @@
 
 #include <array>
 #include <chrono>
+#include <fstream>
 #include <limits>
 #include <optional>
 #include <span>
@@ -265,6 +266,14 @@ std::vector<Eigen::Vector3d> toVector3List(const nb::handle& value)
     result.push_back(toVector3(sequence[i]));
   }
   return result;
+}
+
+std::optional<Eigen::Vector3d> toOptionalVector3(const nb::handle& value)
+{
+  if (value.is_none()) {
+    return std::nullopt;
+  }
+  return toVector3(value);
 }
 
 std::vector<Eigen::Vector3i> toTriangleList(const nb::handle& value)
@@ -1098,6 +1107,18 @@ void defSimulationModule(nb::module_& m)
           "break_force", &sim::Joint::getBreakForce, &sim::Joint::setBreakForce)
       .def_prop_ro("is_broken", &sim::Joint::isBroken)
       .def("reset_breakage", &sim::Joint::resetBreakage)
+      .def_prop_rw(
+          "avbd_start_stiffness",
+          &sim::Joint::getAvbdStartStiffness,
+          &sim::Joint::setAvbdStartStiffness)
+      .def_prop_rw(
+          "avbd_linear_stiffness",
+          &sim::Joint::getAvbdLinearStiffness,
+          &sim::Joint::setAvbdLinearStiffness)
+      .def_prop_rw(
+          "avbd_angular_stiffness",
+          &sim::Joint::getAvbdAngularStiffness,
+          &sim::Joint::setAvbdAngularStiffness)
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
       .def_prop_ro("parent_rigid_body", &sim::Joint::getParentRigidBody)
@@ -1266,17 +1287,33 @@ void defSimulationModule(nb::module_& m)
 
   nb::class_<sim::MultibodyOptions>(m, "MultibodyOptions")
       .def(
-          nb::new_([](const std::string& integrationFamily) {
+          nb::new_([](const std::string& integrationFamily,
+                      std::size_t variationalMaxIterations,
+                      double variationalTolerance) {
             return sim::MultibodyOptions{
-                .integrationFamily = integrationFamily};
+                .integrationFamily = integrationFamily,
+                .variationalMaxIterations = variationalMaxIterations,
+                .variationalTolerance = variationalTolerance};
           }),
-          nb::arg("integration_family") = "semi-implicit")
+          nb::arg("integration_family") = "semi-implicit",
+          nb::arg("variational_max_iterations") = 100,
+          nb::arg("variational_tolerance") = 1e-10)
       .def_rw("integration_family", &sim::MultibodyOptions::integrationFamily)
+      .def_rw(
+          "variational_max_iterations",
+          &sim::MultibodyOptions::variationalMaxIterations)
+      .def_rw(
+          "variational_tolerance", &sim::MultibodyOptions::variationalTolerance)
       .def("__repr__", [](const sim::MultibodyOptions& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back(
             "integration_family",
             nb::cast<std::string>(nb::repr(nb::cast(self.integrationFamily))));
+        fields.emplace_back(
+            "variational_max_iterations",
+            std::to_string(self.variationalMaxIterations));
+        fields.emplace_back(
+            "variational_tolerance", std::to_string(self.variationalTolerance));
         return format_repr("MultibodyOptions", fields);
       });
 
@@ -2901,6 +2938,276 @@ void defSimulationModule(nb::module_& m)
           nb::arg("name"),
           nb::keep_alive<0, 1>())
       .def(
+          "add_articulated_fixed_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& parent,
+             const sim::Link& child,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            const auto parentAnchorValue = toOptionalVector3(parentAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (parentAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (parentAnchorValue.has_value()) {
+              return self.addArticulatedFixedJoint(
+                  name, parent, child, *parentAnchorValue, *childAnchorValue);
+            }
+            return self.addArticulatedFixedJoint(name, parent, child);
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::kw_only(),
+          nb::arg("parent_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_fixed_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& child,
+             const nb::handle& worldAnchor,
+             const nb::handle& childAnchor) {
+            const auto worldAnchorValue = toOptionalVector3(worldAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (worldAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (worldAnchorValue.has_value()) {
+              return self.addArticulatedFixedJoint(
+                  name, child, *worldAnchorValue, *childAnchorValue);
+            }
+            return self.addArticulatedFixedJoint(name, child);
+          },
+          nb::arg("name"),
+          nb::arg("child"),
+          nb::kw_only(),
+          nb::arg("world_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_revolute_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& parent,
+             const sim::Link& child,
+             const nb::handle& axis,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            const auto parentAnchorValue = toOptionalVector3(parentAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (parentAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (parentAnchorValue.has_value()) {
+              return self.addArticulatedRevoluteJoint(
+                  name,
+                  parent,
+                  child,
+                  toVector3(axis),
+                  *parentAnchorValue,
+                  *childAnchorValue);
+            }
+            return self.addArticulatedRevoluteJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::kw_only(),
+          nb::arg("parent_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_revolute_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& child,
+             const nb::handle& axis,
+             const nb::handle& worldAnchor,
+             const nb::handle& childAnchor) {
+            const auto worldAnchorValue = toOptionalVector3(worldAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (worldAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (worldAnchorValue.has_value()) {
+              return self.addArticulatedRevoluteJoint(
+                  name,
+                  child,
+                  toVector3(axis),
+                  *worldAnchorValue,
+                  *childAnchorValue);
+            }
+            return self.addArticulatedRevoluteJoint(
+                name, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::kw_only(),
+          nb::arg("world_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_prismatic_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& parent,
+             const sim::Link& child,
+             const nb::handle& axis,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            const auto parentAnchorValue = toOptionalVector3(parentAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (parentAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (parentAnchorValue.has_value()) {
+              return self.addArticulatedPrismaticJoint(
+                  name,
+                  parent,
+                  child,
+                  toVector3(axis),
+                  *parentAnchorValue,
+                  *childAnchorValue);
+            }
+            return self.addArticulatedPrismaticJoint(
+                name, parent, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::kw_only(),
+          nb::arg("parent_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_prismatic_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& child,
+             const nb::handle& axis,
+             const nb::handle& worldAnchor,
+             const nb::handle& childAnchor) {
+            const auto worldAnchorValue = toOptionalVector3(worldAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (worldAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (worldAnchorValue.has_value()) {
+              return self.addArticulatedPrismaticJoint(
+                  name,
+                  child,
+                  toVector3(axis),
+                  *worldAnchorValue,
+                  *childAnchorValue);
+            }
+            return self.addArticulatedPrismaticJoint(
+                name, child, toVector3(axis));
+          },
+          nb::arg("name"),
+          nb::arg("child"),
+          nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
+          nb::kw_only(),
+          nb::arg("world_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_spherical_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& parent,
+             const sim::Link& child,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            const auto parentAnchorValue = toOptionalVector3(parentAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (parentAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (parentAnchorValue.has_value()) {
+              return self.addArticulatedSphericalJoint(
+                  name, parent, child, *parentAnchorValue, *childAnchorValue);
+            }
+            return self.addArticulatedSphericalJoint(name, parent, child);
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::kw_only(),
+          nb::arg("parent_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_articulated_spherical_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::Link& child,
+             const nb::handle& worldAnchor,
+             const nb::handle& childAnchor) {
+            const auto worldAnchorValue = toOptionalVector3(worldAnchor);
+            const auto childAnchorValue = toOptionalVector3(childAnchor);
+            if (worldAnchorValue.has_value() != childAnchorValue.has_value()) {
+              throw nb::value_error(
+                  "Articulated point-joint anchors must be provided for both "
+                  "endpoints");
+            }
+            if (worldAnchorValue.has_value()) {
+              return self.addArticulatedSphericalJoint(
+                  name, child, *worldAnchorValue, *childAnchorValue);
+            }
+            return self.addArticulatedSphericalJoint(name, child);
+          },
+          nb::arg("name"),
+          nb::arg("child"),
+          nb::kw_only(),
+          nb::arg("world_anchor") = nb::none(),
+          nb::arg("child_anchor") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_articulated_joint",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto joint = self.getArticulatedJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_articulated_joint",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasArticulatedJoint(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_articulated_joints",
+          [](const nb::object& worldObject) {
+            auto& self = nb::cast<sim::World&>(worldObject);
+            return castJointsKeepingWorldAlive(
+                self.getArticulatedJoints(), worldObject);
+          })
+      .def(
           "add_rigid_body",
           [](sim::World& self,
              const std::string& name,
@@ -2975,6 +3282,85 @@ void defSimulationModule(nb::module_& m)
           nb::arg("axis") = nb::make_tuple(0.0, 0.0, 1.0),
           nb::keep_alive<0, 1>())
       .def(
+          "add_rigid_body_spherical_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child) {
+            return self.addRigidBodySphericalJoint(name, parent, child);
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_rigid_body_spherical_joint",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            return self.addRigidBodySphericalJoint(
+                name,
+                parent,
+                child,
+                toVector3(parentAnchor),
+                toVector3(childAnchor));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::kw_only(),
+          nb::arg("parent_anchor"),
+          nb::arg("child_anchor"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_rigid_body_distance_spring",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             double restLength,
+             double stiffness) {
+            self.addRigidBodyDistanceSpring(
+                name, parent, child, restLength, stiffness);
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("rest_length"),
+          nb::arg("stiffness"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_rigid_body_distance_spring",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::RigidBody& parent,
+             const sim::RigidBody& child,
+             double restLength,
+             double stiffness,
+             const nb::handle& parentAnchor,
+             const nb::handle& childAnchor) {
+            self.addRigidBodyDistanceSpring(
+                name,
+                parent,
+                child,
+                restLength,
+                stiffness,
+                toVector3(parentAnchor),
+                toVector3(childAnchor));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("child"),
+          nb::arg("rest_length"),
+          nb::arg("stiffness"),
+          nb::kw_only(),
+          nb::arg("parent_anchor"),
+          nb::arg("child_anchor"),
+          nb::keep_alive<0, 1>())
+      .def(
           "get_rigid_body_joint",
           [](sim::World& self, const std::string& name) -> nb::object {
             auto joint = self.getRigidBodyJoint(name);
@@ -3041,6 +3427,30 @@ void defSimulationModule(nb::module_& m)
           nb::keep_alive<0, 1>())
       .def_prop_ro("is_simulation_mode", &sim::World::isSimulationMode)
       .def("enter_simulation_mode", &sim::World::enterSimulationMode)
+      .def(
+          "save_binary",
+          [](const sim::World& self, const std::filesystem::path& path) {
+            std::ofstream output(path, std::ios::binary);
+            DART_SIMULATION_THROW_T_IF(
+                !output,
+                sim::InvalidArgumentException,
+                "World.save_binary(path) could not open path for writing");
+            self.saveBinary(output);
+          },
+          nb::arg("path"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "load_binary",
+          [](sim::World& self, const std::filesystem::path& path) {
+            std::ifstream input(path, std::ios::binary);
+            DART_SIMULATION_THROW_T_IF(
+                !input,
+                sim::InvalidArgumentException,
+                "World.load_binary(path) could not open path for reading");
+            self.loadBinary(input);
+          },
+          nb::arg("path"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "update_kinematics",
           [](sim::World& self) { self.updateKinematics(); },
@@ -3188,6 +3598,8 @@ void defSimulationModule(nb::module_& m)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def_prop_ro(
+          "num_articulated_joints", &sim::World::getArticulatedJointCount)
       .def_prop_ro("num_rigid_body_joints", &sim::World::getRigidBodyJointCount)
       .def_prop_ro(
           "num_rigid_body_fixed_joints",
@@ -3243,6 +3655,34 @@ void defSimulationModule(nb::module_& m)
       .def_prop_ro(
           "num_differentiable_parameters",
           &sim::World::getNumDifferentiableParameters)
+      .def(
+          "set_collision_pair_ignored",
+          [](sim::World& self,
+             const nb::handle& first,
+             const nb::handle& second,
+             bool ignored) {
+            self.setCollisionPairIgnored(
+                toFrameHandle(first), toFrameHandle(second), ignored);
+          },
+          nb::arg("first"),
+          nb::arg("second"),
+          nb::arg("ignored") = true)
+      .def(
+          "is_collision_pair_ignored",
+          [](const sim::World& self,
+             const nb::handle& first,
+             const nb::handle& second) {
+            return self.isCollisionPairIgnored(
+                toFrameHandle(first), toFrameHandle(second));
+          },
+          nb::arg("first"),
+          nb::arg("second"))
+      .def(
+          "clear_ignored_collision_pairs",
+          &sim::World::clearIgnoredCollisionPairs)
+      .def_prop_ro(
+          "num_ignored_collision_pairs",
+          &sim::World::getIgnoredCollisionPairCount)
       .def(
           "collide",
           [](sim::World& self, const sim::CollisionQueryOptions& options) {

@@ -149,6 +149,18 @@ std::string frameCacheResource(entt::entity entity)
          + std::to_string(static_cast<std::uint32_t>(entity));
 }
 
+//==============================================================================
+bool hasDirtyFrameCaches(const detail::WorldRegistry& registry)
+{
+  const auto frameView = registry.view<comps::FrameCache>();
+  for (const auto entity : frameView) {
+    if (frameView.get<comps::FrameCache>(entity).needTransformUpdate) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace
 
 //==============================================================================
@@ -243,6 +255,10 @@ bool WorldKinematicsGraph::isTopologyCurrent() const noexcept
 //==============================================================================
 void WorldKinematicsGraph::execute(ComputeExecutor& executor)
 {
+  if (!m_world.isStepProfilingEnabled()
+      && !hasDirtyFrameCaches(dart::simulation::detail::registryOf(m_world))) {
+    return;
+  }
   executor.execute(m_graph);
 }
 

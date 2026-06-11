@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/line_search.hpp>
 #include <dart/simulation/export.hpp>
 
 #include <Eigen/Core>
@@ -122,6 +123,35 @@ struct AffineOrthogonalityEnergyResult
   AffineVector12d gradient = AffineVector12d::Zero();
   AffineMatrix12d hessian = AffineMatrix12d::Zero();
   bool active = false;
+};
+
+struct AffinePointTriangleMicroSolveOptions
+{
+  AffineBarrierOptions barrier;
+  double inertialWeight = 1.0;
+  double orthogonalityStiffness = 0.0;
+  double gradientTolerance = 1e-8;
+  double sufficientDecreaseFactor
+      = newton_barrier::kDefaultSufficientDecreaseFactor;
+  double backtrackingScale = newton_barrier::kDefaultBacktrackingScale;
+  double maxStepNorm = 0.25;
+  int maxIterations = 16;
+  int maxLineSearchIterations = 16;
+};
+
+struct AffinePointTriangleMicroSolveResult
+{
+  AffineBodyState state;
+  double initialValue = 0.0;
+  double finalValue = 0.0;
+  double initialGradientNorm = 0.0;
+  double finalGradientNorm = 0.0;
+  double initialSquaredDistance = 0.0;
+  double finalSquaredDistance = 0.0;
+  int iterations = 0;
+  bool valid = false;
+  bool converged = false;
+  bool barrierActive = false;
 };
 
 [[nodiscard]] DART_SIMULATION_API AffineVector12d
@@ -232,5 +262,16 @@ affineOrthogonalityEnergy(
     const AffineBodyState& state,
     double stiffness,
     bool projectHessianToPsd = false);
+
+[[nodiscard]] DART_SIMULATION_API AffinePointTriangleMicroSolveResult
+affinePointTriangleMicroSolve(
+    const AffineBodyState& initialPointBody,
+    const AffineBodyState& inertialTarget,
+    const Eigen::Vector3d& point,
+    const AffineBodyState& triangleBody,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const AffinePointTriangleMicroSolveOptions& options);
 
 } // namespace dart::simulation::detail

@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/body/contact.hpp>
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/constants.hpp>
@@ -39,6 +40,7 @@
 #include <dart/simulation/comps/multibody.hpp>
 #include <dart/simulation/comps/name.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
@@ -208,6 +210,168 @@ void expectRegistryStorageCapacitiesUnchanged(
     ASSERT_NE(it, actual.end()) << "missing storage id " << id;
     EXPECT_EQ(it->second, capacity) << "storage id " << id;
   }
+}
+
+bool hasContactBetween(
+    const std::vector<dart::simulation::Contact>& contacts,
+    std::string_view first,
+    std::string_view second)
+{
+  for (const auto& contact : contacts) {
+    const auto nameA = contact.bodyA.getName();
+    const auto nameB = contact.bodyB.getName();
+    if ((nameA == first && nameB == second)
+        || (nameA == second && nameB == first)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename AddJoint>
+void expectBrokenRigidBodyJointRoundTrips(
+    std::string_view jointName,
+    dart::simulation::JointType expectedType,
+    std::size_t expectedDofCount,
+    bool hasExpectedAxis,
+    const Eigen::Vector3d& expectedAxis,
+    AddJoint addJoint)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  world1.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  auto parent = world1.addRigidBody("parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto child = world1.addRigidBody("child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto joint = addJoint(world1, jointName, parent, child);
+  joint.setBreakForce(12.5);
+
+  auto& jointComp
+      = dart::simulation::detail::registryOf(world1).get<sx::comps::Joint>(
+          dart::simulation::detail::toRegistryEntity(joint.getEntity()));
+  jointComp.broken = true;
+  world1.enterSimulationMode();
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_TRUE(world2.isSimulationMode());
+  EXPECT_EQ(world2.getRigidBodyJointCount(), 1u);
+  auto restoredJoint = world2.getRigidBodyJoint(jointName);
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_EQ(restoredJoint->getType(), expectedType);
+  EXPECT_EQ(restoredJoint->getDOFCount(), expectedDofCount);
+  if (hasExpectedAxis) {
+    EXPECT_TRUE(restoredJoint->getAxis().isApprox(expectedAxis));
+  }
+  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 12.5);
+  EXPECT_TRUE(restoredJoint->isBroken());
+  EXPECT_EQ(restoredJoint->getParentRigidBody().getName(), "parent");
+  EXPECT_EQ(restoredJoint->getChildRigidBody().getName(), "child");
+  EXPECT_TRUE(hasContactBetween(world2.collide(), "parent", "child"));
+
+  restoredJoint->resetBreakage();
+  EXPECT_FALSE(restoredJoint->isBroken());
+  EXPECT_FALSE(hasContactBetween(world2.collide(), "parent", "child"));
+}
+
+template <typename AddJoint>
+void expectBrokenArticulatedPointJointRoundTrips(
+    std::string_view jointName,
+    dart::simulation::JointType expectedType,
+    std::size_t expectedDofCount,
+    bool hasExpectedAxis,
+    const Eigen::Vector3d& expectedAxis,
+    bool hasParentLink,
+    AddJoint addJoint)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  world1.setGravity(Eigen::Vector3d::Zero());
+  world1.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world1.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  spec.transformFromParent.translation() = Eigen::Vector3d(0.4, 0.2, 0.1);
+  auto child = robot.addLink("child", base, spec);
+
+  const Eigen::Vector3d childAnchor(-0.1, 0.05, 0.02);
+  const Eigen::Vector3d parentOrWorldAnchor
+      = child.getWorldTransform() * childAnchor;
+  auto joint = addJoint(
+      world1, jointName, base, child, parentOrWorldAnchor, childAnchor);
+  joint.setBreakForce(12.5);
+  if (expectedDofCount == 1u) {
+    joint.setActuatorType(sx::ActuatorType::Velocity);
+    joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.25));
+    joint.setEffortLimits(
+        Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 4.0));
+  }
+
+  world1.enterSimulationMode();
+  auto& jointComp
+      = dart::simulation::detail::registryOf(world1).get<sx::comps::Joint>(
+          dart::simulation::detail::toRegistryEntity(joint.getEntity()));
+  jointComp.broken = true;
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_TRUE(world2.isSimulationMode());
+  EXPECT_EQ(
+      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+  EXPECT_EQ(world2.getArticulatedJointCount(), 1u);
+  auto restoredJoint = world2.getArticulatedJoint(jointName);
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_EQ(restoredJoint->getType(), expectedType);
+  EXPECT_EQ(restoredJoint->getDOFCount(), expectedDofCount);
+  if (hasExpectedAxis) {
+    EXPECT_TRUE(restoredJoint->getAxis().isApprox(expectedAxis));
+  }
+  EXPECT_DOUBLE_EQ(restoredJoint->getBreakForce(), 12.5);
+  EXPECT_TRUE(restoredJoint->isBroken());
+  EXPECT_EQ(restoredJoint->getChildLink().getName(), "child");
+  if (hasParentLink) {
+    EXPECT_EQ(restoredJoint->getParentLink().getName(), "base");
+  } else {
+    EXPECT_THROW(
+        {
+          auto parent = restoredJoint->getParentLink();
+          (void)parent;
+        },
+        sx::InvalidArgumentException);
+  }
+  if (expectedDofCount == 1u) {
+    EXPECT_EQ(restoredJoint->getActuatorType(), sx::ActuatorType::Velocity);
+    EXPECT_TRUE(restoredJoint->getCommandVelocity().isApprox(
+        Eigen::VectorXd::Constant(1, 0.25)));
+    EXPECT_TRUE(restoredJoint->getEffortLowerLimits().isApprox(
+        Eigen::VectorXd::Constant(1, -3.0)));
+    EXPECT_TRUE(restoredJoint->getEffortUpperLimits().isApprox(
+        Eigen::VectorXd::Constant(1, 4.0)));
+  }
+
+  restoredJoint->resetBreakage();
+  EXPECT_FALSE(restoredJoint->isBroken());
 }
 
 void writeLegacyJointV1(
@@ -411,6 +575,50 @@ void saveLegacyV8WorldWithCurrentEntities(
   saveLegacyWorldWithCurrentEntities(output, world, /*legacyVersion=*/8u);
 }
 
+void writeLegacyV15EmptyWorldWithSolverOptions(std::ostream& output)
+{
+  namespace io = dart::simulation::io;
+
+  constexpr std::uint32_t magicNumber = 0x44525437;
+  io::writePOD(output, magicNumber);
+  io::writePOD(output, 15u);
+
+  const std::size_t entityCount = 0u;
+  io::writePOD(output, entityCount);
+
+  const std::uint8_t simulationFlag = 0u;
+  io::writePOD(output, simulationFlag);
+  const std::size_t counter = 0u;
+  io::writePOD(output, counter); // free frames
+  io::writePOD(output, counter); // fixed frames
+  io::writePOD(output, counter); // multibodies
+  io::writePOD(output, counter); // rigid bodies
+  io::writePOD(output, counter); // links
+  io::writePOD(output, counter); // joints
+
+  io::writePOD(output, 0.125); // time step
+  io::writePOD(output, 2.5);   // time
+  io::writePOD(output, counter);
+
+  io::writePOD(output, 0.0);
+  io::writePOD(output, -1.5);
+  io::writePOD(output, -3.0);
+
+  io::writePOD(output, counter); // deformable-body counter
+
+  const std::uint8_t differentiableFlag = 1u;
+  io::writePOD(output, differentiableFlag);
+
+  const std::uint8_t rigidBodySolver = 1u;
+  const std::uint8_t contactSolverMethod = 1u;
+  const std::uint8_t contactGradientMode = 2u;
+  const std::uint8_t multibodyIntegrationMethod = 1u;
+  io::writePOD(output, rigidBodySolver);
+  io::writePOD(output, contactSolverMethod);
+  io::writePOD(output, contactGradientMode);
+  io::writePOD(output, multibodyIntegrationMethod);
+}
+
 } // namespace
 
 // Test save/load empty world
@@ -429,6 +637,40 @@ TEST(Serialization, EmptyWorld)
   EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
+}
+
+TEST(Serialization, IgnoredCollisionPairsRoundTrip)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  auto bodyA = world1.addRigidBody("rigid_a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto bodyB = world1.addRigidBody("rigid_b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  ASSERT_FALSE(world1.collide().empty());
+  world1.setCollisionPairIgnored(bodyA, bodyB);
+  ASSERT_TRUE(world1.collide().empty());
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto restoredA = world2.getRigidBody("rigid_a");
+  auto restoredB = world2.getRigidBody("rigid_b");
+  ASSERT_TRUE(restoredA.has_value());
+  ASSERT_TRUE(restoredB.has_value());
+  EXPECT_EQ(world2.getIgnoredCollisionPairCount(), 1u);
+  EXPECT_TRUE(world2.isCollisionPairIgnored(*restoredB, *restoredA));
+  EXPECT_TRUE(world2.collide().empty());
+
+  world2.setCollisionPairIgnored(*restoredA, *restoredB, false);
+  EXPECT_FALSE(world2.collide().empty());
 }
 
 TEST(Serialization, ComponentSerializerVersionedLoadFallsBackToLegacyLoad)
@@ -1041,6 +1283,8 @@ TEST(Serialization, PreservesWorldSolverOptions)
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
   options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.variationalMaxIterations = 200;
+  options.multibodyOptions.variationalTolerance = 1e-9;
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
@@ -1056,6 +1300,8 @@ TEST(Serialization, PreservesWorldSolverOptions)
   EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
   EXPECT_EQ(
       world2.getMultibodyOptions().integrationFamily, "variational integrator");
+  EXPECT_EQ(world2.getMultibodyOptions().variationalMaxIterations, 200u);
+  EXPECT_DOUBLE_EQ(world2.getMultibodyOptions().variationalTolerance, 1e-9);
   EXPECT_TRUE(world2.isDifferentiable());
   EXPECT_EQ(world2.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
   EXPECT_EQ(
@@ -1082,6 +1328,33 @@ TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
       sx::ContactGradientMode::ComplementarityAware);
 }
 
+TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
+{
+  namespace sx = dart::simulation;
+
+  std::stringstream legacy;
+  writeLegacyV15EmptyWorldWithSolverOptions(legacy);
+
+  sx::World world;
+  world.loadBinary(legacy);
+
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTimeStep(), 0.125);
+  EXPECT_DOUBLE_EQ(world.getTime(), 2.5);
+  EXPECT_TRUE(world.getGravity().isApprox(Eigen::Vector3d(0.0, -1.5, -3.0)));
+  EXPECT_TRUE(world.isDifferentiable());
+  EXPECT_EQ(world.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(
+      world.getMultibodyOptions().integrationFamily, "variational integrator");
+  EXPECT_EQ(world.getMultibodyOptions().variationalMaxIterations, 100u);
+  EXPECT_DOUBLE_EQ(world.getMultibodyOptions().variationalTolerance, 1e-10);
+  EXPECT_EQ(world.getContactSolverMethod(), sx::ContactSolverMethod::BoxedLcp);
+  EXPECT_EQ(
+      world.getContactGradientMode(),
+      sx::ContactGradientMode::PreContactSurrogate);
+  EXPECT_EQ(world.getIgnoredCollisionPairCount(), 0u);
+}
+
 TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
 {
   namespace sx = dart::simulation;
@@ -1101,10 +1374,32 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
     EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
   };
 
-  expectInvalidByte(4u); // rigid-body solver
-  expectInvalidByte(3u); // contact solver method
-  expectInvalidByte(2u); // contact gradient mode
-  expectInvalidByte(1u); // multibody integration method
+  const std::size_t solverSuffixBytes
+      = sizeof(std::size_t) + sizeof(std::size_t) + sizeof(double);
+  ASSERT_GE(validRecord.size(), solverSuffixBytes + 4u);
+  expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
+  expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
+  expectInvalidByte(solverSuffixBytes + 2u); // contact gradient mode
+  expectInvalidByte(solverSuffixBytes + 1u); // multibody integration method
+
+  const auto expectInvalidTailField
+      = [&](std::size_t offsetFromStart, const void* value, std::size_t size) {
+          auto corruptRecord = validRecord;
+          std::memcpy(corruptRecord.data() + offsetFromStart, value, size);
+
+          std::stringstream input(corruptRecord);
+          sx::World loaded;
+          EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
+        };
+
+  const std::size_t toleranceOffset = validRecord.size() - sizeof(double);
+  const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
+  const std::size_t invalidIterations = 0u;
+  expectInvalidTailField(
+      iterationOffset, &invalidIterations, sizeof(invalidIterations));
+  const double invalidTolerance = 0.0;
+  expectInvalidTailField(
+      toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
 }
 
 // Test loadBinary resets solver-family and policy metadata when reading records
@@ -1121,6 +1416,8 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Ipc;
   options.multibodyOptions.integrationFamily = "variational integrator";
+  options.multibodyOptions.variationalMaxIterations = 200;
+  options.multibodyOptions.variationalTolerance = 1e-9;
   options.differentiable = true;
   options.contactSolverMethod = sx::ContactSolverMethod::BoxedLcp;
   options.contactGradientMode = sx::ContactGradientMode::PreContactSurrogate;
@@ -1131,6 +1428,8 @@ TEST(Serialization, LegacyLoadResetsMissingWorldSolverOptionsToDefaults)
   EXPECT_EQ(
       loaded.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
   EXPECT_EQ(loaded.getMultibodyOptions().integrationFamily, "semi-implicit");
+  EXPECT_EQ(loaded.getMultibodyOptions().variationalMaxIterations, 100u);
+  EXPECT_DOUBLE_EQ(loaded.getMultibodyOptions().variationalTolerance, 1e-10);
   EXPECT_FALSE(loaded.isDifferentiable());
   EXPECT_EQ(
       loaded.getContactSolverMethod(),
@@ -1161,13 +1460,22 @@ TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
       &legacyVersion,
       sizeof(legacyVersion));
   // Format v6+ appends World option metadata after the deformable-body counter.
-  // Drop the v15 tail so the remaining record matches the v2 tail layout this
-  // legacy-compatibility check was written against (deformable counter, then
-  // the gravity block as the last three doubles).
-  constexpr std::size_t worldOptionTailBytes = 5u;
-  ASSERT_GE(legacyRecord.size(), worldOptionTailBytes);
-  legacyRecord.resize(legacyRecord.size() - worldOptionTailBytes);
-  legacyRecord.resize(legacyRecord.size() - 3 * sizeof(double));
+  // Drop the current modern option tail, then erase only the v2+ gravity block
+  // so this legacy-compatibility check still leaves the v1 deformable counter
+  // in place before the synthetic trailer.
+  constexpr std::size_t modernWorldOptionTailBytes
+      = sizeof(std::uint8_t) + 4u * sizeof(std::uint8_t) + sizeof(std::size_t)
+        + sizeof(std::size_t) + sizeof(double);
+  constexpr std::size_t legacyDeformableCounterBytes = sizeof(std::size_t);
+  ASSERT_GE(
+      legacyRecord.size(),
+      modernWorldOptionTailBytes + legacyDeformableCounterBytes
+          + 3u * sizeof(double));
+  legacyRecord.resize(legacyRecord.size() - modernWorldOptionTailBytes);
+  const std::size_t gravityOffset = legacyRecord.size()
+                                    - legacyDeformableCounterBytes
+                                    - 3u * sizeof(double);
+  legacyRecord.erase(gravityOffset, 3u * sizeof(double));
 
   constexpr std::string_view trailerBytes = "0123456789abcdefghijklmn";
   static_assert(trailerBytes.size() == 3 * sizeof(double));
@@ -1202,6 +1510,53 @@ TEST(Serialization, PreservesCounters)
 
   auto mb3 = world2.addMultibody("");
   EXPECT_EQ(mb3.getName(), "multibody_003");
+}
+
+TEST(Serialization, PreservesJointCounterAcrossArticulatedGeneratedNames)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  world1.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world1.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "tree";
+  spec.type = sx::JointType::Floating;
+  spec.transformFromParent.translation() = Eigen::Vector3d::UnitX();
+  auto child = robot.addLink("child", base, spec);
+
+  auto explicitJoint
+      = world1.addArticulatedFixedJoint("joint_001", base, child);
+  auto generatedJoint
+      = world1.addArticulatedRevoluteJoint("", child, Eigen::Vector3d::UnitY());
+  EXPECT_EQ(explicitJoint.getName(), "joint_001");
+  EXPECT_EQ(generatedJoint.getName(), "joint_002");
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto restoredRobot = world2.getMultibody("robot");
+  ASSERT_TRUE(restoredRobot.has_value());
+  auto restoredBase = restoredRobot->getLink("base");
+  ASSERT_TRUE(restoredBase.has_value());
+  auto restoredChild = restoredRobot->getLink("child");
+  ASSERT_TRUE(restoredChild.has_value());
+
+  EXPECT_TRUE(world2.hasArticulatedJoint("joint_001"));
+  EXPECT_TRUE(world2.hasArticulatedJoint("joint_002"));
+  EXPECT_EQ(world2.getArticulatedJointCount(), 2u);
+
+  // The topology joint is also a restored Joint component, so the load-time
+  // counter guard advances the next generated public facade past it.
+  auto afterLoadGenerated = world2.addArticulatedPrismaticJoint(
+      "", *restoredBase, *restoredChild, Eigen::Vector3d::UnitX());
+  EXPECT_EQ(afterLoadGenerated.getName(), "joint_004");
+  EXPECT_EQ(world2.getArticulatedJointCount(), 3u);
 }
 
 // Test multiple save/load cycles
@@ -1453,6 +1808,554 @@ TEST(Serialization, MixedContent)
   EXPECT_TRUE(world2.getMultibody("robot").has_value());
   EXPECT_TRUE(world2.hasRigidBody("box1"));
   EXPECT_TRUE(world2.hasRigidBody("box2"));
+}
+
+TEST(Serialization, RigidBodyFixedJointBreakageRoundTrips)
+{
+  namespace sx = dart::simulation;
+
+  expectBrokenRigidBodyJointRoundTrips(
+      "fixed",
+      sx::JointType::Fixed,
+      0u,
+      false,
+      Eigen::Vector3d::Zero(),
+      [](sx::World& world,
+         std::string_view name,
+         const sx::RigidBody& parent,
+         const sx::RigidBody& child) {
+        return world.addRigidBodyFixedJoint(name, parent, child);
+      });
+}
+
+TEST(Serialization, RigidBodyRevoluteJointBreakageRoundTrips)
+{
+  namespace sx = dart::simulation;
+
+  expectBrokenRigidBodyJointRoundTrips(
+      "hinge",
+      sx::JointType::Revolute,
+      1u,
+      true,
+      Eigen::Vector3d::UnitY(),
+      [](sx::World& world,
+         std::string_view name,
+         const sx::RigidBody& parent,
+         const sx::RigidBody& child) {
+        return world.addRigidBodyRevoluteJoint(
+            name, parent, child, Eigen::Vector3d::UnitY());
+      });
+}
+
+TEST(Serialization, RigidBodyPrismaticJointBreakageRoundTrips)
+{
+  namespace sx = dart::simulation;
+
+  expectBrokenRigidBodyJointRoundTrips(
+      "slider",
+      sx::JointType::Prismatic,
+      1u,
+      true,
+      Eigen::Vector3d::UnitY(),
+      [](sx::World& world,
+         std::string_view name,
+         const sx::RigidBody& parent,
+         const sx::RigidBody& child) {
+        return world.addRigidBodyPrismaticJoint(
+            name, parent, child, Eigen::Vector3d::UnitY());
+      });
+}
+
+TEST(Serialization, RigidBodySphericalJointBreakageRoundTrips)
+{
+  namespace sx = dart::simulation;
+
+  expectBrokenRigidBodyJointRoundTrips(
+      "socket",
+      sx::JointType::Spherical,
+      3u,
+      false,
+      Eigen::Vector3d::Zero(),
+      [](sx::World& world,
+         std::string_view name,
+         const sx::RigidBody& parent,
+         const sx::RigidBody& child) {
+        return world.addRigidBodySphericalJoint(name, parent, child);
+      });
+}
+
+TEST(Serialization, ArticulatedPointJointBreakageRoundTrips)
+{
+  namespace sx = dart::simulation;
+
+  const Eigen::Vector3d axis = Eigen::Vector3d::UnitY();
+
+  expectBrokenArticulatedPointJointRoundTrips(
+      "same_fixed",
+      sx::JointType::Fixed,
+      0u,
+      false,
+      Eigen::Vector3d::Zero(),
+      true,
+      [](sx::World& world,
+         std::string_view name,
+         const sx::Link& parent,
+         const sx::Link& child,
+         const Eigen::Vector3d& parentAnchor,
+         const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedFixedJoint(
+            name, parent, child, parentAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "same_hinge",
+      sx::JointType::Revolute,
+      1u,
+      true,
+      axis,
+      true,
+      [axis](
+          sx::World& world,
+          std::string_view name,
+          const sx::Link& parent,
+          const sx::Link& child,
+          const Eigen::Vector3d& parentAnchor,
+          const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedRevoluteJoint(
+            name, parent, child, axis, parentAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "same_slider",
+      sx::JointType::Prismatic,
+      1u,
+      true,
+      axis,
+      true,
+      [axis](
+          sx::World& world,
+          std::string_view name,
+          const sx::Link& parent,
+          const sx::Link& child,
+          const Eigen::Vector3d& parentAnchor,
+          const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedPrismaticJoint(
+            name, parent, child, axis, parentAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "same_socket",
+      sx::JointType::Spherical,
+      3u,
+      false,
+      Eigen::Vector3d::Zero(),
+      true,
+      [](sx::World& world,
+         std::string_view name,
+         const sx::Link& parent,
+         const sx::Link& child,
+         const Eigen::Vector3d& parentAnchor,
+         const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedSphericalJoint(
+            name, parent, child, parentAnchor, childAnchor);
+      });
+
+  expectBrokenArticulatedPointJointRoundTrips(
+      "world_fixed",
+      sx::JointType::Fixed,
+      0u,
+      false,
+      Eigen::Vector3d::Zero(),
+      false,
+      [](sx::World& world,
+         std::string_view name,
+         const sx::Link&,
+         const sx::Link& child,
+         const Eigen::Vector3d& worldAnchor,
+         const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedFixedJoint(
+            name, child, worldAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "world_hinge",
+      sx::JointType::Revolute,
+      1u,
+      true,
+      axis,
+      false,
+      [axis](
+          sx::World& world,
+          std::string_view name,
+          const sx::Link&,
+          const sx::Link& child,
+          const Eigen::Vector3d& worldAnchor,
+          const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedRevoluteJoint(
+            name, child, axis, worldAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "world_slider",
+      sx::JointType::Prismatic,
+      1u,
+      true,
+      axis,
+      false,
+      [axis](
+          sx::World& world,
+          std::string_view name,
+          const sx::Link&,
+          const sx::Link& child,
+          const Eigen::Vector3d& worldAnchor,
+          const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedPrismaticJoint(
+            name, child, axis, worldAnchor, childAnchor);
+      });
+  expectBrokenArticulatedPointJointRoundTrips(
+      "world_socket",
+      sx::JointType::Spherical,
+      3u,
+      false,
+      Eigen::Vector3d::Zero(),
+      false,
+      [](sx::World& world,
+         std::string_view name,
+         const sx::Link&,
+         const sx::Link& child,
+         const Eigen::Vector3d& worldAnchor,
+         const Eigen::Vector3d& childAnchor) {
+        return world.addArticulatedSphericalJoint(
+            name, child, worldAnchor, childAnchor);
+      });
+}
+
+TEST(Serialization, RigidBodyJointAvbdStiffnessRoundTripsDesignMode)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  auto parent = world1.addRigidBody("parent", parentOptions);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world1.addRigidBody("child", childOptions);
+
+  auto joint = world1.addRigidBodyFixedJoint("fixed", parent, child);
+  joint.setAvbdStartStiffness(2.0);
+  joint.setAvbdLinearStiffness(123.0);
+  joint.setAvbdAngularStiffness(456.0);
+  ASSERT_FALSE(world1.isSimulationMode());
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  ASSERT_FALSE(world2.isSimulationMode());
+  auto restoredJoint = world2.getRigidBodyJoint("fixed");
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 2.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 123.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 456.0);
+
+  restoredJoint->setAvbdLinearStiffness(789.0);
+  restoredJoint->setAvbdAngularStiffness(987.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 789.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 987.0);
+
+  world2.enterSimulationMode();
+  restoredJoint = world2.getRigidBodyJoint("fixed");
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 2.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 789.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 987.0);
+}
+
+TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  world1.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world1.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "tree";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto child = robot.addLink("child", base, spec);
+
+  auto joint = world1.addArticulatedFixedJoint("fixed", base, child);
+  joint.setAvbdStartStiffness(3.0);
+  joint.setAvbdLinearStiffness(234.0);
+  joint.setAvbdAngularStiffness(567.0);
+  ASSERT_FALSE(world1.isSimulationMode());
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  ASSERT_FALSE(world2.isSimulationMode());
+  EXPECT_EQ(
+      world2.getMultibodyOptions().integrationFamily, "variational integrator");
+  auto restoredJoint = world2.getArticulatedJoint("fixed");
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 3.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 234.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 567.0);
+
+  restoredJoint->setAvbdLinearStiffness(432.0);
+  restoredJoint->setAvbdAngularStiffness(765.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 432.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 765.0);
+
+  world2.enterSimulationMode();
+  restoredJoint = world2.getArticulatedJoint("fixed");
+  ASSERT_TRUE(restoredJoint.has_value());
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 3.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 432.0);
+  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 765.0);
+}
+
+TEST(Serialization, AvbdPointJointConfigSerializerRoundTripsAllFields)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "dart::simulation::detail::deformable_vbd::"
+      "AvbdRigidWorldPointJointConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity entity1 = registry1.create();
+  auto& config
+      = registry1.emplace<dvbd::AvbdRigidWorldPointJointConfig>(entity1);
+  config.enabled = false;
+  config.localAnchorA = Eigen::Vector3d(1.0, -2.0, 3.0);
+  config.localAnchorB = Eigen::Vector3d(-4.0, 5.0, -6.0);
+  config.targetRelativeOrientation
+      = Eigen::Quaterniond(Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitY()));
+  config.linearAxes << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  config.angularAxes << -1.0, -2.0, -3.0, -4.0, -5.0, -6.0, -7.0, -8.0, -9.0;
+  config.linearAxisMask = 0b101u;
+  config.angularAxisMask = 0b011u;
+  config.startStiffness = 12.0;
+  config.linearMaterialStiffness = 34.0;
+  config.angularMaterialStiffness = 56.0;
+  config.maxStiffness = 78.0;
+
+  sx::io::EntityMap entityMap;
+  entityMap.emplace(entity1, entity1);
+  std::stringstream stream;
+  serializer->save(stream, entity1, registry1, entityMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity entity2 = registry2.create();
+  serializer->load(stream, entity2, registry2);
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldPointJointConfig>(entity2));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldPointJointConfig>(entity2);
+  EXPECT_FALSE(restored.enabled);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_TRUE(restored.targetRelativeOrientation.coeffs().isApprox(
+      config.targetRelativeOrientation.coeffs()));
+  EXPECT_TRUE(restored.linearAxes.isApprox(config.linearAxes));
+  EXPECT_TRUE(restored.angularAxes.isApprox(config.angularAxes));
+  EXPECT_EQ(restored.linearAxisMask, config.linearAxisMask);
+  EXPECT_EQ(restored.angularAxisMask, config.angularAxisMask);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(
+      restored.linearMaterialStiffness, config.linearMaterialStiffness);
+  EXPECT_DOUBLE_EQ(
+      restored.angularMaterialStiffness, config.angularMaterialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
+}
+
+TEST(Serialization, AvbdDistanceSpringConfigSerializerRoundTripsAllFields)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "dart::simulation::detail::deformable_vbd::"
+      "AvbdRigidWorldDistanceSpringConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity bodyA = registry1.create();
+  const entt::entity bodyB = registry1.create();
+  const entt::entity springEntity = registry1.create();
+  auto& config = registry1.emplace<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      springEntity);
+  config.enabled = false;
+  config.bodyA = bodyA;
+  config.bodyB = bodyB;
+  config.localAnchorA = Eigen::Vector3d(1.0, -2.0, 3.0);
+  config.localAnchorB = Eigen::Vector3d(-4.0, 5.0, -6.0);
+  config.restLength = 7.0;
+  config.startStiffness = 8.0;
+  config.materialStiffness = 9.0;
+  config.maxStiffness = 10.0;
+
+  sx::io::EntityMap entityMap;
+  entityMap.emplace(bodyA, bodyA);
+  entityMap.emplace(bodyB, bodyB);
+  std::stringstream stream;
+  serializer->save(stream, springEntity, registry1, entityMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity restoredEntity = registry2.create();
+  serializer->load(stream, restoredEntity, registry2);
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      restoredEntity));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldDistanceSpringConfig>(restoredEntity);
+  EXPECT_FALSE(restored.enabled);
+  EXPECT_EQ(restored.bodyA, config.bodyA);
+  EXPECT_EQ(restored.bodyB, config.bodyB);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_DOUBLE_EQ(restored.restLength, config.restLength);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(restored.materialStiffness, config.materialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
+}
+
+TEST(Serialization, AvbdDistanceSpringConfigLoadAllEntitiesRemapsBodies)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  sx::detail::WorldRegistry registry1;
+  const entt::entity bodyA = registry1.create();
+  registry1.emplace<sx::comps::Name>(bodyA, "body_a");
+  const entt::entity bodyB = registry1.create();
+  registry1.emplace<sx::comps::Name>(bodyB, "body_b");
+  const entt::entity springEntity = registry1.create();
+  registry1.emplace<sx::comps::Name>(springEntity, "spring");
+
+  auto& config = registry1.emplace<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      springEntity);
+  config.bodyA = bodyA;
+  config.bodyB = bodyB;
+  config.localAnchorA = Eigen::Vector3d(0.1, 0.2, 0.3);
+  config.localAnchorB = Eigen::Vector3d(-0.4, 0.5, -0.6);
+  config.restLength = 1.25;
+  config.startStiffness = 12.0;
+  config.materialStiffness = 34.0;
+  config.maxStiffness = 56.0;
+
+  sx::io::EntityMap saveMap;
+  std::stringstream stream;
+  sx::io::SerializerRegistry::instance().saveAllEntities(
+      stream, registry1, saveMap);
+
+  sx::detail::WorldRegistry registry2;
+  const entt::entity dummy = registry2.create();
+  registry2.emplace<sx::comps::Name>(dummy, "dummy");
+
+  sx::io::EntityMap loadMap;
+  sx::io::SerializerRegistry::instance().loadAllEntities(
+      stream, registry2, loadMap, sx::io::kBinaryFormatVersion);
+
+  const auto findNamedEntity
+      = [&registry2](std::string_view name) -> entt::entity {
+    const auto view = registry2.view<sx::comps::Name>();
+    for (const entt::entity entity : view) {
+      if (view.get<sx::comps::Name>(entity).name == name) {
+        return entity;
+      }
+    }
+    return entt::null;
+  };
+
+  const entt::entity restoredBodyA = findNamedEntity("body_a");
+  const entt::entity restoredBodyB = findNamedEntity("body_b");
+  const entt::entity restoredSpring = findNamedEntity("spring");
+  const entt::entity nullEntity = entt::null;
+  ASSERT_NE(restoredBodyA, nullEntity);
+  ASSERT_NE(restoredBodyB, nullEntity);
+  ASSERT_NE(restoredSpring, nullEntity);
+  EXPECT_NE(restoredBodyA, saveMap.at(bodyA));
+  EXPECT_NE(restoredBodyB, saveMap.at(bodyB));
+
+  ASSERT_TRUE(registry2.all_of<dvbd::AvbdRigidWorldDistanceSpringConfig>(
+      restoredSpring));
+  const auto& restored
+      = registry2.get<dvbd::AvbdRigidWorldDistanceSpringConfig>(restoredSpring);
+  EXPECT_EQ(restored.bodyA, restoredBodyA);
+  EXPECT_EQ(restored.bodyB, restoredBodyB);
+  EXPECT_TRUE(restored.localAnchorA.isApprox(config.localAnchorA));
+  EXPECT_TRUE(restored.localAnchorB.isApprox(config.localAnchorB));
+  EXPECT_DOUBLE_EQ(restored.restLength, config.restLength);
+  EXPECT_DOUBLE_EQ(restored.startStiffness, config.startStiffness);
+  EXPECT_DOUBLE_EQ(restored.materialStiffness, config.materialStiffness);
+  EXPECT_DOUBLE_EQ(restored.maxStiffness, config.maxStiffness);
+}
+
+TEST(Serialization, AvbdDistanceSpringWorldBinaryRoundTrips)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = dart::simulation::detail::deformable_vbd;
+
+  sx::World world1;
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world1.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 2.0;
+  linkOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto link = world1.addRigidBody("link", linkOptions);
+
+  const Eigen::Vector3d anchorA(0.1, 0.2, 0.3);
+  const Eigen::Vector3d anchorB(-0.4, 0.5, -0.6);
+  world1.addRigidBodyDistanceSpring(
+      "spring",
+      base,
+      link,
+      /*restLength=*/1.25,
+      /*stiffness=*/42.0,
+      anchorA,
+      anchorB);
+
+  std::stringstream stream;
+  world1.saveBinary(stream);
+
+  sx::World world2;
+  world2.loadBinary(stream);
+
+  const auto restoredBase = world2.getRigidBody("base");
+  const auto restoredLink = world2.getRigidBody("link");
+  ASSERT_TRUE(restoredBase.has_value());
+  ASSERT_TRUE(restoredLink.has_value());
+
+  std::vector<dvbd::AvbdRigidWorldDistanceSpringInput> springs;
+  dvbd::extractAvbdRigidWorldDistanceSpringInputsInto(
+      sx::detail::registryOf(world2),
+      springs,
+      /*includeWorldAnchors=*/false);
+  ASSERT_EQ(springs.size(), 1u);
+  EXPECT_TRUE(springs[0].anchorsAreLocal);
+  EXPECT_EQ(
+      springs[0].bodyA,
+      sx::detail::toRegistryEntity(restoredBase->getEntity()));
+  EXPECT_EQ(
+      springs[0].bodyB,
+      sx::detail::toRegistryEntity(restoredLink->getEntity()));
+  EXPECT_TRUE(springs[0].anchorA.isApprox(anchorA));
+  EXPECT_TRUE(springs[0].anchorB.isApprox(anchorB));
+  EXPECT_DOUBLE_EQ(springs[0].restLength, 1.25);
+  EXPECT_DOUBLE_EQ(springs[0].startStiffness, 42.0);
+  EXPECT_DOUBLE_EQ(springs[0].materialStiffness, 42.0);
+  EXPECT_DOUBLE_EQ(springs[0].maxStiffness, 42.0);
 }
 
 // Test auto-generated names are preserved

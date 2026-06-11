@@ -199,7 +199,10 @@ jobs:
 
       - name: Test with AddressSanitizer
         run: |
+          # ASAN builds use materially more memory than the normal Release
+          # build; keep parallelism lower to avoid hosted-runner OOM kills.
           DART_VERBOSE=ON \
+          DART_PARALLEL_JOBS=4 \
           pixi run test-asan
 
       - name: Install

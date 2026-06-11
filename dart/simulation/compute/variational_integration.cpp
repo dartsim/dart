@@ -473,26 +473,6 @@ void reserveVariationalStepScratch(
   scratch.zeroAcceleration.resize(dofCount);
 }
 
-entt::entity findOwningMultibodyStructure(
-    const detail::WorldRegistry& registry, entt::entity linkEntity)
-{
-  if (linkEntity == entt::null || !registry.all_of<comps::Link>(linkEntity)) {
-    return entt::null;
-  }
-
-  auto structures = registry.view<comps::MultibodyStructure>();
-  for (const entt::entity structureEntity : structures) {
-    const auto& structure
-        = structures.get<comps::MultibodyStructure>(structureEntity);
-    if (std::find(structure.links.begin(), structure.links.end(), linkEntity)
-        != structure.links.end()) {
-      return structureEntity;
-    }
-  }
-
-  return entt::null;
-}
-
 bool isTopologyMultibodyJoint(
     const detail::WorldRegistry& registry,
     entt::entity jointEntity,
@@ -508,11 +488,254 @@ bool isHardAvbdRigidWorldPointJointConfig(
   return std::isinf(config.startStiffness) && std::isinf(config.maxStiffness);
 }
 
+std::optional<double> avbdRigidWorldCompliantPointJointStiffness(
+    const dvbd::AvbdRigidWorldPointJointConfig& config)
+{
+  if (!std::isfinite(config.startStiffness) || config.startStiffness <= 0.0) {
+    return std::nullopt;
+  }
+  if (std::isfinite(config.maxStiffness)
+      && config.maxStiffness < config.startStiffness) {
+    return std::nullopt;
+  }
+  return config.startStiffness;
+}
+
+void markMultibodyLinkFrameCachesDirty(
+    detail::WorldRegistry& registry, const comps::MultibodyStructure& structure)
+{
+  for (const auto linkEntity : structure.links) {
+    if (auto* cache = registry.try_get<comps::FrameCache>(linkEntity)) {
+      cache->needTransformUpdate = true;
+    }
+  }
+}
+
+std::size_t activeVariationalLoopAxisCount(std::uint8_t mask)
+{
+  std::size_t count = 0;
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    if (dvbd::detail::avbdRigidJointAxisEnabled(mask, axis)) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+std::optional<std::uint8_t> singleInactiveVariationalLoopAxis(std::uint8_t mask)
+{
+  std::optional<std::uint8_t> inactiveAxis;
+  for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+    if (dvbd::detail::avbdRigidJointAxisEnabled(mask, axis)) {
+      continue;
+    }
+    if (inactiveAxis.has_value()) {
+      return std::nullopt;
+    }
+    inactiveAxis = axis;
+  }
+  return inactiveAxis;
+}
+
+Eigen::Index variationalLoopConstraintRowCount(
+    const VariationalLoopConstraint& constraint)
+{
+  if (constraint.distance) {
+    return 1;
+  }
+
+  Eigen::Index rows = static_cast<Eigen::Index>(
+      activeVariationalLoopAxisCount(constraint.linearAxisMask));
+  if (constraint.linearMotor) {
+    rows += 1;
+  }
+  if (constraint.rigid) {
+    rows += static_cast<Eigen::Index>(
+        activeVariationalLoopAxisCount(constraint.angularAxisMask));
+    if (constraint.angularMotor) {
+      rows += 1;
+    }
+  }
+  return rows;
+}
+
+dvbd::AvbdScalarRowBounds variationalMotorProjectionBounds(
+    double maxEffort, double timeStep)
+{
+  if (maxEffort <= 0.0 || std::isnan(maxEffort) || timeStep <= 0.0
+      || !std::isfinite(timeStep)) {
+    return {0.0, 0.0};
+  }
+
+  double maxImpulse = std::numeric_limits<double>::infinity();
+  if (std::isfinite(maxEffort)) {
+    maxImpulse = maxEffort * timeStep * timeStep;
+  }
+  return {-maxImpulse, maxImpulse};
+}
+
+bool variationalProjectionRowHasFiniteBounds(
+    const dvbd::AvbdScalarRowBounds& bounds)
+{
+  return std::isfinite(bounds.lower) || std::isfinite(bounds.upper);
+}
+
+std::vector<dvbd::AvbdScalarRowBounds> variationalLoopConstraintRowBounds(
+    const std::vector<VariationalLoopConstraint>& constraints, double timeStep)
+{
+  std::vector<dvbd::AvbdScalarRowBounds> bounds;
+  for (const auto& constraint : constraints) {
+    bounds.reserve(
+        bounds.size() + variationalLoopConstraintRowCount(constraint));
+
+    if (constraint.distance) {
+      bounds.push_back({});
+      continue;
+    }
+
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      if (dvbd::detail::avbdRigidJointAxisEnabled(
+              constraint.linearAxisMask, axis)) {
+        bounds.push_back({});
+      }
+    }
+    if (constraint.linearMotor) {
+      bounds.push_back(variationalMotorProjectionBounds(
+          constraint.linearMotorMaxForce, timeStep));
+    }
+
+    if (!constraint.rigid) {
+      continue;
+    }
+
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      if (dvbd::detail::avbdRigidJointAxisEnabled(
+              constraint.angularAxisMask, axis)) {
+        bounds.push_back({});
+      }
+    }
+    if (constraint.angularMotor) {
+      bounds.push_back(variationalMotorProjectionBounds(
+          constraint.angularMotorMaxTorque, timeStep));
+    }
+  }
+  return bounds;
+}
+
+Eigen::Vector3d normalizedVariationalLoopAxis(
+    const Eigen::Vector3d& axis, const Eigen::Vector3d& fallback)
+{
+  const double norm = axis.norm();
+  if (!axis.allFinite() || norm <= 0.0) {
+    return fallback;
+  }
+  return axis / norm;
+}
+
+Eigen::Vector3d variationalLoopAxis(
+    const Eigen::Matrix3d& axes, std::uint8_t axis)
+{
+  if (axis >= 3u) {
+    return Eigen::Vector3d::UnitX();
+  }
+
+  return normalizedVariationalLoopAxis(
+      axes.col(axis), Eigen::Vector3d::Unit(axis));
+}
+
+struct VariationalCompliantLoopConstraint
+{
+  struct AxisRow
+  {
+    std::uint8_t axis = 0;
+    dvbd::AvbdScalarRowDescriptor descriptor;
+    double stiffness = 0.0;
+  };
+
+  int linkA = -1; ///< -1 => pointA is a world anchor.
+  Eigen::Vector3d pointA = Eigen::Vector3d::Zero();
+  int linkB = -1; ///< -1 => pointB is a world anchor.
+  Eigen::Vector3d pointB = Eigen::Vector3d::Zero();
+  bool rigid = false;
+  Eigen::Matrix3d rotationA = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d rotationB = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
+  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
+  std::uint8_t linearAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
+  std::uint8_t angularAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
+  std::vector<AxisRow> linearRows;
+  std::vector<AxisRow> angularRows;
+};
+
+struct VariationalCompliantLoopScratch
+{
+  void clear()
+  {
+    linearInventory.records().clear();
+    angularInventory.records().clear();
+  }
+
+  dvbd::AvbdScalarRowInventory linearInventory;
+  dvbd::AvbdScalarRowInventory angularInventory;
+};
+
+dvbd::AvbdScalarRowDescriptor makeVariationalCompliantLoopRowDescriptor(
+    dvbd::AvbdScalarRowRole role,
+    entt::entity jointEntity,
+    const comps::Joint& joint,
+    const dvbd::AvbdRigidWorldPointJointConfig& config,
+    std::uint8_t axis)
+{
+  dvbd::AvbdScalarRowDescriptor descriptor;
+  descriptor.key.role = role;
+  descriptor.key.objectA = dvbd::avbdRigidWorldContactObjectId(jointEntity);
+  descriptor.key.objectB = 0;
+  descriptor.key.featureA = dvbd::avbdRigidWorldContactObjectId(
+      joint.parentLink == entt::null ? jointEntity : joint.parentLink);
+  descriptor.key.featureB = dvbd::avbdRigidWorldContactObjectId(
+      joint.childLink == entt::null ? jointEntity : joint.childLink);
+  descriptor.key.axis = axis;
+  descriptor.kind = dvbd::AvbdScalarRowKind::FiniteStiffness;
+  descriptor.startStiffness = config.startStiffness;
+  descriptor.materialStiffness = role == dvbd::AvbdScalarRowRole::JointLinear
+                                     ? config.linearMaterialStiffness
+                                     : config.angularMaterialStiffness;
+  descriptor.maxStiffness = config.maxStiffness;
+  return descriptor;
+}
+
 void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const detail::WorldRegistry& registry,
     entt::entity structureEntity,
-    std::vector<VariationalLoopConstraint>& constraints)
+    std::vector<VariationalLoopConstraint>& constraints,
+    std::vector<VariationalCompliantLoopConstraint>* compliantConstraints
+    = nullptr)
 {
+  const auto& structure
+      = registry.get<comps::MultibodyStructure>(structureEntity);
+  constexpr std::size_t kStructureLinkIndexMapThreshold = 16u;
+  std::unordered_map<entt::entity, int> structureLinkIndex;
+  if (structure.links.size() > kStructureLinkIndexMapThreshold) {
+    structureLinkIndex.reserve(structure.links.size());
+    for (std::size_t i = 0; i < structure.links.size(); ++i) {
+      structureLinkIndex.emplace(structure.links[i], static_cast<int>(i));
+    }
+  }
+  const auto linkIndexInStructure = [&](entt::entity link) -> int {
+    if (link == entt::null) {
+      return -1;
+    }
+    if (!structureLinkIndex.empty()) {
+      const auto it = structureLinkIndex.find(link);
+      return it == structureLinkIndex.end() ? -1 : it->second;
+    }
+    const auto it
+        = std::find(structure.links.begin(), structure.links.end(), link);
+    return it == structure.links.end()
+               ? -1
+               : static_cast<int>(it - structure.links.begin());
+  };
+
   auto view
       = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>();
   for (const entt::entity jointEntity : view) {
@@ -520,19 +743,35 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
     const auto& config
         = view.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
 
-    if (!config.enabled || !isHardAvbdRigidWorldPointJointConfig(config)
-        || joint.broken || joint.breakForce > 0.0
-        || joint.type != comps::JointType::Fixed
+    const bool hard = isHardAvbdRigidWorldPointJointConfig(config);
+    const std::optional<double> compliantStiffness
+        = avbdRigidWorldCompliantPointJointStiffness(config);
+    if (!config.enabled || joint.broken
+        || !dvbd::isAvbdRigidWorldPointJointType(joint.type)
         || isTopologyMultibodyJoint(registry, jointEntity, joint)) {
       continue;
     }
-    if (config.linearAxisMask != dvbd::kAvbdRigidJointAllAxesMask
-        || config.angularAxisMask != dvbd::kAvbdRigidJointAllAxesMask) {
+    if (!hard
+        && (compliantConstraints == nullptr || !compliantStiffness.has_value()
+            || joint.type != comps::JointType::Fixed)) {
+      continue;
+    }
+    if (!dvbd::detail::hasValidActiveAvbdRigidJointAxes(
+            config.linearAxes, config.linearAxisMask)
+        || !dvbd::detail::hasValidActiveAvbdRigidJointAxes(
+            config.angularAxes, config.angularAxisMask)) {
       continue;
     }
     if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
         || !config.targetRelativeOrientation.coeffs().allFinite()
         || config.targetRelativeOrientation.norm() == 0.0) {
+      continue;
+    }
+    const std::size_t linearRows
+        = activeVariationalLoopAxisCount(config.linearAxisMask);
+    const std::size_t angularRows
+        = activeVariationalLoopAxisCount(config.angularAxisMask);
+    if (linearRows == 0u && angularRows == 0u) {
       continue;
     }
 
@@ -550,35 +789,303 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
       continue;
     }
 
-    const entt::entity structureA
-        = worldA ? entt::null
-                 : findOwningMultibodyStructure(registry, joint.parentLink);
-    const entt::entity structureB
-        = worldB ? entt::null
-                 : findOwningMultibodyStructure(registry, joint.childLink);
-    if ((!worldA && structureA == entt::null)
-        || (!worldB && structureB == entt::null)) {
+    const int linkIndexA = worldA ? -1 : linkIndexInStructure(joint.parentLink);
+    const int linkIndexB = worldB ? -1 : linkIndexInStructure(joint.childLink);
+    if ((!worldA && linkIndexA < 0) || (!worldB && linkIndexB < 0)) {
       continue;
     }
-    if ((structureA != entt::null && structureA != structureEntity)
-        || (structureB != entt::null && structureB != structureEntity)
-        || (structureA != structureEntity && structureB != structureEntity)) {
+    if (linkIndexA < 0 && linkIndexB < 0) {
       continue;
     }
 
     VariationalLoopConstraint constraint;
-    constraint.linkA
-        = structureA == structureEntity ? joint.parentLink : entt::null;
+    constraint.linkA = linkIndexA >= 0 ? joint.parentLink : entt::null;
     constraint.pointA = config.localAnchorA;
-    constraint.linkB
-        = structureB == structureEntity ? joint.childLink : entt::null;
+    constraint.linkB = linkIndexB >= 0 ? joint.childLink : entt::null;
     constraint.pointB = config.localAnchorB;
-    constraint.rigid = true;
+    constraint.rigid = angularRows > 0u;
     constraint.rotationA
         = dvbd::normalizeAvbdRigidOrientation(config.targetRelativeOrientation)
               .toRotationMatrix();
     constraint.rotationB = Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d worldRotationA = Eigen::Matrix3d::Identity();
+    if (!worldA) {
+      worldRotationA = dvbd::avbdRigidWorldContactFrameWorldTransform(
+                           registry, joint.parentLink)
+                           .linear();
+    }
+    Eigen::Matrix3d worldRotationB = Eigen::Matrix3d::Identity();
+    if (!worldB) {
+      worldRotationB = dvbd::avbdRigidWorldContactFrameWorldTransform(
+                           registry, joint.childLink)
+                           .linear();
+    }
+    const Eigen::Matrix3d axisFrame = worldRotationA;
+
+    if (!hard) {
+      VariationalCompliantLoopConstraint constraint;
+      constraint.linkA = linkIndexA;
+      constraint.pointA = config.localAnchorA;
+      constraint.linkB = linkIndexB;
+      constraint.pointB = config.localAnchorB;
+      constraint.rigid = angularRows > 0u;
+      constraint.rotationA = dvbd::normalizeAvbdRigidOrientation(
+                                 config.targetRelativeOrientation)
+                                 .toRotationMatrix();
+      constraint.rotationB = Eigen::Matrix3d::Identity();
+      constraint.linearAxes = axisFrame * config.linearAxes;
+      constraint.angularAxes = axisFrame * config.angularAxes;
+      constraint.linearAxisMask = config.linearAxisMask;
+      constraint.angularAxisMask = config.angularAxisMask;
+      constraint.linearRows.reserve(linearRows);
+      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+        if (!dvbd::detail::avbdRigidJointAxisEnabled(
+                config.linearAxisMask, axis)) {
+          continue;
+        }
+        constraint.linearRows.push_back(
+            VariationalCompliantLoopConstraint::AxisRow{
+                axis,
+                makeVariationalCompliantLoopRowDescriptor(
+                    dvbd::AvbdScalarRowRole::JointLinear,
+                    jointEntity,
+                    joint,
+                    config,
+                    axis),
+                *compliantStiffness});
+      }
+      constraint.angularRows.reserve(angularRows);
+      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+        if (!dvbd::detail::avbdRigidJointAxisEnabled(
+                config.angularAxisMask, axis)) {
+          continue;
+        }
+        constraint.angularRows.push_back(
+            VariationalCompliantLoopConstraint::AxisRow{
+                axis,
+                makeVariationalCompliantLoopRowDescriptor(
+                    dvbd::AvbdScalarRowRole::JointAngular,
+                    jointEntity,
+                    joint,
+                    config,
+                    axis),
+                *compliantStiffness});
+      }
+      compliantConstraints->push_back(constraint);
+      continue;
+    }
+
+    constraint.linearAxes = axisFrame * config.linearAxes;
+    constraint.angularAxes = axisFrame * config.angularAxes;
+    constraint.linearAxisMask = config.linearAxisMask;
+    constraint.angularAxisMask = config.angularAxisMask;
+    if (joint.type == comps::JointType::Prismatic
+        && joint.actuatorType == comps::ActuatorType::Velocity
+        && joint.commandVelocity.size() == 1
+        && joint.commandVelocity.allFinite()) {
+      const double maxForce = dvbd::avbdRigidWorldSymmetricEffortLimit(joint);
+      const std::optional<std::uint8_t> freeAxis
+          = singleInactiveVariationalLoopAxis(config.linearAxisMask);
+      if (maxForce > 0.0 && !std::isnan(maxForce) && freeAxis.has_value()) {
+        constraint.linearMotor = true;
+        constraint.linearMotorAxis
+            = variationalLoopAxis(constraint.linearAxes, *freeAxis);
+        const Eigen::Vector3d pointA
+            = (worldA ? Eigen::Isometry3d::Identity()
+                      : dvbd::avbdRigidWorldContactFrameWorldTransform(
+                            registry, joint.parentLink))
+              * constraint.pointA;
+        const Eigen::Vector3d pointB
+            = (worldB ? Eigen::Isometry3d::Identity()
+                      : dvbd::avbdRigidWorldContactFrameWorldTransform(
+                            registry, joint.childLink))
+              * constraint.pointB;
+        const Eigen::Vector3d positionResidual = pointA - pointB;
+        constraint.linearMotorReferencePosition
+            = -constraint.linearMotorAxis.dot(positionResidual);
+        constraint.linearMotorTargetSpeed = joint.commandVelocity[0];
+        constraint.linearMotorMaxForce = maxForce;
+      }
+    }
+    if (joint.type == comps::JointType::Revolute
+        && joint.actuatorType == comps::ActuatorType::Velocity
+        && joint.commandVelocity.size() == 1
+        && joint.commandVelocity.allFinite()) {
+      const double maxTorque = dvbd::avbdRigidWorldSymmetricEffortLimit(joint);
+      const std::optional<std::uint8_t> freeAxis
+          = singleInactiveVariationalLoopAxis(config.angularAxisMask);
+      if (maxTorque > 0.0 && !std::isnan(maxTorque) && freeAxis.has_value()) {
+        constraint.angularMotor = true;
+        constraint.angularMotorAxis
+            = variationalLoopAxis(constraint.angularAxes, *freeAxis);
+        const Eigen::Matrix3d rotA = worldRotationA * constraint.rotationA;
+        const Eigen::Matrix3d rotB = worldRotationB * constraint.rotationB;
+        const Eigen::Vector3d angularResidual
+            = rotB * rotationLog3(rotB.transpose() * rotA);
+        constraint.angularMotorReferencePosition
+            = -constraint.angularMotorAxis.dot(angularResidual);
+        constraint.angularMotorTargetSpeed = joint.commandVelocity[0];
+        constraint.angularMotorMaxTorque = maxTorque;
+      }
+    }
+    constraint.sourceJoint = jointEntity;
+    constraint.breakForce = joint.breakForce;
     constraints.push_back(constraint);
+  }
+}
+
+void markBrokenAvbdVariationalLoopConstraints(
+    detail::WorldRegistry& registry,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    const Eigen::VectorXd& lambda)
+{
+  Eigen::Index row = 0;
+  for (const auto& constraint : constraints) {
+    const Eigen::Index rows = variationalLoopConstraintRowCount(constraint);
+    if (rows <= 0) {
+      continue;
+    }
+
+    if (constraint.sourceJoint != entt::null && constraint.breakForce > 0.0
+        && std::isfinite(constraint.breakForce) && row + rows <= lambda.size()
+        && registry.all_of<comps::Joint>(constraint.sourceJoint)) {
+      const double load = lambda.segment(row, rows).norm();
+      auto& joint = registry.get<comps::Joint>(constraint.sourceJoint);
+      if (load >= constraint.breakForce) {
+        joint.broken = true;
+      }
+    }
+
+    row += rows;
+  }
+}
+
+constexpr double kVariationalCompliantLoopStiffnessGrowthBeta = 1000.0;
+
+void syncVariationalCompliantLoopConstraintRows(
+    std::vector<VariationalCompliantLoopConstraint>& constraints,
+    VariationalCompliantLoopScratch& scratch)
+{
+  std::vector<dvbd::AvbdScalarRowDescriptor> linearDescriptors;
+  std::vector<dvbd::AvbdScalarRowDescriptor> angularDescriptors;
+  for (const VariationalCompliantLoopConstraint& constraint : constraints) {
+    for (const auto& row : constraint.linearRows) {
+      linearDescriptors.push_back(row.descriptor);
+    }
+    for (const auto& row : constraint.angularRows) {
+      angularDescriptors.push_back(row.descriptor);
+    }
+  }
+
+  const dvbd::AvbdRowWarmStartOptions warmStartOptions;
+  scratch.linearInventory.syncActiveRows(linearDescriptors, warmStartOptions);
+  scratch.angularInventory.syncActiveRows(angularDescriptors, warmStartOptions);
+
+  std::size_t linearCursor = 0;
+  std::size_t angularCursor = 0;
+  for (VariationalCompliantLoopConstraint& constraint : constraints) {
+    for (auto& row : constraint.linearRows) {
+      if (linearCursor >= scratch.linearInventory.size()) {
+        return;
+      }
+      row.stiffness = scratch.linearInventory[linearCursor++].state.stiffness;
+    }
+    for (auto& row : constraint.angularRows) {
+      if (angularCursor >= scratch.angularInventory.size()) {
+        return;
+      }
+      row.stiffness = scratch.angularInventory[angularCursor++].state.stiffness;
+    }
+  }
+}
+
+void updateVariationalCompliantLoopConstraintRows(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalCompliantLoopConstraint>& constraints,
+    VariationalCompliantLoopScratch& scratch)
+{
+  if (constraints.empty()) {
+    scratch.clear();
+    return;
+  }
+
+  const VarTree tree = buildVarTree(registry, structure);
+  const auto worldPoint = [&](int linkIndex, const Eigen::Vector3d& point) {
+    if (linkIndex < 0) {
+      return point;
+    }
+    const auto index = static_cast<std::size_t>(linkIndex);
+    DART_SIMULATION_THROW_T_IF(
+        index >= tree.links.size(),
+        InvalidOperationException,
+        "Compliant variational loop constraint references an out-of-range "
+        "link index");
+    return tree.links[index].worldTransform * point;
+  };
+  const auto worldRotation
+      = [&](int linkIndex, const Eigen::Matrix3d& offset) -> Eigen::Matrix3d {
+    if (linkIndex < 0) {
+      return offset;
+    }
+    const auto index = static_cast<std::size_t>(linkIndex);
+    DART_SIMULATION_THROW_T_IF(
+        index >= tree.links.size(),
+        InvalidOperationException,
+        "Compliant variational loop constraint references an out-of-range "
+        "link index");
+    return tree.links[index].worldTransform.linear() * offset;
+  };
+  const auto updateStiffness
+      = [](dvbd::AvbdScalarRowRecord& record, double constraintValue) {
+          const double materialStiffness = dvbd::maxAvbdDescriptorStiffness(
+              record.descriptor, dvbd::AvbdRowWarmStartOptions{});
+          record.state.stiffness = dvbd::updateAvbdFiniteStiffness(
+              record.state.stiffness,
+              constraintValue,
+              kVariationalCompliantLoopStiffnessGrowthBeta,
+              materialStiffness);
+        };
+
+  std::size_t linearCursor = 0;
+  std::size_t angularCursor = 0;
+  for (const VariationalCompliantLoopConstraint& constraint : constraints) {
+    const Eigen::Vector3d pointA
+        = worldPoint(constraint.linkA, constraint.pointA);
+    const Eigen::Vector3d pointB
+        = worldPoint(constraint.linkB, constraint.pointB);
+    const Eigen::Vector3d positionResidual = pointA - pointB;
+    for (const auto& row : constraint.linearRows) {
+      if (linearCursor >= scratch.linearInventory.size()) {
+        return;
+      }
+      const Eigen::Vector3d rowAxis
+          = variationalLoopAxis(constraint.linearAxes, row.axis);
+      updateStiffness(
+          scratch.linearInventory[linearCursor++],
+          rowAxis.dot(positionResidual));
+    }
+
+    if (!constraint.rigid) {
+      angularCursor += constraint.angularRows.size();
+      continue;
+    }
+    const Eigen::Matrix3d rotA
+        = worldRotation(constraint.linkA, constraint.rotationA);
+    const Eigen::Matrix3d rotB
+        = worldRotation(constraint.linkB, constraint.rotationB);
+    const Eigen::Vector3d angularResidual
+        = rotB * rotationLog3(rotB.transpose() * rotA);
+    for (const auto& row : constraint.angularRows) {
+      if (angularCursor >= scratch.angularInventory.size()) {
+        return;
+      }
+      const Eigen::Vector3d rowAxis
+          = variationalLoopAxis(constraint.angularAxes, row.axis);
+      updateStiffness(
+          scratch.angularInventory[angularCursor++],
+          rowAxis.dot(angularResidual));
+    }
   }
 }
 
@@ -630,6 +1137,48 @@ void gatherState(
   }
 }
 
+struct VariationalVelocityConstraint
+{
+  Eigen::Index dof = 0;
+  double targetPosition = 0.0;
+};
+
+std::vector<VariationalVelocityConstraint> buildVariationalVelocityConstraints(
+    const detail::WorldRegistry& registry,
+    const VarTree& tree,
+    const Eigen::VectorXd& position,
+    double timeStep)
+{
+  std::vector<VariationalVelocityConstraint> constraints;
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    if (joint.actuatorType != comps::ActuatorType::Velocity) {
+      continue;
+    }
+    if (joint.type != comps::JointType::Revolute
+        && joint.type != comps::JointType::Prismatic) {
+      continue;
+    }
+
+    const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+    const auto n = static_cast<Eigen::Index>(link.dof);
+    Eigen::VectorXd command = Eigen::VectorXd::Zero(n);
+    if (joint.commandVelocity.size() == n
+        && joint.commandVelocity.allFinite()) {
+      command = joint.commandVelocity;
+    }
+    const Eigen::VectorXd target
+        = jointRetract(joint, position.segment(seg, n), timeStep * command);
+    for (Eigen::Index d = 0; d < n; ++d) {
+      constraints.push_back({seg + d, target[d]});
+    }
+  }
+  return constraints;
+}
+
 //==============================================================================
 std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     detail::WorldRegistry& registry,
@@ -660,6 +1209,9 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
   if (joint.type != comps::JointType::Prismatic || joint.position.size() != 1
       || joint.velocity.size() != 1 || joint.acceleration.size() != 1
       || joint.parentLink != baseEntity || joint.childLink != childEntity) {
+    return std::nullopt;
+  }
+  if (joint.actuatorType == comps::ActuatorType::Velocity) {
     return std::nullopt;
   }
 
@@ -1205,7 +1757,7 @@ Eigen::Index constraintRowCount(
 {
   Eigen::Index rows = 0;
   for (const auto& constraint : constraints) {
-    rows += constraint.distance ? 1 : (constraint.rigid ? 6 : 3);
+    rows += variationalLoopConstraintRowCount(constraint);
   }
   return rows;
 }
@@ -1335,7 +1887,10 @@ void constraintResidualAndJacobianInto(
     const VarTree& tree,
     const std::vector<Eigen::MatrixXd>& jacobians,
     const std::vector<VariationalLoopConstraint>& constraints,
-    VariationalConstraintProjectionScratch& scratch)
+    VariationalConstraintProjectionScratch& scratch,
+    double timeStep = 0.0,
+    Eigen::Index storageRows = -1,
+    Eigen::Index rowOffset = 0)
 {
   const auto& links = structure.links;
   const auto indexOf = [&](entt::entity e) -> int {
@@ -1344,23 +1899,24 @@ void constraintResidualAndJacobianInto(
   };
   const auto dof = static_cast<Eigen::Index>(tree.dofCount);
   const Eigen::Index rows = constraintRowCount(constraints);
+  const Eigen::Index totalRows = storageRows >= 0 ? storageRows : rows;
   scratch.pointJacobianA.resize(3, dof);
   scratch.pointJacobianB.resize(3, dof);
   scratch.angularJacobianA.resize(3, dof);
   scratch.angularJacobianB.resize(3, dof);
   scratch.pointJacobianWork.resize(3, dof);
-  scratch.residual.resize(rows);
-  scratch.jacobian.resize(rows, dof);
-  scratch.inverseMassJt.resize(dof, rows);
-  scratch.constraintMass.resize(rows, rows);
-  scratch.lambdaRhs.resize(rows);
-  scratch.lambda.resize(rows);
+  scratch.residual.resize(totalRows);
+  scratch.jacobian.resize(totalRows, dof);
+  scratch.inverseMassJt.resize(dof, totalRows);
+  scratch.constraintMass.resize(totalRows, totalRows);
+  scratch.lambdaRhs.resize(totalRows);
+  scratch.lambda.resize(totalRows);
   scratch.correction.resize(dof);
   Eigen::VectorXd& g = scratch.residual;
   Eigen::MatrixXd& jac = scratch.jacobian;
   jac.setZero();
 
-  Eigen::Index row = 0;
+  Eigen::Index row = rowOffset;
   for (const auto& c : constraints) {
     const int ia = (c.linkA != entt::null) ? indexOf(c.linkA) : -1;
     const int ib = (c.linkB != entt::null) ? indexOf(c.linkB) : -1;
@@ -1405,11 +1961,27 @@ void constraintResidualAndJacobianInto(
       continue;
     }
 
-    // Position rows (Point, and the first 3 rows of Rigid).
-    g.segment<3>(row) = pointA - pointB;
-    jac.middleRows<3>(row).noalias()
+    const Eigen::Vector3d positionResidual = pointA - pointB;
+    scratch.pointJacobianWork.noalias()
         = scratch.pointJacobianA - scratch.pointJacobianB;
-    row += 3;
+    for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+      if (!dvbd::detail::avbdRigidJointAxisEnabled(c.linearAxisMask, axis)) {
+        continue;
+      }
+      const Eigen::Vector3d rowAxis = variationalLoopAxis(c.linearAxes, axis);
+      g[row] = rowAxis.dot(positionResidual);
+      jac.row(row).noalias() = rowAxis.transpose() * scratch.pointJacobianWork;
+      row += 1;
+    }
+    if (c.linearMotor) {
+      const Eigen::Vector3d rowAxis = normalizedVariationalLoopAxis(
+          c.linearMotorAxis, Eigen::Vector3d::UnitX());
+      const double targetPosition = c.linearMotorReferencePosition
+                                    + c.linearMotorTargetSpeed * timeStep;
+      g[row] = -rowAxis.dot(positionResidual) - targetPosition;
+      jac.row(row).noalias() = -rowAxis.transpose() * scratch.pointJacobianWork;
+      row += 1;
+    }
 
     if (c.rigid) {
       // Orientation rows: world-frame rotation residual R_B * log(R_B^T R_A)
@@ -1428,7 +2000,8 @@ void constraintResidualAndJacobianInto(
       };
       const Eigen::Matrix3d rotA = worldRotation(ia, c.rotationA);
       const Eigen::Matrix3d rotB = worldRotation(ib, c.rotationB);
-      g.segment<3>(row) = rotB * rotationLog3(rotB.transpose() * rotA);
+      const Eigen::Vector3d angularResidual
+          = rotB * rotationLog3(rotB.transpose() * rotA);
 
       scratch.angularJacobianA.setZero();
       scratch.angularJacobianB.setZero();
@@ -1446,9 +2019,29 @@ void constraintResidualAndJacobianInto(
             static_cast<std::size_t>(ib),
             scratch.angularJacobianB);
       }
-      jac.middleRows<3>(row).noalias()
+      scratch.pointJacobianWork.noalias()
           = scratch.angularJacobianA - scratch.angularJacobianB;
-      row += 3;
+      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+        if (!dvbd::detail::avbdRigidJointAxisEnabled(c.angularAxisMask, axis)) {
+          continue;
+        }
+        const Eigen::Vector3d rowAxis
+            = variationalLoopAxis(c.angularAxes, axis);
+        g[row] = rowAxis.dot(angularResidual);
+        jac.row(row).noalias()
+            = rowAxis.transpose() * scratch.pointJacobianWork;
+        row += 1;
+      }
+      if (c.angularMotor) {
+        const Eigen::Vector3d rowAxis = normalizedVariationalLoopAxis(
+            c.angularMotorAxis, Eigen::Vector3d::UnitZ());
+        const double targetPosition = c.angularMotorReferencePosition
+                                      + c.angularMotorTargetSpeed * timeStep;
+        g[row] = -rowAxis.dot(angularResidual) - targetPosition;
+        jac.row(row).noalias()
+            = -rowAxis.transpose() * scratch.pointJacobianWork;
+        row += 1;
+      }
     }
   }
 }
@@ -1624,6 +2217,145 @@ void variationalContactPointForceInto(
   generalizedForce.noalias()
       -= jacobian.topRows<3>().transpose()
          * (detail::skew(localPoint).transpose() * bodyForce);
+}
+
+Eigen::VectorXd variationalWorldTorque(
+    const VariationalContactContext& context,
+    int linkIndex,
+    const Eigen::Vector3d& worldTorque)
+{
+  if (linkIndex < 0) {
+    return Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+  }
+  const auto index = static_cast<std::size_t>(linkIndex);
+  DART_SIMULATION_THROW_T_IF(
+      index >= context.linkWorldTransforms.size(),
+      InvalidOperationException,
+      "Compliant variational loop constraint references an out-of-range link "
+      "index");
+  const Eigen::MatrixXd worldAngularJacobian
+      = context.linkWorldTransforms[index].linear()
+        * context.linkBodyJacobians[index].topRows<3>();
+  return worldAngularJacobian.transpose() * worldTorque;
+}
+
+VariationalContactHook makeVariationalCompliantLoopConstraintHook(
+    std::vector<VariationalCompliantLoopConstraint> constraints)
+{
+  if (constraints.empty()) {
+    return {};
+  }
+
+  return [constraints = std::move(constraints)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    Eigen::VectorXd generalizedForce
+        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    const auto worldPoint = [&](int linkIndex, const Eigen::Vector3d& point) {
+      if (linkIndex < 0) {
+        return point;
+      }
+      const auto index = static_cast<std::size_t>(linkIndex);
+      DART_SIMULATION_THROW_T_IF(
+          index >= context.linkWorldTransforms.size(),
+          InvalidOperationException,
+          "Compliant variational loop constraint references an out-of-range "
+          "link index");
+      return context.linkWorldTransforms[index] * point;
+    };
+    const auto worldRotation
+        = [&](int linkIndex, const Eigen::Matrix3d& offset) -> Eigen::Matrix3d {
+      if (linkIndex < 0) {
+        return offset;
+      }
+      const auto index = static_cast<std::size_t>(linkIndex);
+      DART_SIMULATION_THROW_T_IF(
+          index >= context.linkWorldTransforms.size(),
+          InvalidOperationException,
+          "Compliant variational loop constraint references an "
+          "out-of-range link index");
+      return context.linkWorldTransforms[index].linear() * offset;
+    };
+
+    for (const VariationalCompliantLoopConstraint& constraint : constraints) {
+      const Eigen::Vector3d pointA
+          = worldPoint(constraint.linkA, constraint.pointA);
+      const Eigen::Vector3d pointB
+          = worldPoint(constraint.linkB, constraint.pointB);
+      const Eigen::Vector3d positionResidual = pointA - pointB;
+      for (const auto& row : constraint.linearRows) {
+        if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
+          continue;
+        }
+        const Eigen::Vector3d rowAxis
+            = variationalLoopAxis(constraint.linearAxes, row.axis);
+        const Eigen::Vector3d forceA
+            = -row.stiffness * rowAxis.dot(positionResidual) * rowAxis;
+        if (constraint.linkA >= 0) {
+          variationalContactPointForceInto(
+              context,
+              static_cast<std::size_t>(constraint.linkA),
+              constraint.pointA,
+              forceA,
+              generalizedForce);
+        }
+        if (constraint.linkB >= 0) {
+          variationalContactPointForceInto(
+              context,
+              static_cast<std::size_t>(constraint.linkB),
+              constraint.pointB,
+              -forceA,
+              generalizedForce);
+        }
+      }
+
+      if (!constraint.rigid) {
+        continue;
+      }
+      const Eigen::Matrix3d rotA
+          = worldRotation(constraint.linkA, constraint.rotationA);
+      const Eigen::Matrix3d rotB
+          = worldRotation(constraint.linkB, constraint.rotationB);
+      const Eigen::Vector3d angularResidual
+          = rotB * rotationLog3(rotB.transpose() * rotA);
+      for (const auto& row : constraint.angularRows) {
+        if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
+          continue;
+        }
+        const Eigen::Vector3d rowAxis
+            = variationalLoopAxis(constraint.angularAxes, row.axis);
+        const Eigen::Vector3d torqueA
+            = -row.stiffness * rowAxis.dot(angularResidual) * rowAxis;
+        generalizedForce
+            += variationalWorldTorque(context, constraint.linkA, torqueA);
+        generalizedForce
+            += variationalWorldTorque(context, constraint.linkB, -torqueA);
+      }
+    }
+    return generalizedForce;
+  };
+}
+
+VariationalContactHook combineVariationalContactHooks(
+    VariationalContactHook first, VariationalContactHook second)
+{
+  if (!first) {
+    return second;
+  }
+  if (!second) {
+    return first;
+  }
+  return [first = std::move(first), second = std::move(second)](
+             const VariationalContactContext& context) -> Eigen::VectorXd {
+    const Eigen::VectorXd firstForce = first(context);
+    const Eigen::VectorXd secondForce = second(context);
+    if (firstForce.size() == 0) {
+      return secondForce;
+    }
+    if (secondForce.size() == 0) {
+      return firstForce;
+    }
+    return firstForce + secondForce;
+  };
 }
 
 } // namespace
@@ -2517,12 +3249,18 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         normTolerance);
   }
 
-  // Enforce holonomic loop closures: Newton-project the next configuration onto
-  // the constraint manifold g(q) = 0 (the paper's Sec. 5 extension),
-  // impulse-based and reusing the O(n) inverse-mass apply.
-  if (!constraints.empty()) {
+  // Enforce holonomic loop closures and velocity-actuated joint coordinates:
+  // Newton-project the next configuration onto the constraint manifold g(q) = 0
+  // (the paper's Sec. 5 extension), impulse-based and reusing the O(n)
+  // inverse-mass apply. Velocity actuators become coordinate targets
+  // q^{k+1} = retract(q^k, dt * qdot_command) for the supported one-DOF
+  // articulated joints, matching the existing velocity-level actuator contract.
+  const auto velocityConstraints
+      = buildVariationalVelocityConstraints(registry, tree, position, timeStep);
+  if (!constraints.empty() || !velocityConstraints.empty()) {
     constexpr double constraintTolerance = 1e-10;
     constexpr int maxProjectionIterations = 32;
+    Eigen::VectorXd projectionLambda;
     bool treeConfigurationChanged = false;
     for (int projection = 0; projection < maxProjectionIterations;
          ++projection) {
@@ -2533,18 +3271,50 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       updateVarTreeConfigurationInto(registry, tree, nextPosition);
       treeConfigurationChanged = true;
       bodyJacobiansInto(tree, projectionScratchStorage.jacobians);
-      constraintResidualAndJacobianInto(
-          structure,
-          tree,
-          projectionScratchStorage.jacobians,
-          constraints,
-          projectionScratchStorage);
-      const Eigen::VectorXd& g = projectionScratchStorage.residual;
-      const Eigen::MatrixXd& jacobian = projectionScratchStorage.jacobian;
+      const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+      const Eigen::Index loopRows
+          = constraints.empty() ? 0 : constraintRowCount(constraints);
+      const Eigen::Index rows
+          = loopRows + static_cast<Eigen::Index>(velocityConstraints.size());
+      std::vector<dvbd::AvbdScalarRowBounds> projectionBounds
+          = constraints.empty()
+                ? std::vector<dvbd::AvbdScalarRowBounds>{}
+                : variationalLoopConstraintRowBounds(constraints, timeStep);
+      projectionBounds.resize(static_cast<std::size_t>(rows));
+      if (!constraints.empty()) {
+        constraintResidualAndJacobianInto(
+            structure,
+            tree,
+            projectionScratchStorage.jacobians,
+            constraints,
+            projectionScratchStorage,
+            timeStep,
+            rows);
+      } else {
+        projectionScratchStorage.residual.setZero(rows);
+        projectionScratchStorage.jacobian.setZero(rows, dof);
+        projectionScratchStorage.inverseMassJt.resize(dof, rows);
+        projectionScratchStorage.constraintMass.resize(rows, rows);
+        projectionScratchStorage.lambdaRhs.resize(rows);
+        projectionScratchStorage.lambda.resize(rows);
+        projectionScratchStorage.correction.resize(dof);
+      }
+
+      Eigen::VectorXd& g = projectionScratchStorage.residual;
+      Eigen::MatrixXd& jacobian = projectionScratchStorage.jacobian;
+      Eigen::Index row = loopRows;
+      for (const auto& velocityConstraint : velocityConstraints) {
+        if (velocityConstraint.dof < 0 || velocityConstraint.dof >= dof) {
+          continue;
+        }
+        g[row] = nextPosition[velocityConstraint.dof]
+                 - velocityConstraint.targetPosition;
+        jacobian(row, velocityConstraint.dof) = 1.0;
+        ++row;
+      }
       if (g.norm() <= constraintTolerance) {
         break;
       }
-      const Eigen::Index rows = g.size();
       for (Eigen::Index r = 0; r < rows; ++r) {
         linearSolve.rhs = jacobian.row(r).transpose();
         applyArticulatedInverseMassInto(
@@ -2559,6 +3329,54 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       projectionScratchStorage.lambda
           = projectionScratchStorage.constraintFactorization.solve(
               projectionScratchStorage.lambdaRhs);
+      std::vector<Eigen::Index> hardRows;
+      std::vector<Eigen::Index> boundedRows;
+      hardRows.reserve(
+          static_cast<std::size_t>(projectionScratchStorage.lambda.size()));
+      boundedRows.reserve(
+          static_cast<std::size_t>(projectionScratchStorage.lambda.size()));
+      for (Eigen::Index r = 0; r < projectionScratchStorage.lambda.size();
+           ++r) {
+        const auto& bounds = projectionBounds[static_cast<std::size_t>(r)];
+        if (variationalProjectionRowHasFiniteBounds(bounds)) {
+          boundedRows.push_back(r);
+          projectionScratchStorage.lambda[r] = dvbd::clampAvbdRowForce(
+              projectionScratchStorage.lambda[r], bounds);
+        } else {
+          hardRows.push_back(r);
+        }
+      }
+      if (!boundedRows.empty() && !hardRows.empty()) {
+        // Bounded motor rows may saturate before reaching their target. Keep
+        // hard joint/anchor rows authoritative after those impulses are
+        // clamped so finite effort cannot leak into locked coordinates.
+        Eigen::MatrixXd hardMass(hardRows.size(), hardRows.size());
+        Eigen::VectorXd hardRhs(hardRows.size());
+        for (std::size_t i = 0; i < hardRows.size(); ++i) {
+          const Eigen::Index hardRow = hardRows[i];
+          hardRhs[static_cast<Eigen::Index>(i)] = -g[hardRow];
+          for (const Eigen::Index boundedRow : boundedRows) {
+            hardRhs[static_cast<Eigen::Index>(i)]
+                -= projectionScratchStorage.constraintMass(hardRow, boundedRow)
+                   * projectionScratchStorage.lambda[boundedRow];
+          }
+          for (std::size_t j = 0; j < hardRows.size(); ++j) {
+            hardMass(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j))
+                = projectionScratchStorage.constraintMass(hardRow, hardRows[j]);
+          }
+        }
+        const Eigen::VectorXd hardLambda = hardMass.ldlt().solve(hardRhs);
+        for (std::size_t i = 0; i < hardRows.size(); ++i) {
+          projectionScratchStorage.lambda[hardRows[i]]
+              = hardLambda[static_cast<Eigen::Index>(i)];
+        }
+      }
+      if (projectionLambda.size() != projectionScratchStorage.lambda.size()) {
+        projectionLambda = projectionScratchStorage.lambda.cwiseAbs();
+      } else {
+        projectionLambda = projectionLambda.cwiseMax(
+            projectionScratchStorage.lambda.cwiseAbs());
+      }
       projectionScratchStorage.correction.noalias()
           = projectionScratchStorage.inverseMassJt
             * projectionScratchStorage.lambda;
@@ -2575,6 +3393,10 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
             projectionScratchStorage.correction.segment(seg, n));
       }
     }
+    if (projectionLambda.size() > 0) {
+      markBrokenAvbdVariationalLoopConstraints(
+          registry, constraints, projectionLambda);
+    }
     if (treeConfigurationChanged) {
       updateVarTreeConfigurationInto(registry, tree, position);
     }
@@ -2589,10 +3411,12 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
       = residualAt(nextPosition, stepScratchStorage.residual).norm();
 
   // Write back joint position/velocity/acceleration (Euclidean, Phase A1).
+  bool wroteJointPosition = false;
   for (auto& link : tree.links) {
     if (link.dof == 0) {
       continue;
     }
+    wroteJointPosition = true;
     auto& joint = registry.get<comps::Joint>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
@@ -2607,6 +3431,9 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     if (previousVelocity.size() == n) {
       joint.acceleration = (joint.velocity - previousVelocity) / timeStep;
     }
+  }
+  if (wroteJointPosition) {
+    markMultibodyLinkFrameCachesDirty(registry, structure);
   }
 
   // Shift the two-step history: dT_prev <- dT, mu_prev <- discrete momentum.
@@ -2915,6 +3742,10 @@ ComputeStageMetadata MultibodyVariationalIntegrationStage::getMetadata()
 //==============================================================================
 void MultibodyVariationalIntegrationStage::prepare(World& world)
 {
+  const auto options = world.getMultibodyOptions();
+  m_maxIterations = options.variationalMaxIterations;
+  m_tolerance = options.variationalTolerance;
+
   auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<comps::MultibodyStructure>();
   std::size_t multibodyCount = 0;
@@ -2942,6 +3773,7 @@ void MultibodyVariationalIntegrationStage::execute(
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& state = registry.get_or_emplace<MultibodyVariationalState>(entity);
+    std::vector<VariationalCompliantLoopConstraint> compliantConstraints;
     auto& scratch
         = registry.get_or_emplace<MultibodyVariationalScratch>(entity);
     auto& constraints = scratch.constraints;
@@ -2954,7 +3786,17 @@ void MultibodyVariationalIntegrationStage::execute(
       }
     }
     appendAvbdRigidWorldArticulatedPointJointConstraints(
-        registry, entity, constraints);
+        registry, entity, constraints, &compliantConstraints);
+    VariationalCompliantLoopScratch* compliantScratch
+        = registry.try_get<VariationalCompliantLoopScratch>(entity);
+    if (!compliantConstraints.empty()) {
+      compliantScratch
+          = &registry.get_or_emplace<VariationalCompliantLoopScratch>(entity);
+      syncVariationalCompliantLoopConstraintRows(
+          compliantConstraints, *compliantScratch);
+    } else if (compliantScratch != nullptr) {
+      compliantScratch->clear();
+    }
     // Build the opt-in contact hook from the multibody's contact config
     // (PLAN-082 Phase C). cadence 0 => C1/C2 (lagged friction + compliant
     // penalty); cadence > 0 => the stateful C3 augmented-Lagrangian rung, whose
@@ -2997,14 +3839,17 @@ void MultibodyVariationalIntegrationStage::execute(
         }
       }
     }
+    contactHook = combineVariationalContactHooks(
+        std::move(contactHook),
+        makeVariationalCompliantLoopConstraintHook(compliantConstraints));
     integrateMultibodyVariationalImpl(
         registry,
         structure,
         gravity,
         timeStep,
         state,
-        100,
-        1e-10,
+        static_cast<int>(m_maxIterations),
+        m_tolerance,
         constraints,
         5,
         contactHook,
@@ -3017,6 +3862,10 @@ void MultibodyVariationalIntegrationStage::execute(
         &scratch.inverseDynamics,
         &scratch.projection,
         &scratch.anderson);
+    if (compliantScratch != nullptr && !compliantConstraints.empty()) {
+      updateVariationalCompliantLoopConstraintRows(
+          registry, structure, compliantConstraints, *compliantScratch);
+    }
 
     // C3 outer loop: after the converged step, advance the AL duals on the
     // configured cadence from the post-step per-link world transforms (a fresh

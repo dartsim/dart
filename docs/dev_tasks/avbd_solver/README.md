@@ -9,6 +9,53 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: small AVBD rigid world-contact snapshots no longer
+  reserve the endpoint entity-index hash map while the body count is within the
+  small-row linear-scan capacity. Focused snapshot-index tests passed, and a
+  selected local Motor benchmark smoke moved from the earlier about 9.3 us mean
+  to about 8.0 us mean CPU time under host load around 7. This is only
+  no-contact source-row overhead evidence; it does not close any source-row
+  CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: C++ and dartpy public articulated facade coverage now
+  verifies that `World::clear()` / `World.clear()` invalidates existing
+  articulated link/joint handles, drops the public point-joint facades, and
+  resets the generated `joint_###` name sequence before a rebuilt world creates
+  a fresh empty-name facade. This is only a narrow public facade
+  lifecycle/name-counter guard; it does not close broader articulated motor
+  lifecycle, fracture corpus, CPU-win, GPU, or paper-number gates.
+- Latest local follow-up: Linux Release CI now runs the ASAN build with
+  `DART_PARALLEL_JOBS=4` after the hosted runner killed the ASAN compilation
+  with exit 137 while rebuilding the full test target set. This is CI resource
+  calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+  paper-number gate.
+- Latest local follow-up: the AVBD-only contact regressions in
+  `test_boxed_lcp_contact` are excluded on MSVC after both target-level `/Od`
+  and a source-local optimization guard still hit C1001 in MSVC 19.44. The
+  ordinary BoxedLcp contact tests remain active on Windows, and the AVBD
+  regressions remain active on Linux/macOS. This is CI portability only; it
+  does not close any AVBD solver, CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: the IPC bake allocation regression now compares the
+  unsupported plane scene against the same IPC contact-query-only setup with
+  supported collision geometry instead of against the sequential solver's
+  allocation baseline. This keeps the guard focused on accidental IPC query
+  prewarm work after the sequential prepare path was tightened. This is CI-test
+  calibration only; it does not close any AVBD solver, CPU-win, GPU, or
+  paper-number gate.
+- Latest local follow-up: `test_boxed_lcp_contact` now avoids a repeated MSVC
+  19.44 internal compiler error in the primitive endpoint-row helper by using
+  an explicit `PrimitiveRowKey` struct instead of a nested
+  `std::pair<AvbdContactEndpointId, AvbdContactEndpointId>` alias in that
+  section. The focused Linux target rebuild and full
+  `test_boxed_lcp_contact` binary passed locally. This is CI portability only;
+  it does not close any AVBD solver, CPU-win, GPU, or paper-number gate.
+- Latest local follow-up: `RigidBodyContactStage::prepare()` now uses the same
+  no-dynamic-collision-geometry skip predicate as execute before sizing contact
+  scratch, so no-collision source rows such as the 2D Motor row avoid a
+  redundant `World::queryContacts()` call during stage preparation. Focused
+  world/contact-stage tests and step-profiling tests passed, and a selected
+  Motor benchmark smoke improved from about 13.5 us to about 9.2 us median CPU
+  time under changing host load. This is no-contact prepare-overhead evidence
+  only; it does not close the Motor CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: point-pair and angular constraint caches now use exact
   component equality for repeated local anchors and target orientations instead
   of zero-tolerance approximate comparisons. This keeps the block-solver
