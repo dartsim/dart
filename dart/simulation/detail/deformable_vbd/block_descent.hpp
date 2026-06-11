@@ -75,7 +75,7 @@ struct SpringAdjacency
   std::vector<std::vector<std::uint32_t>> incidentSprings;
 
   static SpringAdjacency build(
-      std::size_t vertexCount, const std::vector<SpringElement>& springs)
+      std::size_t vertexCount, std::span<const SpringElement> springs)
   {
     SpringAdjacency adjacency;
     adjacency.incidentSprings.resize(vertexCount);
@@ -94,7 +94,7 @@ struct SpringAdjacency
 
 /// Build the vertex-graph coloring induced by a spring list.
 inline VertexColoring colorSprings(
-    std::size_t vertexCount, const std::vector<SpringElement>& springs)
+    std::size_t vertexCount, std::span<const SpringElement> springs)
 {
   VertexAdjacency adjacency(vertexCount);
   for (const SpringElement& spring : springs) {
@@ -162,7 +162,7 @@ inline VertexBlock assembleVertexBlock(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     const SpringAdjacency& adjacency,
     double springStiffness,
     double timeStep,
@@ -210,7 +210,7 @@ inline BlockDescentStats blockDescentMassSpring(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const VertexColoring& coloring,
@@ -283,7 +283,7 @@ inline double massSpringObjective(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep)
 {
@@ -354,7 +354,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
     std::vector<AvbdSpringFiniteStiffnessRow>& springRows,
@@ -470,7 +470,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     const std::vector<double>& masses,
     const FixedMask& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double fallbackSpringStiffness,
     double timeStep,
     std::vector<AvbdHalfSpaceContactRow>& contactRows,
@@ -772,7 +772,7 @@ struct TetAdjacency
   std::vector<std::vector<std::pair<std::uint32_t, std::uint8_t>>> incidentTets;
 
   static TetAdjacency build(
-      std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+      std::size_t vertexCount, std::span<const TetMeshElement> tets)
   {
     TetAdjacency adjacency;
     adjacency.incidentTets.resize(vertexCount);
@@ -791,7 +791,7 @@ struct TetAdjacency
 /// Build the vertex-graph coloring induced by a tetrahedral mesh (each tet is a
 /// 4-vertex clique in the vertex graph).
 inline VertexColoring colorTetMesh(
-    std::size_t vertexCount, const std::vector<TetMeshElement>& tets)
+    std::size_t vertexCount, std::span<const TetMeshElement> tets)
 {
   VertexAdjacency adjacency(vertexCount);
   for (const TetMeshElement& tet : tets) {
@@ -855,7 +855,7 @@ inline VertexBlock assembleTetVertexBlock(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     const TetAdjacency& adjacency,
     double mu,
     double lambda,
@@ -910,7 +910,7 @@ inline BlockDescentStats blockDescentTetMesh(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep,
@@ -991,7 +991,7 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep,
@@ -1222,7 +1222,7 @@ inline double tetMeshObjective(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep)
@@ -1258,8 +1258,8 @@ inline double tetMeshObjective(
 /// that mixes distance springs and volumetric Neo-Hookean tetrahedra.
 inline VertexColoring colorDeformable(
     std::size_t vertexCount,
-    const std::vector<SpringElement>& springs,
-    const std::vector<TetMeshElement>& tets)
+    std::span<const SpringElement> springs,
+    std::span<const TetMeshElement> tets)
 {
   VertexAdjacency adjacency(vertexCount);
   for (const SpringElement& spring : springs) {
@@ -1284,11 +1284,11 @@ inline VertexBlock assembleDeformableVertexBlock(
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<double>& masses,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     const SpringAdjacency& springAdjacency,
     double springStiffness,
     bool clampSpringHessian,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     const TetAdjacency& tetAdjacency,
     double mu,
     double lambda,
@@ -1376,10 +1376,10 @@ inline BlockDescentStats blockDescentDeformable(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     const SpringAdjacency& springAdjacency,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     const TetAdjacency& tetAdjacency,
@@ -1519,9 +1519,9 @@ inline double deformableObjective(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
-    const std::vector<TetMeshElement>& tets,
+    std::span<const TetMeshElement> tets,
     double mu,
     double lambda,
     double timeStep)
@@ -1568,7 +1568,7 @@ inline BlockDescentStats blockDescentMassSpringGround(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const std::vector<ContactPlane>& planes,
@@ -1632,7 +1632,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdGround(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     std::vector<AvbdHalfSpaceContactRow>& contactRows,
@@ -1725,7 +1725,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdAttachments(
     const std::vector<double>& masses,
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     std::vector<AvbdPointAttachmentRow>& attachmentRows,
@@ -1809,7 +1809,7 @@ inline BlockDescentStats blockDescentMassSpringGroundFriction(
     const std::vector<std::uint8_t>& fixed,
     const std::vector<Eigen::Vector3d>& inertialTargets,
     const std::vector<Eigen::Vector3d>& stepStartPositions,
-    const std::vector<SpringElement>& springs,
+    std::span<const SpringElement> springs,
     double springStiffness,
     double timeStep,
     const std::vector<ContactPlane>& planes,

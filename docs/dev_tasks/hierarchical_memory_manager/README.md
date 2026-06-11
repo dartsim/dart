@@ -628,6 +628,11 @@ Follow-up progress after PR #2956:
   vectors, bakes self-contact sweep/adjacency capacity for all enabled
   VBD surface bodies, and has active-scene plus World-base/global-heap gates for
   a 5x9 two-layer self-contact grid.
+- The VBD topology element lists for springs and tetrahedra now live in
+  `DeformableVbdScratch` with the borrowed World allocator. The internal VBD
+  kernels consume those read-only lists through `std::span`, so standalone
+  one-shot callers keep ordinary vectors while baked World-stage steps avoid
+  heap-owned spring/tet topology storage.
 - Contact-heavy `WorldRegistry` rebuild coverage now reuses the existing
   compliant variational contact slider setup to bake/step solver-owned ECS
   scratch, clear the `World`, verify registry capacities release to zero while
@@ -820,7 +825,11 @@ Follow-up progress after PR #2956:
   read-only span and making the AVBD mass-spring row fixed-mask argument
   allocator-agnostic. Chebyshev history scratch for the mixed VBD driver now
   follows the same route: the driver preserves caller-provided scratch
-  allocators while standalone one-shot callers keep default local storage.
+  allocators while standalone one-shot callers keep default local storage. The
+  spring/tet topology element lists now use the same allocator-backed
+  `DeformableVbdScratch` route after narrowing read-only VBD topology inputs to
+  spans; coloring and adjacency structures still own nested vector storage and
+  remain a separate allocator-aware builder pass.
 - Default deformable projected-Newton assembly scratch now borrows that same
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
@@ -858,6 +867,9 @@ Remaining Phase 4/5 follow-up items for the next PR:
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production
   clear/rebuild mixed/contact-family scenes.
+- Convert the remaining VBD coloring/adjacency builders to allocator-aware
+  storage once a no-growth gate or profile shows those nested vector structures
+  on the simulation-loop path.
 - Expand production contact-set coverage only for newly exposed boxed-LCP or
   unified-assembly shapes that are not covered by the current stacked,
   multi-island, mixed-stress, and contact-family gates.

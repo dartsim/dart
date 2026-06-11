@@ -1133,11 +1133,17 @@ struct DeformableVbdScratch
   using AvbdFrictionWarmStartVector = std::vector<
       AvbdFrictionWarmStartRecord<Row>,
       common::StlAllocator<AvbdFrictionWarmStartRecord<Row>>>;
+  using SpringVector = std::
+      vector<dvbd::SpringElement, common::StlAllocator<dvbd::SpringElement>>;
+  using TetAllocator = common::StlAllocator<dvbd::TetMeshElement>;
+  using TetVector = std::vector<dvbd::TetMeshElement, TetAllocator>;
 
   DeformableVbdScratch() = default;
 
   explicit DeformableVbdScratch(common::MemoryAllocator& allocator)
-    : contactPlanes(common::StlAllocator<dvbd::ContactPlane>{allocator}),
+    : springs(common::StlAllocator<dvbd::SpringElement>{allocator}),
+      tets(common::StlAllocator<dvbd::TetMeshElement>{allocator}),
+      contactPlanes(common::StlAllocator<dvbd::ContactPlane>{allocator}),
       contactObjectIds(common::StlAllocator<std::uint64_t>{allocator}),
       contactFeatureIds(common::StlAllocator<std::uint64_t>{allocator}),
       avbdContactDescriptors(
@@ -1177,8 +1183,8 @@ struct DeformableVbdScratch
   {
   }
 
-  std::vector<dvbd::SpringElement> springs;
-  std::vector<dvbd::TetMeshElement> tets;
+  SpringVector springs;
+  TetVector tets;
   dvbd::VertexColoring coloring;
   dvbd::SpringAdjacency springAdjacency;
   dvbd::TetAdjacency tetAdjacency;
