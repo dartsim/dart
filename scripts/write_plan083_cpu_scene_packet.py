@@ -32,6 +32,32 @@ DEFAULT_PACKET_OUTPUT = Path(
 
 DEFAULT_SCENE = "hanging_bridge"
 NUNCHAKU_SCALING_SIZES = (20, 40, 60, 80, 100)
+TIMING_BREAKDOWN_SCENES = (
+    "hanging_bridge",
+    "nunchaku_single",
+    "terrain_vehicle",
+    "ragdoll_reduced",
+    "windmill",
+    "precession",
+)
+SCENE_IDS = {
+    "hanging_bridge": "plan083_hanging_bridge",
+    "nunchaku_single": "plan083_nunchaku",
+    "precession": "plan083_precession",
+    "ragdoll_reduced": "plan083_ragdolls",
+    "terrain_vehicle": "plan083_terrain_vehicle",
+    "timing_breakdown": "plan083_reduced_timing_breakdown",
+    "windmill": "plan083_windmill",
+}
+SCENE_ROW_IDS = {
+    "hanging_bridge": "unb-fig-02",
+    "nunchaku_single": "unb-fig-13",
+    "precession": "unb-fig-23",
+    "ragdoll_reduced": "unb-fig-11",
+    "terrain_vehicle": "unb-fig-10",
+    "timing_breakdown": "unb-fig-24",
+    "windmill": "unb-fig-20",
+}
 SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
@@ -39,8 +65,10 @@ SCENE_ROWS = {
     "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
     "ragdoll_reduced": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
     "terrain_vehicle": "BM_Plan083CpuScene_terrain_vehicle_reduced_world_step",
+    "timing_breakdown": "BM_Plan083CpuScene_reduced_timing_breakdown",
     "windmill": "BM_Plan083CpuScene_windmill_reduced_world_step",
 }
+TIMING_BREAKDOWN_ROWS = {scene: SCENE_ROWS[scene] for scene in TIMING_BREAKDOWN_SCENES}
 SCENE_BENCHMARK_OUTPUTS = {
     "hanging_bridge": DEFAULT_BENCHMARK_OUTPUT,
     "nunchaku_single": Path(
@@ -57,6 +85,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle_benchmark.json"
+    ),
+    "timing_breakdown": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown_benchmark.json"
     ),
     "windmill": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/windmill_benchmark.json"
@@ -76,6 +107,9 @@ SCENE_PACKET_OUTPUTS = {
     ),
     "terrain_vehicle": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/terrain_vehicle.json"
+    ),
+    "timing_breakdown": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown.json"
     ),
     "windmill": Path(".benchmark_results/plan083/cpu_scene_corpus/windmill.json"),
 }
@@ -145,6 +179,9 @@ def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     benchmark_row = SCENE_ROWS[args.scene]
     benchmark_filter = f"^{benchmark_row}$"
+    if args.scene == "timing_breakdown":
+        rows = "|".join(TIMING_BREAKDOWN_ROWS.values())
+        benchmark_filter = f"^({rows})$"
     if args.scene == "nunchaku_scaling":
         benchmark_filter = f"^{benchmark_row}/"
     command = [
@@ -188,6 +225,12 @@ def _finite_number(row: Mapping[str, Any], key: str) -> float:
             f"{benchmark_row_name(row)} has non-finite counter {key}"
         )
     return value
+
+
+def _optional_finite_number(row: Mapping[str, Any], key: str) -> float:
+    if key not in row:
+        return 0.0
+    return _finite_number(row, key)
 
 
 def _packet_row_name(row: Mapping[str, Any]) -> str:
@@ -242,6 +285,12 @@ def make_packet(
 
     if scene == "nunchaku_scaling":
         return _make_nunchaku_scaling_packet(
+            typed_rows,
+            rows,
+            max_equality_residual=max_equality_residual,
+        )
+    if scene == "timing_breakdown":
+        return _make_timing_breakdown_packet(
             typed_rows,
             rows,
             max_equality_residual=max_equality_residual,
@@ -557,6 +606,138 @@ def _make_nunchaku_scaling_packet(
                 "Reduced independent-hinge scaling packet only; cone-twist "
                 "ranges, coupled N-by-N contact, and paper-scale linear-growth "
                 "claims remain planned."
+            ),
+            "samples": samples,
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_timing_breakdown_packet(
+    typed_rows: list[Mapping[str, Any]],
+    rows: list[Any],
+    *,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    expected_to_scene = {
+        row_name: scene for scene, row_name in TIMING_BREAKDOWN_ROWS.items()
+    }
+    found: dict[str, Mapping[str, Any]] = {}
+    errors: list[str] = []
+
+    for row in typed_rows:
+        name = benchmark_row_name(row)
+        if not name:
+            errors.append("benchmark row is missing a name")
+            continue
+        canonical = _packet_row_name(row)
+        if canonical not in expected_to_scene:
+            errors.append(f"unexpected benchmark row: {name}")
+            continue
+        if row.get("aggregate_name") == "median":
+            found[canonical] = row
+        errors.extend(benchmark_timing_field_errors(row, name))
+
+    for row_name in TIMING_BREAKDOWN_ROWS.values():
+        if row_name not in found:
+            errors.append(f"missing median benchmark row: {row_name}")
+
+    if errors:
+        raise Plan083CpuScenePacketError("\n".join(errors))
+
+    samples = []
+    total_wall_time_ns = 0.0
+    max_residual = 0.0
+    total_bodies = 0
+    total_dynamic_bodies = 0
+    total_active_constraints = 0
+    total_active_friction_constraints = 0
+    total_active_articulation_constraints = 0
+
+    for scene in TIMING_BREAKDOWN_SCENES:
+        row_name = TIMING_BREAKDOWN_ROWS[scene]
+        row = found[row_name]
+        timing_ns = benchmark_timing_ns(row)
+        if not math.isfinite(timing_ns) or timing_ns <= 0.0:
+            raise Plan083CpuScenePacketError(
+                f"{benchmark_row_name(row)} timing is not positive"
+            )
+        failed_steps = _finite_number(row, "failed_steps")
+        if failed_steps != 0.0:
+            raise Plan083CpuScenePacketError(
+                f"reduced timing scene {scene} reported {failed_steps:g} failed steps"
+            )
+        final_residual = _finite_number(row, "final_equality_residual_norm")
+        if final_residual > max_equality_residual:
+            raise Plan083CpuScenePacketError(
+                f"reduced timing scene {scene} equality residual "
+                f"{final_residual:.3g} exceeds {max_equality_residual:.3g}"
+            )
+
+        body_count = int(_finite_number(row, "body_count"))
+        dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+        active_constraints = int(_optional_finite_number(row, "active_constraints"))
+        active_friction_constraints = int(
+            _optional_finite_number(row, "active_friction_constraints")
+        )
+        active_articulation_constraints = int(
+            _optional_finite_number(row, "active_articulation_constraints")
+        )
+
+        total_wall_time_ns += timing_ns
+        max_residual = max(max_residual, final_residual)
+        total_bodies += body_count
+        total_dynamic_bodies += dynamic_body_count
+        total_active_constraints += active_constraints
+        total_active_friction_constraints += active_friction_constraints
+        total_active_articulation_constraints += active_articulation_constraints
+        samples.append(
+            {
+                "row_id": SCENE_ROW_IDS[scene],
+                "scene_id": SCENE_IDS[scene],
+                "benchmark_row": _packet_row_name(row),
+                "wall_time_ns": timing_ns,
+                "body_count": body_count,
+                "dynamic_body_count": dynamic_body_count,
+                "active_constraints": active_constraints,
+                "active_friction_constraints": active_friction_constraints,
+                "active_articulation_constraints": active_articulation_constraints,
+                "solver_iterations": int(_finite_number(row, "solver_iterations")),
+                "final_equality_residual_norm": final_residual,
+            }
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-24",
+            "scene_id": SCENE_IDS["timing_breakdown"],
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step reduced corpus rows",
+            "scene_count": len(samples),
+            "sample_scene_ids": [sample["scene_id"] for sample in samples],
+            "total_wall_time_ns": total_wall_time_ns,
+            "max_scene_wall_time_ns": max(sample["wall_time_ns"] for sample in samples),
+            "total_body_count": total_bodies,
+            "total_dynamic_body_count": total_dynamic_bodies,
+            "total_active_constraints": total_active_constraints,
+            "total_active_friction_constraints": total_active_friction_constraints,
+            "total_active_articulation_constraints": (
+                total_active_articulation_constraints
+            ),
+            "max_final_equality_residual_norm": max_residual,
+            "max_equality_residual": max_equality_residual,
+            "available_timing_fields": ["wall_time_ns"],
+            "missing_paper_timing_fields": [
+                "gradient",
+                "hessian",
+                "contact_pairs",
+                "ccd",
+                "linear_solve",
+            ],
+            "limitation_status": (
+                "Reduced aggregate wall-time packet only; paper gradient, "
+                "Hessian, contact-pair, CCD, linear-solve, CPU/GPU parity, "
+                "and paper-scale scene timing breakdowns remain planned."
             ),
             "samples": samples,
         },
@@ -882,11 +1063,17 @@ def main(argv: list[str]) -> int:
             f"residual={row['final_equality_residual_norm']:.3g} "
             f"time={row['wall_time_ns']:.3g} ns"
         )
-    else:
+    elif "sample_sizes" in row:
         print(
             "PLAN-083 CPU scene packet OK: "
             f"{row['scene_id']} samples={row['sample_sizes']} "
             f"max_time_per_pair={row['max_time_per_pair_ns']:.3g} ns"
+        )
+    else:
+        print(
+            "PLAN-083 CPU scene packet OK: "
+            f"{row['scene_id']} scenes={row['scene_count']} "
+            f"total_time={row['total_wall_time_ns']:.3g} ns"
         )
     print(f"Wrote {args.output}")
     return 0

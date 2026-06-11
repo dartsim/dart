@@ -33,6 +33,7 @@ def _benchmark_packet(**overrides):
         "dynamic_body_count": 5,
         "fixed_joint_count": 4,
         "active_articulation_constraints": 12,
+        "solver_iterations": 0,
         "failed_steps": 0,
         "final_equality_residual_norm": 1e-10,
         "traveler_height_m": 0.81,
@@ -54,6 +55,7 @@ def _nunchaku_packet(**overrides):
         "dynamic_body_count": 1,
         "revolute_joint_count": 1,
         "active_articulation_constraints": 2,
+        "solver_iterations": 0,
         "failed_steps": 0,
         "final_equality_residual_norm": 1e-10,
         "swinging_tip_radius_m": 0.36,
@@ -103,6 +105,7 @@ def _windmill_packet(**overrides):
         "active_constraints": 4,
         "active_friction_constraints": 2,
         "active_articulation_constraints": 2,
+        "solver_iterations": 0,
         "failed_steps": 0,
         "final_equality_residual_norm": 1e-10,
         "blade_tip_radius_m": 0.36,
@@ -128,6 +131,7 @@ def _terrain_vehicle_packet(**overrides):
         "active_constraints": 18,
         "active_friction_constraints": 10,
         "active_articulation_constraints": 8,
+        "solver_iterations": 0,
         "failed_steps": 0,
         "final_equality_residual_norm": 1e-10,
         "chassis_height_m": 0.17,
@@ -183,6 +187,21 @@ def _ragdoll_packet(**overrides):
     }
     row.update(overrides)
     return {"benchmarks": [row]}
+
+
+def _timing_breakdown_packet(**overrides):
+    rows = [
+        _benchmark_packet()["benchmarks"][0],
+        _nunchaku_packet()["benchmarks"][0],
+        _terrain_vehicle_packet()["benchmarks"][0],
+        _ragdoll_packet()["benchmarks"][0],
+        _windmill_packet()["benchmarks"][0],
+        _precession_packet()["benchmarks"][0],
+    ]
+    if "row_index" in overrides:
+        row_index = overrides.pop("row_index")
+        rows[row_index].update(overrides)
+    return {"benchmarks": rows}
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
@@ -325,6 +344,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_ragdoll() -> None:
     assert row["wall_time_ns"] == 7.0e6
 
 
+def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _timing_breakdown_packet(),
+        max_equality_residual=1e-8,
+        scene="timing_breakdown",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-24"
+    assert row["scene_id"] == "plan083_reduced_timing_breakdown"
+    assert row["paper_scale"] is False
+    assert row["scene_count"] == 6
+    assert row["total_body_count"] == 27
+    assert row["total_dynamic_body_count"] == 20
+    assert row["total_wall_time_ns"] == 27.0e6
+    assert row["available_timing_fields"] == ["wall_time_ns"]
+    assert "linear_solve" in row["missing_paper_timing_fields"]
+
+
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
     module = _load_module()
 
@@ -427,4 +467,17 @@ def test_plan083_cpu_scene_packet_rejects_ragdoll_without_ground_contact() -> No
             _ragdoll_packet(active_constraints=0),
             max_equality_residual=1e-8,
             scene="ragdoll_reduced",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_timing_breakdown_without_scene() -> None:
+    module = _load_module()
+    packet = _timing_breakdown_packet()
+    packet["benchmarks"] = packet["benchmarks"][:-1]
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="missing median"):
+        module.make_packet(
+            packet,
+            max_equality_residual=1e-8,
+            scene="timing_breakdown",
         )

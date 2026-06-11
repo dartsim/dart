@@ -193,6 +193,8 @@
   - [x] Add a reduced nunchaku scaling CPU packet for sizes 20, 40, 60, 80,
         and 100 while keeping cone-twist and coupled contact scaling future
         work.
+  - [x] Add a reduced timing-breakdown CPU packet that aggregates runnable
+        reduced corpus rows while keeping paper subphase timing future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -210,8 +212,8 @@ storage, or backend resources as public API.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
   the reduced hanging-bridge, terrain vehicle, ragdoll, nunchaku, windmill, and
-  precession smoke scenes, launchable planned py-demo placeholders, and checked
-  corpus manifest.
+  precession smoke scenes, the reduced timing-breakdown packet, launchable
+  planned py-demo placeholders, and checked corpus manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.

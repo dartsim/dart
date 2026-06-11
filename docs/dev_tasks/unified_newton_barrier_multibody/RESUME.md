@@ -196,21 +196,22 @@ speed claims as remaining PLAN-083 work.
 The CPU corpus evidence follow-up is branch-local on
 `feature/newton-barrier-corpus-evidence`: the first packets cover only the
 reduced hanging-bridge, terrain vehicle, ragdoll, nunchaku, windmill, and precession
-runtime smoke paths plus a reduced nunchaku scaling packet with `bm_plan083_cpu_scene_corpus` and
+runtime smoke paths plus reduced nunchaku scaling and timing-breakdown packets
+with `bm_plan083_cpu_scene_corpus` and
 `scripts/write_plan083_cpu_scene_packet.py`. They validate finite reduced-scene
-runtime stepping plus fixed/revolute equality residuals and reduced
-hinge/contact/terrain/ragdoll/rolling diagnostics, but they are not paper-scale
-rod/codimensional coupling, cone-twist range validation, 60-ragdoll scale,
-terrain navigation, angular-velocity sweep validation, Bullet/reference
-comparison, Table 2 reproduction, coupled-contact scaling evidence, or a
-completion claim.
+runtime stepping plus fixed/revolute equality residuals, reduced
+hinge/contact/terrain/ragdoll/rolling diagnostics, and aggregate wall-time
+counters, but they are not paper-scale rod/codimensional coupling, cone-twist
+range validation, 60-ragdoll scale, terrain navigation, angular-velocity sweep
+validation, Bullet/reference comparison, Fig. 24 subphase timing, Table 2
+reproduction, coupled-contact scaling evidence, or a completion claim.
 
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
 commits, and the follow-on CPU corpus evidence branch adds reduced
 hanging-bridge, terrain vehicle, ragdoll, nunchaku, nunchaku scaling,
-windmill, and precession packets.
+windmill, precession, and timing-breakdown packets.
 The final docs pass should preserve that this is runtime smoke/correctness
 evidence, not paper-scale completion.
 

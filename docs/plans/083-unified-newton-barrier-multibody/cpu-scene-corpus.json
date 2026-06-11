@@ -21,9 +21,9 @@
   "summary": {
     "row_count": 26,
     "status_counts": {
-      "in-progress": 15,
+      "in-progress": 16,
       "not-applicable": 1,
-      "planned": 10
+      "planned": 9
     },
     "target_type_counts": {
       "benchmark-manifest": 1,
@@ -231,17 +231,17 @@
       "source_ref": "Fig. 24",
       "dart_target_type": "benchmark-report",
       "priority": "P2",
-      "status": "planned",
+      "status": "in-progress",
       "py_demo_category": "not-required",
       "py_demo_scene_ids": [],
       "smoke_command": "not-required",
       "long_horizon_visual_command": "not-required",
       "visual_evidence_artifact": "not-required",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=timing_breakdown",
+      "benchmark_command": "pixi run bm-plan083-cpu-timing-breakdown-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/timing_breakdown.json",
-      "expected_invariant": "CPU packet reports gradient, Hessian, contact pairs, CCD, and linear-solve timing for every real-world row.",
-      "limitation_status": "Waiting for stable runtime scene packet shape.",
-      "notes_or_gap": "Benchmark-only row; no py-demo placeholder is needed."
+      "expected_invariant": "Reduced CPU packet reports finite wall-time, body, contact, friction, articulation, solver-iteration, and equality-residual counters across the runnable reduced corpus rows.",
+      "limitation_status": "Reduced aggregate wall-time packet only; paper gradient, Hessian, contact-pair, CCD, linear-solve, CPU/GPU parity, and paper-scale scene timing breakdowns remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-timing-breakdown-packet aggregates the reduced hanging-bridge, nunchaku, terrain vehicle, ragdoll, windmill, and precession runtime rows without claiming the paper Fig. 24 subphase breakdown."
     },
     {
       "row_id": "unb-fig-25",
