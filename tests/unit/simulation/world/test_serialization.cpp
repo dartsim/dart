@@ -2080,16 +2080,58 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
 
   auto robot = world1.addMultibody("robot");
   auto base = robot.addLink("base");
-  sx::JointSpec spec;
-  spec.name = "tree";
-  spec.type = sx::JointType::Revolute;
-  spec.axis = Eigen::Vector3d::UnitZ();
-  auto child = robot.addLink("child", base, spec);
 
-  auto joint = world1.addArticulatedFixedJoint("fixed", base, child);
-  joint.setAvbdStartStiffness(3.0);
-  joint.setAvbdLinearStiffness(234.0);
-  joint.setAvbdAngularStiffness(567.0);
+  const auto addFloatingLink = [&](std::string_view name) {
+    sx::JointSpec spec;
+    spec.name = std::string(name) + "_float";
+    spec.type = sx::JointType::Floating;
+    return robot.addLink(name, base, spec);
+  };
+
+  auto fixedChild = addFloatingLink("fixed_child");
+  auto sliderChild = addFloatingLink("slider_child");
+  auto hingeChild = addFloatingLink("hinge_child");
+  auto socketChild = addFloatingLink("socket_child");
+
+  struct ExpectedJoint
+  {
+    std::string_view name;
+    sx::JointType type;
+    std::size_t dofs;
+    double startStiffness;
+    double linearStiffness;
+    double angularStiffness;
+  };
+
+  const std::vector<ExpectedJoint> expectedBeforeMutation{
+      {"fixed", sx::JointType::Fixed, 0u, 3.0, 234.0, 567.0},
+      {"slider", sx::JointType::Prismatic, 1u, 4.0, 345.0, 678.0},
+      {"world_hinge", sx::JointType::Revolute, 1u, 5.0, 456.0, 789.0},
+      {"world_socket", sx::JointType::Spherical, 3u, 6.0, 567.0, 890.0},
+  };
+
+  auto fixed = world1.addArticulatedFixedJoint("fixed", base, fixedChild);
+  fixed.setAvbdStartStiffness(3.0);
+  fixed.setAvbdLinearStiffness(234.0);
+  fixed.setAvbdAngularStiffness(567.0);
+
+  auto slider = world1.addArticulatedPrismaticJoint(
+      "slider", base, sliderChild, Eigen::Vector3d::UnitX());
+  slider.setAvbdStartStiffness(4.0);
+  slider.setAvbdLinearStiffness(345.0);
+  slider.setAvbdAngularStiffness(678.0);
+
+  auto hinge = world1.addArticulatedRevoluteJoint(
+      "world_hinge", hingeChild, Eigen::Vector3d::UnitY());
+  hinge.setAvbdStartStiffness(5.0);
+  hinge.setAvbdLinearStiffness(456.0);
+  hinge.setAvbdAngularStiffness(789.0);
+
+  auto socket
+      = world1.addArticulatedSphericalJoint("world_socket", socketChild);
+  socket.setAvbdStartStiffness(6.0);
+  socket.setAvbdLinearStiffness(567.0);
+  socket.setAvbdAngularStiffness(890.0);
   ASSERT_FALSE(world1.isSimulationMode());
 
   std::stringstream ss;
@@ -2101,23 +2143,52 @@ TEST(Serialization, ArticulatedJointAvbdStiffnessRoundTripsDesignMode)
   ASSERT_FALSE(world2.isSimulationMode());
   EXPECT_EQ(
       world2.getMultibodyOptions().integrationFamily, "variational integrator");
-  auto restoredJoint = world2.getArticulatedJoint("fixed");
-  ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 3.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 234.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 567.0);
+  for (const auto& expected : expectedBeforeMutation) {
+    SCOPED_TRACE(expected.name);
+    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    ASSERT_TRUE(restoredJoint.has_value());
+    EXPECT_EQ(restoredJoint->getType(), expected.type);
+    EXPECT_EQ(restoredJoint->getDOFCount(), expected.dofs);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdStartStiffness(), expected.startStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+  }
 
-  restoredJoint->setAvbdLinearStiffness(432.0);
-  restoredJoint->setAvbdAngularStiffness(765.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 432.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 765.0);
+  const std::vector<ExpectedJoint> expectedAfterMutation{
+      {"fixed", sx::JointType::Fixed, 0u, 3.0, 432.0, 765.0},
+      {"slider", sx::JointType::Prismatic, 1u, 4.0, 543.0, 876.0},
+      {"world_hinge", sx::JointType::Revolute, 1u, 5.0, 654.0, 987.0},
+      {"world_socket", sx::JointType::Spherical, 3u, 6.0, 765.0, 1098.0},
+  };
+  for (const auto& expected : expectedAfterMutation) {
+    SCOPED_TRACE(expected.name);
+    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    ASSERT_TRUE(restoredJoint.has_value());
+    restoredJoint->setAvbdLinearStiffness(expected.linearStiffness);
+    restoredJoint->setAvbdAngularStiffness(expected.angularStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+  }
 
   world2.enterSimulationMode();
-  restoredJoint = world2.getArticulatedJoint("fixed");
-  ASSERT_TRUE(restoredJoint.has_value());
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdStartStiffness(), 3.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdLinearStiffness(), 432.0);
-  EXPECT_DOUBLE_EQ(restoredJoint->getAvbdAngularStiffness(), 765.0);
+  for (const auto& expected : expectedAfterMutation) {
+    SCOPED_TRACE(expected.name);
+    auto restoredJoint = world2.getArticulatedJoint(expected.name);
+    ASSERT_TRUE(restoredJoint.has_value());
+    EXPECT_EQ(restoredJoint->getType(), expected.type);
+    EXPECT_EQ(restoredJoint->getDOFCount(), expected.dofs);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdStartStiffness(), expected.startStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdLinearStiffness(), expected.linearStiffness);
+    EXPECT_DOUBLE_EQ(
+        restoredJoint->getAvbdAngularStiffness(), expected.angularStiffness);
+  }
 }
 
 TEST(Serialization, AvbdPointJointConfigSerializerRoundTripsAllFields)

@@ -9,6 +9,14 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: C++ and dartpy public articulated AVBD stiffness
+  persistence coverage now exercises link-link fixed and prismatic plus
+  world-link revolute and spherical public articulated facades. The C++
+  serialization test and dartpy unit test set finite start/linear/angular AVBD
+  stiffness, save/load the world, mutate the restored stiffness values, and
+  verify they remain visible after entering simulation mode. This is a narrow
+  public facade serialization guard; it does not close broader articulated
+  lifecycle, source-corpus CPU-win, GPU, or paper-number gates.
 - Latest local follow-up: small AVBD rigid world-contact snapshots no longer
   reserve the endpoint entity-index hash map while the body count is within the
   small-row linear-scan capacity. Focused snapshot-index tests passed, and a
