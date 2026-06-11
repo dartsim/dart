@@ -319,10 +319,10 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-phase6-abd-runtime-evidence` - continues Phase 6 CPU corpus
-evidence after merged PRs #2970 and #2971. Keep reduced ABD runtime-step and
-pair runtime-step packet work and docs on this branch until the current Phase 6
-follow-up is reviewer-sized; do not split each planned ABD row into a micro-PR.
+`simx/plan083-phase-6-abd-comparison-packets` - continues Phase 6 CPU corpus
+evidence after merged PRs #2970, #2971, and #2974. Keep reduced ABD comparison
+packet work and docs on this branch until the current Phase 6 follow-up is
+reviewer-sized; do not split each planned ABD row into a micro-PR.
 
 ## Immediate Next Step
 

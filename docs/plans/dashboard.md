@@ -282,7 +282,7 @@ its own line so status updates remain git-history friendly.
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
   Phase 6 CPU corpus follow-up on
-  `simx/plan083-phase6-abd-runtime-evidence`. PR #2960 landed
+  `simx/plan083-phase-6-abd-comparison-packets`. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
