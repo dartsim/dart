@@ -1281,6 +1281,17 @@ def _make_abd_fem_coupling_packet(
         _finite_number(row, "deformable_solver_iterations")
     )
     min_cloth_height = _finite_number(row, "min_cloth_height_m")
+    candidate_diagnostics_measured = _finite_number(
+        row, "affine_fem_candidate_diagnostics_measured"
+    )
+    mixed_candidate_count = int(_finite_number(row, "affine_fem_mixed_candidate_count"))
+    mixed_active_barrier_count = int(
+        _finite_number(row, "affine_fem_mixed_active_barrier_count")
+    )
+    mixed_min_squared_distance = _finite_number(
+        row, "affine_fem_mixed_min_squared_distance"
+    )
+    mixed_barrier_value = _finite_number(row, "affine_fem_mixed_barrier_value")
     coupled_contact_measured = _finite_number(
         row, "affine_fem_coupled_contact_measured"
     )
@@ -1309,6 +1320,26 @@ def _make_abd_fem_coupling_packet(
         raise Plan083CpuScenePacketError(
             f"reduced FEM cloth penetrated below z=0: {min_cloth_height:.3g}"
         )
+    if candidate_diagnostics_measured != 1.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM packet must measure mixed candidate diagnostics"
+        )
+    if mixed_candidate_count <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM packet needs mixed candidate rows"
+        )
+    if mixed_active_barrier_count <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM packet needs active mixed barrier rows"
+        )
+    if mixed_min_squared_distance < 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM mixed distance must be non-negative"
+        )
+    if mixed_barrier_value <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM mixed barrier value must be positive"
+        )
     if coupled_contact_measured != 0.0:
         raise Plan083CpuScenePacketError(
             "reduced ABD/FEM packet must not claim coupled affine/FEM contact"
@@ -1326,11 +1357,17 @@ def _make_abd_fem_coupling_packet(
             "surface_triangle_count": surface_triangle_count,
             "deformable_solver_iterations": deformable_solver_iterations,
             "min_cloth_height_m": min_cloth_height,
+            "affine_fem_candidate_diagnostics_measured": True,
+            "affine_fem_mixed_candidate_count": mixed_candidate_count,
+            "affine_fem_mixed_active_barrier_count": mixed_active_barrier_count,
+            "affine_fem_mixed_min_squared_distance": mixed_min_squared_distance,
+            "affine_fem_mixed_barrier_value": mixed_barrier_value,
             "affine_fem_coupled_contact_measured": False,
             "limitation_status": (
-                "Reduced side-by-side affine runtime-step plus deformable IPC "
-                "smoke packet only; true affine/FEM mixed contact, "
-                "1.1M-triangle assets, and paper-scale reproduction remain planned."
+                "Reduced affine runtime-step, deformable IPC smoke, and "
+                "affine/deformable mixed candidate diagnostics only; true "
+                "coupled affine/FEM solve, 1.1M-triangle assets, and "
+                "paper-scale reproduction remain planned."
             ),
         }
     )

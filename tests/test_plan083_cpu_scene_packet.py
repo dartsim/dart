@@ -712,6 +712,11 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
             surface_triangle_count=30,
             deformable_solver_iterations=4,
             min_cloth_height_m=0.055,
+            affine_fem_candidate_diagnostics_measured=1,
+            affine_fem_mixed_candidate_count=12,
+            affine_fem_mixed_active_barrier_count=4,
+            affine_fem_mixed_min_squared_distance=1e-4,
+            affine_fem_mixed_barrier_value=0.3,
             affine_fem_coupled_contact_measured=0,
         ),
         max_equality_residual=1e-8,
@@ -730,6 +735,9 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
     assert row["dynamic_pair_count"] == 27
     assert row["deformable_body_count"] == 1
     assert row["deformable_node_count"] == 24
+    assert row["affine_fem_candidate_diagnostics_measured"] is True
+    assert row["affine_fem_mixed_candidate_count"] == 12
+    assert row["affine_fem_mixed_active_barrier_count"] == 4
     assert row["affine_fem_coupled_contact_measured"] is False
     assert row["wall_time_ns"] == 6.0e6
 
@@ -1072,6 +1080,11 @@ def test_plan083_cpu_scene_packet_rejects_abd_fem_coupling_contact_claim() -> No
                 surface_triangle_count=30,
                 deformable_solver_iterations=4,
                 min_cloth_height_m=0.055,
+                affine_fem_candidate_diagnostics_measured=1,
+                affine_fem_mixed_candidate_count=12,
+                affine_fem_mixed_active_barrier_count=4,
+                affine_fem_mixed_min_squared_distance=1e-4,
+                affine_fem_mixed_barrier_value=0.3,
                 affine_fem_coupled_contact_measured=1,
             ),
             max_equality_residual=1e-8,

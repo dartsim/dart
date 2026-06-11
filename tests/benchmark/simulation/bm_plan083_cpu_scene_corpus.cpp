@@ -42,6 +42,7 @@
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/detail/affine_body_dynamics.hpp>
+#include <dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp>
 #include <dart/simulation/multibody/joint.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -60,6 +61,7 @@
 
 namespace sx = dart::simulation;
 namespace sxdetail = dart::simulation::detail;
+namespace nb = dart::simulation::detail::newton_barrier;
 
 namespace {
 
@@ -2193,6 +2195,73 @@ static void BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step(
 BENCHMARK(BM_Plan083CpuScene_abd_complex_geometry_reduced_pair_runtime_step)
     ->Unit(benchmark::kMillisecond);
 
+struct ReducedAffineFemMixedDiagnostics
+{
+  std::size_t candidateCount = 0;
+  std::size_t activeBarrierCount = 0;
+  double minSquaredDistance = std::numeric_limits<double>::infinity();
+  double barrierValue = 0.0;
+  bool finite = false;
+};
+
+ReducedAffineFemMixedDiagnostics evaluateReducedAffineFemMixedDiagnostics(
+    const LyingFlatFixture& deformableFixture)
+{
+  sxdetail::AffineSurfaceAdapter affineAdapter;
+  affineAdapter.restVertices
+      = {Eigen::Vector3d(-0.035, -0.025, 0.0),
+         Eigen::Vector3d(0.045, -0.025, 0.0),
+         Eigen::Vector3d(-0.035, 0.055, 0.0)};
+  affineAdapter.triangles = {Eigen::Vector3i(0, 1, 2)};
+
+  sxdetail::AffineBodyState affineState;
+  affineState.translation = deformableFixture.cloth->getPosition(0)
+                            + Eigen::Vector3d(0.035, 0.025, -0.018);
+  affineState.linearMap
+      = Eigen::AngleAxisd(0.03, Eigen::Vector3d::UnitY()).toRotationMatrix();
+
+  std::vector<Eigen::Vector3d> affineVertices;
+  affineVertices.reserve(affineAdapter.restVertices.size());
+  for (std::size_t vertex = 0; vertex < affineAdapter.restVertices.size();
+       ++vertex) {
+    affineVertices.push_back(
+        sxdetail::affineSurfaceVertexWorld(affineAdapter, affineState, vertex));
+  }
+  auto affineSurface = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Affine,
+      0,
+      std::move(affineVertices),
+      affineAdapter.triangles);
+  affineSurface.frictionCoefficient = 0.45;
+
+  const std::vector<Eigen::Vector3d> deformableVertices{
+      deformableFixture.cloth->getPosition(0),
+      deformableFixture.cloth->getPosition(1),
+      deformableFixture.cloth->getPosition(kLyingFlatGridColumns)};
+  auto deformableSurface = nb::makeMixedDomainSurface(
+      nb::MixedDomainType::Deformable,
+      0,
+      deformableVertices,
+      {Eigen::Vector3i(0, 1, 2)});
+  deformableSurface.frictionCoefficient = 0.35;
+
+  const std::array<nb::MixedDomainSurface, 2> surfaces{
+      affineSurface, deformableSurface};
+  nb::MixedDomainCandidateOptions options;
+  options.activationDistance = 0.08;
+  const auto candidates
+      = nb::buildMixedDomainContactCandidates(surfaces, options);
+  const auto diagnostics = nb::evaluateMixedDomainBarrierDiagnostics(
+      surfaces, candidates, 0.08, 1.0);
+
+  return ReducedAffineFemMixedDiagnostics{
+      candidates.candidates.size(),
+      diagnostics.activeBarrierCount,
+      diagnostics.minSquaredDistance,
+      diagnostics.value,
+      diagnostics.finite};
+}
+
 //==============================================================================
 static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
     benchmark::State& state)
@@ -2203,6 +2272,7 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
 
   std::vector<sxdetail::AffinePointTrianglePairRuntimeStepResult> lastResults;
   sx::DeformableSolverDiagnostics lastDiagnostics;
+  ReducedAffineFemMixedDiagnostics mixedDiagnostics;
   std::size_t failedDeformableSteps = 0;
 
   for (auto _ : state) {
@@ -2214,8 +2284,12 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
     deformableFixture.world.step(executor);
     lastDiagnostics
         = deformableFixture.world.getLastDeformableSolverDiagnostics();
+    mixedDiagnostics
+        = evaluateReducedAffineFemMixedDiagnostics(deformableFixture);
     if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
-        || !std::isfinite(deformableFixture.minClothHeight())) {
+        || !std::isfinite(deformableFixture.minClothHeight())
+        || !mixedDiagnostics.finite || mixedDiagnostics.candidateCount == 0u
+        || mixedDiagnostics.activeBarrierCount == 0u) {
       ++failedDeformableSteps;
     }
     for (const auto& result : lastResults) {
@@ -2320,6 +2394,15 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
   state.counters["deformable_solver_iterations"]
       = static_cast<double>(lastDiagnostics.solverIterations);
   state.counters["min_cloth_height_m"] = deformableFixture.minClothHeight();
+  state.counters["affine_fem_candidate_diagnostics_measured"] = 1.0;
+  state.counters["affine_fem_mixed_candidate_count"]
+      = static_cast<double>(mixedDiagnostics.candidateCount);
+  state.counters["affine_fem_mixed_active_barrier_count"]
+      = static_cast<double>(mixedDiagnostics.activeBarrierCount);
+  state.counters["affine_fem_mixed_min_squared_distance"]
+      = mixedDiagnostics.minSquaredDistance;
+  state.counters["affine_fem_mixed_barrier_value"]
+      = mixedDiagnostics.barrierValue;
   state.counters["affine_fem_coupled_contact_measured"] = 0.0;
 }
 BENCHMARK(BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step)

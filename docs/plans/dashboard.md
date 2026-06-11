@@ -312,11 +312,11 @@ its own line so status updates remain git-history friendly.
   CPU/GPU parity and speedup, while keeping GPU `World::step`, contact
   candidate construction, CCD, barrier/friction assembly, sparse equality
   reduction, and global Newton solving as future evidence. The next follow-up
-  adds reduced ABD complex-geometry and side-by-side ABD/FEM packets, while
-  keeping paper-scale assets, true affine/FEM mixed contact, and accepted
+  adds reduced ABD complex-geometry and ABD/FEM mixed-candidate packets, while
+  keeping paper-scale assets, a true coupled affine/FEM solve, and accepted
   reference timings as future evidence. The completion audit still records
-  PLAN-083 as incomplete while in-progress CPU/GPU/scene limitations remain,
-  so dev-task retirement needs maintainer direction before deletion.
+  PLAN-083 as incomplete while in-progress CPU/GPU/scene limitations remain, so
+  dev-task retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

@@ -244,11 +244,12 @@ paper-scale ABD solvers, GPU packets, or completion claims.
 
 The remaining ABD manifest-packet follow-up is branch-local on
 `simx/plan083-abd-remaining-packets`: reduced complex-geometry and
-side-by-side ABD/FEM packets now cover the last planned manifest rows with
-generated affine pair runtime steps plus a deformable IPC smoke sidecar for the
-FEM row. These packets move the rows only to in-progress; they do not claim
-paper-scale complex geometry, true affine/FEM mixed contact, accepted reference
-timings, or completion.
+ABD/FEM mixed-candidate packets now cover the last planned manifest rows with
+generated affine pair runtime steps plus a deformable IPC smoke sidecar and
+affine/deformable mixed candidate diagnostics for the FEM row. These packets
+move the rows only to in-progress; they do not claim paper-scale complex
+geometry, a true coupled affine/FEM solve, accepted reference timings, or
+completion.
 
 ## Last Session Summary
 
@@ -258,7 +259,7 @@ hanging-bridge, lying-flat, pulley, terrain vehicle, ragdoll, nunchaku,
 nunchaku scaling, umbrella, windmill, Candy, precession, timing-breakdown,
 Table 2 packets, the reduced affine point-triangle micro-solve diagnostic, and
 the sparse equality change-of-variable contract tests. The current follow-up
-adds reduced ABD complex-geometry and side-by-side ABD/FEM packets so the
+adds reduced ABD complex-geometry and ABD/FEM mixed-candidate packets so the
 remaining manifest rows become classified as in-progress without claiming
 paper-scale completion.
 The final docs pass should preserve that this is runtime smoke/correctness
