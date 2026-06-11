@@ -773,10 +773,11 @@ Follow-up progress after PR #2956:
 - The deformable stage scratch follow-up routes the stage-owned static-ground
   barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
   rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors
-  through the borrowed World free allocator. A focused custom-stage test covers
-  all of those top-level vectors against an isolated provided free allocator and
-  verifies release when the stage is destroyed. Nested snapshot payload vectors
-  still use their existing storage and remain follow-up work.
+  through the borrowed World free allocator. The next follow-up in the same
+  line routes each snapshot's nested position, topology, contact-mask, and edge
+  payload vectors through that allocator as well. A focused custom-stage test
+  covers those top-level and nested payload vectors against an isolated provided
+  free allocator and verifies release when the stage is destroyed.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test

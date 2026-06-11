@@ -623,9 +623,9 @@ inline void finishCandidateSet(ContactCandidateSet& candidates)
 } // namespace detail
 
 //==============================================================================
+template <typename EdgeVector>
 inline void buildUniqueSurfaceEdges(
-    std::span<const DeformableSurfaceTriangle> triangles,
-    std::vector<SurfaceEdge>& edges)
+    std::span<const DeformableSurfaceTriangle> triangles, EdgeVector& edges)
 {
   edges.clear();
   edges.reserve(3 * triangles.size());

@@ -89,8 +89,8 @@ option/result vectors and nested surface mesh payloads remain separate.
 `DeformableDynamicsStage` routes its stage-owned ground-barrier,
 static-obstacle, deformable-surface snapshot, static rigid surface-CCD snapshot,
 and moving rigid surface-CCD snapshot vectors through the same World free
-allocator; nested snapshot payload vectors remain separate. `WorldKinematicsGraph`
-also uses the World free allocator for its
+allocator, including each snapshot's position, topology, contact-mask, and edge
+payload vectors. `WorldKinematicsGraph` also uses the World free allocator for its
 frame-entity-to-node cache and for `ComputeGraph`'s owned node objects and
 name-lookup table when constructed by the built-in kinematics stage. Other
 nested `std::vector`/Eigen payload capacity inside stage scratch objects,

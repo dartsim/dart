@@ -1755,19 +1755,46 @@ bool solveMatrixFreeConjugateGradient(
 //==============================================================================
 struct SurfaceContactSnapshot
 {
+  using PositionVector
+      = std::vector<Eigen::Vector3d, common::StlAllocator<Eigen::Vector3d>>;
+  using TriangleVector = std::vector<
+      DeformableSurfaceTriangle,
+      common::StlAllocator<DeformableSurfaceTriangle>>;
+  using ContactPointMaskVector
+      = std::vector<std::uint8_t, common::StlAllocator<std::uint8_t>>;
+  using EdgeVector
+      = std::vector<dc::SurfaceEdge, common::StlAllocator<dc::SurfaceEdge>>;
+
+  SurfaceContactSnapshot() = default;
+
+  explicit SurfaceContactSnapshot(common::MemoryAllocator& allocator)
+    : positions(common::StlAllocator<Eigen::Vector3d>{allocator}),
+      surfaceTriangles(
+          common::StlAllocator<DeformableSurfaceTriangle>{allocator}),
+      surfaceContactPointMask(common::StlAllocator<std::uint8_t>{allocator}),
+      surfaceEdges(common::StlAllocator<dc::SurfaceEdge>{allocator})
+  {
+  }
+
   entt::entity entity = entt::null;
-  std::vector<Eigen::Vector3d> positions;
-  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
-  std::vector<std::uint8_t> surfaceContactPointMask;
-  std::vector<dc::SurfaceEdge> surfaceEdges;
+  PositionVector positions;
+  TriangleVector surfaceTriangles;
+  ContactPointMaskVector surfaceContactPointMask;
+  EdgeVector surfaceEdges;
 };
 
 //==============================================================================
 SurfaceContactSnapshot& nextSurfaceContactSnapshot(
-    auto& snapshots, std::size_t& count)
+    auto& snapshots,
+    std::size_t& count,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   if (count == snapshots.size()) {
-    snapshots.emplace_back();
+    if (payloadAllocator != nullptr) {
+      snapshots.emplace_back(*payloadAllocator);
+    } else {
+      snapshots.emplace_back();
+    }
   }
   return snapshots[count++];
 }
@@ -1829,8 +1856,8 @@ void copySurfaceContactTopology(
     std::span<const comps::DeformableSurfaceTriangle> source,
     std::size_t nodeCount,
     bool restrictPointsToReferencedSurfaceNodes,
-    std::vector<DeformableSurfaceTriangle>& surfaceTriangles,
-    std::vector<std::uint8_t>& surfaceContactPointMask)
+    auto& surfaceTriangles,
+    auto& surfaceContactPointMask)
 {
   surfaceTriangles.clear();
   surfaceTriangles.reserve(source.size());
@@ -2295,7 +2322,8 @@ void collectStaticRigidSurfaceCcdObstaclesInto(
     const World& world,
     DeformableSolverStats& stats,
     auto& snapshots,
-    std::size_t& snapshotCount)
+    std::size_t& snapshotCount,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   ++stats.staticRigidSurfaceCcdSnapshotBuilds;
   snapshotCount = 0;
@@ -2337,7 +2365,8 @@ void collectStaticRigidSurfaceCcdObstaclesInto(
           || (shape->halfExtents.array() <= 0.0).any()) {
         continue;
       }
-      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      auto& snapshot = nextSurfaceContactSnapshot(
+          snapshots, snapshotCount, payloadAllocator);
       fillStaticBoxSurfaceCcdSnapshot(
           snapshot, entity, shape->halfExtents, *shapeTransform);
       ++stats.staticRigidSurfaceCcdBoxCount;
@@ -2348,7 +2377,8 @@ void collectStaticRigidSurfaceCcdObstaclesInto(
       if (!std::isfinite(shape->radius) || shape->radius <= 0.0) {
         continue;
       }
-      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      auto& snapshot = nextSurfaceContactSnapshot(
+          snapshots, snapshotCount, payloadAllocator);
       fillStaticSphereSurfaceCcdSnapshot(
           snapshot, entity, shape->radius, *shapeTransform);
       ++stats.staticRigidSurfaceCcdSphereCount;
@@ -2472,7 +2502,8 @@ void collectMovingRigidSurfaceCcdObstaclesInto(
     DeformableSolverStats& stats,
     auto& snapshots,
     std::size_t& snapshotCount,
-    const bool primeKinematicWithoutCurrentTrace = false)
+    const bool primeKinematicWithoutCurrentTrace = false,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   ++stats.movingRigidSurfaceCcdSnapshotBuilds;
   snapshotCount = 0;
@@ -2579,7 +2610,8 @@ void collectMovingRigidSurfaceCcdObstaclesInto(
       sampleTransform.orientation
           = startOrientation.slerp(fraction, endOrientation);
 
-      auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+      auto& snapshot = nextSurfaceContactSnapshot(
+          snapshots, snapshotCount, payloadAllocator);
       fillStaticBoxSurfaceCcdSnapshot(
           snapshot, entity, sampleHalfExtents, sampleTransform);
       stats.movingRigidSurfaceCcdTriangleCount
@@ -8729,7 +8761,8 @@ struct DeformableDynamicsStage::Scratch
   Scratch() = default;
 
   explicit Scratch(common::MemoryAllocator& allocator)
-    : barriers(common::StlAllocator<StaticGroundBarrier>{allocator}),
+    : payloadAllocator(&allocator),
+      barriers(common::StlAllocator<StaticGroundBarrier>{allocator}),
       sphereObstacles(common::StlAllocator<SphereObstacleBarrier>{allocator}),
       boxObstacles(common::StlAllocator<BoxObstacleBarrier>{allocator}),
       capsuleObstacles(common::StlAllocator<CapsuleObstacleBarrier>{allocator}),
@@ -8741,6 +8774,7 @@ struct DeformableDynamicsStage::Scratch
   {
   }
 
+  common::MemoryAllocator* payloadAllocator = nullptr;
   std::vector<StaticGroundBarrier, common::StlAllocator<StaticGroundBarrier>>
       barriers;
   std::
@@ -9960,7 +9994,8 @@ void primeSurfaceContactCandidateScratch(
 void collectDeformableSurfaceSnapshotsInto(
     const sxdetail::WorldRegistry& registry,
     auto& snapshots,
-    std::size_t& snapshotCount)
+    std::size_t& snapshotCount,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   auto view = registry.view<
       comps::DeformableBodyTag,
@@ -9975,9 +10010,10 @@ void collectDeformableSurfaceSnapshotsInto(
       continue;
     }
 
-    auto& snapshot = nextSurfaceContactSnapshot(snapshots, snapshotCount);
+    auto& snapshot = nextSurfaceContactSnapshot(
+        snapshots, snapshotCount, payloadAllocator);
     snapshot.entity = entity;
-    snapshot.positions = state.positions;
+    snapshot.positions.assign(state.positions.begin(), state.positions.end());
     copySurfaceContactTopology(
         topology.surfaceTriangles,
         state.positions.size(),
@@ -10120,16 +10156,21 @@ void DeformableDynamicsStage::prepare(World& world)
       world,
       stats,
       scratch.rigidSurfaceSnapshots,
-      scratch.rigidSurfaceSnapshotCount);
+      scratch.rigidSurfaceSnapshotCount,
+      scratch.payloadAllocator);
   collectMovingRigidSurfaceCcdObstaclesInto(
       world,
       world.getTimeStep(),
       stats,
       scratch.movingRigidSurfaceSnapshots,
       scratch.movingRigidSurfaceSnapshotCount,
-      true);
+      true,
+      scratch.payloadAllocator);
   collectDeformableSurfaceSnapshotsInto(
-      registry, scratch.surfaceSnapshots, scratch.surfaceSnapshotCount);
+      registry,
+      scratch.surfaceSnapshots,
+      scratch.surfaceSnapshotCount,
+      scratch.payloadAllocator);
 
   const auto surfaceSnapshots = activeSurfaceContactSnapshots(
       scratch.surfaceSnapshots, scratch.surfaceSnapshotCount);
@@ -10269,14 +10310,17 @@ void DeformableDynamicsStage::execute(
       world,
       m_lastStats,
       stageScratch.rigidSurfaceSnapshots,
-      stageScratch.rigidSurfaceSnapshotCount);
+      stageScratch.rigidSurfaceSnapshotCount,
+      stageScratch.payloadAllocator);
   const auto timeStep = world.getTimeStep();
   collectMovingRigidSurfaceCcdObstaclesInto(
       world,
       timeStep,
       m_lastStats,
       stageScratch.movingRigidSurfaceSnapshots,
-      stageScratch.movingRigidSurfaceSnapshotCount);
+      stageScratch.movingRigidSurfaceSnapshotCount,
+      false,
+      stageScratch.payloadAllocator);
   const auto gravity = world.getGravity();
   const auto& barriers = stageScratch.barriers;
   const auto& sphereObstacles = stageScratch.sphereObstacles;
@@ -10309,7 +10353,8 @@ void DeformableDynamicsStage::execute(
   collectDeformableSurfaceSnapshotsInto(
       registry,
       stageScratch.surfaceSnapshots,
-      stageScratch.surfaceSnapshotCount);
+      stageScratch.surfaceSnapshotCount,
+      stageScratch.payloadAllocator);
   const auto surfaceSnapshots = activeSurfaceContactSnapshots(
       stageScratch.surfaceSnapshots, stageScratch.surfaceSnapshotCount);
 
