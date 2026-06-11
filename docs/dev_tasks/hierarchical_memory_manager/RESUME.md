@@ -7,6 +7,27 @@ active HMM Phase 4/5 continuation is on
 `pr/hmm-phase45-follow-up-clean`, based on `origin/main` after PR #2956
 landed.
 
+Latest allocator-policy work kept the free-list persistent registry policy
+unchanged and narrowed frame-backed STL bake storage instead: `FrameStlAllocator`
+now sends scalar arrays through the dense 32-byte frame fast path and reserves
+cache-line alignment for cache-line-sized or over-aligned element pages. This
+matches the one-shot bake/growth role better than cache-line-aligning every
+large vector payload. Focused allocator tests passed for
+`UNIT_common_frame_allocator` and `UNIT_common_stl_allocator`, and direct pinned
+EnTT build/growth probes showed the 256/512/2048 DART frame-bake rows beating
+foonathan medians after the dense scalar-array change. The retained-policy
+strict evidence is now green in
+`.benchmark_results/allocator_entt_frame_dense_retained_cpu12_reps9_merged.json`:
+all 12 EnTT no-growth/build comparisons pass against foonathan/memory and
+standard baselines, with zero post-prewarm DART allocator calls in no-growth
+rows. The base CPU12 run had two noisy baseline rows, so
+`.benchmark_results/allocator_entt_frame_dense_retained_replacements_cpu12_reps9.json`
+replaces only `BM_EnttRegistryBuild_Foonathan/512` and
+`BM_EnttRegistryBuild_Std/256` before the checker is re-run over the merged
+artifact. Later free-list color-stride experiments moved wins between foonathan
+and standard rows across CPUs and were discarded as overfitting; they are not
+part of the current diff.
+
 This follow-up slice closes a real VBD allocation gap exposed by a new
 World-base/global-heap gate: enabled VBD self-contact previously only baked
 self-contact candidate sweep storage when AVBD self-contact rows were enabled,

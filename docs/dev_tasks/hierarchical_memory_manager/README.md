@@ -143,18 +143,18 @@
       component arrays can otherwise start on identical cache sets when their
       allocation sizes are multiples of the cache-index period. Persistent
       free-list-backed registry storage uses eight 64-byte colors with a
-      shifted initial phase, while one-shot frame-backed build storage uses
-      four 256-byte colors only for true page-sized storage arrays.
+      shifted initial phase, while one-shot frame-backed build storage stays
+      dense for scalar arrays and uses cache-line alignment only for
+      cache-line-sized or over-aligned value pages.
       Focused probes show the 512-entity no-growth row can close the foonathan
       gap with zero post-prewarm allocator calls; a stricter focused check then
       reduced the remaining evidence gap to the `BM_EnttRegistryBuild/512`
       frame-backed build/unwind row. Frame allocator coloring reduced that row
       from ratio 1.043 to roughly 1.007 in a focused probe; the remaining
       adapter overhead is addressed by using DART's frame-native
-      `FrameStlAllocator` for the build/growth row and by routing small
-      frame-backed STL allocations directly to the inline default frame fast
-      path. The final frame coloring keeps the 2048-byte entity packed arrays
-      compact while spreading true component/sparse pages.
+      `FrameStlAllocator` for the build/growth row and by routing scalar
+      frame-backed STL arrays directly to the inline default frame fast path
+      instead of cache-line-aligning every large `std::vector` payload.
 - [ ] Phase 3: EnTT registry/component storage allocation is configurable from
       the World memory hierarchy and covered by no-growth ECS tests.
       Allocator-aware EnTT storage now has focused `StlAllocator` and
@@ -902,23 +902,28 @@ Remaining Phase 4/5 follow-up items for the next PR:
    gate green after allocator or benchmark policy changes:
 
    A 2026-06-08 follow-up added runner-side CPU prewarm and cache-line coloring
-   for large 64-byte-aligned `FreeListAllocator` and `FrameAllocator` storage
-   allocations. Direct focused probes improved the weak EnTT no-growth 512 row;
-   the current policy keeps persistent free-list registry storage on eight
-   64-byte colors and uses shape-aware four 256-byte frame colors for true
-   page-sized one-shot build storage. The next strict focused checker run
-   passed 11/12 EnTT
-   foonathan/std
-   comparisons and left only `BM_EnttRegistryBuild/512` vs foonathan failing at
-   ratio 1.043. Frame allocator coloring improved a direct 512 build probe to
-   roughly ratio 1.007, and the DART row now uses the frame-native
-   `FrameStlAllocator` with a direct small-allocation fast path to match
-   foonathan's stack-native adapter. Follow-up probes showed the
-   `BM_EnttRegistryBuild/512` row beating foonathan with four 256-byte frame
-   colors and compact 2048-byte entity arrays. Treat
-   `.benchmark_results/allocator_entt_color_after_merge_check.json` as the
-   current focused evidence point until a follow-up run with frame coloring
-   replaces it.
+   for large 64-byte-aligned `FreeListAllocator` storage allocations. Direct
+   focused probes improved the weak EnTT no-growth 512 row; the current
+   persistent policy keeps free-list registry storage on eight 64-byte colors.
+   Later frame-bake experiments showed that coloring ordinary one-shot
+   `FrameStlAllocator` scalar arrays can move wins between foonathan and
+   standard rows without a stable theoretical advantage. The retained frame
+   policy keeps scalar arrays on the dense 32-byte frame fast path and reserves
+   cache-line alignment for cache-line-sized or over-aligned value pages. The
+   best current focused checker evidence for this retained policy is the merged
+   CPU12 run in
+   `.benchmark_results/allocator_entt_frame_dense_retained_cpu12_reps9_merged.json`:
+   all 12 EnTT no-growth/build comparisons pass against foonathan/memory and
+   standard baselines, and the no-growth DART rows report zero post-prewarm
+   allocator calls. The base run had two noisy baseline rows, so
+   `.benchmark_results/allocator_entt_frame_dense_retained_replacements_cpu12_reps9.json`
+   replaces only `BM_EnttRegistryBuild_Foonathan/512` and
+   `BM_EnttRegistryBuild_Std/256` before the strict checker is re-run over the
+   merged artifact.
+   Follow-up free-list color stride experiments are intentionally discarded:
+   they improved selected 256/512 rows but failed different foonathan or
+   standard rows across CPUs, which is cache-layout overfitting rather than
+   evidence for a general allocator policy.
 
    ```bash
    pixi run bm-allocator-comparative-check \
