@@ -1281,6 +1281,45 @@ def test_simulation_world_articulated_generated_names_resume_after_binary_roundt
     assert restored_world.num_articulated_joints == 3
 
 
+def test_simulation_world_clear_resets_articulated_generated_names():
+    sx = _simulation()
+
+    world = sx.World()
+    world.multibody_options = sx.MultibodyOptions(
+        integration_family="variational integrator"
+    )
+    arm = world.add_multibody("clear_generated_joint_arm")
+    base = arm.add_link("base")
+    body = arm.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    first_generated = world.add_articulated_fixed_joint("", base, body)
+    assert first_generated.name == "joint_001"
+    assert world.num_articulated_joints == 1
+
+    world.clear()
+    assert world.num_articulated_joints == 0
+    assert not world.has_articulated_joint("joint_001")
+
+    rebuilt = world.add_multibody("clear_generated_joint_rebuilt")
+    rebuilt_base = rebuilt.add_link("base")
+    rebuilt_body = rebuilt.add_link(
+        "body",
+        parent=rebuilt_base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
+    )
+
+    regenerated = world.add_articulated_revolute_joint(
+        "", rebuilt_body, axis=(0.0, 0.0, 1.0)
+    )
+    assert regenerated.name == "joint_001"
+    assert regenerated.type == sx.JointType.REVOLUTE
+    assert world.num_articulated_joints == 1
+
+
 def test_simulation_world_articulated_motor_breakage_steps_from_python():
     sx = _simulation()
 

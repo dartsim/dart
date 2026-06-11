@@ -15299,6 +15299,42 @@ TEST(World, ArticulatedPointJointsGenerateUniqueFacadeNames)
       sx::InvalidArgumentException);
 }
 
+TEST(World, ClearResetsArticulatedPointJointGeneratedNames)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setMultibodyOptions({"variational integrator"});
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  auto child = robot.addLink("child", base, spec);
+
+  auto firstGenerated = world.addArticulatedFixedJoint("", base, child);
+  EXPECT_EQ(firstGenerated.getName(), "joint_001");
+  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+
+  world.clear();
+  EXPECT_EQ(world.getArticulatedJointCount(), 0u);
+  EXPECT_FALSE(world.hasArticulatedJoint("joint_001"));
+
+  auto rebuiltRobot = world.addMultibody("rebuilt_robot");
+  auto rebuiltBase = rebuiltRobot.addLink("base");
+  sx::JointSpec rebuiltSpec;
+  rebuiltSpec.name = "floating";
+  rebuiltSpec.type = sx::JointType::Floating;
+  auto rebuiltChild = rebuiltRobot.addLink("child", rebuiltBase, rebuiltSpec);
+
+  auto regenerated = world.addArticulatedRevoluteJoint(
+      "", rebuiltChild, Eigen::Vector3d::UnitZ());
+  EXPECT_EQ(regenerated.getName(), "joint_001");
+  EXPECT_EQ(regenerated.getType(), sx::JointType::Revolute);
+  EXPECT_EQ(world.getArticulatedJointCount(), 1u);
+}
+
 TEST(World, ArticulatedPointJointsRejectInvalidEndpointOwnership)
 {
   namespace sx = dart::simulation;
