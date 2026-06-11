@@ -230,6 +230,12 @@ surface and routes the transform/Jacobian vectors used to evaluate variational
 ground contact forces through the World free allocator before bake-time sizing
 or same-shape lazy reserve.
 
+The latest variational loop-closure scratch continuation keeps using the
+existing loop-closure gate and routes the baked step spatial-velocity list,
+articulated linear-solve vector lists, projection Jacobian/row-index lists, and
+Anderson history lists through the World free allocator before bake-time sizing
+or same-shape lazy reserve.
+
 The latest rebuild-boundary slice reuses the existing mixed default-deformable
 storage scenes as compact, production, contact-family production, and
 complementary contact-family production gates for direct-sparse self-contact,

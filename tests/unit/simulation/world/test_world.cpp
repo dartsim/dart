@@ -4324,7 +4324,7 @@ void expectVariationalStateUsesAllocator(
 
 void expectVariationalLoopClosureScratchBaked(
     const dart::simulation::detail::WorldRegistry& registry,
-    const dart::common::MemoryAllocator* expectedTreeAllocator = nullptr)
+    dart::common::MemoryAllocator* expectedAllocator = nullptr)
 {
   namespace sx = dart::simulation;
 
@@ -4337,9 +4337,72 @@ void expectVariationalLoopClosureScratchBaked(
        registry.view<sx::compute::MultibodyVariationalScratch>()) {
     const auto& scratch
         = registry.get<sx::compute::MultibodyVariationalScratch>(entity);
-    if (expectedTreeAllocator != nullptr) {
-      EXPECT_EQ(&scratch.tree.getAllocator(), expectedTreeAllocator);
-      EXPECT_EQ(&scratch.inverseDynamics.getAllocator(), expectedTreeAllocator);
+    if (expectedAllocator != nullptr) {
+      EXPECT_EQ(&scratch.tree.getAllocator(), expectedAllocator);
+      EXPECT_EQ(&scratch.inverseDynamics.getAllocator(), expectedAllocator);
+      const sx::compute::VariationalStepScratch::SpatialVelocityAllocator
+          expectedSpatialVelocityAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.step.currentSpatialVelocities.get_allocator(),
+          expectedSpatialVelocityAllocator);
+      const sx::compute::VariationalLinearSolveScratch::Matrix6Allocator
+          expectedMatrix6Allocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.linearSolve.articulated.get_allocator(),
+          expectedMatrix6Allocator);
+      EXPECT_EQ(
+          scratch.linearSolve.motionToChild.get_allocator(),
+          expectedMatrix6Allocator);
+      const sx::compute::VariationalLinearSolveScratch::Vector6Allocator
+          expectedVector6Allocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.linearSolve.bias.get_allocator(), expectedVector6Allocator);
+      EXPECT_EQ(
+          scratch.linearSolve.spatial.get_allocator(),
+          expectedVector6Allocator);
+      const sx::compute::VariationalLinearSolveScratch::MatrixAllocator
+          expectedMatrixAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.linearSolve.forceProjector.get_allocator(),
+          expectedMatrixAllocator);
+      EXPECT_EQ(
+          scratch.linearSolve.motionProjector.get_allocator(),
+          expectedMatrixAllocator);
+      EXPECT_EQ(
+          scratch.linearSolve.jointMatrix.get_allocator(),
+          expectedMatrixAllocator);
+      EXPECT_EQ(
+          scratch.linearSolve.jointMatrixInverse.get_allocator(),
+          expectedMatrixAllocator);
+      const sx::compute::VariationalLinearSolveScratch::VectorAllocator
+          expectedVectorAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.linearSolve.jointRhs.get_allocator(),
+          expectedVectorAllocator);
+      const sx::compute::VariationalConstraintProjectionScratch::
+          JacobianAllocator expectedJacobianAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.projection.jacobians.get_allocator(),
+          expectedJacobianAllocator);
+      const sx::compute::VariationalConstraintProjectionScratch::
+          ProjectionBoundsAllocator expectedBoundsAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.projection.projectionBounds.get_allocator(),
+          expectedBoundsAllocator);
+      const sx::compute::VariationalConstraintProjectionScratch::
+          RowIndexAllocator expectedRowAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.projection.hardRows.get_allocator(), expectedRowAllocator);
+      EXPECT_EQ(
+          scratch.projection.boundedRows.get_allocator(), expectedRowAllocator);
+      const sx::compute::VariationalAndersonScratch::VectorAllocator
+          expectedAndersonVectorAllocator{*expectedAllocator};
+      EXPECT_EQ(
+          scratch.anderson.stepDeltas.get_allocator(),
+          expectedAndersonVectorAllocator);
+      EXPECT_EQ(
+          scratch.anderson.iterateDeltas.get_allocator(),
+          expectedAndersonVectorAllocator);
     }
     EXPECT_EQ(scratch.tree.linkCount(), kLinkCount);
     EXPECT_EQ(scratch.tree.dofCount(), kDofCount);

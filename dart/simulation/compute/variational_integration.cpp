@@ -49,6 +49,18 @@ namespace {
 namespace dm = detail::variational;
 namespace dvbd = detail::deformable_vbd;
 
+template <typename Vector>
+void rebindVectorAllocator(
+    Vector& values, const typename Vector::allocator_type& targetAllocator)
+{
+  if (values.get_allocator() == targetAllocator) {
+    return;
+  }
+  Vector rebound{targetAllocator};
+  rebound.assign(values.begin(), values.end());
+  values = std::move(rebound);
+}
+
 MultibodyVariationalState makeMultibodyVariationalState(
     dart::common::MemoryAllocator& allocator)
 {
@@ -708,10 +720,11 @@ double clampVariationalProjectionRowForce(
   return std::clamp(value, bounds.lower, bounds.upper);
 }
 
+template <typename BoundsVector>
 void variationalLoopConstraintRowBoundsInto(
     const std::vector<VariationalLoopConstraint>& constraints,
     double timeStep,
-    std::vector<VariationalProjectionRowBounds>& bounds)
+    BoundsVector& bounds)
 {
   bounds.clear();
   for (const auto& constraint : constraints) {
@@ -1570,10 +1583,11 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
 
 // Forward velocity recursion at the current configuration: body spatial
 // velocity V_i = Ad(T_i^{-1}) V_parent + S_i qdot_i.
+template <typename SpatialVelocityVector>
 void currentSpatialVelocitiesInto(
     const VarTree& tree,
     const Eigen::VectorXd& velocity,
-    std::vector<Vector6>& spatialVelocities)
+    SpatialVelocityVector& spatialVelocities)
 {
   spatialVelocities.resize(tree.links.size());
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
@@ -2061,37 +2075,42 @@ void reserveContactEvaluationScratch(
 // World-frame translational Jacobian (3 x dofCount) of a body-fixed point at
 // local offset `point` on link `i`: J_world = R_i (J_linear - [point]
 // J_angular).
+template <typename JacobianVector>
 void worldPointJacobianInto(
     const VarTree& tree,
-    const std::vector<Eigen::MatrixXd>& jacobians,
+    const JacobianVector& jacobians,
     std::size_t i,
     const Eigen::Vector3d& point,
     VariationalConstraintProjectionScratch& scratch,
     Eigen::MatrixXd& output)
 {
   const Eigen::Matrix3d rotation = tree.links[i].worldTransform.linear();
-  scratch.pointJacobianWork.noalias() = skew(point) * jacobians[i].topRows<3>();
-  output.noalias() = jacobians[i].bottomRows<3>() - scratch.pointJacobianWork;
+  scratch.pointJacobianWork.noalias()
+      = skew(point) * jacobians[i].template topRows<3>();
+  output.noalias()
+      = jacobians[i].template bottomRows<3>() - scratch.pointJacobianWork;
   scratch.pointJacobianWork = output;
   output.noalias() = rotation * scratch.pointJacobianWork;
 }
 
+template <typename JacobianVector>
 void worldAngularJacobianInto(
     const VarTree& tree,
-    const std::vector<Eigen::MatrixXd>& jacobians,
+    const JacobianVector& jacobians,
     std::size_t i,
     Eigen::MatrixXd& output)
 {
-  output.noalias()
-      = tree.links[i].worldTransform.linear() * jacobians[i].topRows<3>();
+  output.noalias() = tree.links[i].worldTransform.linear()
+                     * jacobians[i].template topRows<3>();
 }
 
 // Stack the holonomic residual g(q) and Jacobian J = dg/dq for the loop
 // closures on a tree built at the current configuration.
+template <typename JacobianVector>
 void constraintResidualAndJacobianInto(
     const comps::MultibodyStructure& structure,
     const VarTree& tree,
-    const std::vector<Eigen::MatrixXd>& jacobians,
+    const JacobianVector& jacobians,
     const std::vector<VariationalLoopConstraint>& constraints,
     VariationalConstraintProjectionScratch& scratch,
     double timeStep = 0.0,
@@ -2815,6 +2834,64 @@ void ensureVariationalContactEvaluationScratchAllocator(
   };
   rebindJacobians(scratch.previousJacobians);
   rebindJacobians(scratch.trialJacobians);
+}
+
+void ensureVariationalLinearSolveScratchAllocator(
+    VariationalLinearSolveScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  using Scratch = VariationalLinearSolveScratch;
+  const Scratch::Matrix6Allocator matrix6Allocator{allocator};
+  rebindVectorAllocator(scratch.articulated, matrix6Allocator);
+  rebindVectorAllocator(scratch.motionToChild, matrix6Allocator);
+
+  const Scratch::Vector6Allocator vector6Allocator{allocator};
+  rebindVectorAllocator(scratch.bias, vector6Allocator);
+  rebindVectorAllocator(scratch.spatial, vector6Allocator);
+
+  const Scratch::MatrixAllocator matrixAllocator{allocator};
+  rebindVectorAllocator(scratch.forceProjector, matrixAllocator);
+  rebindVectorAllocator(scratch.motionProjector, matrixAllocator);
+  rebindVectorAllocator(scratch.jointMatrix, matrixAllocator);
+  rebindVectorAllocator(scratch.jointMatrixInverse, matrixAllocator);
+
+  const Scratch::VectorAllocator vectorAllocator{allocator};
+  rebindVectorAllocator(scratch.jointRhs, vectorAllocator);
+}
+
+void ensureVariationalStepScratchAllocator(
+    VariationalStepScratch& scratch, dart::common::MemoryAllocator& allocator)
+{
+  const VariationalStepScratch::SpatialVelocityAllocator targetAllocator{
+      allocator};
+  rebindVectorAllocator(scratch.currentSpatialVelocities, targetAllocator);
+}
+
+void ensureVariationalProjectionScratchAllocator(
+    VariationalConstraintProjectionScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  const VariationalConstraintProjectionScratch::JacobianAllocator
+      jacobianAllocator{allocator};
+  rebindVectorAllocator(scratch.jacobians, jacobianAllocator);
+
+  const VariationalConstraintProjectionScratch::ProjectionBoundsAllocator
+      boundsAllocator{allocator};
+  rebindVectorAllocator(scratch.projectionBounds, boundsAllocator);
+
+  const VariationalConstraintProjectionScratch::RowIndexAllocator rowAllocator{
+      allocator};
+  rebindVectorAllocator(scratch.hardRows, rowAllocator);
+  rebindVectorAllocator(scratch.boundedRows, rowAllocator);
+}
+
+void ensureVariationalAndersonScratchAllocator(
+    VariationalAndersonScratch& scratch,
+    dart::common::MemoryAllocator& allocator)
+{
+  const VariationalAndersonScratch::VectorAllocator targetAllocator{allocator};
+  rebindVectorAllocator(scratch.stepDeltas, targetAllocator);
+  rebindVectorAllocator(scratch.iterateDeltas, targetAllocator);
 }
 
 // Validate + normalize a ground-contact config (shared by the AL solver).
@@ -4069,6 +4146,11 @@ void reserveMultibodyVariationalRegistryStorage(
     scratch.inverseDynamics.setAllocator(allocator);
     ensureVariationalContactEvaluationScratchAllocator(
         scratch.contactEvaluation, allocator);
+    ensureVariationalStepScratchAllocator(scratch.step, allocator);
+    ensureVariationalLinearSolveScratchAllocator(
+        scratch.linearSolve, allocator);
+    ensureVariationalProjectionScratchAllocator(scratch.projection, allocator);
+    ensureVariationalAndersonScratchAllocator(scratch.anderson, allocator);
     scratch.postContactTransforms.resize(structure.links.size());
     scratch.constraints.clear();
     for (auto closureEntity : closures) {
@@ -4219,6 +4301,13 @@ void MultibodyVariationalIntegrationStage::execute(
     scratch.inverseDynamics.setAllocator(worldFreeAllocator);
     ensureVariationalContactEvaluationScratchAllocator(
         scratch.contactEvaluation, worldFreeAllocator);
+    ensureVariationalStepScratchAllocator(scratch.step, worldFreeAllocator);
+    ensureVariationalLinearSolveScratchAllocator(
+        scratch.linearSolve, worldFreeAllocator);
+    ensureVariationalProjectionScratchAllocator(
+        scratch.projection, worldFreeAllocator);
+    ensureVariationalAndersonScratchAllocator(
+        scratch.anderson, worldFreeAllocator);
     auto& constraints = scratch.constraints;
     constraints.clear();
     for (auto closureEntity : closures) {

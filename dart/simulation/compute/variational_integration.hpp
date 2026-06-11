@@ -367,15 +367,45 @@ struct VariationalContactEvaluationScratch
 /// Reusable storage for variational articulated linear solves.
 struct VariationalLinearSolveScratch
 {
-  std::vector<Eigen::Matrix<double, 6, 6>> articulated;
-  std::vector<Eigen::Matrix<double, 6, 1>> bias;
-  std::vector<Eigen::Matrix<double, 6, 6>> motionToChild;
-  std::vector<Eigen::Matrix<double, 6, 1>> spatial;
-  std::vector<Eigen::MatrixXd> forceProjector;
-  std::vector<Eigen::MatrixXd> motionProjector;
-  std::vector<Eigen::MatrixXd> jointMatrix;
-  std::vector<Eigen::MatrixXd> jointMatrixInverse;
-  std::vector<Eigen::VectorXd> jointRhs;
+  using Matrix6 = Eigen::Matrix<double, 6, 6>;
+  using Vector6 = Eigen::Matrix<double, 6, 1>;
+  using Matrix6Allocator = dart::common::StlAllocator<Matrix6>;
+  using Matrix6Vector = std::vector<Matrix6, Matrix6Allocator>;
+  using Vector6Allocator = dart::common::StlAllocator<Vector6>;
+  using Vector6Vector = std::vector<Vector6, Vector6Allocator>;
+  using MatrixAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using MatrixVector = std::vector<Eigen::MatrixXd, MatrixAllocator>;
+  using VectorAllocator = dart::common::StlAllocator<Eigen::VectorXd>;
+  using VectorVector = std::vector<Eigen::VectorXd, VectorAllocator>;
+
+  VariationalLinearSolveScratch()
+    : VariationalLinearSolveScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalLinearSolveScratch(
+      dart::common::MemoryAllocator& allocator)
+    : articulated(Matrix6Allocator{allocator}),
+      bias(Vector6Allocator{allocator}),
+      motionToChild(Matrix6Allocator{allocator}),
+      spatial(Vector6Allocator{allocator}),
+      forceProjector(MatrixAllocator{allocator}),
+      motionProjector(MatrixAllocator{allocator}),
+      jointMatrix(MatrixAllocator{allocator}),
+      jointMatrixInverse(MatrixAllocator{allocator}),
+      jointRhs(VectorAllocator{allocator})
+  {
+  }
+
+  Matrix6Vector articulated;
+  Vector6Vector bias;
+  Matrix6Vector motionToChild;
+  Vector6Vector spatial;
+  MatrixVector forceProjector;
+  MatrixVector motionProjector;
+  MatrixVector jointMatrix;
+  MatrixVector jointMatrixInverse;
+  VectorVector jointRhs;
   Eigen::VectorXd jointWork;
   Eigen::VectorXd jointSolveWork;
   Eigen::VectorXd rhs;
@@ -385,7 +415,22 @@ struct VariationalLinearSolveScratch
 /// Reusable storage for one variational multibody step.
 struct VariationalStepScratch
 {
-  std::vector<Eigen::Matrix<double, 6, 1>> currentSpatialVelocities;
+  using SpatialVelocityAllocator
+      = dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>;
+  using SpatialVelocityVector
+      = std::vector<Eigen::Matrix<double, 6, 1>, SpatialVelocityAllocator>;
+
+  VariationalStepScratch()
+    : VariationalStepScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalStepScratch(dart::common::MemoryAllocator& allocator)
+    : currentSpatialVelocities(SpatialVelocityAllocator{allocator})
+  {
+  }
+
+  SpatialVelocityVector currentSpatialVelocities;
   Eigen::VectorXd position;
   Eigen::VectorXd velocity;
   Eigen::VectorXd appliedForce;
@@ -435,7 +480,31 @@ private:
 /// Reusable storage for variational loop-closure projection.
 struct VariationalConstraintProjectionScratch
 {
-  std::vector<Eigen::MatrixXd> jacobians;
+  using JacobianAllocator = dart::common::StlAllocator<Eigen::MatrixXd>;
+  using JacobianVector = std::vector<Eigen::MatrixXd, JacobianAllocator>;
+  using ProjectionBoundsAllocator
+      = dart::common::StlAllocator<VariationalProjectionRowBounds>;
+  using ProjectionBoundsVector
+      = std::vector<VariationalProjectionRowBounds, ProjectionBoundsAllocator>;
+  using RowIndexAllocator = dart::common::StlAllocator<Eigen::Index>;
+  using RowIndexVector = std::vector<Eigen::Index, RowIndexAllocator>;
+
+  VariationalConstraintProjectionScratch()
+    : VariationalConstraintProjectionScratch(
+          dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalConstraintProjectionScratch(
+      dart::common::MemoryAllocator& allocator)
+    : jacobians(JacobianAllocator{allocator}),
+      projectionBounds(ProjectionBoundsAllocator{allocator}),
+      hardRows(RowIndexAllocator{allocator}),
+      boundedRows(RowIndexAllocator{allocator})
+  {
+  }
+
+  JacobianVector jacobians;
   Eigen::MatrixXd pointJacobianA;
   Eigen::MatrixXd pointJacobianB;
   Eigen::MatrixXd angularJacobianA;
@@ -449,9 +518,9 @@ struct VariationalConstraintProjectionScratch
   Eigen::VectorXd lambdaRhs;
   Eigen::VectorXd lambda;
   Eigen::VectorXd correction;
-  std::vector<VariationalProjectionRowBounds> projectionBounds;
-  std::vector<Eigen::Index> hardRows;
-  std::vector<Eigen::Index> boundedRows;
+  ProjectionBoundsVector projectionBounds;
+  RowIndexVector hardRows;
+  RowIndexVector boundedRows;
   Eigen::MatrixXd hardConstraintMass;
   Eigen::LDLT<Eigen::MatrixXd> hardConstraintFactorization;
   Eigen::VectorXd hardConstraintRhs;
@@ -463,8 +532,22 @@ struct VariationalConstraintProjectionScratch
 /// multibody stage.
 struct VariationalAndersonScratch
 {
-  std::vector<Eigen::VectorXd> stepDeltas;
-  std::vector<Eigen::VectorXd> iterateDeltas;
+  using VectorAllocator = dart::common::StlAllocator<Eigen::VectorXd>;
+  using VectorVector = std::vector<Eigen::VectorXd, VectorAllocator>;
+
+  VariationalAndersonScratch()
+    : VariationalAndersonScratch(dart::common::MemoryAllocator::GetDefault())
+  {
+  }
+
+  explicit VariationalAndersonScratch(dart::common::MemoryAllocator& allocator)
+    : stepDeltas(VectorAllocator{allocator}),
+      iterateDeltas(VectorAllocator{allocator})
+  {
+  }
+
+  VectorVector stepDeltas;
+  VectorVector iterateDeltas;
   std::size_t historyCount = 0;
   Eigen::VectorXd previousStep;
   Eigen::VectorXd previousPosition;
