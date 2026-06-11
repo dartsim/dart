@@ -15,6 +15,9 @@ _BRIDGE_BOARD_HALF_EXTENTS = np.array([0.10, 0.16, 0.025])
 _BRIDGE_POST_HALF_EXTENTS = np.array([0.05, 0.2, 0.08])
 _BRIDGE_TRAVELER_HALF_EXTENTS = np.array([0.07, 0.07, 0.07])
 _BRIDGE_BOARD_X = np.linspace(-0.45, 0.45, 4)
+_PULLEY_SUPPORT_HALF_EXTENTS = np.array([0.08, 0.04, 0.08])
+_PULLEY_WHEEL_RADIUS = 0.10
+_PULLEY_LOAD_HALF_EXTENTS = np.array([0.055, 0.055, 0.055])
 _NUNCHAKU_HANDLE_HALF_EXTENTS = np.array([0.18, 0.035, 0.035])
 _TERRAIN_HALF_EXTENTS = np.array([0.70, 0.45, 0.025])
 _TERRAIN_CHASSIS_HALF_EXTENTS = np.array([0.22, 0.12, 0.04])
@@ -122,7 +125,7 @@ def _build_placeholder(target: Plan083SceneTarget) -> SceneSetup:
 def _build_hanging_bridge_runtime(target: Plan083SceneTarget) -> SceneSetup:
     world = dart.World(
         time_step=0.005,
-        gravity=(0.0, 0.0, -9.81),
+        gravity=(0.0, 0.0, 0.0),
         rigid_body_solver=dart.RigidBodySolver.IPC,
     )
 
@@ -348,6 +351,137 @@ def _build_nunchaku_runtime(target: Plan083SceneTarget) -> SceneSetup:
             "rigid_body_solver": "ipc",
             "anchor": anchor,
             "swinging": swinging,
+        }
+    )
+    return SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        force_drag=bridge.force_drag,
+        panels=[ScenePanel(target.title, build_panel)],
+        info=info,
+    )
+
+
+def _build_pulley_runtime(target: Plan083SceneTarget) -> SceneSetup:
+    world = dart.World(
+        time_step=0.005,
+        gravity=(0.0, 0.0, -9.81),
+        rigid_body_solver=dart.RigidBodySolver.IPC,
+    )
+
+    support = world.add_rigid_body(
+        "plan083_pulley_support", position=(0.0, 0.0, 0.76)
+    )
+    support.is_static = True
+    support.set_collision_shape(dart.CollisionShape.box(_PULLEY_SUPPORT_HALF_EXTENTS))
+
+    wheel = world.add_rigid_body(
+        "plan083_pulley_wheel",
+        position=(0.0, 0.0, 0.76),
+    )
+    wheel.mass = 0.16
+    wheel.set_collision_shape(dart.CollisionShape.sphere(_PULLEY_WHEEL_RADIUS))
+
+    left_load = world.add_rigid_body(
+        "plan083_pulley_left_load",
+        position=(-0.20, 0.0, 0.48),
+    )
+    left_load.mass = 0.12
+    left_load.set_collision_shape(dart.CollisionShape.box(_PULLEY_LOAD_HALF_EXTENTS))
+
+    right_load = world.add_rigid_body(
+        "plan083_pulley_right_load",
+        position=(0.20, 0.0, 0.42),
+    )
+    right_load.mass = 0.18
+    right_load.set_collision_shape(dart.CollisionShape.box(_PULLEY_LOAD_HALF_EXTENTS))
+
+    world.add_rigid_body_revolute_joint(
+        "plan083_pulley_hinge",
+        support,
+        wheel,
+        axis=(0.0, 1.0, 0.0),
+    )
+    world.add_rigid_body_fixed_joint(
+        "plan083_pulley_left_point_connection",
+        wheel,
+        left_load,
+    )
+    world.add_rigid_body_fixed_joint(
+        "plan083_pulley_right_point_connection",
+        wheel,
+        right_load,
+    )
+
+    world.enter_simulation_mode()
+
+    bridge = WorldRenderBridge(world, name="plan083_pulley_runtime")
+    bridge.add_rigid_body_visual(
+        support,
+        dart.BoxShape(_full(_PULLEY_SUPPORT_HALF_EXTENTS)),
+        (0.36, 0.37, 0.40),
+        name="plan083_pulley_support_visual",
+    )
+    bridge.add_rigid_body_visual(
+        wheel,
+        dart.SphereShape(_PULLEY_WHEEL_RADIUS),
+        (0.22, 0.52, 0.76),
+        name="plan083_pulley_wheel_visual",
+    )
+    bridge.add_rigid_body_visual(
+        left_load,
+        dart.BoxShape(_full(_PULLEY_LOAD_HALF_EXTENTS)),
+        (0.74, 0.45, 0.24),
+        name="plan083_pulley_left_load_visual",
+    )
+    bridge.add_rigid_body_visual(
+        right_load,
+        dart.BoxShape(_full(_PULLEY_LOAD_HALF_EXTENTS)),
+        (0.86, 0.32, 0.26),
+        name="plan083_pulley_right_load_visual",
+    )
+    bridge.sync()
+
+    left_height_history: deque[float] = deque(maxlen=120)
+    right_height_history: deque[float] = deque(maxlen=120)
+    wheel_spin_history: deque[float] = deque(maxlen=120)
+
+    def build_panel(builder: object, context: object) -> None:
+        left_height = float(np.asarray(left_load.translation, dtype=float)[2])
+        right_height = float(np.asarray(right_load.translation, dtype=float)[2])
+        wheel_spin = float(np.asarray(wheel.angular_velocity, dtype=float)[1])
+        left_height_history.append(left_height)
+        right_height_history.append(right_height)
+        wheel_spin_history.append(wheel_spin)
+
+        builder.text("status: reduced runtime smoke scene")
+        builder.text("solver: rigid IPC World.step")
+        builder.text(f"row: {', '.join(target.row_ids)}")
+        builder.text(f"rigid bodies: {world.num_rigid_bodies}")
+        builder.text(f"joints: {world.num_rigid_body_joints}")
+        builder.text(f"world time: {world.time:.3f} s")
+        builder.text(f"left load height: {left_height:.3f} m")
+        builder.text(f"right load height: {right_height:.3f} m")
+        builder.text(f"wheel spin: {wheel_spin:.3f} rad/s")
+        builder.text(f"benchmark: {target.benchmark_command}")
+        builder.text(f"limitation: {target.limitation}")
+        builder.separator()
+        bridge.build_control_panel(builder, context)
+        if left_height_history:
+            builder.separator()
+            builder.plot_lines("Left load height", list(left_height_history))
+            builder.plot_lines("Right load height", list(right_height_history))
+            builder.plot_lines("Wheel spin", list(wheel_spin_history))
+
+    info = _target_info(target)
+    info.update(
+        {
+            "sx_world": world,
+            "runtime_smoke_scene": True,
+            "rigid_body_solver": "ipc",
+            "support": support,
+            "wheel": wheel,
+            "loads": (left_load, right_load),
         }
     )
     return SceneSetup(
@@ -824,6 +958,8 @@ def _build_ragdoll_runtime(target: Plan083SceneTarget) -> SceneSetup:
 def _scene(target: Plan083SceneTarget) -> PythonDemoScene:
     if target.scene_id == "plan083_hanging_bridge":
         build = lambda target=target: _build_hanging_bridge_runtime(target)
+    elif target.scene_id == "plan083_pulley_system":
+        build = lambda target=target: _build_pulley_runtime(target)
     elif target.scene_id == "plan083_nunchaku":
         build = lambda target=target: _build_nunchaku_runtime(target)
     elif target.scene_id == "plan083_precession":
@@ -876,12 +1012,12 @@ PLAN083_SCENE_TARGETS: tuple[Plan083SceneTarget, ...] = (
         title="PLAN-083 Pulley System",
         row_ids=("unb-fig-03",),
         category="PLAN-083 Constraints Corpus",
-        summary="Planned pulley constraints and frictional lifting validation scene.",
-        target="Paper Fig. 3/Fig. 21 pulley force-comparison scene.",
+        summary="Reduced pulley constraint smoke scene running through World::step.",
+        target="Paper Fig. 3/Fig. 21 pulley force-comparison scene; reduced to a hinged wheel and two point-connected loads for runtime smoke evidence.",
         smoke_command="pixi run py-demos -- --scene plan083_pulley_system --headless --frames 4",
         visual_command="pixi run py-demo-capture -- --scene plan083_pulley_system --frames 240 --width 1280 --height 720",
-        benchmark_command="pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=pulley_system",
-        limitation="Waiting for runtime equality-constraint solve and force packet.",
+        benchmark_command="pixi run bm-plan083-cpu-pulley-packet",
+        limitation="Reduced hinged-wheel and point-connection smoke packet only; analytical force comparison and paper-scale rope/rod coupling remain planned.",
     ),
     Plan083SceneTarget(
         scene_id="plan083_umbrella",

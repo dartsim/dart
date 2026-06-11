@@ -65,6 +65,32 @@ def _nunchaku_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _pulley_packet(**overrides):
+    row = {
+        "name": "BM_Plan083CpuScene_pulley_system_reduced_world_step_median",
+        "run_name": "BM_Plan083CpuScene_pulley_system_reduced_world_step",
+        "aggregate_name": "median",
+        "real_time": 8.0,
+        "cpu_time": 8.0,
+        "time_unit": "ms",
+        "body_count": 4,
+        "dynamic_body_count": 3,
+        "fixed_joint_count": 2,
+        "revolute_joint_count": 1,
+        "active_articulation_constraints": 8,
+        "solver_iterations": 0,
+        "failed_steps": 0,
+        "final_equality_residual_norm": 1e-10,
+        "left_load_height_m": 0.48,
+        "right_load_height_m": 0.42,
+        "load_height_difference_m": 0.06,
+        "load_separation_m": 0.40,
+        "wheel_spin_rad_s": 0.0,
+    }
+    row.update(overrides)
+    return {"benchmarks": [row]}
+
+
 def _nunchaku_scaling_packet(**overrides):
     rows = []
     for size in (20, 40, 60, 80, 100):
@@ -192,6 +218,7 @@ def _ragdoll_packet(**overrides):
 def _timing_breakdown_packet(**overrides):
     rows = [
         _benchmark_packet()["benchmarks"][0],
+        _pulley_packet()["benchmarks"][0],
         _nunchaku_packet()["benchmarks"][0],
         _terrain_vehicle_packet()["benchmarks"][0],
         _ragdoll_packet()["benchmarks"][0],
@@ -207,6 +234,7 @@ def _timing_breakdown_packet(**overrides):
 def _table2_packet(**overrides):
     rows = [
         _benchmark_packet()["benchmarks"][0],
+        _pulley_packet()["benchmarks"][0],
         _terrain_vehicle_packet()["benchmarks"][0],
         _ragdoll_packet()["benchmarks"][0],
         _windmill_packet()["benchmarks"][0],
@@ -255,6 +283,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku() -> None:
     assert row["revolute_joint_count"] == 1
     assert row["active_articulation_constraints"] == 2
     assert row["wall_time_ns"] == 3.0e6
+
+
+def test_plan083_cpu_scene_packet_accepts_reduced_pulley() -> None:
+    module = _load_module()
+
+    packet = module.make_packet(
+        _pulley_packet(),
+        max_equality_residual=1e-8,
+        scene="pulley_system",
+    )
+
+    row = packet["plan083_cpu_scene_packet"]
+    assert row["row_id"] == "unb-fig-03"
+    assert row["scene_id"] == "plan083_pulley_system"
+    assert row["paper_scale"] is False
+    assert row["body_count"] == 4
+    assert row["dynamic_body_count"] == 3
+    assert row["fixed_joint_count"] == 2
+    assert row["revolute_joint_count"] == 1
+    assert row["active_articulation_constraints"] == 8
+    assert row["wall_time_ns"] == 8.0e6
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku_scaling() -> None:
@@ -371,10 +420,10 @@ def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
     assert row["row_id"] == "unb-fig-24"
     assert row["scene_id"] == "plan083_reduced_timing_breakdown"
     assert row["paper_scale"] is False
-    assert row["scene_count"] == 6
-    assert row["total_body_count"] == 27
-    assert row["total_dynamic_body_count"] == 20
-    assert row["total_wall_time_ns"] == 27.0e6
+    assert row["scene_count"] == 7
+    assert row["total_body_count"] == 31
+    assert row["total_dynamic_body_count"] == 23
+    assert row["total_wall_time_ns"] == 35.0e6
     assert row["available_timing_fields"] == ["wall_time_ns"]
     assert "linear_solve" in row["missing_paper_timing_fields"]
 
@@ -392,9 +441,10 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
     assert row["row_id"] == "unb-table-02"
     assert row["scene_id"] == "plan083_reduced_table_2"
     assert row["paper_scale"] is False
-    assert row["scene_count"] == 5
+    assert row["scene_count"] == 6
     assert row["covered_paper_rows"] == [
         "unb-fig-02",
+        "unb-fig-03",
         "unb-fig-10",
         "unb-fig-11",
         "unb-fig-20",
@@ -402,13 +452,12 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
     ]
     assert row["missing_paper_rows"] == [
         "unb-fig-01",
-        "unb-fig-03",
         "unb-fig-04",
         "unb-fig-22",
     ]
-    assert row["total_body_count"] == 25
-    assert row["total_dynamic_body_count"] == 19
-    assert row["total_wall_time_ns"] == 24.0e6
+    assert row["total_body_count"] == 29
+    assert row["total_dynamic_body_count"] == 22
+    assert row["total_wall_time_ns"] == 32.0e6
 
 
 def test_plan083_cpu_scene_packet_rejects_failed_bridge_step() -> None:
@@ -456,6 +505,17 @@ def test_plan083_cpu_scene_packet_rejects_nunchaku_without_hinge() -> None:
             _nunchaku_packet(revolute_joint_count=0),
             max_equality_residual=1e-8,
             scene="nunchaku_single",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_pulley_without_point_connections() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="point-connection"):
+        module.make_packet(
+            _pulley_packet(fixed_joint_count=1),
+            max_equality_residual=1e-8,
+            scene="pulley_system",
         )
 
 

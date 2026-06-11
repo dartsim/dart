@@ -87,11 +87,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_pulley_system --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_pulley_system --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/pulley_system/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=pulley_system",
+      "benchmark_command": "pixi run bm-plan083-cpu-pulley-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/pulley_system.json",
       "expected_invariant": "Pulley constraints satisfy residual tolerances and force-vs-mass comparison rows.",
-      "limitation_status": "Launchable placeholder only; waiting for sparse equality-constraint runtime solve.",
-      "notes_or_gap": "Force comparison remains planned until the runtime packet exists."
+      "limitation_status": "Reduced hinged-wheel and point-connection smoke packet only; analytical force comparison and paper-scale rope/rod coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced pulley scene through World::step, and bm-plan083-cpu-pulley-packet validates the reduced benchmark packet. Analytical force-vs-mass comparison remains planned."
     },
     {
       "row_id": "unb-fig-04",

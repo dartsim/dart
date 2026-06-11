@@ -182,6 +182,8 @@
       paper-scale reproduction.
   - [x] Add the first reduced hanging-bridge CPU scene packet benchmark and
         writer for the runtime smoke path.
+  - [x] Add a reduced pulley hinged-wheel CPU scene packet and runtime status
+        panel while keeping force comparison and rope/rod coupling future work.
   - [x] Add a reduced nunchaku hinge CPU scene packet and runtime status panel
         for the public revolute-joint path.
   - [x] Add a reduced terrain vehicle CPU scene packet and runtime status panel
@@ -198,7 +200,7 @@
   - [x] Add a reduced timing-breakdown CPU packet that aggregates runnable
         reduced corpus rows while keeping paper subphase timing future work.
   - [x] Add a reduced Table 2 setup/statistics CPU packet for runnable reduced
-        rows while keeping missing mixed/constraint/ABD rows future work.
+        rows while keeping missing mixed/ABD rows future work.
   - [x] Add a sparse equality change-of-variable internal contract with rank,
         residual, sparse free-coordinate basis, and KKT solve-equivalence tests
         and route the rigid IPC equality step through it while keeping
@@ -219,9 +221,10 @@ storage, or backend resources as public API.
 - No public API changes.
 - No dartpy binding changes.
 - No paper-scale runtime scene reproduction or fixture asset migration beyond
-  the reduced hanging-bridge, terrain vehicle, ragdoll, nunchaku, windmill, and
-  precession smoke scenes, the reduced timing-breakdown and Table 2 packets,
-  launchable planned py-demo placeholders, and checked corpus manifest.
+  the reduced hanging-bridge, pulley, terrain vehicle, ragdoll, nunchaku,
+  windmill, and precession smoke scenes, the reduced timing-breakdown and
+  Table 2 packets, launchable planned py-demo placeholders, and checked corpus
+  manifest.
 - No rigid curved-trajectory CCD move.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
@@ -273,6 +276,9 @@ storage, or backend resources as public API.
    adding reduced packets only where runtime evidence exists; do not mark
    paper-scale rows complete without paper-scale scene assets and comparison
    evidence.
+   The reduced pulley packet may move only the hinged-wheel/point-connection
+   smoke evidence; analytical force comparison and paper-scale rope/rod coupling
+   remain planned.
 4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has planned CPU/GPU/scene rows and cannot honestly be
@@ -459,6 +465,7 @@ Runtime-wiring branch-local evidence:
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4 --width 320 --height 240`
 - `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 4 --width 320 --height 240 --output-dir /tmp/dart_plan083_hanging_bridge_capture`
 - `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run bm-plan083-cpu-pulley-packet`
 - `pixi run bm-plan083-cpu-nunchaku-packet`
 - `pixi run bm-plan083-cpu-nunchaku-scaling-packet`
 - `pixi run bm-plan083-cpu-ragdoll-packet`

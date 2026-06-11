@@ -66,6 +66,9 @@ constexpr double kPi = 3.141592653589793238462643383279502884;
 const Eigen::Vector3d kBridgeBoardHalfExtents(0.10, 0.16, 0.025);
 const Eigen::Vector3d kBridgePostHalfExtents(0.05, 0.20, 0.08);
 const Eigen::Vector3d kBridgeTravelerHalfExtents(0.07, 0.07, 0.07);
+const Eigen::Vector3d kPulleySupportHalfExtents(0.08, 0.04, 0.08);
+constexpr double kPulleyWheelRadius = 0.10;
+const Eigen::Vector3d kPulleyLoadHalfExtents(0.055, 0.055, 0.055);
 const Eigen::Vector3d kNunchakuHandleHalfExtents(0.18, 0.035, 0.035);
 const Eigen::Vector3d kWindmillHubHalfExtents(0.05, 0.05, 0.05);
 const Eigen::Vector3d kWindmillBladeHalfExtents(0.045, 0.22, 0.025);
@@ -127,7 +130,7 @@ struct HangingBridgeFixture
   {
     world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
     world.setTimeStep(0.005);
-    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world.setGravity(Eigen::Vector3d::Zero());
 
     sx::RigidBodyOptions leftPostOptions;
     leftPostOptions.isStatic = true;
@@ -268,6 +271,88 @@ struct NunchakuFixture
   sx::World world;
   std::optional<sx::RigidBody> anchor;
   std::optional<sx::RigidBody> swinging;
+  std::vector<BodySnapshot> snapshots;
+};
+
+struct PulleyFixture
+{
+  PulleyFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions supportOptions;
+    supportOptions.isStatic = true;
+    supportOptions.position = Eigen::Vector3d(0.0, 0.0, 0.76);
+    support.emplace(
+        world.addRigidBody("plan083_pulley_support", supportOptions));
+    support->setCollisionShape(
+        sx::CollisionShape::makeBox(kPulleySupportHalfExtents));
+
+    sx::RigidBodyOptions wheelOptions;
+    wheelOptions.mass = 0.16;
+    wheelOptions.position = supportOptions.position;
+    wheel.emplace(world.addRigidBody("plan083_pulley_wheel", wheelOptions));
+    wheel->setCollisionShape(
+        sx::CollisionShape::makeSphere(kPulleyWheelRadius));
+
+    sx::RigidBodyOptions leftLoadOptions;
+    leftLoadOptions.mass = 0.12;
+    leftLoadOptions.position = Eigen::Vector3d(-0.20, 0.0, 0.48);
+    leftLoad.emplace(
+        world.addRigidBody("plan083_pulley_left_load", leftLoadOptions));
+    leftLoad->setCollisionShape(
+        sx::CollisionShape::makeBox(kPulleyLoadHalfExtents));
+
+    sx::RigidBodyOptions rightLoadOptions;
+    rightLoadOptions.mass = 0.18;
+    rightLoadOptions.position = Eigen::Vector3d(0.20, 0.0, 0.42);
+    rightLoad.emplace(
+        world.addRigidBody("plan083_pulley_right_load", rightLoadOptions));
+    rightLoad->setCollisionShape(
+        sx::CollisionShape::makeBox(kPulleyLoadHalfExtents));
+
+    (void)world.addRigidBodyRevoluteJoint(
+        "plan083_pulley_hinge", *support, *wheel, Eigen::Vector3d::UnitY());
+    (void)world.addRigidBodyFixedJoint(
+        "plan083_pulley_left_point_connection", *wheel, *leftLoad);
+    (void)world.addRigidBodyFixedJoint(
+        "plan083_pulley_right_point_connection", *wheel, *rightLoad);
+
+    snapshotBody(snapshots, *support);
+    snapshotBody(snapshots, *wheel);
+    snapshotBody(snapshots, *leftLoad);
+    snapshotBody(snapshots, *rightLoad);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double loadHeightDifference() const
+  {
+    return leftLoad->getTranslation().z() - rightLoad->getTranslation().z();
+  }
+
+  double loadSeparation() const
+  {
+    return (leftLoad->getTranslation() - rightLoad->getTranslation()).norm();
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> support;
+  std::optional<sx::RigidBody> wheel;
+  std::optional<sx::RigidBody> leftLoad;
+  std::optional<sx::RigidBody> rightLoad;
   std::vector<BodySnapshot> snapshots;
 };
 
@@ -711,6 +796,63 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["max_board_sag_m"] = fixture.maxBoardSag();
 }
 BENCHMARK(BM_Plan083CpuScene_hanging_bridge_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+//==============================================================================
+static void BM_Plan083CpuScene_pulley_system_reduced_world_step(
+    benchmark::State& state)
+{
+  PulleyFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    const bool residualOk
+        = std::isfinite(lastStats.finalEqualityResidualNorm)
+          && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
+    const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
+                               && lastStats.activeArticulationConstraints >= 8u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.wheel->getTransform().data());
+    benchmark::DoNotOptimize(fixture.leftLoad->getTranslation().data());
+    benchmark::DoNotOptimize(fixture.rightLoad->getTranslation().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_03"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["fixed_joint_count"] = 2.0;
+  state.counters["revolute_joint_count"] = 1.0;
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["left_load_height_m"] = fixture.leftLoad->getTranslation().z();
+  state.counters["right_load_height_m"]
+      = fixture.rightLoad->getTranslation().z();
+  state.counters["load_height_difference_m"] = fixture.loadHeightDifference();
+  state.counters["load_separation_m"] = fixture.loadSeparation();
+  state.counters["wheel_spin_rad_s"] = fixture.wheel->getAngularVelocity().y();
+}
+BENCHMARK(BM_Plan083CpuScene_pulley_system_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

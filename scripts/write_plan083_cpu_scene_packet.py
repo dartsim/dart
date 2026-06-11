@@ -34,6 +34,7 @@ DEFAULT_SCENE = "hanging_bridge"
 NUNCHAKU_SCALING_SIZES = (20, 40, 60, 80, 100)
 TIMING_BREAKDOWN_SCENES = (
     "hanging_bridge",
+    "pulley_system",
     "nunchaku_single",
     "terrain_vehicle",
     "ragdoll_reduced",
@@ -42,6 +43,7 @@ TIMING_BREAKDOWN_SCENES = (
 )
 TABLE2_REDUCED_SCENES = (
     "hanging_bridge",
+    "pulley_system",
     "terrain_vehicle",
     "ragdoll_reduced",
     "windmill",
@@ -50,6 +52,7 @@ TABLE2_REDUCED_SCENES = (
 SCENE_IDS = {
     "hanging_bridge": "plan083_hanging_bridge",
     "nunchaku_single": "plan083_nunchaku",
+    "pulley_system": "plan083_pulley_system",
     "precession": "plan083_precession",
     "ragdoll_reduced": "plan083_ragdolls",
     "table_2": "plan083_reduced_table_2",
@@ -60,6 +63,7 @@ SCENE_IDS = {
 SCENE_ROW_IDS = {
     "hanging_bridge": "unb-fig-02",
     "nunchaku_single": "unb-fig-13",
+    "pulley_system": "unb-fig-03",
     "precession": "unb-fig-23",
     "ragdoll_reduced": "unb-fig-11",
     "table_2": "unb-table-02",
@@ -71,6 +75,7 @@ SCENE_ROWS = {
     "hanging_bridge": "BM_Plan083CpuScene_hanging_bridge_reduced_world_step",
     "nunchaku_single": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step",
     "nunchaku_scaling": "BM_Plan083CpuScene_nunchaku_scaling_reduced_world_step",
+    "pulley_system": "BM_Plan083CpuScene_pulley_system_reduced_world_step",
     "precession": "BM_Plan083CpuScene_precession_reduced_world_step",
     "ragdoll_reduced": "BM_Plan083CpuScene_ragdoll_reduced_world_step",
     "table_2": "BM_Plan083CpuScene_reduced_table_2",
@@ -87,6 +92,9 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "nunchaku_scaling": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling_benchmark.json"
+    ),
+    "pulley_system": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/pulley_system_benchmark.json"
     ),
     "precession": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/precession_benchmark.json"
@@ -114,6 +122,9 @@ SCENE_PACKET_OUTPUTS = {
     ),
     "nunchaku_scaling": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/nunchaku_scaling.json"
+    ),
+    "pulley_system": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/pulley_system.json"
     ),
     "precession": Path(".benchmark_results/plan083/cpu_scene_corpus/precession.json"),
     "ragdoll_reduced": Path(
@@ -355,6 +366,14 @@ def make_packet(
             final_residual=final_residual,
             max_equality_residual=max_equality_residual,
         )
+    if scene == "pulley_system":
+        return _make_pulley_packet(
+            row,
+            rows,
+            timing_ns=timing_ns,
+            final_residual=final_residual,
+            max_equality_residual=max_equality_residual,
+        )
     if scene == "precession":
         return _make_precession_packet(
             row,
@@ -502,6 +521,75 @@ def _make_nunchaku_packet(
             "limitation_status": (
                 "Reduced single-hinge runtime smoke packet only; cone-twist "
                 "ranges, sparse N-by-N scaling, and Fig. 25 remain planned."
+            ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_pulley_packet(
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+    final_residual: float,
+    max_equality_residual: float,
+) -> dict[str, Any]:
+    body_count = int(_finite_number(row, "body_count"))
+    dynamic_body_count = int(_finite_number(row, "dynamic_body_count"))
+    fixed_joint_count = int(_finite_number(row, "fixed_joint_count"))
+    revolute_joint_count = int(_finite_number(row, "revolute_joint_count"))
+    active_articulation_constraints = int(
+        _finite_number(row, "active_articulation_constraints")
+    )
+    if body_count != 4:
+        raise Plan083CpuScenePacketError(f"expected 4 rigid bodies, got {body_count}")
+    if dynamic_body_count != 3:
+        raise Plan083CpuScenePacketError(
+            f"expected 3 dynamic rigid bodies, got {dynamic_body_count}"
+        )
+    if fixed_joint_count != 2:
+        raise Plan083CpuScenePacketError(
+            f"expected 2 point-connection joints, got {fixed_joint_count}"
+        )
+    if revolute_joint_count != 1:
+        raise Plan083CpuScenePacketError(
+            f"expected 1 revolute joint, got {revolute_joint_count}"
+        )
+    if active_articulation_constraints < 8:
+        raise Plan083CpuScenePacketError(
+            "expected pulley hinge and point-connection articulation rows"
+        )
+
+    separation = _finite_number(row, "load_separation_m")
+    if separation <= 0.0:
+        raise Plan083CpuScenePacketError("pulley load separation is not positive")
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": "unb-fig-03",
+            "scene_id": "plan083_pulley_system",
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "rigid IPC World::step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "body_count": body_count,
+            "dynamic_body_count": dynamic_body_count,
+            "fixed_joint_count": fixed_joint_count,
+            "revolute_joint_count": revolute_joint_count,
+            "active_articulation_constraints": active_articulation_constraints,
+            "final_equality_residual_norm": final_residual,
+            "max_equality_residual": max_equality_residual,
+            "left_load_height_m": _finite_number(row, "left_load_height_m"),
+            "right_load_height_m": _finite_number(row, "right_load_height_m"),
+            "load_height_difference_m": _finite_number(row, "load_height_difference_m"),
+            "load_separation_m": separation,
+            "wheel_spin_rad_s": _finite_number(row, "wheel_spin_rad_s"),
+            "limitation_status": (
+                "Reduced hinged-wheel and point-connection smoke packet only; "
+                "analytical force comparison, rope/rod coupling, and paper-scale "
+                "timing remain planned."
             ),
         },
         "benchmarks": rows,
@@ -873,7 +961,6 @@ def _make_table2_packet(
             "covered_paper_rows": [sample["row_id"] for sample in samples],
             "missing_paper_rows": [
                 "unb-fig-01",
-                "unb-fig-03",
                 "unb-fig-04",
                 "unb-fig-22",
             ],
@@ -886,8 +973,8 @@ def _make_table2_packet(
             "max_equality_residual": max_equality_residual,
             "limitation_status": (
                 "Reduced Table 2 setup/statistics packet only; lying-flat, "
-                "pulley, umbrella, candy, paper body/node/contact counts, "
-                "paper timesteps, and paper timing rows remain planned."
+                "umbrella, candy, paper body/node/contact counts, paper timesteps, "
+                "and paper timing rows remain planned."
             ),
             "samples": samples,
         },
