@@ -63,8 +63,9 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `solve()` path remains usable.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
-- Solvers validate basic invariants (e.g., `lo <= hi`, `findex` in range, no
-  NaN bounds) and treat empty problems as a trivial success.
+- Problem classification and solvers validate basic invariants (e.g., finite
+  `A`/`b`, `lo <= hi`, `findex` in range, no NaN bounds) and treat empty
+  problems as a trivial success.
 
 ### Repository Layout
 

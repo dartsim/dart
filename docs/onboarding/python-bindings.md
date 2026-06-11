@@ -135,9 +135,13 @@ outputs on the same problem without relying on in-place mutation. This is a
 standalone comparison API; DART 7 `World` contact behavior remains configured by
 public method values such as `ContactSolverMethod.BOXED_LCP`.
 `LcpSolver.supports_standard_lcp()`, `supports_boxed_lcp()`,
-`supports_friction_index()`, and `supports_problem(problem)` report native
-solver-family coverage, which lets py-demos separate direct apples-to-apples
-rows from boxed/findex paths that are solved through fallback delegation.
+`supports_friction_index()`, and
+`supports_problem(problem, standard_tolerance=None)` report native solver-family
+coverage, which lets py-demos separate direct apples-to-apples rows from
+boxed/findex paths that are solved through fallback delegation. The optional
+standard tolerance mirrors C++ `LcpProblem::getType(tol)` for near-canonical
+standard forms; invalid dimensions or non-finite problem data report no native
+support.
 
 ### Binding Conventions
 
