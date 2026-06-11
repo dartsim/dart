@@ -267,7 +267,9 @@ Available solvers:
 
 The backticked names in this block are checked against
 `tests/common/lcpsolver/lcp_solver_manifest.hpp` by
-`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest`.
+`AllSolversSmokeTest.DocumentedSolverAvailabilityMatchesManifest` and by
+`scripts/check_lcp_solver_roster.py`, which also checks the dartpy bindings,
+stubs, and `lcp_physics` demo metadata.
 The C++ and dartpy `LcpSolver::supports*` predicates expose the same native
 standard/boxed/findex capability split at runtime; fallback delegation is still
 allowed when calling `solve()`.

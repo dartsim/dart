@@ -275,6 +275,10 @@ lint-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+lint-lcp-solver-roster = { cmd = [
+  "python",
+  "scripts/check_lcp_solver_roster.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -304,6 +308,7 @@ lint = { depends-on = [
   "lint-plan083-cpu-scene-corpus",
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
+  "lint-lcp-solver-roster",
   "sync-ai-commands",
 ] }
 
@@ -372,6 +377,10 @@ check-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+check-lcp-solver-roster = { cmd = [
+  "python",
+  "scripts/check_lcp_solver_roster.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -410,6 +419,7 @@ check-lint = { depends-on = [
   "check-phase5-cuda-workflow",
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
+  "check-lcp-solver-roster",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -2382,6 +2392,7 @@ lint = { depends-on = [
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
   "lint-api-boundaries",
+  "lint-lcp-solver-roster",
   "sync-ai-commands",
 ] }
 
@@ -2405,6 +2416,7 @@ check-lint = { depends-on = [
   "check-docs-policy",
   "check-dart7-clean-break-policy",
   "check-api-boundaries",
+  "check-lcp-solver-roster",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
