@@ -210,8 +210,9 @@ reproduction, coupled-contact scaling evidence, or a completion claim.
 The same branch now adds the sparse equality change-of-variable contract in
 `detail/newton_barrier/change_of_variable.hpp`, with focused primitive tests for
 rank detection, residual satisfaction, sparse free-coordinate basis structure,
-and KKT solve equivalence. This moves `unb-alg-change-var` to `in-progress` but
-does not claim runtime sparse assembly or pulley/sliding scene reproduction.
+and KKT solve equivalence, and routes the rigid IPC equality step through that
+private contract. This moves `unb-alg-change-var` to `in-progress` but does not
+claim paper-scale pulley/sliding scene reproduction.
 
 ## Last Session Summary
 

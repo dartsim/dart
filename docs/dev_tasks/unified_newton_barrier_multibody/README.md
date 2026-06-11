@@ -199,7 +199,8 @@
         rows while keeping missing mixed/constraint/ABD rows future work.
   - [x] Add a sparse equality change-of-variable internal contract with rank,
         residual, sparse free-coordinate basis, and KKT solve-equivalence tests
-        while keeping runtime sparse assembly future work.
+        and route the rigid IPC equality step through it while keeping
+        paper-scale pulley/sliding scenes future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
