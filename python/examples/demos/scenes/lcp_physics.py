@@ -1085,11 +1085,59 @@ def _summarize_standalone_problem_suite(
     return summaries
 
 
+def _summarize_standalone_solver_profiles(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    profiles: list[dict[str, Any]] = []
+    for support_row in _SOLVER_SUPPORT_ROWS:
+        solver_rows = [row for row in rows if row["solver"] == support_row["name"]]
+        native_rows = [row for row in solver_rows if row["native_supported"]]
+        delegated_rows = [row for row in solver_rows if not row["native_supported"]]
+        slowest_row = max(solver_rows, key=lambda row: row["elapsed_us"], default=None)
+        profiles.append(
+            {
+                "solver": support_row["name"],
+                "family": support_row["family"],
+                "native_surfaces": ", ".join(
+                    surface
+                    for surface, supported in (
+                        ("standard", support_row["standard"]),
+                        ("boxed", support_row["boxed"]),
+                        ("findex", support_row["findex"]),
+                    )
+                    if supported
+                ),
+                "problem_count": len(solver_rows),
+                "native_case_count": len(native_rows),
+                "delegated_case_count": len(delegated_rows),
+                "contract_ok_count": sum(
+                    1 for row in solver_rows if row["contract_ok"]
+                ),
+                "native_contract_ok_count": sum(
+                    1 for row in native_rows if row["contract_ok"]
+                ),
+                "delegated_contract_ok_count": sum(
+                    1 for row in delegated_rows if row["contract_ok"]
+                ),
+                "max_solution_error": max(
+                    (row["solution_error"] for row in solver_rows), default=0.0
+                ),
+                "total_elapsed_us": sum(row["elapsed_us"] for row in solver_rows),
+                "slowest_case": slowest_row["case"] if slowest_row else "",
+                "slowest_elapsed_us": slowest_row["elapsed_us"] if slowest_row else 0.0,
+            }
+        )
+    return profiles
+
+
 def build() -> SceneSetup:
     state: dict[str, list[_ComparisonCase]] = {"cases": _make_cases()}
     standalone_solver_rows = _run_standalone_solver_smoke()
     standalone_problem_rows = _run_standalone_problem_suite()
     standalone_problem_summary_rows = _summarize_standalone_problem_suite(
+        standalone_problem_rows
+    )
+    standalone_solver_profile_rows = _summarize_standalone_solver_profiles(
         standalone_problem_rows
     )
 
@@ -1283,6 +1331,23 @@ def build() -> SceneSetup:
                     )
                 builder.end_table()
 
+        if builder.collapsing_header("Solver comparison profile", default_open=False):
+            if builder.begin_table(
+                "lcp_solver_profile",
+                ["Solver", "Native surfaces", "OK", "Total us", "Worst error"],
+            ):
+                for row in standalone_solver_profile_rows:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["solver"])
+                    _write_table_cell(builder, row["native_surfaces"])
+                    _write_table_cell(
+                        builder,
+                        f"{row['contract_ok_count']}/{row['problem_count']}",
+                    )
+                    _write_table_cell(builder, f"{row['total_elapsed_us']:.1f}")
+                    _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
+                builder.end_table()
+
         builder.separator()
         boxed_lcp.bridge.build_control_panel(builder, context)
 
@@ -1311,6 +1376,9 @@ def build() -> SceneSetup:
             ],
             "standalone_problem_summary_rows": [
                 dict(row) for row in standalone_problem_summary_rows
+            ],
+            "standalone_solver_profile_rows": [
+                dict(row) for row in standalone_solver_profile_rows
             ],
             "solver_manifest_summary": _solver_manifest_summary(),
             "benchmark_command": _BENCHMARK_COMMAND,

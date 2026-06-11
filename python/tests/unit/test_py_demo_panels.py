@@ -811,9 +811,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     }
     problem_rows = info["standalone_problem_rows"]
     problem_summary_rows = info["standalone_problem_summary_rows"]
+    solver_profile_rows = info["standalone_solver_profile_rows"]
     problem_summary_by_case = {row["case"]: row for row in problem_summary_rows}
+    solver_profile_by_name = {row["solver"]: row for row in solver_profile_rows}
     assert len(problem_rows) == sum(expected_problem_counts.values())
     assert set(problem_summary_by_case) == set(expected_problem_counts)
+    assert len(solver_profile_rows) == summary["solver_count"]
+    assert set(solver_profile_by_name) == expected_solver_names
     assert {row["surface"] for row in problem_summary_rows} == {
         "standard",
         "boxed",
@@ -847,6 +851,30 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_elapsed_us"] >= 0.0
         assert summary_row["fastest_native_solver"] in solver_by_name
         assert summary_row["fastest_native_elapsed_us"] >= 0.0
+    for solver_name, profile_row in solver_profile_by_name.items():
+        manifest_row = solver_by_name[solver_name]
+        expected_native_case_count = (
+            4 + int(manifest_row["boxed"]) + int(manifest_row["findex"])
+        )
+        assert profile_row["problem_count"] == len(expected_problem_counts)
+        assert profile_row["native_case_count"] == expected_native_case_count
+        assert (
+            profile_row["delegated_case_count"]
+            == len(expected_problem_counts) - expected_native_case_count
+        )
+        assert profile_row["contract_ok_count"] == len(expected_problem_counts)
+        assert profile_row["native_contract_ok_count"] == expected_native_case_count
+        assert (
+            profile_row["delegated_contract_ok_count"]
+            == len(expected_problem_counts) - expected_native_case_count
+        )
+        assert profile_row["max_solution_error"] <= 2e-4
+        assert profile_row["total_elapsed_us"] >= 0.0
+        assert profile_row["slowest_case"] in expected_problem_counts
+    assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (
+        "standard, boxed, findex"
+    )
+    assert solver_profile_by_name["MPRGP"]["native_surfaces"] == "standard"
     assert {
         row["solver"]
         for row in problem_rows
@@ -873,6 +901,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "world_card_pile",
         "batch_scale",
     }
+    builder = _FakePanelBuilder()
+    setup.panels[0].build(builder, object())
+    assert (
+        "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error"
+        in builder.events
+    )
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:
