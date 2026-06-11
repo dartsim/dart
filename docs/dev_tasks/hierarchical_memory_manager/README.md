@@ -867,10 +867,11 @@ Follow-up progress after PR #2956:
   descriptors, motor active-row pointer lists, and distance-spring active-row
   pointer lists through allocator-backed reusable scratch instead of local
   default-heap vectors. `RigidBodyContactStage::AvbdScratch` also constructs
-  distance-spring row inventory with the World allocator. Focused large-row
-  builder tests verify the provided scratch allocator is used, and the existing
-  rigid AVBD plus baked World no-heap gates still pass without adding new
-  production scenes.
+  distance-spring row inventory with the World allocator, and thresholded
+  point-joint fracture-index result storage borrows the solve scratch allocator.
+  Focused large-row/fracture builder tests verify the provided scratch allocator
+  is used, and the existing rigid AVBD plus baked World no-heap gates still pass
+  without adding new production scenes.
 - The rigid IPC follow-up routes the stage's top-level runtime-body,
   solver-body, surface, dynamics-term, projected-Newton result,
   kinematic-trace, writeback-order, and resting-contact scratch vectors through

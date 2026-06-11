@@ -12,8 +12,10 @@ adding production scenes. `AvbdScalarRowInventory` now keeps generated
 descriptor lists in allocator-backed reusable scratch, large rigid AVBD motor
 and distance-spring builders can use caller-provided active-row scratch, and
 `RigidBodyContactStage::AvbdScratch` constructs distance-spring inventory from
-the World allocator. Focused large-row builder tests plus the existing rigid
-AVBD allocator and baked World no-heap gates pass for this slice.
+the World allocator. Thresholded point-joint fracture-index result storage now
+borrows the same solve scratch allocator. Focused large-row/fracture builder
+tests plus the existing rigid AVBD allocator and baked World no-heap gates pass
+for this slice.
 
 The latest post-merge pipeline/scratch slices add allocator-aware construction
 for `BatchedRigidBodyIntegrationStage` and allocator-aware

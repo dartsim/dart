@@ -4237,6 +4237,107 @@ TEST(AvbdRigidBlock, RigidWorldPointJointFractureMarksJointBroken)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldPointJointFractureUsesSolveScratchAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  linkOptions.orientation = rotationZ(0.6);
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Fixed;
+
+  vbd::AvbdRigidWorldPointJointInput input;
+  input.joint = jointEntity;
+  input.bodyA = sx::detail::toRegistryEntity(base.getEntity());
+  input.bodyB = sx::detail::toRegistryEntity(link.getEntity());
+  input.anchorA = Vec3::Zero();
+  input.anchorB = Vec3::UnitX();
+  input.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  input.startStiffness = 100.0;
+  input.maxStiffness = 1000.0;
+  input.fractureThreshold = 1e-12;
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  vbd::AvbdRigidWorldContactBuildScratch buildScratch(allocator);
+  vbd::buildAvbdRigidWorldContactSnapshot(
+      registry, std::span<const sx::Contact>(), snapshot, buildScratch);
+  vbd::reserveAvbdRigidWorldContactSnapshot(
+      snapshot,
+      /*bodyCapacity=*/2u,
+      /*contactCapacity=*/0u,
+      /*jointCapacity=*/1u,
+      /*motorCapacity=*/0u);
+  ASSERT_EQ(
+      vbd::appendAvbdRigidWorldPointJoints(
+          registry,
+          std::span<const vbd::AvbdRigidWorldPointJointInput>{&input, 1u},
+          snapshot,
+          buildScratch),
+      1u);
+  vbd::predictAvbdRigidWorldContactInertialTargets(
+      registry, snapshot, /*timeStep=*/1.0);
+
+  vbd::AvbdScalarRowInventory normalInventory(allocator);
+  vbd::AvbdScalarRowInventory frictionInventory(allocator);
+  vbd::AvbdScalarRowInventory jointLinearInventory(allocator);
+  vbd::AvbdScalarRowInventory jointAngularInventory(allocator);
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  vbd::AvbdScalarRowInventory distanceSpringInventory(allocator);
+  jointLinearInventory.reserve(3u);
+  jointAngularInventory.reserve(3u);
+
+  vbd::AvbdRigidWorldContactSolveScratch solveScratch(allocator);
+  vbd::reserveAvbdRigidWorldContactSolveScratch(
+      solveScratch,
+      /*contactCapacity=*/0u,
+      /*jointCapacity=*/1u,
+      /*motorCapacity=*/0u,
+      /*bodyCapacity=*/2u);
+
+  vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.descent.iterations = 8;
+  solveOptions.descent.regularization = 1e-12;
+  solveOptions.row.beta = 1000.0;
+  solveOptions.row.maxStiffness = 1000.0;
+
+  const auto allocationsBeforeSolve = freeList.getAllocationCount();
+  const vbd::AvbdRigidWorldContactSolveResult result
+      = vbd::solveAvbdRigidWorldContactSnapshot(
+          snapshot,
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          distanceSpringInventory,
+          /*timeStep=*/1.0,
+          solveScratch,
+          solveOptions);
+
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeSolve)
+      << "fracture-index result storage should borrow the provided solve "
+         "scratch allocator";
+  EXPECT_EQ(result.fracturedJoints, 1u);
+  ASSERT_EQ(result.fracturedJointIndices.size(), 1u);
+  EXPECT_EQ(result.fracturedJointIndices[0], 0u);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldPointJointInputPreservesAxisConfig)
 {
   sx::World world;

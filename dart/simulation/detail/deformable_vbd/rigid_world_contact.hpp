@@ -266,6 +266,16 @@ struct AvbdRigidWorldContactSolveOptions
 
 struct AvbdRigidWorldContactSolveResult
 {
+  using SizeAllocator = ::dart::common::StlAllocator<std::size_t>;
+  using SizeVector = std::vector<std::size_t, SizeAllocator>;
+
+  AvbdRigidWorldContactSolveResult() = default;
+
+  explicit AvbdRigidWorldContactSolveResult(SizeAllocator allocator)
+    : fracturedJointIndices(allocator)
+  {
+  }
+
   AvbdRigidBlockDescentStats stats;
   std::size_t normalRows = 0;
   std::size_t frictionRows = 0;
@@ -274,7 +284,7 @@ struct AvbdRigidWorldContactSolveResult
   std::size_t motorRows = 0;
   std::size_t distanceSpringRows = 0;
   std::size_t fracturedJoints = 0;
-  std::vector<std::size_t> fracturedJointIndices;
+  SizeVector fracturedJointIndices;
 };
 
 struct AvbdRigidWorldContactApplyResult
@@ -2191,7 +2201,9 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSolveScratch& scratch,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdRigidWorldContactSolveResult result;
+  AvbdRigidWorldContactSolveResult result{
+      AvbdRigidWorldContactSolveResult::SizeAllocator{
+          scratch.normalRows.get_allocator()}};
   if (snapshot.states.empty()) {
     return result;
   }
