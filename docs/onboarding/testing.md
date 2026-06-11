@@ -541,9 +541,10 @@ pixi run bm --pixi-help
 > **Note:** LCP solver comparisons use the solver-agnostic harness and the
 > `BM_LCP_COMPARE` benchmark so all solvers share the same contract and fixtures.
 > The `lcp-solvers` dashboard surface keeps a bounded standard, boxed,
-> friction-index, world-contact, and card-pile slice reproducible for dashboard
-> runs. See `tests/common/lcpsolver` and `tests/benchmark/lcpsolver` for the
-> sources, and keep benchmark outputs under the build tree.
+> friction-index, world-contact, billiards, mass-ratio stack, and card-pile
+> slice reproducible for dashboard runs. See `tests/common/lcpsolver` and
+> `tests/benchmark/lcpsolver` for the sources, and keep benchmark outputs under
+> the build tree.
 
 ### Manual Python Testing
 

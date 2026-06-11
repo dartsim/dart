@@ -53,6 +53,10 @@ def test_humanize_new_solver_surfaces():
         == "LCP billiards world step · 4 pairs · 1 steps"
     )
     assert (
+        module.humanize_name("BM_LcpWorldStackStep_BoxedLcp/4/200")
+        == "LCP mass-ratio stack world step · 4 spheres · 200 steps"
+    )
+    assert (
         module.humanize_name("BM_LcpWorldCardPileStep_BoxedLcp/7/200")
         == "LCP card-pile world step · 7 cards · 200 steps"
     )

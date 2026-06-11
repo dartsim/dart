@@ -62,7 +62,8 @@ BENCHMARK_SPECS = [
     ),
     # LCP solver contract and DART 7 contact evidence: one representative
     # standard, boxed, and friction-index row per supported solver, plus bounded
-    # world-contact and card-pile rows that mirror the lcp_physics demo packets.
+    # world-contact, billiards, mass-ratio stack, and card-pile rows that mirror
+    # the lcp_physics demo packets.
     BenchmarkSpec(
         surface="lcp-solvers",
         target="lcp_compare",
@@ -73,6 +74,7 @@ BENCHMARK_SPECS = [
             "BM_LcpWorldContact/FrictionIndex/.*/4$|"
             "BM_LcpWorldBoxContact/FrictionIndex/.*/4$|"
             "BM_LcpWorldBilliardsStep_BoxedLcp/(1|4|8)/1$|"
+            "BM_LcpWorldStackStep_BoxedLcp/(3|4)/200$|"
             "BM_LcpWorldCardPileStep_BoxedLcp/(4|7|12)/200$"
         ),
         output_name="dashboard_lcp_solvers.json",

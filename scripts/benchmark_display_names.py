@@ -107,6 +107,9 @@ SURFACES: dict[str, Surface] = {
     "BM_LcpWorldBilliardsStep_BoxedLcp": Surface(
         "LCP billiards world step", FAMILY_LCP, ("pairs", "steps")
     ),
+    "BM_LcpWorldStackStep_BoxedLcp": Surface(
+        "LCP mass-ratio stack world step", FAMILY_LCP, ("spheres", "steps")
+    ),
     "BM_LcpWorldCardPileStep_BoxedLcp": Surface(
         "LCP card-pile world step", FAMILY_LCP, ("cards", "steps")
     ),
