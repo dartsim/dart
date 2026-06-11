@@ -144,6 +144,13 @@ void destroyStageOwnedScratch(
 
 struct RigidIpcRuntimeBody
 {
+  RigidIpcRuntimeBody() = default;
+
+  explicit RigidIpcRuntimeBody(common::MemoryAllocator& allocator)
+    : surface(allocator)
+  {
+  }
+
   entt::entity entity = entt::null;
   bool kinematic = false;
   bool hasSupportedSurface = false;
@@ -160,7 +167,8 @@ struct RigidIpcContactStage::Scratch
   Scratch() = default;
 
   explicit Scratch(common::MemoryAllocator& allocator)
-    : runtimeBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
+    : payloadAllocator(&allocator),
+      runtimeBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
       solverBodies(common::StlAllocator<RigidIpcRuntimeBody>{allocator}),
       surfaces(
           common::StlAllocator<sxdetail::RigidIpcBarrierSurface>{allocator}),
@@ -182,6 +190,7 @@ struct RigidIpcContactStage::Scratch
   {
   }
 
+  common::MemoryAllocator* payloadAllocator = nullptr;
   std::vector<RigidIpcRuntimeBody, common::StlAllocator<RigidIpcRuntimeBody>>
       runtimeBodies;
   std::vector<RigidIpcRuntimeBody, common::StlAllocator<RigidIpcRuntimeBody>>
@@ -8036,6 +8045,35 @@ void copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
 }
 
 //==============================================================================
+template <typename RuntimeBodyVector>
+void appendRigidIpcRuntimeBody(
+    RuntimeBodyVector& bodies, common::MemoryAllocator* payloadAllocator)
+{
+  if (payloadAllocator != nullptr) {
+    bodies.emplace_back(*payloadAllocator);
+  } else {
+    bodies.emplace_back();
+  }
+}
+
+//==============================================================================
+template <typename SurfaceVector>
+void resizeRigidIpcSurfacesPreservingPayloadAllocator(
+    SurfaceVector& surfaces,
+    const std::size_t targetSize,
+    common::MemoryAllocator* payloadAllocator)
+{
+  while (surfaces.size() < targetSize) {
+    if (payloadAllocator != nullptr) {
+      surfaces.emplace_back(*payloadAllocator);
+    } else {
+      surfaces.emplace_back();
+    }
+  }
+  surfaces.resize(targetSize);
+}
+
+//==============================================================================
 template <
     typename RuntimeBodyVector,
     typename SolverBodyVector,
@@ -8045,7 +8083,8 @@ void prepareRigidIpcSolverScratch(
     const RuntimeBodyVector& runtimeBodies,
     SolverBodyVector& solverBodies,
     SurfaceVector& surfaces,
-    DynamicsTermVector& dynamicsTerms)
+    DynamicsTermVector& dynamicsTerms,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   std::size_t solverCount = 0u;
   for (const auto& body : runtimeBodies) {
@@ -8054,7 +8093,7 @@ void prepareRigidIpcSolverScratch(
     }
 
     if (solverCount == solverBodies.size()) {
-      solverBodies.emplace_back();
+      appendRigidIpcRuntimeBody(solverBodies, payloadAllocator);
     }
     copyRigidIpcRuntimeBodyPreservingSurfaceCapacity(
         body, solverBodies[solverCount]);
@@ -8064,7 +8103,8 @@ void prepareRigidIpcSolverScratch(
   }
 
   solverBodies.resize(solverCount);
-  surfaces.resize(solverCount);
+  resizeRigidIpcSurfacesPreservingPayloadAllocator(
+      surfaces, solverCount, payloadAllocator);
   dynamicsTerms.resize(solverCount);
   for (std::size_t i = 0; i < solverCount; ++i) {
     copyRigidIpcSurfacePreservingCapacity(solverBodies[i].surface, surfaces[i]);
@@ -8291,8 +8331,8 @@ bool copyCollisionShapeToRigidIpcSurface(
       if (!isValidRigidIpcMeshShape(shape)) {
         return false;
       }
-      surface.vertices = shape.vertices;
-      surface.triangles = shape.triangles;
+      surface.vertices.assign(shape.vertices.begin(), shape.vertices.end());
+      surface.triangles.assign(shape.triangles.begin(), shape.triangles.end());
       return applyLocalTransform();
     case CollisionShapeType::Box:
       if (!isPositiveFiniteVector(shape.halfExtents)) {
@@ -8376,7 +8416,10 @@ sxdetail::RigidIpcBodyDynamicsTerm makeRuntimeRigidIpcDynamicsTerm(
 //==============================================================================
 template <typename RuntimeBodyVector>
 void collectRigidIpcRuntimeBodies(
-    const World& world, RigidIpcSolverStats& stats, RuntimeBodyVector& bodies)
+    const World& world,
+    RigidIpcSolverStats& stats,
+    RuntimeBodyVector& bodies,
+    common::MemoryAllocator* payloadAllocator = nullptr)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view = registry.view<
@@ -8401,7 +8444,7 @@ void collectRigidIpcRuntimeBodies(
 
     ++stats.bodyCount;
     if (outputCount == bodies.size()) {
-      bodies.emplace_back();
+      appendRigidIpcRuntimeBody(bodies, payloadAllocator);
     }
     RigidIpcRuntimeBody& body = bodies[outputCount];
     resetRigidIpcRuntimeBodyPreservingSurface(body);
@@ -9649,12 +9692,17 @@ void RigidIpcContactStage::prepare(World& world)
   m_scratch->solveScratch.bestDecreasingSurfaces.reserve(bodyCount);
 
   RigidIpcSolverStats warmupStats;
-  collectRigidIpcRuntimeBodies(world, warmupStats, m_scratch->runtimeBodies);
+  collectRigidIpcRuntimeBodies(
+      world,
+      warmupStats,
+      m_scratch->runtimeBodies,
+      m_scratch->payloadAllocator);
   prepareRigidIpcSolverScratch(
       m_scratch->runtimeBodies,
       m_scratch->solverBodies,
       m_scratch->surfaces,
-      m_scratch->dynamicsTerms);
+      m_scratch->dynamicsTerms,
+      m_scratch->payloadAllocator);
 }
 
 //==============================================================================
@@ -9664,7 +9712,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   auto& scratch = *m_scratch;
   clearKinematicBodyStepTraces(world, scratch.tracedEntities);
 
-  collectRigidIpcRuntimeBodies(world, m_lastStats, scratch.runtimeBodies);
+  collectRigidIpcRuntimeBodies(
+      world, m_lastStats, scratch.runtimeBodies, scratch.payloadAllocator);
   const auto& runtimeBodies = scratch.runtimeBodies;
 
   if (runtimeBodies.empty()) {
@@ -9688,7 +9737,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
       runtimeBodies,
       scratch.solverBodies,
       scratch.surfaces,
-      scratch.dynamicsTerms);
+      scratch.dynamicsTerms,
+      scratch.payloadAllocator);
   auto& solverBodies = scratch.solverBodies;
   auto& surfaces = scratch.surfaces;
   auto& dynamicsTerms = scratch.dynamicsTerms;

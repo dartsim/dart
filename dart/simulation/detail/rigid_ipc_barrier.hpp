@@ -110,10 +110,45 @@ enum class RigidIpcBarrierPrimitive
 
 struct RigidIpcBarrierSurface
 {
+  using VertexAllocator = dart::common::StlAllocator<Eigen::Vector3d>;
+  using TriangleAllocator = dart::common::StlAllocator<Eigen::Vector3i>;
+  using VertexVector = std::vector<Eigen::Vector3d, VertexAllocator>;
+  using TriangleVector = std::vector<Eigen::Vector3i, TriangleAllocator>;
+
+  RigidIpcBarrierSurface() = default;
+
+  explicit RigidIpcBarrierSurface(dart::common::MemoryAllocator& allocator)
+    : vertices(VertexAllocator{allocator}),
+      triangles(TriangleAllocator{allocator})
+  {
+  }
+
+  RigidIpcBarrierSurface(const RigidIpcBarrierSurface&) = default;
+  RigidIpcBarrierSurface(RigidIpcBarrierSurface&&) noexcept = default;
+  RigidIpcBarrierSurface& operator=(RigidIpcBarrierSurface&&) noexcept
+      = default;
+
+  RigidIpcBarrierSurface& operator=(const RigidIpcBarrierSurface& other)
+  {
+    if (this == &other) {
+      return *this;
+    }
+
+    body = other.body;
+    pose = other.pose;
+    vertices.assign(other.vertices.begin(), other.vertices.end());
+    triangles.assign(other.triangles.begin(), other.triangles.end());
+    frictionCoefficient = other.frictionCoefficient;
+    dynamic = other.dynamic;
+    kinematic = other.kinematic;
+    kinematicStartPose = other.kinematicStartPose;
+    return *this;
+  }
+
   std::size_t body = 0;
   RigidIpcPose pose;
-  std::vector<Eigen::Vector3d> vertices;
-  std::vector<Eigen::Vector3i> triangles;
+  VertexVector vertices;
+  TriangleVector triangles;
   double frictionCoefficient = 1.0;
   bool dynamic = true;
   // Kinematic (prescribed-motion) obstacle: holds no solver DOFs (dynamic ==

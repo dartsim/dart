@@ -2865,10 +2865,11 @@ TEST(World, RigidIpcContactStageScratchPayloadUsesProvidedAllocator)
 
     stage.prepare(world);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 15u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 21u)
         << "allocator-aware rigid IPC scratch should reserve top-level "
-           "runtime, solver, surface, dynamics, result, and writeback "
-           "vectors from the provided free allocator";
+           "runtime, solver, surface, dynamics, result, writeback, and "
+           "nested surface mesh payload vectors from the provided free "
+           "allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);

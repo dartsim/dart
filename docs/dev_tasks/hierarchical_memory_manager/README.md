@@ -770,13 +770,12 @@ Follow-up progress after PR #2956:
   solver-body, surface, dynamics-term, projected-Newton result,
   kinematic-trace, writeback-order, and resting-contact scratch vectors through
   the borrowed World free allocator. A focused IPC prepare test verifies those
-  vector reserves increase the provided free-list allocation count and release
-  when the custom stage is destroyed. The projected-Newton solve scratch now
-  also has allocator-aware construction for its surface work vectors, and the
-  stage passes the same allocator into that nested solver scratch; a focused
-  detail-solver test verifies those reserves use and release the provided free
-  allocator. Nested surface mesh payloads remain separate follow-up work because
-  they cross the detail solver API boundary.
+  top-level and nested surface mesh vector reserves increase the provided
+  free-list allocation count and release when the custom stage is destroyed.
+  The projected-Newton solve scratch now also has allocator-aware construction
+  for its surface work vectors, and the stage passes the same allocator into
+  that nested solver scratch; a focused detail-solver test verifies those
+  reserves use and release the provided free allocator.
 - The deformable stage scratch follow-up routes the stage-owned static-ground
   barrier, sphere/box/capsule obstacle, deformable surface-snapshot, static
   rigid surface-CCD snapshot, and moving rigid surface-CCD snapshot vectors

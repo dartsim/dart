@@ -195,8 +195,11 @@ against the provided free-list live allocation count.
 `RigidIpcProjectedNewtonSolveScratch` now also accepts a `MemoryAllocator`, and
 the stage passes its allocator into that nested solve scratch so lagged,
 line-search, candidate, accepted, and best-decreasing surface work vectors
-borrow the same root. Nested surface mesh payloads remain default-vector
-follow-up work because they cross the detail solver API boundary.
+borrow the same root. A follow-up routes nested rigid IPC surface vertex and
+triangle payload vectors through the same allocator by constructing runtime,
+solver, result, and solver-scratch surfaces with allocator-aware payload
+storage; the focused custom-stage test now covers those payload reserves and
+release against the provided free-list live allocation count.
 
 The current deformable stage scratch slice adds allocator-aware construction
 for `DeformableDynamicsStage::Scratch` top-level barrier and snapshot vectors:
@@ -732,6 +735,7 @@ sequential-impulse constraint vector, plus the `WorldKinematicsGraph`
 entity-node cache, `ComputeGraph` owned node/name lookup storage, rigid IPC
 top-level scratch vectors, rigid IPC solver option/result vectors, and rigid IPC
 projected-Newton solve scratch vectors,
+rigid IPC nested surface vertex/triangle payload vectors,
 deformable stage top-level barrier/snapshot vectors plus nested
 `SurfaceContactSnapshot` payload vectors, and the rigid AVBD contact snapshot,
 row-counter scratch, solve scratch vectors, warm-start inventories, and
@@ -739,9 +743,9 @@ point-joint input vectors are the first nested stage payloads routed through
 world-owned
 allocator-backed storage. The next slice should probe existing no-growth/no-heap
 gates or stage-local heap counters for another concrete nested payload path
-before changing broader scratch layouts; likely candidates are nested rigid IPC
-surface mesh payloads or an API-compatible plan for `ComputeGraph`'s exposed
-edge/topological-order vector storage. Do not add new production scenes unless
+before changing broader scratch layouts; the clearest remaining candidate is an
+API-compatible plan for `ComputeGraph`'s exposed edge/topological-order vector
+storage. Do not add new production scenes unless
 profiling or a failing no-growth/no-heap gate shows a real gap not covered by
 the current shipped scenes.
 
