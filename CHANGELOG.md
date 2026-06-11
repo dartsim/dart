@@ -636,6 +636,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     World registry rebuild gates now also cover the existing compact and
     production mixed default-deformable direct-sparse, matrix-free, FEM, and
     contact-family storage paths across `World::clear()` and rebuild.
+    `ComputeGraph` construction can now borrow a DART allocator for owned
+    nodes, the node-name lookup table, dependency-edge storage, and the
+    topological-order cache while exposing read-only edge/order spans.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,

@@ -849,13 +849,13 @@ Follow-up progress after PR #2956:
   verifies that entity-node cache storage increases the World free-list live
   allocation count and releases it when the graph is destroyed.
 - The `ComputeGraph` follow-up adds allocator-aware graph construction and
-  routes owned `ComputeNode` objects plus the node-name lookup table through
-  the supplied allocator. A focused compute-graph test verifies node storage
-  uses the provided World free allocator and releases it on graph destruction.
-  A follow-up routes the dependency-edge vector and topological-order cache
-  through the same allocator, and changes the read-only edge/order accessors to
-  span views so those allocator-backed containers stay private while existing
-  range-iteration call sites remain source-compatible.
+  routes owned `ComputeNode` objects, the node-name lookup table, the
+  dependency-edge vector, and the topological-order cache through the supplied
+  allocator. Read-only edge/order accessors now return span views so those
+  allocator-backed containers stay private while existing range-iteration call
+  sites remain source-compatible. A focused compute-graph test verifies node,
+  lookup, edge, and order storage use the provided World free allocator and
+  release it on graph destruction.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
