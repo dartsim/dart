@@ -86,6 +86,7 @@ RIGID_VISUAL_WORKFLOW_LABELS = (
     ("rigid_kinematic_normal_push", "Normal push"),
     ("rigid_fixed_joint", "Fixed joint"),
     ("rigid_joint_breakage", "Breakage lifecycle"),
+    ("rigid_distance_spring", "Distance spring"),
     ("rigid_limited_joints", "One-DOF joints"),
     ("rigid_joint_motor_limits", "Motor limits"),
     ("rigid_joint_passive_parameters", "Passive joints"),
@@ -257,6 +258,11 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
         ("Broken/intact state and connector color", "Payload release and reset"),
         "AVBD-pinned breakage row; no user-editable threshold, sequential-impulse, or IPC break-force parity claim.",
     ),
+    "rigid_distance_spring": (
+        "How do rigid-body distance springs enforce rest length?",
+        ("Soft/stiff center springs", "Off-center anchor torque"),
+        "World rigid-body distance-spring row only; IPC and multibody worlds reject this public API.",
+    ),
     "rigid_limited_joints": (
         "Do one-DOF joints keep only their free axis?",
         ("Locked-direction errors", "Hinge yaw and slider travel"),
@@ -408,6 +414,10 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
     "rigid_joint_breakage": (
         "Let the AVBD break-force lifecycle run, then reset breakage.",
         "Healthy: broken state, connector color, and payload release agree.",
+    ),
+    "rigid_distance_spring": (
+        "Reset stretched soft, stiff, and off-center spring lanes.",
+        "Healthy: springs reduce stretch while off-center anchors spin the payload.",
     ),
     "rigid_limited_joints": (
         "Use perturb, then compare hinge yaw and slider travel.",

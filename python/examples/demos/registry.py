@@ -136,6 +136,7 @@ from .scenes.rigid_contact_manipulation import SCENE as RIGID_CONTACT_MANIPULATI
 from .scenes.rigid_contact_solver_compare import (
     SCENE as RIGID_CONTACT_SOLVER_COMPARE,
 )
+from .scenes.rigid_distance_spring import SCENE as RIGID_DISTANCE_SPRING
 from .scenes.rigid_executor_equivalence import SCENE as RIGID_EXECUTOR_EQUIVALENCE
 from .scenes.rigid_external_loads import SCENE as RIGID_EXTERNAL_LOADS
 from .scenes.rigid_frame_hierarchy import SCENE as RIGID_FRAME_HIERARCHY
@@ -207,8 +208,8 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         # friction threshold, spin/roll coupling,
         # resting-stack stability, contact-rich manipulation, prescribed
         # kinematic drivers,
-        # joint-constraint checks, break-force lifecycle, joint motor limits,
-        # passive joint
+        # joint-constraint checks, break-force lifecycle, distance springs,
+        # joint motor limits, passive joint
         # parameters, screw-joint pitch coupling, generalized multibody
         # dynamics terms, link center-of-mass offsets, link-origin Jacobian
         # mapping, multibody solver-family selection, and loop-closure checks.
@@ -239,6 +240,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_KINEMATIC_NORMAL_PUSH,
         RIGID_FIXED_JOINT,
         RIGID_JOINT_BREAKAGE,
+        RIGID_DISTANCE_SPRING,
         RIGID_LIMITED_JOINTS,
         RIGID_JOINT_MOTOR_LIMITS,
         RIGID_JOINT_PASSIVE_PARAMETERS,

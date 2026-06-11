@@ -2,7 +2,7 @@
 
 ## Summary
 
-- Curates the Python `py-demos` front door around a 35-row World rigid-body
+- Curates the Python `py-demos` front door around a 36-row World rigid-body
   visual-verification workflow.
 - Adds focused rigid-body GUI scenes, panels, replay-state coverage, capture
   commands, and drift checks for solver, executor, contact, material, joint,
@@ -26,7 +26,7 @@
   step-timing, force-drag, and replay-control diagnostics.
 - Moves the curated World rigid-body verifier block to the front of the Python
   demo registry and documents the row order in `python/examples/demos/README.md`.
-- Prefixes the interactive `Demos` navigator titles for the 35-row World Rigid
+- Prefixes the interactive `Demos` navigator titles for the 36-row World Rigid
   Body workflow with their position and role while keeping `py-demos --list`
   titles and ids stable for scripts.
 - Adds a runner-owned `Rigid Workflow` panel to numbered rigid rows with the
@@ -42,11 +42,11 @@
     multibody-link contact, friction threshold, spin/roll coupling, stack
     stability, contact manipulation, kinematic drivers, and normal-push caveat
     behavior;
-  - fixed-joint preservation, AVBD-pinned break-force lifecycle, one-DOF
-    joints, motor/limit behavior, passive joint parameters, screw-joint pitch,
-    generalized multibody dynamics terms, link center-of-mass offsets,
-    link-origin Jacobians, multibody solver-family routing, and loop-closure
-    families.
+  - fixed-joint preservation, AVBD-pinned break-force lifecycle, public
+    rigid-body distance springs, one-DOF joints, motor/limit behavior, passive
+    joint parameters, screw-joint pitch, generalized multibody dynamics terms,
+    link center-of-mass offsets, link-origin Jacobians, multibody solver-family
+    routing, and loop-closure families.
 - Adds replay-state snapshot coverage for controller-heavy rigid verifier rows.
 - Adds opt-in replay timeline metadata for the shared bottom `Replay` panel,
   piloted by `rigid_solver_compare` and `rigid_contact_solver_compare` with
@@ -78,6 +78,15 @@
 
 ## Testing
 
+- Latest distance-spring follow-up:
+  - `pixi run lint`
+    - passed
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+    - `17 passed` before and after lint
+  - `pixi run py-demo-capture -- --scene rigid_distance_spring --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_distance_spring_1781220718`
+    - nonblank 960x540 screenshot, docked-workspace detection, 71 PNG frames,
+      72 scene-metrics events, and manifest lanes
+      `free/soft/stiff/offset`
 - Latest post-merge validation on pushed branch `cd7600f8cda`:
   - merged latest `origin/main` into
     `feature/rigid-body-gui-visual-verification`;

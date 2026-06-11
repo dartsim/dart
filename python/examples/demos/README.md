@@ -71,10 +71,10 @@ capture is active, the `Simulation` panel also exposes a timeline scrubber over
 the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
-The first 35 **World Rigid Body** entries in the interactive `Demos` navigator
+The first 36 **World Rigid Body** entries in the interactive `Demos` navigator
 are prefixed with their workflow position and role, such as
-`01/35 Baseline: World Rigid Body` or
-`15/35 Solver family: Rigid Solver Compare`. `--list` keeps the stable scene
+`01/36 Baseline: World Rigid Body` or
+`15/36 Solver family: Rigid Solver Compare`. `--list` keeps the stable scene
 titles and ids for scripts.
 
 World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
@@ -115,8 +115,9 @@ inspection, including swept-capsule link/tool proxies, use
 **`rigid_contact_solver_compare`** when the question is solver family, executor
 parity, or contact policy, then use **`contact`** when multibody links need to
 drop, slide, or push through solver contact. Continue through the focused
-threshold, stability, manipulation, kinematic-driver, joint, dynamics, and
-loop-closure rows when those behaviors need inspection. **World Rigid Body**
+threshold, stability, manipulation, kinematic-driver, joint, distance-spring,
+dynamics, and loop-closure rows when those behaviors need inspection.
+**World Rigid Body**
 here means World-facade rigid debugging: solver-family rows compare sequential
 impulse and IPC, executor-equivalence rows hold the selected physics solver
 constant across executors, and focused threshold or stability rows may pin one
@@ -163,6 +164,7 @@ infer.
 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                |
 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed        |
 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset      |
+| `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time          |
 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion      |
 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap              |
 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration      |
@@ -466,6 +468,14 @@ sequential-impulse or IPC parity. The panel also has a `Reset breakage lifecycle
 button that clears the broken flag, restores the captured body poses, clears
 loads, and restarts the row timing.
 
+The **`rigid_distance_spring`** scene shows the public
+`World.add_rigid_body_distance_spring()` path on free rigid bodies before users
+move to one-DOF joints. It keeps the solver scope explicit: distance springs
+are AVBD-backed rows in the sequential rigid-body World path, while IPC and
+multibody Worlds reject this API. The panel compares an unsprung baseline,
+soft and stiff center springs, and an off-center anchor lane with stretch,
+payload speed, angular speed, and step timing.
+
 The **`rigid_limited_joints`** scene verifies the public revolute and prismatic
 rigid-body joint rows without making motor or limit claims. The hinge lane
 tracks locked anchor radius and z error while its free z-axis spin continues;
@@ -591,6 +601,8 @@ pixi run py-demo-capture -- --scene rigid_kinematic_normal_push --frames 72 \
 pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_distance_spring --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 \
     --width 960 --height 540 --show-ui

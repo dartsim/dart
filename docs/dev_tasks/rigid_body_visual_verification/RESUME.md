@@ -156,10 +156,10 @@ launch scene and moved the curated rigid visual-verification block to the front
 of the global catalog and `World Rigid Body` category. The replay timeline
 remains explicitly selectable as `replay_scrubber`.
 
-The Demos navigator follow-up now prefixes the first 35 interactive
+The Demos navigator follow-up now prefixes the first 36 interactive
 **World Rigid Body** viewer titles with workflow position and role, such as
-`01/35 Baseline: World Rigid Body` and
-`15/35 Solver family: Rigid Solver Compare`, while preserving stable
+`01/36 Baseline: World Rigid Body` and
+`15/36 Solver family: Rigid Solver Compare`, while preserving stable
 `py-demos --list` scene ids and titles for scripts. This turns the existing
 curated order into an in-app breadcrumb instead of relying only on the README
 and PLAN-103 sidecar.
@@ -225,14 +225,28 @@ endpoint-closure verifier, not a distance-closure or rigid-closure family sweep.
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification` - local work in progress. The
-branch has been pushed to origin through merge commit `cd7600f8cda`, which
-merged latest `origin/main` into the feature branch before push. The only manual
-merge conflict was `python/tests/integration/test_demos_cycle.py`; the resolved
-file keeps both the local rigid visual-verification tests and the new AVBD demo
-tests from `origin/main`. Post-merge validation passed: the
+branch has been pushed to origin through `b41b9279b60`
+(`Expose collision query metrics in captures`). The earlier merge commit
+`cd7600f8cda` merged latest `origin/main` into the feature branch before push.
+The only manual merge conflict was `python/tests/integration/test_demos_cycle.py`;
+the resolved file keeps both the local rigid visual-verification tests and the
+new AVBD demo tests from `origin/main`. Post-merge validation passed: the
 conflict-resolution `pixi run test-py` command ran the full Python suite and
 reported `942 passed, 9 skipped`, and `pixi run lint` passed before the merge
 commit was created and pushed.
+
+The current distance-spring follow-up adds `rigid_distance_spring` as row 27/36
+after the AVBD breakage lifecycle and before the one-DOF joint row. It shows
+unsprung, soft, stiff, and off-center anchor lanes for the public
+`World.add_rigid_body_distance_spring()` path, keeps IPC/multibody rejection
+scope visible in the panel/docs, exports replay-state controls and
+`capture_metrics`, and updates the registry, runner guide, README, PLAN-103
+sidecar, changelog, dev-task notes, and PR draft. The focused behavior/replay/
+category/order/viewer-title/guidance/docs/README/capture-command/panel guard
+reported `17 passed` before and after lint. The real docked capture
+`pixi run py-demo-capture -- --scene rigid_distance_spring --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_distance_spring_1781220718`
+wrote a nonblank 960x540 screenshot with docked-workspace detection, 71 PNG
+frames, and 72 scene-metrics events for lanes `free/soft/stiff/offset`.
 
 The previous loop-closure follow-up added the scene, registry row, panel
 coverage, behavior coverage, replay-control restore checks, quickstart docs,
@@ -646,7 +660,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   update.
 - Fresh navigator-count drift validation on 2026-06-11: the focused
   viewer-title/docs-count/sidecar/README guard reported `4 passed` after fixing
-  stale navigator-count examples to `15/35`; `pixi run lint` passed after adding
+  stale navigator-count examples to `15/36`; `pixi run lint` passed after adding
   the guard.
 - Fresh frame-hierarchy validation on 2026-06-11: the focused
   category/order/viewer-title/docs-count/sidecar/README/capture-command/frame
@@ -669,7 +683,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   passed; bounded `pixi run build` reported `ninja: no work to do`; and
   `git diff --check` was clean after the evidence update.
 - Fresh in-viewer workflow-guide follow-up on 2026-06-11: a specialized UX
-  audit found that the 35-row learning path was still mostly documented outside
+  audit found that the 36-row learning path was still mostly documented outside
   the app. The runner now injects a compact `Rigid Workflow` panel for numbered
   World Rigid Body rows, sourced from the PLAN-103 user questions, with inspect
   signals and previous/next route guidance. The focused
@@ -701,7 +715,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   now also expose `request_scene_replay(scene_id)`, and the shared
   `Rigid Workflow` panel renders a restart command plus a text filter over row
   ids, questions, checklist text, and inspect signals. The filter now includes
-  explicit `NN/MM` row-id tokens such as `15/35` so documented row-id search
+  explicit `NN/MM` row-id tokens such as `15/36` so documented row-id search
   switches to the intended workflow row. The focused panel/stub guard reported
   `7 passed`.
 - Fresh collision-casts capsule hardening on 2026-06-11:
@@ -718,7 +732,7 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   `3 passed`, and the docked visual capture produced a nonblank 960x540
   screenshot plus 23 PNG frames.
 
-The latest follow-up promotes the stable `contact` scene id into row 18/35 as
+The latest follow-up promotes the stable `contact` scene id into row 18/36 as
 `Rigid Link Contact`, directly after contact-solver policy and before the
 friction-threshold row. It now shows multibody links dropping, friction-sliding,
 and pushing a rigid target through the public World contact path, with executor,
@@ -753,17 +767,17 @@ focused replay timeline and solver-comparison guard reported `5 passed`, and
 `pixi run test-py` reported `640 passed, 9 skipped` on the post-lint tree.
 
 Fresh related-evidence routing on 2026-06-11: the runner-owned `Rigid Workflow`
-panel now keeps non-numbered shelves visible without changing the 35-row order.
-Row 3/35 `rigid_free_flight` links to `floating_base` as a broader
-floating-joint drift/spin example, row 31/35
+panel now keeps non-numbered shelves visible without changing the 36-row order.
+Row 3/36 `rigid_free_flight` links to `floating_base` as a broader
+floating-joint drift/spin example, row 32/36
 `rigid_multibody_dynamics_terms` links to `articulated` as a broader two-link
-arm example, row 15/35 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a
-focused IPC no-tunneling view, and row 17/35
+arm example, row 15/36 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a
+focused IPC no-tunneling view, and row 17/36
 `rigid_contact_solver_compare` links to `diff_drone_liftoff` as a
 differentiable contact-gradient route. The same route table also links row
-18/35 `contact` to `avbd_rigid_fixed_joint_contact`, row 26/35
+18/36 `contact` to `avbd_rigid_fixed_joint_contact`, row 26/36
 `rigid_joint_breakage` to the AVBD fixed/spherical break-reset scenes, and row
-28/35 `rigid_joint_motor_limits` to the AVBD revolute/prismatic motor scenes.
+29/36 `rigid_joint_motor_limits` to the AVBD revolute/prismatic motor scenes.
 The PLAN-103 sidecar owns the route table, tests verify those scene ids remain
 registered outside the numbered workflow, and `Find row` now indexes related
 shelf names, scene ids, labels, and scope notes so searches such as
@@ -776,7 +790,7 @@ shelf. The sidecar and Python demo README also document docked
 coverage tying those commands to the route table.
 
 Fresh capture-first IPC stack packet on 2026-06-11: `rigid_ipc_stack_packet`
-was added to the non-numbered Rigid IPC shelf, outside the 35-row World Rigid
+was added to the non-numbered Rigid IPC shelf, outside the 36-row World Rigid
 Body workflow, to answer what happens when a four-box IPC stack leaves the live
 demo budget. Its panel reports frame-budget status, wall time, min clearance,
 contact count, top drift, height error, max speed, and the
@@ -836,7 +850,7 @@ Related-shelf links now include the target shelf and scene id in the visible
 row label.
 
 Fresh kinematic normal-push caveat follow-up on 2026-06-11:
-`rigid_kinematic_normal_push` is row 24/35 after the tangential kinematic-driver
+`rigid_kinematic_normal_push` is row 24/36 after the tangential kinematic-driver
 row. The focused order/guidance/docs/replay/panel/normal-push guard reported
 `17 passed`. The standard docked capture wrote a nonblank 960x540 screenshot,
 71 PNG frames, and 72 scene-metrics events; frame 72 ended with IPC normal and

@@ -783,6 +783,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_stack_stability",
             "rigid_fixed_joint",
             "rigid_joint_breakage",
+            "rigid_distance_spring",
             "rigid_limited_joints",
             "rigid_joint_motor_limits",
             "rigid_joint_passive_parameters",
@@ -945,6 +946,7 @@ def test_world_rigid_visual_verification_scenes_are_ordered() -> None:
         "rigid_kinematic_normal_push",
         "rigid_fixed_joint",
         "rigid_joint_breakage",
+        "rigid_distance_spring",
         "rigid_limited_joints",
         "rigid_joint_motor_limits",
         "rigid_joint_passive_parameters",
@@ -2552,6 +2554,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     from examples.demos.scenes.rigid_contact_solver_compare import (
         build as contact_solver_build,
     )
+    from examples.demos.scenes.rigid_distance_spring import (
+        build as distance_spring_build,
+    )
     from examples.demos.scenes.rigid_executor_equivalence import (
         build as executor_build,
     )
@@ -3099,6 +3104,28 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     fixed.restore_replay_state(fixed_state)
     assert fixed.perturbation == pytest.approx(0.31)
 
+    distance_spring = distance_spring_build().info[
+        "rigid_distance_spring_controller"
+    ]
+    distance_spring.executor_index = len(distance_spring._executors) - 1
+    distance_spring.initial_stretch = 0.41
+    distance_spring.gravity_scale = 0.35
+    distance_spring_state = distance_spring.capture_replay_state()
+    distance_spring.executor_index = 0
+    distance_spring.initial_stretch = 0.10
+    distance_spring.gravity_scale = 0.0
+    distance_spring.restore_replay_state(distance_spring_state)
+    assert distance_spring.executor_index == len(distance_spring._executors) - 1
+    assert distance_spring.initial_stretch == pytest.approx(0.41)
+    assert distance_spring.gravity_scale == pytest.approx(0.35)
+    assert distance_spring.world.gravity[2] == pytest.approx(-4.0 * 0.35)
+    assert set(distance_spring._last_metrics) == {
+        "free",
+        "soft",
+        "stiff",
+        "offset",
+    }
+
     limited = limited_joint_build().info["rigid_one_dof_joint_controller"]
     limited.perturbation = 0.29
     limited_state = limited.capture_replay_state()
@@ -3484,6 +3511,39 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     reset_payload = np.asarray(payload.translation, dtype=float).reshape(3)
     assert np.linalg.norm(reset_payload - initial_payload) < 1.0e-9
     assert sx_world.time == pytest.approx(0.0)
+
+
+def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None:
+    from examples.demos.scenes.rigid_distance_spring import build
+
+    setup = build()
+    controller = setup.info["rigid_distance_spring_controller"]
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    for _ in range(60):
+        assert setup.pre_step is not None
+        setup.pre_step()
+
+    metrics = controller._last_metrics
+    assert set(metrics) == {"free", "soft", "stiff", "offset"}
+    free_stretch = abs(float(metrics["free"]["stretch"]))
+    assert free_stretch == pytest.approx(controller.initial_stretch)
+    assert abs(float(metrics["soft"]["stretch"])) < free_stretch * 0.35
+    assert abs(float(metrics["stiff"]["stretch"])) < free_stretch
+    assert abs(float(metrics["offset"]["stretch"])) < free_stretch * 0.35
+    assert float(metrics["offset"]["angular_speed"]) > 1.0
+    assert metrics["offset"]["status"] == "off-center torque"
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_distance_spring"
+    assert capture_metrics["solver"] == "sequential_impulse_avbd_distance_spring"
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["lanes"]["free"]["has_spring"] == pytest.approx(0.0)
+    assert capture_metrics["lanes"]["soft"]["has_spring"] == pytest.approx(1.0)
+
+    assert controller._length_history["soft"]
+    assert controller._stretch_history["stiff"]
+    assert controller._angular_speed_history["offset"]
+    assert all(value >= 0.0 for value in controller._step_ms_history)
 
 
 def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:

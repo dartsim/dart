@@ -157,8 +157,12 @@
     error, payload speed, and an explicit reset lifecycle without claiming
     sequential-impulse or IPC breakage parity.
   - Prefixed the interactive Python `py-demos` Demos navigator titles for the
-    35-row World Rigid Body visual-verification workflow with their position
+    36-row World Rigid Body visual-verification workflow with their position
     and role while keeping `--list` scene titles and ids stable for scripts.
+  - Added `rigid_distance_spring` to Python `py-demos`, showing public World
+    rigid-body distance springs with unsprung, soft, stiff, and off-center
+    anchor lanes plus replay controls and capture metrics while documenting
+    that IPC and multibody worlds reject this public API.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity
@@ -196,7 +200,7 @@
     `rigid_contact_solver_compare` can jump to the differentiable
     contact-gradient scene. The `contact`, `rigid_joint_breakage`, and
     `rigid_joint_motor_limits` rows now also jump to their AVBD-specific rigid
-    constraint variants without changing the 35-row rigid workflow order, and
+    constraint variants while preserving the 36-row rigid workflow order, and
     the `Find row` filter indexes those related shelf targets without demoting
     broad row-intent searches. Related search results label the target scene,
     and the docs now include docked capture commands for every related route.

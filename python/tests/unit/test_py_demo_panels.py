@@ -61,6 +61,7 @@ from examples.demos.scenes import (
     rigid_contact_manipulation,
     rigid_contact_scale_budget,
     rigid_contact_solver_compare,
+    rigid_distance_spring,
     rigid_executor_equivalence,
     rigid_external_loads,
     rigid_fixed_joint,
@@ -996,45 +997,47 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
     if hasattr(sx.World(), "add_rigid_body_fixed_joint"):
         cases.insert(4, (rigid_fixed_joint, "Rigid Fixed Joint"))
         cases.insert(5, (rigid_joint_breakage, "Rigid Joint Breakage"))
+    if hasattr(sx.World(), "add_rigid_body_distance_spring"):
+        cases.insert(6, (rigid_distance_spring, "Rigid Distance Spring"))
     if hasattr(sx.World(), "add_rigid_body_revolute_joint") and hasattr(
         sx.World(), "add_rigid_body_prismatic_joint"
     ):
-        cases.insert(6, (rigid_limited_joints, "Rigid One-DOF Joints"))
+        cases.insert(7, (rigid_limited_joints, "Rigid One-DOF Joints"))
     if hasattr(sx, "ActuatorType") and hasattr(sx, "JointSpec"):
-        cases.insert(7, (rigid_joint_motor_limits, "Rigid Joint Motors & Limits"))
+        cases.insert(8, (rigid_joint_motor_limits, "Rigid Joint Motors & Limits"))
         cases.insert(
-            8,
+            9,
             (
                 rigid_joint_passive_parameters,
                 "Rigid Joint Passive Parameters",
             ),
         )
     if hasattr(sx, "JointType") and hasattr(sx, "JointSpec"):
-        cases.insert(9, (rigid_screw_joint_pitch, "Rigid Screw Joint Pitch"))
+        cases.insert(10, (rigid_screw_joint_pitch, "Rigid Screw Joint Pitch"))
         cases.insert(
-            10,
+            11,
             (
                 rigid_multibody_dynamics_terms,
                 "Rigid Multibody Dynamics Terms",
             ),
         )
         cases.insert(
-            11,
+            12,
             (
                 rigid_link_center_of_mass,
                 "Rigid Link Center of Mass",
             ),
         )
-        cases.insert(12, (rigid_link_jacobian, "Rigid Link Jacobian"))
+        cases.insert(13, (rigid_link_jacobian, "Rigid Link Jacobian"))
     if hasattr(sx, "LoopClosureSpec") and hasattr(sx, "ClosureDynamicsPolicy"):
         cases.insert(
-            13,
+            14,
             (
                 rigid_multibody_solver_family,
                 "Rigid Multibody Solver Family",
             ),
         )
-        cases.insert(14, (rigid_loop_closure, "Rigid Loop Closure"))
+        cases.insert(15, (rigid_loop_closure, "Rigid Loop Closure"))
 
     for scene_module, expected_title in cases:
         setup = scene_module.build()
@@ -1090,13 +1093,17 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         return builder.events
 
     cases = (
-        ("rigid_body", "Previous: start", "Next: 02/35 Body modes"),
+        ("rigid_body", "Previous: start", "Next: 02/36 Body modes"),
         (
             "rigid_solver_compare",
-            "Previous: 14/35 Collision casts",
-            "Next: 16/35 Executor equivalence",
+            "Previous: 14/36 Collision casts",
+            "Next: 16/36 Executor equivalence",
         ),
-        ("rigid_loop_closure", "Previous: 34/35 Multibody solver", "Next: done"),
+        (
+            "rigid_loop_closure",
+            "Previous: 35/36 Multibody solver",
+            "Next: done",
+        ),
     )
 
     for scene_id, previous_text, next_text in cases:
@@ -1148,9 +1155,9 @@ def test_rigid_workflow_panel_route_rows_request_scene_switches() -> None:
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
 
-    previous_label = "Previous: 14/35 Collision casts##rigid_workflow_previous"
-    next_label = "Next: 16/35 Executor equivalence##rigid_workflow_next"
-    replay_label = "Restart row: 15/35 Solver family##rigid_workflow_restart"
+    previous_label = "Previous: 14/36 Collision casts##rigid_workflow_previous"
+    next_label = "Next: 16/36 Executor equivalence##rigid_workflow_next"
+    replay_label = "Restart row: 15/36 Solver family##rigid_workflow_restart"
     workflow_panel.build(
         _ScriptedPanelBuilder(selected_items={previous_label}),
         context,
@@ -1346,7 +1353,7 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "19/35 Friction threshold - rigid_friction_threshold"
+        "19/36 Friction threshold - rigid_friction_threshold"
         "##rigid_workflow_find_rigid_friction_threshold"
     )
     builder = _ScriptedPanelBuilder(
@@ -1358,7 +1365,7 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
 
     assert (
         "selectable:"
-        "19/35 Friction threshold - rigid_friction_threshold"
+        "19/36 Friction threshold - rigid_friction_threshold"
         "##rigid_workflow_find_rigid_friction_threshold:False"
     ) in builder.events
     assert "tooltip:Where is the inclined-ramp stick/slip boundary?" in builder.events
@@ -1426,11 +1433,11 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "15/35 Solver family - rigid_solver_compare"
+        "15/36 Solver family - rigid_solver_compare"
         "##rigid_workflow_find_rigid_solver_compare"
     )
     builder = _ScriptedPanelBuilder(
-        text_input_values={"Find row": "15/35"},
+        text_input_values={"Find row": "15/36"},
         selected_items={target_label},
     )
 
@@ -1438,7 +1445,7 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
 
     assert (
         "selectable:"
-        "15/35 Solver family - rigid_solver_compare"
+        "15/36 Solver family - rigid_solver_compare"
         "##rigid_workflow_find_rigid_solver_compare:False"
     ) in builder.events
     assert (
@@ -1461,7 +1468,7 @@ def test_rigid_workflow_panel_labels_related_evidence_search_matches() -> None:
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     target_label = (
-        "28/35 Motor limits - rigid_joint_motor_limits "
+        "29/36 Motor limits - rigid_joint_motor_limits "
         "(related: avbd_rigid_prismatic_motor)"
         "##rigid_workflow_find_rigid_joint_motor_limits"
     )
@@ -1474,7 +1481,7 @@ def test_rigid_workflow_panel_labels_related_evidence_search_matches() -> None:
 
     assert (
         "selectable:"
-        "28/35 Motor limits - rigid_joint_motor_limits "
+        "29/36 Motor limits - rigid_joint_motor_limits "
         "(related: avbd_rigid_prismatic_motor)"
         "##rigid_workflow_find_rigid_joint_motor_limits:False"
     ) in builder.events

@@ -79,6 +79,10 @@
 - [x] Breakage lifecycle slice: `rigid_joint_breakage` exposes AVBD-pinned
       fixed-joint break-force, broken-state, connector color, payload release,
       and reset behavior without claiming sequential-impulse or IPC parity.
+- [x] Distance-spring slice: `rigid_distance_spring` shows the public
+      `World.add_rigid_body_distance_spring()` path with unsprung, soft, stiff,
+      and off-center anchor lanes, replay controls, capture metrics, and
+      explicit IPC/multibody rejection scope.
 - [x] Joint motor/limit slice: `rigid_joint_motor_limits` shows the stable
       World multibody joint-actuator path for rigid links with velocity motor,
       position stop, and effort-cap diagnostics.
@@ -181,7 +185,7 @@
       `rigid_multibody_dynamics_terms` to the broader `floating_base` and
       `articulated` World rows, `rigid_solver_compare` to the non-numbered
       Rigid IPC no-tunneling view, and `rigid_contact_solver_compare` to the
-      differentiable contact-gradient route without changing the 35-row order;
+      differentiable contact-gradient route without changing the 36-row order;
       it also links `contact`, `rigid_joint_breakage`, and
       `rigid_joint_motor_limits` to their AVBD-specific rigid constraint
       variants.
@@ -259,6 +263,8 @@
       docked ImGui workspace.
 - [x] Visual smoke: `rigid_joint_breakage` capture writes nonblank PNGs with the
       docked ImGui workspace.
+- [x] Visual smoke: `rigid_distance_spring` capture writes nonblank PNGs with
+      the docked ImGui workspace and scene-owned distance-spring metrics.
 - [x] Visual smoke: `rigid_limited_joints` capture writes nonblank PNGs with the
       docked ImGui workspace.
 - [x] Visual smoke: `rigid_joint_motor_limits` capture writes nonblank PNGs
