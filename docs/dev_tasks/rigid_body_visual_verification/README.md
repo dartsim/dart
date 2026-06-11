@@ -170,13 +170,21 @@
 - [x] Related-evidence route follow-up: the runner-owned `Rigid Workflow` panel
       now links `rigid_solver_compare` to the non-numbered Rigid IPC
       no-tunneling view and `rigid_contact_solver_compare` to the
-      differentiable contact-gradient route without changing the 35-row order.
+      differentiable contact-gradient route without changing the 35-row order;
+      it also links `contact`, `rigid_joint_breakage`, and
+      `rigid_joint_motor_limits` to their AVBD-specific rigid constraint
+      variants.
 - [x] Workflow-search UX follow-up: the `Rigid Workflow` panel's `Find row`
       filter now ranks row ids, scene ids, labels, questions, and positive
       signals ahead of scope caveats, so searches such as `contact` and
       `solver` route users to the intended rows instead of early rows that
       only say what not to infer. Related-shelf labels now show the target
       shelf and scene id in the visible row text.
+- [x] Related-evidence search follow-up: `Find row` now indexes related-shelf
+      scene ids, shelf names, labels, and scope notes, so searches such as
+      `rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
+      `avbd spherical`, and `avbd prismatic` route to the numbered row that
+      owns the non-numbered shelf link.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`

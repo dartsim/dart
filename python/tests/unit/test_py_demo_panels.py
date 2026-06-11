@@ -1354,6 +1354,24 @@ def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> N
     assert "rigid_body" not in solver_ids[:3]
 
 
+def test_rigid_workflow_search_finds_related_evidence_targets() -> None:
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("rigid_ipc_tunnel")
+    ][:1] == ["rigid_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("contact gradient")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("avbd fixed contact")
+    ][:1] == ["contact"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("avbd spherical")
+    ][:1] == ["rigid_joint_breakage"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("avbd prismatic")
+    ][:1] == ["rigid_joint_motor_limits"]
+
+
 def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch() -> None:
     scene = PythonDemoScene(
         id="rigid_contact_inspector",

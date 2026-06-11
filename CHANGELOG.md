@@ -195,7 +195,8 @@
     differentiable contact-gradient scene. The `contact`,
     `rigid_joint_breakage`, and `rigid_joint_motor_limits` rows now also jump
     to their AVBD-specific rigid constraint variants without changing the
-    35-row rigid workflow order.
+    35-row rigid workflow order, and the `Find row` filter indexes those
+    related shelf targets without demoting broad row-intent searches.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
     clearance, contact-count, drift, height-error, speed, and benchmark-owner

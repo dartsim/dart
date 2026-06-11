@@ -745,9 +745,15 @@ Fresh related-evidence routing on 2026-06-11: the runner-owned `Rigid Workflow`
 panel now keeps non-numbered shelves visible without changing the 35-row order.
 Row 15/35 `rigid_solver_compare` links to `rigid_ipc_tunnel` as a focused IPC
 no-tunneling view, and row 17/35 `rigid_contact_solver_compare` links to
-`diff_drone_liftoff` as a differentiable contact-gradient route. The PLAN-103
-sidecar owns the route table, and tests verify those scene ids remain registered
-outside the numbered workflow.
+`diff_drone_liftoff` as a differentiable contact-gradient route. The same route
+table also links row 18/35 `contact` to `avbd_rigid_fixed_joint_contact`, row
+26/35 `rigid_joint_breakage` to the AVBD fixed/spherical break-reset scenes,
+and row 28/35 `rigid_joint_motor_limits` to the AVBD revolute/prismatic motor
+scenes. The PLAN-103 sidecar owns the route table, tests verify those scene ids
+remain registered outside the numbered workflow, and `Find row` now indexes
+related shelf names, scene ids, labels, and scope notes so searches such as
+`rigid_ipc_tunnel`, `contact gradient`, `avbd fixed contact`,
+`avbd spherical`, and `avbd prismatic` route to the numbered source row.
 
 Fresh capture-first IPC stack packet on 2026-06-11: `rigid_ipc_stack_packet`
 was added to the non-numbered Rigid IPC shelf, outside the 35-row World Rigid

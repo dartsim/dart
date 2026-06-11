@@ -1513,6 +1513,15 @@ def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -
     if positive_score > 0:
         return positive_score
 
+    related_evidence_text = " ".join(
+        " ".join((entry.scene_id, entry.shelf, entry.label, entry.reason))
+        for entry in _RIGID_WORKFLOW_RELATED_EVIDENCE.get(guide.scene_id, ())
+    )
+    if related_evidence_text:
+        lowered = related_evidence_text.lower()
+        if all(token in lowered for token in tokens):
+            return 500
+
     scope = guide.scope.lower()
     if all(token in scope for token in tokens):
         return 25
