@@ -68,11 +68,11 @@
       "smoke_command": "pixi run py-demos -- --scene plan083_hanging_bridge --headless --frames 4",
       "long_horizon_visual_command": "pixi run py-demo-capture -- --scene plan083_hanging_bridge --frames 240 --width 1280 --height 720",
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/hanging_bridge/manifest.json",
-      "benchmark_command": "pixi run bm bm_plan083_cpu_scene_corpus -- --benchmark_filter=hanging_bridge",
+      "benchmark_command": "pixi run bm-plan083-cpu-hanging-bridge-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/hanging_bridge.json",
       "expected_invariant": "Reduced bridge boards, point connections, and traveler stay finite while stepping through the rigid IPC World path.",
-      "limitation_status": "Reduced runtime smoke only; waiting for rod, rigid, and codimensional paper-scale coupling.",
-      "notes_or_gap": "The py-demo now runs a reduced hanging-bridge scene through World::step; full paper body/node/contact counts remain planned."
+      "limitation_status": "Reduced runtime smoke and CPU packet only; waiting for rod, rigid, and codimensional paper-scale coupling.",
+      "notes_or_gap": "The py-demo now runs a reduced hanging-bridge scene through World::step, and bm-plan083-cpu-hanging-bridge-packet validates the reduced benchmark packet. Full paper body/node/contact counts remain planned."
     },
     {
       "row_id": "unb-fig-03",

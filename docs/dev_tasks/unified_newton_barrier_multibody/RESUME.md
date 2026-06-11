@@ -193,6 +193,14 @@ This branch intentionally keeps paper-scale mixed-domain scenes, sparse
 equality-constraint solving, complete CPU benchmark packets, and GPU parity
 speed claims as remaining PLAN-083 work.
 
+The CPU corpus evidence follow-up is branch-local on
+`feature/newton-barrier-corpus-evidence`: the first packet covers only the
+reduced hanging-bridge runtime smoke path with
+`bm_plan083_cpu_scene_corpus` and
+`scripts/write_plan083_cpu_scene_packet.py`. It validates finite reduced-scene
+runtime stepping and fixed-joint equality residuals, but it is not paper-scale
+rod/codimensional coupling, Table 2 reproduction, or a completion claim.
+
 ## Last Session Summary
 
 Current slice: the one-branch runtime wiring follow-up has five checkpoint
@@ -272,14 +280,20 @@ build/CTest entries.
 body. Keep all remaining cleanup for this branch in the same PR; do not split
 the already small runtime slices into separate PRs.
 
+`feature/newton-barrier-corpus-evidence` - starts the next CPU corpus evidence
+slice from the runtime-wiring head. Keep it separate from PR #2970 until the
+runtime-wiring PR lands or needs a CI-only rerun.
+
 ## Immediate Next Step
 
-Resolve the `main` merge for PR #2970, rerun the required validation gates, push
-`feature/newton-barrier-runtime-wiring`, and keep managing that single PR
-through review/CI. Leave the dev-task folder active because PLAN-083 acceptance
-criteria are still unmet; if the task later moves out of this folder, get
-maintainer direction before deleting it and keep the remaining planned
-CPU/GPU/scene rows in durable sidecars.
+Keep managing PR #2970 through hosted CI; the latest local conflict check says
+it merges cleanly with `main`, so the current blocker is CI state rather than a
+file conflict. While #2970 waits on hosted CI, continue
+`feature/newton-barrier-corpus-evidence` with reduced CPU corpus packets only
+where runtime evidence exists. Leave the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet; if the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned CPU/GPU/scene rows in durable sidecars.
 
 ## Context That Would Be Lost
 

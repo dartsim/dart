@@ -1,0 +1,222 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+// PLAN-083 CPU scene corpus packet seed. This benchmark measures the reduced
+// hanging-bridge runtime smoke scene only; it is not a paper-scale bridge,
+// codimensional-rod, or mixed-domain performance claim.
+
+#include <dart/simulation/body/collision_shape.hpp>
+#include <dart/simulation/body/rigid_body.hpp>
+#include <dart/simulation/body/rigid_body_options.hpp>
+#include <dart/simulation/compute/sequential_executor.hpp>
+#include <dart/simulation/compute/world_step_stage.hpp>
+#include <dart/simulation/multibody/joint.hpp>
+#include <dart/simulation/world.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <benchmark/benchmark.h>
+
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace sx = dart::simulation;
+
+namespace {
+
+constexpr std::array<double, 4> kBridgeBoardX{-0.45, -0.15, 0.15, 0.45};
+
+const Eigen::Vector3d kBridgeBoardHalfExtents(0.10, 0.16, 0.025);
+const Eigen::Vector3d kBridgePostHalfExtents(0.05, 0.20, 0.08);
+const Eigen::Vector3d kBridgeTravelerHalfExtents(0.07, 0.07, 0.07);
+
+struct BodySnapshot
+{
+  sx::RigidBody body;
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+};
+
+void snapshotBody(
+    std::vector<BodySnapshot>& snapshots, const sx::RigidBody& body)
+{
+  snapshots.push_back(
+      {body,
+       body.getTransform(),
+       body.getLinearVelocity(),
+       body.getAngularVelocity()});
+}
+
+struct HangingBridgeFixture
+{
+  HangingBridgeFixture()
+  {
+    world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+    world.setTimeStep(0.005);
+    world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+    sx::RigidBodyOptions leftPostOptions;
+    leftPostOptions.isStatic = true;
+    leftPostOptions.position = Eigen::Vector3d(-0.65, 0.0, 0.56);
+    leftPost.emplace(
+        world.addRigidBody("plan083_bridge_left_post", leftPostOptions));
+    leftPost->setCollisionShape(
+        sx::CollisionShape::makeBox(kBridgePostHalfExtents));
+
+    sx::RigidBodyOptions rightPostOptions;
+    rightPostOptions.isStatic = true;
+    rightPostOptions.position = Eigen::Vector3d(0.65, 0.0, 0.56);
+    rightPost.emplace(
+        world.addRigidBody("plan083_bridge_right_post", rightPostOptions));
+    rightPost->setCollisionShape(
+        sx::CollisionShape::makeBox(kBridgePostHalfExtents));
+
+    sx::RigidBody parent = *leftPost;
+    boards.reserve(kBridgeBoardX.size());
+    for (std::size_t index = 0; index < kBridgeBoardX.size(); ++index) {
+      sx::RigidBodyOptions boardOptions;
+      boardOptions.mass = 0.25;
+      boardOptions.position = Eigen::Vector3d(kBridgeBoardX[index], 0.0, 0.50);
+      auto board = world.addRigidBody(
+          "plan083_bridge_board_" + std::to_string(index), boardOptions);
+      board.setFriction(0.7);
+      board.setCollisionShape(
+          sx::CollisionShape::makeBox(kBridgeBoardHalfExtents));
+      world.addRigidBodyFixedJoint(
+          "plan083_bridge_point_connection_" + std::to_string(index),
+          parent,
+          board);
+      boards.push_back(board);
+      parent = board;
+    }
+
+    sx::RigidBodyOptions travelerOptions;
+    travelerOptions.mass = 0.12;
+    travelerOptions.position = Eigen::Vector3d(-0.60, 0.0, 0.82);
+    travelerOptions.linearVelocity = Eigen::Vector3d(0.35, 0.0, -0.05);
+    traveler.emplace(
+        world.addRigidBody("plan083_bridge_traveler", travelerOptions));
+    traveler->setFriction(0.4);
+    traveler->setCollisionShape(
+        sx::CollisionShape::makeBox(kBridgeTravelerHalfExtents));
+
+    snapshotBody(snapshots, *leftPost);
+    snapshotBody(snapshots, *rightPost);
+    for (const auto& board : boards) {
+      snapshotBody(snapshots, board);
+    }
+    snapshotBody(snapshots, *traveler);
+
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    world.setTime(0.0);
+    for (auto& snapshot : snapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
+  }
+
+  double maxBoardSag() const
+  {
+    double minBoardZ = std::numeric_limits<double>::infinity();
+    for (const auto& board : boards) {
+      minBoardZ = std::min(minBoardZ, board.getTranslation().z());
+    }
+    return 0.50 - minBoardZ;
+  }
+
+  sx::World world;
+  std::optional<sx::RigidBody> leftPost;
+  std::optional<sx::RigidBody> rightPost;
+  std::vector<sx::RigidBody> boards;
+  std::optional<sx::RigidBody> traveler;
+  std::vector<BodySnapshot> snapshots;
+};
+
+} // namespace
+
+//==============================================================================
+static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
+    benchmark::State& state)
+{
+  HangingBridgeFixture fixture;
+  sx::compute::SequentialExecutor executor;
+
+  std::size_t failedSteps = 0;
+  sx::compute::RigidIpcSolverStats lastStats;
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    sx::compute::RigidIpcContactStage ipcStage(64);
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    state.ResumeTiming();
+
+    fixture.world.step(executor, pipeline);
+    lastStats = ipcStage.getLastStats();
+    if (lastStats.failed || !lastStats.converged || !lastStats.resultApplied) {
+      ++failedSteps;
+    }
+    benchmark::DoNotOptimize(fixture.traveler->getTranslation().data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["row_unb_fig_02"] = 1.0;
+  state.counters["paper_scale"] = 0.0;
+  state.counters["body_count"] = static_cast<double>(lastStats.bodyCount);
+  state.counters["dynamic_body_count"]
+      = static_cast<double>(lastStats.dynamicBodyCount);
+  state.counters["fixed_joint_count"]
+      = static_cast<double>(fixture.boards.size());
+  state.counters["active_articulation_constraints"]
+      = static_cast<double>(lastStats.activeArticulationConstraints);
+  state.counters["solver_iterations"]
+      = static_cast<double>(lastStats.solverIterations);
+  state.counters["failed_steps"] = static_cast<double>(failedSteps);
+  state.counters["final_equality_residual_norm"]
+      = lastStats.finalEqualityResidualNorm;
+  state.counters["traveler_height_m"] = fixture.traveler->getTranslation().z();
+  state.counters["max_board_sag_m"] = fixture.maxBoardSag();
+}
+BENCHMARK(BM_Plan083CpuScene_hanging_bridge_reduced_world_step)
+    ->Unit(benchmark::kMillisecond);
+
+BENCHMARK_MAIN();
