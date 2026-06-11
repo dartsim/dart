@@ -51,7 +51,8 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   (`lo = 0`, `hi = +inf`, `findex < 0`),
   `LcpProblem::isBoxedLcp()` identifies explicit-bound problems without
   findex coupling, and `LcpProblem::hasFrictionIndex()` exposes contact-style
-  bound coupling.
+  bound coupling when every non-negative `findex` entry references another
+  in-range row.
 - All solvers implement
   `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
 - `LcpSolver::supportsStandardLcp()`, `supportsBoxedLcp()`,
