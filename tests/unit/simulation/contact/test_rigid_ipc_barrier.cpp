@@ -1713,15 +1713,19 @@ TEST(RigidIpcBarrier, ProjectedNewtonSolveScratchUsesProvidedAllocator)
 
   {
     expdetail::RigidIpcBarrierSurface surfaceA = makeTriangleSurface(0.0);
-    surfaceA.dynamic = false;
     expdetail::RigidIpcBarrierSurface surfaceB = makeTriangleSurface(0.25);
-    surfaceB.dynamic = false;
     const std::array<expdetail::RigidIpcBarrierSurface, 2> surfaces{
         surfaceA, surfaceB};
 
-    expdetail::RigidIpcProjectedNewtonSolveOptions options;
+    expdetail::RigidIpcProjectedNewtonSolveOptions options(allocator);
     options.barrier.squaredActivationDistance = 1.0;
     options.maxIterations = 0;
+    auto& articulation = options.articulationConstraints.emplace_back();
+    articulation.active = true;
+    articulation.bodyA = 0;
+    articulation.bodyB = 1;
+    articulation.localPointA = Eigen::Vector3d::Zero();
+    articulation.localPointB = Eigen::Vector3d::Zero();
     expdetail::RigidIpcProjectedNewtonSolveResult result(allocator);
     expdetail::RigidIpcProjectedNewtonSolveScratch scratch(allocator);
 

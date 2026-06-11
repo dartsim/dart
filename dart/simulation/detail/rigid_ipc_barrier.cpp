@@ -213,13 +213,20 @@ struct RigidIpcAssemblyScratch
       dart::common::MemoryAllocator* allocator = nullptr)
     : pairs(allocator),
       barrierTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
-      objectiveTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)})
+      objectiveTriplets(BarrierTripletAllocator{allocatorOrDefault(allocator)}),
+      articulationResiduals(
+          SurfaceMarginAllocator{allocatorOrDefault(allocator)}),
+      articulationJacobianTriplets(
+          BarrierTripletAllocator{allocatorOrDefault(allocator)})
   {
   }
 
   RigidIpcSurfacePairScratch pairs;
   std::vector<BarrierTriplet, BarrierTripletAllocator> barrierTriplets;
   std::vector<BarrierTriplet, BarrierTripletAllocator> objectiveTriplets;
+  std::vector<double, SurfaceMarginAllocator> articulationResiduals;
+  std::vector<BarrierTriplet, BarrierTripletAllocator>
+      articulationJacobianTriplets;
 };
 
 struct RigidIpcLineSearchScratch
@@ -913,9 +920,10 @@ void addBodyDynamicsTerm(
   ++assembly.activeDynamicsTerms;
 }
 
+template <typename TripletVector>
 void scatterArticulationJacobianBlock(
     const RigidIpcBarrierAssembly& assembly,
-    std::vector<Eigen::Triplet<double>>& triplets,
+    TripletVector& triplets,
     const std::size_t rowOffset,
     const std::size_t body,
     const Matrix3x6d& jacobian)
@@ -943,10 +951,11 @@ void scatterArticulationJacobianBlock(
   }
 }
 
+template <typename ResidualVector, typename TripletVector>
 void addArticulationConstraintRows(
     RigidIpcBarrierAssembly& assembly,
-    std::vector<double>& residuals,
-    std::vector<Eigen::Triplet<double>>& jacobianTriplets,
+    ResidualVector& residuals,
+    TripletVector& jacobianTriplets,
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcArticulationConstraintInput& input)
 {
@@ -1015,10 +1024,13 @@ void addArticulationConstraintRows(
           input.type, input.bodyA, input.bodyB, residual});
 }
 
+template <typename ResidualVector, typename TripletVector>
 void addArticulationConstraintRows(
     RigidIpcBarrierAssembly& assembly,
     std::span<const RigidIpcBarrierSurface> surfaces,
-    std::span<const RigidIpcArticulationConstraintInput> constraints)
+    std::span<const RigidIpcArticulationConstraintInput> constraints,
+    ResidualVector& residuals,
+    TripletVector& jacobianTriplets)
 {
   if (constraints.empty()) {
     assembly.equalityResidual.resize(0);
@@ -1026,9 +1038,9 @@ void addArticulationConstraintRows(
     return;
   }
 
-  std::vector<double> residuals;
+  residuals.clear();
   residuals.reserve(3 * constraints.size());
-  std::vector<Eigen::Triplet<double>> jacobianTriplets;
+  jacobianTriplets.clear();
   jacobianTriplets.reserve(12 * constraints.size());
   for (const RigidIpcArticulationConstraintInput& constraint : constraints) {
     addArticulationConstraintRows(
@@ -2184,7 +2196,12 @@ static RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystemWithScratch(
     addBodyDynamicsTerm(
         assembly, triplets, body, surfaces[body], dynamicsTerms[body]);
   }
-  addArticulationConstraintRows(assembly, surfaces, articulationConstraints);
+  addArticulationConstraintRows(
+      assembly,
+      surfaces,
+      articulationConstraints,
+      scratch.articulationResiduals,
+      scratch.articulationJacobianTriplets);
 
   if (!triplets.empty()) {
     Eigen::SparseMatrix<double> dynamicsHessian(

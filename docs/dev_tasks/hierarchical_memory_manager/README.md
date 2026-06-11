@@ -792,8 +792,8 @@ Follow-up progress after PR #2956:
   constraint, and active friction-constraint vectors with that allocator,
   preserves the destination allocator across repeated result assignments, and
   routes solve-internal barrier-assembly plus line-search surface-pair,
-  sweep-item, candidate-pair, and triplet scratch through the same borrowed
-  allocator. After
+  sweep-item, candidate-pair, triplet, and articulation equality-row scratch
+  through the same borrowed allocator. After
   the post-#2956 main merge added rigid/deformable mixed-domain candidate
   diagnostics, the same stage scratch now reuses allocator-backed BDF2 history,
   articulation-input, mixed-domain surface payload, candidate, edge, and AABB
