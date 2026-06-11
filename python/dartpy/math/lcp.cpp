@@ -69,6 +69,7 @@ using dart::math::InteriorPointSolver;
 using dart::math::JacobiSolver;
 using dart::math::LcpOptions;
 using dart::math::LcpProblem;
+using dart::math::LcpProblemType;
 using dart::math::LcpResult;
 using dart::math::LcpSolver;
 using dart::math::LcpSolverStatus;
@@ -135,6 +136,17 @@ void defLcp(nb::module_& m)
       "lcp_solver_status_to_string",
       [](LcpSolverStatus status) { return dart::math::toString(status); },
       nb::arg("status"));
+
+  nb::enum_<LcpProblemType>(m, "LcpProblemType")
+      .value("INVALID", LcpProblemType::Invalid)
+      .value("STANDARD", LcpProblemType::Standard)
+      .value("BOXED", LcpProblemType::Boxed)
+      .value("FRICTION_INDEX", LcpProblemType::FrictionIndex);
+
+  m.def(
+      "lcp_problem_type_to_string",
+      [](LcpProblemType type) { return dart::math::toString(type); },
+      nb::arg("type"));
 
   nb::class_<LcpResult>(m, "LcpResult")
       .def(nb::init<>())
@@ -208,6 +220,7 @@ void defLcp(nb::module_& m)
       .def_ro("findex", &LcpProblem::findex)
       .def("size", &LcpProblem::size)
       .def("empty", &LcpProblem::empty)
+      .def("get_type", &LcpProblem::getType, nb::arg("tolerance") = 0.0)
       .def(
           "is_standard_lcp",
           &LcpProblem::isStandardLcp,

@@ -73,11 +73,40 @@ enum class LcpSolverStatus
 };
 
 //==============================================================================
+/// Public problem-form classification for LcpProblem.
+///
+/// A standard LCP is represented internally as a boxed problem with
+/// lo = 0, hi = +inf, and no friction-index rows. This enum gives callers one
+/// prioritized answer instead of requiring them to interpret overlapping
+/// predicate results.
+enum class LcpProblemType
+{
+  /// The bounds/findex vectors do not describe a recognized problem form.
+  Invalid = 0,
+
+  /// Standard LCP: w = Ax - b, x >= 0, w >= 0, x'w = 0.
+  Standard = 1,
+
+  /// Boxed LCP with fixed lower and upper bounds.
+  Boxed = 2,
+
+  /// Boxed LCP with friction-index rows whose bounds depend on another row.
+  FrictionIndex = 3
+};
+
+//==============================================================================
 /// Convert solver status to string
 ///
 /// \param[in] status The solver status to convert
 /// \return String representation of the status
 DART_API std::string toString(LcpSolverStatus status);
+
+//==============================================================================
+/// Convert problem type to string
+///
+/// \param[in] type The problem type to convert
+/// \return String representation of the type
+DART_API std::string toString(LcpProblemType type);
 
 //==============================================================================
 /// Solver result structure containing solution status and statistics
@@ -306,6 +335,27 @@ struct DART_API LcpProblem
     }
 
     return (findex.array() >= 0).any();
+  }
+
+  /// Returns a single prioritized classification for this problem form.
+  ///
+  /// Standard LCPs are also boxed by storage representation; this method
+  /// returns Standard first, then FrictionIndex, then Boxed, then Invalid.
+  LcpProblemType getType(double standardTolerance = 0.0) const
+  {
+    if (isStandardLcp(standardTolerance)) {
+      return LcpProblemType::Standard;
+    }
+
+    if (hasFrictionIndex()) {
+      return LcpProblemType::FrictionIndex;
+    }
+
+    if (isBoxedLcp()) {
+      return LcpProblemType::Boxed;
+    }
+
+    return LcpProblemType::Invalid;
   }
 
   Eigen::MatrixXd A;

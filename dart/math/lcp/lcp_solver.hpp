@@ -92,16 +92,15 @@ public:
   /// Returns true when this solver natively supports the problem form.
   bool supportsProblem(const LcpProblem& problem) const
   {
-    if (problem.isStandardLcp()) {
-      return supportsStandardLcp();
-    }
-
-    if (problem.hasFrictionIndex()) {
-      return supportsFrictionIndex();
-    }
-
-    if (problem.isBoxedLcp()) {
-      return supportsBoxedLcp();
+    switch (problem.getType()) {
+      case LcpProblemType::Standard:
+        return supportsStandardLcp();
+      case LcpProblemType::FrictionIndex:
+        return supportsFrictionIndex();
+      case LcpProblemType::Boxed:
+        return supportsBoxedLcp();
+      case LcpProblemType::Invalid:
+        return false;
     }
 
     return false;

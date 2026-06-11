@@ -16,6 +16,7 @@ __all__: list[str] = [
     "JacobiSolver",
     "LcpOptions",
     "LcpProblem",
+    "LcpProblemType",
     "LcpResult",
     "LcpSolver",
     "LcpSolverStatus",
@@ -78,6 +79,7 @@ __all__: list[str] = [
     "exp_to_quat",
     "half_pi",
     "inf",
+    "lcp_problem_type_to_string",
     "lcp_solver_status_to_string",
     "log",
     "matrixToEulerXYX",
@@ -190,6 +192,14 @@ class LcpSolverStatus(Enum):
 
 def lcp_solver_status_to_string(status: LcpSolverStatus) -> str: ...
 
+class LcpProblemType(Enum):
+    INVALID: LcpProblemType
+    STANDARD: LcpProblemType
+    BOXED: LcpProblemType
+    FRICTION_INDEX: LcpProblemType
+
+def lcp_problem_type_to_string(type: LcpProblemType) -> str: ...
+
 class LcpResult:
     @overload
     def __init__(self) -> None: ...
@@ -257,6 +267,7 @@ class LcpProblem:
 
     def size(self) -> int: ...
     def empty(self) -> bool: ...
+    def get_type(self, tolerance: float = ...) -> LcpProblemType: ...
     def is_standard_lcp(self, tolerance: float = ...) -> bool: ...
     def is_boxed_lcp(self) -> bool: ...
     def has_friction_index(self) -> bool: ...

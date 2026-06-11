@@ -174,6 +174,7 @@ from .math import (
     JacobiSolver,
     LcpOptions,
     LcpProblem,
+    LcpProblemType,
     LcpResult,
     LcpSolver,
     LcpSolverStatus,
@@ -219,6 +220,7 @@ from .math import (
     exp_to_quat,
     half_pi,
     inf,
+    lcp_problem_type_to_string,
     lcp_solver_status_to_string,
     log,
     matrix_to_euler_xyx,
@@ -627,6 +629,7 @@ __all__: list[str] = [
     "JacobiSolver",
     "LcpOptions",
     "LcpProblem",
+    "LcpProblemType",
     "LcpResult",
     "LcpSolver",
     "LcpSolverStatus",
@@ -643,6 +646,7 @@ __all__: list[str] = [
     "SubspaceMinimizationSolver",
     "SymmetricPsorSolver",
     "TgsSolver",
+    "lcp_problem_type_to_string",
     "lcp_solver_status_to_string",
 ]
 __version__: str = ""

@@ -79,6 +79,17 @@ TEST(LcpTypesTest, StatusToString)
   EXPECT_EQ(toString(static_cast<LcpSolverStatus>(99)), "Unknown");
 }
 
+TEST(LcpTypesTest, ProblemTypeToString)
+{
+  EXPECT_EQ(toString(LcpProblemType::Invalid), "Invalid");
+  EXPECT_EQ(toString(LcpProblemType::Standard), "Standard");
+  EXPECT_EQ(toString(LcpProblemType::Boxed), "Boxed");
+  EXPECT_EQ(toString(LcpProblemType::FrictionIndex), "FrictionIndex");
+
+  EXPECT_EQ(toString(static_cast<LcpProblemType>(-1)), "Unknown");
+  EXPECT_EQ(toString(static_cast<LcpProblemType>(99)), "Unknown");
+}
+
 TEST(LcpTypesTest, StandardProblemConstructorSetsCanonicalBounds)
 {
   Eigen::Matrix2d A;
@@ -92,6 +103,7 @@ TEST(LcpTypesTest, StandardProblemConstructorSetsCanonicalBounds)
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Standard);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
   EXPECT_TRUE(problem.lo.isZero());
@@ -108,6 +120,7 @@ TEST(LcpTypesTest, EmptyStandardProblemIsCanonical)
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Standard);
   EXPECT_EQ(problem.lo.size(), 0);
   EXPECT_EQ(problem.hi.size(), 0);
   EXPECT_EQ(problem.findex.size(), 0);
@@ -127,6 +140,7 @@ TEST(LcpTypesTest, BoxedProblemConstructorSetsNoFrictionIndex)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Boxed);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
   EXPECT_TRUE(problem.lo.isApprox(lo));
@@ -148,6 +162,7 @@ TEST(LcpTypesTest, FrictionIndexProblemConstructorPreservesFindex)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_TRUE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::FrictionIndex);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
   EXPECT_TRUE(problem.lo.isApprox(lo));
@@ -168,6 +183,8 @@ TEST(LcpTypesTest, StandardClassificationHonorsTolerance)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_TRUE(problem.isStandardLcp(1e-8));
+  EXPECT_EQ(problem.getType(), LcpProblemType::Boxed);
+  EXPECT_EQ(problem.getType(1e-8), LcpProblemType::Standard);
 }
 
 TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
@@ -182,4 +199,5 @@ TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }

@@ -58,6 +58,7 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
 
     standard = dart.LcpProblem(A, b)
     assert standard.size() == 2
+    assert standard.get_type() == dart.LcpProblemType.STANDARD
     assert standard.is_standard_lcp()
     assert standard.is_boxed_lcp()
     assert not standard.has_friction_index()
@@ -66,6 +67,7 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
     np.testing.assert_array_equal(standard.findex, [-1, -1])
 
     boxed = dart.LcpProblem(A, b, np.array([-1.0, 0.0]), np.array([1.0, 3.0]))
+    assert boxed.get_type() == dart.LcpProblemType.BOXED
     assert not boxed.is_standard_lcp()
     assert boxed.is_boxed_lcp()
     assert not boxed.has_friction_index()
@@ -77,9 +79,11 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
         np.array([np.inf, 1.0]),
         np.array([-1, 0], dtype=np.int32),
     )
+    assert findex.get_type() == dart.LcpProblemType.FRICTION_INDEX
     assert not findex.is_standard_lcp()
     assert not findex.is_boxed_lcp()
     assert findex.has_friction_index()
+    assert dart.lcp_problem_type_to_string(dart.LcpProblemType.FRICTION_INDEX)
 
 
 @pytest.mark.parametrize("solver_type", SOLVER_TYPES)
