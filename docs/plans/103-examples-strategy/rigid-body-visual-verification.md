@@ -52,7 +52,10 @@ stable scene titles and ids for scripts. These rows also receive a runner-owned
 `Rigid Workflow` panel with the row's maintained user question, what to try
 first, the main signals to inspect, the known scope/limitation, and the
 previous/next numbered route, restart command, direct row selector, and
-question/signal text filter as scene-switch rows.
+ranked row filter as scene-switch rows. The filter prioritizes row ids, scene
+ids, labels, questions, and positive signals before scope caveats, so intent
+searches such as `contact` or `solver` surface the relevant debugging rows
+instead of early rows that only say what not to infer.
 
 | Order | Scene id                         | User question                                                            | Solver(s)                        | Controls and diagnostics                                                                                                                                                                                                                                | Capture command                                                                                                      | Automated evidence                                                                                                                                                                                             | Known limitation                                                                                           |
 | ----- | -------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -140,10 +143,10 @@ The in-viewer `Rigid Workflow` panel may route a numbered rigid row to a
 non-numbered shelf only through this table. These scenes remain outside the
 34-row World Rigid Body sequence.
 
-| Source row                     | Related scene        | Shelf          | Panel label                                          | Scope note                                                                         |
-| ------------------------------ | -------------------- | -------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `rigid_solver_compare`         | `rigid_ipc_tunnel`   | Rigid IPC      | Related shelf: focused IPC no-tunneling view         | Focused IPC capability scene; not a broad solver comparison or general proof.      |
-| `rigid_contact_solver_compare` | `diff_drone_liftoff` | Differentiable | Related shelf: differentiable contact-gradient route | Analytic vs complementarity-aware clamping-contact optimization; not a solver row. |
+| Source row                     | Related scene        | Shelf          | Panel label                                                                 | Scope note                                                                         |
+| ------------------------------ | -------------------- | -------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `rigid_solver_compare`         | `rigid_ipc_tunnel`   | Rigid IPC      | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view     | Focused IPC capability scene; not a broad solver comparison or general proof.      |
+| `rigid_contact_solver_compare` | `diff_drone_liftoff` | Differentiable | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route | Analytic vs complementarity-aware clamping-contact optimization; not a solver row. |
 
 ## Capture-First Rigid IPC Packets
 
@@ -473,6 +476,13 @@ Evidence recorded for this slice:
   near-wall frames during replay scrubbing while keeping long-form guidance in
   the `Rigid Workflow` panel. The post-lint full Python sweep,
   `pixi run test-py`, reported `640 passed, 9 skipped`.
+- Latest post-push replay-contract refresh:
+  the branch was committed as `245095f1164` and pushed to
+  `origin/feature/rigid-body-gui-visual-verification`. A full
+  `pixi run test-py` first caught `rigid_ipc_stack_packet` missing shared
+  replay-state callbacks; after adding capture/restore hooks for its controls
+  and history, the focused replay/stack guard reported `2 passed`, and the
+  refreshed full Python sweep reported `648 passed, 9 skipped`.
 - Latest contact-policy replay timeline follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_keeps_frame_marks_for_signal_only_metadata -q`
   reported `5 passed`. `rigid_contact_solver_compare` now feeds the shared

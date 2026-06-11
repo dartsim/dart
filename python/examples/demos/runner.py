@@ -475,7 +475,7 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
 ] = {
     "rigid_solver_compare": (
         RigidWorkflowRelatedEvidence(
-            label="focused IPC no-tunneling view",
+            label="Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view",
             scene_id="rigid_ipc_tunnel",
             shelf="Rigid IPC",
             reason=(
@@ -486,7 +486,7 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
     ),
     "rigid_contact_solver_compare": (
         RigidWorkflowRelatedEvidence(
-            label="differentiable contact-gradient route",
+            label="Differentiable / diff_drone_liftoff - contact-gradient route",
             scene_id="diff_drone_liftoff",
             shelf="Differentiable",
             reason=(
@@ -1410,24 +1410,36 @@ def _workflow_jump_row(builder: Any, context: Any, guide: RigidWorkflowGuide) ->
             _request_workflow_scene(context, next_scene_id)
 
 
-def _workflow_search_text(guide: RigidWorkflowGuide) -> str:
+def _workflow_search_row_id_text(guide: RigidWorkflowGuide) -> str:
     row_id = f"{guide.index:02d}/{guide.count:02d}"
     unpadded_row_id = f"{guide.index}/{guide.count}"
-    return " ".join(
-        (
-            f"row {guide.index}",
-            f"row {guide.index:02d}",
-            row_id,
-            unpadded_row_id,
-            guide.scene_id,
-            guide.label,
-            guide.question,
-            guide.try_first,
-            " ".join(guide.inspect),
-            guide.healthy_signal,
-            guide.scope,
-        )
-    ).lower()
+    return f"row {guide.index} row {guide.index:02d} {row_id} {unpadded_row_id}"
+
+
+def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -> int:
+    positive_fields = (
+        (1000, _workflow_search_row_id_text(guide)),
+        (900, guide.scene_id),
+        (800, guide.label),
+        (600, guide.question),
+        (350, guide.try_first),
+        (300, " ".join(guide.inspect)),
+        (250, guide.healthy_signal),
+    )
+
+    positive_score = 0
+    for weight, text in positive_fields:
+        lowered = text.lower()
+        if all(token in lowered for token in tokens):
+            positive_score += weight
+
+    if positive_score > 0:
+        return positive_score
+
+    scope = guide.scope.lower()
+    if all(token in scope for token in tokens):
+        return 25
+    return 0
 
 
 def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
@@ -1435,13 +1447,15 @@ def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
     if not tokens:
         return ()
 
-    matches: list[RigidWorkflowGuide] = []
+    matches: list[tuple[int, RigidWorkflowGuide]] = []
     for scene_id, _label in RIGID_VISUAL_WORKFLOW_LABELS:
         candidate = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id]
-        search_text = _workflow_search_text(candidate)
-        if all(token in search_text for token in tokens):
-            matches.append(candidate)
-    return tuple(matches[:6])
+        score = _workflow_search_score(candidate, tokens)
+        if score > 0:
+            matches.append((score, candidate))
+
+    matches.sort(key=lambda item: (-item[0], item[1].index))
+    return tuple(candidate for _score, candidate in matches[:6])
 
 
 def _workflow_search_rows(

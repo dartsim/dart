@@ -17,6 +17,7 @@ from examples.demos.runner import (
     _has_world_replay_api,
     _make_world_factory,
     _scene_build_timeout_ms,
+    _workflow_matching_guides,
     _validate_scene,
 )
 
@@ -1191,7 +1192,7 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     tunnel_label = (
-        "Related shelf: focused IPC no-tunneling view"
+        "Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view"
         "##rigid_workflow_related_rigid_ipc_tunnel"
     )
     tunnel_builder = _ScriptedPanelBuilder(selected_items={tunnel_label})
@@ -1200,7 +1201,8 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
 
     assert "text:Related evidence" in tunnel_builder.events
     assert (
-        "selectable:Related shelf: focused IPC no-tunneling view"
+        "selectable:Related shelf: Rigid IPC / rigid_ipc_tunnel - "
+        "focused no-tunneling view"
         "##rigid_workflow_related_rigid_ipc_tunnel:False"
     ) in tunnel_builder.events
     assert any(
@@ -1225,7 +1227,8 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
     context = _FakePanelContext()
     diff_label = (
-        "Related shelf: differentiable contact-gradient route"
+        "Related shelf: Differentiable / diff_drone_liftoff - "
+        "contact-gradient route"
         "##rigid_workflow_related_diff_drone_liftoff"
     )
     diff_builder = _ScriptedPanelBuilder(selected_items={diff_label})
@@ -1233,7 +1236,8 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     workflow_panel.build(diff_builder, context)
 
     assert (
-        "selectable:Related shelf: differentiable contact-gradient route"
+        "selectable:Related shelf: Differentiable / diff_drone_liftoff - "
+        "contact-gradient route"
         "##rigid_workflow_related_diff_drone_liftoff:False"
     ) in diff_builder.events
     assert any(
@@ -1296,6 +1300,30 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
     ) in builder.events
     assert "tooltip:Where is the inclined-ramp stick/slip boundary?" in builder.events
     assert context.scene_switch_requests == ["rigid_friction_threshold"]
+
+
+def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
+    contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
+    solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]
+
+    assert contact_ids[:4] == [
+        "contact",
+        "rigid_contact_scale_budget",
+        "rigid_contact_inspector",
+        "rigid_contact_solver_compare",
+    ]
+    assert not {
+        "rigid_body",
+        "rigid_body_modes",
+        "rigid_free_flight",
+        "rigid_frame_hierarchy",
+    }.intersection(contact_ids)
+    assert solver_ids[:3] == [
+        "rigid_solver_compare",
+        "rigid_contact_solver_compare",
+        "rigid_multibody_solver_family",
+    ]
+    assert "rigid_body" not in solver_ids[:3]
 
 
 def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch() -> None:

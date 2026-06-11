@@ -165,6 +165,12 @@
       now links `rigid_solver_compare` to the non-numbered Rigid IPC
       no-tunneling view and `rigid_contact_solver_compare` to the
       differentiable contact-gradient route without changing the 34-row order.
+- [x] Workflow-search UX follow-up: the `Rigid Workflow` panel's `Find row`
+      filter now ranks row ids, scene ids, labels, questions, and positive
+      signals ahead of scope caveats, so searches such as `contact` and
+      `solver` route users to the intended rows instead of early rows that
+      only say what not to infer. Related-shelf labels now show the target
+      shelf and scene id in the visible row text.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -336,9 +342,9 @@ physics-method comparison.
   on a wall scene, and `rigid_ipc_tunnel` remains the focused IPC
   no-tunneling capability check from the Rigid IPC shelf.
 - Keep related-evidence routes in the runner and PLAN-103 sidecar synchronized.
-  They are labelled as `Related shelf` links so non-numbered scenes such as
-  `rigid_ipc_tunnel` and `diff_drone_liftoff` do not look like new workflow
-  rows.
+  They are labelled as `Related shelf` links that name the target shelf and
+  scene id, so non-numbered scenes such as `rigid_ipc_tunnel` and
+  `diff_drone_liftoff` do not look like new workflow rows.
 - Keep motor/limit wording on World multibody joint actuators until rigid-body
   joint motor behavior is stable enough to support bounded public claims.
 - Keep passive joint parameters separate from motor/limit claims. The passive
@@ -374,9 +380,9 @@ physics-method comparison.
   sidecar's row questions, compact inspect signals, and scope notes while adding
   a try-first checklist, restart command, selectable previous/next
   scene-switch rows, and direct/searchable workflow-row selectors, including
-  `NN/MM` row-id search, so the
-  learning path and caveats are visible and navigable inside `py-demos` without
-  duplicating guide text in every scene.
+  `NN/MM` row-id search and ranked intent search, so the learning path and
+  caveats are visible and navigable inside `py-demos` without duplicating guide
+  text in every scene.
 - Keep replay timeline diagnostics opt-in and scene-owned. The shared `Replay`
   panel can render a lightweight `replay_timeline` signal plus marker track from
   saved replay snapshots, but long-form row guidance stays in `Rigid Workflow`
@@ -452,8 +458,8 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Refresh validation as needed, then use the local
-   [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves
-   commit/push/opening a PR for the current P0 workflow branch.
+   [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
+   pushed `feature/rigid-body-gui-visual-verification` branch.
 2. Keep the broader rigid-body visual-verification goal open and pick the next
    bounded rigid-body gap from another fresh audit before adding another row.
 3. Keep related-evidence routes synchronized between the runner-owned

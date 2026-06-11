@@ -111,9 +111,12 @@ contact pairs need inspection, use **`rigid_collision_query_options`** when
 `World.collide(options)` body-kind filtering needs inspection, use
 **`rigid_collision_casts`** when raycast or swept-sphere hit queries need
 inspection, including swept-capsule link/tool proxies, use
-**`contact`** when multibody links need to drop, slide, or push through solver
-contact, and continue through the focused verifier scenes below when a solver,
-executor, or contact behavior needs inspection. **World Rigid Body**
+**`rigid_solver_compare`**, **`rigid_executor_equivalence`**, and
+**`rigid_contact_solver_compare`** when the question is solver family, executor
+parity, or contact policy, then use **`contact`** when multibody links need to
+drop, slide, or push through solver contact. Continue through the focused
+threshold, stability, manipulation, kinematic-driver, joint, dynamics, and
+loop-closure rows when those behaviors need inspection. **World Rigid Body**
 here means World-facade rigid debugging: solver-family rows compare sequential
 impulse and IPC, executor-equivalence rows hold the selected physics solver
 constant across executors, and focused threshold or stability rows may pin one
@@ -125,10 +128,12 @@ In the interactive viewer, every numbered **World Rigid Body** row also gets a
 compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
 the current row as a small checklist: what to try first, what to look for, and
 what not to infer from that row. The panel also has selectable previous/next
-numbered rows, a restart command, a direct row selector, and a text filter over
-row ids/questions/signals that request in-viewer scene switches, so caveats
-such as IPC-only guarantees, query-only diagnostics, and benchmark-first stress
-cases stay visible while users move through the workflow.
+numbered rows, a restart command, a direct row selector, and a ranked text
+filter over row ids, scene ids, labels, questions, and signals that request
+in-viewer scene switches. Scope caveats remain visible in the row, but the
+filter ranks positive intent matches first so searches such as `contact` and
+`solver` do not get dominated by early rows that only mention what not to
+infer.
 
 | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                      |
 | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |

@@ -593,8 +593,8 @@ skipped`; `pixi run lint` passed; and bounded `pixi run build` passed with
   row until the public API can express a stable, interactive gripper without
   overclaiming IK, actuator dynamics, or link-material behavior.
 - The local review packet draft now lives at `PR_DRAFT.md` and follows the
-  repository PR template for a `main`/DART 7.0 review. No commit, push, or PR
-  mutation has been performed.
+  repository PR template for a `main`/DART 7.0 review. That draft-only slice
+  did not perform a commit, push, or PR mutation.
 - Fresh pre-review validation on 2026-06-10: `pixi run test-py` reported
   `615 passed, 9 skipped`; bounded `pixi run build` passed with
   `DART safe jobs: 3` and `ninja: no work to do`; `pixi run lint` passed; the
@@ -764,6 +764,21 @@ guard
 reported `2 passed`. Short real `py-demo-capture --show-ui` runs for both rows
 wrote eight scene-metrics events each and mirrored the expected lane sets into
 the manifests.
+
+Fresh post-push replay-contract refresh on 2026-06-11: the branch was committed
+as `245095f1164` and pushed to
+`origin/feature/rigid-body-gui-visual-verification`. The first full
+`pixi run test-py` caught `rigid_ipc_stack_packet` missing shared replay-state
+hooks; the packet now exposes capture/restore callbacks for its controls and
+history, the focused replay/stack guard reported `2 passed`, and the refreshed
+full Python sweep reported `648 passed, 9 skipped`.
+
+Fresh workflow-search UX follow-up on 2026-06-11: a specialized UX audit found
+that `Find row` ranked scope caveats before intent matches. The runner now
+scores row ids, scene ids, labels, questions, and positive signals before scope
+caveats, so `contact` and `solver` searches surface the intended workflow rows.
+Related-shelf links now include the target shelf and scene id in the visible
+row label.
 
 ## How to Resume
 

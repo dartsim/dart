@@ -986,14 +986,17 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
             "rigid_solver_compare",
             "rigid_ipc_tunnel",
             "Rigid IPC",
-            "Related shelf: focused IPC no-tunneling view",
+            "Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view",
             "Focused IPC capability scene; not a broad solver comparison or general proof.",
         ),
         (
             "rigid_contact_solver_compare",
             "diff_drone_liftoff",
             "Differentiable",
-            "Related shelf: differentiable contact-gradient route",
+            (
+                "Related shelf: Differentiable / diff_drone_liftoff - "
+                "contact-gradient route"
+            ),
             "Analytic vs complementarity-aware clamping-contact optimization; not a solver row.",
         ),
     ]
