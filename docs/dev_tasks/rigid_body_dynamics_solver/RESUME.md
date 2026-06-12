@@ -1,5 +1,18 @@
 # Resume: Rigid-Body Dynamics Solver
 
+## Current Reality (2026-06-06)
+
+Use `README.md`, `docs/plans/dashboard.md`, and the current code as the live
+status. The older branch-local sections below record useful implementation
+history, but references to `feature/experimental-model-loader`, unpublished
+local commits, "DONE locally" slices, and publish/push instructions are
+historical handoff notes, not current branch state. The default semi-implicit
+path now routes rigid-rigid and articulated link contacts through the unified
+boxed-LCP stage when multibody structures are present; remaining PLAN-080 work is
+the Subsystem A polish called out in `README.md` and the dashboard: warm
+starting, friction-cone iteration, scaling around the unified solve, and
+separate deferred model-loading/actuator/mimic/loop-closure slices.
+
 ## B2 Gate — Rigid Open-Chain Dynamics Parity Harness (2026-06-01)
 
 Status of the DART 7 "Rigid dynamics parity" checkable gate (PLAN-080 B2):
@@ -7,12 +20,12 @@ Status of the DART 7 "Rigid dynamics parity" checkable gate (PLAN-080 B2):
 tolerances for gravity, integration, drift, and controls."
 
 The dedicated world-parity suite lives in
-`tests/unit/simulation/experimental/world/test_world_parity.cpp`. It builds the
+`tests/unit/simulation/world/test_world_parity.cpp`. It builds the
 same scene in both `dart::simulation::World` (classic DART 6 path) and
-`dart::simulation::experimental::World`, steps both with matched dt, and asserts
+`dart::simulation::World`, steps both with matched dt, and asserts
 state agreement within named tolerance constants. It runs under the
 `simulation-experimental` ctest label, i.e. `pixi run
-test-simulation-experimental` (or focused `ctest -R test_world_parity`).
+test-simulation` (or focused `ctest -R test_world_parity`).
 
 This is the **start of the B2 evidence**, scoped to OPEN-CHAIN (no-contact)
 rigid dynamics, which does not depend on the unified contact/constraint solver
@@ -57,7 +70,7 @@ helpers and named tolerance constants.
 ## Last Session Summary
 
 Implemented and verified, in fully-tested slices, the rigid-body solver's
-joint-space dynamics layer on the experimental `World` (Phases 0-1 complete;
+joint-space dynamics layer on the DART 7 `World` (Phases 0-1 complete;
 Phases 2-5 partial — the contact-LCP subsystem is the main remaining work, see
 the implementation plan below):
 
@@ -224,46 +237,30 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
 
 Historical gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. The current `feature/experimental-model-loader`
-branch has been reconciled with `origin/main` and locally validated; it is not
-associated with a hosted PR yet.
+`test_experimental_world.py`. The model-loading and unified contact/constraint
+follow-up line later landed on `main` as PR #2838, with follow-up allocation
+polish in PR #2899 and PR #2910.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
 (`Ad(transformFromParent^{-1}) * S_jointframe`) — this was essential to get
 correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
-## Current Branch
+## Current Main Status
 
 PR #2705 (the rigid-body MVP) **merged to `main` on 2026-05-25** (merge commit
 `003c2d0e39`). The MVP convention re-alignment and the GUI example (Subsystem C)
 are done and on `main`.
 
-Current work is on branch `feature/experimental-model-loader` in
-`/home/js/dev/dartsim/dart/task_1` — Subsystem B (model loading), the
-`dynamics::Skeleton` → experimental `Multibody` bridge
-(`dart/simulation/experimental/io/skeleton_to_multibody.{hpp,cpp}`).
-
-### Local branch state
-
-The branch is ahead of `origin/feature/experimental-model-loader` with local
-model-loading/contact follow-up commits plus the latest merge from `origin/main`
-(`a806d68cd3a3a79441314d4599b6991adc580d26`). Current slices on the branch cover
-cross-multibody/link contacts, row-island unified constraints, preserved
-collision shape offsets, capsule/cylinder/plane/mesh-like collision shape
-support, and multiple collision shapes per body/link. As of 2026-06-01, `gh pr
-list --head feature/experimental-model-loader` reports no associated PR.
-
-Current validation for the reconciled model-loading/collision-shape line:
-`pixi run update-api-boundary-inventory`,
-`pixi run check-api-boundary-inventory`,
-`pixi run build-simulation-experimental-tests`,
-`pixi run test-simulation-experimental` (52/52),
-`pixi run test-py` (486 passed, 9 skipped), `pixi run lint`,
-`pixi run test-all`, and `pixi run -e cuda test-all` all passed. The docs build
-still emits four non-fatal autodoc warnings from generated dartpy stubs around
-`LocalResource.get_size = getSize`; they did not fail either default or CUDA
-`test-all`.
+PR #2838 **merged to `main` on 2026-06-02** (merge commit `c325539ec29`) and
+published the former `feature/experimental-model-loader` line: the
+`dynamics::Skeleton` / `simulation::World` to experimental `Multibody` bridge,
+preserved collision shape offsets, capsule/cylinder/plane/mesh-like collision
+shape support, multiple collision shapes per body/link, same- and
+cross-multibody link contacts, and row-islanded unified constraints. PR #2899
+and PR #2910 then broadened the baked-step allocation guards and reused unified
+constraint stage scratch. Future work should branch from current `main` rather
+than resurrecting that retired local branch.
 
 ### Committed: pre-joint offset on `JointSpec`
 
@@ -310,7 +307,7 @@ serializes that transform, and `World::collide()` poses native shapes as
 plus height, and planes carry normal plus offset, through C++, dartpy,
 serialization, and the native collision query. Triangular `MeshShape` and
 `ConvexMeshShape` instances carry their vertex/index buffers through the
-model-loading bridge as experimental mesh collision shapes; `HeightmapShape`
+model-loading bridge as DART 7 mesh collision shapes; `HeightmapShape`
 instances are triangulated into the same carrier, and `SoftMeshShape` instances
 snapshot their point-mass mesh into that carrier. Triangular meshes also
 round-trip through C++, dartpy, serialization, and native collision queries.
@@ -675,7 +672,7 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     prismatic links and an emergent world test where overlapping sibling links
     stop approaching and separate through the default `UnifiedConstraintStage`.
     Focused validation passed:
-    `build-simulation-experimental-tests`, `test_multibody_link_contact`,
+    `build-simulation-tests`, `test_multibody_link_contact`,
     selected `test_world` link-contact cases, selected `test_unified_constraint`
     cases, and `test_unified_constraint_stage`; full
     `ctest -L simulation-experimental` passed (44/44), and `pixi run lint`
@@ -693,11 +690,11 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     fallback update the second articulated end. Added assembler/apply coverage
     for the second articulated end and an emergent world test where two separate
     prismatic multibodies collide and stop approaching. Focused validation
-    passed: `build-simulation-experimental-tests`, selected
+    passed: `build-simulation-tests`, selected
     `test_unified_constraint`, selected `test_world`, and
     `test_multibody_link_contact`; full
     `ctest -L simulation-experimental` passed (44/44). Final validation passed:
-    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    `pixi run lint`, post-lint `pixi run build-simulation-tests`,
     and post-lint `ctest -L simulation-experimental` (44/44).
   - **(DONE locally) Slice 5c — row-islanded unified LCP solve.**
     `solveUnifiedConstraintProblem` now decomposes independent row islands before
@@ -709,10 +706,10 @@ multibodyVelocities)` which applies the solved global impulses to rigid
     failure returns `succeeded=false` so the existing global fallback remains the
     recovery path. Added a regression with two independent contact islands where
     the second island's friction rows must remap global `findex=3` to local row
-    zero. Focused validation passed: `build-simulation-experimental-tests`,
+    zero. Focused validation passed: `build-simulation-tests`,
     selected `test_unified_constraint`; full
     `ctest -L simulation-experimental` passed (44/44). Final validation passed:
-    `pixi run lint`, post-lint `pixi run build-simulation-experimental-tests`,
+    `pixi run lint`, post-lint `pixi run build-simulation-tests`,
     and post-lint `ctest -L simulation-experimental` (44/44).
 - **Blockers the critiques verified (address before the relevant slice):**
   - _Positions last._ Keep the existing invariant (`world.cpp:1606` comment): no
@@ -766,10 +763,11 @@ demos). The blocker described in earlier sessions is resolved.
 screw, universal, planar, ball, free) with a floating base via a `Free` joint,
 including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
 integration. **Subsystem B (model loading) and the Subsystem A unified contact
-solve are both well underway** — see below. The immediate next step is to decide
-whether to publish `feature/experimental-model-loader` as a new PR or continue
-locally with a smaller follow-up slice such as visual geometry/material loading,
-richer load diagnostics, or warm-starting/friction-cone polish.
+solve are both on `main`** — see below. The immediate next step is a smaller
+follow-up slice such as visual geometry/material loading, richer load
+diagnostics, or warm-starting/friction-cone polish; for the current Subsystem A
+headline, prefer warm-start/friction-cone scaling polish around the unified
+constraint solve.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
@@ -809,7 +807,7 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   per-multibody solve for the default semi-implicit path. **Still remaining:**
   cross-multibody link-vs-link contacts and scaling polish.
 
-### Subsystem B — model loading (URDF/SDF/MJCF) into the experimental World
+### Subsystem B — model loading (URDF/SDF/MJCF) into the DART 7 World
 
 `dart::io` (`dart/io/read.hpp`) parses to the **legacy** types only:
 `readSkeleton` → `dynamics::SkeletonPtr`, `readWorld` → `simulation::WorldPtr`.
@@ -830,10 +828,10 @@ still need the remaining translation layer:
   pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
   map onto `transformFromParent` as today.
 - **(DONE) C++/dartpy model-loading bridge.**
-  `simulation::experimental::io::buildMultibodyFromSkeleton()` /
+  `simulation::io::buildMultibodyFromSkeleton()` /
   `buildMultibodiesFromWorld()` provide the lower-level translation pass, while
   `addSkeleton()` / `addWorld()` and dartpy
-  `simulation_experimental.add_skeleton()` / `add_world()` compose that bridge
+  `simulation.add_skeleton()` / `add_world()` compose that bridge
   with `dart::io::readSkeleton()` / `readWorld()` URI loading and optional
   `ReadOptions` / `SkeletonLoadOptions`.
   - **Frame-mapping decision.** The importer places each experimental link frame
@@ -961,10 +959,10 @@ response)** and beyond.
    sphere shape descends under gravity and rests on a static rigid ground
    (penetration stops, normal velocity -> 0).
 
-When publishing this branch: preserve the local merge commit from `origin/main`,
-push only after explicit maintainer approval, and open a PR with milestone
-`DART 7.0`. The branch already has the default and CUDA `test-all` gates passing
-after the merge.
+The old branch-publication guidance is obsolete: the model-loading and unified
+contact/constraint line is already on `main` via PR #2838. Future follow-ups
+should start from current `main`, keep PRs scoped to one polish slice, and use
+the normal `DART 7.0` PR milestone and validation gates.
 
 ## Context That Would Be Lost
 
@@ -984,7 +982,7 @@ after the merge.
   (PLAN-035/036/037); Phase 2 bridges it into the experimental world.
 - Existing experimental tests assume zero gravity — changing the default is a
   deliberate, documented decision (matches DART 6 and the user vision).
-- Two related dev tasks: `simulation_experimental_api_design` (facade shape) and
+- Two related dev tasks: `simulation_api_design` (facade shape) and
   this one (dynamics). Keep concerns separate.
 
 ## How To Resume
@@ -1001,7 +999,7 @@ docs/dev_tasks/rigid_body_dynamics_solver/README.md
 docs/dev_tasks/rigid_body_dynamics_solver/01-gap-analysis.md
 docs/dev_tasks/rigid_body_dynamics_solver/02-roadmap.md
 docs/design/simulation_solver_architecture.md
-docs/design/simulation_experimental_cpp_api.md
+docs/design/simulation_cpp_api.md
 ```
 
 Then continue the current phase from "Immediate Next Step".

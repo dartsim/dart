@@ -33,8 +33,6 @@
 #ifndef DART_IO_READ_HPP_
 #define DART_IO_READ_HPP_
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/dynamics/skeleton.hpp>
 
 #include <dart/common/resource_retriever.hpp>
@@ -51,7 +49,7 @@
 namespace dart {
 namespace io {
 
-/// Supported model formats for reading Skeletons and Worlds.
+/// Supported model formats for reading Skeletons.
 enum class ModelFormat
 {
   /// Infer from URI (extension / XML root element).
@@ -113,16 +111,8 @@ struct DART_IO_API ReadOptions
   }
 };
 
-/// Read World from a model file.
-simulation::WorldPtr DART_IO_API
-readWorld(const common::Uri& uri, const ReadOptions& options = ReadOptions());
-
 /// Read Skeleton from a model file.
 dynamics::SkeletonPtr DART_IO_API readSkeleton(
-    const common::Uri& uri, const ReadOptions& options = ReadOptions());
-
-/// Try to read World from a model file, returning Result instead of nullptr.
-common::Result<simulation::WorldPtr, common::Error> DART_IO_API tryReadWorld(
     const common::Uri& uri, const ReadOptions& options = ReadOptions());
 
 /// Try to read Skeleton from a model file, returning Result instead of nullptr.

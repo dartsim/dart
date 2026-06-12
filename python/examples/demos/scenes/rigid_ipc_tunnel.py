@@ -5,7 +5,7 @@ through it -- the headline property of intersection-free rigid IPC (PLAN-082).
 A single discrete contact step would let an 8 m/s box jump past a thin wall
 between frames; the rigid IPC conservative line search refuses any step that
 would cross the wall, so the box is always caught. WorldRenderBridge mirrors the
-bodies into a parallel dart.simulation.World for rendering.
+bodies into a parallel render World for rendering.
 """
 
 from __future__ import annotations

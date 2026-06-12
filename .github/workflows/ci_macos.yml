@@ -56,21 +56,18 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Release
 
       - name: Run Release Python tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test-py ON Release
 
       - name: Build Release examples
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run build-examples ON Release
 
       - name: Install
@@ -104,5 +101,4 @@ jobs:
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           DART_BUILD_DARTPY_OVERRIDE=OFF \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Debug

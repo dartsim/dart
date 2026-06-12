@@ -21,8 +21,8 @@ for the full naming scheme and rationale.
 | Pre-commit               | `verify`               | `test-core`  | `bench`       |
 | Pre-push / authoritative | `verify-full`          | `test-full`  | `bench-full`  |
 
-(`test-core` runs unit + integration; `test-experimental-quick` adds the
-experimental tests minus the long poles; `test-full` runs every label.)
+(`test-core` runs unit + integration; `test-simulation-quick` adds the
+DART 7 simulation tests minus the long poles; `test-full` runs every label.)
 
 `verify-full` is the authoritative gate (the former `test-all`, still available
 as an alias). Subsystem scope stays orthogonal (`test-math`, `test-io`, …), and
@@ -143,7 +143,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e cuda test-all
 
 The CUDA-environment `test-all` preserves the `cuda` Pixi environment for nested
 tasks, builds the CUDA targets, runs CTest coverage labelled
-`simulation-experimental-cuda`, and then runs `pixi run -e cuda test-cuda` when a
+`simulation-cuda`, and then runs `pixi run -e cuda test-cuda` when a
 CUDA runtime is detected. The CUDA smoke task currently covers:
 
 - `test_rigid_body_state_batch_cuda`
@@ -357,7 +357,9 @@ pixi run bm-allocator-comparative-check
 when DART does not beat the selected foonathan/memory or standard-library
 baseline on matching workloads. It also rejects compared aggregate rows whose
 coefficient of variation exceeds `--max-cv` (default 10%), because noisy rows are
-not valid evidence for strict allocator decisions.
+not valid evidence for strict allocator decisions unless the saved benchmark
+mean/stddev/repetition aggregates still show DART's normal-approximation 95%
+confidence interval strictly below the selected baseline's confidence interval.
 
 Pass `--include-entt-registry` to add allocator-aware EnTT registry/component
 storage churn rows. Those rows are an evidence surface for registry allocator
@@ -616,7 +618,7 @@ future code changes easy to cover.
 Add a new test file only for a distinct behavior family, dependency boundary, or
 fixture shape. Keep coverage targets focused on meaningful public behavior and
 backend dispatch paths; do not chase brittle coverage for GUI/OpenGL paths,
-experimental simulation code, debug-only fatal assertions, or unreachable
+DART 7 simulation internals, debug-only fatal assertions, or unreachable
 defensive branches unless the task explicitly calls for them.
 
 When auditing core coverage, treat test binary coverage as part of the capture

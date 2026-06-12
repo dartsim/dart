@@ -56,10 +56,6 @@
 #include <dart/gui/profile.hpp>
 #include <dart/gui/viewer.hpp>
 
-#include <dart/simulation/world.hpp>
-
-#include <dart/collision/collision_result.hpp>
-
 #include <dart/dynamics/body_node.hpp>
 
 #include <dart/common/profile.hpp>
@@ -216,7 +212,6 @@ void applySceneOptions(
     bool renderOutputModeExplicit,
     dart::gui::RenderOutputMode renderOutputMode)
 {
-  appOptions.world = src.world;
   appOptions.renderableProvider = src.renderableProvider;
   appOptions.dockingEnabled = src.dockingEnabled;
   appOptions.preStep = src.preStep;
@@ -233,7 +228,8 @@ void applySceneOptions(
   appOptions.keyboardActions = src.keyboardActions;
   appOptions.preRender = src.preRender;
   appOptions.postRender = src.postRender;
-  appOptions.simulateWorld = src.simulateWorld;
+  appOptions.timeStep = src.timeStep;
+  appOptions.advanceSimulation = src.advanceSimulation;
   appOptions.panels = src.panels;
   appOptions.camera = src.camera;
   appOptions.cameraControlsProvider = src.cameraControlsProvider;
@@ -986,7 +982,6 @@ int runGuiBackendApplicationImpl(
   // (re)applies each scene's options inside the scene loop below.
   if (demoCatalog == nullptr) {
     if (!hasSceneOption(argc, argv)) {
-      appOptions.world = applicationOptions.world;
       appOptions.renderableProvider = applicationOptions.renderableProvider;
       appOptions.selectedRenderableProvider
           = applicationOptions.selectedRenderableProvider;
@@ -1008,7 +1003,8 @@ int runGuiBackendApplicationImpl(
     }
     appOptions.preRender = applicationOptions.preRender;
     appOptions.postRender = applicationOptions.postRender;
-    appOptions.simulateWorld = applicationOptions.simulateWorld;
+    appOptions.timeStep = applicationOptions.timeStep;
+    appOptions.advanceSimulation = applicationOptions.advanceSimulation;
     appOptions.panels = applicationOptions.panels;
     appOptions.cameraControlsProvider
         = applicationOptions.cameraControlsProvider;
@@ -1181,9 +1177,6 @@ int runGuiBackendApplicationImpl(
                   << "' failed to load: " << error.what() << "\n";
         sceneOptions = dart::gui::ApplicationOptions{};
       }
-      if (sceneOptions.world == nullptr) {
-        sceneOptions.world = dart::simulation::World::create("(empty)");
-      }
       if (elapsedMs(sceneStartupStart) > demoSceneStartupTimeoutMs
           && restorePendingDemoFallback("factory startup exceeded budget")) {
         continue;
@@ -1217,7 +1210,7 @@ int runGuiBackendApplicationImpl(
     }
     const auto homeCamera = cameraController.camera;
 
-    const bool validateFixtureRequirements = appOptions.world == nullptr;
+    const bool validateFixtureRequirements = false;
     DartScene dartScene = createDartScene(appOptions);
     std::optional<InitialSceneState> maybeInitialSceneState
         = createInitialSceneState(
@@ -1342,7 +1335,7 @@ int runGuiBackendApplicationImpl(
             imguiIo,
             runOptions.width,
             runOptions.height,
-            dartScene.world->getTimeStep(),
+            dartScene.timeStep,
             appOptions.showUi,
             cameraControls,
             viewportLayout);
@@ -1498,7 +1491,7 @@ int runGuiBackendApplicationImpl(
       }
     }
 
-    finalContacts = dartScene.world->getLastCollisionResult().getNumContacts();
+    finalContacts = dartScene.contactCount;
     sceneFrameUpdater.releaseScriptedForceDragIfActive(
         "scripted force-drag released during scene teardown");
     selectionController.cancelActiveDrag(dartScene);
@@ -1635,9 +1628,7 @@ int runApplication(int argc, char* argv[], const char* defaultScene)
 int runApplication(
     int argc, char* argv[], const ApplicationOptions& applicationOptions)
 {
-  if (applicationOptions.world != nullptr
-      || applicationOptions.defaultScene.empty()
-      || hasSceneOption(argc, argv)) {
+  if (applicationOptions.defaultScene.empty() || hasSceneOption(argc, argv)) {
     return detail::runGuiBackendApplication(argc, argv, applicationOptions);
   }
 

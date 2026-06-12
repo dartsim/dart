@@ -23,7 +23,6 @@
 
 using namespace dart;
 using namespace dart::dynamics;
-using namespace dart::simulation;
 
 //==============================================================================
 TEST(GroupTest, CreateEmptyGroup)

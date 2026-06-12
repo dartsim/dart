@@ -119,7 +119,7 @@ target_compile_definitions(
 )
 
 # Benchmarks (optional)
-dart_experimental_add_benchmark(
+dart_add_simulation_benchmark(
   bm_collision_native_sdf_compare
   ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks/bm_sdf_compare.cpp
   LIBRARY ${target_name}

@@ -1,7 +1,7 @@
-Experimental World Performance Dashboard
-========================================
+DART 7 World Performance Dashboard
+==================================
 
-DART publishes a public performance dashboard that tracks experimental World
+DART publishes a public performance dashboard that tracks DART 7 World
 Google Benchmark results over time:
 
 * Dashboard:
@@ -13,11 +13,11 @@ the first publication), open it directly with the link above.
 .. raw:: html
 
    <iframe src="https://dartsim.github.io/dart/performance/"
-           title="DART experimental World performance dashboard"
+           title="DART 7 World performance dashboard"
            width="100%" height="720" loading="lazy"
            style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
 
-It is scoped to the DART 7 experimental World and its solver families, tracking
+It is scoped to the DART 7 World and its solver families, tracking
 their end-to-end ``World::step`` (and kinematics-update) throughput:
 
 * **Core step & scaling** — kinematics updates, world-step throughput with

@@ -2126,7 +2126,7 @@ function(dart_build_tests)
 endfunction()
 
 #===============================================================================
-# Simulation Experimental Functions
+# Simulation Functions
 #===============================================================================
 
 #-------------------------------------------------------------------------------
@@ -2139,13 +2139,13 @@ endfunction()
 #          [VERSION <version>]
 #          [COMPONENTS <components...>]
 #          [SET_VAR <variable_name>]
-#          [PREFIX <prefix>]  # Variable prefix (default: DART_EXPERIMENTAL)
+#          [PREFIX <prefix>]  # Variable prefix (default: DART_SIMULATION)
 #        )
 #
 # This function wraps find_package() and tracks found/missing dependencies
 # for compact summary reporting.
 #
-# Variables used (with PREFIX=DART_EXPERIMENTAL):
+# Variables used (with PREFIX=DART_SIMULATION):
 #   - ${PREFIX}_DEPS_FOUND: List of found dependencies
 #   - ${PREFIX}_DEPS_MISSING: List of missing dependencies
 #   - ${PREFIX}_VERBOSE: Enable verbose output
@@ -2159,9 +2159,9 @@ function(dart_find_dependency)
     ${ARGN}
   )
 
-  # Default prefix for simulation-experimental compatibility
+  # Default prefix for simulation dependency tracking
   if(NOT ARG_PREFIX)
-    set(ARG_PREFIX "DART_EXPERIMENTAL")
+    set(ARG_PREFIX "DART_SIMULATION")
   endif()
 
   # Build find_package arguments
@@ -2229,11 +2229,6 @@ function(dart_find_dependency)
     endif()
   endif()
 endfunction()
-
-# Backward compatibility alias - uses DART_EXPERIMENTAL prefix by default
-macro(dart_experimental_find_package)
-  dart_find_dependency(${ARGN})
-endmacro()
 
 #-------------------------------------------------------------------------------
 # Utility function to create a shared library with standard settings
@@ -2335,14 +2330,12 @@ function(dart_create_library)
   # Set C++20 standard (modern CMake approach)
   target_compile_features(${ARG_NAME} PUBLIC cxx_std_20)
 
-  # Add compile definition for source directory (used for relative paths in logging)
-  # Include both DART_SOURCE_DIR and DART_EXPERIMENTAL_SOURCE_DIR for compatibility
-  # with the experimental logging helper in dart/simulation/experimental/common/logging.hpp
+  # Add compile definition for source directory (used for relative paths in logging).
   target_compile_definitions(
     ${ARG_NAME}
     PUBLIC
       DART_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-      DART_EXPERIMENTAL_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+      DART_SIMULATION_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
   )
 
   # Include directories - default to parent of current source dir
@@ -2394,11 +2387,6 @@ function(dart_create_library)
 
   message(STATUS "${ARG_NAME}: Configured library")
 endfunction()
-
-# Backward compatibility alias
-macro(dart_experimental_add_library)
-  dart_create_library(${ARGN})
-endmacro()
 
 #-------------------------------------------------------------------------------
 # Utility function to create a Python binding module with nanobind
@@ -2525,11 +2513,6 @@ function(dart_create_python_module)
   message(STATUS "${ARG_NAME}: Configured Python bindings")
 endfunction()
 
-# Backward compatibility alias
-macro(dart_experimental_add_python_module)
-  dart_create_python_module(${ARGN})
-endmacro()
-
 #-------------------------------------------------------------------------------
 # Utility function to add a simulation test
 # Automatically adds to CTest with appropriate label and global test list
@@ -2543,11 +2526,11 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
   cmake_parse_arguments(ARG "" "LIBRARY;LABEL" "" ${ARGN})
 
   if(NOT ARG_LIBRARY)
-    set(ARG_LIBRARY "dart-simulation-experimental")
+    set(ARG_LIBRARY "dart-simulation")
   endif()
 
   if(NOT ARG_LABEL)
-    set(ARG_LABEL "simulation-experimental")
+    set(ARG_LABEL "simulation")
   endif()
 
   if(NOT DART_BUILD_TESTS)
@@ -2560,9 +2543,9 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     PRIVATE ${ARG_LIBRARY} GTest::gtest GTest::gtest_main
   )
 
-  # In-tree simulation-experimental tests routinely include ECS-internal headers
+  # In-tree simulation tests routinely include ECS-internal headers
   # that pull in <entt/entt.hpp>. EnTT is a PRIVATE dependency of
-  # dart-simulation-experimental (the public surface is entt-free), so test
+  # dart-simulation (the public surface is entt-free), so test
   # targets do not inherit its include directories. Link it here for every test
   # this helper creates so clean builds -- where EnTT is provided only via
   # dart_find_entt.cmake/FetchContent rather than a global include dir -- still
@@ -2683,11 +2666,6 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
   )
 endfunction()
 
-# Backward compatibility alias
-macro(dart_experimental_add_test TEST_NAME TEST_PATH)
-  dart_add_simulation_test(${TEST_NAME} ${TEST_PATH} ${ARGN})
-endmacro()
-
 #-------------------------------------------------------------------------------
 # Utility function to register all unit tests in a directory
 # Automatically discovers test_*.cpp files and creates meta target
@@ -2748,11 +2726,6 @@ function(dart_add_unit_test_dir MODULE_NAME MODULE_DIR)
   message(STATUS "  - ${MODULE_NAME}: ${num_tests} test(s)")
 endfunction()
 
-# Backward compatibility alias
-macro(dart_experimental_add_unit_test_dir MODULE_NAME MODULE_DIR)
-  dart_add_unit_test_dir(${MODULE_NAME} ${MODULE_DIR} ${ARGN})
-endmacro()
-
 #-------------------------------------------------------------------------------
 # Utility function to add a simulation benchmark
 #
@@ -2765,14 +2738,14 @@ function(dart_add_simulation_benchmark BENCHMARK_NAME BENCHMARK_PATH)
   cmake_parse_arguments(ARG "" "LIBRARY;LABEL" "" ${ARGN})
 
   if(NOT ARG_LIBRARY)
-    set(ARG_LIBRARY "dart-simulation-experimental")
+    set(ARG_LIBRARY "dart-simulation")
   endif()
 
   if(NOT ARG_LABEL)
-    set(ARG_LABEL "simulation-experimental")
+    set(ARG_LABEL "simulation")
   endif()
 
-  if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS)
+  if(NOT DART_SIMULATION_BUILD_BENCHMARKS)
     return()
   endif()
 
@@ -2788,8 +2761,3 @@ function(dart_add_simulation_benchmark BENCHMARK_NAME BENCHMARK_PATH)
     PROPERTIES FOLDER "${ARG_LABEL}/benchmarks"
   )
 endfunction()
-
-# Backward compatibility alias
-macro(dart_experimental_add_benchmark BENCHMARK_NAME BENCHMARK_PATH)
-  dart_add_simulation_benchmark(${BENCHMARK_NAME} ${BENCHMARK_PATH} ${ARGN})
-endmacro()

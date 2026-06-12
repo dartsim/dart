@@ -17,21 +17,18 @@ solver surface directly instead of preserving the historical DART 6 examples.
 
 `examples/` now contains:
 
-- **`hello_world`** — the minimal, copy-pasteable standalone template for an
-  executable CMake project that links DART.
 - **`demos`** — the `dart-demos` application: one window hosting C++ World
   solver scenes the user picks from a categorized sidebar and switches between
   at runtime.
-- A few standalone programs that do not fit the single-window model: the headless
-  CLI examples (`csv_logger`, `headless_simulation`, `speed_test`,
-  `unified_loading`) and `gui_scene_diagnostics` (a headless GUI-descriptor
-  inspector).
+- The standalone `dartsim` authoring/viewer application. The old CLI examples
+  that taught DART 6 whole-World loading were retired from `main`; use
+  `release-6.*` branches for that parity source.
 
 ## Strategy: World-only Demos
 
 Per PLAN-103, Python is DART's primary, growing example surface. Both `py-demos`
 and C++ `dart-demos` now present World solver demos without DART 6 scene ids or
-experimental/sx labels. Python carries the broader catalog (World rigid body,
+experimental/sim labels. Python carries the broader catalog (World rigid body,
 Rigid IPC, Variational Integrators, Differentiable, Vertex Block Descent, and
 IPC Deformable); C++ keeps the smaller companion set needed for native
 viewer/smoke coverage. A shared `Planned World Ports` category keeps important
@@ -146,18 +143,8 @@ splitters.
 
 `examples/demos/` builds the `dart-demos` executable via the shared
 `dart_build_gui_example` helper, linking `dart-io`, `dart-collision-native`, and
-`dart-simulation-experimental` while the World implementation still lives in
+`dart-simulation` while the World implementation still lives in
 that component.
-
-## Standalone examples
-
-These remain standalone rather than demos scenes:
-
-- **`gui_scene_diagnostics`** — a headless GUI-descriptor inspector, not a
-  viewer scene.
-- **`csv_logger`, `headless_simulation`, `speed_test`, `unified_loading`** —
-  CLI/headless programs rather than interactive viewer scenes.
-- **`hello_world`** — the standalone minimal CMake template.
 
 ## Examples vs renderer test fixtures
 

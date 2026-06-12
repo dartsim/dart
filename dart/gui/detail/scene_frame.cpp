@@ -44,8 +44,6 @@
 #include <dart/gui/scene.hpp>
 #include <dart/gui/viewer.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/collision/collision_result.hpp>
 
 #include <dart/common/profile.hpp>
@@ -221,26 +219,13 @@ void SceneFrameUpdater::update(
 {
   DART_PROFILE_SCOPED_N("SceneFrameUpdater::update");
   const std::size_t simulationStepsToRun = mSimulationStepper.stepsToRun(
-      mOptions, mLifecycle, mDartScene.world->getTimeStep());
+      mOptions, mLifecycle, mDartScene.timeStep);
 
-  if (advanceSimulationSteps(
-          mDartScene, simulationStepsToRun, mLifecycle, mProfile)) {
-    auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
-    refreshContactDebugOverlay(
-        mEngine,
-        mScene,
-        mMaterials.debugColor,
-        mDartScene.world->getLastCollisionResult(),
-        mSceneState.debugOverlays);
-    mProfile.contactDebugMs += dart::gui::elapsedMs(phaseStart);
-  }
+  advanceSimulationSteps(
+      mDartScene, simulationStepsToRun, mLifecycle, mProfile);
 
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
-  auto descriptors = mExtractor.extract(*mDartScene.world);
-  if (mDartScene.renderableProvider) {
-    auto extra = mDartScene.renderableProvider();
-    descriptors.insert(descriptors.end(), extra.begin(), extra.end());
-  }
+  auto descriptors = collectSceneRenderables(mDartScene);
   syncExternalRenderableSelection(
       mSelectionController, mDartScene, descriptors);
   mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);

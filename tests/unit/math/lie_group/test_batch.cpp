@@ -135,4 +135,33 @@ TYPED_TEST(LieBatchTest, ExpMatchesScalar)
   }
 }
 
+//==============================================================================
+TYPED_TEST(LieBatchTest, AdjointMatchesScalar)
+{
+  using T = TypeParam;
+  using S = typename T::Scalar;
+  constexpr int P = T::ParamSize;
+  constexpr int D = T::DoF;
+  const std::size_t n = 8;
+
+  using Tangent = typename T::Tangent;
+  std::vector<S> groups(n * P), tangents(n * D), out(n * D);
+  for (std::size_t i = 0; i < n; ++i) {
+    Eigen::Map<T>(groups.data() + i * P) = T::Random();
+    Eigen::Map<Eigen::Matrix<S, D, 1>>(tangents.data() + i * D)
+        = Tangent::Random().params();
+  }
+
+  adjointBatch<T>(groups.data(), tangents.data(), out.data(), n);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const Eigen::Map<const T> g(groups.data() + i * P);
+    const Tangent tangent(
+        Eigen::Map<const Eigen::Matrix<S, D, 1>>(tangents.data() + i * D));
+    const Eigen::Map<const Eigen::Matrix<S, D, 1>> result(out.data() + i * D);
+    EXPECT_TRUE(result.isApprox(Ad(g, tangent).params(), LieGroupTol<S>()))
+        << "element " << i;
+  }
+}
+
 } // namespace

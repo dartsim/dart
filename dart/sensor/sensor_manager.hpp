@@ -92,8 +92,8 @@ public:
   /// Returns whether this manager contains a sensor by name.
   bool hasSensor(std::string_view name) const;
 
-  /// Update all sensors using the current world state.
-  void updateSensors(const simulation::World& world);
+  /// Update all sensors using the current simulation context.
+  void updateSensors(const SensorUpdateContext& context);
 
   /// Reset all sensors in this manager.
   void resetSensors();

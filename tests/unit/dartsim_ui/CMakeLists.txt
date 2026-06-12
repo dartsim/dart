@@ -18,6 +18,9 @@ target_link_libraries(UNIT_dartsim_ui_HistoryActions dartsim_ui)
 dart_add_test("unit" UNIT_dartsim_ui_InspectorActions test_inspector_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_InspectorActions dartsim_ui)
 
+dart_add_test("unit" UNIT_dartsim_ui_MemoryActions test_memory_actions.cpp)
+target_link_libraries(UNIT_dartsim_ui_MemoryActions dartsim_ui)
+
 dart_add_test("unit" UNIT_dartsim_ui_OutlinerActions test_outliner_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_OutlinerActions dartsim_ui)
 
@@ -38,7 +41,7 @@ target_link_libraries(UNIT_dartsim_ui_SimulationActions dartsim_ui)
 dart_add_test("unit" UNIT_dartsim_ui_WatchActions test_watch_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_WatchActions dartsim_ui)
 
-if(NOT APPLE AND TARGET dart-simulation-experimental)
+if(NOT APPLE AND TARGET dart-simulation)
   if(WIN32)
     set(_dartsim_ui_path_var "PATH")
   else()
@@ -50,6 +53,7 @@ if(NOT APPLE AND TARGET dart-simulation-experimental)
     UNIT_dartsim_ui_ConsoleActions
     UNIT_dartsim_ui_HistoryActions
     UNIT_dartsim_ui_InspectorActions
+    UNIT_dartsim_ui_MemoryActions
     UNIT_dartsim_ui_OutlinerActions
     UNIT_dartsim_ui_PaletteActions
     UNIT_dartsim_ui_RelationshipActions
@@ -63,7 +67,7 @@ if(NOT APPLE AND TARGET dart-simulation-experimental)
         APPEND
         PROPERTY
           ENVIRONMENT_MODIFICATION
-            "${_dartsim_ui_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart-simulation-experimental>"
+            "${_dartsim_ui_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart-simulation>"
       )
     endif()
   endforeach()

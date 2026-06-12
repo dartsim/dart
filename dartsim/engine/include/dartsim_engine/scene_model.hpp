@@ -70,7 +70,7 @@ struct WorkspaceSettings
 /// The authoritative, editable description of a scene.
 ///
 /// SceneModel is the single source of truth for the editor. The derived
-/// experimental World is rebuilt from it (the experimental World has no
+/// DART 7 World is rebuilt from it (the DART 7 World has no
 /// per-object removal), and undo/redo is implemented by copying SceneModel
 /// snapshots, so this type is intentionally plain, copyable data.
 class SceneModel
@@ -152,7 +152,7 @@ public:
   /// True when the simulation-owned part of the model matches exactly.
   ///
   /// Workspace metadata is excluded because it does not affect the derived
-  /// experimental World and should not force rebuilds during undo/redo.
+  /// DART 7 World and should not force rebuilds during undo/redo.
   [[nodiscard]] bool hasSameSceneContents(const SceneModel& other) const;
 
 private:

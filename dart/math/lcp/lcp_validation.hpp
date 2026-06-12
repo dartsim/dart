@@ -71,14 +71,13 @@ inline double projectToBounds(double value, double lo, double hi)
 }
 
 inline bool validateProblem(
-    const LcpProblem& problem, std::string* message = nullptr)
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    std::string* message = nullptr)
 {
-  const auto& A = problem.A;
-  const auto& b = problem.b;
-  const auto& lo = problem.lo;
-  const auto& hi = problem.hi;
-  const auto& findex = problem.findex;
-
   const bool dimensionMismatch
       = (A.rows() != A.cols()) || (A.rows() != b.size())
         || (lo.size() != b.size()) || (hi.size() != b.size())
@@ -130,6 +129,13 @@ inline bool validateProblem(
   }
 
   return true;
+}
+
+inline bool validateProblem(
+    const LcpProblem& problem, std::string* message = nullptr)
+{
+  return validateProblem(
+      problem.A, problem.b, problem.lo, problem.hi, problem.findex, message);
 }
 
 inline bool computeEffectiveBounds(
@@ -255,7 +261,9 @@ inline double complementarityInfinityNorm(
                           && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
-      violation = std::max(violation, std::abs(wi));
+      // A collapsed interval has no feasible motion, so its normal cone admits
+      // any gradient value once the variable is at the fixed bound.
+      continue;
     } else if (atLo) {
       violation = std::max(violation, std::max(0.0, -wi));
     } else if (atHi) {
@@ -319,12 +327,9 @@ inline bool validateSolution(
                           && (!hasUpper || xi < hi[i] - tol);
 
     if (fixed) {
-      if (std::abs(wi) > tol) {
-        if (message) {
-          *message = "Solution validation failed: fixed variable residual";
-        }
-        return false;
-      }
+      // A collapsed interval has no feasible motion, so its normal cone admits
+      // any gradient value once the variable is at the fixed bound.
+      continue;
     } else if (atLo) {
       if (wi < -tol) {
         if (message) {

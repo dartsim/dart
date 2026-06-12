@@ -13,7 +13,7 @@ family across CPU and GPU:
 
 - shared deformable, rigid, affine, articulation, codimensional, contact,
   friction, restitution, and diagnostics contracts behind DART-owned
-  experimental `World` capabilities;
+  DART 7 `World` capabilities;
 - DART-owned tests proving correctness parity across CPU/GPU and across the
   variant owners named in
   [`ipc-variant-consolidation.md`](ipc-variant-consolidation.md);
@@ -28,6 +28,14 @@ family across CPU and GPU:
 CPU-only work may land first when that keeps reviewable slices small. It is not
 the final target. GPU work stays private and benchmark-gated until same-scene
 CPU/GPU parity and timing packets exist.
+
+## PR Discipline
+
+Default to one PR per implementation-roadmap phase, with atomic
+self-describing commits inside the branch. Adjacent small internal phases may
+be consolidated into one PR when that keeps review clearer, as Phases 3-8 did
+in PR #2960. Split only for public-API boundaries, unrelated CI/build
+infrastructure, or reviewability.
 
 ## Phase 0: Current Foundation
 
@@ -58,8 +66,14 @@ Convert the current ABD benchmark smoke shape into the first comparison packet:
   claim.
 
 Gate: benchmark JSON and a manifest row prove the comparison is reproducible.
-A two-body affine contact micro-solve is added only if the packet needs a
-solved-state residual before shared Newton work starts.
+The current first packet is the `abd-alg-affine-body` microbench row in
+[`paper-deck-manifest.md`](paper-deck-manifest.md), generated and checked with
+`pixi run bm-abd-comparison-packet`; it intentionally compares the internal
+affine point-triangle primitive mapping with the rigid IPC oracle and
+orthogonality energy only, without claiming a runtime solver or paper-scale
+scene result. This micro-packet does not need a two-body affine contact
+micro-solve before shared-contract scouting starts; add that solved-state row
+only when a broader ABD packet needs runtime residual or stepping evidence.
 
 ## Phase 2: Shared Solver Contracts
 

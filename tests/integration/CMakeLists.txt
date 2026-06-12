@@ -45,55 +45,7 @@ endfunction()
 # ==============================================================================
 # Collision Tests
 # ==============================================================================
-dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_collision_groups.cpp)
 dart_add_test("integration" INTEGRATION_collision_Issue2470 collision/test_issue2470.cpp)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  if(TARGET dart-test-reference-fcl)
-    target_link_libraries(
-      INTEGRATION_collision_CollisionGroups
-      dart-test-reference-fcl
-    )
-  endif()
-  if(TARGET dart-test-reference-bullet)
-    target_link_libraries(
-      INTEGRATION_collision_CollisionGroups
-      dart-test-reference-bullet
-    )
-  endif()
-  if(TARGET dart-test-reference-ode)
-    target_link_libraries(
-      INTEGRATION_collision_CollisionGroups
-      dart-test-reference-ode
-    )
-  endif()
-endif()
-
-if(
-  DART_BUILD_COLLISION_REFERENCE_TESTS
-  AND TARGET dart-io
-  AND TARGET dart-test-reference-fcl
-)
-  dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
-  target_link_libraries(INTEGRATION_collision_Collision dart-io)
-  target_link_libraries(INTEGRATION_collision_Collision dart-test-reference-fcl)
-  if(TARGET dart-test-reference-bullet)
-    target_link_libraries(
-      INTEGRATION_collision_Collision
-      dart-test-reference-bullet
-    )
-  endif()
-  if(TARGET dart-test-reference-ode)
-    target_link_libraries(
-      INTEGRATION_collision_Collision
-      dart-test-reference-ode
-    )
-  endif()
-  target_link_libraries(INTEGRATION_collision_Collision dart-collision-native)
-  target_compile_definitions(
-    INTEGRATION_collision_Collision
-    PRIVATE DART_HAS_DART_COLLISION
-  )
-endif()
 
 if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-fcl)
   dart_add_test(
@@ -172,70 +124,12 @@ if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   endif()
 endif()
 
-# Additional collision tests
-if(TARGET dart-utils-urdf)
-  dart_add_test("integration" INTEGRATION_collision_SelfCollisionFiltering collision/test_self_collision_filtering.cpp)
-  dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_no_false_contacts.cpp)
-endif()
-
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-bullet)
-  dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_collision_accuracy.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_CollisionAccuracy
-    dart-test-reference-bullet
-  )
-  dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_bullet_cylinder_rolling.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_BulletCylinderRolling
-    dart-test-reference-bullet
-  )
-  dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_bullet_ellipsoid_rolling.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_BulletEllipsoidRolling
-    dart-test-reference-bullet
-  )
-  dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_bullet_box_stack.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_BulletBoxStack
-    dart-test-reference-bullet
-  )
-endif()
-
 if(
   DART_BUILD_COLLISION_REFERENCE_TESTS
   AND TARGET dart-test-reference-bullet
   AND TARGET dart-test-reference-ode
   AND TARGET dart-test-reference-fcl
 )
-  dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_plane_shape_collision.cpp)
-  target_link_libraries(
-    INTEGRATION_collision_PlaneShapeCollision
-    dart-utils
-    dart-test-reference-bullet
-    dart-test-reference-ode
-    dart-test-reference-fcl
-  )
-
-  if(TARGET dart-io)
-    dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_contact_grouping.cpp)
-    target_link_libraries(
-      INTEGRATION_collision_ContactGrouping
-      dart-io
-      dart-test-reference-ode
-    )
-  endif()
-
-  dart_add_test(
-    "integration"
-    INTEGRATION_collision_CapsuleGroundContact
-    collision/test_capsule_ground_contact.cpp
-  )
-  target_link_libraries(
-    INTEGRATION_collision_CapsuleGroundContact
-    dart-test-reference-bullet
-    dart-test-reference-ode
-  )
-
   dart_add_test(
     "integration"
     INTEGRATION_collision_BoxGroundContactParity
@@ -253,144 +147,23 @@ endif()
 # ==============================================================================
 # Constraint Tests
 # ==============================================================================
-dart_build_tests(
-  TYPE integration
-  TARGET_PREFIX INTEGRATION
-  LINK_LIBRARIES dart
-  SOURCES
-    constraint/test_constraint.cpp
-    constraint/test_friction.cpp
-)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(INTEGRATION_constraint_constraint dart-test-reference-fcl PRIVATE)
-  dart_force_link_collision_backend(INTEGRATION_constraint_friction dart-test-reference-fcl PRIVATE)
-endif()
-
-dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_contact_constraint.cpp)
-dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_split_impulse.cpp)
-dart_add_test("integration" INTEGRATION_constraint_Issue719 constraint/test_issue719.cpp)
-if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-  dart_force_link_collision_backend(INTEGRATION_constraint_ContactConstraint dart-test-reference-fcl)
-  dart_force_link_collision_backend(INTEGRATION_constraint_SplitImpulse dart-test-reference-fcl)
-endif()
-
-if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-ode)
-  dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_force_dependent_slip.cpp)
-  target_link_libraries(
-    INTEGRATION_constraint_ForceDependentSlip
-    dart-test-reference-ode
-  )
-  dart_force_link_collision_backend(INTEGRATION_constraint_ForceDependentSlip dart-test-reference-fcl)
-endif()
-
-# Additional constraint tests
-if(TARGET dart-utils-urdf)
-  dart_add_test("integration" INTEGRATION_constraint_LcpSolverStability constraint/test_lcp_solver_stability.cpp)
-endif()
+# DART 6 constraint-world parity tests live on release-6.*.
 
 # ==============================================================================
 # Dynamics Tests
 # ==============================================================================
-dart_build_tests(
-  TYPE integration
-  TARGET_PREFIX INTEGRATION
-  LINK_LIBRARIES dart
-  SOURCES
-    dynamics/test_name_management.cpp
-    dynamics/test_invalid_dynamics_inputs.cpp
-)
+if(TARGET dart-utils-urdf AND TARGET dart-io)
+  dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_forward_kinematics.cpp)
+  target_link_libraries(INTEGRATION_dynamics_ForwardKinematics dart-io)
 
-if(TARGET dart-utils AND TARGET dart-io)
-  set(DYNAMICS_TEST_FIXTURE dynamics/dynamics_test_fixture.cpp)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsJacobians
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_jacobians.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsJacobians dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsFiniteDifference
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_finite_difference.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsFiniteDifference dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsEquations
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_equations.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsEquations dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsCenterOfMass
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_center_of_mass.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsCenterOfMass dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsImpulse
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_impulse.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsImpulse dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_DynamicsHybrid
-    ${DYNAMICS_TEST_FIXTURE}
-    dynamics/test_dynamics_hybrid.cpp
-  )
-  target_link_libraries(INTEGRATION_dynamics_DynamicsHybrid dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_Joints dynamics/test_joints.cpp)
-  target_link_libraries(INTEGRATION_dynamics_Joints dart-io)
-
-  if(DART_ENABLE_SDFORMAT)
-    dart_add_test("integration" INTEGRATION_dynamics_JointForceTorque dynamics/test_joint_force_torque.cpp)
-    target_link_libraries(INTEGRATION_dynamics_JointForceTorque dart-io)
-  endif()
-
-  dart_add_test("integration" INTEGRATION_dynamics_Skeleton dynamics/test_skeleton.cpp)
-  target_link_libraries(INTEGRATION_dynamics_Skeleton dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_MetaSkeleton dynamics/test_meta_skeleton.cpp)
-  target_link_libraries(INTEGRATION_dynamics_MetaSkeleton dart-io)
-
-  dart_add_test("integration" INTEGRATION_dynamics_SoftDynamics dynamics/test_soft_dynamics.cpp)
-  target_link_libraries(INTEGRATION_dynamics_SoftDynamics dart-io)
-  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-    dart_force_link_collision_backend(INTEGRATION_dynamics_SoftDynamics dart-test-reference-fcl)
-  endif()
-
-  # Additional dynamics tests requiring SDF support
-  if(DART_ENABLE_SDFORMAT)
-    dart_add_test("integration" INTEGRATION_dynamics_ServoJointLimits dynamics/test_servo_joint_limits.cpp)
-    target_link_libraries(INTEGRATION_dynamics_ServoJointLimits dart-io)
-
-    dart_add_test("integration" INTEGRATION_dynamics_UniversalJointLimits dynamics/test_universal_joint_limits.cpp)
-    target_link_libraries(INTEGRATION_dynamics_UniversalJointLimits dart-io)
-  endif()
-
-  if(TARGET dart-utils-urdf)
-    dart_add_test("integration" INTEGRATION_dynamics_ForwardKinematics dynamics/test_forward_kinematics.cpp)
-    target_link_libraries(INTEGRATION_dynamics_ForwardKinematics dart-io)
-
-    dart_add_test("integration" INTEGRATION_dynamics_AtlasIK dynamics/test_atlas_ik.cpp)
-    target_link_libraries(INTEGRATION_dynamics_AtlasIK dart-io)
-
-    # Additional dynamics tests
-    dart_add_test("integration" INTEGRATION_dynamics_SkeletonState dynamics/test_skeleton_state.cpp)
-    dart_add_test("integration" INTEGRATION_dynamics_SkeletonTopology dynamics/test_skeleton_topology.cpp)
-    if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-      dart_force_link_collision_backend(INTEGRATION_dynamics_SkeletonTopology dart-test-reference-fcl)
-    endif()
-  endif()
+  dart_add_test("integration" INTEGRATION_dynamics_AtlasIK dynamics/test_atlas_ik.cpp)
+  target_link_libraries(INTEGRATION_dynamics_AtlasIK dart-io)
 endif()
 
 # ==============================================================================
 # IO Tests
 # ==============================================================================
 if(TARGET dart-utils)
-  dart_add_test("integration" INTEGRATION_io_MjcfParser io/test_mjcf_parser.cpp)
-  target_link_libraries(INTEGRATION_io_MjcfParser dart-utils)
-
   if(DART_ENABLE_SDFORMAT)
     dart_add_test("integration" INTEGRATION_io_SdfParser io/test_sdf_parser.cpp)
     target_link_libraries(INTEGRATION_io_SdfParser dart-utils)
@@ -486,110 +259,6 @@ dart_build_tests(
 dart_add_test("integration" INTEGRATION_optimization_Optimizer optimization/test_optimizer.cpp)
 
 # ==============================================================================
-# Simulation Tests
-# ==============================================================================
-dart_build_tests(
-  TYPE integration
-  TARGET_PREFIX INTEGRATION
-  LINK_LIBRARIES dart
-  SOURCES
-    simulation/test_building.cpp
-)
-
-dart_add_test(
-  "integration" INTEGRATION_simulation_Issue870 simulation/test_issue870.cpp
-)
-
-dart_add_test(
-  "integration" INTEGRATION_simulation_Issue743 simulation/test_issue743.cpp
-)
-
-dart_add_test(
-  "integration" INTEGRATION_simulation_Sensors simulation/test_sensors.cpp
-)
-
-if(TARGET dart-utils AND TARGET dart-io)
-  dart_add_test("integration" INTEGRATION_simulation_FileInfoWorld simulation/test_file_info_world.cpp)
-  target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-io)
-
-  dart_add_test("integration" INTEGRATION_simulation_World simulation/test_world.cpp)
-  set_property(
-    TEST INTEGRATION_simulation_World
-    APPEND
-    PROPERTY LABELS collision-native-stability
-  )
-  set_tests_properties(INTEGRATION_simulation_World PROPERTIES TIMEOUT 3600)
-  target_link_libraries(INTEGRATION_simulation_World dart-io)
-  # Integration test owns its own copy of the SIMBICON controller under
-  # ./atlas_simbicon/. Tests must not link sources out of examples/ — keeps
-  # the example and test build graphs decoupled.
-  target_include_directories(
-    INTEGRATION_simulation_World
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon
-  )
-  target_sources(
-    INTEGRATION_simulation_World
-    PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/controller.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/state.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/state_machine.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/atlas_simbicon/terminal_condition.cpp
-  )
-  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-    target_compile_definitions(
-      INTEGRATION_simulation_World
-      PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
-    )
-    if(TARGET dart-test-reference-fcl)
-      target_link_libraries(
-        INTEGRATION_simulation_World
-        dart-test-reference-fcl
-      )
-    endif()
-    if(TARGET dart-test-reference-bullet)
-      target_link_libraries(
-        INTEGRATION_simulation_World
-        dart-test-reference-bullet
-      )
-    endif()
-    if(TARGET dart-test-reference-ode)
-      target_link_libraries(
-        INTEGRATION_simulation_World
-        dart-test-reference-ode
-      )
-    endif()
-  endif()
-
-  # Additional simulation tests
-  dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_issue410.cpp)
-  target_link_libraries(INTEGRATION_simulation_Issue410 dart-io)
-  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-    dart_force_link_collision_backend(INTEGRATION_simulation_Issue410 dart-test-reference-fcl)
-  endif()
-
-  if(DART_ENABLE_SDFORMAT)
-    dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_momentum_conservation.cpp)
-    target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-io)
-
-    if(DART_BUILD_COLLISION_REFERENCE_TESTS)
-      dart_add_test(
-        "integration"
-        INTEGRATION_simulation_MimicConstraint
-        simulation/test_mimic_constraint.cpp
-      )
-      target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
-      target_compile_definitions(
-        INTEGRATION_simulation_MimicConstraint
-        PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
-      )
-      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-fcl)
-      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-bullet)
-      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-ode)
-    endif()
-  endif()
-endif()
-
-# ==============================================================================
 # Utils Tests
 # ==============================================================================
 dart_build_tests(
@@ -601,11 +270,6 @@ dart_build_tests(
     utils/test_frames.cpp
     utils/test_signal.cpp
 )
-
-if(DART_ENABLE_SDFORMAT)
-  dart_add_test("integration" INTEGRATION_utils_Concurrency utils/test_concurrency.cpp)
-  target_link_libraries(INTEGRATION_utils_Concurrency dart-utils)
-endif()
 
 dart_add_test("integration" INTEGRATION_utils_LocalResourceRetriever utils/test_local_resource_retriever.cpp)
 dart_add_test("integration" INTEGRATION_utils_Subscriptions utils/test_subscriptions.cpp)

@@ -1,35 +1,38 @@
 # PLAN-042: DART 7 Public API And Source Layout
 
 - Operating state: `PLAN-042` in [`dashboard.md`](dashboard.md)
-- Outcome: DART 7 has an accepted public API topology and source-layout map
-  before the official World API is frozen. The common user path is deliberately
-  designed instead of inherited from DART 6-era submodules or the
-  `simulation_experimental` staging surface; physical source moves happen only
-  after the public topology, package exports, examples, and verification gates
-  are clear.
-- Current evidence: the north star requires an easy public API, extensible
-  internals, and scalable compute; dartpy already flattens many symbols onto the
-  top-level package; `dart/simulation/experimental/**` and
-  `dartpy.simulation_experimental` were staging paths; current `dart/*` folders
-  still reflect historical DART 6 module boundaries, backend adapters, and
-  compatibility surfaces; the current experimental C++ component recursively
-  installs staging headers and links implementation dependencies publicly enough
-  that a promotion needs an allowlist and package audit before source moves.
+- Outcome: DART 7 has an accepted public API topology and source-layout map for
+  the official World API. The common user path is deliberately designed instead
+  of inherited from DART 6-era submodules or the retired
+  `simulation_experimental` staging surface; physical source moves follow the
+  public topology, package exports, examples, and verification gates.
+- Current evidence: PR #2932 landed the first official DART 7 simulation API
+  promotion; the north star requires an easy public API, extensible internals,
+  and scalable compute; dartpy now promotes the ECS-backed World through
+  `dartpy.simulation.World` and the root `dartpy.World` alias, with generated
+  stubs no longer publishing `dartpy.simulation_experimental`;
+  `dart::simulation`, `dart/simulation/**`, the `dart-simulation` component, and
+  `python/dartpy/simulation/` now own the promoted World surface. The current
+  `dart/simulation` folder tree is accepted as a guarded post-promotion layout,
+  not as the final whole-repo source taxonomy. Current `dart/*` folders still
+  reflect some historical DART 6 module boundaries, backend adapters, and
+  compatibility surfaces, so the remaining work is cleanup, quarantine, and
+  enforcement rather than choosing staging names.
 
 ## Direction
 
-Decide the public topology now. Move files later.
+Keep the public topology explicit. Move files only when the move reinforces
+that topology and keeps the gates green.
 
-DART 7 should not promote `dartpy.simulation_experimental.World` or
+DART 7 should not revive `dartpy.simulation_experimental.World` or
 `dart::simulation::experimental::World` as final user-facing names. Those names
-were useful staging surfaces. They are evidence for the final API, not the final
-API.
+were useful staging surfaces. They are historical evidence, not the final API.
 
 The default recommendation to review, then accept or revise, is:
 
 - Python common path: `import dartpy as dart` and construct the first simulation
   through `dart.World(...)`. This is a root convenience, not a second owner:
-  `dart.World is dart.simulation.World` must hold after promotion.
+  `dart.World is dart.simulation.World` must hold.
 - Python canonical owner: `dart.simulation` owns the full official World API and
   related simulation object model. The top-level `dart.World` is an alias to
   that owner, not a separate nanobind registration.
@@ -63,16 +66,15 @@ The default recommendation to review, then accept or revise, is:
   backend/component storage.
 - C++ simulation path: the default review hypothesis is that first-class public
   simulation types live in `dart::simulation` with small snake_case headers such
-  as `dart/simulation/world.hpp`. Do not preserve
+  as `dart/simulation/world.hpp`. Do not reintroduce
   `dart::simulation::experimental`, add a public transition namespace, or expose
   public `body/`, `frame/`, `multibody/`, `ecs/`, or `comps` namespaces just to
   mirror today's staging folders.
 - C++ package path: the official World must be usable from the default DART 7
-  package without `DART_BUILD_SIMULATION_EXPERIMENTAL`, the
-  `dart-simulation-experimental` component, recursive staging header installs,
-  or public EnTT/Taskflow/CUDA dependency discovery. Use `DART_API` while the
-  promoted World is in the core `dart` target; introduce a final simulation
-  export macro only if maintainers choose a real library split.
+  package without a staging build flag, the `dart-simulation-experimental`
+  component, recursive staging header installs, or public EnTT/Taskflow/CUDA
+  dependency discovery. The current package owner is the `dart-simulation`
+  component; keep implementation-only dependencies private.
 - Source tree: final folders should communicate public concepts and internal
   ownership. Historical folders may remain only when they still describe a
   supported DART 7 concept; otherwise they are quarantined, folded into a better
@@ -84,8 +86,10 @@ boundary evidence.
 
 The initial decision and audit packet lives in
 [`042-dart7-public-api-and-source-layout/api-source-layout-audit.md`](042-dart7-public-api-and-source-layout/api-source-layout-audit.md).
-Keep that sidecar focused on concrete rows, gates, and follow-up work items; keep
-this owner plan focused on direction, sequencing, and acceptance criteria.
+The post-promotion folder decision lives in
+[`042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`](042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md).
+Keep those sidecars focused on concrete rows, gates, and follow-up work items;
+keep this owner plan focused on direction, sequencing, and acceptance criteria.
 
 ## Review Board
 
@@ -104,7 +108,7 @@ Before implementation, collect and reconcile these review perspectives:
 - **Research extensibility**: where algorithm families, state spaces, compute
   stages, solver choices, and multi-physics components live without exposing
   backend or storage implementation.
-- **Migration/release**: DART 6.17 compatibility lane, examples/tutorials,
+- **Migration/release**: `release-6.*` compatibility lane, examples/tutorials,
   changelog/migration notes, and downstream canaries.
 
 External API surveys may inform the review, but DART-owned docs should record
@@ -144,15 +148,16 @@ the resulting principles and DART vocabulary, not the source projects' names.
 7. **Package and documentation topology.** Decide final CMake targets,
    installed headers, dartpy stubs, API docs, examples, and tutorial paths
    before source moves make those names expensive to change.
-8. **Differentiable helper home.** Decide whether the current `sx.diff` helper
-   moves to `dart.simulation.diff`, a separate stable owner, or another final
-   path; any `sx.diff` compatibility must be temporary and covered by identity,
-   import, stub, and docs tests.
+8. **Differentiable helper home.** Keep `dart.diff` and `dart.simulation.diff`
+   aligned while deciding whether differentiable helpers remain
+   simulation-specific or move to a separate stable owner. Any reintroduced
+   compatibility alias must be temporary and covered by identity, import, stub,
+   and docs tests.
 9. **Public-layout checker.** Decide whether to add a dedicated
    `check-dartpy-public-layout` gate or fold the same runtime/stub/docs checks
    into `check-api-boundaries`.
 10. **Package compatibility policy.** Decide how DART 7 package config/version
-    behavior, wheel defaults, migration notes, DART 6.17 support, and gz-physics
+    behavior, wheel defaults, migration notes, `release-6.*` support, and gz-physics
     lane policy line up so clean-break packages are not accidentally consumed as
     old DART 6-compatible packages.
 
@@ -161,12 +166,14 @@ the resulting principles and DART vocabulary, not the source projects' names.
 The first implementation task derived from this plan is a repo-wide audit map.
 The initial map lives in
 [`042-dart7-public-api-and-source-layout/api-source-layout-audit.md`](042-dart7-public-api-and-source-layout/api-source-layout-audit.md).
+The current post-PR-2932 folder decision and open follow-up rows live in
+[`042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`](042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md).
 Each row uses these fields:
 
 | Field                 | Meaning                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------- |
 | Current owner         | Existing C++ folder, Python module, stub page, target, or docs surface.             |
-| Current role          | Public API, compatibility API, staging API, backend adapter, or internal.           |
+| Current role          | Public API, compatibility API, retired staging API, backend adapter, or internal.   |
 | DART 7 role           | Common public path, advanced public module, internal owner, quarantine, or removal. |
 | Proposed public name  | Final import, namespace, header, target, or `n/a`.                                  |
 | Proposed source owner | Final folder/module or existing owner that should absorb the concept.               |
@@ -181,12 +188,12 @@ Initial folders/surfaces to classify:
 | `dart/common`                                                           | Mixes public utilities and internal foundation patterns.                                               | Which pieces are true DART 7 user API versus internal support?                                           |
 | `dart/math`, `dart/simd`                                                | Strong foundations, but not every kernel belongs in first-use docs.                                    | Which symbols are common path, advanced math, or internal acceleration?                                  |
 | `dart/dynamics`                                                         | DART 6 object model and naming dominate this folder.                                                   | Which concepts survive as DART 7 public multibody API, and which move behind compatibility or internals? |
-| `dart/simulation`                                                       | Classic World owns the official name today.                                                            | How does the promoted World become official without preserving DART 6 surface debt?                      |
-| `dart/simulation/experimental`                                          | Staging implementation tree looks public because headers install recursively.                          | Which files become public, internal, IO-owned, compute-owned, or deleted?                                |
+| `dart/simulation`                                                       | Promoted World owns the official name, while internal subtrees must stay hidden.                       | Which files are public, internal, IO-owned, compute-owned, or deleted?                                   |
+| `dart/simulation/experimental`                                          | Retired staging path.                                                                                  | Negative checks should keep it from returning as a public include path.                                  |
 | `dart/io`, `dart/utils`                                                 | `io` is the intended model-loading front door, while parser code still spans historical utility paths. | How do loading APIs consolidate without duplicate front doors?                                           |
 | `dart/collision`, `dart/constraint`, `dart/lcpsolver`, `dart/optimizer` | User concepts and solver machinery are mixed across old module boundaries.                             | Which extension contracts remain public, and which solver/backend details become internal?               |
 | `dart/gui`, `dart/sensor`                                               | Runtime integrations should stay backend-hidden.                                                       | Which viewer/sensor concepts are public versus application or backend internals?                         |
-| `python/dartpy`                                                         | Flattened top-level API coexists with legacy submodules and experimental module attachment.            | What is the DART 7 top-level symbol budget and submodule compatibility story?                            |
+| `python/dartpy`                                                         | Top-level API coexists with legacy submodules and the promoted `simulation` module.                    | What is the DART 7 top-level symbol budget and submodule compatibility story?                            |
 | `python/stubs`, generated API docs                                      | Generated surfaces still encode current module decisions.                                              | Which generated pages prove the accepted topology?                                                       |
 
 ## C++ Renovation Constraints
@@ -199,22 +206,24 @@ The C++ simulation source tree should be renovated in stages:
   objects.
 - **Do not promote yet**: handles or classes that still expose entity IDs,
   registry ownership, ECS base classes, `comps/`, or `ecs/` includes.
-- **Move later**: broad `experimental/` physical moves, namespace rewrites,
-  compute subtrees, loader bridges, solver detail trees, and deletion of
-  obsolete build options/components. These follow after PLAN-041's facade and
-  name-swap gates are green.
+- **Move later**: compute subtrees, loader bridges, solver detail trees, and
+  deletion of obsolete build options/components when the owner and gate for each
+  subtree is clear.
 
 Public C++ simulation headers must pass these checks before promotion:
 
-- installed by allowlist rather than recursive staging-tree install;
+- installed by allowlist rather than recursive implementation-tree install;
 - no `<entt/entt.hpp>`, `comps/`, `ecs/`, direct registry access, public entity
   IDs, public ECS helper inheritance, solver-kernel types, backend adapters, or
   implementation-folder includes;
-- exported with the final component macro rather than `DART_EXPERIMENTAL_API`;
-- usable from an installed package without `DART_BUILD_SIMULATION_EXPERIMENTAL`
-  or a `simulation-experimental` target;
-- usable from wheels and source builds whose configuration does not enable the
-  old experimental option;
+- exported with the final component macro rather than a staging macro;
+- usable from an installed package without a staging build option or a
+  `simulation-experimental` target;
+- usable from wheels and default source builds without staging build flags;
+- guarded by `check-dart7-world-promotion-blockers` so any remaining
+  main-branch DART 6 World, experimental namespace, staged target/component, or
+  parity-reference dependency is explicit and can be driven to zero before the
+  final public shape is accepted;
 - validated on a case-insensitive filesystem when generated compatibility
   headers or `world.hpp`-adjacent paths change.
 
@@ -228,33 +237,37 @@ The accepted Python decision must define each row before implementation:
 | `dart.World`                                       | Root convenience for the official simulation World.                       | `dart.World is dart.simulation.World`; root `__all__` includes it only if approved. |
 | `dart.simulation.World`                            | Canonical owner path for the full official World API.                     | Same class identity as the root facade, stubs, and docs.                            |
 | `dartpy.simulation.World`                          | Same canonical owner, using the package name directly.                    | Import smoke and wheel smoke.                                                       |
-| `dart.simulation_experimental`                     | Removed, absent, or Python-level migration alias only.                    | No second C++ binding; documented identity behavior if alias exists.                |
-| `from dartpy import simulation_experimental as sx` | Compatibility-only if retained.                                           | Import smoke, warning expectation, and removal condition.                           |
-| `sx.World`                                         | Compatibility alias only if `sx` remains.                                 | `sx.World is dart.simulation.World`; no duplicate `nb::class_`.                     |
-| `sx.diff`                                          | Temporary alias or final move to a stable owner.                          | Stub/doc/runtime parity, lazy torch behavior, and final-home decision.              |
+| `dart.simulation_experimental`                     | Absent unless a maintainer approves a Python-level migration alias.       | No second C++ binding; documented identity behavior if alias exists.                |
+| `from dartpy import simulation_experimental as sx` | Unsupported unless a migration alias is explicitly reintroduced.          | Import smoke, warning expectation, and removal condition if retained.               |
+| `sx.World`                                         | Compatibility alias only if `sx` returns.                                 | `sx.World is dart.simulation.World`; no duplicate `nb::class_`.                     |
+| `sx.diff`                                          | Compatibility alias only if `sx` returns.                                 | Stub/doc/runtime parity, lazy torch behavior, and final-home decision if retained.  |
 | `dart.simulation.diff`                             | Preferred final owner if differentiable helpers stay simulation-specific. | Runtime import, generated stubs, generated docs, and torch-free import smoke.       |
 | `__all__`                                          | Matches the accepted root symbol allowlist.                               | Focused runtime test and generated `__init__.pyi` check.                            |
 | `sys.modules` aliases                              | Only final paths plus documented compatibility aliases.                   | Focused import-layout test.                                                         |
 | Generated stubs/docs                               | Encode the same layout as runtime.                                        | `generate-stubs`, `api-docs-py`, and docs policy gates.                             |
-| Feature-off public World                           | Official Python World exists without the old experimental build option.   | Source/wheel smoke with `DART_BUILD_SIMULATION_EXPERIMENTAL=OFF`.                   |
+| Default-build public World                         | Official Python World exists without staging build flags.                 | Source/wheel smoke with the default DART 7 configuration.                           |
 
 ## Sequencing
 
-1. **Decision record now.** Run the review board, record the Python/C++
-   namespace decision, and review the initial audit sidecar before PLAN-041
-   freezes the promoted World path. The record should explicitly accept, revise,
-   or reject the default recommendation for `dart.World`, `dart.simulation.World`,
-   C++ `dart::simulation::World`, and no initial C++ `dart::World` facade.
+1. **Decision record now.** Treat the Python namespace decision as implemented
+   unless maintainers revise it: `dart.World is dart.simulation.World`,
+   generated stubs expose that path, `dart.simulation_experimental` is absent,
+   and `dart.diff is dart.simulation.diff`. Keep the C++ and package decision
+   explicit: `dart::simulation::World`, no initial C++ `dart::World` facade,
+   final header/source owner, `dart-simulation` target/component shape, and
+   DART 6 quarantine/removal policy.
 2. **Small facade PRs next.** Add or adjust public facades, package smokes,
    stubs, docs, `check-simulation-public-header-allowlist`,
-   `check-dartpy-import-layout` or equivalent public-layout coverage, and
-   boundary checks using the accepted names. Do not rename folders yet unless the
-   move is tiny and fully covered.
+   `check-dart7-promotion-package-contract`,
+   `check-dart7-promotion-installed-package`, `check-dartpy-import-layout` or
+   equivalent public-layout coverage, `check-dart7-world-promotion-blockers`,
+   and boundary checks using the accepted names.
 3. **Official World promotion.** PLAN-041 consumes the accepted PLAN-042
-   topology when replacing the stopgap experimental World path.
-4. **Mechanical source renovation.** After the public path is green, move files
-   in small batches by owner: public headers, internals, Python bindings, docs,
-   generated compatibility headers, then cleanup aliases/options.
+   topology to keep the promoted World path, package target, and Python identity
+   coherent.
+4. **Mechanical source renovation.** Move remaining files in small batches by
+   owner: public headers, internals, Python bindings, docs, generated
+   compatibility headers, then cleanup aliases/options.
 5. **Retire the plan.** Once durable design/onboarding docs, code, examples,
    and package checks own the result, mark PLAN-042 complete and remove or
    consolidate this numbered plan.
@@ -272,12 +285,14 @@ The accepted Python decision must define each row before implementation:
   `experimental`, DART 6 legacy modules, backend names, component storage, or
   implementation folders.
 - The accepted Python policy proves `dart.World is dart.simulation.World`, does
-  not bind a second C++ World class, and defines whether
-  `dart.simulation_experimental` is absent, removed, or a Python-level alias
-  with documented identity behavior, deprecation behavior, and removal condition.
+  not bind a second C++ World class, keeps
+  `dart.simulation_experimental` absent unless a maintainer explicitly
+  reintroduces a Python-level alias with documented identity behavior,
+  deprecation behavior, and removal condition.
 - The Python import compatibility matrix covers runtime imports, `__all__`,
   `sys.modules`, stubs, generated docs, wheel import smokes, and the final home
-  for differentiable helpers currently exposed through `sx.diff`.
+  for differentiable helpers exposed through `dart.diff` and
+  `dart.simulation.diff`, plus any explicitly reintroduced compatibility alias.
 - Advanced Python submodules are importable, documented, stubbed, and omitted
   from broad root flattening unless explicitly approved.
 - The repo-wide audit map classifies every top-level `dart/*` folder,
@@ -293,7 +308,7 @@ The accepted Python decision must define each row before implementation:
   installed C++ package, and a release wheel without the old experimental option
   or component, and scans installed config/component files for private dependency
   leakage.
-- DART 7 package metadata, migration notes, DART 6.17 support window, and
+- DART 7 package metadata, migration notes, `release-6.*` support window, and
   gz-physics lane policy agree before release publication.
 
 ## Verification Gates
@@ -310,19 +325,26 @@ For implementation PRs derived from this plan, select by touched scope:
 
 - `pixi run check-api-boundaries`
 - `pixi run check-api-boundary-inventory`
-- `check-simulation-public-header-allowlist`, or equivalent
-  `check-api-boundaries` coverage for promoted simulation headers
-- `check-dartpy-import-layout`, or equivalent `check-api-boundaries` coverage
-  for runtime `__all__`, stubs, docs, aliases, and `sys.modules`
+- `pixi run check-dart7-promotion-surface` and
+  `pixi run check-simulation-public-headers` for the promoted C++ header
+  allowlist
+- `pixi run check-dart7-promotion-package-contract` for the package
+  target/component contract
+- `pixi run check-dart7-promotion-installed-package` for the local-install
+  package smoke
+- `pixi run check-dartpy-import-layout` for runtime/static Python import
+  layout, stubs, aliases, and `sys.modules`
 - `pixi run build`
 - `pixi run test-unit`
 - `pixi run test-py`
 - `pixi run generate-stubs`
 - `pixi run api-docs-py`
 - installed-package C++ and wheel import smokes
-- feature-off source/wheel smokes proving the final World path without
-  `DART_BUILD_SIMULATION_EXPERIMENTAL`
+- default source/wheel smokes proving the final World path without staging
+  build flags
 - negative smokes for removed headers, modules, targets, and aliases
+- `pixi run check-dart7-final-world-promotion`, with parity evidence sourced
+  from local `release-6.*` branch refs rather than main-branch DART 6 World tests
 - case-insensitive filesystem validation for renamed public headers
 
 ## Revision Triggers

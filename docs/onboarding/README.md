@@ -85,7 +85,7 @@ This onboarding guide is organized into several focused documents:
 - **[api-documentation.md](api-documentation.md)** - Publishing strategy for RTD and GitHub Pages API docs
 - **[build-system.md](build-system.md)** - CMake internals and dependency analysis
 - **[io-parsing.md](io-parsing.md)** - Unified model loading API (`dart::io`)
-- **[profiling.md](profiling.md)** - Text-first profiling of the experimental World (per-stage step profile + built-in scope profiler)
+- **[profiling.md](profiling.md)** - Text-first profiling of the DART 7 World (per-stage step profile + built-in scope profiler)
 
 ### Feature Workflows
 
@@ -544,7 +544,7 @@ sequenceDiagram
 
 **Key Files**:
 
-- Example: [`examples/hello_world/main.cpp`](../../examples/hello_world/main.cpp)
+- Example: [`examples/demos/scenes/rigid_body.cpp`](../../examples/demos/scenes/rigid_body.cpp)
 - [`World::step()`](dart/simulation/World.cpp#L356)
 - [`RunOptions`](../../dart/gui/viewer.hpp)
 - [`RenderableDescriptor`](../../dart/gui/renderable.hpp)

@@ -32,9 +32,12 @@
     scene selectable at runtime from a categorized sidebar (`--scene <id>`
     selects the initial scene; `--cycle-scenes` drives the headless smoke).
     Added a runtime scene-switch capability to `dart::gui` via
-    `dart::gui::runDemos`. `hello_world` stays a standalone minimal CMake
-    template, and the headless `csv_logger`, `headless_simulation`,
-    `speed_test`, and `unified_loading` examples stay standalone.
+    `dart::gui::runDemos`. The classic standalone GUI examples
+    (`hello_world`, `gui_scene_diagnostics`, and `speed_test`) were retired
+    from `main`; release-6.\* branches remain the parity source for those DART 6
+    examples. The headless `csv_logger`, `headless_simulation`, and
+    `unified_loading` examples were also retired because they taught the removed
+    DART 6 whole-World loading API.
   - Pruned `pixi run demos` and `pixi run py-demos` to the DART 7 World demo
     catalog. The old DART 6 demo scene modules and cross-language golden parity
     fixtures were removed; remaining scene ids/categories use World, IPC,
@@ -99,14 +102,301 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     facades with C++ and dartpy bindings, generated stubs, tests, and a
     `sx_rigid_limited_joints` py-demo so users can exercise the narrow AVBD
     one-DOF rigid-joint path without touching ECS internals.
-  - Added public experimental joint break-force and broken-state accessors,
-    wired free rigid-body AVBD point joints to mark and skip broken joints, and
-    added an `avbd_rigid_breakable_joint` py-demo for the narrow breakable-joint
-    lifecycle.
+  - Added public experimental joint break-force, broken-state, and reset
+    accessors, wired free rigid-body AVBD point joints to mark and skip broken
+    joints, and added `avbd_rigid_breakable_joint` and
+    `avbd_rigid_spherical_breakable_joint` py-demos for narrow free-rigid
+    break/re-engagement lifecycles, with a tracked
+    `avbd-rigid-breakable-joint-packet.json` visual/benchmark packet for the
+    fixed point-joint path and a tracked
+    `avbd-rigid-spherical-breakable-joint-packet.json` visual/benchmark packet
+    for the spherical point-joint path.
   - Bridged private hard fixed-link AVBD point-joint endpoints into the
     articulated variational solve path, covered that private path with C++ tests
     and a benchmark row, and added a `variational_endpoint_loop_closure` py-demo
-    for public multibody-link point-closure behavior.
+    for public multibody-link point-closure behavior. Non-topology multibody-link
+    private point-joint entities can now also generate hard AVBD configs from
+    the simulation-entry current pose while tree-topology joints stay skipped,
+    and public experimental `World` articulated
+    fixed/revolute/prismatic/spherical link-link and world-link facades now
+    expose that narrow AVBD bridge through
+    C++ and dartpy, including focused public revolute/prismatic bounded
+    velocity-actuator, same-multibody/world-anchored command-update and tiny
+    effort-limit coverage, private revolute/prismatic command-update plus
+    fixed-row and revolute/prismatic break/reset re-engagement, and
+    same-multibody/world-anchored public one-DOF motor break/skip coverage
+    including focused dartpy stepping tests for same-multibody/world-link
+    revolute and prismatic explicit-anchor break/skip and reset/re-engagement
+    cases, plus
+    dartpy fixed point-joint break/skip/reset coverage for same-multibody,
+    movable-movable same-multibody, and world-link explicit all-axis anchor
+    rows, plus
+    same-multibody/world-anchored public one-DOF motor break/reset
+    re-engagement, plus movable-movable same-multibody revolute/prismatic motor
+    break/reset regressions with explicit off-origin anchors covered in C++ and
+    dartpy and fixed break/reset regressions, plus a world-fixed
+    break/reset regression. The
+    articulated point-joint facade also accepts explicit local/world anchor
+    points in C++ and dartpy, with same-multibody and world-anchored
+    fixed/revolute/prismatic off-origin regressions, and exposes spherical
+    articulated point joints as linear-only pinned-anchor rows that leave
+    relative orientation free, including explicit link-link and world-link
+    anchor overload coverage plus focused spherical break/skip and
+    same-multibody/world-link reset coverage for those linear-only rows,
+    including explicit-anchor dartpy stepping coverage and C++ save/load
+    regressions proving same-multibody link-link
+    and world-link fixed/spherical facade state rebuilds the private AVBD
+    all-axis or linear rows after load, plus same-multibody and world-link
+    revolute/prismatic motor
+    facade state rebuilds the private hard rows and free-axis motor row after
+    load, plus same-multibody/world-link fixed/spherical/revolute/prismatic
+    broken-state save/load regressions, including explicit-anchor fixed,
+    movable-movable fixed, and one-DOF motor cases, proving restored broken
+    joints remain skipped until reset re-engages the AVBD rows.
+    Direct private world-link `AvbdRigidWorldPointJointConfig`
+    revolute/prismatic rows now also survive broken-state binary save/load,
+    preserving anchors, bases, masks, stiffness fields, actuator command, and
+    effort-limit state until reset re-engages the hard rows plus updated
+    free-axis motor motion.
+    Multibody position writes now also mark link frame caches dirty before the
+    clean-cache kinematics graph shortcut, keeping public link transforms
+    current after semi-implicit and variational multibody steps.
+    Added
+    `avbd_articulated_revolute_motor`
+    and `avbd_articulated_prismatic_motor` py-demos for public articulated
+    velocity-motor command updates, with a tracked
+    `avbd-articulated-revolute-motor-packet.json` visual/benchmark packet for
+    the revolute path and a tracked
+    `avbd-articulated-prismatic-motor-packet.json` visual/benchmark packet for
+    the prismatic path,
+    an `avbd_articulated_motor_breakable_joint` py-demo for same-multibody
+    public articulated motor break/reset with a tracked
+    `avbd-articulated-breakable-motor-packet.json` visual/benchmark packet,
+    an `avbd_articulated_prismatic_pair_motor_breakable_joint` py-demo for
+    same-multibody public articulated prismatic motor break/reset with a
+    tracked `avbd-articulated-prismatic-pair-breakable-motor-packet.json`
+    visual/benchmark packet,
+    an `avbd_articulated_prismatic_motor_breakable_joint` py-demo for
+    world-anchored public articulated prismatic motor break/reset with a
+    tracked `avbd-articulated-world-prismatic-breakable-motor-packet.json`
+    visual/benchmark packet, an
+    `avbd_articulated_world_revolute_motor_breakable_joint` py-demo for
+    world-anchored public articulated revolute motor break/reset with a tracked
+    `avbd-articulated-world-revolute-breakable-motor-packet.json`
+    visual/benchmark packet, a
+    `avbd_articulated_breakable_joint` py-demo for public articulated fixed
+    point-joint break/reset with a tracked
+    `avbd-articulated-breakable-joint-packet.json` visual/benchmark packet, a
+    `BM_AvbdArticulatedBreakableMotorStep` dashboard row for the active
+    break-force armed articulated revolute motor path, a
+    `BM_AvbdArticulatedPrismaticBreakableMotorStep` dashboard row for the
+    active break-force armed articulated prismatic motor path, a
+    `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep` dashboard row for the
+    active break-force armed world-anchored articulated prismatic motor path,
+    a `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` dashboard row for
+    the active break-force armed world-anchored articulated revolute motor path,
+    and an `avbd_articulated_fixed_pair_breakable_joint` py-demo
+    for the public same-multibody fixed break/reset path with a tracked
+    `avbd-articulated-fixed-pair-breakable-joint-packet.json` visual/benchmark
+    packet, an
+    `avbd_articulated_spherical_breakable_joint` py-demo for
+    the public world-link spherical break/reset path with a tracked
+    `avbd-articulated-spherical-breakable-joint-packet.json` visual/benchmark
+    packet, and an
+    `avbd_articulated_spherical_pair_breakable_joint` py-demo for the public
+    same-multibody spherical break/reset path over the variational bridge with a
+    tracked `avbd-articulated-spherical-pair-breakable-joint-packet.json`
+    visual/benchmark packet, plus
+    an `avbd_articulated_high_ratio_chain` py-demo for a narrow 200:1
+    articulated high mass-ratio variational-chain smoke case and
+    `BM_AvbdArticulatedHighRatioChainStep` dashboard row with a tracked
+    `avbd-articulated-high-ratio-chain-packet.json` visual/benchmark packet,
+    plus `avbd_paper_scale_high_ratio_chain`,
+    `BM_AvbdPaperScaleHighRatioChainStep`, and a tracked
+    `avbd-paper-scale-high-ratio-chain-packet.json` visual/benchmark packet for
+    a 50-link/50,000:1 CPU smoke that keeps the same-hardware and GPU gates open,
+    plus tracked `avbd-rigid-revolute-motor-packet.json` and
+    `avbd-rigid-prismatic-motor-packet.json` visual/benchmark packets for the
+    public free-rigid revolute and prismatic motor rows,
+    plus
+    an `avbd_empty_baseline` py-demo
+    for the first source-demo empty-scene smoke baseline,
+    `avbd_demo2d_ground` for the static `avbd-demo2d` Ground source row, and
+    `avbd_demo2d_motor` for the first one-DOF motor `avbd-demo2d` source
+    row, plus `avbd_demo2d_hanging_rope` for the `avbd-demo2d` Hanging Rope
+    source row, plus `avbd_demo2d_spring` and
+    `avbd_demo2d_spring_ratio` for the first radial rigid distance-spring source
+    harnesses, plus `avbd_demo2d_fracture` for the `avbd-demo2d` Fracture
+    source row, plus `avbd_demo2d_dynamic_friction` for the `avbd-demo2d`
+    Dynamic Friction source row, plus `avbd_demo2d_static_friction` for the
+    `avbd-demo2d` Static Friction source row, plus `avbd_demo2d_pyramid` for
+    the `avbd-demo2d` Pyramid source row, plus `avbd_demo2d_cards` for the
+    `avbd-demo2d` Cards source row, plus `avbd_demo2d_stack` for the
+    `avbd-demo2d` Stack source row, plus `avbd_demo2d_stack_ratio` for the
+    `avbd-demo2d` Stack Ratio source row, plus `avbd_demo2d_rod` for the
+    `avbd-demo2d` Rod source row, plus `avbd_demo2d_soft_body` for the
+    `avbd-demo2d` Soft Body source row, plus `avbd_demo2d_joint_grid` for the
+    `avbd-demo2d` Joint Grid source row, plus `avbd_demo2d_rope` for the
+    `avbd-demo2d` Rope source row, plus `avbd_demo2d_heavy_rope` for the
+    `avbd-demo2d` Heavy Rope source row, plus `avbd_demo2d_net` for the
+    `avbd-demo2d` Net source row, plus `avbd_demo3d_ground`,
+    `avbd_demo3d_dynamic_friction`,
+    `avbd_demo3d_static_friction`, `avbd_demo3d_pyramid`,
+    `avbd_demo3d_rope`, `avbd_demo3d_heavy_rope`,
+    `avbd_demo3d_spring`, `avbd_demo3d_spring_ratio`,
+    `avbd_demo3d_stack`, `avbd_demo3d_stack_ratio`,
+    `avbd_demo3d_soft_body`,
+    `avbd_demo3d_bridge`, and `avbd_demo3d_breakable` py-demos for the first
+    non-empty `avbd-demo3d`
+    source rows, each with reference revision
+    and default-parameter
+    metadata. The empty
+    baseline is backed by a tracked visual/benchmark packet. The 2D Ground row
+    has a tracked visual/DART-benchmark/native-reference timing packet that
+    keeps the CPU-win gate explicit: after skipping static-only contact queries,
+    no-op rigid dynamics stages, clean frame-cache graph execution, and the
+    clean no-work default step pipeline with a cheap scratch reset, DART records
+    the static Ground row about 1.51x faster than the native source runner on
+    this host, closing that narrow source row. The Motor row
+    has a tracked visual/DART-benchmark/native-reference timing packet that keeps
+    the CPU-win gate explicit: after skipping contact queries for
+    no-collision-geometry worlds in contact-stage prepare/execute, DART still
+    records the public World Motor row about 6.18x slower than the native source
+    runner on this host. The Hanging
+    Rope row has a tracked visual/DART-benchmark/native-reference timing packet
+    and records DART about 7.84x slower than the native source runner on this
+    host. The 2D Spring and Spring Ratio rows have tracked
+    visual/DART-benchmark/native-reference timing packets that record DART
+    about 17.8x and 11.1x slower than their native source runners on this host,
+    keeping those CPU-win gates open. The 3D Spring and Spring Ratio rows have
+    tracked visual/DART-benchmark/native-reference timing packets that record
+    DART about 3.17x and 5.78x slower than their native source runners on this
+    host, keeping those CPU-win gates open. The Fracture row has a tracked
+    visual/DART-benchmark/native-reference
+    timing packet and records DART about 1.20x faster than the native source
+    runner on this host after a refreshed same-source timing run. The
+    rigid AVBD contact stage now also reuses its extracted point-joint input
+    scratch, solve-row scratch, and per-body row-index scratch, and avoids
+    copying already-predicted inertial targets in the World contact path. The
+    rigid contact stage also no longer
+    performs a duplicate prepare-time collision query just to reserve
+    sequential-contact scratch; execute-time contact discovery remains the
+    authoritative query.
+    Collision queries now also suppress live public rigid-body joint endpoint
+    pairs from reusable query-cache scratch, mirroring the source demo solver's
+    constrained-pair broadphase rule while allowing broken AVBD joints to
+    become collidable again; focused coverage verifies warmed filtered queries
+    do not allocate. The Fracture source-row metadata and packet writer record
+    the 10 joint-connected collision pairs, but the packet was not refreshed
+    because diagnostic timing remained noisy. Known and unknown-index rigid
+    contact snapshots now map the world contact point through body and shape
+    transforms before feature coding, while explicit endpoint-A/B compound
+    shape-index feature coding now uses the narrow-phase shape-local contact
+    point. Focused coverage now also verifies actual `World::collide()`
+    sphere/cylinder/capsule/plane/mesh contacts feed their narrow-phase
+    endpoints into AVBD feature coding, including shape-scoped sphere body
+    features. Unknown-index inference now also recognizes unique
+    compound plane and triangle-mesh matches, assigning shape-scoped plane face
+    IDs and mesh face/edge/vertex feature IDs while preserving the body fallback
+    for ambiguous compounds; same-feature manifold row ordinals are now assigned
+    from deterministic canonical-local contact-point ordering so reversed
+    narrow-phase contact order or swapped contact body endpoints do not swap
+    warm-start state, with actual `World::collide()` sphere/plane contact-point
+    replay and live box-box manifold box-face feature coverage. Persisting
+    private rigid contact friction rows now also store their tangent directions
+    and project the warm-started paired dual into the current tangent basis when
+    the contact normal rotates. The `avbd-demo2d`
+    Dynamic Friction row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    1.83x faster than the native source runner on this host. The
+    `avbd-demo2d` Static Friction row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.68x faster than the native source runner on this host. The
+    `avbd-demo2d` Pyramid row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    9.84x faster than the 10,000-step native source runner on this host. The
+    `avbd-demo2d` Cards row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.38x slower than the native source runner on this host. The
+    `avbd-demo2d` Stack row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.17x faster than the native source runner on this host. The
+    `avbd-demo2d` Stack Ratio row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.22x faster than the native source runner on this host. The
+    `avbd-demo2d` Rod row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    9.58x slower than the native source runner on this host. The
+    `avbd-demo2d` Soft Body row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    6.30x slower than the native source runner on this host. The AVBD scalar
+    row inventory now reuses stable same-order descriptor lists in place,
+    avoiding the previous per-step previous-row map rebuild for unchanged row
+    sets while preserving the existing fallback for dropped or reordered rows;
+    rigid World contact snapshots also use reserved endpoint-pair hash counters
+    for contact/joint/spring row ordinals instead of per-step tree maps, and
+    append paths seed the body-index cache when they fall back to an existing
+    snapshot entity scan. The rigid row driver skips per-body row-index scratch
+    setup for row families absent from a solve.
+    The
+    `avbd-demo2d` Joint Grid row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    2.06x slower than the native source runner on this host after reusing
+    per-body row-index scratch and caching snapshot body indices, while
+    configuring the source's 1152 diagonal ignore-collision pairs through the
+    public per-pair collision filter. The
+    `avbd-demo2d` Rope row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.20x slower than the native source runner on this host. The
+    `avbd-demo2d` Heavy Rope row has a tracked
+    visual/DART-benchmark/native-reference timing packet and records DART about
+    5.85x slower than the native source runner on this host after reusing
+    per-body row-index scratch and caching snapshot body indices. The
+    `avbd-demo3d`
+    Ground
+    row has a tracked visual/DART-benchmark/native-reference timing packet and
+    records DART about 1.11x faster than the native source runner on this host,
+    the Dynamic Friction row records DART about 1.41x faster, while the
+    Static Friction row records DART about 1.08x faster, the Pyramid row records
+    DART about 2.83x faster, the Rope row records DART about 3.75x slower, the
+    Heavy Rope row records DART about 3.84x slower, the
+    Stack row records DART about 1.80x faster, the
+    Stack Ratio row records DART about 2.32x faster, the Soft Body row records
+    DART about 2.33x slower, the Bridge row records DART about 1.61x faster,
+    and the Breakable row records DART about 1.42x faster.
+    The dashboard's AVBD World slice now also tracks an empty-baseline step row,
+    an `avbd-demo2d` Motor source-row step benchmark,
+    an `avbd-demo2d` Ground source-row step benchmark,
+    an `avbd-demo2d` Hanging Rope source-row step benchmark,
+    an `avbd-demo2d` Fracture source-row step benchmark,
+    an `avbd-demo2d` Dynamic Friction source-row step benchmark,
+    an `avbd-demo2d` Static Friction source-row step benchmark,
+    an `avbd-demo2d` Pyramid source-row step benchmark,
+    an `avbd-demo2d` Cards source-row step benchmark,
+    an `avbd-demo2d` Stack source-row step benchmark,
+    an `avbd-demo2d` Stack Ratio source-row step benchmark,
+    an `avbd-demo2d` Rod source-row step benchmark,
+    an `avbd-demo2d` Soft Body source-row step benchmark,
+    an `avbd-demo2d` Joint Grid source-row step benchmark,
+    an `avbd-demo2d` Rope source-row step benchmark,
+    an `avbd-demo2d` Heavy Rope source-row step benchmark,
+    an `avbd-demo3d` Ground source-row step benchmark,
+    an `avbd-demo3d` Dynamic Friction source-row step benchmark,
+    an `avbd-demo3d` Static Friction source-row step benchmark,
+    an `avbd-demo3d` Pyramid source-row step benchmark,
+    an `avbd-demo3d` Rope source-row step benchmark,
+    an `avbd-demo3d` Heavy Rope source-row step benchmark,
+    an `avbd-demo3d` Stack source-row step benchmark,
+    an `avbd-demo3d` Stack Ratio source-row step benchmark,
+    an `avbd-demo3d` Soft Body source-row step benchmark,
+    an `avbd-demo3d` Bridge source-row step benchmark,
+    an `avbd-demo3d` Breakable source-row step benchmark,
+    public articulated
+    revolute and prismatic motor step benchmark rows, plus public
+    free-rigid/articulated breakable fixed point-joint benchmark rows, and adds a
+    durable AVBD demo/benchmark corpus matrix that maps the required 2D/3D
+    source-demo, paper, website/video, and performance rows to missing or partial
+    DART evidence.
   - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
     user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
     can override misreported DPI, implicit interactive app windows now use a
@@ -140,6 +430,14 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-allocator-comparative-check`, a strict allocator
     benchmark gate that compares DART allocator workloads against
     foonathan/memory and `std::pmr` baselines.
+  - Added required comparative rows for foonathan/memory static fixed-storage
+    stacks, scoped temporary allocators, and two-iteration frame allocators,
+    with matching DART frame-allocator fast-path rows and
+    `std::pmr::monotonic_buffer_resource` baselines.
+  - Added required comparative rows for foonathan/memory raw heap/malloc/new
+    allocators plus aligned, fallback, segregator, tracked, and deeply tracked
+    allocator adapters, with matching DART frame/pool HMM rows and standard
+    allocator baselines.
   - Extended the comparative allocator benchmarks with opt-in allocator-aware
     EnTT registry/component storage churn against foonathan/memory and
     standard-registry baselines, and added a CV/noise guard so strict allocator
@@ -153,29 +451,92 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     configured without an existing EnTT target. The EnTT registry benchmark rows
     now discover installed EnTT package metadata without invoking DART's
     FetchContent-backed dependency helper. The EnTT rows now benchmark cached
-    component storage handles, use frame-backed DART storage for persistent
-    no-growth registry churn, and use pool-backed DART storage for build/growth
-    churn. The no-growth row reports frame usage and overflow counters and
-    fails if reserved churn grows after prewarm. The build/growth row times the
-    uninstrumented pool-backed registry path and reports configured-allocator
-    call counters from a matching untimed probe. The focused checker now
+    component storage handles, use free-list-backed DART storage for persistent
+    no-growth registry churn, and use a resettable frame-backed DART bake arena
+    for one-shot registry build/growth storage construction. The foonathan
+    build/growth baseline uses stack marker/unwind bulk lifetime storage,
+    matching the one-shot construction role rather than persistent pool reuse.
+    The no-growth row reports allocator-call counters and fails if
+    reserved churn grows after prewarm. The build/growth row times the
+    uninstrumented construction/destruction path. The focused checker now
     distinguishes timing loss, allocator-call regressions, frame growth, and
-    noisy benchmark evidence.
-  - Optimized the frame allocator reset/accounting fast path and normal-aligned
-    `FrameStlAllocator` allocations while preserving over-aligned STL storage.
+    noisy benchmark evidence. The checker now also requires the expected
+    benchmark rows for the selected mode, so missing foonathan/memory coverage
+    cannot be treated as passing evidence.
+  - Optimized the frame allocator reset/accounting fast path, default 32-byte
+    frame allocations, and cache-line-aligned `FrameStlAllocator` allocations
+    while preserving over-aligned STL storage; frame-backed STL blocks are now
+    cache-line aligned for container hot loops such as allocator-aware EnTT
+    storage pages, and the comparative STL-vector row now batches reserve-only
+    allocator-adapter work to measure allocator throughput directly.
+  - Added an explicit `PoolAllocator::DiagnosticsPolicy` so hot-path pool
+    allocation can opt out of live/peak counter updates while preserving
+    counter behavior for existing direct `PoolAllocator` users by default.
+    Release `MemoryManager` pool allocation now uses the non-diagnostic policy,
+    and comparative DART pool workloads use that HMM hot path.
+  - Added optional CPU affinity, warmup, and random-interleaving controls to the
+    C++ benchmark runner and comparative allocator checker; the realistic
+    comparative allocator row now lets the checker control benchmark min-time,
+    and short stack/tracked-stack rows batch repeated allocator cycles for
+    stricter low-noise comparisons.
+  - Prewarmed the benchmark runner's selected CPU immediately before launching
+    an affinity-pinned C++ benchmark binary, reducing cold-frequency bias from
+    configure/build work that happens before benchmark execution.
   - Kept `StlAllocator` allocation and deallocation alignment-aware for
     allocator-backed STL storage, including fixed-pool-backed max-aligned
-    values.
+    values and cache-line-aligned large storage pages for allocator-aware
+    container hot loops such as the production World registry.
+  - Made `StlAllocator` a lightweight stateful allocator instead of deriving
+    from `std::allocator`, matching foonathan-style container propagation
+    traits and letting `std::allocator_traits` handle object
+    construction/destruction for allocator-aware container hot loops.
+  - Added `DefaultStlAllocator`, a stateless STL adapter backed by DART's
+    default C heap, so allocator-aware containers that use the process-wide
+    default C allocator resource avoid per-container allocator state and the
+    virtual default-allocator hop.
+  - Added explicit STL allocator construct/destroy hooks that keep non-trivial
+    object lifetimes correct while avoiding unnecessary trivial-destructor work
+    in allocator-aware container hot loops.
+  - Refined the comparative allocator checker so high-CV rows can pass only
+    when the benchmark mean/stddev/repetition aggregates still show DART's
+    normal-approximation 95% confidence interval strictly below the selected
+    baseline's confidence interval.
+  - Applied the same lightweight stateful allocator traits to
+    `FrameStlAllocator`, letting `std::allocator_traits` own construction and
+    destruction in frame-backed allocator-aware container builds.
   - Added a fixed-capacity growth policy to `FreeListAllocator` so
     preallocated free-list arenas can fail deterministically instead of growing
     from the base allocator after bake/build, and exposed construction-time
     free-list capacity/policy knobs through `MemoryManager` and experimental
     `WorldOptions`.
+  - Added cache-line coloring for large 64-byte-aligned
+    `FreeListAllocator` array allocations so consecutive page-sized
+    component/storage arrays avoid starting on the same L1 cache sets while
+    preserving their requested alignment.
+  - Extended shape-aware cache-line coloring to large 64-byte-aligned
+    `FrameAllocator` and frame-backed STL storage allocations, improving
+    one-shot component storage build/unwind locality without changing arena
+    lifetime semantics or padding smaller packed entity pages.
+  - Switched the EnTT build/growth comparative benchmark to DART's
+    frame-native `FrameStlAllocator`, matching foonathan's stack-native
+    `std_allocator` adapter for one-shot arena lifetimes.
+  - Tightened `FrameStlAllocator` small natural-aligned allocations to use the
+    frame allocator's inline default fast path directly instead of routing
+    through the public aligned-allocation dispatcher.
   - Fixed fixed-capacity `FreeListAllocator` aligned allocations so
     `PoolAllocator` can satisfy aligned size-class chunks from reserved arena
     bytes without growing from the base allocator.
+  - Routed expand-policy `FreeListAllocator` over-aligned allocations through
+    reserved free-list arena blocks instead of delegating them to the base
+    allocator.
   - Hardened `FreeListAllocator` reservation arithmetic so impossible fixed
     capacities and expansion sizes fail before touching the base allocator.
+  - Hardened common allocator count and size overflow guards for
+    `MemoryAllocator::allocateAs`, `FrameAllocator`, `FrameStlAllocator`, and
+    `StlAllocator`; fixed fixed-capacity `FreeListAllocator` aligned-allocation
+    diagnostics so public live/peak counters track requested bytes instead of
+    internal header padding, and added allocator-root isolation coverage for
+    independent `MemoryManager` and experimental `World` instances.
   - Added query methods on `dart::common::MemoryAllocatorDebugger`,
     `FreeListAllocator`, and `PoolAllocator` for current live bytes, peak live
     bytes, and live allocation count so allocator diagnostics can consume
@@ -183,6 +544,87 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added structured `MemoryManager` debug diagnostics and surfaced them through
     experimental `World` memory diagnostics for free/pool allocator accounting,
     including typed borrowed allocator use.
+  - Added a read-only Memory panel to the standalone `dartsim` editor for
+    frame-scratch counters, `MemoryManager` debug counters, and ECS storage
+    capacity diagnostics.
+  - Made experimental `World::clear()` recreate its internal allocator-backed
+    registry storage so ECS capacities and debug-tracked registry allocations
+    are released at the rebuild boundary while preserving the World memory
+    hierarchy.
+  - Reused legacy graph-backed `RigidBodyIntegrationStage` scratch for rigid-body
+    entity lists and dependency nodes instead of allocating per execute.
+  - Extended experimental `World` base-allocator no-growth coverage to baked
+    rigid-body resting contact, non-cross articulated resting contact, and
+    same-DOF cross-articulated link-contact scenes after contact prewarm.
+  - Removed per-assembly heap containers from the experimental unified
+    constraint assembler for row directions, rigid/articulated row ends, and
+    shared rigid-body inertia lookup, and routed the boxed-LCP stage's
+    per-multibody link-contact row assembly through reusable
+    `MultibodyDynamicsScratch`. Cross-multibody row completion now reuses that
+    scratch for other-link point Jacobians and joint-space denominator work.
+    The Dantzig boxed-LCP solver now accepts caller-owned reusable scratch,
+    avoids `LcpProblem` input copies for already assembled systems, and is
+    routed through reusable unified-constraint solve scratch for island
+    remapping, island sub-problems, normal-only fallback, and fallback tangent
+    accumulators. Same-shape no-heap regressions cover both Dantzig solves and
+    unified island solves. The unified assembler now reuses same-shape link
+    block row storage without per-row Eigen temporaries, and the boxed-LCP
+    stage borrows per-multibody contact problems from persistent dynamics
+    scratch instead of copying them into staging containers first. Rigid
+    contact problem assembly now has an in-place scratch overload, and boxed-LCP
+    fallback world gates cover mixed/different-DOF, stacked, and coupled
+    multi-row cross-articulated contact scenes for base-allocator no-growth and
+    first baked-step global-heap no-allocation by priming unified constraint
+    scratch during `enterSimulationMode()`. Public multibody link-contact
+    assembly now has reusable scratch storage that can be borrowed by the
+    in-place unified assembler without same-shape heap growth, and the
+    boxed-LCP fallback gates include larger five- and eight-multibody stacked
+    contact sets plus a disconnected multi-island mixed rigid/articulated
+    contact set. Unified island solves now reserve island traversal scratch and
+    build the local row remap once per solve instead of once per island, and
+    successful unified link impulse application can reuse the same solve scratch
+    for generalized-impulse and velocity-delta buffers.
+    Rigid IPC accepted/rejected writeback now reuses stage-owned entity-order
+    scratch instead of allocating local traversal vectors, and the
+    resting-contact no-op predicate reuses stage-owned per-body contact-power
+    and stationary-flag scratch. The rigid IPC projected-Newton loop now reuses
+    solve-local surface buffers across line-search and sufficient-decrease
+    backtracking candidates, and its repeated solve-internal barrier assembly
+    and line-search calls reuse surface-pair/triplet scratch, including the
+    lagged-friction barrier pass. The rigid IPC contact stage now uses the
+    caller-owned projected-Newton solve overload so per-solve surface candidate
+    buffers persist in stage scratch across steps.
+    Convenience return-by-value unified problem wrappers remain a separate
+    allocation target.
+  - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,
+    static/moving rigid surface-CCD snapshots, and rigid obstacle barrier lists,
+    and primed deformable surface-contact candidate buffers during
+    `enterSimulationMode()`, including the wider swept-AABB candidate envelope
+    needed by non-square self-contact grids. Inter-body/rigid surface-CCD sweep
+    buffers are now stage/entity scratch-backed too, and VBD
+    topology/static-contact scratch is primed during `enterSimulationMode()`, so
+    baked surface-snapshot steps and first-baked-step active VBD static rigid
+    surface-CCD point crossing do not allocate from the global heap. Scripted
+    deformable boundary processing now
+    reuses per-body Dirichlet/Neumann count masks instead of allocating local
+    per-node vectors each step. Default projected-Newton deformable solves now
+    reuse per-body RHS, sparse Hessian assembly, PSD block batch, sparse
+    pattern, and solution scratch for covered mass-spring and static rigid
+    surface-CCD steps, and FEM rest-shape caches are primed for covered
+    one-tetrahedron FEM projected-Newton steps. Self-contact barrier scratch is
+    sized from bake-primed candidates for covered two-triangle
+    projected-Newton self-contact steps. AVBD ground contact/friction rows and
+    self-contact normal/friction rows, including a rectangular self-contact
+    grid row workload, now reuse row-inventory and self-contact adjacency
+    storage, with bake-time reserve sizing for covered active contact steps;
+    row and friction-projection warm-start lookup now use sorted reserved
+    storage instead of map allocation or per-row linear scans. Rigid
+    AVBD contact projection now reuses stage-owned snapshot, point-joint,
+    row-counter, row-inventory, and solve scratch for covered active rigid
+    contacts and no-contact fixed-joint rows, with baked base-allocator and
+    global-heap no-growth guards. Active inter-body deformable surface-CCD
+    crossings and two non-square production-scale deformable frictional
+    self-contact grids now have the same baked no-growth guard coverage.
   - Hardened `dart::common::FixedPoolAllocator` against base-allocator failures
     during construction and block-table growth, with coverage for deterministic
     failure, fallback, reuse, and debug-guard paths.
@@ -204,13 +646,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     non-docking ImGui builds are unaffected. See
     `docs/design/dartsim_gui_simulator.md` and
     `docs/onboarding/gui-rendering.md`.
-  - Moved the `dartsim` viewer source to a dedicated application tree, added a
-    public `dart::gui::ApplicationOptions::world` handoff for example-owned
-    worlds, and restored `hello_world` as a real public-API `dart::gui` example
-    source.
-  - Restored the `hello_world` example's instruction text, camera/run
-    defaults, deterministic non-axis-aligned box orientation, profiling
-    markers, and README through public `dart::gui`.
+  - Moved the `dartsim` viewer source to a dedicated application tree and added
+    a public `dart::gui::ApplicationOptions::world` handoff for example-owned
+    worlds.
   - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
     `dart::gui` example sources with source-defined DART worlds instead of
     shared private scene-fixture launchers.
@@ -369,10 +807,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,
     camera/run defaults, and README through public `dart::gui`.
-  - Audited `gui_scene_diagnostics` against its historical source and kept it
-    as a promoted `dart::gui` descriptor diagnostic example with marker
-    coverage for CLI options, descriptor extraction, debug/selection lines,
-    camera picking, README, and no renderer dependency.
+  - Audited the `gui_scene_diagnostics` source before retiring it from `main`
+    with the rest of the classic standalone GUI example surface.
   - Removed the no-source `rerun` placeholder example because it had no
     concrete integration workflow, executable, or known downstream user.
   - Restored the `lcp_physics` example's historical scene counts, names,
@@ -534,18 +970,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     through public `dart::gui`.
   - Restored hardcoded-design example joint keyboard controls, camera default,
     and example README through public `dart::gui`.
-  - Preserved the `csv_logger` example's non-GUI command-line CSV logging
-    contract and added strict-audit marker coverage so renderer promotion does
-    not pull it into the GUI dependency surface.
-  - Preserved the `headless_simulation` example's non-GUI deterministic
-    batch-simulation contract and added strict-audit marker coverage so
-    renderer promotion does not pull it into the GUI dependency surface.
-  - Preserved the `speed_test` example's non-GUI timing benchmark contract and
-    added strict-audit marker coverage so renderer promotion does not pull it
-    into the GUI dependency surface.
-  - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
-    loading contract and added strict-audit marker coverage so renderer
-    promotion does not pull it into the GUI dependency surface.
+  - Retired the `csv_logger`, `headless_simulation`, and `unified_loading`
+    examples from `main` with release-6.\* branches as the parity source for
+    their DART 6 whole-World loading behavior.
   - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
     `FCLCollisionDetector`, `BulletCollisionDetector`, and
     `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.
@@ -570,6 +997,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Developer workflow updates: refactored pixi tasks, tuned pixi parallelism, simplified the devcontainer, and bumped the DART version to 7.0.0. ([#2083](https://github.com/dartsim/dart/pull/2083), [#2208](https://github.com/dartsim/dart/pull/2208), [#2255](https://github.com/dartsim/dart/pull/2255), [#2046](https://github.com/dartsim/dart/pull/2046))
   - Limited `pixi run test-unit` to the built C++ `UNIT_` test set so
     simulation-experimental tests remain covered by their dedicated task.
+  - Fixed `pixi run test-math` so its build step uses the current math,
+    optimization, LCP, and lie-group CMake test target names before running the
+    `^UNIT_math_` ctest slice.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
@@ -654,6 +1084,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.
+  - Added `pixi run bm-lie-group-batch` to benchmark the DART 7 SO(3)/SE(3)
+    batch `expBatch`, `logBatch`, and `adjointBatch` paths against explicit
+    scalar loops before introducing SIMD or other compute backends.
   - Added `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
     `--input <packet.json>` to create and validate the manual Phase 5 GPU
     go/no-go benchmark packet once a project GPU runner exists, including
@@ -767,7 +1200,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     side/cap/rim endpoint features, so cylinder contacts warm-start across
     same-feature motion but reset when they move between barrel, cap, and rim
     manifolds. Capsule side/top-cap/bottom-cap endpoint features provide the
-    same private warm-start partitioning for capsule contacts.
+    same private warm-start partitioning for capsule contacts. Known-shape
+    contacts now map world contact points through body and collision-shape local
+    transforms before feature coding, and unknown-index contacts use the same
+    shape-frame path when exactly one collision shape can be inferred.
   - Added a private AVBD rigid World point-joint snapshot path that appends
     world-space point-joint inputs to the same rigid snapshot/solve/apply
     wrapper and combined step helper with persistent linear and angular joint
@@ -780,6 +1216,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World.add_rigid_body_fixed_joint()` for design-mode fixed constraints
     between two free rigid bodies, backed by the private AVBD fixed-joint
     projection path and covered by a `py-demos` rigid fixed-joint scene.
+  - Added experimental AVBD point-joint stiffness controls on public joint
+    handles (`Joint::setAvbdStartStiffness()`, `setAvbdLinearStiffness()`, and
+    `setAvbdAngularStiffness()`, plus dartpy properties) so rigid point-joint
+    facades can choose hard rows or finite material-stiffness rows without
+    exposing solver row storage.
   - Added explicit rigid-body endpoint accessors for public experimental
     rigid-body fixed joints (`Joint::getParentRigidBody()`/
     `getChildRigidBody()`, dartpy `joint.parent_rigid_body`/
@@ -905,6 +1346,16 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     inline with an eight-stage capacity, eliminating stage-list heap allocation
     during default step pipeline assembly and rejecting overflow with
     `InvalidArgumentException`.
+  - Centralized the experimental World's built-in step schedule selection so
+    sequential impulse, rigid IPC, semi-implicit/variational multibody,
+    deformable, and custom-final-stage paths share one internal slot map.
+    Method-family changes after simulation bake now re-run one shared
+    preparation path, empty solver domains no longer add placeholder stages, and
+    custom-final-stage steps reuse the baked solver stages while clearing
+    caller-owned final stage pointers after execution.
+  - Added construction-time rigid and multibody solver-family selection to
+    experimental `WorldOptions`, and exposed the same validated path through the
+    dartpy `sx.World(...)` constructor.
   - Pre-baked the experimental World's default step stage bundle, kinematics
     graph traversal, and rigid IPC kinematic scratch at `enterSimulationMode()`,
     eliminating global heap allocation for repeated baked kinematic IPC steps
@@ -954,6 +1405,387 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction sweep. Verified by the existing drop/rest/bounce/friction tests
     and a new sliding-sphere test that checks friction drives the contact slip
     to zero (rolling) through the coupled solve.
+  - Corrected shared boxed-LCP solution validation for collapsed intervals
+    (`lo == hi`): fixed variables now require the solution to sit on the bound
+    but do not require the residual force to be zero. This matches the normal
+    cone semantics of a fixed interval and removes false negatives for DART 7
+    friction-index rows whose tangent bounds collapse when the normal impulse is
+    zero.
+  - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
+    bounds by including the bound derivative in the natural-residual
+    Jacobian. Added manifest-driven coverage for coupled mildly
+    ill-conditioned 4-contact friction-index cases across the DART 7 LCP
+    solver set, and extended generated standard, boxed, and friction-index
+    coverage to larger deterministic cases, including a scoped scalable-solver
+    slice up to standard 128-row, boxed 64-row, friction-index 24-contact, and
+    coupled friction-index 12-contact problems, plus a scoped robust
+    near-singular known-solution slice for standard 8-row, boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
+    128-, 192-, and 256-contact packets,
+    with the friction-index exact-solution check narrowed to Dantzig after
+    `ShockPropagation` contract-succeeded but missed the selected generated
+    solution tolerance on those coupled packets,
+    and active-set
+    transition coverage near lower, upper, and friction-cone boundaries. The
+    active-set transition correctness grid now reaches standard 128-row, boxed
+    128-row, and coupled friction-index 16-contact packets over scoped
+    scalable solvers, plus production coupled friction-index 24-, 32-, 48-,
+    64-, 96-, 128-, 192-, and 256-contact active-set transition packets with
+    stronger cross-contact coupling. Added a scoped larger mildly
+    ill-conditioned known-solution slice
+    for standard
+    32/64-row, boxed 16/32-row, friction-index 8-contact, and
+    1x-/4x-/8x-coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets and a 16x-coupled
+    128-contact packet, plus an
+    exact rank-deficient
+    singular-degenerate slice for standard 16-row, boxed 16-row, and coupled
+    friction-index 6-contact packets and a larger exact rank-deficient
+    singular-degenerate slice for standard 32-row, boxed 32-row, and coupled
+    friction-index 8-contact packets, plus a stress exact rank-deficient
+    singular-degenerate slice for standard 64-row, boxed 64-row, and coupled
+    friction-index 12-contact packets over the solver scope proven by the
+    generated harness, plus an extreme exact rank-deficient
+    singular-degenerate slice for standard 128-row, boxed 128-row, and coupled
+    friction-index 16-, 24-, 32-, 48-, 64-, 96-, 128-, 192-, and 256-contact
+    packets.
+  - Added an opt-in CPU worker-thread update path for the DART 7 projected
+    Jacobi LCP solver (`JacobiSolver::Parameters::workerThreads`), with
+    generated 128-row correctness coverage and focused dense plus banded
+    serial-vs-worker benchmark rows up to 8192 banded rows and up to 32 worker
+    threads on the banded rows. The local benchmark
+    rows are comparison evidence, not a speedup claim.
+  - Extended DART 7 Red-Black Gauss-Seidel and Blocked Jacobi LCP
+    solver-internal CPU threading benchmark evidence from 128-row banded
+    packets to 512-, 1024-, and 2048-row banded packets with serial, 4-worker,
+    and 8-worker rows. These rows are correctness/comparison evidence, not
+    solver speedup or CUDA-kernel claims.
+  - Added DART 7 contact-derived block-structure coverage for BGS and Blocked
+    Jacobi LCP solvers, proving real boxed-LCP world-contact snapshots solve
+    with `findex`-derived non-contiguous per-contact blocks and reject explicit
+    block partitions that split tangent rows from their owning normal rows;
+    focused world-contact, stack-contact, and serial/parallel batch benchmark
+    rows for both solvers also pass the LCP contract.
+  - Added opt-in projected gradient-descent warm starts for the DART 7
+    standard-LCP Minimum Map, Fischer-Burmeister, and Penalized
+    Fischer-Burmeister Newton solvers. Focused unit coverage proves each
+    initializer reduces its solver-specific merit before Newton line search.
+    Added opt-in PGS warm starts for those same standard Newton paths, accepting
+    PGS seeds only when they reduce the solver-specific Newton merit. Boxed/findex
+    problems remain delegated for those three solvers. Added 36 benchmark rows
+    comparing no seed, PGS, projected gradient descent, and PGS-then-gradient
+    modes on identical 32-row, 64-row, and 128-row standard active-set
+    transition packets for those solvers, verified in default, SIMD-enabled,
+    and CUDA-enabled build trees. Added 72 batch benchmark rows for the same
+    warm-start mode matrix over batch-size-4 serial and DART 7
+    `ParallelExecutor` standard active-set transition packets. The
+    CUDA-enabled rows are CPU solver rows, not CUDA LCP kernel execution.
+  - Added focused DART 7 PGS/PSOR, symmetric PSOR, and Red-Black Gauss-Seidel
+    relaxation sweep benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index fixtures at relaxation 0.5, 1.0, and 1.3, verified in default,
+    SIMD-enabled, and CUDA-enabled build trees. The rows distinguish
+    under-relaxation, plain relaxation, and over-relaxation; Red-Black rows also
+    report two-color partition counters. CUDA-enabled rows are CPU solver rows,
+    not CUDA LCP kernel execution.
+  - Added DART 7 APGD restart-policy comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 TGS iteration-budget comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 NNCG PGS-preconditioner iteration comparison benchmark rows
+    for standard, boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 SubspaceMinimization PGS active-set-estimation iteration
+    comparison benchmark rows for standard, boxed, and 8-/16-contact
+    friction-index LCP fixtures, with backend build-state counters distinguishing default,
+    SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 ShockPropagation layer-layout comparison benchmark rows for
+    standard, boxed, and 8-/16-contact friction-index LCP fixtures, comparing
+    single-layer, two-layer, and serial schedules with backend build-state
+    counters distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver
+    runs.
+  - Added DART 7 MPRGP SPD/positive-definite-check comparison benchmark rows
+    for dense, banded, mildly ill-conditioned, and near-singular standard-LCP
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Interior Point path-parameter comparison benchmark rows for
+    dense, banded, mildly ill-conditioned, and near-singular standard-LCP
+    fixtures up to 128 dense/banded rows and 16 near-singular rows, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Staggering contact-pipeline comparison benchmark rows for
+    separated world-contact, coupled stack-contact, and articulated unified
+    contact fixtures up to 8 contacts, with normal/friction split counters and
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 Boxed Semi-Smooth Newton line-search comparison benchmark
+    rows for standard, boxed, and 8-/16-contact friction-index fixtures, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 pivoting scale comparison benchmark rows for Direct 2D/3D
+    enumeration, Lemke and Baraff standard fixtures, and Dantzig standard
+    through 32 rows, boxed through 48 rows, and friction-index through 16
+    contacts, with backend build-state counters
+    distinguishing default, SIMD-enabled, and CUDA-enabled CPU solver runs.
+  - Added DART 7 BGS and Blocked Jacobi block-partition comparison benchmark
+    rows for full-block, 3-row block, auto `findex`, and explicit contact-block
+    partitions on standard, boxed, and 4-/8-contact friction-index fixtures,
+    with backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added manifest-generated serial and DART 7 `ParallelExecutor` batch LCP
+    benchmarks so standard, boxed, and friction-index solver families compare
+    the same independent-problem batches across every supporting solver. The
+    benchmark suite also includes active-set transition rows for standard,
+    boxed, and coupled friction-index generated packets near lower, upper, and
+    friction-cone boundaries, plus 49 larger active-set transition rows for
+    standard 32-row, boxed 32-row, and coupled friction-index 8-contact
+    packets and 49 stress active-set transition rows for standard 64-row,
+    boxed 64-row, and coupled friction-index 12-contact packets verified across
+    default, SIMD-enabled, and CUDA-enabled build trees, plus 49 extreme
+    active-set transition rows for standard 128-row, boxed 128-row, and coupled
+    friction-index 16-contact packets verified across default, SIMD-enabled,
+    and CUDA-enabled build trees, plus generated production active-set
+    correctness coverage through a 256-contact/768-row packet and 128
+    production active-set transition benchmark rows for
+    24-contact/72-row, 32-contact/96-row, 48-contact/144-row, and
+    64-contact/192-row, 96-contact/288-row, 128-contact/384-row, and
+    192-contact/576-row and 256-contact/768-row coupled friction-index packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    550 production active-set transition batch
+    rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over the
+    standard 32/64/128-row, boxed 32/64/128-row, and coupled friction-index
+    8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact active-set packets
+    verified across default, SIMD-enabled, and CUDA-enabled build trees, plus
+    larger mildly ill-conditioned generated correctness coverage for standard
+    32/64-row, boxed 16/32-row, friction-index 8-contact,
+    1x-/4x-/8x-coupled 6-/8-/12-/16-/24-/32-/48-/64-/96-contact packets, and
+    16x-coupled packets through 192 contacts over solvers that reproduce the
+    selected generated solution, plus 629 benchmark rows with 16x-coupled
+    single-problem packets through 256 contacts. Boxed Semi-Smooth Newton is
+    included across those coupled single-problem rows. The
+    256-contact single rows are verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
+    SIMD-enabled SAP 192-contact row is contract-correct but slow and does not
+    claim a speedup. Added
+    1258 larger mildly ill-conditioned batch rows for batch-size-4 serial and
+    DART 7 `ParallelExecutor` runs over standard 32-row, boxed 16-row,
+    friction-index 8-contact, coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 4x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, 8x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-contact, and 15-solver 16x-coupled
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact rows. Boxed
+    Semi-Smooth Newton reports tuned line-search settings on the 16x rows. The
+    new 192- and 256-contact batch rows are verified in the default build, and
+    focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass. Focused SIMD/CUDA-enabled selected-solver
+    256-contact batch gates now pass for PGS, NNCG, APGD, TGS, ADMM, and Boxed
+    Semi-Smooth Newton, while the full all-solver 256-contact SIMD/CUDA batch
+    gate remains unclaimed. Added 31 near-singular benchmark rows for standard 8-row,
+    boxed 8-row, and
+    coupled friction-index 3-, 6-, 9-, 12-, 16-, 24-, 32-, 48-, 64-, 96-,
+    128-, 192-, and 256-contact
+    packets verified across default, SIMD-enabled, and CUDA-enabled build
+    trees, plus 62 near-singular batch rows for batch-size-4 serial and
+    DART 7 `ParallelExecutor` runs over standard 8-row, boxed 8-row, and those
+    coupled friction-index packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees, plus
+    27 exact
+    rank-deficient singular-degenerate benchmark rows for standard 16-row,
+    boxed 16-row, and coupled friction-index 6-contact packets, plus 27 larger
+    exact rank-deficient singular-degenerate benchmark rows for standard
+    32-row, boxed 32-row, and coupled friction-index 8-contact packets, plus
+    27 stress exact rank-deficient singular-degenerate benchmark rows for
+    standard 64-row, boxed 64-row, and coupled friction-index 12-contact
+    packets, each verified across default, SIMD-enabled, and CUDA-enabled build
+    trees, plus 51 extreme exact rank-deficient singular-degenerate rows for
+    standard 128-row, boxed 128-row, and coupled friction-index
+    16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified across default,
+    SIMD-enabled, and CUDA-enabled build
+    trees, plus 72 exact rank-deficient singular-degenerate friction-index
+    batch rows for batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+    coupled friction-index
+    6-/8-/12-/16-/24-/32-/48-/64-/96-/128-/192-/256-contact packets verified
+    across default, SIMD-enabled, and CUDA-enabled build trees, plus 192 exact
+    rank-deficient singular-degenerate standard/boxed batch rows for
+    batch-size-4 serial and DART 7 `ParallelExecutor` runs over
+    16-/32-/64-/128-row packets verified across default, SIMD-enabled, and
+    CUDA-enabled build trees. The
+    LCP benchmark rows now report scalar/SIMD/CUDA build-state counters so
+    backend-specific runs are distinguishable in the benchmark output.
+  - Added DART 7 experimental CUDA LCP execution paths for fixed-iteration
+    projected Jacobi and PGS batch solves over homogeneous dense standard,
+    boxed, and friction-index packets now reaching 256-row standard/boxed and
+    96-contact friction-index synthetic cases, grouped variable-size synthetic
+    standard, boxed, and friction-index packets now reaching
+    16/32/48/96/128/192-row standard/boxed groups and
+    4/8/16/32/48/64-contact friction-index groups with
+    two- and three-variant grouped rows,
+    matching CPU serial and DART 7 `ParallelExecutor` Jacobi/PGS batch rows
+    verified in default, SIMD-enabled, and CUDA-enabled builds at both those
+    grouped packets and the
+    24-/48-/96-/128-/192-/256-row and 8-/16-/32-/48-/64-/96-contact
+    direct CUDA packet sizes,
+    homogeneous 4-, 8-, and 16-contact world-contact,
+    homogeneous 5-/6-/7-/8-/9-/10-/11-/12-/13-/14-/15-/16-sphere coupled stack-contact, grouped variable-size
+    1/2/4/8/16-contact separated world-contact LCP packets with additional
+    three-variant grouped rows, plus grouped
+    variable-size 2/3/4/5/6/7/8/9/10/11/12/13/14/15/16-sphere coupled stack-contact LCP packets with
+    additional three-variant grouped stack benchmark rows, plus
+    grouped variable-size manually assembled 1-/4-/8-/16-contact articulated
+    unified-contact LCP packets with additional three-variant grouped rows,
+    including cross-multibody link-vs-link cases,
+    plus mixed grouped contact batches combining separated, stack, and
+    1-/4-/8-/16-contact articulated fixture families including cross-multibody link-vs-link
+    packets, with
+    CUDA unit coverage and benchmark rows that report CUDA LCP, CUDA batch
+    execution, CUDA grouped-batch execution, world-contact batch, and
+    stack-contact batch counters. General CUDA execution across the full solver
+    manifest remains future work.
+  - Added DART 7 `dart::simulation::World` boxed-LCP snapshot coverage for one
+    sphere-ground friction contact and for two separated sphere-ground contacts
+    assembled into one boxed/friction-index LCP, plus a 200-step two-sphere
+    `World::step()` invariant test. Added contact-derived LCP benchmark rows
+    that compare all friction-index-capable solvers on identical 1/2/4
+    separated sphere-ground boxed/findex snapshots, plus boxed-LCP
+    contact assembly/solve benchmark rows for the same contact counts. Added
+    coupled 2/3-sphere vertical-stack benchmark rows for the same solver set,
+    plus scoped 4-, 5-, and 6-sphere stack rows for all of those solvers
+    (`NNCG` uses 20 PGS preconditioner iterations for this coupled contact
+    family), plus 7-sphere rows for that full solver set
+    (`RedBlackGaussSeidel` reports a 512-iteration stack-contact cap for this
+    family), plus 8-/9-/10-/11-/12-/13-sphere rows for that full solver set (`Pgs`,
+    `Jacobi`, `BlockedJacobi`, `RedBlackGaussSeidel`, and `ShockPropagation`
+    use a 512-iteration stack-contact cap; `SymmetricPsor`, `BGS`, and `Tgs`
+    use that cap on the 11-/12-/13-sphere rows; and `NNCG` uses 20 PGS
+    preconditioner iterations through 11 spheres and 40 at 12+ spheres). Focused
+    default, SIMD-enabled, and CUDA-enabled build-tree rows pass for the
+    11-/12-/13-sphere all-solver stack slice; the CUDA-enabled rows are CPU solver
+    rows in a CUDA-enabled build, not CUDA LCP kernel execution. Added 3-, 4-,
+    5-, 6-, 7-, 8-, 9-, 10-, 11-, 12-, 13-, 14-, 15-, and 16-sphere stack
+    snapshot tests that validate nonzero normal-contact coupling, plus boxed-LCP
+    Baumgarte velocity-bias stabilization that preserves kinematic contacts'
+    static-obstacle compatibility behavior, and
+    3-sphere 200-step, 3-sphere 500-step,
+    4-sphere 200-step, 5-sphere 500-step, and 6-sphere 1000-step
+    `World::step()` invariant tests with matching benchmark rows for the
+    public boxed-LCP stack path. Added 4- and 16-sphere separated-contact
+    `World::step()` invariant tests and 4-/8-/16-sphere separated-contact
+    `World::step()` benchmark rows for the public boxed-LCP path. Stack
+    assembly/solve benchmark rows now include 7-sphere, 7-contact, 21-row,
+    8-sphere, 8-contact, 24-row, 9-sphere, 9-contact, 27-row, 10-sphere,
+    10-contact, 30-row, 11-sphere, 11-contact, 33-row, 12-sphere,
+    12-contact, 36-row, 13-sphere, 13-contact, 39-row, 14-sphere,
+    14-contact, 42-row, 15-sphere, 15-contact, 45-row, and 16-sphere,
+    16-contact, 48-row coupled stack snapshots. Added
+    mixed world-contact batch benchmark rows that compare every
+    friction-index-capable solver on the same five separated-contact and
+    stacked-contact snapshots, both serially and through the DART 7
+    experimental `ParallelExecutor`. Added stress mixed world-contact batch
+    benchmark rows for every friction-index-capable solver except `NNCG`, over
+    the same separated-contact snapshots plus 2/3/4/5-sphere coupled stack
+    snapshots, both serially and through `ParallelExecutor`. Added fixed-base
+    dense box-face contact evidence: a 4-contact, 12-row boxed/findex snapshot
+    APGD-verified in tests, dense contact assertions in the sliding/static box
+    `World::step()` tests, and 72 scoped
+    `BM_LcpWorldBoxContact/FrictionIndex` benchmark rows over
+    1/2/4/8/16/24/32/48/64/96/128/192-box snapshots verified in default, SIMD-enabled, and
+    CUDA-enabled build trees, plus 72 serial and DART 7
+    `ParallelExecutor` dense box-face batch rows for `Pgs`,
+    `RedBlackGaussSeidel`, `NNCG`, `Apgd`, `Tgs`, and `Admm` over
+    24/64/96/128/192-box snapshots, with `Pgs` additionally covering
+    1/4/8/16/32/48-box snapshots so the CPU rows match homogeneous CUDA PGS
+    packet sizes through 96 boxes in default, SIMD-enabled, and CUDA-enabled
+    build trees,
+    plus CUDA batch coverage for homogeneous Jacobi
+    1/4/8/16/24/32/48/64/96-box batch-size-4 rows and a 128-box
+    batch-size-1 row,
+    homogeneous PGS 1/4/8/16/24/32/48/64/96-box batch-size-4 rows and a
+    128-box batch-size-1 row, and Jacobi/PGS grouped
+    1/2/4/8/16/24/32/48/64/96-box dense box-face packets with two and three velocity
+    variants per box-count shape through
+    `BM_LcpCudaJacobiWorldBoxContactBatch_FrictionIndex`,
+    `BM_LcpCudaJacobiWorldBoxContactGroupedBatch_FrictionIndex`,
+    `BM_LcpCudaPgsWorldBoxContactBatch_FrictionIndex`, and
+    `BM_LcpCudaPgsWorldBoxContactGroupedBatch_FrictionIndex`, and
+    1/2/4/8/16/24/32-box
+    `BM_LcpWorldBoxStep_BoxedLcp` end-to-end invariant benchmark rows verified
+    in default, SIMD-enabled, and CUDA-enabled build trees plus a focused
+    default-build 48-box/192-contact row, plus a
+    `FourBoxWorldStepMaintainsDenseContactInvariants` unit test for a 16-contact
+    dense box-face public-step scene and
+    `EightBoxWorldStepMaintainsDenseContactInvariants` and
+    `SixteenBoxWorldStepMaintainsDenseContactInvariants` for 32-contact and
+    64-contact scenes, plus
+    `TwentyFourBoxWorldStepMaintainsDenseContactInvariants` for a 96-contact
+    small-timestep scene and
+    `ThirtyTwoBoxWorldStepMaintainsDenseContactInvariants` for a
+    128-contact small-timestep scene, plus
+    `FortyEightBoxWorldStepMaintainsDenseContactInvariants` for a
+    192-contact small-timestep scene.
+    Added fixed-base prismatic articulated
+    link-ground `World::step()` invariant coverage for one-link and four-link
+    contact scenes, plus 1-/4-/8-/16-link articulated ground-step benchmark
+    rows through the public boxed-LCP unified constraint path. Added connected
+    fixed-base three-axis prismatic Cartesian-chain link-ground `World::step()`
+    invariant coverage and 1-/4-/8-/16-chain articulated Cartesian ground-step
+    benchmark rows through the same public unified path. Added fixed-base
+    prismatic link-vs-dynamic-rigid `World::step()` invariant coverage and
+    1-/4-/8-/16-pair articulated rigid-impact benchmark rows through the same
+    public unified path. Added cross-multibody fixed-base prismatic
+    link-vs-link `World::step()` invariant coverage and
+    1-/4-/8-/16-pair articulated link-impact benchmark rows through the same
+    public unified path. Added
+    all-solver articulated unified-contact benchmark rows for manually
+    assembled fixed-base three-axis prismatic link-ground and
+    link-vs-dynamic-rigid LCP snapshots, now extended to cross-multibody
+    link-vs-link LCP snapshots and 32-contact packets, plus CUDA grouped-batch Jacobi/PGS
+    execution rows over manually assembled 1-/4-/8-/16-contact articulated
+    unified-contact packets covering link-ground, link-vs-dynamic-rigid, and
+    cross-multibody link-vs-link cases and mixed CUDA grouped-batch rows that
+    combine separated, stack, and 1-/4-/8-/16-contact articulated
+    cross-multibody contact packets in one benchmark family with two- and
+    three-variant mixed scenario rows.
+  - Updated the DART 7 LCP background taxonomy and selection guide to include
+    APGD, TGS, boxed semi-smooth Newton, ADMM, and SAP alongside the shared
+    solver manifest, correctness coverage, and benchmark registration.
+    The selection guide's available-solver block is now checked against
+    `kLcpSolverManifest` by the all-solvers smoke test so documented DART 7 LCP
+    solver availability cannot drift silently from implementation coverage.
+  - Added DART 7 ADMM rho/adaptive-rho comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 SAP regularization comparison benchmark rows for standard,
+    boxed, and 8-/16-contact friction-index LCP fixtures, with backend
+    build-state counters distinguishing default, SIMD-enabled, and CUDA-enabled
+    CPU solver runs.
+  - Added DART 7 ADMM, SAP, and Boxed Semi-Smooth Newton contact comparison
+    benchmark rows for separated world-contact, coupled stack-contact, and
+    articulated unified-contact friction-index fixtures up to 8 contacts, with
+    backend build-state counters distinguishing default, SIMD-enabled, and
+    CUDA-enabled CPU solver runs.
+  - Added DART 7 generated correctness coverage for
+    1x-/4x-/8x-coupled mildly ill-conditioned friction-index LCP packets
+    through 96 contacts and 16x-coupled packets through 192 contacts, plus
+    single/batch benchmark rows through 256 contacts across the scoped
+    iterative solver set plus Boxed Semi-Smooth Newton. Boxed
+    Semi-Smooth Newton reports tuned line-search settings on the 16x rows.
+    Focused SIMD/CUDA-enabled all-solver serial/parallel 192-contact batch
+    contract gates now pass; CUDA-enabled rows are CPU solver rows in that
+    build tree, not CUDA LCP kernel execution.
+  - Added DART 7 contact-normal standard-LCP comparison benchmark rows for
+    Dantzig, Lemke, Baraff, Direct, Minimum Map Newton,
+    Fischer-Burmeister Newton, Penalized Fischer-Burmeister Newton, Interior
+    Point, and MPRGP on normal-only subproblems extracted from separated
+    world-contact, coupled stack-contact, and articulated unified-contact
+    snapshots up to 8 contacts. Direct rows are limited to 1-, 2-, and 3-row
+    subproblems to avoid benchmarking its Dantzig fallback as direct
+    enumeration.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the
@@ -2530,8 +3362,16 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Ensure Bullet double-precision builds include `dart/collision/bullet/BulletInclude.hpp` before Bullet headers so `BT_USE_DOUBLE_PRECISION` is honored: [#2334](https://github.com/dartsim/dart/pull/2334).
 
 - LCP and Optimization
+  - Added `dart::constraint::CylindricalJointConstraint` for runtime
+    slide-and-rotate attachments that leave translation along an axis and
+    rotation about that axis free, with dartpy bindings, unit tests, a focused
+    headless smoke example, and a consolidated `dart-demos` dynamic joint
+    constraint catalog.
   - Added dimension validation to `Problem::setDimension()` to reject dimensions exceeding `Problem::kMaxDimension` (1,000,000) with `InvalidArgumentException` instead of attempting multi-GB allocations that cause ASan aborts or `std::bad_alloc`. ([#2500](https://github.com/dartsim/dart/issues/2500))
   - Refactored the LCP solver stack under `dart::math::lcp` with unified APIs plus new solver implementations and ImGui dashboard support. ([#2202](https://github.com/dartsim/dart/pull/2202), [#2241](https://github.com/dartsim/dart/pull/2241), [#2318](https://github.com/dartsim/dart/pull/2318), [#2355](https://github.com/dartsim/dart/pull/2355))
+  - Added opt-in solver-internal CPU worker threads for the Red-Black
+    Gauss-Seidel and Blocked Jacobi LCP solvers, with focused correctness tests
+    and benchmark counters for threaded color/block updates.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))
@@ -2561,10 +3401,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     `DART_GUI_HIGH_FIDELITY` opt-in that restores the heavy screen-space passes
     on the headless path for GPU capture; an `ApplicationOptions::debugProvider`
     callback that feeds per-frame debug lines/triangles/labels into the built-in
-    overlay (so hosts no longer re-implement overlay wiring per example; the
-    `gui_scene_diagnostics` example is ported to it and now performs a bounded
-    headless application run); new joint-axis and linear/angular velocity debug
-    primitives; and built-in panel toggles plus numeric tuning sliders for the
+    overlay (so hosts no longer re-implement overlay wiring per example); new
+    `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers usable from the
+    provider; and built-in panel toggles plus numeric tuning sliders for the
     debug overlays. See `docs/design/renderer_fidelity_and_debug_visuals.md`.
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,
@@ -2731,6 +3570,9 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
 
 - Core
   - Added SIMD abstraction layer (`dart/simd/`) with portable vectorized math primitives supporting SSE4.2, AVX, AVX2, AVX-512, and ARM NEON backends with automatic runtime dispatch. Includes `Vec<T, N>`, `VecMask<T, N>`, aligned allocators, Eigen interop utilities, and dynamic vector/matrix types for batch computation. ([#2490](https://github.com/dartsim/dart/pull/2490))
+  - Added a backend-neutral lie-group batch adjoint helper and fixed SO3, SE3,
+    and group-product log Jacobian plumbing so DART 7 math paths have tested
+    scalar baselines ready for SIMD, multi-threaded, and CUDA compute backends.
   - Added `<numbers>`-style variable templates (`dart::math::pi`, `phi`, `two_pi`, etc.) plus numeric-limits helpers (`inf_v`, `max_v`, `min_v`, `eps_v`) in `dart/math/Constants.hpp` and deprecated `dart::math::constants<T>` (the legacy struct/header will be removed in DART 7.1). ([#2150](https://github.com/dartsim/dart/pull/2150), [#2157](https://github.com/dartsim/dart/pull/2157), [#2225](https://github.com/dartsim/dart/pull/2225))
   - Fix spdlog/fmt 12 builds by treating DART logging format parameters as runtime format strings. ([#2542](https://github.com/dartsim/dart/pull/2542), [#2538](https://github.com/dartsim/dart/issues/2538))
   - Logging and profiling updates: conditional logging macros, source-context metadata, `DART_ASSERT` adoption, log prefix cleanup, and the text profiling backend. ([#2099](https://github.com/dartsim/dart/pull/2099), [#2104](https://github.com/dartsim/dart/pull/2104), [#2105](https://github.com/dartsim/dart/pull/2105), [#2109](https://github.com/dartsim/dart/pull/2109), [#2110](https://github.com/dartsim/dart/pull/2110), [#2238](https://github.com/dartsim/dart/pull/2238))

@@ -1,5 +1,9 @@
 # Codex hand-off prompt
 
+Historical prompt for the PR #2705 conflict-resolution session. Do not use this
+as live task direction; use [`README.md`](README.md), [`RESUME.md`](RESUME.md),
+and the durable solver architecture design for current status.
+
 Paste the block below into Codex.
 
 ---
@@ -7,7 +11,7 @@ Paste the block below into Codex.
 DART repo (`dartsim/dart`, C++20 + nanobind dartpy, pixi/ninja). Branch
 `feature/experimental-rigid-body-dynamics` = PR #2705: a rigid-body dynamics MVP
 (all joint types, two-sided contacts, floating base) on the experimental ECS
-`World` (`dart::simulation::experimental`). Green on its own, but PR #2705 is
+`World` (`dart::simulation`). Green on its own, but PR #2705 is
 `CONFLICTING` — while it was in review `origin/main` landed #2698, which
 refactored the rigid-body integration foundation underneath it.
 
@@ -16,7 +20,7 @@ refactored the rigid-body integration foundation underneath it.
 1. Unblock PR #2705: merge current `origin/main` and reconcile the integration
    _conventions_ #2698 changed, so the suite is green and the PR is `MERGEABLE`,
    without regressing the MVP.
-2. Add at least one MVP **GUI** example that steps the experimental World and
+2. Add at least one MVP **GUI** example that steps the DART 7 World and
    renders it live with `dart-gui`.
 
 Required reading (verified analysis + design intent — don't skip), under
@@ -27,7 +31,7 @@ Required reading (verified analysis + design intent — don't skip), under
 - `architecture_principles.md` — durable intent: SoA / cache-friendly / batch /
   backend-portable (multi-thread CPU, CUDA, hybrid) **pure kernels**, with
   **DART-6 dynamics parity**; reuse DART-6 code where it fits the new API, else
-  rewrite (DART 8 ships only the experimental API).
+  rewrite (DART 8 ships only the DART 7 API).
 - `RESUME.md` — full roadmap; the GUI example is "Subsystem C".
 
 Re-alignment: #2698 made integration gravity-free +

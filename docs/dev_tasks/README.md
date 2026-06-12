@@ -87,6 +87,11 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 - Update `RESUME.md` **before** ending your session
 - Update after significant progress (don't wait until "done")
 - Keep it current — stale resume prompts are worse than none
+- Treat branch/status sections as snapshots from the last update. Before acting
+  on an existing `RESUME.md`, verify the current checkout with `git status` and
+  the task's `README.md`/durable design docs. If the code has landed or the
+  branch instructions are historical, add a short "Current Reality" note above
+  the older branch-local instructions instead of deleting useful archaeology.
 
 ### README.md Template
 
@@ -154,6 +159,9 @@ find docs/dev_tasks -maxdepth 2 -type d -print
        home (a `docs/design/` doc, a `docs/plans/` entry, or the dashboard) so they
        survive folder deletion. If such work genuinely cannot be completed now,
        **ask the human before retiring the folder** so it can be revisited later.
+       Open-ended checklist items such as "continue expanding" need an explicit
+       stopping condition or scope cap before cleanup; record the achieved scope
+       and move further expansion to the durable follow-up home.
 2. [ ] **Extract key insights** → Add brief section to the existing relevant `docs/onboarding/` (or `docs/design/` / `docs/plans/`) doc
 3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
 4. [ ] **Include in completion PR** → Same PR that finishes the implementation

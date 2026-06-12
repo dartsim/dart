@@ -128,14 +128,13 @@ void refreshStaticDebugOverlay(
     ::filament::Engine& engine,
     ::filament::Scene& scene,
     ::filament::Material& material,
-    const dart::simulation::World& world,
     DebugOverlayController& controller)
 {
   refreshDebugLineOverlay(
       engine,
       scene,
       material,
-      extractDebugLines(world, controller.staticOptions),
+      extractDebugLines(controller.staticOptions),
       controller.staticOverlay);
 }
 

@@ -1,4 +1,4 @@
-"""Atlas SIMBICON preview on the experimental World.
+"""Atlas SIMBICON preview on the DART 7 World.
 
 This scene stages the old `atlas_simbicon` flagship as a World-native controller
 preview: Atlas is loaded through `sx.add_skeleton`, then a four-state SIMBICON
@@ -203,6 +203,6 @@ SCENE = PythonDemoScene(
     id="atlas_simbicon",
     title="Atlas SIMBICON",
     category="Control & IK",
-    summary="Atlas cycling SIMBICON gait targets on the experimental World.",
+    summary="Atlas cycling SIMBICON gait targets on the DART 7 World.",
     build=build,
 )

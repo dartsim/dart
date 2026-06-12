@@ -109,7 +109,8 @@ MemoryManager::MemoryManager(
         mBaseAllocator,
         options.freeListInitialAllocation,
         options.freeListGrowthPolicy);
-    mPoolAllocator = std::make_unique<PoolAllocator>(*mFreeListAllocator);
+    mPoolAllocator = std::make_unique<PoolAllocator>(
+        *mFreeListAllocator, PoolAllocator::DiagnosticsPolicy::Disabled);
   }
 
   mFrameAllocator = std::make_unique<FrameAllocator>(

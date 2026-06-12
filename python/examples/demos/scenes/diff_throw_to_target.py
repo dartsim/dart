@@ -1,8 +1,8 @@
 """Differentiable throw-to-target scene (paper experiment, World).
 
 Mirrors the throw-to-target trajectory optimization from
-``tests/unit/simulation/experimental/diff/test_diff_optimization.cpp`` and the
-C++ GUI demo ``examples/experimental_differentiable_gui/main.cpp``: a ballistic
+``tests/unit/simulation/diff/test_diff_optimization.cpp`` and the
+C++ GUI demo ``examples/differentiable_gui/main.cpp``: a ballistic
 projectile is thrown under gravity and its INITIAL VELOCITY is optimized by
 plain gradient descent so the converged rollout lands on a fixed target. The
 gradient comes from ``sx.diff.rollout`` plus ``RolloutTrajectory.gradients``
@@ -73,9 +73,7 @@ def _build_throw_world() -> "sx.World | None":
     ground.set_collision_shape(sx.CollisionShape.box((50.0, 50.0, 0.5)))
     ground.friction = 0.0
 
-    projectile = world.add_rigid_body(
-        "projectile", mass=1.0, position=(0.0, 0.0, 5.0)
-    )
+    projectile = world.add_rigid_body("projectile", mass=1.0, position=(0.0, 0.0, 5.0))
     projectile.set_collision_shape(sx.CollisionShape.sphere(_PROJECTILE_RADIUS))
     projectile.friction = 0.0
 
@@ -140,9 +138,9 @@ def _optimize_throw(diff: Any, world: "sx.World") -> dict[str, Any]:
         final_state_grad[:3] = residual
         initial_state_grad, _control_grads = trajectory.gradients(final_state_grad)
         # The decision variable is the initial velocity (state rows 3..5).
-        velocity = velocity - _LEARNING_RATE * np.asarray(
-            initial_state_grad, dtype=float
-        )[3:6]
+        velocity = (
+            velocity - _LEARNING_RATE * np.asarray(initial_state_grad, dtype=float)[3:6]
+        )
 
     final_trajectory = run(velocity)
     post_trail = _positions_of(np.asarray(final_trajectory.states))
@@ -164,7 +162,9 @@ def _make_marker(
     color: tuple[float, float, float],
     position: Any,
 ) -> None:
-    frame = dart.SimpleFrame(dart.gui.world_render_frame(), name, _translation(position))
+    frame = dart.SimpleFrame(
+        dart.gui.world_render_frame(), name, _translation(position)
+    )
     frame.set_shape(shape)
     frame.create_visual_aspect().set_color(list(color))
     render_world.add_simple_frame(frame)

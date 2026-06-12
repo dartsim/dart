@@ -7,7 +7,7 @@ from the retired `refactor/ownership` branch as a tracked dev task. The
 prototype branch was retired because the simple half of its scope (removing
 `World::createSkeletonFromUri`) already landed on main, and the surviving
 design half (the enum + parser plumbing) needs a placement decision before it
-can land cleanly under the snake_case + experimental-World layout.
+can land cleanly under the snake_case + DART 7 World layout.
 
 ## Current Branch
 
@@ -18,7 +18,7 @@ prototype.
 
 Decide whether the lifecycle marker belongs on the legacy
 `dart::dynamics::Skeleton` (and propagate through five parsers) or only on
-the experimental World's frame storage (PLAN-050). Record the decision as
+the DART 7 World's frame storage (PLAN-050). Record the decision as
 `01-placement.md` here. Phase 1 implementation is blocked on this.
 
 ## Context That Would Be Lost

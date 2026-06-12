@@ -1,12 +1,17 @@
 # Roadmap: Rigid-Body Dynamics Solver (First Solver)
 
-Phased plan to bring the experimental `World` to DART 6-equivalent (then better)
+Historical phased roadmap for the first rigid-body solver. It is useful for
+understanding why the slices were ordered this way, but it is not current status.
+For live status use [`README.md`](README.md),
+[`RESUME.md`](RESUME.md), and the durable solver architecture design.
+
+Phased plan to bring the DART 7 `World` to DART 6-equivalent (then better)
 rigid-body simulation as the first solver under the architecture in
 [`docs/design/simulation_solver_architecture.md`](../../design/simulation_solver_architecture.md).
 
 Each phase is multi-session and should land as several small, independently
 verifiable slices (one PR per slice). Every slice runs `pixi run lint`, focused
-C++ tests under `tests/unit/simulation/experimental/`, `pixi run build`, and
+C++ tests under `tests/unit/simulation/`, `pixi run build`, and
 `pixi run test-py` when dartpy changes. Update the gap matrix
 ([`01-gap-analysis.md`](01-gap-analysis.md)) rows as they flip to PRESENT.
 

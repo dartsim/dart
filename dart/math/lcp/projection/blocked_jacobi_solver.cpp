@@ -44,6 +44,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -326,6 +327,12 @@ LcpResult BlockedJacobiSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  if (params->workerThreads <= 0) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Worker thread count must be positive";
+    return result;
+  }
+
   std::vector<BlockData> blocks;
   std::string blockMessage;
   if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &blockMessage)) {
@@ -372,9 +379,8 @@ LcpResult BlockedJacobiSolver::solve(
   bool converged = (residual <= tol && complementarity <= compTol);
   int iterationsUsed = 0;
 
-  DirectSolver directSolver;
-  DantzigSolver blockSolver;
-  LcpOptions blockOptions = blockSolver.getDefaultOptions();
+  DantzigSolver blockOptionsSource;
+  LcpOptions blockOptions = blockOptionsSource.getDefaultOptions();
   blockOptions.absoluteTolerance = absTol;
   blockOptions.relativeTolerance = relTol;
   blockOptions.complementarityTolerance = compTolOpt;
@@ -382,43 +388,86 @@ LcpResult BlockedJacobiSolver::solve(
   blockOptions.warmStart = true;
   blockOptions.customOptions = nullptr;
 
+  auto solveBlock = [&](const BlockData& block,
+                        const Eigen::VectorXd& xPrev,
+                        Eigen::VectorXd& xNext) {
+    const auto m = std::ssize(block.indices);
+    Eigen::VectorXd xBlock(m);
+    for (int r = 0; r < m; ++r) {
+      xBlock[r] = xPrev[block.indices[r]];
+    }
+
+    Eigen::VectorXd AxBlock(m);
+    for (int r = 0; r < m; ++r) {
+      const int globalIndex = block.indices[r];
+      AxBlock[r] = A.row(globalIndex).dot(xPrev);
+    }
+
+    const Eigen::VectorXd AxSelf = block.A * xBlock;
+    const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
+
+    LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+    const bool useDirect
+        = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
+    DirectSolver directSolver;
+    DantzigSolver blockSolver;
+    const LcpResult blockResult
+        = useDirect ? directSolver.solve(subProblem, xBlock, blockOptions)
+                    : blockSolver.solve(subProblem, xBlock, blockOptions);
+    if (blockResult.status == LcpSolverStatus::InvalidProblem
+        || blockResult.status == LcpSolverStatus::NumericalError) {
+      return blockResult;
+    }
+
+    for (int r = 0; r < m; ++r) {
+      xNext[block.indices[r]] = xBlock[r];
+    }
+
+    return blockResult;
+  };
+
+  const int requestedWorkers = std::max(1, params->workerThreads);
+  const int workerCount = std::min(
+      requestedWorkers, std::max(1, static_cast<int>(blocks.size())));
+
   for (int iter = 0; iter < maxIterations && !converged; ++iter) {
     iterationsUsed = iter + 1;
 
     const Eigen::VectorXd xPrev = x;
     Eigen::VectorXd xNext = x;
 
-    for (const auto& block : blocks) {
-      const auto m = std::ssize(block.indices);
-      Eigen::VectorXd xBlock(m);
-      for (int r = 0; r < m; ++r) {
-        xBlock[r] = xPrev[block.indices[r]];
+    std::vector<LcpResult> blockResults(blocks.size());
+    auto solveBlockRange = [&](const int begin, const int end) {
+      for (int blockIndex = begin; blockIndex < end; ++blockIndex) {
+        blockResults[static_cast<std::size_t>(blockIndex)] = solveBlock(
+            blocks[static_cast<std::size_t>(blockIndex)], xPrev, xNext);
       }
+    };
 
-      Eigen::VectorXd AxBlock(m);
-      for (int r = 0; r < m; ++r) {
-        const int globalIndex = block.indices[r];
-        AxBlock[r] = A.row(globalIndex).dot(xPrev);
+    if (workerCount > 1) {
+      std::vector<std::thread> workers;
+      workers.reserve(static_cast<std::size_t>(workerCount));
+      const int blockCount = static_cast<int>(blocks.size());
+      const int chunkSize = (blockCount + workerCount - 1) / workerCount;
+      for (int worker = 0; worker < workerCount; ++worker) {
+        const int begin = worker * chunkSize;
+        const int end = std::min(blockCount, begin + chunkSize);
+        workers.emplace_back(
+            [&, begin, end]() { solveBlockRange(begin, end); });
       }
+      for (auto& worker : workers) {
+        worker.join();
+      }
+    } else {
+      solveBlockRange(0, static_cast<int>(blocks.size()));
+    }
 
-      const Eigen::VectorXd AxSelf = block.A * xBlock;
-      const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
-
-      LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
-      const bool useDirect
-          = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
-      const LcpResult blockResult
-          = useDirect ? directSolver.solve(subProblem, xBlock, blockOptions)
-                      : blockSolver.solve(subProblem, xBlock, blockOptions);
+    for (const auto& blockResult : blockResults) {
       if (blockResult.status == LcpSolverStatus::InvalidProblem
           || blockResult.status == LcpSolverStatus::NumericalError) {
         result.status = blockResult.status;
         result.message = blockResult.message;
         return result;
-      }
-
-      for (int r = 0; r < m; ++r) {
-        xNext[block.indices[r]] = xBlock[r];
       }
     }
 

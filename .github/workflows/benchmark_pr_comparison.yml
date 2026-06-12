@@ -42,7 +42,7 @@ jobs:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
       # Must stay byte-identical to performance_dashboard.yml's `name:` so the
       # gh-pages baseline series matches.
-      BENCHMARK_SERIES: DART Experimental World Performance
+      BENCHMARK_SERIES: DART 7 World Performance
     steps:
       - name: Checkout source
         uses: actions/checkout@v6

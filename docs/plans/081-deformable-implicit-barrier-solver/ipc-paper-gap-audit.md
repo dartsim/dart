@@ -52,7 +52,7 @@ files plus 10 tracked symlink aliases.
 
 ## Current DART Slice
 
-DART currently has an experimental point-mass deformable slice, not a full IPC
+DART currently has a DART 7 point-mass deformable slice, not a full IPC
 solver:
 
 - `DeformableBody` stores world-space nodes, velocities, masses, fixed nodes,

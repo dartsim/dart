@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Check that scalable-compute backend details stay out of public APIs.
 
-The experimental compute API may expose backend-neutral concepts such as graph
+The simulation compute API may expose backend-neutral concepts such as graph
 nodes, executor injection, profiles, stage metadata, and DOT visualization. It
 must not expose CUDA/SYCL/device/stream/kernel/memory-pool concepts through
-public C++ headers or the default dartpy experimental bindings before a later
+public C++ headers or the default dartpy simulation bindings before a later
 promotion design and benchmark gate justify that API surface.
 """
 
@@ -17,10 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-EXPERIMENTAL_HEADER_ROOT = REPO_ROOT / "dart" / "simulation" / "experimental"
-SIMULATION_EXPERIMENTAL_BINDING_ROOT = (
-    REPO_ROOT / "python" / "dartpy" / "simulation_experimental"
-)
+SIMULATION_HEADER_ROOT = REPO_ROOT / "dart" / "simulation"
+SIMULATION_BINDING_ROOT = REPO_ROOT / "python" / "dartpy" / "simulation"
 
 SOURCE_SUFFIXES = {".cpp", ".h", ".hpp"}
 SKIPPED_HEADER_PARTS = {
@@ -56,7 +54,7 @@ PROHIBITED_TERMS = {
 # device, stream, kernel, memory allocator, or package dependency.
 ALLOWLIST = {
     (
-        "dart/simulation/experimental/compute/compute_stage_metadata.hpp",
+        "dart/simulation/compute/compute_stage_metadata.hpp",
         "Gpu",
     ),
 }
@@ -71,7 +69,7 @@ class Violation:
 
 
 def _is_scanned_header(path: Path) -> bool:
-    rel = path.relative_to(EXPERIMENTAL_HEADER_ROOT)
+    rel = path.relative_to(SIMULATION_HEADER_ROOT)
     if any(part in SKIPPED_HEADER_PARTS for part in rel.parts):
         return False
     return not any(path.name.endswith(suffix) for suffix in SKIPPED_HEADER_SUFFIXES)
@@ -80,13 +78,13 @@ def _is_scanned_header(path: Path) -> bool:
 def iter_scanned_sources() -> list[Path]:
     sources = [
         path
-        for path in EXPERIMENTAL_HEADER_ROOT.rglob("*")
+        for path in SIMULATION_HEADER_ROOT.rglob("*")
         if path.is_file() and path.suffix in {".h", ".hpp"} and _is_scanned_header(path)
     ]
-    if SIMULATION_EXPERIMENTAL_BINDING_ROOT.exists():
+    if SIMULATION_BINDING_ROOT.exists():
         sources.extend(
             path
-            for path in SIMULATION_EXPERIMENTAL_BINDING_ROOT.rglob("*")
+            for path in SIMULATION_BINDING_ROOT.rglob("*")
             if path.is_file() and path.suffix in SOURCE_SUFFIXES
         )
     return sorted(sources)
@@ -235,7 +233,7 @@ def find_backend_boundary_violations() -> list[Violation]:
 
 
 def run_self_tests() -> None:
-    allowed_path = "dart/simulation/experimental/compute/compute_stage_metadata.hpp"
+    allowed_path = "dart/simulation/compute/compute_stage_metadata.hpp"
     if find_backend_boundary_violations_in_text(allowed_path, "enum X { Gpu };"):
         raise AssertionError("Gpu metadata allowlist self-test failed")
 
@@ -245,7 +243,7 @@ def run_self_tests() -> None:
     struct BackendNeutral {};
     """
     if find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/world.hpp", comment_fixture
+        "dart/simulation/world.hpp", comment_fixture
     ):
         raise AssertionError("comment/string masking self-test failed")
 
@@ -256,7 +254,7 @@ def run_self_tests() -> None:
     )
     for source, token in cases:
         violations = find_backend_boundary_violations_in_text(
-            "dart/simulation/experimental/world.hpp", source
+            "dart/simulation/world.hpp", source
         )
         if not any(violation.token == token for violation in violations):
             raise AssertionError(f"backend token self-test failed for {token}")

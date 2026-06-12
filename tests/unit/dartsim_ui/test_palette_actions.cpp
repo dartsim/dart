@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/simulation/experimental/multibody/multibody.hpp>
-#include <dart/simulation/experimental/world.hpp>
+#include <dart/simulation/multibody/multibody.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <dartsim_engine/sim_engine.hpp>
 #include <dartsim_ui/palette_actions.hpp>

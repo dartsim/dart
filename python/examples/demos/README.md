@@ -69,7 +69,7 @@ the recorded PPM sequence with first/previous/play/next/last controls and the
 selected frame path.
 
 World-backed scenes also get a bottom `Replay` panel. `Save replay` is enabled
-by default and records bounded experimental-World state snapshots while the
+by default and records bounded DART 7 World state snapshots while the
 scene runs. Use the replay transport or scrubber to pause the live simulation,
 restore a saved frame, and play the saved states without stepping physics again;
 `Resume live` continues simulation from the selected restored state. Scenes with
@@ -94,11 +94,55 @@ visual change done.
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
 user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
 
-| Scene id                         | Shows                                                | AVBD capability exercised                          |
-| -------------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
-| `avbd_rigid_fixed_joint_contact` | A fixed rigid payload sliding against static contact | Public fixed-joint rows plus ordinary contact      |
-| `avbd_rigid_revolute_motor`      | A bounded revolute motor driving a free hinge        | Public velocity actuator mapped to AVBD motor rows |
-| `avbd_rigid_breakable_joint`     | A weak fixed joint releasing a rigid payload         | Public break-force threshold and broken-state path |
+| Scene id                                                | Shows                                                                                       | AVBD capability exercised                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `avbd_empty_baseline`                                   | An empty variational-integrator World stepping with render-only axes                        | Source-demo corpus baseline with 2D/3D empty-row revision/default metadata       |
+| `avbd_demo2d_ground`                                    | The `avbd-demo2d` Ground source scene as its static 2D ground slab                          | Source-demo static ground row with matched source geometry and metadata          |
+| `avbd_demo2d_motor`                                     | The `avbd-demo2d` Motor source scene as a pinned rigid bar with a velocity motor            | First non-empty source-demo row using public AVBD revolute motor rows            |
+| `avbd_demo2d_dynamic_friction`                          | The `avbd-demo2d` Dynamic Friction source scene as sliding boxes over a ground slab         | Source-demo rigid friction row with matched source geometry and metadata         |
+| `avbd_demo2d_static_friction`                           | The `avbd-demo2d` Static Friction source scene as rotated 2D boxes on an inclined slab      | Source-demo inclined-slab friction row with matched source geometry/metadata     |
+| `avbd_demo2d_pyramid`                                   | The `avbd-demo2d` Pyramid source scene as a triangular pile of 2D rigid boxes               | Source-demo rigid stacking row with matched source geometry and metadata         |
+| `avbd_demo2d_cards`                                     | The `avbd-demo2d` Cards source scene as a thin-card rigid contact tower                     | Source-demo card-tower contact row with matched source geometry and metadata     |
+| `avbd_demo2d_stack`                                     | The `avbd-demo2d` Stack source scene as falling 2D boxes over a ground slab                 | Source-demo rigid stacking row with matched source geometry and metadata         |
+| `avbd_demo2d_stack_ratio`                               | The `avbd-demo2d` Stack Ratio source scene as geometric-size 2D rigid boxes                 | Source-demo size-ratio stacking row with matched source geometry and metadata    |
+| `avbd_demo2d_rod`                                       | The `avbd-demo2d` Rod source scene as a horizontal all-axis fixed-joint chain               | Source-demo rod row with matched hard constraints, geometry, and metadata        |
+| `avbd_demo2d_soft_body`                                 | The `avbd-demo2d` Soft Body source scene as two finite-stiffness box lattices               | Source-demo soft-body row with finite all-axis joint stiffness and metadata      |
+| `avbd_demo2d_joint_grid`                                | The `avbd-demo2d` Joint Grid source scene as a 25x25 fixed-joint box lattice                | Source-demo large joint-grid row with matched hard constraints and metadata      |
+| `avbd_demo2d_rope`                                      | The `avbd-demo2d` Rope source scene as a horizontal point-jointed rigid chain               | Source-demo rope row with matched anchors, geometry, and metadata                |
+| `avbd_demo2d_heavy_rope`                                | The `avbd-demo2d` Heavy Rope source scene with a large endpoint block                       | Source-demo high-ratio rope row with matched anchors, geometry, and metadata     |
+| `avbd_demo2d_hanging_rope`                              | The `avbd-demo2d` Hanging Rope source scene as vertical point-jointed links                 | Source-demo long rope row with matched anchors, geometry, and metadata           |
+| `avbd_demo2d_spring`                                    | The `avbd-demo2d` Spring source scene as one radial rigid distance spring                   | Source-demo finite-stiffness spring row with matched anchors and metadata        |
+| `avbd_demo2d_spring_ratio`                              | The `avbd-demo2d` Spring Ratio source scene as alternating-stiffness radial springs         | Source-demo stiffness-ratio row with matched anchors, geometry, and metadata     |
+| `avbd_demo2d_net`                                       | The `avbd-demo2d` Net source scene as endpoint-pinned links under falling rigid blocks      | Source-demo net row with matched anchors, geometry, and metadata                 |
+| `avbd_demo2d_fracture`                                  | The `avbd-demo2d` Fracture source scene as falling 2D boxes over weak fixed joints          | Source-demo breakable fixed-joint row with public AVBD break thresholds          |
+| `avbd_demo3d_ground`                                    | The `avbd-demo3d` Ground source scene as a falling rigid box over a static ground box       | Source-demo rigid contact row with matched source geometry and metadata          |
+| `avbd_demo3d_dynamic_friction`                          | The `avbd-demo3d` Dynamic Friction source scene as sliding rigid boxes over ground          | Source-demo rigid friction row with matched source geometry and metadata         |
+| `avbd_demo3d_static_friction`                           | The `avbd-demo3d` Static Friction source scene as rigid boxes on an inclined ramp           | Source-demo inclined-ramp friction row with matched source geometry/metadata     |
+| `avbd_demo3d_pyramid`                                   | The `avbd-demo3d` Pyramid source scene as a triangular pile of rigid boxes                  | Source-demo rigid stacking row with matched source geometry and metadata         |
+| `avbd_demo3d_rope`                                      | The `avbd-demo3d` Rope source scene as anchored rigid links with linear-only point joints   | Source-demo rope row with matched anchors, geometry, and metadata                |
+| `avbd_demo3d_heavy_rope`                                | The `avbd-demo3d` Heavy Rope source scene with a large endpoint block                       | Source-demo high-ratio rope row with matched anchors, geometry, and metadata     |
+| `avbd_demo3d_stack`                                     | The `avbd-demo3d` Stack source scene as ten rigid boxes over a static ground box            | Source-demo vertical stacking row with matched source geometry and metadata      |
+| `avbd_demo3d_stack_ratio`                               | The `avbd-demo3d` Stack Ratio source scene as a four-box geometric size tower               | Source-demo size-ratio stacking row with matched source geometry and metadata    |
+| `avbd_demo3d_soft_body`                                 | The `avbd-demo3d` Soft Body source scene as three finite-stiffness box lattices             | Source-demo 3D soft-body row with finite all-axis joint stiffness and metadata   |
+| `avbd_demo3d_bridge`                                    | The `avbd-demo3d` Bridge source scene with paired point-jointed planks and load boxes       | Source-demo bridge row with matched anchors, geometry, and metadata              |
+| `avbd_demo3d_breakable`                                 | The `avbd-demo3d` Breakable source scene as rigid boxes, contact shapes, and weak joints    | Source-demo breakable fixed-joint row with public AVBD break thresholds          |
+| `avbd_rigid_fixed_joint_contact`                        | A fixed rigid payload sliding against static contact                                        | Public fixed-joint rows plus ordinary contact                                    |
+| `avbd_rigid_revolute_motor`                             | A bounded revolute motor driving a free hinge                                               | Public velocity actuator mapped to AVBD motor rows                               |
+| `avbd_rigid_prismatic_motor`                            | A bounded prismatic motor driving a free rigid slider                                       | Public linear velocity actuator mapped to AVBD motor rows                        |
+| `avbd_articulated_revolute_motor`                       | A bounded revolute motor reversing an articulated floating link                             | Public articulated velocity motor updates through the bridge                     |
+| `avbd_articulated_prismatic_motor`                      | A bounded prismatic motor reversing an articulated floating carriage                        | Public articulated linear motor updates through the bridge                       |
+| `avbd_articulated_motor_breakable_joint`                | A weak articulated revolute motor releasing and re-engaging an articulated floating link    | Public articulated motor break/reset lifecycle through the bridge                |
+| `avbd_articulated_prismatic_pair_motor_breakable_joint` | A weak same-multibody prismatic motor releasing and re-engaging an articulated carriage     | Public articulated linear motor break/reset lifecycle through the bridge         |
+| `avbd_articulated_prismatic_motor_breakable_joint`      | A weak world-anchored prismatic motor releasing and re-engaging an articulated carriage     | Public articulated linear motor break/reset lifecycle through the bridge         |
+| `avbd_articulated_world_revolute_motor_breakable_joint` | A weak world-anchored revolute motor releasing and re-engaging an articulated floating link | Public world-anchored articulated motor break/reset lifecycle through the bridge |
+| `avbd_articulated_high_ratio_chain`                     | A five-link variational chain swinging with a 200:1 heavy tip                               | Narrow articulated high mass-ratio smoke for the AVBD paper gap                  |
+| `avbd_paper_scale_high_ratio_chain`                     | A 50-link variational chain swinging with a 50,000:1 heavy tip                              | Paper-scale articulated high mass-ratio visual smoke for the AVBD paper gap      |
+| `avbd_rigid_breakable_joint`                            | A weak fixed joint releasing and re-engaging a rigid payload                                | Public break-force threshold, reset, and broken-state path                       |
+| `avbd_rigid_spherical_breakable_joint`                  | A weak spherical point joint releasing and re-engaging only a rigid payload anchor          | Public free-rigid spherical break/reset while orientation stays free             |
+| `avbd_articulated_breakable_joint`                      | A world-anchored floating link released and reset through a public articulated fixed joint  | Public articulated world-link break/reset path through the variational bridge    |
+| `avbd_articulated_fixed_pair_breakable_joint`           | A same-multibody fixed joint releasing and restoring a captured relative pose               | Public articulated link-link fixed break/reset through the variational bridge    |
+| `avbd_articulated_spherical_breakable_joint`            | A world-anchored floating socket that releases and resets only its anchor                   | Public articulated spherical break/reset with orientation left free              |
+| `avbd_articulated_spherical_pair_breakable_joint`       | A same-multibody floating socket that releases and resets only its anchor                   | Public articulated link-link spherical break/reset with orientation left free    |
 
 This is an early AVBD rigid-row showcase, not a paper-complete reproduction.
 The remaining AVBD corpus still needs the full 2D/3D reference demos, paper
@@ -113,6 +157,18 @@ entries are lightweight launchable placeholders with status panels. They track
 World-native follow-ups for inverse kinematics, SIMBICON walking,
 operational-space control, robot puppets, collision sandbox workflows, and
 mobile manipulation.
+
+## PLAN-083 CPU Corpus
+
+The **`PLAN-083 Mixed Corpus`**, **`PLAN-083 Constraints Corpus`**,
+**`PLAN-083 Robot Corpus`**, and **`PLAN-083 ABD Corpus`** categories expose
+launchable placeholders for the unified Newton-barrier paper/deck scene rows.
+Each placeholder records its manifest row IDs, smoke command, long-horizon
+visual capture command, benchmark packet target, and current limitation. They
+are not paper-scene reproductions yet; the checked corpus sidecar lives at
+`docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json` and
+keeps the py-demo, visual evidence, and CPU benchmark obligations explicit until
+runtime mixed-domain stepping and ABD scene support land.
 
 ## IPC Deformable scenes
 
@@ -162,7 +218,7 @@ rendering it through `IpcDeformableBridge`.
 
 ## Simulation Replay
 
-`replay_scrubber` demonstrates the experimental `World` replay recorder:
+`replay_scrubber` demonstrates the DART 7 `World` replay recorder:
 the scene records a rigid-body rollout once, restores the first frame, and
 exposes a bottom-docked replay timeline with a scrubber, frame marks, a cursor
 track, transport controls, loop/rate controls, and cursor details. The scene
@@ -171,7 +227,7 @@ timeline lanes. Moving the scrubber calls `World.restore_replay_frame(...)` at
 timestep resolution and does not re-run physics.
 
 The same saved-state replay path is injected by the runner into every
-`SceneSetup` that exposes an experimental `World` in `info["sx_world"]` or
+`SceneSetup` that exposes a DART 7 `World` in `info["sx_world"]` or
 `info["physics_world"]`. The shared panel stores only bounded mutable World
 snapshots plus optional small scene-provided mutable controller snapshots;
 static topology, geometry, materials, and scene construction data remain owned

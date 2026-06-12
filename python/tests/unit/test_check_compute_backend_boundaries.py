@@ -29,7 +29,7 @@ def test_backend_boundary_check_allows_gpu_metadata_flag():
     module = _load_module()
 
     violations = module.find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/compute/compute_stage_metadata.hpp",
+        "dart/simulation/compute/compute_stage_metadata.hpp",
         "enum class ComputeStageAcceleration { Gpu = 1u << 4u };",
     )
 
@@ -40,7 +40,7 @@ def test_backend_boundary_check_masks_comments_and_strings():
     module = _load_module()
 
     violations = module.find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/world.hpp",
+        "dart/simulation/world.hpp",
         """
         // CUDA and stream text in comments is not API.
         const char* diagnostic = "CudaDevice";
@@ -55,7 +55,7 @@ def test_backend_boundary_check_rejects_public_cuda_type():
     module = _load_module()
 
     violations = module.find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/world.hpp",
+        "dart/simulation/world.hpp",
         "class CudaDevice {};",
     )
 
@@ -66,7 +66,7 @@ def test_backend_boundary_check_rejects_public_sycl_function():
     module = _load_module()
 
     violations = module.find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/world.hpp",
+        "dart/simulation/world.hpp",
         "void set_sycl_stream(int stream_id);",
     )
 
@@ -80,7 +80,7 @@ def test_backend_boundary_check_rejects_public_memory_pool_type():
     module = _load_module()
 
     violations = module.find_backend_boundary_violations_in_text(
-        "dart/simulation/experimental/world.hpp",
+        "dart/simulation/world.hpp",
         "struct MemoryPoolHandle {};",
     )
 

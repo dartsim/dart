@@ -19,19 +19,24 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
 | **Projection**     | PGS (Gauss-Seidel)         | ✅ Implemented | `projection/PgsSolver.hpp`                          | Boxed LCP + friction index (iterative)  |
 | **Projection**     | PSOR (Over-Relaxation)     | ✅ Implemented | `projection/PgsSolver.hpp`                          | Set `LcpOptions::relaxation`            |
 | **Projection**     | Symmetric PSOR             | ✅ Implemented | `projection/SymmetricPsorSolver.hpp`                | Forward/backward sweeps                 |
-| **Projection**     | Jacobi (Projected)         | ✅ Implemented | `projection/JacobiSolver.hpp`                       | Parallel-friendly baseline              |
+| **Projection**     | Jacobi (Projected)         | ✅ Implemented | `projection/JacobiSolver.hpp`                       | Optional CPU threads; CUDA batch slice  |
 | **Projection**     | Red-Black Gauss-Seidel     | ✅ Implemented | `projection/RedBlackGaussSeidelSolver.hpp`          | Two-color sweeps                        |
 | **Projection**     | Blocked Gauss-Seidel       | ✅ Implemented | `projection/BgsSolver.hpp`                          | For contact problems                    |
 | **Projection**     | Blocked Jacobi             | ✅ Implemented | `projection/BlockedJacobiSolver.hpp`                | Parallel block updates                  |
 | **Projection**     | NNCG (Conjugate Gradient)  | ✅ Implemented | `projection/NncgSolver.hpp`                         | Better convergence than PGS             |
 | **Projection**     | Subspace Minimization      | ✅ Implemented | `projection/SubspaceMinimizationSolver.hpp`         | Hybrid PGS approach                     |
+| **Projection**     | APGD                       | ✅ Implemented | `projection/ApgdSolver.hpp`                         | Nesterov-accelerated PGS                |
+| **Projection**     | TGS                        | ✅ Implemented | `projection/TgsSolver.hpp`                          | Temporal Gauss-Seidel style sweep       |
 | **Newton**         | Minimum Map Newton         | ✅ Implemented | `newton/MinimumMapNewtonSolver.hpp`                 | Standard LCP (boxed/findex fallback)    |
 | **Newton**         | Fischer-Burmeister Newton  | ✅ Implemented | `newton/FischerBurmeisterNewtonSolver.hpp`          | Standard LCP (boxed/findex fallback)    |
-| **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Extension of FB                         |
+| **Newton**         | Penalized FB Newton        | ✅ Implemented | `newton/PenalizedFischerBurmeisterNewtonSolver.hpp` | Standard LCP (boxed/findex fallback)    |
+| **Newton**         | Boxed Semi-Smooth Newton   | ✅ Implemented | `newton/BoxedSemiSmoothNewtonSolver.hpp`            | Boxed LCP + friction index              |
 | **Interior Point** | Interior Point Method      | ✅ Implemented | `other/InteriorPointSolver.hpp`                     | Very robust                             |
 | **Other**          | MPRGP (QP)                 | ✅ Implemented | `other/MprgpSolver.hpp`                             | Standard SPD LCPs                       |
 | **Other**          | Shock Propagation          | ✅ Implemented | `other/ShockPropagationSolver.hpp`                  | Layered contact solves                  |
 | **Staggering**     | Staggering Method          | ✅ Implemented | `other/StaggeringSolver.hpp`                        | Normal/friction splitting               |
+| **Other**          | ADMM                       | ✅ Implemented | `other/AdmmSolver.hpp`                              | Operator splitting for boxed LCP        |
+| **Other**          | SAP                        | ✅ Implemented | `other/SapSolver.hpp`                               | Regularized contact-inspired solve      |
 
 **Legend**: ✅ Implemented | 🚧 In Progress | ❌ Not Implemented | 📋 Planned
 
@@ -63,6 +68,7 @@ dart/math/lcp/
 │   └── dantzig/                # Low-level ODE Dantzig implementation
 │
 ├── projection/
+│   ├── ApgdSolver.hpp/cpp      # Nesterov-accelerated projected GS
 │   ├── BgsSolver.hpp/cpp       # Blocked Gauss-Seidel
 │   ├── BlockedJacobiSolver.hpp/cpp  # Blocked Jacobi updates
 │   ├── JacobiSolver.hpp/cpp    # Projected Jacobi
@@ -70,12 +76,15 @@ dart/math/lcp/
 │   ├── PgsSolver.hpp/cpp       # Boxed LCP + findex (iterative)
 │   ├── RedBlackGaussSeidelSolver.hpp/cpp  # Red/black sweeps
 │   ├── SubspaceMinimizationSolver.hpp/cpp  # PGS-SM hybrid
-│   └── SymmetricPsorSolver.hpp/cpp  # Forward/backward PSOR
+│   ├── SymmetricPsorSolver.hpp/cpp  # Forward/backward PSOR
+│   └── TgsSolver.hpp/cpp       # Temporal GS-style boxed LCP sweep
 │
-├── newton/                     # Minimum map, FB, penalized FB Newton
+├── newton/                     # Minimum map, FB, penalized FB, boxed semi-smooth Newton
 └── other/
+    ├── AdmmSolver.hpp/cpp  # ADMM operator-splitting solver
     ├── InteriorPointSolver.hpp/cpp  # Primal-dual interior point
     ├── MprgpSolver.hpp/cpp  # MPRGP QP solver
+    ├── SapSolver.hpp/cpp  # SAP-inspired regularized solve
     ├── ShockPropagationSolver.hpp/cpp  # Layered contact solver
     └── StaggeringSolver.hpp/cpp  # Normal/friction staggering
 ```
@@ -152,9 +161,16 @@ solver usage examples.
 - **Algorithm**: Jacobi updates with projection onto `[lo, hi]`
 - **Features**:
   - Uses the previous iterate for all updates (parallel-friendly)
+  - Exposes an opt-in DART 7 CPU worker-thread update path through
+    `JacobiSolver::Parameters::workerThreads`; current dense 128/512-row
+    benchmark rows are correctness/comparison evidence, not a speedup claim
+  - Has a DART 7 experimental fixed-iteration CUDA batch path for homogeneous
+    dense standard, boxed, and friction-index Jacobi packets, plus grouped
+    variable-size world-contact packet batches; the general solver manifest
+    remains CPU-only
   - Supports bounds and `findex` friction coupling
   - Optional damping via `LcpOptions::relaxation`
-- **Use Case**: Parallel/GPU baselines and coarse approximations
+- **Use Case**: Parallel-friendly CPU/CUDA baselines and coarse approximations
 
 #### 6. Projected Gauss-Seidel (PGS) (`projection/PgsSolver.hpp`)
 
@@ -165,6 +181,10 @@ solver usage examples.
   - Handles bounds and `findex` friction pyramids
   - Supports warm starts, optional relaxation (PSOR), and customizable sweep
     order
+  - Has a DART 7 experimental fixed-iteration CUDA batch path for homogeneous
+    dense standard, boxed, and friction-index PGS packets, plus grouped
+    variable-size world-contact packet batches; the general solver manifest
+    remains CPU-only
   - Early-out when the primary pivoting solver fails in ConstraintSolver
 - **Use Case**: Real-time fallback for constraint solving where approximate
   solutions are acceptable
@@ -187,6 +207,10 @@ solver usage examples.
   - Parallel-friendly variant of PGS (color sets update independently)
   - Supports bounds and `findex` friction coupling
   - Uses `LcpOptions::relaxation` for damping/acceleration
+  - Exposes an opt-in DART 7 CPU worker-thread update path through
+    `RedBlackGaussSeidelSolver::Parameters::workerThreads`; current 128-,
+    512-, and 1024-row banded benchmark rows are correctness/comparison
+    evidence, not a speedup claim
 - **Use Case**: Parallel-style baseline with reduced data dependency
 
 #### 9. Blocked Gauss-Seidel (BGS) (`projection/BgsSolver.hpp`)
@@ -205,7 +229,10 @@ solver usage examples.
 - **Algorithm**: Jacobi updates over blocks with per-block Dantzig solves
 - **Features**:
   - Block partition identical to BGS (by `findex` or explicit block sizes)
-  - Parallel-friendly block updates
+  - Parallel-friendly block updates, with opt-in DART 7 CPU worker threads via
+    `BlockedJacobiSolver::Parameters::workerThreads`; current 128-, 512-, and
+    1024-row banded benchmark rows are correctness/comparison evidence, not a
+    speedup claim
   - Supports bounds and friction index coupling
 - **Use Case**: Parallel-friendly baseline for block-structured problems
 
@@ -228,6 +255,32 @@ solver usage examples.
   - Solves a reduced system for interior variables each iteration
   - Works with bounds and friction index coupling
 - **Use Case**: Medium-scale problems where PGS converges slowly
+
+#### 12a. APGD (`projection/ApgdSolver.hpp`)
+
+- **Type**: Accelerated projection method for boxed LCP
+- **Algorithm**: Nesterov-style extrapolation followed by a projected
+  Gauss-Seidel sweep, with optional adaptive restart
+- **Features**:
+  - Shares boxed bounds and friction index handling with PGS
+  - Uses a momentum coefficient to reduce iteration count on contact-like
+    problems
+  - Restart checks avoid keeping a harmful extrapolation direction
+- **Use Case**: PGS-like robustness with faster convergence on suitable
+  generated/contact-style problems
+
+#### 12b. TGS (`projection/TgsSolver.hpp`)
+
+- **Type**: Temporal Gauss-Seidel style boxed LCP projection method
+- **Algorithm**: Gauss-Seidel projection with TGS-style defaults; substepping is
+  handled by the surrounding simulation pipeline, not this standalone LCP class
+- **Features**:
+  - Supports boxed bounds and friction index coupling
+  - Uses standard relaxation by default
+  - Keeps the same `LcpSolver` interface as PGS for apples-to-apples tests and
+    benchmarks
+- **Use Case**: DART 7 contact-style experiments that need a TGS-labelled
+  projection baseline
 
 #### 13. Staggering Method (`other/StaggeringSolver.hpp`)
 
@@ -277,6 +330,8 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in PGS warm start for standard LCPs
+  - Opt-in projected gradient-descent warm start for the minimum-map merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
 #### 18. Fischer-Burmeister Newton (`newton/FischerBurmeisterNewtonSolver.hpp`)
@@ -286,6 +341,8 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
+  - Opt-in PGS warm start for standard LCPs
+  - Opt-in projected gradient-descent warm start for the FB merit
 - **Use Case**: High-accuracy solves for standard LCPs
 
 #### 19. Penalized Fischer-Burmeister Newton (`newton/PenalizedFischerBurmeisterNewtonSolver.hpp`)
@@ -296,7 +353,47 @@ solver usage examples.
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
   - Penalty parameter (`lambda`) to tune convergence behavior
+  - Opt-in PGS warm start for standard LCPs
+  - Opt-in projected gradient-descent warm start for the penalized FB merit
 - **Use Case**: High-accuracy solves for standard LCPs with tunable penalty
+
+#### 20. Boxed Semi-Smooth Newton (`newton/BoxedSemiSmoothNewtonSolver.hpp`)
+
+- **Type**: Semi-smooth Newton method over the natural residual for boxed LCPs
+- **Algorithm**: Build a generalized Jacobian for the projected residual,
+  including moving `findex` friction bounds, and globalize with backtracking
+- **Features**:
+  - Supports standard, boxed, and friction-index problems through one solver
+  - Handles active lower/upper bounds and free variables in the Jacobian
+  - Uses regularization and line search for robustness
+- **Use Case**: Higher-accuracy boxed/contact-style solves when the active set is
+  well behaved enough for a Newton step
+
+#### 21. ADMM (`other/AdmmSolver.hpp`)
+
+- **Type**: Operator-splitting method for boxed LCPs
+- **Algorithm**: Alternates a proximal linear solve, box projection, and dual
+  update; adapts `rho` using primal/dual residual balance
+- **Features**:
+  - Supports boxed bounds and friction index coupling
+  - Uses Cholesky factorization of `A + rho I + mu I`
+  - Often useful as a robust approximate solver rather than an exact pivoting
+    method
+- **Use Case**: Regularized or contact-like problems where splitting robustness
+  is more important than exact pivoting
+
+#### 22. SAP (`other/SapSolver.hpp`)
+
+- **Type**: Semi-Analytic Primal inspired regularized solver
+- **Algorithm**: Newton iteration on a regularized quadratic contact objective
+  with Armijo backtracking
+- **Features**:
+  - Supports boxed bounds and friction index coupling through effective bounds
+  - Uses regularization, so strict complementarity is approximate by design
+  - Keeps validation disabled by default in its solver options because the
+    regularized solution is not an exact LCP solution
+- **Use Case**: DART 7 compliant-contact-inspired experiments and approximate
+  contact solves
 
 ## Introduction
 
@@ -355,7 +452,8 @@ LCP solvers can be categorized into several main families:
 ### 2. [Projection/Sweeping Methods](04_projection-methods.md)
 
 - **Jacobi**, **PGS**, **PSOR**, **Symmetric PSOR**, **Red-Black Gauss-Seidel**,
-  **Blocked Gauss-Seidel**, **Blocked Jacobi**, **NNCG**, **PGS-SM**
+  **Blocked Gauss-Seidel**, **Blocked Jacobi**, **NNCG**, **PGS-SM**,
+  **APGD**, **TGS**
 - Iterative with linear convergence
 - Time: $O(n)$ per iteration, Storage: $O(n)$
 - Best for: Real-time simulation, interactive applications
@@ -375,14 +473,14 @@ LCP solvers can be categorized into several main families:
 
 ## Quick Selection Guide
 
-| Use Case             | Recommended Method                   | Reason                  |
-| -------------------- | ------------------------------------ | ----------------------- |
-| Real-time simulation | PGS, PSOR, BGS                       | Fast O(n) iterations    |
-| High accuracy        | Newton, Pivoting                     | Superlinear convergence |
-| Large-scale          | NNCG, PGS                            | Scalable, matrix-free   |
-| Poorly conditioned   | Pivoting, Interior Point             | Numerically robust      |
-| Contact mechanics    | BGS, Baraff, Dantzig, Staggering     | Natural block structure |
-| Parallel computing   | Jacobi, Blocked Jacobi, Red-Black GS | Embarrassingly parallel |
+| Use Case             | Recommended Method                   | Reason                                                                                                                                                                                                                     |
+| -------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Real-time simulation | PGS, PSOR, BGS                       | Fast O(n) iterations                                                                                                                                                                                                       |
+| High accuracy        | Newton, Pivoting                     | Superlinear convergence                                                                                                                                                                                                    |
+| Large-scale          | NNCG, PGS                            | Scalable, matrix-free                                                                                                                                                                                                      |
+| Poorly conditioned   | Pivoting, Interior Point             | Numerically robust                                                                                                                                                                                                         |
+| Contact mechanics    | BGS, Baraff, Dantzig, Staggering     | Natural block structure                                                                                                                                                                                                    |
+| Parallel computing   | Jacobi, Blocked Jacobi, Red-Black GS | Parallel update structure; current DART 7 evidence covers CPU Jacobi worker-thread correctness and fixed-iteration CUDA Jacobi/PGS batch slices, including grouped variable-size separated and stack world-contact packets |
 
 See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
@@ -449,7 +547,9 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 
 - [x] Blocked Gauss-Seidel (BGS)
 - [x] Blocked Jacobi
-- [ ] Per-contact block structure
+- [x] APGD
+- [x] TGS
+- [x] Per-contact block structure
 - [x] Direct 2D/3D sub-solvers
 
 ### Phase 3: Advanced Iterative (Medium Priority)
@@ -463,8 +563,10 @@ See [LCP Selection Guide](07_selection-guide.md) for detailed recommendations.
 - [x] Minimum Map Newton
 - [x] Fischer-Burmeister Newton
 - [x] Penalized Fischer-Burmeister Newton
+- [x] Boxed Semi-Smooth Newton
 - [x] Projected line search
-- [ ] Nonsmooth gradient descent (warm start)
+- [x] Nonsmooth gradient descent warm start for standard Newton methods
+- [x] PGS warm start for standard Newton methods
 
 ### Phase 5: Additional Methods (Future)
 

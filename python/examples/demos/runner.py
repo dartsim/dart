@@ -80,8 +80,8 @@ class ScenePanel:
 class SceneSetup:
     """The per-scene state returned by a scene's ``build()``.
 
-    ``world`` is whatever the scene built (a ``dartpy.World`` or an
-    ``sx.World``); both support ``.step()``.
+    ``world`` is the scene's headless stepping object. It may be ``None`` for
+    descriptor-only scenes.
 
     ``pre_step`` is an optional callable invoked before each viewer step
     (controllers, sensor updates). It receives no arguments and returns
@@ -104,14 +104,19 @@ class SceneSetup:
     and diagnostics. Panels are rendered through DART's renderer-neutral
     ``PanelBuilder`` abstraction and dock on the right by default.
 
+    ``renderable_provider`` returns the current GUI descriptors for interactive
+    rendering. When omitted, the runner also checks whether ``world`` provides a
+    ``renderable_provider`` method.
+
     ``info`` carries scene-specific metadata for tests and panels.
     """
 
-    world: Any
+    world: Any | None = None
     pre_step: Callable[[], None] | None = None
     step: Callable[[int], None] | None = None
     force_drag: Callable[[dict[str, Any]], None] | None = None
     panels: list[ScenePanel] = field(default_factory=list)
+    renderable_provider: Callable[[], list[Any]] | None = None
     info: dict[str, Any] = field(default_factory=dict)
 
 
@@ -250,7 +255,7 @@ def _cursor_series(frame_count: int, frame: int) -> list[float]:
 
 
 class _ReplayController:
-    """Shared replay recorder/scrubber for py-demos experimental worlds."""
+    """Shared replay recorder/scrubber for py-demos DART 7 worlds."""
 
     def __init__(
         self,
@@ -494,7 +499,7 @@ class _ReplayController:
 
         changed, save = builder.checkbox("Save replay", bool(self.save_replay))
         builder.item_tooltip(
-            "Record experimental World states while the demo runs; disabling it "
+            "Record DART 7 World states while the demo runs; disabling it "
             "keeps existing replay frames but stops storing new states."
         )
         if changed:
@@ -647,7 +652,8 @@ def _step(setup: SceneSetup, frames: int) -> None:
     for _ in range(max(0, frames)):
         if pre is not None:
             pre()
-        setup.world.step()
+        if setup.world is not None and hasattr(setup.world, "step"):
+            setup.world.step()
 
 
 def _print_catalog(scenes: list[PythonDemoScene]) -> None:
@@ -745,18 +751,8 @@ def _make_world_factory(
 ) -> Callable[[], Any]:
     """Wrap scene.build() so dart.gui.run_demos can call it as a factory.
 
-    Returns one of:
-      * a bare ``dartpy.World`` (physics-only), or
-      * a ``(World, pre_step)`` tuple, or
-      * a ``(World, pre_step, force_drag)`` tuple, or
-      * a ``(World, pre_step, force_drag, panels)`` tuple.
-
-    The viewer binding inspects the return value: a bare World is treated as
-    physics-only; element 1 (if not ``None``) registers as the viewer's per-step
-    hook; element 2 (if not ``None``) registers as the viewer's mouse
-    force-drag handler; element 3 (if not ``None``) registers scene-specific
-    panels. These are used by World scenes that own a physics world and a
-    render-mirror dart::simulation::World.
+    Returns a tuple consumed by the viewer binding:
+      ``(pre_step, force_drag, panels, renderable_provider)``.
     """
 
     def factory() -> Any:
@@ -777,13 +773,15 @@ def _make_world_factory(
             # A runner-injected, scene-independent GPU compute toggle (only
             # present when CUDA is available); see _make_gpu_panel.
             panels.append(gpu_panel)
-        if panels:
-            return (setup.world, pre_step, setup.force_drag, panels)
-        if setup.force_drag is not None:
-            return (setup.world, pre_step, setup.force_drag)
-        if pre_step is not None:
-            return (setup.world, pre_step)
-        return setup.world
+        renderable_provider = setup.renderable_provider
+        if renderable_provider is None and setup.world is not None:
+            renderable_provider = getattr(setup.world, "renderable_provider", None)
+        return (
+            pre_step,
+            setup.force_drag,
+            panels if panels else None,
+            renderable_provider,
+        )
 
     return factory
 
@@ -860,8 +858,7 @@ def _configure_gpu_compute(dart: Any, cli_pref: bool | None) -> ScenePanel | Non
     """
 
     # In DART 7 the ECS simulation API is flat on the dartpy module, so the GPU
-    # deformable-solve controls live directly on it (absent when the simulation
-    # module is not built, e.g. DART_BUILD_SIMULATION_EXPERIMENTAL=OFF).
+    # deformable-solve controls live directly on it when the World stack is built.
     sx = dart
     if not hasattr(sx, "set_accelerated_deformable_solve"):
         return None

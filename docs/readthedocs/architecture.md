@@ -1,23 +1,23 @@
 # DART 7 Architecture: Multi-Physics, Multi-Solver, Multi-Backend
 
 ```{note}
-This page describes the **DART 7 simulation engine** — the experimental
-`dart::simulation::experimental` `World`, which is the clean-break public API
-target for DART 7. It is the single-page visual map of how that one pipeline is
+This page describes the **DART 7 simulation engine** — the promoted
+`dart::simulation::World`, which is the clean-break public API for DART 7. It
+is the single-page visual map of how that one pipeline is
 generalized so it can support **many physics domains, many solver methods, and
 many compute backends** at once. Everything below is DART 7.
 
 The classic DART 6 API (`dart::simulation::World`, `Skeleton`/`BodyNode`/`Joint`,
 the FCL/Bullet/ODE collision backends) is **not** part of this engine. It is
-maintained separately on the `release-6.17` compatibility line and is out of
+maintained separately on `release-6.*` compatibility branches and is out of
 scope here; see the
 [clean-break strategy](https://github.com/dartsim/dart/blob/main/docs/design/dart7_clean_break_strategy.md).
 
-DART 7 promotion is **parity-gated**: the experimental World becomes the promoted
-public API only after core robotics workflows have direct parity evidence, so
-this is a maturing target, not a finished one. Boxes below are marked
-**available** (in the experimental stack today), **experimental / opt-in**
-(active research tracks), or **planned**. Owner documents and headers are the
+DART 7 promotion is **parity-gated**: parity claims must come from direct
+evidence, with DART 6 comparisons sourced from `release-6.*` branches. Boxes
+below are marked **available** (in the DART 7 stack today),
+**experimental / opt-in** (active research tracks), or **planned**. Owner
+documents and headers are the
 source of truth; this page is a navigational snapshot. For live progress and
 sequencing see the
 [plan dashboard](https://github.com/dartsim/dart/blob/main/docs/plans/dashboard.md)
@@ -115,8 +115,8 @@ COMPUTE BACKEND — injected through the ComputeExecutor seam
   CUDA / GPU — opt-in sidecar, CPU fallback      [X]
   SIMD multi-ISA foundation (SSE…AVX-512 / NEON) [A]
 
-Status:  [A] available in the experimental stack today, parity-gated
-         before DART 7 promotion  ·  [X] experimental / opt-in  ·  [P] planned
+Status:  [A] available in the DART 7 stack today  ·
+         [X] experimental / opt-in  ·  [P] planned
 ```
 
 ### Per-substep step schedule
@@ -150,10 +150,9 @@ The seams above, with the concrete options that exist today, how they are
 selected from the public facade, and the owner document for details. Header and
 owner docs are authoritative; this table is a snapshot.
 
-Throughout, **✅ available** means "present and selectable in the experimental
-stack today" — still parity-gated before DART 7 promotion, not a shipped/promoted
-guarantee. **🧪 experimental** is an opt-in active research track, and
-**📋 planned** has an agreed design but no implementation yet.
+Throughout, **✅ available** means "present and selectable in the DART 7 stack
+today." **🧪 experimental** is an opt-in active research track, and **📋 planned**
+has an agreed design but no implementation yet.
 
 ### Physics domains
 
@@ -169,21 +168,22 @@ same shape is usable across domains and `World::add*` stays uniform.
 
 ### Solver method families
 
-| Domain     | Method option                                                                       | Status          | Selected by                                                      |
-| ---------- | ----------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------- |
-| Rigid      | Sequential-impulse (default)                                                        | ✅ available    | `World::setRigidBodySolver(SequentialImpulse)`                   |
-| Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `World::setRigidBodySolver(Ipc)`                                 |
-| Rigid      | Contact normal: sequential-impulse / boxed-LCP                                      | 🧪 experimental | `WorldOptions::contactSolverMethod`                              |
-| Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable` + `World::setContactGradientMode` |
-| Multibody  | Semi-implicit articulated-body forward dynamics (default)                           | ✅ available    | `MultibodyOptions::integrationFamily = "semi-implicit"`          |
-| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `MultibodyOptions::integrationFamily = "variational integrator"` |
-| Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                          |
-| Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                               |
+| Domain     | Method option                                                                       | Status          | Selected by                                                                 |
+| ---------- | ----------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------- |
+| Rigid      | Sequential-impulse (default)                                                        | ✅ available    | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`         |
+| Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`         |
+| Rigid      | Contact normal/friction: sequential-impulse / boxed-LCP                             | 🧪 experimental | `WorldOptions::contactSolverMethod`                                         |
+| Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable`, `WorldOptions::contactGradientMode`, setter |
+| Multibody  | Semi-implicit articulated-body forward dynamics (default)                           | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                                     |
+| Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                                          |
 
-New paper methods enter through the nearest DART-owned family (rigid IPC and
-deformable IPC under the Newton-barrier family; VBD/AVBD under the VBD family;
-differentiable LCP under the differentiable rigid family) so they share a domain,
-state adapter, contact representation, benchmark schema, and capability
+New paper methods enter through the nearest DART-owned family (the IPC family
+for deformable, rigid, and affine/unified IPC variants consolidated through the
+unified Newton-barrier implementation; VBD/AVBD under the VBD family;
+differentiable LCP under the differentiable rigid family) so they share a
+domain, state adapter, contact representation, benchmark schema, and capability
 vocabulary instead of forming isolated stacks. Solvers, presets, and examples
 use method/approach/paper or DART-owned names — never other engines' names.
 
@@ -229,15 +229,22 @@ and [shared CUDA device substrate](https://github.com/dartsim/dart/blob/main/doc
 
 Multi-everything must not make the common path hard. The configuration contract:
 
-- **Default selection from content.** A rigid/articulated-only world gets the
-  articulated-body forward-dynamics + LCP-contacts default — DART 7's own native
-  implementation, gated to reach parity with the DART 6 rigid-body capability set
-  — with no solver vocabulary. The easy path is
-  `World` → `addRigidBody`/`addMultibody` → `step`.
+- **Default selection from content.** A free-rigid world gets the
+  sequential-impulse path, an articulated multibody world gets the
+  semi-implicit articulated-body path, and deformable bodies get the deformable
+  dynamics path. The built-in schedule emits only the domains that are present,
+  so the easy path remains `World` → `addRigidBody`/`addMultibody`/
+  `addDeformableBody` → `step` with no solver vocabulary.
 - **Method-family names, not engine or backend names.** Advanced users request a
   capability (e.g. `"variational integrator"`, IPC, boxed-LCP) or set a policy.
   The `World` maps it to an internal solver or returns an actionable
   unsupported-capability error.
+- **Construction-time grouping.** `WorldOptions` carries initial domain solver
+  choices and policies, while post-construction properties/setters remain for
+  interactive workflows. This keeps defaults, bindings, and schedule
+  preparation on one validated path. Result-affecting World-level solver
+  choices round-trip through binary save/load and replay so restarts do not
+  silently fall back to default families.
 - **No backend leakage.** Backend, ECS storage, registry, and execution types
   stay internal. Switching or adding a backend preserves the public API.
 - **Deterministic by default.** `World::step()` is synchronous and reproducible;
@@ -263,8 +270,8 @@ This page is a synthesis. Each detailed rule has one owner:
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Mission and the three research dimensions                      | [north-star](https://github.com/dartsim/dart/blob/main/docs/ai/north-star.md)                                                                                                        |
 | Solver abstraction, domain assignment, coupling, step schedule | [simulation_solver_architecture](https://github.com/dartsim/dart/blob/main/docs/design/simulation_solver_architecture.md)                                                            |
-| Public C++ object model and promotion rules                    | [simulation_experimental_cpp_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)                                                          |
-| dartpy surface                                                 | [simulation_experimental_python_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_python_api.md)                                                    |
+| Public C++ object model and promotion rules                    | [simulation_cpp_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)                                                                                    |
+| dartpy surface                                                 | [simulation_python_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_python_api.md)                                                                              |
 | Research extension and baseline contracts                      | [algorithm_extension_contracts](https://github.com/dartsim/dart/blob/main/docs/design/algorithm_extension_contracts.md)                                                              |
 | CPU / SIMD / GPU decision framework                            | [scalable_compute_decisions](https://github.com/dartsim/dart/blob/main/docs/design/scalable_compute_decisions.md)                                                                    |
 | Backend evidence survey                                        | [compute_backend_research](https://github.com/dartsim/dart/blob/main/docs/design/compute_backend_research.md)                                                                        |

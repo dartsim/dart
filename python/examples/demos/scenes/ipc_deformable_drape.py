@@ -6,7 +6,7 @@ deformable ground barriers (finite-footprint support height fields), so the
 mat is held at the box top over its footprint and falls past the edges to the
 surrounding ground -- exercising the landed IPC contact pipeline (ground
 barrier + self-contact clamped-log barrier + sparse projected Newton). This
-mirrors the C++ ``experimental_deformable`` drape scene at a viewer-friendly
+mirrors the C++ ``deformable`` drape scene at a viewer-friendly
 mesh size.
 
 DART-native point-mass/spring showcase -- not a faithful IPC paper-figure
@@ -102,9 +102,8 @@ def build() -> SceneSetup:
             ground_top = _GROUND_CENTER[2] + _GROUND_HALF[2]
             step_top = _OBSTACLE_CENTER[2] + _OBSTACLE_HALF[2]
             over_step = (
-                (np.abs(positions[:, 0] - _OBSTACLE_CENTER[0]) <= _OBSTACLE_HALF[0])
-                & (np.abs(positions[:, 1] - _OBSTACLE_CENTER[1]) <= _OBSTACLE_HALF[1])
-            )
+                np.abs(positions[:, 0] - _OBSTACLE_CENTER[0]) <= _OBSTACLE_HALF[0]
+            ) & (np.abs(positions[:, 1] - _OBSTACLE_CENTER[1]) <= _OBSTACLE_HALF[1])
             off_step = ~over_step
             ground_clearance = float(np.min(positions[:, 2] - ground_top))
             step_clearance = (

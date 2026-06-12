@@ -8,7 +8,9 @@ allocator on matching workloads.
 The default foonathan rule is intentionally strict: DART must be faster than
 the corresponding foonathan/memory row. This script is a manual evidence gate
 for deciding whether DART's in-house allocators are good enough for broader
-simulation-loop adoption.
+simulation-loop adoption. The checker also requires the benchmark rows expected
+for the selected mode, so missing foonathan/memory coverage cannot be mistaken
+for a pass.
 
 Usage:
     python scripts/check_allocator_comparative_benchmarks.py
@@ -31,27 +33,89 @@ from pathlib import Path
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
 
 DEFAULT_FILTER = (
-    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector)_"
+    "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
+    "StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    "AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool)_"
     "(DART|Foonathan|StdPmr)"
 )
 
 ENTT_REGISTRY_FILTER = (
     "BM_(Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    "EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|StdPmr|Std)"
+    "StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    "AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool|"
+    "EnttRegistry|EnttRegistryBuild)_"
+    "(DART|Foonathan|StdPmr|Std)"
 )
 ENTT_REGISTRY_ONLY_FILTER = "BM_(EnttRegistry|EnttRegistryBuild)_(DART|Foonathan|Std)"
 
 _COMPARATIVE_RE = re.compile(
     r"^(BM_(?:Pool|Stack|MultiPool|Realistic|SteadyState|FrameBulk|StlVector|"
-    r"EnttRegistry|EnttRegistryBuild))_(DART|Foonathan|StdPmr|Std)(/.*)?$"
+    r"StaticStack|Temporary|Iteration|RawHeap|RawMalloc|RawNew|"
+    r"AlignedStack|FallbackStack|Segregator|TrackedStack|DeepTrackedPool|"
+    r"EnttRegistry|EnttRegistryBuild))_"
+    r"(DART|Foonathan|StdPmr|Std)(/.*)?$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
+# Normal-approximation 95% confidence interval over benchmark repetitions.
+_NOISY_SEPARATION_Z = 1.96
 _BASELINE_ALLOCATORS = {
     "foonathan": ("Foonathan",),
     "std": ("StdPmr", "Std"),
     "stdpmr": ("StdPmr", "Std"),
 }
+
+_DEFAULT_REQUIRED_KEYS = (
+    "BM_Pool/32/64",
+    "BM_Pool/256/256",
+    "BM_Pool/32/1024",
+    "BM_Stack/32/64",
+    "BM_Stack/256/256",
+    "BM_Stack/256/1024",
+    "BM_Stack/32/4096",
+    "BM_MultiPool",
+    "BM_Realistic",
+    "BM_SteadyState/64/1024",
+    "BM_SteadyState/256/512",
+    "BM_FrameBulk/256",
+    "BM_FrameBulk/1024",
+    "BM_FrameBulk/4096",
+    "BM_StlVector/1000",
+    "BM_StlVector/10000",
+    "BM_StaticStack/256",
+    "BM_StaticStack/1024",
+    "BM_StaticStack/4096",
+    "BM_Temporary/256",
+    "BM_Temporary/1024",
+    "BM_Temporary/4096",
+    "BM_Iteration/256",
+    "BM_Iteration/1024",
+    "BM_Iteration/4096",
+    "BM_RawHeap/256",
+    "BM_RawHeap/1024",
+    "BM_RawMalloc/256",
+    "BM_RawMalloc/1024",
+    "BM_RawNew/256",
+    "BM_RawNew/1024",
+    "BM_AlignedStack/256",
+    "BM_AlignedStack/1024",
+    "BM_FallbackStack/256",
+    "BM_FallbackStack/1024",
+    "BM_Segregator/256",
+    "BM_Segregator/1024",
+    "BM_TrackedStack/256",
+    "BM_TrackedStack/1024",
+    "BM_DeepTrackedPool/256",
+    "BM_DeepTrackedPool/1024",
+)
+_ENTT_REQUIRED_KEYS = (
+    "BM_EnttRegistry/256",
+    "BM_EnttRegistry/512",
+    "BM_EnttRegistry/2048",
+    "BM_EnttRegistryBuild/256",
+    "BM_EnttRegistryBuild/512",
+    "BM_EnttRegistryBuild/2048",
+)
 
 
 class BenchmarkCheckError(RuntimeError):
@@ -84,6 +148,32 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Minimum benchmark time passed to Google Benchmark. The default "
             "keeps the strict manual comparison gate focused on sustained "
             "allocator timings instead of short-run noise."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-min-warmup-time",
+        default=None,
+        help=(
+            "Optional Google Benchmark warmup time in seconds. Pass a bare "
+            "number such as 0.1; this host's Google Benchmark rejects an "
+            "'s'-suffixed warmup value."
+        ),
+    )
+    parser.add_argument(
+        "--benchmark-random-interleaving",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Enable Google Benchmark random interleaving for repetitions. This "
+            "can reduce order and thermal bias in strict allocator comparisons."
+        ),
+    )
+    parser.add_argument(
+        "--cpu-affinity",
+        default=None,
+        help=(
+            "Pin only the benchmark binary to one CPU via run_cpp_benchmark.py. "
+            "Pass a CPU index or 'auto' to choose a nonzero allowed CPU."
         ),
     )
     parser.add_argument(
@@ -224,9 +314,19 @@ def require_requested_entt_registry_rows(
 
     raise BenchmarkCheckError(
         "EnTT registry benchmark rows were requested but are unavailable. "
-        "Configure this benchmark in an environment where EnTT::EnTT is already "
-        "available, for example with DART_BUILD_SIMULATION_EXPERIMENTAL=ON."
+        "Configure this benchmark in an environment where EnTT::EnTT is "
+        "available through the DART 7 World stack."
     )
+
+
+def required_keys_for_mode(
+    *, include_entt_registry: bool, only_entt_registry: bool
+) -> tuple[str, ...]:
+    if only_entt_registry:
+        return _ENTT_REQUIRED_KEYS
+    if include_entt_registry:
+        return (*_DEFAULT_REQUIRED_KEYS, *_ENTT_REQUIRED_KEYS)
+    return _DEFAULT_REQUIRED_KEYS
 
 
 def _select_rows(rows: list[dict]) -> list[dict]:
@@ -287,6 +387,45 @@ def collect_coefficients_of_variation(
     return dict(cvs)
 
 
+def collect_timing_statistics(
+    rows: list[dict], metric: str = "cpu_time"
+) -> dict[str, dict[str, dict[str, float]]]:
+    statistics: dict[str, dict[str, dict[str, float]]] = defaultdict(
+        lambda: defaultdict(dict)
+    )
+
+    for row in rows:
+        if row.get("run_type") != "aggregate":
+            continue
+        aggregate = row.get("aggregate_name")
+        if aggregate not in {"mean", "stddev"}:
+            continue
+
+        name = _canonical_name(_row_name(row))
+        match = _COMPARATIVE_RE.match(name)
+        if match is None:
+            continue
+
+        family, allocator, args = match.groups()
+        key = family + (args or "")
+        timing = _timing_ns(row, metric)
+        if not math.isfinite(timing) or timing < 0.0:
+            continue
+
+        statistics[key][allocator][aggregate] = timing
+        try:
+            repetitions = int(row.get("repetitions", 0))
+        except (TypeError, ValueError):
+            repetitions = 0
+        if repetitions > 0:
+            statistics[key][allocator]["repetitions"] = float(repetitions)
+
+    return {
+        key: {allocator: dict(values) for allocator, values in allocs.items()}
+        for key, allocs in statistics.items()
+    }
+
+
 def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
     counters: dict[str, dict[str, float]] = defaultdict(dict)
 
@@ -314,10 +453,59 @@ def collect_dart_counters(rows: list[dict]) -> dict[str, dict[str, float]]:
     return dict(counters)
 
 
+def _mean_confidence_interval(
+    statistics: dict[str, float],
+) -> tuple[float, float] | None:
+    mean = statistics.get("mean")
+    stddev = statistics.get("stddev")
+    repetitions = statistics.get("repetitions")
+    if mean is None or stddev is None or repetitions is None:
+        return None
+    if not all(math.isfinite(value) for value in (mean, stddev, repetitions)):
+        return None
+    if mean <= 0.0 or stddev < 0.0 or repetitions < 2.0:
+        return None
+
+    half_width = _NOISY_SEPARATION_Z * stddev / math.sqrt(repetitions)
+    return max(0.0, mean - half_width), mean + half_width
+
+
+def _separated_noisy_timing_evidence(
+    timing_statistics: dict[str, dict[str, dict[str, float]]],
+    *,
+    key: str,
+    baseline: str,
+    max_ratio: float,
+) -> dict | None:
+    dart_interval = _mean_confidence_interval(
+        timing_statistics.get(key, {}).get("DART", {})
+    )
+    baseline_interval = _mean_confidence_interval(
+        timing_statistics.get(key, {}).get(baseline, {})
+    )
+    if dart_interval is None or baseline_interval is None:
+        return None
+
+    dart_lower, dart_upper = dart_interval
+    baseline_lower, baseline_upper = baseline_interval
+    if dart_upper < baseline_lower * max_ratio:
+        return {
+            "evidence": "MEAN_CI_SEPARATED",
+            "dart_mean_ci_ns": [round(dart_lower, 3), round(dart_upper, 3)],
+            "baseline_mean_ci_ns": [
+                round(baseline_lower, 3),
+                round(baseline_upper, 3),
+            ],
+            "confidence_z": _NOISY_SEPARATION_Z,
+        }
+    return None
+
+
 def evaluate_comparisons(
     rows: list[dict],
     *,
     baseline_allocators: list[str | tuple[str, ...]],
+    required_keys: tuple[str, ...] = (),
     max_ratio: float = 1.0,
     max_cv: float | None = 0.10,
     metric: str = "cpu_time",
@@ -332,12 +520,24 @@ def evaluate_comparisons(
 
     timings = collect_timings(rows, metric)
     cvs = collect_coefficients_of_variation(rows, metric)
+    timing_statistics = collect_timing_statistics(rows, metric)
     dart_counters = collect_dart_counters(rows)
     failures = []
     passes = []
 
     if not timings:
         raise BenchmarkCheckError("no comparative allocator benchmark rows found")
+
+    for key in required_keys:
+        allocs = timings.get(key)
+        if allocs is None:
+            failures.append(
+                {
+                    "benchmark": key,
+                    "baseline": "<required>",
+                    "status": "MISSING_BENCHMARK",
+                }
+            )
 
     for key in sorted(timings):
         allocs = timings[key]
@@ -368,27 +568,6 @@ def evaluate_comparisons(
                 )
                 continue
 
-            noisy_allocators = []
-            if max_cv is not None:
-                dart_cv = cvs.get(key, {}).get("DART")
-                baseline_cv = cvs.get(key, {}).get(baseline)
-                if dart_cv is not None and dart_cv > max_cv:
-                    noisy_allocators.append(("DART", dart_cv))
-                if baseline_cv is not None and baseline_cv > max_cv:
-                    noisy_allocators.append((baseline, baseline_cv))
-
-            if noisy_allocators:
-                failures.append(
-                    {
-                        "benchmark": key,
-                        "baseline": baseline,
-                        "noisy_allocators": noisy_allocators,
-                        "max_cv": max_cv,
-                        "status": "NOISY",
-                    }
-                )
-                continue
-
             ratio = dart_time / baseline_time
             result = {
                 "benchmark": key,
@@ -400,6 +579,42 @@ def evaluate_comparisons(
             }
             if key in dart_counters:
                 result["dart_counters"] = dart_counters[key]
+
+            noisy_allocators = []
+            if max_cv is not None:
+                dart_cv = cvs.get(key, {}).get("DART")
+                baseline_cv = cvs.get(key, {}).get(baseline)
+                if dart_cv is not None and dart_cv > max_cv:
+                    noisy_allocators.append(("DART", dart_cv))
+                if baseline_cv is not None and baseline_cv > max_cv:
+                    noisy_allocators.append((baseline, baseline_cv))
+
+            if noisy_allocators:
+                separated_evidence = _separated_noisy_timing_evidence(
+                    timing_statistics,
+                    key=key,
+                    baseline=baseline,
+                    max_ratio=max_ratio,
+                )
+                if ratio < max_ratio and separated_evidence is not None:
+                    result.update(separated_evidence)
+                    result["noisy_allocators"] = noisy_allocators
+                    result["max_cv"] = max_cv
+                    result["status"] = "PASS"
+                    passes.append(result)
+                    continue
+
+                failures.append(
+                    {
+                        "benchmark": key,
+                        "baseline": baseline,
+                        "noisy_allocators": noisy_allocators,
+                        "max_cv": max_cv,
+                        "status": "NOISY",
+                    }
+                )
+                continue
+
             if ratio < max_ratio:
                 result["status"] = "PASS"
                 passes.append(result)
@@ -425,6 +640,9 @@ def run_benchmark(
     *,
     build_type: str,
     benchmark_min_time: str,
+    benchmark_min_warmup_time: str | None,
+    benchmark_random_interleaving: bool,
+    cpu_affinity: str | None,
     include_entt_registry: bool,
     only_entt_registry: bool,
     repetitions: int,
@@ -432,13 +650,18 @@ def run_benchmark(
     output.parent.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
-    subprocess.run(
+    command = [
+        sys.executable,
+        "scripts/run_cpp_benchmark.py",
+        "allocators-comparative",
+        "--build-type",
+        build_type,
+    ]
+    if cpu_affinity is not None:
+        command.extend(["--cpu-affinity", cpu_affinity])
+    command.append("--")
+    command.extend(
         [
-            sys.executable,
-            "scripts/run_cpp_benchmark.py",
-            "allocators-comparative",
-            "--build-type",
-            build_type,
             "--benchmark_filter={}".format(
                 benchmark_filter_for_mode(
                     include_entt_registry=include_entt_registry,
@@ -450,7 +673,17 @@ def run_benchmark(
             "--benchmark_report_aggregates_only=true",
             "--benchmark_out={}".format(output),
             "--benchmark_out_format=json",
-        ],
+        ]
+    )
+    if benchmark_min_warmup_time is not None:
+        command.append(
+            "--benchmark_min_warmup_time={}".format(benchmark_min_warmup_time)
+        )
+    if benchmark_random_interleaving:
+        command.append("--benchmark_enable_random_interleaving=true")
+
+    subprocess.run(
+        command,
         check=True,
         env=env,
     )
@@ -514,6 +747,17 @@ def _print_result(prefix: str, result: dict) -> None:
     counters = _format_dart_counters(result)
     if counters:
         message += "; DART counters: {}".format(counters)
+    if result.get("evidence") == "MEAN_CI_SEPARATED":
+        message += (
+            "; noisy but separated mean CI: DART [{:.1f}, {:.1f}] ns, "
+            "baseline [{:.1f}, {:.1f}] ns (z={:.2f})"
+        ).format(
+            result["dart_mean_ci_ns"][0],
+            result["dart_mean_ci_ns"][1],
+            result["baseline_mean_ci_ns"][0],
+            result["baseline_mean_ci_ns"][1],
+            result["confidence_z"],
+        )
     print(message)
 
 
@@ -537,6 +781,9 @@ def main(argv: list[str]) -> int:
             args.output,
             build_type=args.build_type,
             benchmark_min_time=args.benchmark_min_time,
+            benchmark_min_warmup_time=args.benchmark_min_warmup_time,
+            benchmark_random_interleaving=args.benchmark_random_interleaving,
+            cpu_affinity=args.cpu_affinity,
             include_entt_registry=args.include_entt_registry,
             only_entt_registry=args.only_entt_registry,
             repetitions=args.repetitions,
@@ -557,6 +804,10 @@ def main(argv: list[str]) -> int:
         failures, passes = evaluate_comparisons(
             rows,
             baseline_allocators=baseline_allocators,
+            required_keys=required_keys_for_mode(
+                include_entt_registry=args.include_entt_registry,
+                only_entt_registry=args.only_entt_registry,
+            ),
             max_ratio=args.max_ratio,
             max_cv=args.max_cv,
             metric=args.metric,

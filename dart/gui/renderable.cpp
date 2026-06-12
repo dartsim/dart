@@ -32,8 +32,6 @@
 
 #include <dart/gui/renderable.hpp>
 
-#include <dart/simulation/world.hpp>
-
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/shape.hpp>
 #include <dart/dynamics/shape_frame.hpp>
@@ -247,49 +245,21 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
       std::move(*geometry));
 }
 
-std::vector<RenderableDescriptor> extractRenderables(
-    const simulation::World& world)
+std::vector<RenderableDescriptor> extractRenderables(const simulation::World&)
 {
-  std::vector<RenderableDescriptor> renderables;
+  return {};
+}
 
-  for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-       ++skeletonIndex) {
-    const auto skeleton = world.getSkeleton(skeletonIndex);
-    if (!skeleton) {
-      continue;
-    }
-
-    skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
-      bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
-          [&](const dynamics::ShapeNode* shapeNode) {
-            const auto* visualAspect = shapeNode->getVisualAspect();
-            auto descriptor = makeRenderableDescriptor(
-                *shapeNode,
-                *visualAspect,
-                skeleton->getName(),
-                bodyNode->getName(),
-                shapeNode->getName());
-            if (descriptor) {
-              renderables.push_back(std::move(*descriptor));
-            }
-          });
-    });
+std::optional<RenderableDescriptor> describeShapeFrame(
+    const dynamics::ShapeFrame& shapeFrame)
+{
+  const auto* visualAspect = shapeFrame.getVisualAspect();
+  if (visualAspect == nullptr) {
+    return std::nullopt;
   }
 
-  for (std::size_t i = 0; i < world.getNumSimpleFrames(); ++i) {
-    const auto simpleFrame = world.getSimpleFrame(i);
-    if (simpleFrame == nullptr || !simpleFrame->hasVisualAspect()) {
-      continue;
-    }
-
-    auto descriptor = makeRenderableDescriptor(
-        *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {}, simpleFrame);
-    if (descriptor) {
-      renderables.push_back(std::move(*descriptor));
-    }
-  }
-
-  return renderables;
+  return makeRenderableDescriptor(
+      shapeFrame, *visualAspect, {}, {}, shapeFrame.getName(), {});
 }
 
 std::optional<RenderableDescriptor> makeDeformableSurfaceRenderable(
@@ -431,7 +401,7 @@ std::vector<Eigen::Vector3i> makeGridSurfaceTriangles(
 // in place without a version bump must be rebuilt every frame; these are
 // exactly the kinds computeRenderResourceVersion() vertex-hashes (soft meshes,
 // point clouds) plus voxel grids, whose describeShape() reads live cell data.
-bool isCacheableGeometryKind(ShapeKind kind)
+[[maybe_unused]] bool isCacheableGeometryKind(ShapeKind kind)
 {
   switch (kind) {
     case ShapeKind::SoftMesh:
@@ -444,116 +414,10 @@ bool isCacheableGeometryKind(ShapeKind kind)
 }
 
 std::vector<RenderableDescriptor> RenderableExtractor::extract(
-    const simulation::World& world)
+    const simulation::World&)
 {
-  std::vector<RenderableDescriptor> renderables;
-  std::unordered_set<std::size_t> seenShapeIds;
-
-  const auto processShapeFrame
-      = [&](const dynamics::ShapeFrame& shapeFrame,
-            const dynamics::VisualAspect& visualAspect,
-            const std::string& skeletonName,
-            const std::string& bodyName,
-            const std::string& shapeNodeName,
-            const dynamics::WeakConstSimpleFramePtr& simpleFrame) {
-          const auto shape = shapeFrame.getShape();
-          if (!shape) {
-            return;
-          }
-          // Key on the stable shape id, never the pointer: a deleted shape's
-          // heap address can be reused by a new shape, but ids are never
-          // reused, so a reused address cannot alias a stale cache entry.
-          const std::size_t shapeId = shape->getID();
-          const std::size_t version = shape->getVersion();
-          seenShapeIds.insert(shapeId);
-
-          auto it = mGeometryCache.find(shapeId);
-          if (it != mGeometryCache.end() && it->second.version == version) {
-            // Cache hit (only cacheable, static-geometry kinds are ever
-            // stored). The per-shape cost is a geometry copy rather than
-            // rebuilding the mesh via describeShape.
-            renderables.push_back(assembleRenderableDescriptor(
-                shapeFrame,
-                visualAspect,
-                skeletonName,
-                bodyName,
-                shapeNodeName,
-                simpleFrame,
-                *shape,
-                it->second.geometry));
-            return;
-          }
-
-          auto geometry = describeShape(*shape);
-          if (!geometry) {
-            // Unsupported shape: drop any stale cache entry and skip.
-            if (it != mGeometryCache.end()) {
-              mGeometryCache.erase(it);
-            }
-            return;
-          }
-          GeometryDescriptor builtGeometry = std::move(*geometry);
-          if (isCacheableGeometryKind(builtGeometry.kind)) {
-            mGeometryCache.insert_or_assign(
-                shapeId, CachedGeometry{version, builtGeometry});
-          } else if (it != mGeometryCache.end()) {
-            // Dynamic geometry must be rebuilt every frame; never keep an
-            // entry.
-            mGeometryCache.erase(it);
-          }
-          renderables.push_back(assembleRenderableDescriptor(
-              shapeFrame,
-              visualAspect,
-              skeletonName,
-              bodyName,
-              shapeNodeName,
-              simpleFrame,
-              *shape,
-              std::move(builtGeometry)));
-        };
-
-  for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
-       ++skeletonIndex) {
-    const auto skeleton = world.getSkeleton(skeletonIndex);
-    if (!skeleton) {
-      continue;
-    }
-
-    skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
-      bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
-          [&](const dynamics::ShapeNode* shapeNode) {
-            processShapeFrame(
-                *shapeNode,
-                *shapeNode->getVisualAspect(),
-                skeleton->getName(),
-                bodyNode->getName(),
-                shapeNode->getName(),
-                {});
-          });
-    });
-  }
-
-  for (std::size_t i = 0; i < world.getNumSimpleFrames(); ++i) {
-    const auto simpleFrame = world.getSimpleFrame(i);
-    if (simpleFrame == nullptr || !simpleFrame->hasVisualAspect()) {
-      continue;
-    }
-
-    processShapeFrame(
-        *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {}, simpleFrame);
-  }
-
-  // Drop cache entries for shapes that are no longer present so the cache does
-  // not grow unbounded.
-  for (auto it = mGeometryCache.begin(); it != mGeometryCache.end();) {
-    if (seenShapeIds.find(it->first) == seenShapeIds.end()) {
-      it = mGeometryCache.erase(it);
-    } else {
-      ++it;
-    }
-  }
-
-  return renderables;
+  mGeometryCache.clear();
+  return {};
 }
 
 } // namespace dart::gui

@@ -36,3 +36,11 @@ Before implementation starts, the owner plan or dev task should record:
 7. **Failure and fallback semantics.** Record unsupported-feature errors,
    fallback behavior, non-convergence handling, determinism requirements, and
    serialization/restart expectations before promoting a runtime path.
+8. **World-step schedule integration.** Record which built-in schedule slots the
+   runtime path adds, replaces, or deliberately avoids in
+   `detail/world_step_schedule.hpp`; whether the method participates in the
+   prepare / pre-couple / couple / post-couple lifecycle; which domain-presence
+   flags activate it so empty domains do not add placeholder work; and which
+   focused tests prove default `World::step()` and custom-final-stage stepping
+   share the same dynamics schedule without exceeding the built-in inline stage
+   capacity.

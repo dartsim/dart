@@ -20,9 +20,9 @@ class BenchmarkSpec:
     output_name: str
 
 
-# The dashboard is intentionally scoped to experimental World performance. Keep
-# the published history focused on end-to-end experimental World update/step
-# cases for the new DART 7 simulation APIs (the experimental World and its
+# The dashboard is intentionally scoped to DART 7 World performance. Keep
+# the published history focused on end-to-end DART 7 World update/step
+# cases for the new DART 7 simulation APIs (the DART 7 World and its
 # solver families) instead of mixing in unrelated SIMD or robot-loader surfaces.
 #
 # Each surface tracks the *end-to-end World step* of a DART 7 solver family so
@@ -32,11 +32,11 @@ class BenchmarkSpec:
 # runner lacks or a build flag the dashboard build does not set, and they would
 # bury the World-step throughput signal. Filters are bounded so a run stays cheap.
 BENCHMARK_SPECS = [
-    # Core experimental World step & scaling (kinematics, sequential/parallel
+    # Core DART 7 World step & scaling (kinematics, sequential/parallel
     # World step, rigid-body step scaling, the contact-shaped/contact-island
     # scalable-compute proxies, and the Phase 5 CPU baseline row).
     BenchmarkSpec(
-        surface="experimental-world",
+        surface="world",
         target="bm_compute_graph",
         benchmark_filter=(
             "BM_WorldUpdateKinematics/.*|"
@@ -46,7 +46,7 @@ BENCHMARK_SPECS = [
             "BM_ContactIslandShaped(Sequential|Parallel)/.*|"
             "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10"
         ),
-        output_name="dashboard_experimental_world.json",
+        output_name="dashboard_world.json",
     ),
     # Rigid-body dynamics solver (PLAN-080 / PLAN-082): end-to-end World step
     # with the default sequential-impulse contact solve and the opt-in IPC
@@ -74,13 +74,59 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_DeformableFemBarStep/.*",
         output_name="dashboard_deformable_world.json",
     ),
-    # Augmented VBD rigid (PLAN-104): end-to-end World step of rigid chains
-    # routed through the AVBD contact projection for fixed-joint and
-    # revolute-motor rows.
+    # Augmented VBD (PLAN-104): end-to-end World step of the empty and first
+    # non-empty 2D source-demo baselines plus 2D/3D dynamic/static friction,
+    # 3D ground, stacking, and breakable source rows and narrow public rigid
+    # fixed/revolute/prismatic/breakable/spherical rows and articulated
+    # revolute/prismatic/breakable motor, same-multibody/world-anchored one-DOF
+    # breakable motors, and breakable rows routed through the AVBD projection
+    # paths, with narrow and paper-scale high mass-ratio articulated-chain
+    # smoke rows.
     BenchmarkSpec(
         surface="avbd-world",
         target="bm_avbd_rigid_fixed_joint",
-        benchmark_filter="BM_AvbdRigid(FixedJoint|RevoluteMotor)Step/.*",
+        benchmark_filter=(
+            "BM_AvbdEmptyWorldStep$|"
+            "BM_AvbdDemo2dMotorStep$|"
+            "BM_AvbdDemo2dHangingRopeStep$|"
+            "BM_AvbdDemo2dFractureStep$|"
+            "BM_AvbdDemo2dGroundStep$|"
+            "BM_AvbdDemo2dDynamicFrictionStep$|"
+            "BM_AvbdDemo2dStaticFrictionStep$|"
+            "BM_AvbdDemo2dPyramidStep$|"
+            "BM_AvbdDemo2dCardsStep$|"
+            "BM_AvbdDemo2dStackStep$|"
+            "BM_AvbdDemo2dStackRatioStep$|"
+            "BM_AvbdDemo2dRodStep$|"
+            "BM_AvbdDemo2dSoftBodyStep$|"
+            "BM_AvbdDemo2dJointGridStep$|"
+            "BM_AvbdDemo2dRopeStep$|"
+            "BM_AvbdDemo2dHeavyRopeStep$|"
+            "BM_AvbdDemo2dSpringStep$|"
+            "BM_AvbdDemo2dSpringRatioStep$|"
+            "BM_AvbdDemo2dNetStep$|"
+            "BM_AvbdDemo3dGroundStep$|"
+            "BM_AvbdDemo3dDynamicFrictionStep$|"
+            "BM_AvbdDemo3dStaticFrictionStep$|"
+            "BM_AvbdDemo3dPyramidStep$|"
+            "BM_AvbdDemo3dRopeStep$|"
+            "BM_AvbdDemo3dHeavyRopeStep$|"
+            "BM_AvbdDemo3dSpringStep$|"
+            "BM_AvbdDemo3dSpringRatioStep$|"
+            "BM_AvbdDemo3dStackStep$|"
+            "BM_AvbdDemo3dStackRatioStep$|"
+            "BM_AvbdDemo3dSoftBodyStep$|"
+            "BM_AvbdDemo3dBridgeStep$|"
+            "BM_AvbdDemo3dBreakableStep$|"
+            "BM_AvbdArticulatedHighRatioChainStep$|"
+            "BM_AvbdPaperScaleHighRatioChainStep$|"
+            "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
+            "|SphericalBreakableJoint)"
+            "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
+            "|PrismaticBreakable|Prismatic|Breakable)Motor"
+            "|BreakableJoint|WorldSphericalBreakableJoint"
+            "|SphericalPairBreakableJoint))Step/.*"
+        ),
         output_name="dashboard_avbd_world.json",
     ),
 ]

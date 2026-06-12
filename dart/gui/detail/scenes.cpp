@@ -33,7 +33,6 @@
 #include "scenes.hpp"
 
 #include "gui_scale.hpp"
-#include "scene_fixtures.hpp"
 
 #include <dart/gui/renderable.hpp>
 
@@ -43,6 +42,7 @@
 #include <dart/common/uri.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <algorithm>
 #include <iostream>
@@ -126,6 +126,77 @@ std::optional<std::string> inferPackageNameFromPackageUri(
   }
 
   return getLastPathSegment(packageUri);
+}
+
+std::vector<dart::gui::RenderableDescriptor> makeDefaultSceneRenderables(
+    ExampleScene scene)
+{
+  std::vector<dart::gui::RenderableDescriptor> renderables;
+  renderables.reserve(2u);
+
+  dart::gui::RenderableDescriptor ground;
+  ground.id = 0xD7'0001u;
+  ground.shapeFrameName = "ground";
+  ground.geometry.kind = dart::gui::ShapeKind::Box;
+  ground.geometry.size = Eigen::Vector3d(4.0, 4.0, 0.04);
+  ground.material.rgba = Eigen::Vector4d(0.42, 0.45, 0.47, 1.0);
+  ground.worldTransform.translation() = Eigen::Vector3d(0.0, 0.0, -0.02);
+  renderables.push_back(std::move(ground));
+
+  dart::gui::RenderableDescriptor marker;
+  marker.id = 0xD7'0002u;
+  marker.shapeFrameName = sceneName(scene);
+  marker.geometry.kind = dart::gui::ShapeKind::Box;
+  marker.geometry.size = Eigen::Vector3d(0.55, 0.55, 0.55);
+  marker.material.rgba = Eigen::Vector4d(0.18, 0.47, 0.82, 1.0);
+  marker.worldTransform.translation() = Eigen::Vector3d(0.0, 0.0, 0.28);
+  renderables.push_back(std::move(marker));
+
+  return renderables;
+}
+
+DartScene makeSceneFromOptions(const AppOptions& options)
+{
+  DartScene scene;
+  scene.preStep = options.preStep;
+  scene.postStep = options.postStep;
+  scene.timeStep = options.timeStep > 0.0 ? options.timeStep : 1.0 / 60.0;
+  scene.advanceSimulation = options.advanceSimulation;
+  scene.renderSettings = options.renderSettings;
+  scene.renderableProvider = options.renderableProvider;
+  if (!scene.renderableProvider) {
+    const ExampleScene exampleScene = options.scene;
+    scene.renderableProvider = [exampleScene]() {
+      return makeDefaultSceneRenderables(exampleScene);
+    };
+  }
+  scene.selectedRenderableProvider = options.selectedRenderableProvider;
+  scene.onRenderableSelected = options.onRenderableSelected;
+  scene.onForceDrag = options.onForceDrag;
+  scene.onViewportPaneActivated = options.onViewportPaneActivated;
+  scene.dockingEnabled = options.dockingEnabled;
+  scene.gizmos = options.gizmos;
+  scene.debugLabels = options.debugLabels;
+  scene.debugProvider = options.debugProvider;
+  scene.bodyNodeDragHandles = options.bodyNodeDragHandles;
+  scene.keyboardActions = options.keyboardActions;
+  scene.ikHandles.reserve(options.ikHandles.size());
+  for (const auto& handle : options.ikHandles) {
+    if (handle.target == nullptr) {
+      continue;
+    }
+
+    IkHandle runtimeHandle;
+    runtimeHandle.targetRenderableId
+        = dart::gui::makeRenderableId(*handle.target);
+    runtimeHandle.label = handle.label;
+    runtimeHandle.hotkey = handle.hotkey;
+    runtimeHandle.target = handle.target;
+    runtimeHandle.ik = handle.ik;
+    runtimeHandle.solveMode = handle.solveMode;
+    scene.ikHandles.push_back(std::move(runtimeHandle));
+  }
+  return scene;
 }
 
 } // namespace
@@ -711,110 +782,16 @@ AppOptions parseOptions(
 
 DartScene createDartScene(const AppOptions& options)
 {
-  if (options.world != nullptr) {
-    DartScene scene;
-    scene.world = options.world;
-    scene.preStep = options.preStep;
-    scene.postStep = options.postStep;
-    scene.simulateWorld = options.simulateWorld;
-    scene.renderSettings = options.renderSettings;
-    scene.renderableProvider = options.renderableProvider;
-    scene.selectedRenderableProvider = options.selectedRenderableProvider;
-    scene.onRenderableSelected = options.onRenderableSelected;
-    scene.onForceDrag = options.onForceDrag;
-    scene.onViewportPaneActivated = options.onViewportPaneActivated;
-    scene.dockingEnabled = options.dockingEnabled;
-    scene.gizmos = options.gizmos;
-    scene.debugLabels = options.debugLabels;
-    scene.debugProvider = options.debugProvider;
-    scene.bodyNodeDragHandles = options.bodyNodeDragHandles;
-    scene.keyboardActions = options.keyboardActions;
-    scene.ikHandles.reserve(options.ikHandles.size());
-    for (const auto& handle : options.ikHandles) {
-      if (handle.target == nullptr) {
-        continue;
-      }
+  return makeSceneFromOptions(options);
+}
 
-      IkHandle runtimeHandle;
-      runtimeHandle.targetRenderableId
-          = dart::gui::makeRenderableId(*handle.target);
-      runtimeHandle.label = handle.label;
-      runtimeHandle.hotkey = handle.hotkey;
-      runtimeHandle.target = handle.target;
-      runtimeHandle.ik = handle.ik;
-      runtimeHandle.solveMode = handle.solveMode;
-      scene.ikHandles.push_back(std::move(runtimeHandle));
-    }
-    return scene;
+std::vector<dart::gui::RenderableDescriptor> collectSceneRenderables(
+    const DartScene& scene)
+{
+  if (!scene.renderableProvider) {
+    return {};
   }
-
-  switch (options.scene) {
-    case ExampleScene::Mvp:
-      return createMvpDartScene();
-    case ExampleScene::HelloWorld:
-      return createHelloWorldScene();
-    case ExampleScene::Boxes:
-      return createBoxesScene();
-    case ExampleScene::HardcodedDesign:
-      return createHardcodedDesignScene();
-    case ExampleScene::RigidChain:
-      return createRigidChainScene();
-    case ExampleScene::RigidLoop:
-      return createRigidLoopScene();
-    case ExampleScene::MixedChain:
-      return createMixedChainScene();
-    case ExampleScene::CouplerConstraint:
-      return createCouplerConstraintScene();
-    case ExampleScene::AddDeleteSkels:
-      return createAddDeleteSkelsScene();
-    case ExampleScene::Vehicle:
-      return createVehicleScene();
-    case ExampleScene::HybridDynamics:
-      return createHybridDynamicsScene();
-    case ExampleScene::JointConstraints:
-      return createJointConstraintsScene();
-    case ExampleScene::FreeJointCases:
-      return createFreeJointCasesScene();
-    case ExampleScene::HumanJointLimits:
-      return createHumanJointLimitsScene();
-    case ExampleScene::LcpPhysics:
-      return createLcpPhysicsScene();
-    case ExampleScene::MimicPendulums:
-      return createMimicPendulumsScene();
-    case ExampleScene::AtlasPuppet:
-      return createAtlasPuppetScene();
-    case ExampleScene::HuboPuppet:
-      return createHuboPuppetScene();
-    case ExampleScene::AtlasSimbicon:
-      return createAtlasSimbiconScene();
-    case ExampleScene::OperationalSpaceControl:
-      return createOperationalSpaceControlScene();
-    case ExampleScene::WamIkFast:
-      return createWamIkFastScene();
-    case ExampleScene::Fetch:
-      return createFetchScene();
-    case ExampleScene::Tinkertoy:
-      return createTinkertoyScene();
-    case ExampleScene::DragAndDrop:
-      return createDragAndDropScene();
-    case ExampleScene::SimpleFrames:
-      return createSimpleFramesScene();
-    case ExampleScene::SoftBodies:
-      return createSoftBodiesScene();
-    case ExampleScene::PointCloud:
-      return createPointCloudScene();
-    case ExampleScene::CapsuleGroundContact:
-      return createCapsuleGroundContactScene();
-    case ExampleScene::SimulationEventHandler:
-      return createSimulationEventHandlerScene();
-    case ExampleScene::Polyhedron:
-      return createPolyhedronScene();
-    case ExampleScene::Heightmap:
-      return createHeightmapScene();
-    case ExampleScene::G1:
-      return createG1DartScene(options);
-  }
-  return createMvpDartScene();
+  return scene.renderableProvider();
 }
 
 } // namespace dart::gui::detail

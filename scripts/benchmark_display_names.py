@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Human-readable display names for the experimental World performance dashboard.
+"""Human-readable display names for the DART 7 World performance dashboard.
 
 Both the hosted dashboard (``benchmark-action/github-action-benchmark``) and the
 local preview use a Google Benchmark row's ``name`` as the chart title *and* the
@@ -27,11 +27,11 @@ import re
 from dataclasses import dataclass
 
 # Section headers used to group charts on the dashboard.
-FAMILY_CORE = "Experimental World — core step & scaling"
+FAMILY_CORE = "DART 7 World — core step & scaling"
 FAMILY_RIGID = "Rigid-body dynamics solver"
 FAMILY_VBD = "Deformable solver (Vertex Block Descent)"
 FAMILY_FEM = "Deformable solver (FEM)"
-FAMILY_AVBD = "Augmented VBD rigid"
+FAMILY_AVBD = "Augmented VBD"
 FAMILY_OTHER = "Other benchmarks"
 
 
@@ -49,7 +49,7 @@ class Surface:
 
 # Base benchmark name (without the ``/arg`` suffix) -> readable surface.
 SURFACES: dict[str, Surface] = {
-    # --- Experimental World core step & scaling (bm_compute_graph) ---------
+    # --- DART 7 World core step & scaling (bm_compute_graph) ---------
     "BM_WorldUpdateKinematics": Surface(
         "Kinematics update", FAMILY_CORE, ("parents", "children/parent")
     ),
@@ -103,11 +103,115 @@ SURFACES: dict[str, Surface] = {
     # --- Deformable FEM (bm_deformable_body) ------------------------------
     "BM_DeformableFemBarStep": Surface("FEM bar step", FAMILY_FEM, ("cells",)),
     # --- Augmented VBD rigid (bm_avbd_rigid_fixed_joint) ------------------
+    "BM_AvbdEmptyWorldStep": Surface("AVBD empty baseline step", FAMILY_AVBD),
     "BM_AvbdRigidFixedJointStep": Surface(
         "AVBD fixed-joint step", FAMILY_AVBD, ("links",)
     ),
     "BM_AvbdRigidRevoluteMotorStep": Surface(
         "AVBD revolute-motor step", FAMILY_AVBD, ("motors",)
+    ),
+    "BM_AvbdRigidPrismaticMotorStep": Surface(
+        "AVBD prismatic-motor step", FAMILY_AVBD, ("motors",)
+    ),
+    "BM_AvbdDemo2dMotorStep": Surface("AVBD demo2d motor step", FAMILY_AVBD),
+    "BM_AvbdDemo2dHangingRopeStep": Surface(
+        "AVBD demo2d hanging rope step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo2dFractureStep": Surface("AVBD demo2d fracture step", FAMILY_AVBD),
+    "BM_AvbdDemo2dDynamicFrictionStep": Surface(
+        "AVBD demo2d dynamic friction step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo2dStaticFrictionStep": Surface(
+        "AVBD demo2d static friction step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo2dGroundStep": Surface("AVBD demo2d ground step", FAMILY_AVBD),
+    "BM_AvbdDemo2dPyramidStep": Surface("AVBD demo2d pyramid step", FAMILY_AVBD),
+    "BM_AvbdDemo2dCardsStep": Surface("AVBD demo2d cards step", FAMILY_AVBD),
+    "BM_AvbdDemo2dStackStep": Surface("AVBD demo2d stack step", FAMILY_AVBD),
+    "BM_AvbdDemo2dStackRatioStep": Surface("AVBD demo2d stack ratio step", FAMILY_AVBD),
+    "BM_AvbdDemo2dRodStep": Surface("AVBD demo2d rod step", FAMILY_AVBD),
+    "BM_AvbdDemo2dSoftBodyStep": Surface("AVBD demo2d soft body step", FAMILY_AVBD),
+    "BM_AvbdDemo2dJointGridStep": Surface("AVBD demo2d joint grid step", FAMILY_AVBD),
+    "BM_AvbdDemo2dRopeStep": Surface("AVBD demo2d rope step", FAMILY_AVBD),
+    "BM_AvbdDemo2dHeavyRopeStep": Surface("AVBD demo2d heavy rope step", FAMILY_AVBD),
+    "BM_AvbdDemo2dSpringStep": Surface("AVBD demo2d spring step", FAMILY_AVBD),
+    "BM_AvbdDemo2dSpringRatioStep": Surface(
+        "AVBD demo2d spring ratio step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo2dNetStep": Surface("AVBD demo2d net step", FAMILY_AVBD),
+    "BM_AvbdDemo3dGroundStep": Surface("AVBD demo3d ground step", FAMILY_AVBD),
+    "BM_AvbdDemo3dDynamicFrictionStep": Surface(
+        "AVBD demo3d dynamic friction step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo3dStaticFrictionStep": Surface(
+        "AVBD demo3d static friction step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo3dPyramidStep": Surface("AVBD demo3d pyramid step", FAMILY_AVBD),
+    "BM_AvbdDemo3dRopeStep": Surface("AVBD demo3d rope step", FAMILY_AVBD),
+    "BM_AvbdDemo3dHeavyRopeStep": Surface("AVBD demo3d heavy rope step", FAMILY_AVBD),
+    "BM_AvbdDemo3dSpringStep": Surface("AVBD demo3d spring step", FAMILY_AVBD),
+    "BM_AvbdDemo3dSpringRatioStep": Surface(
+        "AVBD demo3d spring ratio step", FAMILY_AVBD
+    ),
+    "BM_AvbdDemo3dStackStep": Surface("AVBD demo3d stack step", FAMILY_AVBD),
+    "BM_AvbdDemo3dStackRatioStep": Surface("AVBD demo3d stack ratio step", FAMILY_AVBD),
+    "BM_AvbdDemo3dSoftBodyStep": Surface("AVBD demo3d soft body step", FAMILY_AVBD),
+    "BM_AvbdDemo3dBridgeStep": Surface("AVBD demo3d bridge step", FAMILY_AVBD),
+    "BM_AvbdDemo3dBreakableStep": Surface("AVBD demo3d breakable step", FAMILY_AVBD),
+    "BM_AvbdRigidBreakableJointStep": Surface(
+        "AVBD breakable-joint step", FAMILY_AVBD, ("breakable joints",)
+    ),
+    "BM_AvbdRigidSphericalBreakableJointStep": Surface(
+        "AVBD spherical breakable-joint step",
+        FAMILY_AVBD,
+        ("breakable joints",),
+    ),
+    "BM_AvbdArticulatedRevoluteMotorStep": Surface(
+        "AVBD articulated revolute-motor step", FAMILY_AVBD, ("motors",)
+    ),
+    "BM_AvbdArticulatedBreakableMotorStep": Surface(
+        "AVBD articulated breakable-motor step",
+        FAMILY_AVBD,
+        ("breakable motors",),
+    ),
+    "BM_AvbdArticulatedPrismaticMotorStep": Surface(
+        "AVBD articulated prismatic-motor step", FAMILY_AVBD, ("motors",)
+    ),
+    "BM_AvbdArticulatedPrismaticBreakableMotorStep": Surface(
+        "AVBD articulated prismatic breakable-motor step",
+        FAMILY_AVBD,
+        ("breakable motors",),
+    ),
+    "BM_AvbdArticulatedWorldPrismaticBreakableMotorStep": Surface(
+        "AVBD articulated world-prismatic breakable-motor step",
+        FAMILY_AVBD,
+        ("breakable motors",),
+    ),
+    "BM_AvbdArticulatedWorldRevoluteBreakableMotorStep": Surface(
+        "AVBD articulated world-revolute breakable-motor step",
+        FAMILY_AVBD,
+        ("breakable motors",),
+    ),
+    "BM_AvbdArticulatedBreakableJointStep": Surface(
+        "AVBD articulated breakable-joint step",
+        FAMILY_AVBD,
+        ("breakable joints",),
+    ),
+    "BM_AvbdArticulatedWorldSphericalBreakableJointStep": Surface(
+        "AVBD articulated world-spherical breakable-joint step",
+        FAMILY_AVBD,
+        ("breakable joints",),
+    ),
+    "BM_AvbdArticulatedSphericalPairBreakableJointStep": Surface(
+        "AVBD articulated spherical-pair breakable-joint step",
+        FAMILY_AVBD,
+        ("breakable joints",),
+    ),
+    "BM_AvbdArticulatedHighRatioChainStep": Surface(
+        "AVBD articulated high-ratio chain step", FAMILY_AVBD
+    ),
+    "BM_AvbdPaperScaleHighRatioChainStep": Surface(
+        "AVBD paper-scale high-ratio chain step", FAMILY_AVBD
     ),
 }
 

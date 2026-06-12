@@ -5,13 +5,11 @@
 #include "gui/viewer.hpp"
 
 #include "dart/gui/application.hpp"
-#include "dart/simulation/world.hpp"
 #include "gui/panel.hpp"
 
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
-#include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
@@ -66,27 +64,24 @@ void defGuiViewer(nb::module_& m)
       &dart::gui::isDockingAvailable,
       "Return whether the GUI build includes Dear ImGui docking support.");
 
-  // Run the interactive viewer (Filament + ImGui) against a single world.
+  // Run the interactive viewer (Filament + ImGui) against descriptor-backed
+  // application options.
   // Argv flags propagate to the C++ runtime: --scene, --cycle-scenes,
   // --frames, --headless, --screenshot <path>, --width, --height, --backend.
   m.def(
       "run_application",
-      [](const dart::simulation::WorldPtr& world,
-         const std::vector<std::string>& argv) {
+      [](const std::vector<std::string>& argv) {
         dart::gui::ApplicationOptions options;
-        options.world = world;
         ArgvHolder holder(argv);
         return dart::gui::runApplication(holder.argc(), holder.argv(), options);
       },
-      nb::arg("world"),
       nb::arg("argv") = std::vector<std::string>{},
-      "Open the interactive Filament viewer with the given world. Blocks "
+      "Open the interactive Filament viewer. Blocks "
       "until the user closes the window (or --headless --frames N exits).");
 
   // Run the multi-scene demos host. Each scene is a (id, title, category,
-  // summary, build_world) tuple where build_world is a Python callable that
-  // returns a dart.simulation.World; the world is built lazily when the
-  // scene is first selected. Mirrors C++ dart::gui::runDemos.
+  // summary, factory) tuple where factory builds descriptor-backed
+  // ApplicationOptions lazily when the scene is first selected.
   m.def(
       "run_demos",
       [](const std::vector<std::tuple<
@@ -105,8 +100,8 @@ void defGuiViewer(nb::module_& m)
           entry.title = title;
           entry.category = category;
           entry.summary = summary;
-          // Capture the Python callable; on invocation, acquire the GIL,
-          // call into Python, and unwrap the returned World pointer.
+          // Capture the Python callable; on invocation, acquire the GIL and
+          // translate optional callbacks/panels into ApplicationOptions.
           entry.factory = [factory, scene_id = id]() {
             nb::gil_scoped_acquire gil;
             dart::gui::ApplicationOptions options;
@@ -115,43 +110,38 @@ void defGuiViewer(nb::module_& m)
             // frame. Captured by a stable shared_ptr so subsequent factory
             // invocations don't tear it down mid-step.
             auto pre_step_holder = std::make_shared<nb::callable>();
-            // Hold the optional Python force-drag handler alive past the
-            // factory call so the viewer's onForceDrag can invoke it each frame
-            // the user drags an sx renderable (see the (World, pre_step,
-            // force_drag) tuple form below).
+            // Hold optional Python callbacks alive past the factory call.
             auto force_drag_holder = std::make_shared<nb::callable>();
+            auto renderable_provider_holder = std::make_shared<nb::callable>();
             try {
               nb::object result = factory();
               // Accept either:
-              //   factory() -> World
-              //   factory() -> (World, pre_step_callable)
-              //   factory() -> (World, pre_step_callable, force_drag_callable)
-              //   factory() -> (World, pre_step_callable, force_drag_callable,
-              //                 panels)
-              dart::simulation::WorldPtr world;
+              //   factory() -> None
+              //   factory() -> pre_step_callable
+              //   factory() -> (pre_step_callable, force_drag_callable)
+              //   factory() -> (pre_step_callable, force_drag_callable, panels)
+              //   factory() -> (pre_step_callable, force_drag_callable, panels,
+              //                 renderable_provider_callable)
               if (nb::isinstance<nb::tuple>(result)) {
                 nb::tuple t = nb::cast<nb::tuple>(result);
-                if (t.size() < 1) {
-                  throw std::runtime_error(
-                      "factory tuple must contain at least a World");
+                if (t.size() >= 1 && !t[0].is_none()) {
+                  *pre_step_holder = nb::cast<nb::callable>(t[0]);
                 }
-                world = nb::cast<dart::simulation::WorldPtr>(t[0]);
                 if (t.size() >= 2 && !t[1].is_none()) {
-                  *pre_step_holder = nb::cast<nb::callable>(t[1]);
+                  *force_drag_holder = nb::cast<nb::callable>(t[1]);
                 }
                 if (t.size() >= 3 && !t[2].is_none()) {
-                  *force_drag_holder = nb::cast<nb::callable>(t[2]);
-                }
-                if (t.size() >= 4 && !t[3].is_none()) {
-                  nb::iterable panels = nb::cast<nb::iterable>(t[3]);
+                  nb::iterable panels = nb::cast<nb::iterable>(t[2]);
                   for (nb::handle panel : panels) {
                     options.panels.push_back(makeGuiPanelFromPython(panel));
                   }
                 }
-              } else {
-                world = nb::cast<dart::simulation::WorldPtr>(std::move(result));
+                if (t.size() >= 4 && !t[3].is_none()) {
+                  *renderable_provider_holder = nb::cast<nb::callable>(t[3]);
+                }
+              } else if (!result.is_none()) {
+                *pre_step_holder = nb::cast<nb::callable>(std::move(result));
               }
-              options.world = std::move(world);
             } catch (const std::exception& e) {
               fprintf(
                   stderr,
@@ -159,13 +149,6 @@ void defGuiViewer(nb::module_& m)
                   scene_id.c_str(),
                   e.what());
               throw;
-            }
-            // If the factory returns None/null without throwing, still hand
-            // the viewer a valid world so downstream null-pointer checks do
-            // not crash the host.
-            if (options.world == nullptr) {
-              options.world
-                  = dart::simulation::World::create(scene_id + "_placeholder");
             }
             if (pre_step_holder && *pre_step_holder) {
               options.preStep = [pre_step_holder]() {
@@ -196,6 +179,22 @@ void defGuiViewer(nb::module_& m)
                 }
               };
             }
+            if (renderable_provider_holder && *renderable_provider_holder) {
+              options.renderableProvider = [renderable_provider_holder]() {
+                nb::gil_scoped_acquire gil;
+                try {
+                  nb::object result = (*renderable_provider_holder)();
+                  return nb::cast<std::vector<dart::gui::RenderableDescriptor>>(
+                      result);
+                } catch (const std::exception& e) {
+                  fprintf(
+                      stderr,
+                      "py-demos renderable_provider error: %s\n",
+                      e.what());
+                  throw;
+                }
+              };
+            }
             return options;
           };
           entries.push_back(std::move(entry));
@@ -207,7 +206,7 @@ void defGuiViewer(nb::module_& m)
       nb::arg("scenes"),
       nb::arg("argv") = std::vector<std::string>{},
       "Open the interactive Filament viewer hosting a catalog of scenes; "
-      "each scene is (id, title, category, summary, build_world_callable). "
+      "each scene is (id, title, category, summary, factory_callable). "
       "Flags --scene/--cycle-scenes/--headless/--frames/--screenshot apply.");
 }
 

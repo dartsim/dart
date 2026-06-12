@@ -1,12 +1,12 @@
 # Rigid-Body Dynamics Solver — Dev Task
 
-Bring the experimental `World` (`dart/simulation/experimental/`) to DART
+Bring the DART 7 `World` (`dart/simulation/`) to DART
 6-equivalent — then better — rigid-body simulation, implemented as the **first
 solver** under a multi-solver, multi-physics architecture.
 
 ## Current Status
 
-- [x] Gap analysis: legacy DART 6 rigid-body sim vs experimental World
+- [x] Gap analysis: legacy DART 6 rigid-body sim vs DART 7 World
       ([`01-gap-analysis.md`](01-gap-analysis.md)).
 - [x] Architecture design for solvers / domain assignment / coupling /
       model-state separation
@@ -36,47 +36,50 @@ solver** under a multi-solver, multi-physics architecture.
       now persists the native collision world across queries and only rebuilds
       when collision geometry changes).
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
-      contact solver between free rigid bodies with accumulated normal impulses,
-      restitution, two-tangent Coulomb friction, positional correction, and a
-      public static-body convention — a body drops onto a static ground and
-      rests, an elastic head-on collision swaps velocities, and a sliding box
-      brakes via friction. Remaining: joint-limit/motor constraints, contacts on
-      multibody links, islands, and the boxed-LCP formulation).
-- [ ] Phase 4: joint features & actuators (started: spring stiffness + rest
-      position and damping are applied as passive generalized forces for
-      revolute/prismatic joints; remaining: actuator types, limits, Coulomb
-      friction, mimic/coupler, armature).
+      contact for free rigid bodies; the current semi-implicit default routes
+      mixed free-rigid / articulated-link contact through the unified boxed-LCP
+      stage when multibody structures are present. Remaining work is Subsystem A
+      polish from `RESUME.md`: warm starting, friction-cone iteration, scaling
+      around the unified solve, and separate joint-limit/motor/island slices).
+- [ ] Phase 4: joint features & actuators (started: spring stiffness, rest
+      position, damping, effort limits, armature, joint-space Coulomb friction,
+      and Force/Passive/Velocity actuator behavior on supported joints;
+      remaining: servo/acceleration/locked actuator modes plus mimic/coupler
+      work).
 - [ ] Phase 5: loop closures & improvements.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
 - [x] World-parity harness:
-      `tests/unit/simulation/experimental/world/test_world_parity.cpp` compares
+      `tests/unit/simulation/world/test_world_parity.cpp` compares
       classic `dart::simulation::World` vs
-      `dart::simulation::experimental::World` on shared open-chain scenes
+      `dart::simulation::World` on shared open-chain scenes
       (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
       and a held-torque controlled scene), within documented tolerances. Runs
-      under `pixi run test-simulation-experimental`. All open-chain scenarios
+      under `pixi run test-simulation`. All open-chain scenarios
       reach parity on `main` to machine epsilon; contact/constraint parity (B3)
       is deferred to the unified solver (PR #2838). See `RESUME.md` for the
       per-scenario table and deferred items.
 
 ## Goal
 
-A user can build a rigid-body / articulated scene on the experimental `World`,
+A user can build a rigid-body / articulated scene on the DART 7 `World`,
 step it, and get dynamics that match legacy DART 6 (within tolerance) and then
 exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
 neutral compute, model/state separation) — without the public API exposing
 solvers, couplers, ECS storage, or execution backends.
 
-## Non-Goals (for early phases)
+## Boundaries
 
-- No second solver or non-rigid domain implementation yet (architecture must
-  _allow_ it; see roadmap "multi-solver readiness").
-- No public solver/coupler/domain types or registries.
-- No direct file-based loader in the experimental library yet; compose through
-  legacy `dart::io::readSkeleton`/`readWorld` and the experimental
-  skeleton-to-multibody bridge.
+- Keep public configuration at the method-family / policy level (`WorldOptions`,
+  handles, and value objects), not public solver, coupler, ECS, backend, or
+  registry types.
+- Rigid-body work must continue to compose with the existing multibody,
+  deformable, rigid IPC, variational-integrator, and differentiable paths
+  through the centralized built-in schedule instead of adding another parallel
+  default-step switch.
+- Direct file loading remains outside this task; compose through maintained
+  `dart::io` readers and the DART 7 skeleton/world conversion bridges.
 - Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
@@ -100,14 +103,18 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Immediate Next Steps
 
-1. Keep the local `feature/experimental-model-loader` branch clean and validated
-   while it carries the model-loading/contact follow-up commits ahead of origin.
+1. Treat the model-loading and unified contact/constraint line as landed on
+   `main` via PR #2838; do not look for the retired
+   `feature/experimental-model-loader` branch as the active publication path.
 2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
    iteration, and other scaling work around the unified contact solve.
+3. Keep richer model-loading diagnostics, visual/material import, actuator,
+   mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
+   deferred slices unless the active solver-polish work directly requires them.
 
 ## Relationship To The API-Design Dev Task
 
-`docs/dev_tasks/simulation_experimental_api_design/` tracks the public _facade
+`docs/dev_tasks/simulation_api_design/` tracks the public _facade
 shape_ (handles, naming, Pythonic dartpy). This task tracks the _dynamics
 implementation_ behind that facade. Keep facade changes in that task; keep
 solver/dynamics changes here. When this task completes, promote durable

@@ -60,10 +60,52 @@
 
 #include <Eigen/Core>
 
+#include <memory>
+#include <vector>
+
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 
 namespace dart::math {
+
+/// Reusable work storage for the low-level Dantzig LCP driver.
+///
+/// The legacy driver mutates its input arrays while pivoting. Callers that run
+/// same-shape solves repeatedly can keep this scratch object alongside their
+/// solver and avoid rebuilding the driver's transient buffers every call.
+template <typename Scalar>
+struct DantzigLcpScratch
+{
+  std::vector<Scalar> L;
+  std::vector<Scalar> d;
+  std::vector<Scalar> w;
+  std::vector<Scalar> deltaW;
+  std::vector<Scalar> deltaX;
+  std::vector<Scalar> dell;
+  std::vector<Scalar> ell;
+  std::vector<int> p;
+  std::vector<int> C;
+  std::vector<Scalar*> rowPointers;
+  std::unique_ptr<bool[]> state;
+  std::size_t stateCapacity = 0;
+
+  void clear() noexcept
+  {
+    L.clear();
+    d.clear();
+    w.clear();
+    deltaW.clear();
+    deltaX.clear();
+    dell.clear();
+    ell.clear();
+    p.clear();
+    C.clear();
+    rowPointers.clear();
+    state.reset();
+    stateCapacity = 0;
+  }
+};
 
 /// Solve the Linear Complementarity Problem using Dantzig's algorithm
 ///
@@ -114,6 +156,26 @@ bool SolveLCP(
     Scalar* lo,
     Scalar* hi,
     int* findex,
+    bool earlyTermination = false);
+
+/// Solve the Linear Complementarity Problem using caller-owned reusable
+/// scratch storage.
+///
+/// `scratch` may retain capacity after the call. The input matrix uses the same
+/// padded row stride convention as `SolveLCP`: callers should allocate rows
+/// with `padding(n)` entries.
+template <typename Scalar>
+bool SolveLCPWithScratch(
+    int n,
+    Scalar* A,
+    Scalar* x,
+    Scalar* b,
+    Scalar* w,
+    int nub,
+    Scalar* lo,
+    Scalar* hi,
+    int* findex,
+    DantzigLcpScratch<Scalar>& scratch,
     bool earlyTermination = false);
 
 } // namespace dart::math

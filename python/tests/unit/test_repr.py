@@ -9,10 +9,11 @@ def _make_two_link_skeleton(name: str = "skel"):
 
 
 def test_world_repr():
-    world = dart.gui.RenderWorld("repr_world")
+    world = dart.World()
+    world.add_rigid_body("repr_body")
     text = repr(world)
     assert "World(" in text
-    assert "repr_world" in text
+    assert "rigid_bodies=1" in text
     assert "time_step" in text
 
 

@@ -33,6 +33,9 @@
 #pragma once
 
 #include <dart/math/lcp/lcp_solver.hpp>
+#include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
+
+#include <vector>
 
 namespace dart::math {
 
@@ -41,6 +44,24 @@ namespace dart::math {
 class DART_API DantzigSolver : public LcpSolver
 {
 public:
+  /// Reusable work storage for repeated same-shape Dantzig solves.
+  struct DART_API Scratch
+  {
+    std::vector<double> Adata;
+    std::vector<double> xdata;
+    std::vector<double> wdata;
+    std::vector<double> bdata;
+    std::vector<double> loData;
+    std::vector<double> hiData;
+    std::vector<int> findexData;
+    Eigen::VectorXd w;
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    DantzigLcpScratch<double> lcp;
+
+    void clear() noexcept;
+  };
+
   DantzigSolver();
   ~DantzigSolver() override = default;
 
@@ -50,6 +71,22 @@ public:
       const LcpProblem& problem,
       Eigen::VectorXd& x,
       const LcpOptions& options) override;
+
+  LcpResult solve(
+      const LcpProblem& problem,
+      Eigen::VectorXd& x,
+      Scratch& scratch,
+      const LcpOptions& options);
+
+  LcpResult solve(
+      const Eigen::MatrixXd& A,
+      const Eigen::VectorXd& b,
+      const Eigen::VectorXd& lo,
+      const Eigen::VectorXd& hi,
+      const Eigen::VectorXi& findex,
+      Eigen::VectorXd& x,
+      Scratch& scratch,
+      const LcpOptions& options);
 
   std::string getName() const override;
   std::string getCategory() const override;

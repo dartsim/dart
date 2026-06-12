@@ -1,7 +1,7 @@
-# PLAN-080: Rigid-Body Dynamics Solver (First Experimental Solver)
+# PLAN-080: Rigid-Body Dynamics Solver (First DART 7 Solver)
 
 - Operating state: `PLAN-080` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` runs full rigid-body dynamics — gravity,
+- Outcome: the DART 7 `World` runs full rigid-body dynamics — gravity,
   articulated-body forward dynamics, collision-driven contacts, and constraint
   solving — matching legacy DART 6 on shared scenes and then improving on it,
   delivered as the first solver under a multi-solver, multi-physics architecture
@@ -12,9 +12,9 @@
     revolute, prismatic, screw, universal, planar, ball, free), a floating base,
     derived quantities, actuator/limit primitives, a collision-query bridge,
     and the required dart-gui example. The active follow-up line adds the
-    legacy `dynamics::Skeleton` / `simulation::World` to experimental
-    `Multibody` bridge, including `addSkeleton()` / `addWorld()` URI-loading
-    facades, joint-family/property transfer, branching and root offsets,
+    legacy `dynamics::Skeleton` / `simulation::World` to DART 7
+    `Multibody` bridge, including the retained `addSkeleton()` URI-loading
+    facade, joint-family/property transfer, branching and root offsets,
     collision shape import with local transforms, compound shapes, and dartpy
     coverage. It also upgrades `World::collide()` with body-type filtering,
     native broad-phase pruning, and a persistent native collision-query world.
@@ -28,15 +28,15 @@
     `dart/simulation/world.cpp`.
   - Reusable foundations: boxed-LCP library `dart/math/lcp/` (PLAN-020), native
     collision engine `dart/collision/native/` (PLAN-035/036/037), compute-graph
-    executor in `dart/simulation/experimental/compute/`.
+    executor in `dart/simulation/compute/`.
 
 ## Owner Docs
 
 - Architecture rationale:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Public facade:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Active implementation tracking:
   `docs/dev_tasks/rigid_body_dynamics_solver/` (gap matrix, roadmap, RESUME).
 
@@ -49,7 +49,7 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 2. **Articulated-body forward dynamics** — joint effort input, ABA joint
    accelerations, mass matrix / Coriolis / gravity generalized forces,
    damping/springs, manifold-aware integration.
-3. **Collision bridge** — experimental collision geometry/material value
+3. **Collision bridge** — DART 7 collision geometry/material value
    objects and a World-owned bridge to the native collision engine producing
    typed contact buffers with broad-phase-pruned, filterable, cached queries.
 4. **Constraint & contact solver** — wire boxed-LCP into contact + joint-limit
@@ -64,9 +64,9 @@ Sequenced; see the dev-task roadmap for slice-level detail.
 
 - Each workstream lands as small verifiable slices with focused tests; gap-matrix
   rows flip to PRESENT with evidence.
-- Parity gate: experimental dynamics match legacy DART 6 on identical scenes
-  (energy-drift bounds and trajectory tolerance) before any DART 7 promotion
-  claim for the affected capability.
+- Parity gate: DART 7 dynamics match legacy DART 6 on identical scenes
+  (energy-drift bounds and trajectory tolerance) using `release-6.*` branch
+  refs before any DART 7 promotion claim for the affected capability.
 - The public API never exposes `Solver`, `Coupler`, `PhysicsDomain`, schedule
   phase types, ECS storage, component types, execution-backend names, or the
   registry; `pixi run check-api-boundaries` stays green.

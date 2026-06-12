@@ -1,0 +1,374 @@
+{
+  "comparison": {
+    "dart_cpu_time_per_step_ns": 148507.0131710811,
+    "dart_faster_than_reference": false,
+    "dart_to_reference_cpu_time_ratio": 5.845909226176514,
+    "performance_claim": "DART does not yet beat the native avbd-demo2d Heavy Rope row",
+    "reference_cpu_time_per_step_ns": 25403.57837
+  },
+  "dart_benchmark": {
+    "benchmark": "BM_AvbdDemo2dHeavyRopeStep",
+    "context": {
+      "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
+      "json_schema_version": 1,
+      "library_build_type": "release",
+      "library_version": "v1.9.5",
+      "mhz_per_cpu": 4365,
+      "num_cpus": 20
+    },
+    "cpu_time_per_step_ns": 148507.0131710811,
+    "invariants": {
+      "collision_shapes": 20,
+      "linear_point_joints": 19,
+      "rigid_bodies": 20,
+      "rigid_body_joints": 19,
+      "source_scene_index": 7,
+      "time_step": 0.016666666666666666
+    },
+    "json_sha256": "46fef6020f14fd0d342f075cf12c53cec63d552185c9aad4db9a3139f13d84b0",
+    "rows": [
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 149865.8857551897,
+        "family_index": 1,
+        "iterations": 6985,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep",
+        "per_family_instance_index": 0,
+        "real_time": 150199.68504292134,
+        "repetition_index": 0,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "iteration",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 147707.16392269143,
+        "family_index": 1,
+        "iterations": 6985,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep",
+        "per_family_instance_index": 0,
+        "real_time": 148014.9634935111,
+        "repetition_index": 1,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "iteration",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 146744.68732999283,
+        "family_index": 1,
+        "iterations": 6985,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep",
+        "per_family_instance_index": 0,
+        "real_time": 147026.30207711217,
+        "repetition_index": 2,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "iteration",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 148507.0131710811,
+        "family_index": 1,
+        "iterations": 6985,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep",
+        "per_family_instance_index": 0,
+        "real_time": 148802.63879838545,
+        "repetition_index": 3,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "iteration",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "collision_shapes": 20.0,
+        "cpu_time": 177519.37222619922,
+        "family_index": 1,
+        "iterations": 6985,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep",
+        "per_family_instance_index": 0,
+        "real_time": 178006.59455679645,
+        "repetition_index": 4,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "iteration",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "mean",
+        "aggregate_unit": "time",
+        "collision_shapes": 20.0,
+        "cpu_time": 154068.82448103087,
+        "family_index": 1,
+        "iterations": 5,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep_mean",
+        "per_family_instance_index": 0,
+        "real_time": 154410.0367937453,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "aggregate",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "median",
+        "aggregate_unit": "time",
+        "collision_shapes": 20.0,
+        "cpu_time": 148507.0131710811,
+        "family_index": 1,
+        "iterations": 5,
+        "linear_point_joints": 19.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep_median",
+        "per_family_instance_index": 0,
+        "real_time": 148802.63879838545,
+        "repetitions": 5,
+        "rigid_bodies": 20.0,
+        "rigid_body_joints": 19.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "aggregate",
+        "source_scene_index": 7.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "stddev",
+        "aggregate_unit": "time",
+        "collision_shapes": 0.0,
+        "cpu_time": 13159.030536059674,
+        "family_index": 1,
+        "iterations": 5,
+        "linear_point_joints": 0.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep_stddev",
+        "per_family_instance_index": 0,
+        "real_time": 13241.827793869725,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      },
+      {
+        "aggregate_name": "cv",
+        "aggregate_unit": "percentage",
+        "collision_shapes": 0.0,
+        "cpu_time": 0.08541007942641783,
+        "family_index": 1,
+        "iterations": 5,
+        "linear_point_joints": 0.0,
+        "name": "BM_AvbdDemo2dHeavyRopeStep_cv",
+        "per_family_instance_index": 0,
+        "real_time": 0.08575755869780424,
+        "repetitions": 5,
+        "rigid_bodies": 0.0,
+        "rigid_body_joints": 0.0,
+        "run_name": "BM_AvbdDemo2dHeavyRopeStep",
+        "run_type": "aggregate",
+        "source_scene_index": 0.0,
+        "threads": 1,
+        "time_unit": "ns"
+      }
+    ]
+  },
+  "packet": "avbd_demo2d_heavy_rope_source_demo",
+  "reference_timing": {
+    "compile_command": [
+      "g++",
+      "-std=c++17",
+      "-O3",
+      "-DNDEBUG",
+      "-I<source-dir>/source",
+      "<temp-dir>/reference_runner.cpp",
+      "<source-dir>/source/solver.cpp",
+      "<source-dir>/source/rigid.cpp",
+      "<source-dir>/source/force.cpp",
+      "<source-dir>/source/joint.cpp",
+      "<source-dir>/source/spring.cpp",
+      "<source-dir>/source/motor.cpp",
+      "<source-dir>/source/manifold.cpp",
+      "<source-dir>/source/collide.cpp",
+      "-lGL",
+      "-o",
+      "<temp-dir>/reference_runner"
+    ],
+    "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+    "compiler": "g++",
+    "cpu_time_per_step_ns": 25403.57837,
+    "elapsed_ns": 5080715674,
+    "invariants": {
+      "collision_shapes": 20,
+      "dynamic_bodies": 19,
+      "final_time": 3335.4668,
+      "heavy_block_size": 30.0,
+      "joints": 19,
+      "linear_point_joints": 19,
+      "max_friction": 0.5,
+      "min_friction": 0.5,
+      "regular_link_count": 19,
+      "rigid_bodies": 20,
+      "rope_links": 20,
+      "static_bodies": 1
+    },
+    "json_sha256": "a55a82633b9ac2ffaa389b439c387f7e6c1d5749ff41e57de3b920039b36cccb",
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "scene_builder": "sceneHeavyRope",
+    "scene_index": 7,
+    "scene_name": "Heavy Rope",
+    "source_demo": "avbd-demo2d",
+    "source_revision": "74699a11f858",
+    "steps": 200000,
+    "warmup_steps": 128
+  },
+  "remaining_gates": [
+    "DART CPU performance for this Heavy Rope row must beat the native reference before a CPU win is claimed",
+    "remaining avbd-demo2d card tower, spring, spring ratio, stack ratio, rod, soft-body, joint-grid, and net source rows",
+    "GPU AVBD row parity and same-hardware benchmark packets",
+    "paper/site/video scene visual and performance packets",
+    "broad rope and high-ratio constraint coverage beyond this source row"
+  ],
+  "reproduction": {
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_heavy_rope --frames 24 --width 640 --height 360 --output-dir <capture-dir>",
+    "dart_benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dHeavyRopeStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene heavy_rope --output <reference-timing-json>"
+  },
+  "scene": "avbd_demo2d_heavy_rope",
+  "schema_version": 1,
+  "source_demo_reference_row": {
+    "demo": "avbd-demo2d",
+    "dimension": 2,
+    "expected_counts": {
+      "collision_shapes": 20,
+      "dynamic_bodies": 19,
+      "joints": 19,
+      "linear_point_joints": 19,
+      "rigid_bodies": 20,
+      "static_bodies": 1
+    },
+    "repository": "https://github.com/savant117/avbd-demo2d",
+    "revision": "74699a11f858",
+    "scene_builder": "sceneHeavyRope",
+    "scene_count": 19,
+    "scene_index": 7,
+    "scene_name": "Heavy Rope",
+    "solver_defaults": {
+      "gravity": -10.0,
+      "gravity_axis": "y",
+      "iterations": 10,
+      "time_step": 0.016666666666666666
+    },
+    "source_constraints": {
+      "linear_point_joints": {
+        "angular_stiffness": 0.0,
+        "count": 19,
+        "fracture": "infinity",
+        "heavy_child_anchor": [
+          -15.0,
+          0.0
+        ],
+        "linear_stiffness": "infinity",
+        "parent_anchor": [
+          0.5,
+          0.0
+        ],
+        "regular_child_anchor": [
+          -0.5,
+          0.0
+        ],
+        "source_initial_last_endpoint_gap": 0.5
+      }
+    },
+    "source_shapes": {
+      "heavy_block": {
+        "count": 1,
+        "density": 1.0,
+        "friction": 0.5,
+        "position": [
+          34.0,
+          10.0,
+          0.0
+        ],
+        "size": [
+          30.0,
+          30.0
+        ]
+      },
+      "rope_link": {
+        "count": 19,
+        "dynamic_density": 1.0,
+        "first_position": [
+          0.0,
+          10.0,
+          0.0
+        ],
+        "friction": 0.5,
+        "size": [
+          1.0,
+          0.5
+        ],
+        "static_anchor_density": 0.0,
+        "x_spacing": 1.0
+      }
+    }
+  },
+  "visual_capture": {
+    "frames": {
+      "count": 24,
+      "directory": "png_frames",
+      "first_frame": {
+        "file": "png_frames/frame_000001.png",
+        "sha256": "45688e986e302833f0799f9fa6e8eb85269f59b0163138e8dc8ed36a78fc3234"
+      },
+      "last_frame": {
+        "file": "png_frames/frame_000024.png",
+        "sha256": "ed466f0b9972d734afc1a69a0c25e1318f785429a0589cb036cd00e6210fdf98"
+      }
+    },
+    "manifest_sha256": "dedb303c5080584c779e4892d32df775582e849a235c12a3ea96b1e8591b8f59",
+    "scene": "avbd_demo2d_heavy_rope",
+    "screenshot": {
+      "file": "avbd_demo2d_heavy_rope.png",
+      "height": 360,
+      "sha256": "ed466f0b9972d734afc1a69a0c25e1318f785429a0589cb036cd00e6210fdf98",
+      "width": 640
+    },
+    "show_ui": false,
+    "ui_ready": {
+      "dropped_warmup_frames": 0,
+      "required": false
+    }
+  }
+}

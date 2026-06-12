@@ -38,14 +38,14 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    # One bounded command per curated DART 7 experimental-World surface.
+    # One bounded command per curated DART 7 World surface.
     assert len(lines) == 5
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
-    # Core experimental World step & scaling surface (bm_compute_graph).
-    assert "dashboard_experimental_world.json" in result.stdout
+    # Core DART 7 World step & scaling surface (bm_compute_graph).
+    assert "dashboard_world.json" in result.stdout
     assert "BM_WorldUpdateKinematics" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
@@ -60,7 +60,49 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "dashboard_deformable_world.json" in result.stdout
     assert "BM_DeformableFemBarStep/.*" in result.stdout
     assert "dashboard_avbd_world.json" in result.stdout
-    assert "BM_AvbdRigid(FixedJoint|RevoluteMotor)Step/.*" in result.stdout
+    assert "BM_AvbdEmptyWorldStep$" in result.stdout
+    assert "BM_AvbdDemo2dMotorStep$" in result.stdout
+    assert "BM_AvbdDemo2dHangingRopeStep$" in result.stdout
+    assert "BM_AvbdDemo2dFractureStep$" in result.stdout
+    assert "BM_AvbdDemo2dGroundStep$" in result.stdout
+    assert "BM_AvbdDemo2dDynamicFrictionStep$" in result.stdout
+    assert "BM_AvbdDemo2dStaticFrictionStep$" in result.stdout
+    assert "BM_AvbdDemo2dPyramidStep$" in result.stdout
+    assert "BM_AvbdDemo2dCardsStep$" in result.stdout
+    assert "BM_AvbdDemo2dStackStep$" in result.stdout
+    assert "BM_AvbdDemo2dStackRatioStep$" in result.stdout
+    assert "BM_AvbdDemo2dRodStep$" in result.stdout
+    assert "BM_AvbdDemo2dSoftBodyStep$" in result.stdout
+    assert "BM_AvbdDemo2dJointGridStep$" in result.stdout
+    assert "BM_AvbdDemo2dRopeStep$" in result.stdout
+    assert "BM_AvbdDemo2dHeavyRopeStep$" in result.stdout
+    assert "BM_AvbdDemo2dSpringStep$" in result.stdout
+    assert "BM_AvbdDemo2dSpringRatioStep$" in result.stdout
+    assert "BM_AvbdDemo2dNetStep$" in result.stdout
+    assert "BM_AvbdDemo3dGroundStep$" in result.stdout
+    assert "BM_AvbdDemo3dDynamicFrictionStep$" in result.stdout
+    assert "BM_AvbdDemo3dStaticFrictionStep$" in result.stdout
+    assert "BM_AvbdDemo3dPyramidStep$" in result.stdout
+    assert "BM_AvbdDemo3dRopeStep$" in result.stdout
+    assert "BM_AvbdDemo3dHeavyRopeStep$" in result.stdout
+    assert "BM_AvbdDemo3dSpringStep$" in result.stdout
+    assert "BM_AvbdDemo3dSpringRatioStep$" in result.stdout
+    assert "BM_AvbdDemo3dStackStep$" in result.stdout
+    assert "BM_AvbdDemo3dStackRatioStep$" in result.stdout
+    assert "BM_AvbdDemo3dSoftBodyStep$" in result.stdout
+    assert "BM_AvbdDemo3dBridgeStep$" in result.stdout
+    assert "BM_AvbdDemo3dBreakableStep$" in result.stdout
+    assert "BM_AvbdArticulatedHighRatioChainStep$" in result.stdout
+    assert "BM_AvbdPaperScaleHighRatioChainStep$" in result.stdout
+    assert (
+        "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
+        "|SphericalBreakableJoint)"
+        "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
+        "|PrismaticBreakable|Prismatic|Breakable)Motor"
+        "|BreakableJoint|WorldSphericalBreakableJoint"
+        "|SphericalPairBreakableJoint))Step/.*"
+        in result.stdout
+    )
     # Still excludes unrelated solver, SIMD, and robot-loader surfaces, and the
     # CUDA/GPU and DART_BUILD_DIFF rows the hosted runner cannot produce.
     assert "BM_Robot_(KR5|Atlas)_WorldStep" not in result.stdout
@@ -76,7 +118,7 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
             sys.executable,
             str(SCRIPT),
             "--surface",
-            "experimental-world",
+            "world",
             "--output-dir",
             str(tmp_path),
             "--benchmark-min-time",
@@ -92,7 +134,7 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
 
     lines = result.stdout.strip().splitlines()
     assert len(lines) == 1
-    assert "dashboard_experimental_world.json" in result.stdout
+    assert "dashboard_world.json" in result.stdout
     assert "--benchmark_min_time=2ms" in result.stdout
     assert "--benchmark_repetitions=2" in result.stdout
 

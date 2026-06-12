@@ -1,4 +1,4 @@
-"""Articulated public loop-closure preview for the experimental World facade."""
+"""Articulated public loop-closure preview for the DART 7 World facade."""
 
 from __future__ import annotations
 

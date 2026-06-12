@@ -31,6 +31,19 @@ Default to `analyze` if the requested mode is ambiguous.
    ```bash
    git remote prune origin --dry-run
    ```
+   If `origin` uses SSH and port 22 is unavailable, keep the check read-only
+   and use a temporary HTTPS rewrite instead of changing repository config:
+   ```bash
+   git -c url.https://github.com/.insteadOf=git@github.com: \
+     fetch --all --no-prune
+   git -c url.https://github.com/.insteadOf=git@github.com: \
+     remote prune origin --dry-run
+   ```
+   To confirm that a remote PR branch was deleted without updating refs, query
+   GitHub directly over HTTPS:
+   ```bash
+   git ls-remote --heads https://github.com/dartsim/dart.git <BRANCH>
+   ```
 3. Determine target branch, usually `origin/main`.
 4. For each branch:
    ```bash

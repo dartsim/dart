@@ -32,16 +32,23 @@ Landed (build + headless render + unit/extraction tests + dartpy smoke verified)
   sharper shadows) for GPU capture, without changing the llvmpipe CI default.
 - **B1 — `ApplicationOptions::debugProvider`.** A `DebugScene`
   (lines/triangles/labels) provider merged each frame into the built-in overlay
-  with the correct unlit/no-shadow treatment. `gui_scene_diagnostics` is ported
-  to it (the example's hand-rolled selection-overlay wiring became a
-  `debugProvider` callback driving a bounded headless run), and a unit test
-  covers provider propagation through `createDartScene`.
+  with the correct unlit/no-shadow treatment; a unit test covers provider
+  propagation through `createDartScene`. (The `gui_scene_diagnostics` example
+  that motivated this seam was retired together with the legacy world in the
+  DART 7 simulation promotion, so the per-example wiring it carried no longer
+  exists anywhere.)
 - **B3 — new debug primitives.** `drawJointAxes` (revolute double-line /
   prismatic arrow) and `drawLinearVelocities`/`drawAngularVelocities` arrows,
-  with `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers.
+  with `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers. The helpers
+  operate on `dynamics::BodyNode` directly and are intended for `debugProvider`
+  callbacks; the legacy-world `extractDebugLines` overload that auto-walked
+  skeletons was retired with the legacy world, so world-derived overlays will
+  be re-wired when debug extraction lands for the promoted
+  `dart::simulation::World`.
 - **B2 — built-in panel.** Toggles for the new debug types plus a "Debug tuning"
   slider group (grid spacing, axis lengths, velocity scales, contact-force
-  scale).
+  scale). The skeleton-derived toggles are inert until world debug extraction
+  is reintroduced for the promoted world (see B3 note).
 
 Remaining (deliberately deferred — see rationale):
 
@@ -204,8 +211,8 @@ debug geometry must either abuse `renderableProvider` (debug lines become real
 lit/solid renderables, losing the always-on-top unlit debug treatment) or build
 its own ImGui panel and call `extractDebugLines` itself. `gui_scene_diagnostics`
 did exactly the latter (hand-rolled `DebugDrawOptions` + `extractDebugLines` +
-`makeSelectionDebugLines` wiring) before being ported — that wiring is what
-should live once, in the component.
+`makeSelectionDebugLines` wiring) before it was retired with the legacy world —
+that wiring is what should live once, in the component.
 
 **Recommendation.** Add
 
@@ -294,17 +301,17 @@ gracefully; a true world-space text mesh is a larger effort — defer.
 
 Ordered by return on a small, surgical change. Each is independently shippable.
 
-| #     | Item                                               | Effort | ROI  | Public API change                      | Validation                                            |
-| ----- | -------------------------------------------------- | ------ | ---- | -------------------------------------- | ----------------------------------------------------- |
-| A1    | Per-shape PBR (metallic/roughness/reflectance)     | S–M    | High | `MaterialDescriptor` + `VisualAspect`  | scene-extraction test + headless screenshot           |
-| A3    | Texture mipmaps + trilinear                        | S      | High | none                                   | screenshot of textured asset                          |
-| B1    | `debugProvider` callback into built-in overlay     | S      | High | `ApplicationOptions` + `DebugScene`    | new gui unit test; port `gui_scene_diagnostics` to it |
-| A2    | IBL specular reflection cubemap                    | M      | High | none (internal)                        | screenshot of A1 metal sphere                         |
-| B3    | Arrowheads + velocity/force/joint-axis debug types | M      | High | `DebugDrawOptions` + helpers           | per-helper unit tests                                 |
-| A4    | Capture fidelity = GPU-gated, not headless-gated   | M      | Med  | via `FidelityProfile`                  | offscreen-parity + GPU headless screenshot            |
-| B2    | Numeric debug tuning in built-in panel             | S      | Med  | none                                   | manual/headless smoke                                 |
-| B4    | Depth-tested debug variant + view layers           | M      | Med  | per-descriptor flag                    | screenshot occluded-vs-xray                           |
-| A5/B5 | Exposure, clearcoat, label scaling                 | M      | Low  | `FidelityProfile` / `DebugDrawOptions` | deferred                                              |
+| #     | Item                                               | Effort | ROI  | Public API change                      | Validation                                  |
+| ----- | -------------------------------------------------- | ------ | ---- | -------------------------------------- | ------------------------------------------- |
+| A1    | Per-shape PBR (metallic/roughness/reflectance)     | S–M    | High | `MaterialDescriptor` + `VisualAspect`  | scene-extraction test + headless screenshot |
+| A3    | Texture mipmaps + trilinear                        | S      | High | none                                   | screenshot of textured asset                |
+| B1    | `debugProvider` callback into built-in overlay     | S      | High | `ApplicationOptions` + `DebugScene`    | new gui unit test (`UNIT_gui_DebugVisuals`) |
+| A2    | IBL specular reflection cubemap                    | M      | High | none (internal)                        | screenshot of A1 metal sphere               |
+| B3    | Arrowheads + velocity/force/joint-axis debug types | M      | High | `DebugDrawOptions` + helpers           | per-helper unit tests                       |
+| A4    | Capture fidelity = GPU-gated, not headless-gated   | M      | Med  | via `FidelityProfile`                  | offscreen-parity + GPU headless screenshot  |
+| B2    | Numeric debug tuning in built-in panel             | S      | Med  | none                                   | manual/headless smoke                       |
+| B4    | Depth-tested debug variant + view layers           | M      | Med  | per-descriptor flag                    | screenshot occluded-vs-xray                 |
+| A5/B5 | Exposure, clearcoat, label scaling                 | M      | Low  | `FidelityProfile` / `DebugDrawOptions` | deferred                                    |
 
 **Suggested first slice** (smallest change, biggest perceived jump): A1 + A3 + B1.
 A1+A3 make the _scene_ look materially better with near-zero API risk; B1 removes
@@ -318,9 +325,9 @@ focused extraction test plus at least one bounded headless render — command
 success is not sufficient for material/lighting/debug regressions:
 
 ```bash
-cmake --build build/default/cpp/Release --target UNIT_gui_FilamentSceneExtraction
+cmake --build build/default/cpp/Release --target UNIT_gui_DebugVisuals
 ctest --test-dir build/default/cpp/Release --output-on-failure \
-  -R '^UNIT_gui_FilamentSceneExtraction$'
+  -R '^UNIT_gui_DebugVisuals$'
 pixi run ex dartsim --headless --frames 1 --width 1280 --height 720 \
   --screenshot /tmp/dartsim.ppm
 pixi run gui-offscreen-parity        # for A4 / render-target work

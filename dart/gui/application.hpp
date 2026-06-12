@@ -40,8 +40,6 @@
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
-#include <dart/simulation/fwd.hpp>
-
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/simple_frame.hpp>
@@ -92,7 +90,7 @@ struct RenderableSelection
 ///
 /// Emitted by the selection controller when the user left-drags a renderable
 /// that is not backed by a legacy `dart::dynamics::BodyNode` (e.g. the
-/// SimpleFrame mirrors of an experimental `sx::World`). Applications resolve
+/// SimpleFrame mirrors of a DART 7 `sx::World`). Applications resolve
 /// `renderableName` to their own body and (re)apply `force` at
 /// `applicationPoint` (both world-frame) every step while `active` is true,
 /// then stop once a final event with `active == false` arrives. Renderables
@@ -197,13 +195,13 @@ struct KeyboardAction
 
 struct ApplicationOptions
 {
-  dart::simulation::WorldPtr world;
   std::optional<RunOptions> runDefaults;
   std::function<void()> preStep;
   std::function<void()> postStep;
   std::function<void()> preRender;
   std::function<void()> postRender;
-  bool simulateWorld = true;
+  double timeStep = 1.0 / 60.0;
+  bool advanceSimulation = true;
   std::optional<OrbitCamera> camera;
   std::function<OrbitCameraControlOptions()> cameraControlsProvider;
   std::function<bool(OrbitCamera&)> cameraUpdater;
@@ -252,10 +250,9 @@ struct ApplicationOptions
 
   /// Optional provider of extra renderables appended to the scene each frame.
   ///
-  /// Lets an application render geometry that is not backed by the legacy
-  /// `dart::simulation::World` (e.g. the experimental-World editor in
-  /// `dartsim/ui`). The returned descriptors only need `id`, `geometry`,
-  /// `material`, and `worldTransform`; dynamics pointers may stay null.
+  /// Lets an application render geometry from any simulation source. The
+  /// returned descriptors only need `id`, `geometry`, `material`, and
+  /// `worldTransform`; dynamics pointers may stay null.
   std::function<std::vector<RenderableDescriptor>()> renderableProvider;
 
   /// Optional provider for the app-owned selected renderable.
@@ -277,7 +274,7 @@ struct ApplicationOptions
   /// The selection controller computes a world-frame spring-damper force and
   /// invokes this each frame with `active == true` (the application must
   /// (re)apply the one-shot force to its own body every step), then once with
-  /// `active == false` on release. Used by the experimental-World demos to
+  /// `active == false` on release. Used by the DART 7 World demos to
   /// push/pull `sx::World` links rendered via SimpleFrame mirrors.
   std::function<void(const ForceDragEvent&)> onForceDrag;
 

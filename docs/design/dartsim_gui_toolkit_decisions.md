@@ -141,7 +141,7 @@ Choose the toolkit and language from `dartsim`'s mission and users, not from wha
 incumbent simulators happen to use. From the north star and PLAN-101, `dartsim`
 exists to (1) serve DART's **easy start** — a researcher reaches a working
 simulation fast — and (2) act as a **forcing function** validating the
-experimental World toward DART 7 promotion. Its users are **researchers and developers**,
+DART 7 World. Its users are **researchers and developers**,
 not non-programmer end users. Each decision weighs: user fit, capability ceiling
 versus _actual_ needs, integration risk with Filament, cross-OS deployment
 reliability, maintenance/bandwidth cost, and reversibility behind the existing

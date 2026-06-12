@@ -1,4 +1,4 @@
-"""AVBD breakable fixed-joint scene for the experimental World facade."""
+"""AVBD breakable fixed-joint scene for the DART 7 World facade."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ _BASE_POS = np.array([0.0, 0.0, 0.88])
 _CAPTURED_OFFSET = np.array([0.62, 0.0, 0.0])
 _PAYLOAD_PRESTRAIN = np.array([0.18, 0.0, -0.08])
 _BREAK_FORCE = 1.0e-12
+_RESET_BREAK_FORCE = 1.0e12
 
 
 def _full(half_extents: np.ndarray) -> np.ndarray:
@@ -82,6 +83,8 @@ def build() -> SceneSetup:
     breakable_joint.break_force = _BREAK_FORCE
     payload.transform = _translation(payload_position + _PAYLOAD_PRESTRAIN)
     world.enter_simulation_mode()
+    captured_payload_transform = _translation(payload_position)
+    captured_payload_rotation = captured_payload_transform[:3, :3].copy()
 
     bridge = WorldRenderBridge(world, name="avbd_rigid_breakable_joint_render")
     bridge.add_rigid_body_visual(
@@ -128,6 +131,16 @@ def build() -> SceneSetup:
         bridge.sync()
         sync_connector()
 
+    def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
+        payload.linear_velocity = (0.0, 0.0, 0.0)
+        payload.angular_velocity = (0.0, 0.0, 0.0)
+        breakable_joint.break_force = float(break_force)
+        breakable_joint.reset_breakage()
+        sync_connector()
+
+    def rearm_weak_joint() -> None:
+        reset_joint(_BREAK_FORCE)
+
     def pre_step() -> None:
         bridge.pre_step()
         sync_connector()
@@ -156,6 +169,10 @@ def build() -> SceneSetup:
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"captured-offset error: {offset_error:.4f} m")
         builder.text(f"payload speed: {speed:.3f} m/s")
+        if builder.button("Reset joint"):
+            reset_joint(_RESET_BREAK_FORCE)
+        if builder.button("Re-arm weak joint"):
+            rearm_weak_joint()
         builder.plot_lines("Offset error", list(offset_history))
         builder.plot_lines("Payload speed", list(speed_history))
         builder.plot_lines("Broken", list(broken_history))
@@ -174,9 +191,15 @@ def build() -> SceneSetup:
             "payload": payload,
             "ground": ground,
             "connector": connector,
+            "captured_offset": _CAPTURED_OFFSET.copy(),
+            "captured_payload_transform": captured_payload_transform,
+            "captured_payload_rotation": captured_payload_rotation,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
             "break_force": _BREAK_FORCE,
+            "reset_break_force": _RESET_BREAK_FORCE,
+            "reset_joint": reset_joint,
+            "rearm_weak_joint": rearm_weak_joint,
         },
     )
 
@@ -185,6 +208,7 @@ SCENE = PythonDemoScene(
     id="avbd_rigid_breakable_joint",
     title="AVBD Breakable Joint (sx)",
     category="AVBD Rigid Constraints (sx)",
-    summary="A weak fixed joint breaks once AVBD row load exceeds its threshold.",
+    summary="A weak fixed joint breaks, releases, and can re-engage its "
+    "captured pose.",
     build=build,
 )

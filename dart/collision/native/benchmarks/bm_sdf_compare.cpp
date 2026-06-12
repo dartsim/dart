@@ -16,7 +16,7 @@
 
 #include <benchmark/benchmark.h>
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
   #include <voxblox/core/common.h>
   #include <voxblox/core/esdf_map.h>
   #include <voxblox/core/layer.h>
@@ -249,7 +249,7 @@ std::vector<Eigen::Vector3d> buildQueryPoints(
   return points;
 }
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
 std::shared_ptr<voxblox::EsdfMap> buildVoxbloxMap()
 {
   constexpr int kVoxelsPerSide = 16;
@@ -557,7 +557,7 @@ static void BM_DenseEsdfBuildResolution(benchmark::State& state)
 
 BENCHMARK(BM_DenseEsdfBuildResolution)->Arg(0)->Arg(1)->Arg(2)->Arg(3)->Arg(4);
 
-#ifdef DART_EXPERIMENTAL_HAVE_VOXBLOX
+#ifdef DART_NATIVE_HAVE_VOXBLOX
 static void BM_VoxbloxDistance(benchmark::State& state)
 {
   static auto map = buildVoxbloxMap();

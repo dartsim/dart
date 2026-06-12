@@ -42,7 +42,7 @@ class SceneModel;
 /// Human-readable, diff-friendly project (scene) file I/O.
 ///
 /// The format is a versioned, line-based text document chosen over the
-/// experimental binary format so designed scenes are reviewable and
+/// DART 7 binary format so designed scenes are reviewable and
 /// hand-editable. See docs/design/dartsim_gui_simulator.md.
 namespace scene_io {
 

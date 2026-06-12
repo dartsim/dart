@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "source": {
+    "plan": "PLAN-083",
+    "paper": "A Unified Newton Barrier Method for Multibody Dynamics",
+    "phase": "Phase 7: Private GPU Parity And Speed",
+    "roadmap": "docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md",
+    "cpu_scene_corpus": "docs/plans/083-unified-newton-barrier-multibody/cpu-scene-corpus.json"
+  },
+  "policy": {
+    "row_gate": "Measured rows require same-scene CPU/GPU parity, explicit tolerance, setup/transfer/readback/kernel/solve timing, and speedup against the DART CPU path.",
+    "public_api": "No public CUDA, stream, device, memory-pool, backend-task, solver-registry, or package-surface exposure is allowed by this packet.",
+    "ordering": "Promote private GPU evidence in the roadmap order: stencils/candidates, CCD/line search, local barrier/friction kernels and PSD projection, then assembly/linear solve after CPU packet shape is stable.",
+    "limitation_policy": "Rows that cannot be measured yet stay planned or in-progress with a concrete blocker instead of a speed claim."
+  },
+  "summary": {
+    "row_count": 6,
+    "status_counts": {
+      "measured": 1,
+      "planned": 5
+    }
+  },
+  "rows": [
+    {
+      "row_id": "contact-stencils-candidate-filtering",
+      "roadmap_item": "contact stencils and candidate filtering",
+      "owner": "PLAN-083 + PLAN-030",
+      "status": "planned",
+      "cpu_evidence_command": "pixi run bm --target bm_ipc_candidate_set --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/contact_candidates_cpu.json --benchmark_out_format=json",
+      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU contact-stencil or candidate-filtering kernel has landed",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/contact_candidates_parity.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/contact_candidates_benchmark.json",
+      "same_scene_policy": "Use identical DART-owned candidate fixtures and sort keys on CPU and GPU; compare candidate ids, primitive ids, and conservative activation distances.",
+      "tolerance_policy": "Candidate-set parity is exact; any floating distance counter must stay within 1e-10 absolute error.",
+      "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
+      "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
+      "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
+      "limitation_status": "Waiting for host/device-portable contact stencil and candidate-filtering kernels after the CPU scene packet shape stabilizes.",
+      "notes_or_gap": "The Phase 5 mixed-domain candidate contract is CPU-only; this row records the GPU evidence shape without claiming a kernel."
+    },
+    {
+      "row_id": "ccd-line-search",
+      "roadmap_item": "CCD and line-search kernels",
+      "owner": "PLAN-083 + PLAN-082",
+      "status": "planned",
+      "cpu_evidence_command": "pixi run bm --target bm_ipc_continuous_collision_step --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/ccd_line_search_cpu.json --benchmark_out_format=json",
+      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU CCD or line-search kernel has landed",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_parity.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/ccd_line_search_benchmark.json",
+      "same_scene_policy": "Use identical conservative CCD fixtures, step directions, and feasibility margins on CPU and GPU.",
+      "tolerance_policy": "Time-of-impact and maximum feasible step fraction must stay within 1e-10 absolute error.",
+      "timing_policy": "Report setup, transfer, CCD kernel, line-search kernel, readback, and CPU baseline timing separately.",
+      "speedup_policy": "Require >=1.25x over the DART CPU CCD/line-search path before recording a go claim.",
+      "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
+      "limitation_status": "Waiting for a GPU conservative-CCD row and a line-search feasibility row that share the CPU contract.",
+      "notes_or_gap": "The current Phase 5 point-pair CCD reduction is CPU-only and intentionally remains the oracle."
+    },
+    {
+      "row_id": "barrier-friction-local-kernels",
+      "roadmap_item": "barrier/friction local kernels",
+      "owner": "PLAN-083 + PLAN-081 + PLAN-082",
+      "status": "planned",
+      "cpu_evidence_command": "pixi run bm --target bm_ipc_barrier_kernel --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/barrier_cpu.json --benchmark_out_format=json && pixi run bm --target bm_ipc_tangent_stencil --build-type Release -- --benchmark_report_aggregates_only=true --benchmark_out=.benchmark_results/plan083/gpu/friction_cpu.json --benchmark_out_format=json",
+      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU barrier/friction local kernel has landed",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/barrier_friction_parity.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/barrier_friction_benchmark.json",
+      "same_scene_policy": "Use identical primitive distances, tangent bases, lagged normal forces, and friction displacements on CPU and GPU.",
+      "tolerance_policy": "Barrier value, gradient, Hessian, tangent basis, and friction work counters must stay within row-specific 1e-10 to 1e-9 tolerances.",
+      "timing_policy": "Report setup, transfer, barrier kernel, friction kernel, PSD/local projection timing where used, readback, and CPU baseline timing.",
+      "speedup_policy": "Require >=1.25x over DART CPU local-kernel timing before recording a go claim.",
+      "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
+      "limitation_status": "Waiting for a first GPU IPC consumer to make the existing detail/newton_barrier scalar cores host/device-portable in place.",
+      "notes_or_gap": "No mirrored device Newton-barrier implementation is created until that real GPU consumer exists."
+    },
+    {
+      "row_id": "psd-projection",
+      "roadmap_item": "PSD projection",
+      "owner": "PLAN-081 + PLAN-083",
+      "status": "measured",
+      "cpu_evidence_command": "pixi run test-unit -- --gtest_filter='*PsdProjection*'",
+      "gpu_evidence_command": "pixi run -e cuda bm-plan083-gpu-psd-packet",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/psd_projection_parity.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/psd_projection_benchmark.json",
+      "same_scene_policy": "Use identical symmetric block batches and solver-realistic PSD dimensions on CPU and GPU.",
+      "tolerance_policy": "Projected blocks must match the CPU reference within 1e-9 absolute error for double precision rows.",
+      "timing_policy": "Report setup, host_to_device, PSD kernel, solve=0 for local projection, device_to_host, readback, and CPU reference timing.",
+      "speedup_policy": "Require >=1.25x over DART CPU PSD projection before recording a PLAN-083 speed claim.",
+      "public_api_policy": "No public CUDA or backend exposure; existing PSD backend install seam remains private and opt-in.",
+      "limitation_status": "Measured packet exists for 4096 symmetric 12x12 PSD blocks; this is a local-kernel packet, not a scene-level GPU claim.",
+      "notes_or_gap": "The PSD projection packet measured max_result_abs_error=2.4868995751603507e-14 and speedup=4.451557656446166x on 2026-06-09; remaining GPU rows stay planned until their own kernels and same-scene packets land.",
+      "same_scene_cpu_gpu": true,
+      "block_dimension": 12,
+      "block_count": 4096,
+      "max_result_abs_error": 2.4868995751603507e-14,
+      "result_abs_error_tolerance": 1e-9,
+      "speedup": 4.451557656446166,
+      "min_speedup": 1.25,
+      "timing_ns": {
+        "setup": 321619.5,
+        "host_to_device": 572091.0,
+        "kernel": 5562031.0,
+        "solve": 0.0,
+        "device_to_host": 768212.0,
+        "readback": 0.0
+      }
+    },
+    {
+      "row_id": "assembly-linear-solve",
+      "roadmap_item": "assembly and linear-solve paths",
+      "owner": "PLAN-083 + PLAN-030",
+      "status": "planned",
+      "cpu_evidence_command": "not-ready: CPU scene packet shape and sparse Newton assembly rows are not stable yet",
+      "gpu_evidence_command": "not-ready: no private PLAN-083 GPU assembly or linear-solve path has landed",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_parity.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/assembly_linear_solve_benchmark.json",
+      "same_scene_policy": "Use identical sparse matrices, right-hand sides, pivots, solver tolerances, and deterministic reduction order on CPU and GPU.",
+      "tolerance_policy": "Residual norm, step norm, and barrier feasibility must stay within the accepted sparse Newton tolerance for the same scene.",
+      "timing_policy": "Report setup, transfer, assembly kernel, linear solve, readback, CPU assembly, and CPU solve timing separately.",
+      "speedup_policy": "Require >=1.25x over the matched DART CPU sparse Newton packet before recording a go claim.",
+      "public_api_policy": "No public CUDA or backend exposure; any residency or solver owner must stay behind private implementation boundaries.",
+      "limitation_status": "Blocked until CPU scene packets and sparse Newton assembly rows are stable enough to compare.",
+      "notes_or_gap": "The roadmap explicitly defers assembly and linear solve until after CPU packet shape is stable."
+    },
+    {
+      "row_id": "scene-parity-speedup",
+      "roadmap_item": "same-scene CPU/GPU result parity and speedup",
+      "owner": "PLAN-083 + PLAN-030",
+      "status": "planned",
+      "cpu_evidence_command": "not-ready: CPU scene-corpus placeholders are launchable but not runtime paper-scene reproductions",
+      "gpu_evidence_command": "not-ready: private PLAN-083 GPU same-scene packet depends on the staged rows above",
+      "parity_evidence_artifact": ".benchmark_results/plan083/gpu/scene_parity_speedup.json",
+      "benchmark_profile_artifact": ".benchmark_results/plan083/gpu/scene_parity_profile.json",
+      "same_scene_policy": "Use the same DART scene id, timestep, material parameters, contact geometry, initial state, and acceptance invariant for CPU and GPU.",
+      "tolerance_policy": "Use row-specific invariants from cpu-scene-corpus.json; no speed row may pass if the CPU/GPU final state or diagnostics violate those invariants.",
+      "timing_policy": "Report setup, transfer, candidate/CCD/local-kernel/assembly/solve subphase timings, readback, and full CPU step timing.",
+      "speedup_policy": "Require speedup over DART CPU at matched accuracy; if the paper source lacks a GPU number, compare only against DART CPU and record that limitation.",
+      "public_api_policy": "No public CUDA or backend exposure; scene evidence stays private/manual until a separate public promotion gate exists.",
+      "limitation_status": "Waiting for runtime CPU scene reproduction plus the private staged GPU rows above.",
+      "notes_or_gap": "This is the final Phase 7 go/no-go row and intentionally cannot pass from placeholder py-demos alone."
+    }
+  ]
+}

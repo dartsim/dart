@@ -1137,7 +1137,7 @@ void SelectionController::applyKeyboardNudge(
   }
 
   lifecycle.paused = true;
-  descriptors = extractRenderables(*scene.world);
+  descriptors = collectSceneRenderables(scene);
 }
 
 bool SelectionController::updateMouseSelection(
@@ -1341,7 +1341,7 @@ bool SelectionController::updateMouseSelection(
           && rotateRenderableAndApplyIk(
               scene, *selectedDescriptor, mSelectedRotationAxis, angle)) {
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
@@ -1352,7 +1352,7 @@ bool SelectionController::updateMouseSelection(
       if (std::abs(angle) > 1e-12
           && applyBodyNodeDragRotation(mSelectedRotationAxis, angle)) {
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
@@ -1373,7 +1373,7 @@ bool SelectionController::updateMouseSelection(
           && applyBodyNodeDragTranslation(*translation)) {
         mSelectedDragLastRay = ray;
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
     } else if (mSelectedDragMode == DragMode::GizmoTranslateAxis) {
       const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
@@ -1391,7 +1391,7 @@ bool SelectionController::updateMouseSelection(
                              .target->getWorldTransform()
                              .translation();
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
     } else if (mSelectedDragMode == DragMode::GizmoTranslatePlane) {
       const PickRay ray = makePanePickRay(inputPane, cursorX, cursorY);
@@ -1409,7 +1409,7 @@ bool SelectionController::updateMouseSelection(
                              .target->getWorldTransform()
                              .translation();
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
     } else if (mSelectedDragMode == DragMode::GizmoRotateAxis) {
       const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
@@ -1422,7 +1422,7 @@ bool SelectionController::updateMouseSelection(
                              .target->getWorldTransform()
                              .translation();
         lifecycle.paused = true;
-        descriptors = extractRenderables(*scene.world);
+        descriptors = collectSceneRenderables(scene);
       }
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
@@ -1447,7 +1447,7 @@ bool SelectionController::updateMouseSelection(
                 scene, *selectedDescriptor, *translation)) {
           mSelectedDragLastRay = ray;
           lifecycle.paused = true;
-          descriptors = extractRenderables(*scene.world);
+          descriptors = collectSceneRenderables(scene);
         }
       }
     }

@@ -10,8 +10,6 @@ import pytest
 # by ``test_normalize_target_redirects_demos_scenes`` instead.
 FILAMENT_ROUTED_EXAMPLES = {
     "dartsim": (),
-    "hello_world": (),
-    "gui_scene_diagnostics": (),
 }
 
 
@@ -47,8 +45,29 @@ def test_normalize_target_rejects_backend_named_gui(run_cpp_example, target):
 
 
 def test_normalize_target_passthrough(run_cpp_example, capsys):
-    assert run_cpp_example._normalize_target("hello_world") == "hello_world"
+    assert run_cpp_example._normalize_target("demos") == "demos"
     assert capsys.readouterr().err == ""
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "hello_world",
+        "gui_scene_diagnostics",
+        "csv_logger",
+        "headless_simulation",
+        "unified_loading",
+    ],
+)
+def test_normalize_target_rejects_retired_classic_standalone_examples(
+    run_cpp_example, target
+):
+    with pytest.raises(SystemExit) as exc:
+        run_cpp_example._normalize_target(target)
+
+    message = str(exc.value)
+    assert "retired from main" in message
+    assert "release-6.*" in message
 
 
 @pytest.mark.parametrize(
@@ -165,21 +184,14 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
             "dartsim",
             "dartsim",
             "dartsim",
-            ("filament", "simulation-experimental"),
+            ("filament", "simulation"),
             (),
         ),
         (
             "demos",
             "dart-demos",
             "dart-demos",
-            ("filament", "simulation-experimental"),
-            (),
-        ),
-        (
-            "hello_world",
-            "hello_world",
-            "hello_world",
-            ("filament",),
+            ("filament", "simulation"),
             (),
         ),
     ],
@@ -215,7 +227,7 @@ def test_filament_routed_examples_resolve_to_filament(
 def test_dartsim_requires_experimental_world(run_cpp_example):
     spec = run_cpp_example._resolve_example("dartsim")
 
-    assert "simulation-experimental" in spec.requirements
+    assert "simulation" in spec.requirements
 
 
 def _scene_from_default_args(default_args):
@@ -429,7 +441,7 @@ def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
     )
     scene_call = _cmake_headless_smoke_test_call(cmake_text, "${_test_name}")
 
-    # The no-scene launch is the experimental-World editor, whose minimal default
+    # The no-scene launch is the DART 7 World editor, whose minimal default
     # scene uses the non-blank (basic) check; the legacy --scene fixtures also
     # use the basic check.
     assert "ANALYZE" in _cmake_tokens(default_call)
@@ -468,46 +480,6 @@ def test_cmake_cache_bool(run_cpp_example, tmp_path):
 
     cache_path.write_text("UNRELATED:BOOL=ON\n", encoding="utf-8")
     assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
-
-
-def test_ensure_simulation_experimental_reconfigures_off_cache(
-    run_cpp_example, tmp_path, monkeypatch
-):
-    cache_path = tmp_path / "CMakeCache.txt"
-    cache_path.write_text(
-        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=OFF\n", encoding="utf-8"
-    )
-    calls = []
-
-    def fake_configure(build_dir, definitions, env):
-        calls.append((build_dir, definitions, env))
-
-    monkeypatch.setattr(run_cpp_example, "_configure", fake_configure)
-    env = {"EXAMPLE": "1"}
-
-    run_cpp_example._ensure_simulation_experimental(tmp_path, env)
-
-    assert calls == [(tmp_path, {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}, env)]
-
-
-def test_ensure_simulation_experimental_keeps_on_cache(
-    run_cpp_example, tmp_path, monkeypatch
-):
-    cache_path = tmp_path / "CMakeCache.txt"
-    cache_path.write_text(
-        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=ON\n", encoding="utf-8"
-    )
-    calls = []
-
-    monkeypatch.setattr(
-        run_cpp_example,
-        "_configure",
-        lambda build_dir, definitions, env: calls.append((build_dir, definitions, env)),
-    )
-
-    run_cpp_example._ensure_simulation_experimental(tmp_path, {})
-
-    assert calls == []
 
 
 def test_run_filament_smoke_uses_no_tests_error_when_supported(

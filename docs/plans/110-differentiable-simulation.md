@@ -1,7 +1,7 @@
 # PLAN-110: Differentiable Simulation (Opt-In Gradient Capabilities)
 
 - Operating state: `PLAN-110` in [`dashboard.md`](dashboard.md)
-- Outcome: the experimental `World` can, **opt-in**, produce analytic derivatives
+- Outcome: the DART 7 `World` can, **opt-in**, produce analytic derivatives
   of a physics step — state, control, and physical parameters — via DART-owned
   differentiable solver capabilities. The first committed path is implicit
   differentiation of the contact LCP and articulated-body dynamics, matching the
@@ -22,19 +22,19 @@
     separation is "the precondition for … differentiability"
     (`docs/design/simulation_solver_architecture.md`).
   - The capability matrix's `Differentiability` axis is defined in
-    `docs/design/simulation_experimental_cpp_api.md` (do not restate it here;
+    `docs/design/simulation_cpp_api.md` (do not restate it here;
     that doc is the single source of truth for the axis values).
   - `compute_backend_research.md` recorded differentiability as _deferred_ with an
     explicit promotion question; this plan answers it (analytic method committed
     for contact; autodiff-scalar templating reserved for smooth terms only).
     Public scalar precision selection remains out of scope for this plan and is
-    governed by the simulation experimental API design docs plus PLAN-041.
+    governed by the simulation API design docs plus PLAN-041.
   - Forward-pass ingredients DART already owns: boxed-LCP library `dart/math/lcp/`
     (`LcpResult LcpSolver::solve(const LcpProblem&, VectorXd& x, const LcpOptions&)`),
     articulated-body dynamics `compute/multibody_dynamics.*` (`M, C, g`, link
     Jacobians), and the `tan-lcp` formulation.
   - As built: an opt-in boxed-LCP rigid-body contact path landed on the
-    experimental `World` (`detail/boxed_lcp_contact.{hpp,cpp}` assembles the
+    DART 7 `World` (`detail/boxed_lcp_contact.{hpp,cpp}` assembles the
     Delassus system `A = J M⁻¹ Jᵀ` and solves it via the `dart/math/lcp` Dantzig
     pivoting solver, behind `WorldOptions::contactSolverMethod == BoxedLcp`; the
     default `SequentialImpulse` path is unchanged). The analytic contact gradient
@@ -59,8 +59,8 @@
 - Dojo solver gap audit + integration notes:
   [`110-differentiable-simulation/dojo-gap-audit.md`](110-differentiable-simulation/dojo-gap-audit.md)
 - Public facade rules:
-  [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
-  [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
+  [`../design/simulation_cpp_api.md`](../design/simulation_cpp_api.md),
+  [`../design/simulation_python_api.md`](../design/simulation_python_api.md)
 - Research references: `werling-2021` and `howell-2022-dojo` in
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - Active implementation tracking (transient; durable owners are the design + gap
@@ -69,7 +69,7 @@
 ## Dependencies
 
 - **Boxed-LCP contact prerequisite — landed in this work** (the PLAN-080
-  Workstream 4 seam, scoped opt-in here). The experimental `World` gained a
+  Workstream 4 seam, scoped opt-in here). The DART 7 `World` gained a
   `BoxedLcp` contact method whose solve emits the `{A,b,lo,hi,findex,f}` snapshot
   the analytic contact gradient differentiates, via a pivoting (Dantzig) solver
   with a clean active set — exactly the differentiation-ready seam this plan
@@ -102,7 +102,7 @@ in the dev-task roadmap.
    (upper-bound mapping), `∂(Jᵀf)/∂q`, rotational/off-COM and multi-contact; over
    the `BoxedLcp` pivoting solve.
 3. **Reverse product + PyTorch bridge** (implemented) — framework-neutral
-   `applyStepVjp` and `diff::rollout`, the optional `sx.diff` submodule
+   `applyStepVjp` and `diff::rollout`, the optional `sim.diff` submodule
    (`timestep`/`rollout` `autograd.Function`, lazy torch), `state_vector`/
    `num_efforts` helpers, dartpy stubs, a torch-absent import test, Python tests,
    and a throw-to-target trajectory-optimization test.
@@ -122,7 +122,7 @@ in the dev-task roadmap.
    model/state representation, nonlinear friction cone, primal-dual
    interior-point residuals and central-path smoothness knob, implicit-gradient
    KKT solve, examples/baselines, and coexistence with the current
-   boxed-LCP/Nimble-style path. This stays inside the experimental `World`
+   boxed-LCP/Nimble-style path. This stays inside the DART 7 `World`
    multi-solver architecture as an alternate rigid-domain method family with
    DART-owned capability names, not as a `DojoWorld`, public solver registry, or
    Dojo.jl dependency. The first slice is evidence-only: keep
@@ -136,7 +136,7 @@ tracked in `docs/dev_tasks/differentiable_simulation/`.
 
 This plan must not add a public `World` precision selector as a differentiability
 shortcut. Autodiff-scalar templating may remain an internal smooth-term or spike
-mechanism, but public `sx.World(dtype=...)`, `sx.World[...]`, or scalar-specific
+mechanism, but public `sim.World(dtype=...)`, `sim.World[...]`, or scalar-specific
 `World` aliases belong to a separate scalar-instantiation plan with its own API,
 binding, serialization, collision, determinism, and package gates. That separate
 plan should wait until the DART 7 rigid-body and multibody stack is already in
@@ -189,13 +189,13 @@ family.
 - Dojo-style work remains an evaluation track until the gap audit is complete and
   a minimal internal spike proves the maximal-coordinate variational/NCP/IPM
   step, implicit-gradient solve, finite-difference agreement, and comparison
-  scenes can coexist with the current experimental `World` without leaking solver
+  scenes can coexist with the current DART 7 `World` without leaking solver
   internals or making Dojo.jl a runtime dependency.
 
 ## Revision Triggers
 
 - A workstream completes, splits, or is reprioritized.
-- The PLAN-080 boxed-LCP contact contract changes shape, or the experimental LCP
+- The PLAN-080 boxed-LCP contact contract changes shape, or the boxed-LCP
   problem representation / `findex` convention changes (changes seams 1–2 and the
   friction-cone gradient).
 - The boxed-LCP solver interface (`dart/math/lcp/`) changes.

@@ -71,7 +71,6 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
 DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
@@ -156,7 +155,6 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
   -DDART_BUILD_DIFF=${DART_BUILD_DIFF_VALUE} \
   -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
@@ -199,8 +197,8 @@ lint-cpp = { cmd = """
     --target format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) -print0 | xargs -0 clang-format -i --style=file
+lint-simulation = { cmd = """
+    find dart/simulation tests/unit/simulation tests/benchmark/simulation -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-collision-native = { cmd = """
@@ -234,6 +232,19 @@ audit-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_su
 # Enforcement gate: fail if any promoted public header reintroduces an ECS leak
 # (which would re-expose EnTT through the public surface). The tree is clean.
 check-dart7-promotion-surface = { cmd = "python scripts/audit_dart7_promotion_surface.py --strict" }
+check-dart7-promotion-package-contract = { cmd = "python scripts/check_dart7_promotion_package_contract.py" }
+check-dart7-world-promotion-blockers = { cmd = "python scripts/check_dart7_world_promotion_blockers.py" }
+check-dart7-final-world-promotion = { cmd = "python scripts/check_dart7_world_promotion_blockers.py --strict-final --require-release6-branch" }
+check-dart7-promotion-installed-package = { cmd = ["bash", "-lc", """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}-promotion-install-smoke
+python scripts/check_dart7_promotion_installed_package.py \
+  --build-dir ${BUILD_DIR} \
+  --prefix ${BUILD_DIR}/install-prefix \
+  --build-type ${BUILD_TYPE}
+"""], args = [{ arg = "build_type", default = "Release" }] }
+check-dartpy-import-layout = { cmd = "python scripts/check_dartpy_import_layout.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 lint-compute-backend-boundaries = { cmd = [
@@ -252,6 +263,18 @@ lint-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+lint-plan083-gpu-parity-packet = { cmd = [
+  "python",
+  "scripts/check_plan083_gpu_parity_packet.py",
+] }
+lint-plan083-cpu-scene-corpus = { cmd = [
+  "python",
+  "scripts/check_plan083_cpu_scene_corpus.py",
+] }
+lint-plan083-completion-audit = { cmd = [
+  "python",
+  "scripts/check_plan083_completion_audit.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -261,7 +284,7 @@ update-api-boundary-inventory = { cmd = [
 lint = { depends-on = [
   "lint-spell",
   "lint-cpp",
-  "lint-simulation-experimental",
+  "lint-simulation",
   "lint-collision-native",
   "lint-cmake",
   "lint-py",
@@ -278,6 +301,9 @@ lint = { depends-on = [
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
   "lint-phase5-cuda-workflow",
+  "lint-plan083-cpu-scene-corpus",
+  "lint-plan083-gpu-parity-packet",
+  "lint-plan083-completion-audit",
   "sync-ai-commands",
 ] }
 
@@ -288,8 +314,8 @@ check-lint-cpp = { cmd = """
         --target check-format
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-check-lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) | xargs clang-format --dry-run --Werror --style=file
+check-lint-simulation = { cmd = """
+    find dart/simulation tests/unit/simulation tests/benchmark/simulation -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -334,6 +360,18 @@ check-phase5-cuda-workflow = { cmd = [
   "python",
   "scripts/check_phase5_cuda_workflow.py",
 ] }
+check-plan083-gpu-parity-packet = { cmd = [
+  "python",
+  "scripts/check_plan083_gpu_parity_packet.py",
+] }
+check-plan083-cpu-scene-corpus = { cmd = [
+  "python",
+  "scripts/check_plan083_cpu_scene_corpus.py",
+] }
+check-plan083-completion-audit = { cmd = [
+  "python",
+  "scripts/check_plan083_completion_audit.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -350,7 +388,7 @@ check-ai-commands = { cmd = [
 
 check-lint = { depends-on = [
   "check-lint-cpp",
-  "check-lint-simulation-experimental",
+  "check-lint-simulation",
   "check-lint-cmake",
   "check-lint-py",
   "check-lint-yaml",
@@ -362,11 +400,16 @@ check-lint = { depends-on = [
   "check-docs-policy",
   "check-dart7-clean-break-policy",
   "check-dart7-promotion-surface",
+  "check-dart7-promotion-package-contract",
+  "check-dart7-world-promotion-blockers",
+  "check-dartpy-import-layout",
   "check-api-boundaries",
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
   "check-phase5-cuda-benchmark-contract",
   "check-phase5-cuda-workflow",
+  "check-plan083-gpu-parity-packet",
+  "check-plan083-completion-audit",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -416,7 +459,6 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
 DART_BUILD_DIFF_VALUE=${DART_BUILD_DIFF_OVERRIDE:-OFF}
 DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
@@ -500,7 +542,6 @@ cmake \
   -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
   -DDART_BUILD_DIFF=${DART_BUILD_DIFF_VALUE} \
   -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
@@ -594,13 +635,13 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   { arg = "build_type", default = "Release" },
 ] }
 
-build-simulation-experimental-tests = { cmd = [
+build-simulation-tests = { cmd = [
   "bash",
   "-lc",
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
-CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart_experimental_tests
+CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cmake_build.py --target dart_simulation_tests
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -613,19 +654,19 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
 ] }
 
 # Negative public-header self-containment smoke test (PLAN-041 / U-WS2).
-# Builds and runs test_experimental_public_header_smoke, a TU that includes
+# Builds and runs test_simulation_public_header_smoke, a TU that includes
 # every promoted public header but is compiled WITHOUT entt/taskflow on its
-# include path (EnTT/Taskflow are PRIVATE deps of the experimental library). If
+# include path (EnTT/Taskflow are PRIVATE deps of the simulation library). If
 # any promoted header leaks <entt/...>, the build fails with "file not found".
-check-experimental-public-header-smoke = { cmd = [
+check-simulation-public-header-smoke = { cmd = [
   "bash",
   "-lc",
   """
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py --target test_experimental_public_header_smoke
-ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_experimental_public_header_smoke$'
+CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py --target test_simulation_public_header_smoke
+ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_simulation_public_header_smoke$'
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -637,11 +678,11 @@ ctest --test-dir "${BUILD_DIR}" --output-on-failure -R '^test_experimental_publi
   { arg = "build_type", default = "Release" },
 ] }
 
-# Aggregate experimental public-surface gates: the source-level strict audit and
+# Aggregate simulation public-surface gates: the source-level strict audit and
 # the build-tree no-entt-on-include-path compile smoke.
-check-experimental-public-headers = { depends-on = [
+check-simulation-public-headers = { depends-on = [
   "check-dart7-promotion-surface",
-  "check-experimental-public-header-smoke",
+  "check-simulation-public-header-smoke",
 ] }
 
 build-cuda = { cmd = [
@@ -655,7 +696,9 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   --target test_rigid_body_state_batch_cuda \
   --target test_deformable_psd_projection_cuda \
   --target test_vbd_block_descent_cuda \
+  --target test_lcp_jacobi_batch_cuda \
   --target bm_cuda_rigid_body_state_batch \
+  --target bm_plan083_gpu_psd_projection \
   --target bm_vbd_cuda
 """,
 ], depends-on = [
@@ -667,20 +710,49 @@ CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
   { arg = "build_type", default = "Release" },
 ] }
 
-build-math-tests = { cmd = [
-  "bash",
-  "-lc",
-  """
+build-math-tests = { cmd = ["bash", "-lc", """
 set -euo pipefail
-BUILD_TYPE=${BUILD_TYPE:-Release}
-BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-python scripts/cmake_build.py --build-dir "$BUILD_DIR" \
-  --target UNIT_math_Convhull --target UNIT_math_Geometry --target UNIT_math_Icosphere \
-  --target UNIT_math_Math --target UNIT_math_Random --target UNIT_math_TriMesh
-""",
-], depends-on = [
-  "config",
-] }
+targets=(
+  UNIT_math_Convhull
+  UNIT_math_configuration_space
+  UNIT_math_geometry
+  UNIT_math_icosphere
+  UNIT_math_lcp_math_lcp_additional_solvers
+  UNIT_math_lcp_math_lcp_all_solvers_smoke
+  UNIT_math_lcp_math_lcp_dantzig_misc
+  UNIT_math_lcp_math_lcp_dantzig_solver
+  UNIT_math_lcp_math_lcp_dantzig_vs_ode
+  UNIT_math_lcp_math_lcp_lcp_comparison_harness
+  UNIT_math_lcp_math_lcp_lcp_edge_cases
+  UNIT_math_lcp_math_lcp_lcp_newton_solvers
+  UNIT_math_lcp_math_lcp_lcp_problems
+  UNIT_math_lcp_math_lcp_lcp_projection_solvers
+  UNIT_math_lcp_math_lcp_lcp_solvers_stress
+  UNIT_math_lcp_math_lcp_lcp_types
+  UNIT_math_lcp_math_lcp_lcp_validation_and_solvers
+  UNIT_math_lcp_math_lcp_lemke
+  UNIT_math_lcp_math_lcp_pgs
+  UNIT_math_lcp_math_lcp_pivot_matrix
+  UNIT_math_lie_group_math_lie_group_batch
+  UNIT_math_lie_group_math_lie_group_forward_kinematics
+  UNIT_math_lie_group_math_lie_group_group_product
+  UNIT_math_lie_group_math_lie_group_se3
+  UNIT_math_lie_group_math_lie_group_so3
+  UNIT_math_lie_group_math_lie_group_spatial_inertia
+  UNIT_math_math
+  UNIT_math_optimization_GradientDescentSolver
+  UNIT_math_optimization_Problem
+  UNIT_math_polygon_mesh
+  UNIT_math_random
+  UNIT_math_tri_mesh
+  UNIT_math_value_equal
+)
+build_args=()
+for target in "${targets[@]}"; do
+  build_args+=(--target "$target")
+done
+python scripts/cmake_build.py "${build_args[@]}"
+"""], depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 build-py-dev = { cmd = [
   "bash",
@@ -854,7 +926,7 @@ if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
   fi
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} ${COMPILER_DEFS} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_DIR_NAME} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=${DART_USE_SYSTEM_IMGUI_VALUE} -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} ${COMPILER_DEFS} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -1019,7 +1091,7 @@ py-ex-atlas-puppet = { depends-on = [
 test = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE simulation-experimental",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -LE simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -1033,13 +1105,13 @@ test = { cmd = [
 test-no-plane = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\"",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
-  { task = "build-simulation-experimental-tests", args = [
+  { task = "build-simulation-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -1048,16 +1120,16 @@ test-no-plane = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
-test-simulation-experimental = { cmd = [
+test-simulation = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L simulation-experimental",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} --output-on-failure -L simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
-  { task = "build-simulation-experimental-tests", args = [
+  { task = "build-simulation-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -1073,7 +1145,7 @@ test-cuda = { cmd = [
 set -euo pipefail
 BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
-ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-cuda
+ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-cuda
 # Benchmark smoke runs go through run_benchmark_smoke.py because Google Benchmark
 # exits 0 even when a --benchmark_filter matches nothing; the wrapper fails loudly
 # so a renamed or dropped benchmark cannot silently stop being exercised.
@@ -1082,6 +1154,9 @@ python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state
   --benchmark_min_time=1ms
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
+python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_plan083_gpu_psd_projection" \
+  --benchmark_filter='BM_Plan083PsdProjection(Cpu|Cuda)/1024(/real_time)?$' \
   --benchmark_min_time=0.001s
 python scripts/run_benchmark_smoke.py "${BUILD_DIR}/bin/bm_vbd_cuda" \
   --benchmark_filter='BM_Vbd(Cpu|Cuda)Step/32$' \
@@ -1188,7 +1263,6 @@ rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 DART_CODECOV_TEMP_DIR=${DART_CODECOV_TEMP_DIR:-build/$PIXI_ENVIRONMENT_NAME/cpp/coverage_temp}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-OFF}
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
@@ -1232,7 +1306,6 @@ cmake \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_PROFILE=OFF \
     -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-    -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_CODECOV=ON \
@@ -1367,12 +1440,6 @@ ex-atlas-simbicon = { depends-on = [
   ] },
 ] }
 
-ex-hello-world = { depends-on = [
-  { task = "run-cpp-target", args = [
-    "hello_world",
-  ] },
-] }
-
 py-atlas-puppet = { cmd = """
     PYTHONPATH=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python:$PYTHONPATH \
     python python/examples/atlas_puppet/main.py
@@ -1388,8 +1455,84 @@ bm-allocator-comparative-check = { cmd = "python scripts/check_allocator_compara
 bm-compute-check = { cmd = "python scripts/check_compute_graph_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-abd-comparison-packet = { cmd = "python scripts/check_abd_comparison_packet.py", depends-on = [
+  "config",
+] }
 bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
+bm-plan083-cpu-abd-chain-8-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_chain_8", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-chain-16-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_chain_16", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-chain-96-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_chain_96", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-gears-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_gears", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-small-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_small", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-medium-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_medium", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-large-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_large", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-cards-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_house_of_cards", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-wrecking-ball-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_wrecking_ball", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-candy-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene candy", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-hanging-bridge-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-lying-flat-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene lying_flat", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-nunchaku-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene nunchaku_single", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-nunchaku-scaling-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene nunchaku_scaling", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-pulley-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene pulley_system", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-precession-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene precession", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-ragdoll-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene ragdoll_reduced", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-table2-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene table_2", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-terrain-vehicle-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene terrain_vehicle", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-timing-breakdown-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene timing_breakdown", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-umbrella-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene umbrella", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-windmill-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene windmill", depends-on = [
+  "config",
+] }
+bm-plan083-gpu-parity-packet-check = { cmd = "python scripts/check_plan083_gpu_parity_packet.py" }
+bm-plan083-gpu-psd-packet = { cmd = "python scripts/write_plan083_gpu_psd_packet.py", depends-on = [
+  { task = "build-cuda", args = [
+    "Release",
+  ] },
+] }
+bm-plan083-completion-audit-check = { cmd = "python scripts/check_plan083_completion_audit.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",
 ] }
@@ -1593,6 +1736,12 @@ bm-simd = { cmd = """
   "config",
 ], env = { BUILD_TYPE = "Release" } }
 
+bm-lie-group-batch = { depends-on = [
+  { task = "run-cpp-target", args = [
+    "bm_lie_group_batch",
+  ] },
+] }
+
 tu-biped = { depends-on = [
   { task = "run-cpp-target", args = [
     "tutorial_biped",
@@ -1709,7 +1858,6 @@ cmake \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_DARTPY={{ dartpy }} \
-    -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
     -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
     -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
@@ -1993,20 +2141,20 @@ test-quick = { cmd = "python scripts/run_cpp_test.py --quick", depends-on = [
 ] }
 verify-quick = { depends-on = ["check-lint-quick", "test-quick"] }
 
-# Tier 1 — pre-commit default: lint + Release lib/tests + experimental-quick + python.
+# Tier 1 — pre-commit default: lint + Release lib/tests + simulation-quick + python.
 # Builds only the test targets (not examples/tutorials/docs/Debug) to stay lean.
-test-core = { cmd = "python scripts/ctest_tier.py -LE simulation-experimental", depends-on = [
+test-core = { cmd = "python scripts/ctest_tier.py -LE simulation", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
   ] },
 ] }
-test-experimental-quick = { cmd = "python scripts/ctest_tier.py -L simulation-experimental --exclude-long-poles", depends-on = [
+test-simulation-quick = { cmd = "python scripts/ctest_tier.py -L simulation --exclude-long-poles", depends-on = [
   { task = "build-tests", args = [
     "ON",
     "Release",
   ] },
-  { task = "build-simulation-experimental-tests", args = [
+  { task = "build-simulation-tests", args = [
     "ON",
     "Release",
   ] },
@@ -2016,7 +2164,7 @@ test-experimental-quick = { cmd = "python scripts/ctest_tier.py -L simulation-ex
 verify = { depends-on = [
   "check-lint",
   "test-core",
-  "test-experimental-quick",
+  "test-simulation-quick",
   "test-py",
 ] }
 
@@ -2026,7 +2174,7 @@ test-full = { cmd = "python scripts/ctest_tier.py", depends-on = [
     "ON",
     "Release",
   ] },
-  { task = "build-simulation-experimental-tests", args = [
+  { task = "build-simulation-tests", args = [
     "ON",
     "Release",
   ] },
@@ -2063,7 +2211,6 @@ CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-RelWithDebInfo}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
-DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
@@ -2094,7 +2241,6 @@ cmake \
   -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
-  -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
@@ -2132,7 +2278,7 @@ BUILD_TYPE=${BUILD_TYPE:-asan}
 ctest \
   --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} \
   --output-on-failure \
-  -LE simulation-experimental
+  -LE simulation
 """,
 ], depends-on = [
   "build-asan",
@@ -2193,7 +2339,6 @@ set -euo pipefail
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
         -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
         -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE={{ build_profile }} \
@@ -2305,9 +2450,9 @@ build-tests = { cmd = """
   { arg = "build_type", default = "Release" },
 ] }
 
-build-simulation-experimental-tests = { cmd = """
+build-simulation-tests = { cmd = """
     BUILD_TYPE={{ build_type }}
-    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart_experimental_tests
+    CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp python scripts/cmake_build.py --config $BUILD_TYPE --target dart_simulation_tests
 """, depends-on = [
   { task = "config", args = [
     "{{ dartpy }}",
@@ -2338,7 +2483,6 @@ set -euo pipefail
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
-        -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
         -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
         -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE={{ build_profile }} \
@@ -2360,7 +2504,7 @@ set -euo pipefail
 test = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE simulation-experimental",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -LE simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2374,7 +2518,7 @@ test = { cmd = [
 test-no-plane = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --exclude-regex \"test_plane_shape_collision\" --label-exclude simulation-experimental",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure --label-exclude simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
@@ -2385,16 +2529,16 @@ test-no-plane = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
-test-simulation-experimental = { cmd = [
+test-simulation = { cmd = [
   "bash",
   "-lc",
-  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L simulation-experimental",
+  "set -euo pipefail\nBUILD_TYPE={{ build_type }}\nctest --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp --build-config ${BUILD_TYPE} --output-on-failure -L simulation",
 ], depends-on = [
   { task = "build-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
-  { task = "build-simulation-experimental-tests", args = [
+  { task = "build-simulation-tests", args = [
     "{{ dartpy }}",
     "{{ build_type }}",
   ] },
@@ -2508,7 +2652,6 @@ set -euo pipefail
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
-        -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
         -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
         -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE=OFF \
@@ -2618,7 +2761,7 @@ libode = ">=0.16.6,<0.17"
 # Feature: CUDA
 #=============
 #
-# Opt-in experimental CUDA support for internal simulation-experimental smoke
+# Opt-in experimental CUDA support for internal simulation smoke
 # tests and benchmarks. CUDA stays out of the default environment and public API.
 #
 # Usage:

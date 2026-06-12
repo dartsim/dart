@@ -55,8 +55,8 @@ jobs:
 
       # The Debug + --coverage build instruments every translation unit, so its
       # object files (debug info + gcov arcs) are several times larger than a
-      # normal build. With the simulation-experimental module now built by
-      # default, core + experimental + all tests no longer fit in the
+      # normal build. With the simulation module now built by default, core +
+      # simulation + all tests no longer fit in the
       # GitHub-hosted runner's free space and compilation fails with
       # "No space left on device". Reclaim the large preinstalled toolchains we
       # do not use (~25 GB) before configuring.
@@ -91,7 +91,7 @@ jobs:
           pixi run coverage-report
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.info
@@ -130,21 +130,18 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Release
 
       - name: Run Release Python tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test-py ON Release
 
       - name: Build Release examples
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run build-examples ON Release
 
       - name: Install
@@ -186,26 +183,26 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Release
 
       - name: Run Release Python tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test-py ON Release
 
       - name: Build Release examples
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run build-examples ON Release
 
       - name: Test with AddressSanitizer
         run: |
+          # ASAN builds use materially more memory than the normal Release
+          # build; keep parallelism lower to avoid hosted-runner OOM kills.
           DART_VERBOSE=ON \
+          DART_PARALLEL_JOBS=4 \
           pixi run test-asan
 
       - name: Install
@@ -259,8 +256,9 @@ jobs:
               dart \
               dartpy \
               dart_collision_native_tests \
-              INTEGRATION_simulation_World \
-              UNIT_simulation_World \
+              test_world \
+              test_world_contact_parity \
+              test_world_dart7_regression \
               UNIT_collision_CollisionGroup \
               UNIT_collision_Raycast \
               UNIT_collision_DartCollisionDetector \
@@ -281,7 +279,7 @@ jobs:
           PYTHONPATH=build/default/cpp/Release/python \
             pixi run -- pytest -q \
               python/tests/unit/collision/test_collision.py \
-              python/tests/unit/simulation/test_experimental_world.py
+              python/tests/unit/simulation/test_world.py
 
   collision-benchmark-guard:
     needs: changes
@@ -360,14 +358,12 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test ON Debug
 
       - name: Run Debug Python tests
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
-          DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF \
           pixi run test-py ON Debug
 
   build-asserts:

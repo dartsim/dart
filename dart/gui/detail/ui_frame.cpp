@@ -588,13 +588,12 @@ void updateFrameUi(
     }
   }
   dart::gui::PanelContext panelContext{
-      dartScene.world.get(),
       &lifecycle,
       selectedLabel,
       selectionController.selectedPoint(),
       selectionController.selectedNormal(),
-      dartScene.world->getTime(),
-      dartScene.world->getLastCollisionResult().getNumContacts(),
+      dartScene.time,
+      dartScene.contactCount,
       {cameraBasis.eye,
        cameraController.camera.target,
        cameraBasis.up,
@@ -637,14 +636,7 @@ void updateFrameUi(
       dartScene.dockingEnabled,
       statusPanelLeftPx);
   if (debugOptionsChanged) {
-    refreshStaticDebugOverlay(
-        engine, scene, debugMaterial, *dartScene.world, debugOverlays);
-    refreshContactDebugOverlay(
-        engine,
-        scene,
-        debugMaterial,
-        dartScene.world->getLastCollisionResult(),
-        debugOverlays);
+    refreshStaticDebugOverlay(engine, scene, debugMaterial, debugOverlays);
   }
   renderApplicationPanels(
       panels, panelContext, guiScale.effectiveScale, dartScene.dockingEnabled);

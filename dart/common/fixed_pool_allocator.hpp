@@ -223,6 +223,21 @@ private:
     return alignment;
   }
 
+  [[nodiscard]] static constexpr size_t cacheFriendlyUnitSize(
+      size_t unitSize) noexcept
+  {
+    constexpr size_t cacheSkewBytes = 32;
+    constexpr size_t maxPaddedUnitSize = 4096;
+    // Avoid medium power-of-two strides concentrating sequential pool walks
+    // into a small subset of L1 cache sets.
+    if (unitSize >= 8 * cacheSkewBytes && unitSize <= maxPaddedUnitSize
+        && isPowerOfTwo(unitSize)
+        && unitSize <= std::numeric_limits<size_t>::max() - cacheSkewBytes) {
+      return unitSize + cacheSkewBytes;
+    }
+    return unitSize;
+  }
+
   MemoryAllocator& mBaseAllocator;
 
   size_t mUnitSize;

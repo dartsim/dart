@@ -25,7 +25,7 @@ change to the active PLAN-030 milestone.
 
 ## Method And Evidence Basis
 
-- Repository inspection of DART's current compute substrate (the experimental
+- Repository inspection of DART's current compute substrate (the simulation
   compute graph, the SIMD module, native-collision sequencing).
 - A 2025-2026 landscape review of comparable physics engines and their compute
   backends.
@@ -47,7 +47,7 @@ figures and are treated as upper bounds, not validated benchmarks.
 New scalable-compute work builds on what already exists; the survey below should
 not motivate parallel-from-scratch designs.
 
-- The experimental compute graph under `dart::simulation::experimental::compute`
+- The simulation compute graph under `dart::simulation::compute`
   is the CPU-first substrate. `ComputeExecutor` is the backend-neutral boundary
   with a sequential reference path and a Taskflow-backed `ParallelExecutor`
   (`TaskflowExecutor` is a compatibility alias).
@@ -58,8 +58,8 @@ not motivate parallel-from-scratch designs.
   therefore already expressible as graph metadata.
 - The SIMD module (`dart/simd/`) is mature: SSE4.2, AVX, AVX2, AVX512, NEON, and
   SVE backends with a scalar fallback and Eigen interop.
-- Classic `dart::simulation::World` stays untouched by experimental compute work,
-  and Taskflow stays behind the executor boundary.
+- DART 6 parity evidence stays on `release-6.*` branches, and Taskflow stays
+  behind the executor boundary.
 - The native-collision performance plan already sequences single-core, then
   scenario-scale, then multi-core CPU, then optional GPU work for collision data
   structures (`docs/plans/035-native-collision-dashboard.md`).
@@ -127,7 +127,7 @@ Cross-cutting lessons:
 
 Newton (contributed to the Linux Foundation in 2025 by Disney Research, Google
 DeepMind, and NVIDIA, built on NVIDIA Warp) is the closest architectural
-reference for where DART's experimental World is already heading. Its shape:
+reference for where the DART 7 World is already heading. Its shape:
 
 - an immutable `Model` (topology, parameters) built once, plus mutable `State`,
   `Control`, and `Contacts`, all in structure-of-arrays layout with a leading
@@ -140,7 +140,7 @@ reference for where DART's experimental World is already heading. Its shape:
   device;
 - differentiability via Warp's autodiff tape.
 
-DART's experimental World is structurally convergent with this: EnTT components
+The DART 7 World is structurally convergent with this: EnTT components
 are the SoA columns, public handles are thin views, the compute graph is the
 kernel-per-stage pipeline, and `ComputeExecutor` is the backend seam where a
 device backend slots in without changing `World`. The two moves that complete the
@@ -148,7 +148,7 @@ alignment are an explicit immutable-Model / batched-State split with an `nworld`
 leading dimension, and treating the device state buffer as the single source of
 truth behind the handle facade. The classic object-oriented `Skeleton`/`BodyNode`
 core is the opposite of SoA; porting it would be a rewrite, which is the concrete
-reason this roadmap is scoped to the experimental World.
+reason this roadmap is scoped to the DART 7 World.
 
 ## ECS Auto-Scheduling Evidence
 
@@ -266,7 +266,7 @@ and merged; operating priority and the Phase 6 backlog now live in
 `docs/plans/dashboard.md` (PLAN-030), and the GPU prototype gate, the recorded
 go/no-go, and the CUDA-versus-SYCL criteria live in
 `scalable_compute_decisions.md` (the multiphase dev-task folder has been
-retired). Scope is the experimental World only;
+retired). Scope is the DART 7 World only;
 shared backend-neutral utilities (for example `dart/simd/`) may live elsewhere.
 
 Direction (confirmed by a three-perspective review — architecture, plan critique,
@@ -289,7 +289,7 @@ Decisions resolved from the repository's own design docs and the evidence above,
 so they need no external input:
 
 - **Differentiability stays deferred** (a capability-matrix axis in
-  `simulation_experimental_cpp_api.md`), not a near-term API. Keep the door open
+  `simulation_cpp_api.md`), not a near-term API. Keep the door open
   cheaply by writing the rewritten dynamics scalar-generic and instantiating only
   `double` — but co-locate that with the state rewrite, not before it.
 - **CUDA-versus-SYCL is decided at the Phase 5 benchmark gate**, not now. The GPU

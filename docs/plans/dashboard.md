@@ -64,10 +64,12 @@ its own line so status updates remain git-history friendly.
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
-  example as the template when the next algorithm family is selected. For
-  solver or multi-physics papers, first apply the solver-family intake
-  checklist in [`solver-family-intake.md`](solver-family-intake.md)
+- Next step: The DART 7 LCP evidence campaign is complete in
+  [#2962](https://github.com/dartsim/dart/pull/2962); use its LCP contract,
+  tests, benchmark packets, and `lcp_physics` example as the template when the
+  next algorithm family is selected. For solver or multi-physics papers, first
+  apply the solver-family intake checklist in
+  [`solver-family-intake.md`](solver-family-intake.md)
   so the work routes to an existing family, shares common collision,
   kinematics, and optimization components, and defines apples-to-apples
   evidence plus a user-facing configuration shape.
@@ -88,7 +90,7 @@ its own line so status updates remain git-history friendly.
 - Next step: Phases 0-5 are complete and merged to `main` (PRs #2698, #2710,
   #2712); the dev-task folder has been retired, so PLAN-030 plus
   [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
-  are now the durable trackers. The default experimental `World::step` path
+  are now the durable trackers. The default DART 7 `World::step` path
   preserves the rigid-body contact/multibody solver pipeline, while the batched
   SoA rigid-body stage remains an explicit unconstrained path and
   benchmark/prototype seam. Phase 5 is closed with a GO: `CI CUDA / CUDA Build`
@@ -120,7 +122,7 @@ its own line so status updates remain git-history friendly.
   and differentiable state types if differentiability is promoted from a
   deferred to a committed capability. Rationale for each lives in
   [`../design/compute_backend_research.md`](../design/compute_backend_research.md).
-- Gate: `pixi run test-simulation-experimental` covers graph/world parity for
+- Gate: `pixi run test-simulation-quick` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
@@ -129,53 +131,36 @@ its own line so status updates remain git-history friendly.
   hosts; `pixi run -e cuda test-cuda` remains the focused CUDA smoke path; and
   future compute-bound contact/constraint work must extend the checked
   benchmark gate.
-  Taskflow remains behind the experimental executor boundary, metadata remains
+  Taskflow remains behind the simulation executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
-  stays untouched.
+  parity evidence comes from `release-6.*` branches.
 
 ### PLAN-031: Shared Experimental CUDA Device Substrate
 
 - Owner doc:
   [`../design/shared_cuda_device_substrate.md`](../design/shared_cuda_device_substrate.md)
-- Status: Active
-- Horizon: Now
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: The build-now scope is implemented locally and verified (pending
-  maintainer review/commit). It de-duplicates the three existing experimental
-  CUDA modules (`rigid_body_state_batch_cuda`, `vbd_block_descent_cuda`,
-  `deformable_psd_projection_cuda`) before AVBD-CUDA (PLAN-104), rigid-IPC GPU
-  (PLAN-082), and PD-IPC GPU (PLAN-081) multiply the duplication. Landed: a shared
-  `compute/cuda/cuda_runtime.cuh` + host `cuda_runtime.cpp` (one
-  `isCudaRuntimeAvailable`, one `throwIfCudaError`, `checkLastError`, inline
-  `launchGrid1D`), replacing the triplicated probe, three error helpers (VBD's
-  divergent `std::runtime_error` unified onto `InvalidOperationException`), and
-  7+ hand-rolled launch sites; `compute/cuda/device_buffer.cuh`
-  (`DeviceBuffer<T=double>` with opt-in resident `ensure()`/`allocationCount()`)
-  subsuming `DeviceDoubleBuffer`/`DeviceArray<T>`/`ResidentDeviceBuffer`; and a
-  per-body `__host__ __device__` orientation core in
-  `compute/detail/rigid_integration_core.hpp` (macro `DART_EXPERIMENTAL_HD`) that
-  the CPU `rigid_body_integration_kernel.hpp` loop and the CUDA kernel now share,
-  deleting the drifted `__device__ integrateOrientation`. Deferred behind
-  documented second-use triggers: rollout/graph-capture/precision/colored-sweep, a
-  generic accelerator registry, a device IPC barrier/distance mirror, a residency
-  owner, and device reductions; the existing `deformable_psd_backend.hpp`
-  registrar is reused by example. No new general library — `dart/math`,
-  `dart/optimizer`, `detail/newton_barrier`, and `deformable_psd_backend` are
-  reused, and device IPC math will promote the same PLAN-083 cores
-  host/device-portable rather than forking a GPU copy. Remaining: maintainer
-  review and the dual-commit split (the VBD thrown-type change as its own
-  reviewed commit).
-- Gate: Verified locally — the three module CUDA parity tests pass within the
-  recorded tolerance (`pixi run -e cuda test-cuda`, 3/3), the default no-GPU
-  experimental suite passes (`pixi run test-simulation-experimental`, 61/61,
-  including `test_compute_graph` over the single-sourced kernel), and
-  `check-api-boundaries`, `check-compute-backend-boundaries`, and
-  `check-no-gpu-runtime-dependencies` stay green. Shared device code stays
-  `.cuh`/`.cpp`-only under `compute/cuda/` (plus the `detail/` core header) in the
-  build-only `dart-simulation-experimental-cuda` STATIC library (never added to
-  `add_component_targets`, never installed/exported, never in a default Pixi
-  feature or wheel manifest); and the VBD thrown-type change is reviewed
-  separately with any downstream catcher updated in the same PR.
+- Next step: The build-now substrate landed on `main` in PR #2875. Use
+  [`../design/shared_cuda_device_substrate.md`](../design/shared_cuda_device_substrate.md)
+  as the extraction contract when AVBD-CUDA (PLAN-104), rigid-IPC GPU
+  (PLAN-082), PD-IPC GPU (PLAN-081), or broadened Phase-6 compute work
+  introduces a real second consumer for deferred rollout, graph-capture,
+  precision, colored-sweep, accelerator-registry, device IPC math, residency, or
+  reduction helpers. No new general library is planned: reuse `dart/math`,
+  `dart/optimizer`, `detail/newton_barrier`, and
+  `deformable_psd_backend`, and promote the same PLAN-083 cores
+  host/device-portable only when a GPU IPC consumer lands.
+- Gate: Future substrate changes must keep shared device code `.cuh`/`.cpp`-only
+  under `compute/cuda/` (plus scanner-skipped `detail/` kernel cores), leave the
+  CUDA sidecar build-only and uninstalled, preserve the default no-GPU path, and
+  keep `pixi run -e cuda test-cuda`,
+  `pixi run test-simulation`,
+  `pixi run check-api-boundaries`,
+  `pixi run check-compute-backend-boundaries`, and
+  `pixi run check-no-gpu-runtime-dependencies` green for any promoted second-use
+  extraction.
 
 ### PLAN-080: Rigid-Body Dynamics Solver
 
@@ -186,8 +171,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: The rigid-body MVP shipped (PR #2705, merged 2026-05-25). The
   active line now carries the model-loading bridge from legacy
-  `dynamics::Skeleton` / `simulation::World` into experimental `Multibody`
-  objects, including the `addSkeleton()` / `addWorld()` URI-loading facades,
+  `dynamics::Skeleton` / `simulation::World` into DART 7 `Multibody`
+  objects, including the retained `addSkeleton()` URI-loading facade,
   joint-family/property transfer, branching and root offsets, collision shape
   import with local transforms, compound shapes, broad-phase-pruned collision
   queries, and a persistent native collision-query world. The semi-implicit
@@ -197,9 +182,10 @@ its own line so status updates remain git-history friendly.
   iteration, and scaling work around the unified contact solve; keep richer
   model-loading diagnostics, visual/material import, actuator, mimic/coupler,
   loop-closure, integrator, and COM-Jacobian work as separate deferred slices.
-- Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
-  green, holds DART 6 parity on shared scenes before any promotion claim, and
-  never exposes solver/coupler/domain/backend types or ECS storage publicly.
+- Gate: Each slice keeps focused simulation tests and `check-api-boundaries`
+  green, sources DART 6 parity evidence from `release-6.*` branch refs before
+  any promotion claim, and never exposes solver/coupler/domain/backend types or
+  ECS storage publicly.
 
 ### PLAN-081: Deformable Implicit-Barrier Solver
 
@@ -294,16 +280,25 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
-  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/):
-  Phase 1 promoted shared distance/barrier/tangent/friction primitives into
-  `detail/newton_barrier`, Phase 2 has internal ABD barrier/friction derivative
-  oracles, and the next move is to promote the first ABD benchmark packet from
-  smoke shape to a comparison manifest row. Use the PLAN-083
-  [`ipc-variant-consolidation.md`](083-unified-newton-barrier-multibody/ipc-variant-consolidation.md)
-  sidecar to keep deformable IPC, codimensional IPC, rigid IPC, ABD, PD-IPC,
-  SPB, and VBD/OGC-adjacent obligations in the right owners. Generalize PSD
-  projection, projected-Newton, line-search, diagnostics, and benchmark schemas
-  only when second-use evidence proves a shared contract.
+  [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
+  Phase 6 CPU corpus follow-up on
+  `simx/plan083-phase-6-abd-comparison-packets`. PR #2960 landed
+  implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
+  projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
+  articulation-only figure rows with landed private diagnostics; PR #2970
+  landed runtime wiring for point/fixed and hinge constraints, opt-in BDF-2,
+  deformable fixed obstacles, and the reduced hanging-bridge py-demo; PR #2971
+  landed reduced CPU packets for lying-flat, hanging-bridge, pulley, umbrella,
+  terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy,
+  precession, reduced timing-breakdown, reduced Table 2, the sparse equality
+  change-of-variable rigid IPC path, and the reduced affine point-triangle
+  micro-solve diagnostic; PR #2974 added reduced ABD runtime-step evidence for
+  `abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
+  and `abd-chain-96`. The current follow-up adds reduced ABD gears/Bullet
+  comparison packets without claiming gear assets, Bullet/reference baselines,
+  GPU parity, or paper-scale parity. The completion audit still records
+  PLAN-083 as incomplete while planned manifest and non-PSD GPU parity rows
+  remain, so dev-task retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and
@@ -315,7 +310,9 @@ its own line so status updates remain git-history friendly.
   serializable where result-affecting, and backend-neutral; `pixi run lint`,
   docs gates, focused C++/Python tests,
   benchmark smokes, and `check-api-boundaries` stay green for each promoted
-  slice.
+  slice. PPF-derived cubic barriers, strain-limit rows, ACCD diagnostics,
+  solver logs, shell/rod state adapters, or frontend/platform patterns require
+  the PPF intake sidecar plus CPU/GPU comparison evidence before promotion.
 
 ### PLAN-104: Vertex Block Descent Solver
 
@@ -378,7 +375,10 @@ its own line so status updates remain git-history friendly.
   point-attachment row, two-body point-pair row stamping, and private
   point-pair contact/friction row constructors plus paired friction-cone
   projection, with a private serial row driver for point attachments,
-  contact-normal point pairs, and paired friction tangent rows, and a private
+  contact-normal point pairs, and paired friction tangent rows. Paired friction
+  row updates now reuse the regularized tangent constraint vector for both cone
+  projection and stiffness growth, shared-anchor tangent pairs reuse the first
+  transformed anchor pair across both tangent rows, and a private
   rigid contact-manifold row builder for active contact points. Private
   dynamic/rigid contact feature IDs, canonical two-endpoint row keys, and
   normal/friction row descriptor helpers have started, and private
@@ -388,14 +388,119 @@ its own line so status updates remain git-history friendly.
   ECS through a combined private wrapper in focused tests. The first
   contact-stage AVBD activation is now available behind the internal
   `RigidAvbdContactConfig`: supported free rigid-body contacts route through
-  the private 6-DOF AVBD row solve as a velocity-level projection while
+  the private 6-DOF AVBD row solve as a velocity-level projection, with focused
+  dynamic/dynamic and static/dynamic contact-stage coverage in
+  `World.RigidBodyContactStageAvbdProjectsDynamicDynamicContactVelocity` and
+  `World.RigidBodyContactStageAvbdProjectsStaticDynamicContactVelocity`,
+  single-config dynamic/dynamic opt-in coverage in
+  `World.RigidBodyContactStageAvbdProjectsDynamicPairWithSingleConfig`,
+  default `World::step()` dynamic/dynamic coverage in
+  `World.RigidBodyContactStageAvbdDynamicDynamicRunsThroughDefaultWorldStep`,
+  default `World::step()` single-config dynamic/dynamic coverage in
+  `World.RigidBodyContactStageAvbdDynamicPairWithSingleConfigRunsThroughDefaultWorldStep`,
+  contact-to-position pipeline coverage in
+  `World.RigidBodyContactStageAvbdFeedsRigidBodyPositionStage`,
+  default `World::step()` schedule coverage in
+  `World.RigidBodyContactStageAvbdRunsThroughDefaultWorldStep`,
+  static-owned static/dynamic opt-in coverage in
+  `World.RigidBodyContactStageAvbdProjectsStaticOwnedContactConfig`,
+  default `World::step()` static-owned static/dynamic opt-in coverage in
+  `World.RigidBodyContactStageAvbdStaticOwnedRunsThroughDefaultWorldStep`,
+  stored static-body velocity ignore coverage in
+  `World.RigidBodyContactStageAvbdIgnoresStoredStaticVelocity`,
+  kinematic-as-prescribed endpoint coverage in
+  `World.RigidBodyContactStageAvbdTreatsKinematicBodyAsStaticObstacle`,
+  default `World::step()` kinematic-prescribed endpoint coverage in
+  `World.RigidBodyContactStageAvbdKinematicRunsThroughDefaultWorldStep`,
+  enabled-peer/disabled-peer opt-in coverage in
+  `World.RigidBodyContactStageAvbdProjectsEnabledPeerWithDisabledConfig`,
+  default `World::step()` enabled-peer/disabled-peer coverage in
+  `World.RigidBodyContactStageAvbdEnabledPeerWithDisabledConfigRunsThroughDefaultWorldStep`,
+  configured multi-contact coverage in
+  `World.RigidBodyContactStageAvbdProjectsMultipleConfiguredContacts`, plus
+  default `World::step()` configured multi-contact coverage in
+  `World.RigidBodyContactStageAvbdMultipleConfiguredContactsRunThroughDefaultWorldStep`,
+  mixed-config all-or-nothing fallback coverage in
+  `World.RigidBodyContactStageAvbdFallsBackForUnconfiguredContactSet`,
+  default `World::step()` mixed-config all-or-nothing fallback coverage in
+  `World.RigidBodyContactStageAvbdMixedConfigFallsBackThroughDefaultWorldStep`,
+  disabled-config opt-out fallback coverage in
+  `World.RigidBodyContactStageAvbdDisabledConfigFallsBack`, default
+  `World::step()` disabled-config fallback coverage in
+  `World.RigidBodyContactStageAvbdDisabledConfigFallsBackThroughDefaultWorldStep`,
+  and
+  static/dynamic and dynamic/dynamic warm-started friction slip-reduction
+  coverage in `World.RigidBodyContactStageAvbdWarmStartedFrictionReducesSlide`
+  and
+  `World.RigidBodyContactStageAvbdWarmStartedDynamicFrictionReducesSlip`,
+  static-owned warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionReducesSlide`,
+  kinematic-owned warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionReducesSlide`,
+  enabled-peer/disabled-peer warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionReducesSlide`,
+  simultaneous multi-contact warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionReducesSlide`,
+  live box-box manifold warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionReducesSlide`,
+  live dynamic/dynamic box-manifold warm-started friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionReducesSlip`,
+  stacked static/dynamic plus dynamic/dynamic box-manifold warm-started
+  friction coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionReducesSlip`,
+  multi-top stacked box-manifold warm-started friction contact-stage coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionReducesSlip`,
+  plus default `World::step()` warm-started friction schedule coverage in
+  `World.RigidBodyContactStageAvbdWarmStartedFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedStaticOwnedFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedKinematicOwnedFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedEnabledPeerWithDisabledConfigFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedMultipleConfiguredContactsFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedBoxManifoldFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedDynamicBoxManifoldFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedStackedBoxManifoldFrictionRunsThroughDefaultWorldStep`,
+  `World.RigidBodyContactStageAvbdWarmStartedMultiTopStackedBoxManifoldFrictionRunsThroughDefaultWorldStep`,
+  and
+  `World.RigidBodyContactStageAvbdWarmStartedDynamicFrictionRunsThroughDefaultWorldStep`,
+  while
   unsupported envelopes fall back to the existing sequential-impulse path. The
   private rigid contact snapshot now derives box face/edge/corner endpoint
-  feature IDs and scopes row ordinals per canonical endpoint pair for narrower
-  warm-start persistence, cylinder side/cap/rim and capsule
-  side/top-cap/bottom-cap endpoint features extend the same private identity
-  path beyond boxes, and the private rigid row path now has point-joint linear,
-  angular, and combined row builders for fixed-anchor
+  feature IDs, scopes row ordinals per canonical endpoint pair, and assigns
+  same-feature manifold rows from deterministic canonical-local point ordering
+  for narrower warm-start persistence, including endpoint-order row-identity
+  evidence, actual `World::collide()` sphere/plane contact-point replay,
+  sphere/mesh-face, sphere/mesh-edge, mesh-vertex replay, and
+  mesh-face/mesh-edge/mesh-vertex small-pose persistence plus endpoint-order
+  stability,
+  cylinder/capsule cap/side/rim small-pose persistence and endpoint-order
+  stability, and live box-box manifold box-face feature evidence. The first
+  wider live box-pile friction row-persistence regression now preserves per-pair
+  row ordinals, friction coefficients, Coulomb bounds, and warm-started friction
+  dual state across a small pose nudge; the multi-top companion preserves the
+  same row state across two lower supports and two independent upper dynamic
+  bodies; the contact-order replay companion
+  keeps those row keys and lambdas stable when the live contact vector is
+  reversed; and the endpoint-order regression keeps those per-pair bounds while
+  projecting paired tangent duals into the swapped physical tangent basis. The
+  live contact-stage/default-step pile companions now carry the same two-lower
+  plus spanning-top stack through `RigidBodyContactStage`, reducing top/lower
+  tangential slip in both schedules.
+  Cylinder side/cap/rim and
+  capsule side/top-cap/bottom-cap endpoint
+  features extend the same private identity path beyond boxes, and known and
+  unknown-index contacts now map world points through body and collision-shape
+  local transforms before feature coding,
+  while explicit endpoint-A/B compound shape-index feature coding uses
+  narrow-phase shape-local contact points; actual `World::collide()`
+  sphere/cylinder/capsule/plane/mesh contacts now cover the primitive-feature
+  path, including shape-scoped sphere body features, and
+  single-shape and uniquely containing compound-shape fallback coverage remains
+  in the rigid snapshot path.
+  Persisting private rigid contact friction rows now retain their
+  previous tangent directions and project the warm-started paired dual into the
+  current tangent basis when the contact normal rotates. The private rigid row
+  path now has point-joint linear, angular,
+  and combined row builders for fixed-anchor
   translation and orientation constraints, with step-start previous values
   seeded for AVBD alpha regularization. Those private point-joint rows can now
   be appended to the World rigid snapshot/solve/apply wrapper and combined step
@@ -415,26 +520,544 @@ its own line so status updates remain git-history friendly.
   and the categorized `sx_rigid_limited_joints` py-demo. The first AVBD
   rigid-constraint `py-demos` scene,
   `avbd_rigid_fixed_joint_contact`, exposes the fixed-joint/contact slice as a
-  user-visible showcase. Public free-rigid-body revolute velocity actuators now
-  extract to private bounded AVBD angular-motor rows, with persistent
-  contact-stage motor inventory, a categorized `avbd_rigid_revolute_motor`
-  py-demo, and the first dashboard benchmark row for that public motor path.
+  user-visible showcase. Public free-rigid-body revolute/prismatic velocity
+  actuators now extract to private bounded AVBD angular/linear motor rows, with
+  persistent contact-stage motor inventory, categorized
+  `avbd_rigid_revolute_motor` and `avbd_rigid_prismatic_motor` py-demos,
+  dashboard benchmark rows for those public motor paths, and tracked
+  visual/benchmark packets.
+  Public articulated one-DOF velocity motors now also expose command-update
+  behavior through the categorized `avbd_articulated_revolute_motor` and
+  `avbd_articulated_prismatic_motor` py-demos, with tracked visual/benchmark
+  packets for both paths, while
+  `avbd_articulated_motor_breakable_joint` exposes the same-multibody public
+  articulated motor break/reset lifecycle with post-reset reversed-command
+  plus weak re-arm coverage and a tracked packet,
+  `avbd_articulated_prismatic_pair_motor_breakable_joint` exposes the
+  same-multibody public articulated prismatic motor break/reset lifecycle with
+  post-reset reversed-command plus weak re-arm coverage and a tracked packet,
+  and
+  `avbd_articulated_prismatic_motor_breakable_joint` exposes the world-anchored
+  public articulated prismatic motor break/reset lifecycle with a tracked
+  packet plus post-reset reversed-command and weak re-arm coverage, while
+  `avbd_articulated_world_revolute_motor_breakable_joint` exposes the
+  world-anchored public articulated revolute motor break/reset lifecycle with a
+  tracked packet and post-reset reversed-command plus weak re-arm coverage. The
+  bounded AVBD World
+  dashboard slice now includes matching public articulated
+  revolute/prismatic/breakable motor step rows, the active prismatic
+  breakable-motor step row, the active world-prismatic breakable-motor step
+  row, the active world-revolute breakable-motor step row, plus public
+  free-rigid/articulated breakable fixed point-joint step rows backed by
+  tracked visual/benchmark packets, plus public free-rigid/world-link/
+  same-multibody spherical breakable point-joint rows backed by tracked packets.
   Public free-rigid-body point joints also expose a narrow break-force and
   broken-state lifecycle, mark solved AVBD point joints broken when row load
   reaches the threshold, skip broken joints during later extraction, and expose
-  the `avbd_rigid_breakable_joint` py-demo. Public multibody/articulated AVBD
-  state is only narrowly wired: the private endpoint layer distinguishes free
+  fixed/revolute/prismatic/spherical binary save/load broken-state reset
+  coverage plus same-multibody/world-link articulated fixed/revolute/prismatic/
+  spherical binary broken-state round-trips preserving one-DOF command/effort-limit
+  motor state, dartpy same-multibody/world-link fixed/spherical and one-DOF
+  design-mode rebuild checks, and
+  free-rigid/articulated design-mode AVBD point-joint stiffness facade binary
+  persistence plus direct C++/dartpy validation of public articulated stiffness
+  defaults, finite setters, invalid setter rejection, and C++/dartpy
+  endpoint-ownership rejection plus the
+  `avbd_rigid_breakable_joint` py-demo with reset/re-engagement coverage
+  and tracked packet evidence
+  plus `avbd_rigid_spherical_breakable_joint` for spherical anchor-only
+  reset/re-engagement with tracked packet evidence; both free-rigid breakable
+  demo regressions verify weak re-arm breaks again after high-force reset.
+  Public articulated fixed
+  point-joints now also expose the narrow world-link break/reset lifecycle
+  through the categorized `avbd_articulated_breakable_joint` py-demo with
+  tracked packet evidence and the
+  same-multibody break/reset lifecycle through
+  `avbd_articulated_fixed_pair_breakable_joint` with tracked packet evidence,
+  both with weak re-arm breakage coverage after reset,
+  while public articulated
+  spherical point-joints expose the matching linear-only
+  anchor break/reset path through
+  `avbd_articulated_spherical_breakable_joint` for world-link endpoints and
+  `avbd_articulated_spherical_pair_breakable_joint` for same-multibody
+  endpoints, both with tracked packet evidence and weak re-arm breakage
+  coverage after reset. A narrow
+  `avbd_articulated_high_ratio_chain` py-demo,
+  `BM_AvbdArticulatedHighRatioChainStep` dashboard row, and
+  [`avbd-articulated-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-articulated-high-ratio-chain-packet.json)
+  now also cover a five-link variational-chain smoke with a 200:1 heavy tip,
+  and `avbd_paper_scale_high_ratio_chain`,
+  `PaperScaleHighRatioChainStaysFiniteAndResets`, plus
+  `BM_AvbdPaperScaleHighRatioChainStep` cover a 50-link/50,000:1 finite/reset
+  and visual/CPU benchmark smoke through configured `World::step()` solve-budget
+  fields with
+  [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
+  visual/benchmark evidence, while keeping the same-hardware comparison and GPU
+  gates open. Public
+  empty-scene corpus baseline coverage is now visible through
+  `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
+  default source parameters, and the `sceneEmpty` zero-count invariant, and
+  `BM_AvbdEmptyWorldStep`; the tracked
+  `avbd-empty-baseline-packet.json` records the corresponding headless
+  visual-capture hashes and Google Benchmark row. The first non-empty
+  2D source row is now visible through `avbd_demo2d_ground`, which matches the
+  `avbd-demo2d` Ground source revision, scene index, one static slab, one rigid
+  body, one collision shape, no joints, and no dynamic bodies, plus
+  `BM_AvbdDemo2dGroundStep`. The tracked
+  `avbd-demo2d-ground-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; after skipping static-only contact queries,
+  no-op rigid dynamics stages, clean frame-cache graph execution, and the clean
+  no-work default step pipeline with a cheap scratch reset, it records DART
+  about 1.51x faster than the native static Ground runner on this host, closing
+  that narrow CPU-win gate. The
+  first one-DOF motor source-demo row is now visible through
+  `avbd_demo2d_motor`, which matches the
+  `avbd-demo2d` Motor scene's source revision, scene index, default parameters,
+  20 rad/s target speed, and 50 N m effort bound, plus
+  `BM_AvbdDemo2dMotorStep`. The tracked
+  `avbd-demo2d-motor-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing. After the rigid contact stage skips contact
+  queries for worlds with no collision geometry in prepare/execute, the packet
+  still records the DART public World row about 6.18x slower than the native
+  source runner on this host, so the CPU-win gate remains open. The next
+  non-empty
+  `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_hanging_rope`, which matches the `avbd-demo2d` Hanging Rope
+  source revision, scene index, 49 regular links, one 10 m endpoint block, 49
+  linear-only point joints, and 50 collision shapes, plus
+  `BM_AvbdDemo2dHangingRopeStep`. The tracked
+  `avbd-demo2d-hanging-rope-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 7.84x slower
+  than the native Hanging Rope runner on this host, keeping that CPU-win gate
+  open. The first radial distance-spring source harnesses are now visible
+  through `avbd_demo2d_spring` and `avbd_demo2d_spring_ratio`, which match the
+  `avbd-demo2d` Spring and Spring Ratio source rows over public free-rigid
+  distance springs, plus `BM_AvbdDemo2dSpringStep` and
+  `BM_AvbdDemo2dSpringRatioStep`. Their tracked
+  visual/DART-benchmark/native-timing packets record DART about 5.09x slower
+  than the native Spring runner and about 4.25x slower than the native Spring
+  Ratio runner on this host, so CPU performance resolution and GPU parity
+  remain open. The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_fracture`, which matches the `avbd-demo2d` Fracture source
+  revision, scene index, 11 chain links, two dynamic supports, 15 falling
+  blocks, 10 breakable fixed joints, and 29 collision shapes, plus
+  `BM_AvbdDemo2dFractureStep`. Focused integration coverage now also verifies
+  that the source-row fixed joints fracture, reset at a high break force, stay
+  unbroken, and reduce their anchor residuals again. The tracked
+  `avbd-demo2d-fracture-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; after a refreshed same-source
+  timing run, it records DART about 1.20x faster than the native Fracture
+  runner on this host, closing only that narrow source-row CPU gate. Later
+  local cleanup replaces the contact stage's duplicate prepare-time collision
+  query with collision-shape-count constraint prewarm and aligns live
+  constrained-pair filtering with the native solver, and that refreshed packet
+  now captures the comparison.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_dynamic_friction`, which matches the `avbd-demo2d` Dynamic
+  Friction source revision, scene index, 11 sliding boxes, source friction
+  coefficients from 5.0 down to 0.0, a static ground, and 12 collision shapes,
+  plus `BM_AvbdDemo2dDynamicFrictionStep`. The tracked
+  `avbd-demo2d-dynamic-friction-packet.json` adds headless visual capture,
+  DART benchmark JSON, and native source timing; it records DART about 1.83x
+  faster than the native Dynamic Friction runner on this host, closing that
+  narrow CPU-win gate while leaving broad friction scenes and GPU packets open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_static_friction`, which matches the `avbd-demo2d` Static
+  Friction source revision, scene index, one rotated static ground slab, 11
+  rotated dynamic boxes, uniform source friction 1.0, and 12 collision shapes,
+  plus `BM_AvbdDemo2dStaticFrictionStep`. The tracked
+  `avbd-demo2d-static-friction-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 2.68x faster
+  than the native Static Friction runner on this host, closing that narrow
+  CPU-win gate while leaving broad friction scenes and GPU packets open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_pyramid`, which matches the `avbd-demo2d` Pyramid source
+  revision, scene index, a static ground, 210 dynamic boxes in the source
+  pyramid layout, and 211 collision shapes, plus
+  `BM_AvbdDemo2dPyramidStep`. The tracked
+  `avbd-demo2d-pyramid-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 9.84x faster than the
+  10,000-step native Pyramid runner on this host, closing that narrow row only.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_stack`, which matches the `avbd-demo2d` Stack source revision,
+  scene index, 20 vertical dynamic boxes over static ground, and 21 collision
+  shapes, plus `BM_AvbdDemo2dStackStep`. The tracked
+  `avbd-demo2d-stack-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 2.17x faster than the
+  native Stack runner on this host, closing that narrow row only.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_stack_ratio`, which matches the `avbd-demo2d` Stack Ratio
+  source revision, scene index, six geometric-size dynamic boxes over static
+  ground, and 7 collision shapes, plus `BM_AvbdDemo2dStackRatioStep`. The
+  tracked `avbd-demo2d-stack-ratio-packet.json` adds headless visual capture,
+  DART benchmark JSON, and native source timing; it records DART about 2.22x
+  faster than the native Stack Ratio runner on this host, closing that narrow
+  row only.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_rod`, which matches the `avbd-demo2d` Rod source revision,
+  scene index, 20 rigid links, one static anchor link, 19 all-axis public fixed
+  joints, and 20 collision shapes, plus `BM_AvbdDemo2dRodStep`. The tracked
+  `avbd-demo2d-rod-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 9.58x slower than the
+  native Rod runner on this host, so that CPU-win gate remains open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_soft_body`, which matches the `avbd-demo2d` Soft Body source
+  revision, scene index, one static ground slab, two 15x5 dynamic rigid-box
+  lattices, 260 finite-stiffness all-axis public fixed joints, 224 diagonal
+  ignored collision pairs, and 151 collision shapes, plus
+  `BM_AvbdDemo2dSoftBodyStep`. The tracked
+  `avbd-demo2d-soft-body-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 6.30x slower
+  than the native Soft Body runner on this host, so that CPU-win gate remains
+  open. Stable same-order AVBD row inventories now warm-start in place and row
+  ordinal counters now use reserved endpoint-pair hash maps. The rigid row
+  append paths seed fallback snapshot body-index cache entries, and the rigid
+  row driver also skips per-body row-index scratch for row families absent in a
+  solve, keeps unchanged source-row index layouts warm across frames, and
+  routes single-family point-pair/angular solves without rebuilding combined row
+  vectors, while one-new-row point-joint/distance-spring appends skip endpoint
+  row-counter hash-map setup. Friction tangent-pair rows now reuse precomputed
+  world anchors across force and direction stamping in one pair evaluation. The
+  contact-stage AVBD path now reuses a
+  scratch contact snapshot through an in-place builder, skips pair-constraint
+  extraction when no point-joint/distance-spring configs exist, and
+  extracts/appends point-joint and distance-spring families independently when
+  only one family exists. The rigid snapshot solve now also clears absent
+  row-family inventories directly instead of calling empty
+  contact/joint/motor/spring builders, small point-joint/motor/distance-spring
+  row builders use stack descriptor/active-row storage for up to 16 candidate
+  rows instead of allocating temporary vectors, and the split rigid-body velocity
+  stage assembles force batches only for advanceable bodies, but the packet
+  CPU-win gate stays open until refreshed same-command evidence beats the native
+  runner.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_joint_grid`, which matches the `avbd-demo2d` Joint Grid source
+  revision, scene index, 625 rigid boxes, two static top-corner anchors, 1200
+  all-axis public fixed joints, and 625 collision shapes, plus
+  `BM_AvbdDemo2dJointGridStep`. The tracked
+  `avbd-demo2d-joint-grid-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 2.06x slower
+  than the native Joint Grid runner on this host after reusing per-body
+  row-index scratch, caching snapshot body indices, reusing row-assembly
+  world-anchor computations through force/Hessian/Jacobian stamping, and
+  caching all-axis angular-row orientation errors, with the source diagonal
+  ignore-collision filter configured through DART's public per-pair API.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_cards`, which matches the `avbd-demo2d` Cards source revision,
+  scene index, one static ground slab, 40 thin dynamic cards across five
+  levels, and 41 collision shapes, plus `BM_AvbdDemo2dCardsStep`. The tracked
+  `avbd-demo2d-cards-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 5.38x slower than the
+  native Cards runner on this host. Later friction tangent-pair world-anchor
+  reuse, row-state constraint-vector reuse, and shared-anchor reuse removed
+  local contact-heavy duplicate work but have not refreshed this packet,
+  keeping that CPU-win gate open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_rope`, which matches the `avbd-demo2d` Rope source revision,
+  scene index, 20 rigid links, 19 linear-only public spherical point joints,
+  and 20 collision shapes, plus `BM_AvbdDemo2dRopeStep`. The tracked
+  `avbd-demo2d-rope-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 5.20x slower than the
+  native Rope runner on this host, so that CPU-win gate remains open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_heavy_rope`, which matches the `avbd-demo2d` Heavy Rope source
+  revision, scene index, 19 regular links, a 30 m endpoint block, 19
+  linear-only public spherical point joints, and 20 collision shapes, plus
+  `BM_AvbdDemo2dHeavyRopeStep`. The tracked
+  `avbd-demo2d-heavy-rope-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 5.85x slower
+  than the native Heavy Rope runner on this host after reusing per-body
+  row-index scratch, caching snapshot body indices, avoiding redundant
+  row-assembly world-anchor transforms, reusing precomputed distance-spring
+  Hessian/Jacobian world points, skipping capped finite-row constraint
+  recomputation, and caching grouped angular-row orientation errors, so
+  that CPU-win gate remains open.
+  The next `avbd-demo2d` source row is now visible through
+  `avbd_demo2d_net`, which matches the `avbd-demo2d` Net source revision, scene
+  index, one static ground slab, 40 endpoint-pinned net links, 50 falling rigid
+  blocks, 39 linear-only public spherical point joints, and 91 collision shapes,
+  plus `BM_AvbdDemo2dNetStep`. The tracked
+  `avbd-demo2d-net-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 1.23x slower than the
+  native Net runner on this host after caching snapshot body indices, reusing
+  row-assembly world-anchor computations through force/Hessian/Jacobian
+  stamping, reusing friction tangent-pair world anchors, reusing row-state
+  tangent constraint values, reusing shared tangent-row anchors, skipping capped
+  finite-row constraint recomputation, and caching grouped angular-row
+  orientation errors, with local-anchor point-joint extraction now using a
+  stable full-rank linear basis for spherical point joints, so that CPU-win gate
+  remains open.
+  The next 3D source row is now visible through `avbd_demo3d_ground`, which
+  matches the
+  `avbd-demo3d` Ground source revision, scene index, a static floor, falling
+  rigid box, 2 rigid bodies, and 2 collision shapes, plus
+  `BM_AvbdDemo3dGroundStep`. The tracked `avbd-demo3d-ground-packet.json` adds
+  headless visual capture, DART benchmark JSON, and native source timing; it
+  records DART about 1.11x faster than the native Ground runner on this host,
+  closing that narrow row only. The next non-empty source row after that is
+  visible through `avbd_demo3d_dynamic_friction`, which matches the
+  `avbd-demo3d` Dynamic Friction source revision, scene index, 11 sliding rigid
+  boxes, a static floor, and 12 collision shapes, plus
+  `BM_AvbdDemo3dDynamicFrictionStep`. The tracked
+  `avbd-demo3d-dynamic-friction-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 1.41x faster
+  than the native Dynamic Friction runner on this host, closing that narrow row
+  only. The next non-empty source row after that is visible through
+  `avbd_demo3d_static_friction`, which matches the
+  `avbd-demo3d` Static Friction source revision, scene index, a static floor,
+  inclined static ramp, 11 sliding rigid boxes, and 13 collision shapes, plus
+  `BM_AvbdDemo3dStaticFrictionStep`. The tracked
+  `avbd-demo3d-static-friction-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 1.08x faster
+  than the native Static Friction runner on this host, closing that narrow
+  CPU-win gate. The next non-empty source row after that is visible through
+  `avbd_demo3d_pyramid`, which matches the `avbd-demo3d` Pyramid source
+  revision, scene index, a static ground, 136 dynamic boxes in the triangular
+  pile layout, and 137 collision shapes, plus
+  `BM_AvbdDemo3dPyramidStep`. The tracked `avbd-demo3d-pyramid-packet.json`
+  adds headless visual capture, DART benchmark JSON, and native source timing;
+  it records DART about 2.83x faster than the native Pyramid runner on this
+  host, closing that narrow row only. The next non-empty source row after that
+  is visible through `avbd_demo3d_rope`, which matches the `avbd-demo3d` Rope
+  source revision, scene index, 20 rigid links, 19 anchored linear-only point
+  joints, and 21 collision shapes, plus `BM_AvbdDemo3dRopeStep`. The tracked
+  `avbd-demo3d-rope-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 3.75x slower than the
+  native Rope runner on this host, so that CPU-win gate remains open. The next
+  non-empty source row after that is visible through
+  `avbd_demo3d_heavy_rope`, which matches the `avbd-demo3d` Heavy Rope source
+  revision, scene index, 19 regular links, a 5 m endpoint block, 19 anchored
+  linear-only point joints, and 21 collision shapes, plus
+  `BM_AvbdDemo3dHeavyRopeStep`. The tracked
+  `avbd-demo3d-heavy-rope-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 3.84x slower
+  than the native Heavy Rope runner on this host, so that CPU-win gate remains
+  open. The next non-empty source row after that is visible through
+  `avbd_demo3d_stack`, which matches the `avbd-demo3d` Stack
+  source revision, scene index, 10 vertical dynamic boxes over static ground,
+  and 11 collision shapes, plus `BM_AvbdDemo3dStackStep`. The tracked
+  `avbd-demo3d-stack-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 1.80x faster than the
+  native Stack runner on this host, closing that narrow row only. The next
+  non-empty source row after that is visible through
+  `avbd_demo3d_stack_ratio`, which matches the `avbd-demo3d` Stack Ratio source
+  revision, scene index, four geometric-size dynamic boxes over static ground,
+  and 5 collision shapes, plus `BM_AvbdDemo3dStackRatioStep`. The tracked
+  `avbd-demo3d-stack-ratio-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 2.32x faster
+  than the native Stack Ratio runner on this host, closing that narrow row only.
+  The next non-empty source row after that is visible through
+  `avbd_demo3d_soft_body`, which matches the `avbd-demo3d` Soft Body source
+  revision, scene index, three 4x4x4 dynamic rigid-box lattices, 432
+  finite-stiffness all-axis fixed joints, 648 diagonal ignored collision pairs,
+  and 193 collision shapes, plus `BM_AvbdDemo3dSoftBodyStep`. The tracked
+  `avbd-demo3d-soft-body-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 1.21x faster
+  than the native Soft Body runner on this host, closing that narrow CPU row
+  only. Stable same-order AVBD row inventories now warm-start in place and row
+  ordinal counters now use reserved endpoint-pair hash maps. The rigid row
+  append paths seed fallback snapshot body-index cache entries, and the rigid
+  row driver also skips per-body row-index scratch for row families absent in a
+  solve, keeps unchanged source-row index layouts warm across frames, and
+  routes single-family point-pair/angular solves without rebuilding combined
+  row vectors, while one-new-row point-joint/distance-spring appends skip
+  endpoint row-counter hash-map setup. The contact-stage AVBD path now reuses a
+  scratch contact snapshot through an in-place builder, skips pair-constraint
+  extraction when no point-joint/distance-spring configs exist, and
+  extracts/appends point-joint and distance-spring families independently when
+  only one family exists. The rigid snapshot solve now also clears absent
+  row-family inventories directly instead of calling empty
+  contact/joint/motor/spring builders, small point-joint/motor/distance-spring
+  row builders use stack descriptor/active-row storage for up to 16 candidate
+  rows instead of allocating temporary vectors, and the split rigid-body velocity
+  stage assembles force batches only for advanceable bodies, but the packet
+  CPU-win gate stays open until refreshed same-command evidence beats the native
+  runner. The next non-empty source row after that is visible through
+  `avbd_demo3d_bridge`, which matches the `avbd-demo3d` Bridge source revision,
+  scene index, 40 planks, 50 load boxes, 78 paired linear-only point joints,
+  and 91 collision shapes, plus `BM_AvbdDemo3dBridgeStep`. The tracked
+  `avbd-demo3d-bridge-packet.json` adds headless visual capture, DART benchmark
+  JSON, and native source timing; it records DART about 1.61x faster than the
+  native Bridge runner on this host, closing that narrow row only. The next
+  non-empty source row after that is visible through
+  `avbd_demo3d_breakable`, which matches the
+  `avbd-demo3d` Breakable source revision, scene index, 19 rigid bodies, 10
+  breakable fixed joints, and 19 collision shapes, plus
+  `BM_AvbdDemo3dBreakableStep`. Focused integration coverage now also verifies
+  that the source-row fixed joints fracture, reset at a high break force, stay
+  unbroken, and reduce their anchor residuals again. The tracked
+  `avbd-demo3d-breakable-packet.json` adds headless visual capture, DART
+  benchmark JSON, and native source timing; it records DART about 1.42x faster
+  than the native Breakable runner on this host. The next `avbd-demo3d` source
+  rows are now visible through `avbd_demo3d_spring` and
+  `avbd_demo3d_spring_ratio`, which match the `avbd-demo3d` Spring and Spring
+  Ratio source rows over public free-rigid distance springs, plus
+  `BM_AvbdDemo3dSpringStep` and
+  `BM_AvbdDemo3dSpringRatioStep`. Their tracked
+  visual/DART-benchmark/native-timing packets record DART about 1.96x slower
+  than the native Spring runner and about 3.70x slower than the native Spring
+  Ratio runner on this host, so CPU performance resolution and GPU parity
+  remain open. Other missing corpus items include Spring and Spring Ratio GPU
+  gates, the 2D Motor, Hanging Rope, 2D Cards, 2D Rod, 2D Joint Grid,
+  2D Rope, 2D Heavy Rope, 2D Net, 3D Rope, and 3D Heavy Rope CPU gaps, remaining
+  CPU reference wins, broad 2D stack variants, and GPU packets remain missing.
+  multibody/articulated AVBD state is only narrowly wired: the private endpoint
+  layer distinguishes free
   rigid-body endpoints from multibody links, fixed multibody-link point-joint
-  configs can bridge into the variational articulated solve path, and the branch
+  configs can bridge into the variational articulated solve path, the branch
   has a `BM_AvbdRigidEndpointClassification` benchmark row plus focused C++
-  bridge tests. The related `variational_endpoint_loop_closure` py-demo previews
-  public loop-closure behavior but does not exercise the private AVBD config
-  extractor. The next local slice should extend masked articulated rows or
-  broaden rigid-contact feature
-  persistence, while the plan/dev-task surfaces must also keep the 2D/3D
-  source-demo corpus, paper/video scenes, CPU/GPU benchmark packets, and
-  performance leadership gates explicit instead of treating the current
-  free-rigid rows as AVBD completion.
+  bridge tests, and public same-multibody/world-link articulated
+  fixed/revolute/prismatic/spherical facades now feed the current-pose extractor
+  through C++/dartpy with focused spherical linear-only pinned-anchor behavior
+  including explicit link-link/world-link anchors,
+  bounded revolute/prismatic velocity-actuator,
+  same-multibody/world-anchored tiny effort-limit and command-update coverage,
+  private revolute/prismatic command-update, fixed-row and revolute/prismatic
+  break/reset re-engagement,
+  same-multibody/world-anchored public one-DOF motor break/skip and
+  reset/re-engagement,
+  selected direct same-multibody/world-link one-DOF break/skip/reset
+  non-cardinal basis checks,
+  including focused dartpy stepping coverage for same-multibody/world-link
+  revolute and prismatic explicit-anchor cases,
+  same-multibody/world-anchored public one-DOF motor break/reset
+  re-engagement, movable-movable same-multibody revolute/prismatic motor
+  break/reset with explicit off-origin anchors covered in C++/dartpy,
+  direct/private and current-pose movable-pair revolute plus non-cardinal
+  current-pose revolute/prismatic motor-axis coverage, public
+  same-multibody/world-anchored articulated revolute/prismatic
+  floating-endpoint plus selected off-origin-anchor facade non-cardinal
+  motor-axis coverage,
+  current-pose
+  fixed/prismatic reset regressions, private current-pose revolute/prismatic
+  tiny-limit movable-pair coverage, public same-multibody/world-link one-DOF
+  non-cardinal finite-limit coverage, public same-multibody movable-pair
+  revolute/prismatic non-cardinal motor-axis and finite-limit coverage, public
+  same-multibody movable-pair revolute/prismatic broken-state save/load/reset
+  coverage, private generated current-pose movable-pair fixed and
+  revolute/prismatic broken-state save/load/reset coverage, private generated current-pose
+  movable-pair spherical broken-state save/load/reset coverage, direct private
+  world-link one-DOF broken-state save/load/reset coverage preserving private
+  `AvbdRigidWorldPointJointConfig` basis/mask/anchor state, private
+  current-pose spherical reset regression for linear-only rows, and
+  fixed break/save/load/reset with dartpy stepping coverage, explicit local/world anchor projection including
+  same-multibody and world-anchored off-origin fixed/revolute/prismatic anchors and
+  revolute/prismatic motors,
+  world-fixed break/reset, same-multibody fixed break/reset py-demo coverage,
+  same-multibody/world-link spherical linear-row break/skip and reset including
+  focused dartpy stepping coverage and categorized same-multibody/world-link
+  py-demos, same-multibody link-link and world-link fixed/spherical save/load
+  rebuilding of the private all-axis and linear rows, including selected dartpy
+  same-multibody/world-link fixed/spherical and one-DOF design-mode rebuild
+  checks, same-multibody/world-link
+  revolute/prismatic motor save/load rebuilding of the private hard rows and
+  free-axis motor row with selected non-cardinal axis-basis persistence,
+  same-multibody/world-link
+  fixed/spherical/revolute/prismatic broken-state save/load/reset persistence
+  including movable-movable fixed coverage and selected non-cardinal one-DOF
+  motor rows with focused C++ binary round-trips preserving one-DOF
+  command/effort-limit motor state plus dartpy same-multibody/world-link
+  fixed/spherical and one-DOF binary round-trips and direct
+  break/skip/reset non-cardinal basis checks,
+  public free-rigid/articulated AVBD point-joint
+  stiffness facade binary persistence plus direct C++/dartpy validation of
+  articulated stiffness defaults, finite setters, invalid setter rejection, and
+  C++/dartpy endpoint-ownership rejection for same-link/cross-multibody/cross-world
+  articulated point-joint requests,
+  a narrow five-link 200:1 high mass-ratio
+  articulated-chain smoke py-demo plus dashboard row, a focused 50-link/50,000:1
+  finite/reset stability smoke and matching
+  `BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
+  through configured `World::step()` solve-budget fields, world-anchor
+  coverage, and a
+  per-multibody link-index cache in the
+  articulated point-joint extractor so same-multibody/world-link AVBD private
+  rows no longer rescan structure membership for every point-joint config.
+  Rigid AVBD point-joint and distance-spring extraction now also share a
+  projectable-body metadata lookup, avoiding a second transform lookup after
+  endpoint classification in the pair-constraint hot path and reusing the
+  already-checked projectable transform, mass, and static tag when contact
+  snapshots materialize body state. The same metadata path also skips
+  static-static rigid point-joint and distance-spring pairs before input or row
+  construction.
+  The
+  related `variational_endpoint_loop_closure` py-demo previews public
+  loop-closure behavior but does not exercise the private AVBD config extractor.
+  The next local slice should broaden persistent articulated motor/fracture
+  lifecycle coverage beyond the current revolute/prismatic command-update,
+  movable link-pair motor/fixed reset projection, direct/private and
+  current-pose movable-pair fixed/revolute/prismatic break/reset coverage,
+  current-pose/public same-multibody and world-anchored
+  floating-endpoint plus selected off-origin-anchor facade non-cardinal axis and
+  selected save/load and broken-state save/load/reset non-cardinal axis-basis
+  persistence plus selected direct break/skip/reset non-cardinal axis-basis
+  checks plus
+  same-multibody/world-link one-DOF and public movable-pair finite-limit plus
+  broken-state save/load/reset coverage with non-cardinal axis-basis checks,
+  private generated current-pose movable-pair fixed, one-DOF, and spherical
+  broken-state save/load/reset coverage,
+  private spherical movable-pair linear-row reset coverage, private fixed-row reset,
+  narrow breakable benchmark rows, world-fixed reset,
+  same-multibody/world-anchored one-DOF motor break/skip and
+  reset/re-engagement, including the focused dartpy same-multibody/world-link
+  revolute/prismatic explicit-anchor stepping regressions with post-reset
+  endpoint/axis-shape assertions including non-cardinal same-multibody pair and
+  world-link reset cases,
+  spherical linear-row break/skip and reset including the focused dartpy
+  spherical stepping regression,
+  matched-metadata empty-scene baseline smoke, the 2D Fracture/3D Breakable
+  source-demo fixed-joint break/reset coverage, the first non-empty
+  `avbd-demo2d` Ground, Motor, Hanging Rope, Fracture, Dynamic Friction, Static
+  Friction, Pyramid, Cards, Stack, Stack Ratio, Rod, Joint Grid, Rope, Heavy
+  Rope, and Net source-row packets, the Spring and Spring Ratio source packets
+  plus open CPU/GPU gates, the
+  `avbd-demo3d`
+  Ground source-row
+  py-demo, benchmark row, and packet, the `avbd-demo3d` Dynamic Friction
+  source-row py-demo, benchmark row, and packet, the `avbd-demo3d` Static
+  Friction source-row py-demo, benchmark row, and packet, the `avbd-demo3d`
+  Pyramid source-row py-demo, benchmark row, and packet, the `avbd-demo3d`
+  Rope, Heavy Rope, Spring, and Spring Ratio source-row py-demos, benchmark
+  rows, and packets, the `avbd-demo3d` Stack, Stack Ratio, and Soft Body source-row py-demos,
+  benchmark rows, and packets, the `avbd-demo3d` Breakable source-row py-demo,
+  benchmark row, and packet, and one-DOF
+  break/reset checks,
+  expand
+  articulated facade coverage beyond the new link-link,
+  world-link, explicit-anchor, spherical linear-only point-joint entrypoints,
+  same-multibody link-link/world-link fixed/spherical save/load rebuilding
+  including dartpy same-multibody/world-link fixed/spherical and one-DOF
+  design-mode rebuild checks, and
+  same-multibody/world-link revolute/prismatic motor save/load rebuilding
+  including selected non-cardinal axis-basis persistence and restored
+  same-multibody/world-link endpoint-shape assertions, and
+  same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
+  save/load/reset persistence including explicit-anchor fixed and selected
+  non-cardinal one-DOF motor rows with restored effort-limit state plus
+  dartpy same-multibody/world-link fixed/spherical and one-DOF binary
+  round-trips and direct break/skip/reset non-cardinal basis checks, plus
+  dartpy fixed point-joint break/skip/reset
+  stepping for same-multibody and world-link explicit all-axis anchor rows
+  with endpoint-shape assertions, dartpy same-multibody/world-link spherical
+  linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
+  one-DOF motor break/skip/reset endpoint/axis-shape assertions and
+  re-engagement,
+  broaden rigid-contact feature persistence beyond the current
+  box/sphere/cylinder/capsule/plane/mesh known/unknown shape-frame feature
+  identity tests, endpoint-A/B explicit-shape local-point evidence, actual
+  narrow-phase primitive-feature evidence, same-feature sphere/plane replay plus
+  sphere/mesh-face, sphere/mesh-edge, mesh-vertex replay, and
+  mesh-face/mesh-edge/mesh-vertex small-pose persistence, cylinder/capsule
+  cap/side/rim small-pose persistence, live box-box row-order evidence,
+  endpoint-order row-identity evidence, spanning-top and multi-top box-pile
+  row-persistence evidence, plus
+  private rigid tangent-dual projection, or
+  implement the first missing row from the new
+  [`avbd-demo-corpus.md`](104-vertex-block-descent-solver/avbd-demo-corpus.md)
+  matrix, while the plan/dev-task surfaces must also keep the 2D/3D source-demo
+  corpus, paper/video scenes, CPU/GPU benchmark packets, and performance
+  leadership gates explicit instead of treating the current free-rigid rows as
+  AVBD completion.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, PD Hessian
@@ -456,27 +1079,54 @@ its own line so status updates remain git-history friendly.
   proving DART beats both the reference demo repositories and the published
   paper numbers for every claimed CPU/GPU case.
 
+### PLAN-105: Simplicits Geometry-Agnostic Elastic Solver
+
+- Owner doc:
+  [`105-simplicits-geometry-agnostic-elastic-solver.md`](105-simplicits-geometry-agnostic-elastic-solver.md)
+- Status: Active
+- Horizon: Next
+- Dimension: Algorithm extensibility
+- Next step: Use the PLAN-105 source list and solver-family intake to build a
+  corpus manifest before implementation. The manifest must classify every
+  Simplicits paper/project/video/Kaolin row into tests, benchmark JSON,
+  `py-demos`, visual evidence, CPU reference comparison, GPU parity, and DART 7
+  pipeline surface. Only after that, start a dedicated `docs/dev_tasks/`
+  tracker and prototype the
+  first CPU baked-reduced-basis slice without exposing Simplicits, Kaolin, Warp,
+  Torch, CUDA, solver-registry, ECS, or backend-resource types through the
+  public API.
+- Gate: Simplicits progress is not complete until DART implements the
+  occupancy/point-sampling pipeline, learned or baked skinning-weight reduced
+  basis, reduced mass/deformation-gradient operators, implicit
+  time-integration/Newton solve, boundary/floor/gravity controls, contact,
+  friction, CPU and GPU runtime paths, all paper/site/video/Kaolin demos and
+  supplemental-table benchmark rows, and benchmark JSON proving DART beats
+  Kaolin/reference and paper numbers at matched scene parameters. Every slice
+  must keep public APIs DART-owned and backend-neutral and keep
+  `pixi run lint`, `pixi run build`, focused C++/Python tests, benchmark smokes,
+  `check-api-boundaries`, and relevant CUDA gates green.
+
 ### PLAN-082: Linear-Time Variational Integrator
 
 - Owner doc:
   [`082-variational-integrator-solver.md`](082-variational-integrator-solver.md)
-- Status: Proposed
-- Horizon: Next
+- Status: Active
+- Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Run the O(n) impulse-ABI de-risking spike first — the experimental
-  World has no ABA today (dense `M.ldlt()` solve), and the linear-time claim
-  depends on it — then start Phase A1 (fixed-base MVP on a dense-solve
-  placeholder) under a new `docs/dev_tasks/variational_integrator_solver/`
-  folder. Durable design lives in
-  [`../design/simulation_variational_integrator.md`](../design/simulation_variational_integrator.md);
-  contact/friction is a deferred go/no-go sidecar.
-- Gate: Phase A1 proves symplectic energy behavior (no secular energy drift over
-  ≥1e5 steps where semi-implicit Euler drifts), analytic single-DOF correctness,
-  bounded RIQN iterations with a defined non-convergence error, and
-  determinism/serialization round-trip; Phase A2 proves sub-quadratic O(n)
-  scaling via benchmark JSON; `check-api-boundaries` stays green with no
-  solver/stage/component/backend leak; contact/friction stays behind the
-  contact-roadmap go/no-go.
+- Next step: The VI selector, O(n) inverse-mass path, floating/spherical support,
+  loop closures, scoped C1-C3 contact/friction, dartpy surface, and supported
+  envelope have landed. Continue either by opening the maintainer-owned
+  graduation proposal from
+  [`../dev_tasks/variational_integrator_solver/graduation-criteria.md`](../dev_tasks/variational_integrator_solver/graduation-criteria.md)
+  or by starting the separate arbitrary-geometry contact adapter workstream
+  coordinated with the rigid IPC / deformable IPC geometry stack.
+- Gate: The implemented family remains opt-in behind `MultibodyOptions`;
+  `check-api-boundaries` stays green with no solver/stage/component/backend leak;
+  regression evidence keeps symplectic energy behavior, O(n) scaling,
+  deterministic serialization, loop closures, and the declared contact/friction
+  envelope green. Graduation requires the maintainer-owned `PLAN-` entry and
+  adversarial review; arbitrary link geometry and C4 hard-barrier contact remain
+  explicit follow-up work, not hidden gaps.
 
 ### PLAN-035: Native Collision Feature Dashboard
 
@@ -548,7 +1198,7 @@ its own line so status updates remain git-history friendly.
   visible. A secondary backend (Bencher/CodSpeed) remains optional future work.
   The tracked slice now covers the new DART 7 solver families' end-to-end
   `World::step` surfaces (rigid-body sequential-impulse/IPC, VBD + default
-  deformable grid, FEM bar, AVBD fixed-joint and revolute-motor rows)
+  deformable grid, FEM bar, AVBD fixed-joint, motor, and breakable-joint rows)
   alongside the original core step/scaling rows, and
   `scripts/benchmark_display_names.py` rewrites the raw Google Benchmark names
   into readable chart titles (merge `--humanize`) with family-grouped,
@@ -566,13 +1216,13 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Release transition
 - Next step: Follow the DART 7 implementation order in the release roadmap:
-  finish policy alignment and Gazebo lane split, publish the DART 6.17 support
+  finish policy alignment and Gazebo lane split, publish the `release-6.*` support
   packet, then settle PLAN-042 public API/source-layout topology before freezing
   PLAN-041 official simulation API promotion. Keep research-solver breadth out
   of the DART 7 release blocker set unless a promoted API depends on it.
 - Gate: DART 7 is not release-ready until the clean-break gates in the release
   roadmap have direct evidence, package metadata no longer implies DART
-  6/gz-physics compatibility, and DART 6.17 support scope plus sunset trigger
+  6/gz-physics compatibility, and `release-6.*` support scope plus sunset trigger
   are published.
 
 ### PLAN-041: Official Simulation API Promotion
@@ -582,25 +1232,34 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Consume the PLAN-042 namespace/source-layout decision, then start
-  the simulation-specific readiness audit, promoted-header manifest,
-  Python import-layout transaction, and installed-package smoke design before
-  any broad `experimental/` source-tree move. The readiness audit must keep the
-  promoted `World` double-backed and explicitly defer public scalar precision
-  selectors (`sx.World(dtype=...)`, `sx.World[...]`, scalar-specific aliases, or
-  a public C++ scalar-template facade) until DART 7 rigid-body and multibody
-  simulation is in good shape for humanoid locomotion and manipulation and a
-  separate scalar-instantiation plan proves the required ownership, binding,
-  serialization, collision, differentiability, package, and migration gates. The
-  intended path is DART 7 official API promotion, not a DART 8 middle step.
+- Next step: The promoted-header allowlist, strict promotion-surface audit,
+  package-contract check, installed-package smoke, World-promotion blocker
+  inventory, C++ namespace/target transaction, Python import-layout transaction,
+  and source-tree move are now in place: `dart::simulation::World`,
+  `dartpy.simulation.World`, and `dartpy.World` point at the ECS-backed facade,
+  generated stubs no longer publish `dartpy.simulation_experimental`, and the
+  classic Python world is quarantined as `dartpy.gui.RenderWorld`. The urgent
+  remaining promotion work is hardening and cleanup: finish stale docs, keep
+  the public-header/package/import guards green, add negative smokes for retired
+  experimental paths and targets, and keep strict-final World-promotion checks
+  green with parity evidence sourced from `release-6.*` branch refs.
+  The promoted `World` remains double-backed; public scalar precision selectors
+  (`sim.World(dtype=...)`, `sim.World[...]`, scalar-specific aliases, or a public
+  C++ scalar-template facade) stay deferred until a separate
+  scalar-instantiation plan proves the required ownership, binding,
+  serialization, collision, differentiability, package, and migration gates.
+  The intended path is DART 7 official API promotion, not a DART 8 middle step.
 - Gate: The planning PR passes the docs-only gates; implementation PRs must keep
   promotion-aware API-boundary checks, C++/Python tests, package/export smokes,
+  `check-dart7-promotion-surface`,
+  `check-dart7-promotion-package-contract`,
+  `check-dart7-promotion-installed-package`, `check-dartpy-import-layout`,
   stub/API-doc regeneration, and CUDA/full gates green according to the touched
-  scope. The promoted public API must hide ECS, component, solver-registry,
-  backend, implementation-folder, tensor framework, and unplanned
-  scalar-instantiation details, and the installed package must expose only final
-  headers, final CMake targets/components, and final dartpy module paths once
-  promotion is claimed.
+  scope. The
+  promoted public API must hide ECS, component, solver-registry, backend,
+  implementation-folder, tensor framework, and unplanned scalar-instantiation
+  details, and the installed package must expose only final headers, final CMake
+  targets/components, and final dartpy module paths once promotion is claimed.
 
 ### PLAN-042: DART 7 Public API And Source Layout
 
@@ -609,31 +1268,40 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Review and accept or revise the initial PLAN-042 decision/audit
-  packet before PLAN-041 freezes promoted World names. The default packet
-  recommends `dart.World(...)` after `import dartpy as dart` as a root
-  convenience alias to canonical `dart.simulation.World`, explicit C++
-  `dart::simulation::World` without an initial `dart::World` facade,
-  `check-simulation-public-header-allowlist`, `check-dartpy-import-layout`, and
-  no official dependency on `DART_BUILD_SIMULATION_EXPERIMENTAL` or
-  `dart-simulation-experimental`.
+- Next step: Treat the default packet as implemented and guarded
+  (`dart.World is dart.simulation.World`, no generated
+  `simulation_experimental` stubs, `dart.simulation.diff` / `dart.diff` shared
+  module, classic render world isolated under `dart.gui.RenderWorld`,
+  `dart::simulation::World` as the C++ owner, and `dart-simulation` as the
+  package target/component). The current `dart/simulation` folder tree is the
+  accepted guarded post-promotion layout, not the final whole-repo taxonomy; use
+  the post-promotion source-layout decision sidecar for compute, IO, state/space,
+  diff, and legacy dynamics follow-ups before moving files. Remaining work is
+  negative smokes and docs cleanup for removed DART 6 or experimental paths.
+  Parity references should come from `release-6.*` branches, not main-branch
+  classic World tests. Final local gate: `pixi run
+check-dart7-final-world-promotion`.
 - Gate: The planning PR passes the docs-only gates; follow-up implementation
   PRs must prove final examples, stubs/docs, package exports, API boundaries,
-  C++/Python tests, feature-off source/wheel behavior, case-insensitive header
-  behavior, and negative smokes for removed DART 6 or experimental paths.
+  C++/Python tests, `check-dart7-promotion-package-contract`,
+  `check-dart7-promotion-installed-package`, `check-dartpy-import-layout`,
+  feature-off source/wheel behavior, case-insensitive header behavior, and
+  negative smokes for removed DART 6 or experimental paths.
 
-### PLAN-050: Experimental World Split
+### PLAN-050: DART 7 World Binding Transition
 
 - Owner doc:
-  [`../onboarding/python-bindings.md#experimental-world-bindings-and-transition`](../onboarding/python-bindings.md#experimental-world-bindings-and-transition)
+  [`../onboarding/python-bindings.md#dart-7-world-bindings-and-transition`](../onboarding/python-bindings.md#dart-7-world-bindings-and-transition)
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Track DART 7 promotion work under the release roadmap once the
-  experimental world has parity gates.
-- Gate: `dartpy.simulation_experimental` is separate from legacy
-  `dartpy.simulation`, has focused import/API coverage, and the clean-break
-  promotion path is documented in onboarding docs.
+- Next step: Keep this item complete. Current DART 7 promotion work is tracked
+  by PLAN-040, PLAN-041, and PLAN-042; the ECS World is promoted to
+  `dart::simulation`, `dartpy.simulation`, and `dartpy.World`.
+- Gate: The old split is retired: generated stubs no longer
+  publish `dartpy.simulation_experimental`, `check-dartpy-import-layout` guards
+  the promoted import shape, and any remaining `experimental` references are
+  compatibility or transition checks tracked by PLAN-041 rather than PLAN-050.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
@@ -711,17 +1379,17 @@ its own line so status updates remain git-history friendly.
   console, watch, viewport), selection syncs across viewport/tree/inspector, and
   the editor covers create/edit/relationship/simulation/record-replay/watch and
   a four-view layout. The `dartsim_workbench_completion` dev task is retired into
-  the design doc; its remaining work is experimental-API-gated and tracked there:
+  the design doc; its remaining work is World-API-gated and tracked there:
   runtime sensor output panes + joint render layers/visibility filters, richer
   relationship inspectors/grouping, a Scene Tree context-menu popup affordance,
   extracting the `editor.cpp` project file-dialog flow into its own tested seam,
-  and adopting experimental shape/loader APIs (replace editor-side shape
+  and adopting simulation shape/loader APIs (replace editor-side shape
   descriptors) per PLAN-050.
 - Gate: The headless engine is covered by command/undo, object, selection,
   name-uniqueness, and project-round-trip tests with zero GUI/renderer includes;
   the filtered `dartsim/engine/*` + `dartsim/ui/*_actions` surface holds ≥95%
   line coverage (`pixi run coverage-report-dartsim`); the editor loop (design →
-  run → record → replay) works on the experimental World only; the renderer
+  run → record → replay) works on the DART 7 World only; the renderer
   stays backend-hidden (PLAN-060), enforced for `dartsim/engine` and
   `dartsim/ui` by `scripts/check_api_boundaries.py`; and the default `dartsim`
   headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a non-blank
@@ -739,14 +1407,13 @@ its own line so status updates remain git-history friendly.
   scenes plus lightweight `Planned World Ports` placeholders for high-value DART
   6 concepts that still need World-native ports (IK, SIMBICON walking,
   operational-space control, robot puppets, collision sandbox, mobile
-  manipulation); `hello_world` stays the standalone template;
-  tooling/docs/CHANGELOG updated. The
+  manipulation); tooling/docs/CHANGELOG updated. The
   `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
   internal test fixtures (see the design doc's "examples vs renderer fixtures"
   decision), so PLAN-101's `--scene` smoke gate is unaffected.
 - Gate: `dart-demos` launches and switches across the World scenes in one window
   without window recreation; the headless cycle smoke renders every registered
-  scene; only `hello_world` plus CLI/headless support programs stay standalone;
+  scene; only CLI/headless support programs stay standalone;
   `pixi run lint` and `check-docs-policy` green.
 
 ### PLAN-103: Examples Strategy (Python-First)
@@ -788,7 +1455,7 @@ its own line so status updates remain git-history friendly.
   track under PLAN-110: maximal-coordinate variational hard-contact NCP/IPM with
   implicit gradients, using Dojo.jl as method evidence and a comparison baseline
   rather than a dependency.
-- Next step: The WS1–WS5 experimental surface is merged to `main` (PR #2761);
+- Next step: The WS1–WS5 differentiability surface is merged to `main` (PR #2761);
   the remaining work is the hardening/examples/Dojo-spike follow-ups. Run the
   torch-autograd test (`pip install torch`); add the
   standalone worked trajectory-optimization / system-identification example
@@ -827,9 +1494,9 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Run the Phase 0 design inventory before implementation: map
   classic DART `InverseKinematics`/`WholeBodyIK`/`CompositeIK`/`IKFast` behavior
-  to experimental `World` concepts; define the shared IK benchmark scene set;
+  to DART 7 `World` concepts; define the shared IK benchmark scene set;
   draft `docs/design/inverse_kinematics_motion.md`; and decide which pose,
-  motion-level, and `auto` selection APIs can wait on existing experimental
+  motion-level, and `auto` selection APIs can wait on existing DART 7
   state-space, kinematics-only, rollout, collision-query, and model-loading
   seams.
 - Gate: PLAN-120 is not implementation-ready until the design inventory proves
