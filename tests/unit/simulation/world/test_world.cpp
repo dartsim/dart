@@ -2237,6 +2237,27 @@ void configureDeformableMovingRigidSurfaceCcdCrossingScene(
   world.addDeformableBody("moving_surface_fast_point", options);
 }
 
+void configureDynamicRigidIpcMeshSolveScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto body = world.addRigidBody("dynamic_ipc_mesh", options);
+  body.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2)}));
+  body.setForce(Eigen::Vector3d(4.0, 0.0, 0.0));
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -6349,6 +6370,12 @@ TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
+}
+
+TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
+{
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC solve graph", configureDynamicRigidIpcMeshSolveScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

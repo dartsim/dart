@@ -701,6 +701,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Allocator-aware graph traversal now also keeps cycle-detection,
     topological-order rebuild, and resource-hazard scratch on that supplied
     allocator instead of falling back to the global heap.
+    The rigid IPC contact stage now keeps its projected-Newton solve graph in
+    prewarmed stage scratch and bypasses the full solver for the exact
+    single-dynamic-body contact-free quadratic, so baked dynamics-only IPC
+    steps avoid solver-private heap allocation while preserving the existing
+    one-body IPC update.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,

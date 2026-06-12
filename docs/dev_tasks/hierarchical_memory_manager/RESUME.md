@@ -2,22 +2,29 @@
 
 ## Authoritative Handoff (2026-06-11)
 
-Stop state: use exactly one branch for the post-#2956 HMM handoff,
+Current branch: use exactly one branch for the post-#2956 HMM handoff and
+continuation,
 `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean`. Other similarly named HMM follow-up
 branches are historical/no-resume targets unless a maintainer explicitly
 redirects the work.
 
-The latest code checkpoint before this docs-only handoff is `3a646829301`
-(`Route compute graph traversal scratch through allocator`). If the branch head
-is newer, it should be a handoff-docs-only commit on top of that checkpoint.
-Treat `git log` on `pr/hmm-phase45-follow-up-clean` as authoritative for the
-exact pushed branch head.
+The latest completed code checkpoint before the 2026-06-11 stop request was
+`3a646829301` (`Route compute graph traversal scratch through allocator`), and
+`fb89fd3ef3c` was a docs-only handoff commit that intentionally skipped
+verification. Work has since resumed on the same branch: the current
+continuation closes a dynamic rigid IPC dynamics-only heap gap by keeping
+`RigidIpcContactStage`'s one-node solve graph in prewarmed stage scratch and
+using the exact diagonal inertial quadratic minimizer for a single supported
+dynamic body with no possible contact/articulation pairs. The new baked gate
+failed before the fix with 156 global allocations / 7920 bytes over four steps
+and now passes with zero global heap allocation.
 
-Maintainer stop request: stop current work and hand off without further
-verification. Do not run build/test/lint just to validate this handoff update.
-The next agent should resume from this branch, read the current docs, and only
-then choose the next evidence-first Phase 4/5 slice.
+The maintainer then issued a critical stop request for handoff only, with no
+further verification. A `pixi run build` was in progress and was interrupted;
+do not treat full build or full `pixi run test-unit` validation as complete for
+the dynamic rigid IPC slice. Resume from the pushed branch head, not from this
+session.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
@@ -46,10 +53,11 @@ git log --oneline --decorate -5
 Expected status after the handoff push: clean worktree, branch even with
 `origin/pr/hmm-phase45-follow-up-clean`.
 
-Immediate next step: choose the next remaining Phase 4/5 item from
-`README.md` and prove a real allocation source before editing. Do not continue
-adding scenes or scratch-reuse work to PR #2956; it is merged. The last closed
-gap was the pure semi-implicit external-force multibody path:
+Immediate next step: after this dynamic rigid IPC slice is committed and
+pushed, choose the next remaining Phase 4/5 item from `README.md` and prove a
+real allocation source before editing. Do not continue adding scenes or
+scratch-reuse work to PR #2956; it is merged. Earlier closed gaps include the
+pure semi-implicit external-force multibody path:
 
 - `computeUnconstrainedMultibodyVelocityInto()` now reuses
   `MultibodyDynamicsScratch::bodyJacobian` for link body Jacobians.
@@ -96,9 +104,24 @@ Verification run for the compute-graph traversal continuation:
 - `pixi run build`
 - `pixi run test-unit` passed all 161 tests.
 
-No verification was run after the 2026-06-11 maintainer stop-and-handoff
-request. The final handoff update is docs-only and intentionally skipped
-`pixi run lint`, build, and tests per that request.
+The 2026-06-11 docs-only handoff update intentionally skipped `pixi run lint`,
+build, and tests per the maintainer's stop-and-handoff request. Later
+continuation slices list their own verification below.
+
+Verification run for the dynamic rigid IPC dynamics-only continuation:
+
+- Before the fix:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failed with 156
+  global allocations / 7920 bytes over four baked steps.
+- After the fix:
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap:World.RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics:World.RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics' --gtest_color=no`
+  passed.
+- A broader focused IPC `test_world` filter also passed after preserving the
+  one-body IPC diagnostic counters.
+- `git diff --check` and `pixi run lint` passed before the final handoff-only
+  doc edits.
+- Not completed because of the stop request: full `pixi run build` and full
+  `pixi run test-unit`.
 
 Fresh-session reading order:
 

@@ -221,7 +221,8 @@ struct RigidIpcContactStage::Scratch
           common::StlAllocator<std::uint8_t>{allocator}),
       stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator}),
       solveResult(allocator),
-      solveScratch(allocator)
+      solveScratch(allocator),
+      solveGraph(allocator)
   {
   }
 
@@ -267,6 +268,7 @@ struct RigidIpcContactStage::Scratch
       stationaryContactBody;
   sxdetail::RigidIpcProjectedNewtonSolveResult solveResult;
   sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
+  ComputeGraph solveGraph;
 };
 
 struct RigidBodyNode
@@ -10733,6 +10735,11 @@ void RigidIpcContactStage::prepare(World& world)
       m_scratch->surfaces,
       m_scratch->dynamicsTerms,
       m_scratch->payloadAllocator);
+
+  m_scratch->solveGraph.clear();
+  m_scratch->solveGraph.addNode("ipc_solve", []() {}, getMetadata());
+  static_cast<void>(m_scratch->solveGraph.getTopologicalOrderView());
+  m_scratch->solveGraph.clear();
 }
 
 //==============================================================================
@@ -10888,15 +10895,86 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
   options.stepTolerance = 1e-12;
 
   sxdetail::RigidIpcProjectedNewtonSolveResult& result = scratch.solveResult;
-  ComputeGraph graph;
+  // With one supported dynamic surface and no articulation rows, there are no
+  // IPC contact pairs. The objective is the diagonal inertial quadratic, so the
+  // exact minimizer is the target pose plus force divided by diagonal weight.
+  // Taking that path directly avoids constructing solver-private Eigen dynamic
+  // matrices for a contact-free step.
+  if (solverBodies.size() == 1u && surfaces.size() == 1u
+      && options.dynamicsTerms.size() == 1u
+      && options.articulationConstraints.empty() && surfaces[0].dynamic
+      && options.dynamicsTerms[0].active) {
+    const auto& term = options.dynamicsTerms[0];
+    sxdetail::RigidIpcVector6d acceptedPosition = poseVector(term.targetPose);
+    bool diagonalSolveValid = true;
+    for (Eigen::Index dof = 0; dof < acceptedPosition.size(); ++dof) {
+      const double weight = term.diagonalWeights[dof];
+      const double force = term.generalizedForce[dof];
+      if (!std::isfinite(weight) || weight <= 1e-15 || !std::isfinite(force)) {
+        diagonalSolveValid = false;
+        break;
+      }
+      acceptedPosition[dof] += force / weight;
+    }
+
+    if (diagonalSolveValid && acceptedPosition.allFinite()) {
+      const sxdetail::RigidIpcVector6d startPosition
+          = poseVector(surfaces[0].pose);
+      const double stepNorm = (acceptedPosition - startPosition).norm();
+
+      m_lastStats.status = RigidIpcSolveStatus::Converged;
+      m_lastStats.activeDynamicsTerms = 1u;
+      m_lastStats.solverIterations = stepNorm > 0.0 ? 1u : 0u;
+      m_lastStats.acceptedSteps = stepNorm > 0.0 ? 1u : 0u;
+      m_lastStats.sufficientDecreaseChecks = m_lastStats.acceptedSteps;
+      m_lastStats.initialGradientNorm
+          = (term.diagonalWeights.cwiseProduct(
+                 startPosition - poseVector(term.targetPose))
+             - term.generalizedForce)
+                .norm();
+      m_lastStats.finalGradientNorm = 0.0;
+      m_lastStats.lastStepNorm = stepNorm;
+      m_lastStats.barrierStiffness = options.barrier.stiffness;
+      m_lastStats.converged = true;
+      m_lastStats.resultApplied = true;
+      world.resetRigidIpcAdaptiveBarrierStiffnessLowerBound();
+
+      solveDynamicsTerms = std::move(options.dynamicsTerms);
+      applyRigidIpcPoseToRuntimeBody(
+          world,
+          solverBodies[0],
+          poseFromVector(acceptedPosition),
+          m_options.timeIntegration == RigidIpcTimeIntegration::Bdf2
+              ? std::addressof(scratch.bdf2Histories)
+              : nullptr);
+      return;
+    }
+  }
+
+  struct SolveGraphContext
+  {
+    std::vector<
+        sxdetail::RigidIpcBarrierSurface,
+        common::StlAllocator<sxdetail::RigidIpcBarrierSurface>>* surfaces;
+    sxdetail::RigidIpcProjectedNewtonSolveOptions* options;
+    sxdetail::RigidIpcProjectedNewtonSolveResult* result;
+    sxdetail::RigidIpcProjectedNewtonSolveScratch* scratch;
+  } context{&surfaces, &options, &result, &scratch.solveScratch};
+
+  auto& graph = scratch.solveGraph;
+  graph.clear();
   graph.addNode(
-      "rigid_ipc_projected_newton_solve",
-      [&]() {
+      "ipc_solve",
+      [&context]() {
         sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
-            surfaces, options, result, scratch.solveScratch);
+            *context.surfaces,
+            *context.options,
+            *context.result,
+            *context.scratch);
       },
       getMetadata());
   executor.execute(graph);
+  graph.clear();
   solveDynamicsTerms = std::move(options.dynamicsTerms);
 
   const bool lineSearchBlocked

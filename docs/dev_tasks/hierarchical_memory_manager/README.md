@@ -9,12 +9,12 @@ Stop state for fresh handoff: use exactly one branch,
 should not be used by fresh sessions unless a maintainer explicitly redirects
 the work.
 
-The latest code checkpoint before this docs-only handoff is `3a646829301`
-(`Route compute graph traversal scratch through allocator`). A later commit on
-the same branch may update only these handoff docs; treat `git log` on
+The branch head should contain the latest handoff checkpoint for the dynamic
+rigid IPC dynamics-only slice, after `fb89fd3ef3c` refreshed the earlier
+docs-only handoff. Treat `git log` on
 `pr/hmm-phase45-follow-up-clean` as the source of truth for the exact branch
 head. Do not continue optimization work in the stopped session that produced
-this handoff.
+this handoff; resume only from a fresh session after reading this task state.
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -33,6 +33,15 @@ and scanning resource hazards. The focused regression failed before the fix
 with 38 global allocations / 880 bytes during allocator-aware traversal and now
 passes with zero global heap allocation. This is pipeline scratch cleanup, not
 a new deformable production-scene coverage claim.
+
+The current continuation closes a narrow dynamic rigid IPC no-heap gap without
+claiming contact-heavy IPC coverage: `RigidIpcContactStage` now owns a
+prewarmed allocator-backed solve graph, and the single supported dynamic body
+with no possible contact/articulation pairs takes the exact diagonal inertial
+quadratic minimizer instead of constructing the full projected-Newton Eigen
+system. The new baked dynamic rigid IPC gate failed before this slice with 156
+global allocations / 7920 bytes over four steps and now passes with zero global
+heap allocation.
 
 The previous proven Phase 4/5 slice keeps the semi-implicit external-force
 multibody path inside both World-base no-growth and global-heap no-allocation
@@ -83,9 +92,26 @@ Additional checks completed for the compute-graph traversal slice:
 - `pixi run build`
 - `pixi run test-unit` passed all 161 tests.
 
-No verification was run after the maintainer's 2026-06-11 stop-and-handoff
-request. The final handoff update is docs-only and intentionally skips
-`pixi run lint`, build, and tests per that request.
+Additional checks completed for the dynamic rigid IPC dynamics-only slice:
+
+- Before the fix:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failed with 156
+  global allocations / 7920 bytes over four baked steps.
+- After the fix:
+  `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap:World.RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics:World.RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics' --gtest_color=no`
+  passed.
+- A broader focused IPC `test_world` filter also passed after preserving the
+  one-body IPC diagnostic counters.
+- `git diff --check` and `pixi run lint` passed before the final handoff-only
+  doc edits.
+
+The docs-only handoff commit `fb89fd3ef3c` intentionally skipped
+`pixi run lint`, build, and tests per the maintainer's 2026-06-11 stop request.
+The final 2026-06-11 stop request also required no further verification: a
+subsequent `pixi run build` was in progress and was interrupted, and no full
+`pixi run build` or `pixi run test-unit` result should be inferred for the
+dynamic rigid IPC slice. Later continuation slices should list their own
+verification here, as the dynamic rigid IPC slice does above.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
@@ -1084,6 +1110,12 @@ Follow-up progress after PR #2956:
   only rigid/link collision-geometry components are empty. A baked global-heap
   regression covers that loaded/pre-existing ECS-storage shape without changing
   the existing shape-backed rigid, link, AVBD, and boxed-LCP contact gates.
+- The dynamic rigid IPC dynamics-only path now keeps its one-node solve graph in
+  prewarmed stage scratch and bypasses the full projected-Newton assembly for
+  the exact single supported dynamic body with no possible contact or
+  articulation pairs. The focused baked gate covers this contact-free IPC
+  update with zero global heap allocation after bake; contact-heavy rigid IPC
+  projected-Newton Eigen storage remains evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
