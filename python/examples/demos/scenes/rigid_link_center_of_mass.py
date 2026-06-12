@@ -425,13 +425,35 @@ class _RigidLinkCenterOfMass:
         high_accel = lane_value("high_inertia", "acceleration")
         positive_mass_matrix = lane_value("positive", "mass_matrix")
         high_mass_matrix = lane_value("high_inertia", "mass_matrix")
+        centered_torque = lane_value("centered", "gravity_torque")
+        if abs(centered_torque) < 1.0e-12:
+            centered_torque = 0.0
         positive_torque = lane_value("positive", "gravity_torque")
         negative_torque = lane_value("negative", "gravity_torque")
+        high_mass_matrix_ratio = high_mass_matrix / max(positive_mass_matrix, 1.0e-12)
+        positive_negative_angle_sum = lane_value("positive", "angle") + lane_value(
+            "negative", "angle"
+        )
+        high_acceleration_ratio = high_accel / max(positive_accel, 1.0e-12)
+        max_abs_acceleration_error = max(
+            abs(lane_value(lane.key, "acceleration_error")) for lane in self.lanes
+        )
+        lane_order = [lane.key for lane in self.lanes]
         payload: dict[str, Any] = {
             "row": "rigid_link_center_of_mass",
+            "comparison_axis": "link_center_of_mass_offset_family",
             "solver": "world_multibody_inertial_offsets",
             "scope": "contact_free_link_center_of_mass_offsets",
             "executor": self._executors[executor_index][0],
+            "held_fixed": {
+                "solver": "world_multibody_inertial_offsets",
+                "contacts": "off",
+                "joint_type": "revolute",
+                "visual_geometry": "fixed",
+                "link_mass": float(self.link_mass),
+                "gravity_scale": float(self.gravity_scale),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "com_offset": float(self.com_offset),
@@ -445,10 +467,18 @@ class _RigidLinkCenterOfMass:
                 "link_mass": float(self.link_mass),
                 "inertia_scale": float(self.inertia_scale),
             },
-            "lane_order": [lane.key for lane in self.lanes],
+            "com_lanes": lane_order,
+            "lane_order": lane_order,
             "lane_count": float(len(self.lanes)),
             "lanes": lanes,
-            "centered_gravity_torque": lane_value("centered", "gravity_torque"),
+            "link_com_centered_gravity_torque": centered_torque,
+            "link_com_positive_gravity_torque": positive_torque,
+            "link_com_negative_gravity_torque": negative_torque,
+            "link_com_positive_negative_angle_sum": positive_negative_angle_sum,
+            "link_com_high_mass_matrix_ratio": high_mass_matrix_ratio,
+            "link_com_high_acceleration_ratio": high_acceleration_ratio,
+            "link_com_max_acceleration_error": max_abs_acceleration_error,
+            "centered_gravity_torque": centered_torque,
             "centered_angle": lane_value("centered", "angle"),
             "centered_acceleration": lane_value("centered", "acceleration"),
             "positive_offset": lane_value("positive", "offset"),
@@ -462,13 +492,11 @@ class _RigidLinkCenterOfMass:
             "positive_mass_matrix": positive_mass_matrix,
             "negative_mass_matrix": lane_value("negative", "mass_matrix"),
             "high_inertia_mass_matrix": high_mass_matrix,
-            "high_to_positive_mass_matrix_ratio": high_mass_matrix
-            / max(positive_mass_matrix, 1.0e-12),
+            "high_to_positive_mass_matrix_ratio": high_mass_matrix_ratio,
             "positive_angle": lane_value("positive", "angle"),
             "negative_angle": lane_value("negative", "angle"),
             "high_inertia_angle": lane_value("high_inertia", "angle"),
-            "positive_negative_angle_sum": lane_value("positive", "angle")
-            + lane_value("negative", "angle"),
+            "positive_negative_angle_sum": positive_negative_angle_sum,
             "positive_acceleration": positive_accel,
             "positive_expected_acceleration": positive_expected,
             "positive_acceleration_error": lane_value(
@@ -491,8 +519,7 @@ class _RigidLinkCenterOfMass:
             "negative_to_positive_acceleration_ratio": negative_accel
             / max(abs(positive_accel), 1.0e-12),
             "positive_negative_acceleration_sum": positive_accel + negative_accel,
-            "high_to_positive_acceleration_ratio": high_accel
-            / max(positive_accel, 1.0e-12),
+            "high_to_positive_acceleration_ratio": high_acceleration_ratio,
             "positive_negative_torque_sum": positive_torque + negative_torque,
             "positive_com_world_x": lane_value("positive", "com_world_x"),
             "negative_com_world_x": lane_value("negative", "com_world_x"),
@@ -502,9 +529,7 @@ class _RigidLinkCenterOfMass:
             ),
             "positive_energy": lane_value("positive", "energy"),
             "high_inertia_energy": lane_value("high_inertia", "energy"),
-            "max_abs_acceleration_error": max(
-                abs(lane_value(lane.key, "acceleration_error")) for lane in self.lanes
-            ),
+            "max_abs_acceleration_error": max_abs_acceleration_error,
             "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
             "max_step_ms": max(self._step_ms_history, default=0.0),
             "history": {
@@ -759,6 +784,13 @@ class _RigidLinkCenterOfMass:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: link center-of-mass offset family")
+        builder.text(
+            "held fixed: World multibody revolute links | contacts off | "
+            "visual geometry fixed | "
+            f"link mass {self.link_mass:.1f} | gravity scale {self.gravity_scale:.1f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: World multibody revolute links | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text("visual boxes stay centered; yellow markers are Link.center_of_mass")

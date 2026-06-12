@@ -210,7 +210,7 @@ plus a warning block if any selected row is missing those fields.
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | World joints, gravity off, contacts off               | Passive axis, energy decay, slip, armature lag                |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | World screw joints, pitch, mass, inertia              | Screw axis, pitch ratios, travel gap, reverse sign            |
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | World dynamics, acceleration, impulse, gravity        | Dynamics axis, coupling, torque gap, response ratio           |
-| 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks     |
+| 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | World links, COM offset, mass, gravity                | COM axis, torque sign, mirror sum, inertia lag                |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link speed, Jacobian gap, wrench load, Replay marks           |
 | 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks            |
 | 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks            |
@@ -753,9 +753,14 @@ acceleration, expected acceleration, COM position, energy, and step timing.
 controls, per-lane link/joint/local-COM metadata, mirrored torque/angle/
 acceleration sums, reflected mass and acceleration ratios, COM marker position,
 energy, step timing, and compact histories into the manifest sidecar.
-The shared Replay panel uses mirrored COM angle spread as its value track and
-marks offset-driven angle divergence, centered-lane stillness, and
-high-inertia lag frames.
+The panel and capture metrics label the link center-of-mass offset comparison
+axis, held-fixed contact-free World revolute-link/fixed-visual-geometry/mass/
+gravity/time step context, lane names, and top-level review signals for
+centered/positive/negative gravity torque, mirrored angle sum, high-inertia
+mass and acceleration ratios, and acceleration residual. The shared Replay
+panel uses mirrored COM angle spread as its value track and marks
+offset-driven angle divergence, centered-lane stillness, and high-inertia lag
+frames.
 
 The **`rigid_link_jacobian`** scene makes link-origin Jacobians concrete before
 users move from generalized dynamics terms into solver-family routing. A

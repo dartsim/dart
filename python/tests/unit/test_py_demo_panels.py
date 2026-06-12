@@ -1284,6 +1284,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World multibody dynamics | contacts off | fixed-base revolute links | target acceleration 2.2 | impulse 3.0 | gravity scale 1.0 | time step 3.0 ms",
             ),
         ),
+        (
+            rigid_link_center_of_mass,
+            (
+                "text:comparison axis: link center-of-mass offset family",
+                "text:held fixed: World multibody revolute links | contacts off | visual geometry fixed | link mass 2.0 | gravity scale 1.0 | time step 3.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:

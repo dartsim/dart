@@ -1366,6 +1366,33 @@ def test_rigid_workflow_latest_signals_prioritize_multibody_dynamics_values() ->
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_link_com_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "link_com_centered_gravity_torque": 0.0,
+            "link_com_high_acceleration_ratio": 0.42,
+            "link_com_high_mass_matrix_ratio": 2.25,
+            "link_com_max_acceleration_error": 0.0,
+            "link_com_negative_gravity_torque": -3.53,
+            "link_com_positive_gravity_torque": 3.53,
+            "link_com_positive_negative_angle_sum": 0.0,
+            "solver": "world_multibody_inertial_offsets",
+        }
+    )
+
+    assert highlights[:8] == [
+        "link com centered gravity torque: 0",
+        "link com positive gravity torque: 3.53",
+        "link com negative gravity torque: -3.53",
+        "link com positive negative angle sum: 0",
+        "link com high mass matrix ratio: 2.25",
+        "link com high acceleration ratio: 0.42",
+        "link com max acceleration error: 0",
+        "solver: world_multibody_inertial_offsets",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

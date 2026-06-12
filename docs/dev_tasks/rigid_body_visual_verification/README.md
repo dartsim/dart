@@ -2,55 +2,67 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 32 now gives the World multibody generalized dynamics
-terms row the same reviewable comparison shape as the surrounding rigid
+Latest local slice: row 33 now gives the World multibody link center-of-mass
+offset row the same reviewable comparison shape as the surrounding rigid
 workflow rows while continuing to follow the DART 7 architecture harness from
-PR #2986. `rigid_multibody_dynamics_terms` names
-`joint_space_dynamics_term_family` as its comparison axis in the panel and
+PR #2986. `rigid_link_center_of_mass` names
+`link_center_of_mass_offset_family` as its comparison axis in the panel and
 capture metrics, records held-fixed contact-free World
-dynamics/fixed-base/revolute-link/target-acceleration/impulse/gravity/time-step
-context, exports top-level scalar mass, coupling, torque-gap, response-gap,
-response-ratio, and residual metrics, and feeds decisive latest signals into
-the workflow review index.
+revolute-link/fixed-visual-geometry/mass/gravity/time-step context, exports
+top-level centered/positive/negative gravity torque, mirrored-angle,
+high-inertia ratio, and acceleration-residual metrics, and feeds decisive
+latest signals into the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-32 latest signals prioritize scalar
-  mass diagonal, coupled off-diagonal mass term, heavy-load torque gap,
-  coupled/heavy response gap, heavy response ratio, inverse-dynamics residual,
-  impulse residual, and solver.
-- Real row-32 workflow capture completed under
-  `build/captures/rigid_multibody_dynamics_terms_row_32_1781303198` with
+  sync check, and the unit guard that row-33 latest signals prioritize
+  centered/positive/negative gravity torque, mirrored angle sum, high-inertia
+  mass and acceleration ratios, acceleration residual, and solver.
+- Real row-33 workflow capture completed under
+  `build/captures/rigid_link_center_of_mass_row_33_1781303757` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 32 reported `comparison_axis=joint_space_dynamics_term_family`,
-  held-fixed `base=fixed`, `contacts=off`, `joint_type=revolute`,
-  `target_acceleration=2.2`, `joint_impulse=3.0`, `gravity_scale=1.0`,
-  `link_length=0.55`, `solver=world_multibody_dynamics_terms`,
-  `time_step_ms=3.0`, controls `executor_index=0.0`, `target_acceleration=2.2`,
-  `joint_impulse=3.0`, `heavy_distal_mass_scale=4.0`, `gravity_scale=1.0`,
-  `dynamics_lanes=[single_hinge, coupled_two_link, heavy_distal]`,
-  `multibody_dynamics_single_mass_diag0=0.27855208333333303`,
-  `multibody_dynamics_coupled_coupling=0.35663328364695346`,
-  `multibody_dynamics_heavy_tau_gap=18.137982615675263`,
-  `multibody_dynamics_coupled_heavy_response_gap=6.830740780136933`,
-  `multibody_dynamics_heavy_response_ratio=0.5582694151303279`,
-  `multibody_dynamics_max_inverse_residual=3.66205343881779e-15`,
-  `multibody_dynamics_max_impulse_residual=2.6645352591003757e-14`, and
-  history `max_abs_coupling=0.37303926820793976`.
-- `review_index.html` showed the row-32 card with `axis`, `held fixed`,
+- Row 33 reported `comparison_axis=link_center_of_mass_offset_family`,
+  held-fixed `contacts=off`, `joint_type=revolute`, `link_mass=2.0`,
+  `gravity_scale=1.0`, `solver=world_multibody_inertial_offsets`,
+  `time_step_ms=3.0`, `visual_geometry=fixed`, controls `executor_index=0.0`,
+  `com_offset=0.18`, `gravity_scale=1.0`, `inertia_scale=4.0`,
+  `link_mass=2.0`, `com_lanes=[centered, positive, negative, high_inertia]`,
+  `link_com_centered_gravity_torque=0.0`,
+  `link_com_positive_gravity_torque=3.181624744338047`,
+  `link_com_negative_gravity_torque=-3.181624744338047`,
+  `link_com_positive_negative_angle_sum=0.0`,
+  `link_com_high_mass_matrix_ratio=2.9480519480519467`,
+  `link_com_high_acceleration_ratio=0.37020890970141507`,
+  `link_com_max_acceleration_error=0.09943438126516568`, and history
+  `positive_max_abs_angle=0.44895353573752983`.
+- `review_index.html` showed the row-33 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for scalar mass diagonal, coupling, heavy-load torque gap,
-  coupled/heavy response gap, heavy response ratio, inverse-dynamics residual,
-  impulse residual, and solver.
-- The per-scene capture wrote a nonblank docked screenshot and 95 PNG frames for
-  `rigid_multibody_dynamics_terms` from the 96-frame workflow row capture under
+  ordering for centered/positive/negative gravity torque, mirrored angle sum,
+  high-inertia mass and acceleration ratios, acceleration residual, and solver.
+- The per-scene capture wrote a nonblank docked screenshot and 71 PNG frames for
+  `rigid_link_center_of_mass` from the 72-frame workflow row capture under
   `build/captures/`.
+
+Previous completed and verified slice: row 32 gives the World multibody
+generalized dynamics terms row the same reviewable comparison shape as the
+surrounding rigid workflow rows. `rigid_multibody_dynamics_terms` names
+`joint_space_dynamics_term_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World dynamics/fixed-base/
+revolute-link/target-acceleration/impulse/gravity/time-step context, exports
+top-level scalar mass, coupling, torque-gap, response-gap, response-ratio, and
+residual metrics, and feeds decisive latest signals into the workflow review
+index. Evidence: focused row/panel/docs-order/review-index pytest subset
+reported `6 passed`; the real row-32 workflow capture completed under
+`build/captures/rigid_multibody_dynamics_terms_row_32_1781303198` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 95 PNG frames.
 
 Previous completed and verified slice: row 31 gives the World multibody
 screw-joint pitch row the same reviewable comparison shape as the surrounding
@@ -167,16 +179,16 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `6def027a935 Surface screw joint workflow signals`.
+  `a6e4f924504 Surface multibody dynamics workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  multibody dynamics-terms workflow signals; otherwise inspect the uncommitted
-  diff for the row-32 follow-up.
+  link center-of-mass workflow signals; otherwise inspect the uncommitted diff
+  for the row-33 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-32 review-index/evidence direction before broadening
+current row-15-through-row-33 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
