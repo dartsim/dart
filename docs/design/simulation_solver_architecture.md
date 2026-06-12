@@ -33,7 +33,7 @@ simulator that:
 1. runs full rigid-body dynamics with constraints and contacts, matching and
    then improving on the legacy DART 6 capability set;
 2. supports more than one solver method for the same domain (for example an
-   articulated-body forward-dynamics solver and, later, a position-based or
+   joint-space forward-dynamics solver and, later, a position-based or
    implicit time-stepping solver) without forking the user-facing object model;
 3. supports more than one physics domain (rigid bodies first; deformables,
    particles, and fluids later) coupled inside one deterministic step;
@@ -49,7 +49,12 @@ The core design sentence is:
 
 ## Design Principles
 
-These extend the experimental-API principles; they do not replace them.
+These extend the DART 7 public-API design principles in
+[`simulation_cpp_api.md`](simulation_cpp_api.md); they do not replace them.
+The gap between these principles and the current implementation is tracked as
+verified findings in
+[`dart7_architecture_assessment.md`](dart7_architecture_assessment.md) and
+executed through PLAN-091.
 
 ### Solvers Own Dynamics, The World Owns Composition
 
@@ -242,10 +247,11 @@ active solver, allocating State/Control/Contacts runtime storage. Each
 
 1. refresh collision/contact generation for the substep (when contacts are
    enabled);
-2. run the prepare / pre-couple / couple / post-couple schedule across active
-   solvers and registered couplers through the built-in stage schedule, with
-   backend-neutral compute-graph work inside stages where parallel execution is
-   available;
+2. run the built-in content-aware ordered stage schedule across active solver
+   families (the prepare / pre-couple / couple / post-couple substep windowing
+   above is the planned coupler-ready generalization — no couplers or substeps
+   exist in code yet), with backend-neutral compute-graph work inside stages
+   where parallel execution is available;
 3. integrate state and advance internal substep accounting.
 
 After the substep loop, the `World` advances time and frame counters once per
@@ -279,13 +285,13 @@ shared with the default path.
 Common users should not choose a solver. The `World` selects a sensible default
 per domain from content:
 
-| Content                    | Default method family                                                                    |
-| -------------------------- | ---------------------------------------------------------------------------------------- |
-| Free rigid bodies          | Sequential-impulse free-rigid dynamics/contact path                                      |
-| Articulated multibodies    | Semi-implicit articulated-body forward dynamics plus the unified constraint/contact path |
-| Deformables                | Mass-spring / stable neo-Hookean FEM through the deformable dynamics stage               |
-| Particles / fluids (later) | Continuum/particle solver                                                                |
-| Mixed domains              | Per-domain defaults in the content-aware schedule; cross-domain couplers remain planned  |
+| Content                    | Default method family                                                                   |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| Free rigid bodies          | Sequential-impulse free-rigid dynamics/contact path                                     |
+| Articulated multibodies    | Semi-implicit joint-space forward dynamics plus the unified constraint/contact path     |
+| Deformables                | Mass-spring / stable neo-Hookean FEM through the deformable dynamics stage              |
+| Particles / fluids (later) | Continuum/particle solver                                                               |
+| Mixed domains              | Per-domain defaults in the content-aware schedule; cross-domain couplers remain planned |
 
 Advanced users may request a method family or set policies; the `World` returns
 documented fallback behavior or an unsupported-capability error when the build
@@ -436,8 +442,8 @@ evidence, and only the backend-neutral, facade-safe subset is eligible for DART
 ## Design Rationale
 
 - Keeping dynamics in solvers and composition in the `World` lets DART add
-  methods and domains without reshaping the user object model, which is the
-  whole point of the experimental staging namespace.
+  methods and domains without reshaping the user object model — the core
+  promise of the DART 7 clean-break line.
 - Domain-driven assignment gives a uniform `add*` API across radically different
   physical models while keeping geometry and physics orthogonal.
 - Pairwise, swappable couplers avoid a monolithic coupling object that reaches
