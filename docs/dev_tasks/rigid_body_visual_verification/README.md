@@ -1,5 +1,15 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-11 Local PR-Readiness Refresh
+
+After the shared Replay follow-up checkpoint, the branch was refreshed against
+origin for local PR readiness without pushing or mutating GitHub state.
+`origin/main` is already merged into the branch, no local merge commit was
+needed, bounded `pixi run build` passed with `DART safe jobs: 2` and
+`ninja: no work to do`, and full `pixi run test-py` passed with
+`950 passed, 10 skipped` using `DART safe jobs: 1`. The latest checked GitHub
+state still reports no PR associated with this branch.
+
 ## Current Active Snapshot - 2026-06-11 Shared Replay Follow-Up
 
 The latest continuation lands a local checkpoint named
@@ -51,6 +61,11 @@ continue implementation unless the user explicitly resumes it.
 
 ## Current Status
 
+- [x] Local PR-readiness refresh: fetched origin, confirmed `origin/main` is
+      already merged, confirmed no PR is associated with the branch, ran
+      bounded `pixi run build` (`DART safe jobs: 2`, `ninja: no work to do`),
+      and ran full `pixi run test-py` (`950 passed, 10 skipped`, `DART safe
+    jobs: 1`). No push or GitHub mutation was performed.
 - [x] Shared Replay panel follow-up: `articulated`, `floating_base`,
       `avbd_rigid_revolute_motor`, `avbd_rigid_prismatic_motor`, and
       `rigid_ipc_tunnel` now publish `replay_sync` plus

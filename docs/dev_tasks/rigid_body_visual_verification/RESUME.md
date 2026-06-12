@@ -1,5 +1,31 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Checkpoint Snapshot - 2026-06-11 Local PR-Readiness Refresh
+
+After the shared Replay follow-up checkpoint, the branch was refreshed against
+origin for local PR readiness without pushing or mutating GitHub state.
+
+State and validation:
+
+- `git fetch origin` completed.
+- `origin/main` is already an ancestor of the local branch; no merge commit was
+  needed.
+- Latest checked GitHub state still reports no PR associated with
+  `feature/rigid-body-gui-visual-verification`.
+- Bounded `pixi run build` passed with `DART safe jobs: 2` and
+  `ninja: no work to do`.
+- Full `pixi run test-py` passed with `950 passed, 10 skipped` using
+  `DART safe jobs: 1`.
+- No push, PR creation, PR comment, review reply, CI retrigger, or other
+  external mutation was performed.
+
+Immediate next step:
+
+1. If the maintainer approves publishing, push the branch and open/update the
+   PR using `PR_DRAFT.md`; otherwise continue with the next bounded
+   rigid-body visual-verification slice from the task state. Keep GitHub
+   mutations gated on explicit approval.
+
 ## Current Checkpoint Snapshot - 2026-06-11 Shared Replay Follow-Up
 
 The latest continuation lands a local checkpoint named

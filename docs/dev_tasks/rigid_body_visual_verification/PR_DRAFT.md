@@ -90,6 +90,18 @@
 
 ## Testing
 
+- Local PR-readiness refresh:
+  - `git fetch origin`
+    - completed
+  - `origin/main` ancestry check
+    - already merged into the local branch; no merge commit needed
+  - Latest checked GitHub state
+    - no PR associated with `feature/rigid-body-gui-visual-verification`
+  - bounded `pixi run build`
+    - passed with `DART safe jobs: 2`, `ninja: no work to do`
+  - full `pixi run test-py`
+    - passed with `950 passed, 10 skipped` using `DART safe jobs: 1`
+  - No push or GitHub mutation has been performed for this refresh.
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,
