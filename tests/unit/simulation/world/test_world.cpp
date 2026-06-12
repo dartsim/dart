@@ -19729,6 +19729,36 @@ TEST(World, ReplayRecordingRestoresTransientVariationalComponents)
   EXPECT_EQ(countVariationalStates(), 1u);
   EXPECT_EQ(countDualStates(), 1u);
 
+  std::vector<entt::entity> variationalStateEntities;
+  for (auto entity : registry.view<compute::MultibodyVariationalState>()) {
+    variationalStateEntities.push_back(entity);
+  }
+  for (auto entity : variationalStateEntities) {
+    registry.remove<compute::MultibodyVariationalState>(entity);
+  }
+
+  std::vector<entt::entity> dualStateEntities;
+  for (auto entity : registry.view<sx::comps::VariationalContactDualState>()) {
+    dualStateEntities.push_back(entity);
+  }
+  for (auto entity : dualStateEntities) {
+    registry.remove<sx::comps::VariationalContactDualState>(entity);
+  }
+  EXPECT_EQ(countVariationalStates(), 0u);
+  EXPECT_EQ(countDualStates(), 0u);
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.restoreReplayFrame(1);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "transient variational replay restore should reinsert recorded "
+           "components without allocating from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_EQ(countVariationalStates(), 1u);
+  EXPECT_EQ(countDualStates(), 1u);
+
   world.restoreReplayFrame(0);
   EXPECT_EQ(countVariationalStates(), 0u);
   EXPECT_EQ(countDualStates(), 0u);

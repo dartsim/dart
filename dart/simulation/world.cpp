@@ -989,13 +989,71 @@ void restoreReplayDeformableNodeStates(
   }
 }
 
-template <typename Component, typename Snapshot, typename EntityPredicate>
-void restoreReplayTransientComponents(
+compute::MultibodyVariationalState makeReplayMultibodyVariationalState(
+    common::MemoryAllocator& allocator)
+{
+  using State = compute::MultibodyVariationalState;
+  return State{
+      false,
+      State::DeltaTransformVector{
+          common::StlAllocator<Eigen::Isometry3d>{allocator}},
+      State::MomentumVector{
+          common::StlAllocator<Eigen::Matrix<double, 6, 1>>{allocator}}};
+}
+
+void restoreReplayMultibodyVariationalState(
+    const compute::MultibodyVariationalState& source,
+    compute::MultibodyVariationalState& target,
+    common::MemoryAllocator& allocator)
+{
+  using State = compute::MultibodyVariationalState;
+  target.bootstrapped = source.bootstrapped;
+
+  State::DeltaTransformVector transforms{
+      common::StlAllocator<Eigen::Isometry3d>{allocator}};
+  transforms.assign(
+      source.previousDeltaTransform.begin(),
+      source.previousDeltaTransform.end());
+  target.previousDeltaTransform = std::move(transforms);
+
+  State::MomentumVector momentum{
+      common::StlAllocator<Eigen::Matrix<double, 6, 1>>{allocator}};
+  momentum.assign(
+      source.previousMomentum.begin(), source.previousMomentum.end());
+  target.previousMomentum = std::move(momentum);
+}
+
+comps::VariationalContactDualState makeReplayVariationalContactDualState(
+    common::MemoryAllocator& allocator)
+{
+  using State = comps::VariationalContactDualState;
+  return State{State::DualVector{common::StlAllocator<double>{allocator}}, 0u};
+}
+
+void restoreReplayVariationalContactDualState(
+    const comps::VariationalContactDualState& source,
+    comps::VariationalContactDualState& target,
+    common::MemoryAllocator& allocator)
+{
+  using State = comps::VariationalContactDualState;
+  State::DualVector duals{common::StlAllocator<double>{allocator}};
+  duals.assign(source.duals.begin(), source.duals.end());
+  target.duals = std::move(duals);
+  target.stepsSinceDualUpdate = source.stepsSinceDualUpdate;
+}
+
+template <
+    typename Component,
+    typename Snapshot,
+    typename EntityPredicate,
+    typename Restorer>
+void restoreReplayTransientComponentsWithRestorer(
     detail::WorldRegistry& registry,
     const Snapshot& snapshot,
     std::string_view componentName,
     common::MemoryAllocator& allocator,
-    EntityPredicate&& entityPredicate)
+    EntityPredicate&& entityPredicate,
+    Restorer&& restorer)
 {
   validateReplayTransientComponents<Component>(
       registry, snapshot, componentName, entityPredicate);
@@ -1023,8 +1081,27 @@ void restoreReplayTransientComponents(
   }
 
   for (const auto& [entity, component] : snapshot) {
-    registry.emplace_or_replace<Component>(entity, component);
+    restorer(entity, component);
   }
+}
+
+template <typename Component, typename Snapshot, typename EntityPredicate>
+void restoreReplayTransientComponents(
+    detail::WorldRegistry& registry,
+    const Snapshot& snapshot,
+    std::string_view componentName,
+    common::MemoryAllocator& allocator,
+    EntityPredicate&& entityPredicate)
+{
+  restoreReplayTransientComponentsWithRestorer<Component>(
+      registry,
+      snapshot,
+      componentName,
+      allocator,
+      std::forward<EntityPredicate>(entityPredicate),
+      [&](entt::entity entity, const Component& component) {
+        registry.emplace_or_replace<Component>(entity, component);
+      });
 }
 
 bool isReplayPublicFrameEntity(
@@ -1185,7 +1262,8 @@ WorldEcsDiagnostics makeWorldEcsDiagnostics(const Registry& registry)
 //==============================================================================
 void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 {
-  compute::WorldKinematicsGraph graph(world);
+  compute::WorldKinematicsGraph graph(
+      world, world.getMemoryManager().getFreeAllocator());
   graph.execute(executor);
 }
 
@@ -5597,6 +5675,10 @@ void World::restoreReplayFrame(std::size_t index)
       index);
 
   const ReplayState::Frame& replayFrame = m_replay->frames[index];
+  const bool wasSimulationMode = m_simulationMode;
+  const auto previousRigidBodySolver = m_rigidBodySolver;
+  const auto previousMultibodyIntegrationMethod = m_multibodyIntegrationMethod;
+  const auto previousContactSolverMethod = m_contactSolverMethod;
 
   validateReplayComponents<comps::DeformableNodeState>(
       m_storage->registry,
@@ -5766,15 +5848,32 @@ void World::restoreReplayFrame(std::size_t index)
 
   restoreReplayDeformableNodeStates(
       m_storage->registry, replayFrame.deformableNodeStates);
-  restoreReplayTransientComponents<compute::MultibodyVariationalState>(
+  restoreReplayTransientComponentsWithRestorer<
+      compute::MultibodyVariationalState>(
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
       "MultibodyVariationalState",
       replayAllocator,
       [](const detail::WorldRegistry& registry, entt::entity entity) {
         return registry.all_of<comps::MultibodyStructure>(entity);
+      },
+      [&](entt::entity entity,
+          const compute::MultibodyVariationalState& replayState) {
+        auto* state
+            = m_storage->registry.try_get<compute::MultibodyVariationalState>(
+                entity);
+        if (state == nullptr) {
+          state
+              = &m_storage->registry
+                     .emplace<compute::MultibodyVariationalState>(
+                         entity,
+                         makeReplayMultibodyVariationalState(replayAllocator));
+        }
+        restoreReplayMultibodyVariationalState(
+            replayState, *state, replayAllocator);
       });
-  restoreReplayTransientComponents<comps::VariationalContactDualState>(
+  restoreReplayTransientComponentsWithRestorer<
+      comps::VariationalContactDualState>(
       m_storage->registry,
       replayFrame.variationalContactDualStates,
       "VariationalContactDualState",
@@ -5783,6 +5882,21 @@ void World::restoreReplayFrame(std::size_t index)
         return registry
             .all_of<comps::MultibodyStructure, comps::VariationalContact>(
                 entity);
+      },
+      [&](entt::entity entity,
+          const comps::VariationalContactDualState& replayState) {
+        auto* state
+            = m_storage->registry.try_get<comps::VariationalContactDualState>(
+                entity);
+        if (state == nullptr) {
+          state = &m_storage->registry
+                       .emplace<comps::VariationalContactDualState>(
+                           entity,
+                           makeReplayVariationalContactDualState(
+                               replayAllocator));
+        }
+        restoreReplayVariationalContactDualState(
+            replayState, *state, replayAllocator);
       });
 
   for (const auto& state : replayFrame.joints) {
@@ -5800,7 +5914,13 @@ void World::restoreReplayFrame(std::size_t index)
         = state.externalForce;
   }
 
+  bool frameTopologyChanged = false;
   for (const auto& state : replayFrame.publicFrames) {
+    const auto& currentFrameState
+        = m_storage->registry.get<comps::FrameState>(state.entity);
+    frameTopologyChanged
+        = frameTopologyChanged
+          || currentFrameState.parentFrame != state.frameState.parentFrame;
     m_storage->registry.replace<comps::FrameState>(
         state.entity, state.frameState);
     if (state.freeFrameProperties) {
@@ -5812,7 +5932,9 @@ void World::restoreReplayFrame(std::size_t index)
           state.entity, *state.fixedFrameProperties);
     }
   }
-  markFrameTopologyChanged();
+  if (frameTopologyChanged) {
+    markFrameTopologyChanged();
+  }
   markFrameCachesDirty(m_storage->registry);
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
@@ -5860,7 +5982,14 @@ void World::restoreReplayFrame(std::size_t index)
   markFrameCachesDirty(m_storage->registry);
   if (m_simulationMode) {
     updateKinematics();
-    prepareStepPipelineCacheForCurrentConfiguration();
+    const bool stepPipelinePolicyChanged
+        = !wasSimulationMode || frameTopologyChanged
+          || previousRigidBodySolver != m_rigidBodySolver
+          || previousMultibodyIntegrationMethod != m_multibodyIntegrationMethod
+          || previousContactSolverMethod != m_contactSolverMethod;
+    if (stepPipelinePolicyChanged) {
+      prepareStepPipelineCacheForCurrentConfiguration();
+    }
   }
 
   m_replay->cursor = index;

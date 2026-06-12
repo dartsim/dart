@@ -101,7 +101,9 @@ void appendNodeLabel(
     for (const auto& access : node.getMetadata().resources) {
       out << "\\n"
           << escapeDot(std::string(toString(access.mode))) << " "
-          << escapeDot(access.resource);
+          << escapeDot(
+                 std::string_view{
+                     access.resource.data(), access.resource.size()});
     }
   }
 

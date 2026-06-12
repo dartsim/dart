@@ -360,6 +360,38 @@ TEST(SimulationComputeStageMetadata, SupportsMultipleDomainsAndAccelerators)
 }
 
 //==============================================================================
+TEST(SimulationComputeStageMetadata, ResourceStorageUsesProvidedAllocator)
+{
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeMetadata = freeList.getAllocationCount();
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    compute::ComputeStageMetadata metadata{
+        compute::ComputeStageDomain::Kinematics,
+        compute::toMask(compute::ComputeStageAcceleration::TaskParallel),
+        memoryManager.getFreeAllocator()};
+    metadata.resources.push_back(
+        {"comps::FrameCache#123456789", compute::ComputeAccessMode::Write});
+    metadata.resources.push_back(
+        compute::ComputeResourceAccess{
+            "comps::FrameCache#987654321",
+            compute::ComputeAccessMode::Read,
+            memoryManager.getFreeAllocator()});
+    heapCounter.stop();
+
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "allocator-aware compute metadata should not allocate resource "
+           "storage from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+    EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeMetadata);
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeMetadata);
+}
+
+//==============================================================================
 TEST(SimulationComputeGraph, EmptyGraphIsValid)
 {
   compute::ComputeGraph graph;

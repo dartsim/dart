@@ -1,11 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Authoritative Stop Handoff (2026-06-12, Final)
-
-Maintainer instruction for this checkpoint: stop all implementation,
-optimization, benchmark, build, lint, test, and CI follow-up work. This update
-is handoff documentation only; no fresh verification is intentionally run for
-this handoff.
+## Current Continuation (2026-06-12, Transient Replay Restore Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -14,26 +9,42 @@ Resume from exactly one branch:
 merged. Treat `pr/hmm-phase45-follow-up-clean` and older HMM branches as
 historical base branches unless a maintainer explicitly redirects the work.
 
-Latest committed source checkpoint before this docs-only handoff:
-`0c6ac25a7ef` (`Route deformable replay payloads through World allocator`).
-That commit sits on top of the replay snapshot/name/joint-payload replay
-allocator series and has prior-session local validation recorded below. Re-run
-from a fresh session before relying on that evidence.
+Latest local slice: transient replay restore now reinserts recorded
+`MultibodyVariationalState` and `VariationalContactDualState` components
+without global-heap allocation when those transient components are missing
+live. The pre-fix probe reproduced 21 global allocations / 793 bytes during
+`restoreReplayFrame(1)` after manually removing the live transient components.
 
-Do not continue implementation from the interrupted local working tree. The
-working tree at this handoff still contains an uncommitted transient replay
-restore probe in:
+The fix has three parts:
 
-- `dart/simulation/world.cpp`
-- `tests/unit/simulation/world/test_world.cpp`
+- replay transient restore uses World-allocated scratch and allocator-aware
+  construction/copy for the two variational transient payload types;
+- replay restore only invalidates frame topology and rebuilds step-pipeline
+  caches when the restored frame actually changes topology or solver policy;
+- compute graph resource metadata and `WorldKinematicsGraph` resource ids use
+  the graph allocator, closing the remaining allocation stack from
+  kinematics/compute graph resource-name construction.
 
-That probe was intentionally not committed or pushed. It added a heap counter
-around restoring missing transient variational replay components, attempted to
-avoid some replay-restore rebuild work, and still reproduced global heap
-allocations from kinematics/compute graph string resource construction. Treat
-it as scratch evidence only. A fresh agent should either inspect and discard
-the local diff before starting a clean branch, or explicitly turn it into a new
-evidence-first follow-up slice after re-measuring from scratch.
+New regression coverage:
+
+- `World.ReplayRecordingRestoresTransientVariationalComponents` removes the
+  live transient variational components while replay recording is active, then
+  asserts `restoreReplayFrame(1)` reinserts the recorded components with zero
+  global heap allocations.
+- `SimulationComputeStageMetadata.ResourceStorageUsesProvidedAllocator`
+  asserts long compute resource identifiers allocate through the supplied
+  allocator rather than the global heap.
+
+Validation run for this local slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target test_world test_compute_graph --parallel "$JOBS"
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.Replay*:World.WorldPersistentStorageUsesWorldFreeAllocator:World.AvbdGroundFrictionRowsAreActive:World.AvbdSelfContactFrictionGridRowsAreActive:World.AvbdSelfContactFrictionProductionGridRowsAreActive' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_compute_graph --gtest_color=no
+```
 
 Fresh-session entry point:
 
@@ -46,17 +57,12 @@ git log --oneline --decorate -8
 git diff --stat
 ```
 
-If `git diff --stat` shows the transient replay probe files above, do not
-assume they are validated. Stop, inspect the diff, and decide whether to
-discard it or restart the investigation as a separate follow-up PR.
+If this slice has not been committed yet, run `git diff --stat` and inspect the
+transient replay restore / compute graph metadata diff before continuing. If it
+has been committed, start from the next measured HMM gap below.
 
 Immediate follow-up candidates for the next fresh session:
 
-- Replay transient restore path: measure missing
-  `MultibodyVariationalState` / `VariationalContactDualState` restore under a
-  global-heap counter. Prior scratch evidence pointed at
-  `WorldKinematicsGraph::rebuild()` / compute-graph resource-name strings as a
-  remaining allocation source, not just EnTT component insertion.
 - Persistent deformable storage: replay-owned `DeformableNodeState` snapshots
   are allocator-aware, but live `DeformableNodeState` component storage still
   uses plain `std::vector`.
@@ -91,10 +97,11 @@ allocator`).
 - Committed locally: `194bc3ad206` (`Record HMM replay allocator handoff`).
 - Committed locally: `0c6ac25a7ef` (`Route deformable replay payloads through
 World allocator`).
-- A docs-only stop-handoff commit should sit on top of those replay commits
-  when this branch is pushed.
-- Latest local slice: deformable node replay payload snapshots now route
-  through World memory and restore without resizing live node-state vectors.
+- Committed and pushed: `f46c6f19239` (`Record HMM final stop handoff`).
+- Latest local slice: transient variational replay restore now reinserts
+  missing recorded components without global-heap allocation by routing replay
+  transient payloads and kinematics graph metadata through World/graph
+  allocators.
 
 The committed replay slices close the next replay ownership gaps. A new
 non-empty replay ownership assertion first reproduced one global heap
@@ -142,8 +149,20 @@ masses, and fixed flags, and restore copies into existing live vectors only
 after size checks. `World.ReplayRecordingRejectsDeformableNodeVectorSizeChanges`
 covers the allocation-avoidance invariant for corrupted live node-state sizes.
 
-Validation for the replay-name, replay-payload, restore-size, and deformable
-replay-payload slices:
+The transient replay-restore slice closes the next replay restore allocation
+gap. A focused probe in
+`World.ReplayRecordingRestoresTransientVariationalComponents` reproduced 21
+global heap allocations / 793 bytes when restoring a recorded frame after the
+live `MultibodyVariationalState` and `VariationalContactDualState` components
+were removed. Restore now uses allocator-aware construction/copy for those
+transient payloads, skips unnecessary step-pipeline cache rebuilds when replay
+restore does not change topology or solver policy, and routes compute graph
+resource metadata plus `WorldKinematicsGraph` resource ids through the graph
+allocator. `SimulationComputeStageMetadata.ResourceStorageUsesProvidedAllocator`
+covers the compute metadata allocator invariant directly.
+
+Validation for the replay-name, replay-payload, restore-size, deformable
+replay-payload, and transient replay-restore slices:
 
 ```bash
 pixi run lint
@@ -156,16 +175,16 @@ build/default/cpp/Release/bin/test_world \
 build/default/cpp/Release/bin/test_world \
   --gtest_filter='World.Replay*:World.AvbdGroundFrictionRowsAreActive:World.AvbdSelfContactFrictionGridRowsAreActive:World.AvbdSelfContactFrictionProductionGridRowsAreActive' \
   --gtest_color=no
+build/default/cpp/Release/bin/test_compute_graph --gtest_color=no
 ```
 
 Live joint component storage still uses `Eigen::VectorXd`, and live deformable
 node component storage still uses plain `std::vector`; the replay changes only
 change replay-owned snapshot payloads and reject runtime vector size drift
-during restore. Richer replay restores may still allocate if they insert
-missing transient components or touch other non-joint replay payloads that
-remain native heap-owned. Treat those as separate evidence-first slices; do not
-claim full World replay zero-heap coverage from the current snapshot-payload
-gates.
+during restore. Richer replay restores may still allocate if they touch other
+non-joint replay payloads that remain native heap-owned. Treat those as
+separate evidence-first slices; do not claim full World replay zero-heap
+coverage from the current replay gates.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -187,26 +206,19 @@ git log --oneline --decorate -8
 git diff --stat
 ```
 
-Then verify from scratch before any new code, benchmark, or PR work. Do not
-continue implementation from this stop checkpoint without first choosing a
-fresh follow-up PR plan and running the relevant local gates.
+Then verify from scratch before any new code, benchmark, or PR work.
 
 Immediate follow-up candidates for the next fresh session:
 
-- Replay transient restore path: `restoreReplayTransientComponents()` still
-  uses `registry.emplace_or_replace<Component>(entity, component)` after
-  removing stale components. If a recorded transient component is missing live,
-  restore may allocate while re-inserting it. Measure first; do not change
-  behavior without evidence.
 - Non-joint replay payloads: `comps::DeformableNodeState` replay snapshots are
   now allocator-aware, but live `DeformableNodeState` component storage still
   uses plain `std::vector`. Decide separately whether persistent deformable
   node storage should move to World-backed vectors; that is broader than the
   replay snapshot fix.
-- Existing allocator-aware transient payloads: `VariationalContactDualState`
-  and `MultibodyVariationalState` already use `dart::common::StlAllocator` for
-  nested vectors. Confirm copy-construction/assignment allocator propagation
-  before changing those paths.
+- Additional transient replay component types: `MultibodyVariationalState` and
+  `VariationalContactDualState` now have allocator-aware restore paths. Use a
+  focused heap counter before adding similar paths for any other transient
+  component type.
 - Allocator comparative matrix: the remaining standard/foonathan misses are
   still EnTT steady-state registry rows, especially fixed 1024-element
   component payload pages plus sparse/packed entity pages. Do not lower

@@ -79,6 +79,7 @@ private:
   [[nodiscard]] ComputeNode* findNode(entt::entity entity) const;
 
   World& m_world;
+  dart::common::MemoryAllocator* m_allocator = nullptr;
   ComputeGraph m_graph;
   std::vector<EntityNode, EntityNodeAllocator> m_entityNodes;
   std::uint64_t m_frameTopologyRevision = 0;

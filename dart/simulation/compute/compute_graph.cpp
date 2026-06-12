@@ -157,7 +157,8 @@ ComputeNode& ComputeGraph::addNode(
       nameString);
 
   auto node = ComputeNodePtr(
-      m_allocator->construct<ComputeNode>(nameString, std::move(fn), metadata),
+      m_allocator->construct<ComputeNode>(
+          nameString, std::move(fn), std::move(metadata)),
       ComputeNodeDeleter{m_allocator});
   if (node == nullptr) {
     throw std::bad_alloc();
@@ -392,7 +393,11 @@ std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
           }
           hazards.push_back(
               ComputeResourceHazard{
-                  nodes[i], nodes[j], first.resource, first.mode, second.mode});
+                  nodes[i],
+                  nodes[j],
+                  std::string(first.resource.begin(), first.resource.end()),
+                  first.mode,
+                  second.mode});
         }
       }
     }

@@ -41,7 +41,7 @@ namespace dart::simulation::compute {
 //==============================================================================
 ComputeNode::ComputeNode(
     std::string_view name, ExecuteFn fn, ComputeStageMetadata metadata)
-  : m_name(name), m_fn(std::move(fn)), m_metadata(metadata)
+  : m_name(name), m_fn(std::move(fn)), m_metadata(std::move(metadata))
 {
 }
 
