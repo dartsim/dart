@@ -2,9 +2,16 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds replay-guided timeline metadata to
+This checkpoint is hand-off documentation only. The user explicitly stopped
+all further implementation and verification, asked for the current work to be
+resumable from a fresh Claude/Codex session, and previously asked for the
+hand-off to be pushed. No code, tests, lint, dry-runs, or diff checks were run
+for this checkpoint.
+
+The newest implementation checkpoint remains `cc8431ef6f9 Add stack stability
+replay timeline`, which added replay-guided timeline metadata to
 `rigid_stack_stability` after the live open-command workflow follow-up. The
-stack row now uses top-x divergence as its Replay value track and marks frames
+stack row uses top-x divergence as its Replay value track and marks frames
 where overlap, low clearance, visible top-block drift, or solver-family
 divergence make the stack worth scrubbing.
 
@@ -22,10 +29,16 @@ Expected repository state after this hand-off:
   live open-command and stack Replay timeline checkpoints.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
   checkpoint after the workflow-video packet slice.
-- `d5c6de2bee1 Describe optional rigid workflow rows`,
-  `5a4529f0083 Audit rigid workflow guidance coverage`, and
-  `ad013e62069 Refresh rigid guidance audit handoff` are local and unpushed at
-  this checkpoint.
+- Before this hand-off doc was committed, the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by five local commits:
+  `d5c6de2bee1 Describe optional rigid workflow rows`,
+  `5a4529f0083 Audit rigid workflow guidance coverage`,
+  `ad013e62069 Refresh rigid guidance audit handoff`,
+  `4395ba51f35 Expose rigid workflow live open commands`, and
+  `cc8431ef6f9 Add stack stability replay timeline`.
+- This docs-only hand-off commit is intended to be pushed together with those
+  five parent commits because the user explicitly requested pushing the
+  hand-off and then stopping.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -36,8 +49,8 @@ Expected repository state after this hand-off:
 - The stack Replay timeline continuation added `replay_timeline` metadata to
   `rigid_stack_stability`, updated tests and docs, and ran focused tests plus a
   real docked capture.
-- Do not push any new implementation or handoff commit without explicit
-  approval in a future session.
+- After this pushed hand-off, do not push any new implementation or handoff
+  commit without explicit approval in a future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -113,6 +126,9 @@ Expected repository state after this hand-off:
 - [x] `rigid_stack_stability` now exposes a Replay timeline value track for
       top-x divergence and markers for overlap, low-clearance, top-drift, or
       solver-divergence frames.
+- [x] The final action in this checkpoint is docs-only hand-off cleanup after
+      the user explicitly instructed the agent to stop all further work and
+      verification.
 
 ## Goal
 
@@ -144,11 +160,12 @@ are easy to inspect, cycle, capture, and regression-test.
   live open-command and stack Replay timeline checkpoints.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
   checkpoint.
-- `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed.
-- `5a4529f0083 Audit rigid workflow guidance coverage` is local and unpushed.
-- `ad013e62069 Refresh rigid guidance audit handoff` is local and unpushed.
-- The current live open-command and stack Replay timeline checkpoints are local
-  and unpushed until an explicit future push approval.
+- Immediately before this hand-off doc was committed, the branch was ahead of
+  origin by five commits: `d5c6de2bee1`,
+  `5a4529f0083`, `ad013e62069`, `4395ba51f35`, and
+  `cc8431ef6f9`.
+- This docs-only hand-off commit is expected to be pushed with those five
+  parents because the user explicitly requested it.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -775,20 +792,24 @@ Observed results:
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the optional-row metadata, guidance-audit, handoff,
-   live-open-command, and stack Replay timeline commits to be local and
-   unpushed unless a future session already pushed them with explicit approval.
-3. Re-evaluate the durable sidecar before selecting the next bounded rigid
+   live-open-command, stack Replay timeline, and final docs-only hand-off
+   commits to be present. If this hand-off push succeeded, expect them on
+   `origin/feature/rigid-body-gui-visual-verification`.
+3. Do not continue implementation until the user explicitly asks for more work.
+4. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice.
-4. Rerun the repository-mandated `pixi run lint` before any future commit.
-5. Retire this dev-task folder only if the maintainer explicitly accepts the
+5. Rerun the repository-mandated `pixi run lint` before any future commit.
+6. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-6. Do not push again unless the user explicitly approves pushing in that
+7. Do not push again unless the user explicitly approves pushing in that
    session.
 
 ## Commit And Push Notes
 
 - Do not commit without following the repository pre-commit rule:
   `pixi run lint` is mandatory before every commit.
+- Exception for this final docs-only checkpoint: lint was intentionally not run
+  because the user explicitly requested no further verification.
 - Do not push unless the user explicitly approves pushing in that session.
 - Before pushing an existing PR branch, merge the latest base branch into the
   branch first; do not rebase a published PR branch.
