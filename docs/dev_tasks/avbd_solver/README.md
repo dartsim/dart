@@ -9,6 +9,20 @@ Corpus matrix:
 
 ## Current Status
 
+- Critical stop handoff (2026-06-12): the user explicitly directed the session
+  to stop all further work and only ensure the hand-off docs. Do not continue
+  implementation, verification, branch cleanup, PR mutation, hosted CI work,
+  push, or merge from this checkpoint unless a future user request explicitly
+  asks for it. The active checkout before this docs-only handoff edit was the
+  consolidated continuation branch `avbd/source-row-extraction-precheck` at
+  local HEAD `456b931a57b` (`Broaden AVBD articulated reset axis coverage`),
+  tracking `origin/avbd/source-row-extraction-precheck` and ahead by eight
+  local commits. This docs-only handoff intentionally has no fresh
+  build/test/CI or `git diff --check` verification by explicit user direction;
+  only the repository-required pre-commit `pixi run lint` is expected if the
+  handoff is committed locally. `RESUME.md` is the current source of truth for
+  the branch inventory, stash inventory, recent local commits, PR #2977
+  caveats, and the next steps to use only if work is explicitly resumed.
 - Latest resumed checkpoint (2026-06-11): same-multibody articulated one-DOF
   reset/re-engagement coverage now exercises non-cardinal axes in the public
   movable offset revolute path, the direct private movable revolute config

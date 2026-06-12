@@ -1,5 +1,86 @@
 # Resume: AVBD Solver
 
+## Critical Stop Handoff (2026-06-12)
+
+User directive: stop all further work and only ensure the hand-off docs. Do
+not continue implementation, verification, branch cleanup, PR mutation, hosted
+CI work, push, or merge from this checkpoint unless a future user request
+explicitly asks for it. This section is intentionally a hand-off snapshot, not
+new validation evidence.
+
+North star when work is explicitly resumed: continue PLAN-104 AVBD toward
+source-shaped articulated rigid and deformable row coverage with evidence
+against the native source corpus. Do not count source-row overhead cleanup or
+focused articulated lifecycle tests as CPU-win, GPU, or paper-number gates;
+those gates require dedicated corpus and benchmark evidence.
+
+Current checkout snapshot before this docs-only handoff edit:
+
+- Branch: `avbd/source-row-extraction-precheck`.
+- Upstream: `origin/avbd/source-row-extraction-precheck`.
+- Local HEAD:
+  `456b931a57bfc12bbd9b7b1eea9adbe5c7ed1ca1 Broaden AVBD articulated reset axis coverage`.
+- Status before this docs edit: clean, ahead of upstream by eight commits.
+- Local-only commits above upstream, newest first:
+  `456b931a57b Broaden AVBD articulated reset axis coverage`,
+  `6e1492826c7 Broaden AVBD private motor persistence axis coverage`,
+  `68af00b8817 Record AVBD stop handoff snapshot`,
+  `533dc490d87 Reuse AVBD rigid motor row scratch`,
+  `77404f63496 Avoid contact-manifold row builder heap scratch for small AVBD inputs`,
+  `04a369222a7 Record AVBD literal stop handoff`,
+  `13604d8b8b5 Reuse AVBD distance spring row scratch`, and
+  `51eb9b48e08 Record AVBD angular motor validation evidence`.
+- This docs-only handoff intentionally has no new build/test/CI or
+  `git diff --check` verification. The user explicitly asked to stop without
+  further verification; only the repository-required pre-commit
+  `pixi run lint` is expected if this handoff is committed locally. Do not
+  infer that this handoff edit was pushed unless a later session records that
+  explicitly.
+
+Current local branch inventory:
+
+| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                    |
+| -------------------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `456b931a57b`         | Current consolidated continuation branch; ahead of origin by eight commits before this docs edit.     |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch; do not mutate or rerun CI without explicit approval and a fresh PR status refresh.   |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                             |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local main matched the last checked origin/main snapshot; refresh before using it as a base.          |
+
+Current local stash inventory. Do not apply or drop these by default:
+
+- `stash@{0}` on `avbd/source-row-extraction-precheck`:
+  `codex-pr2977-switch-preserve-extraction-precheck-wip`.
+- `stash@{1}` on `avbd/source-row-extraction-precheck`:
+  `codex-avbd-normalize-fastpath-wip`.
+- `stash@{2}` through `stash@{7}` are older
+  `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
+
+PR #2977 state was not refreshed during this stop-only handoff. The last known
+details below may be stale; a future session should refresh them read-only
+before making any PR decision. Do not reply to bot comments or mutate review
+threads.
+
+Fresh-session recovery command:
+
+```bash
+git switch avbd/source-row-extraction-precheck
+git status --short --branch
+git log --oneline --decorate -12
+git stash list
+```
+
+If a future user explicitly asks to resume implementation, the next preferred
+local gap is broader articulated lifecycle coverage rather than more
+source-row overhead cleanup. The most concrete unstarted slice from the last
+analysis was direct private same-multibody prismatic velocity point-joint reset
+coverage with a non-cardinal slider axis, complementing the existing direct
+private movable revolute reset coverage and generated current-pose prismatic
+reset coverage. After that, prefer rigid contact persistence completeness and
+then source-demo CPU/GPU corpus evidence. Keep all claims narrow unless corpus
+or benchmark evidence supports them.
+
 ## Latest Same-Multibody Reset Checkpoint (2026-06-11)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
