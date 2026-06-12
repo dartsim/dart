@@ -41,6 +41,8 @@
 #include "dart/simulation/multibody/link.hpp"
 #include "dart/simulation/world.hpp"
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <vector>
 
 #include <cmath>
@@ -257,13 +259,15 @@ void validateJointLimitPair(
       fieldName);
 }
 
-void markSubtreeTransformCacheDirty(auto& registry, entt::entity root)
+void markSubtreeTransformCacheDirty(
+    auto& registry, entt::entity root, dart::common::MemoryAllocator& allocator)
 {
   if (root == entt::null || !registry.valid(root)) {
     return;
   }
 
-  std::vector<entt::entity> stack;
+  std::vector<entt::entity, dart::common::StlAllocator<entt::entity>> stack(
+      dart::common::StlAllocator<entt::entity>{allocator});
   stack.push_back(root);
 
   auto frameStateView = registry.template view<comps::FrameState>();
@@ -421,7 +425,9 @@ void Joint::setPosition(const Eigen::VectorXd& position)
 
   jointComp.position = position;
   markSubtreeTransformCacheDirty(
-      dart::simulation::detail::registryOf(*m_world), jointComp.childLink);
+      dart::simulation::detail::registryOf(*m_world),
+      jointComp.childLink,
+      m_world->getMemoryManager().getFreeAllocator());
 }
 
 //==============================================================================

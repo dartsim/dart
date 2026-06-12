@@ -44,6 +44,8 @@
 #include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/name.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
@@ -51,7 +53,8 @@
 
 namespace {
 
-void markSubtreeCacheDirty(auto& registry, entt::entity root)
+void markSubtreeCacheDirty(
+    auto& registry, entt::entity root, dart::common::MemoryAllocator& allocator)
 {
   if (root == entt::null) {
     return;
@@ -61,7 +64,8 @@ void markSubtreeCacheDirty(auto& registry, entt::entity root)
     return;
   }
 
-  std::vector<entt::entity> stack;
+  std::vector<entt::entity, dart::common::StlAllocator<entt::entity>> stack(
+      dart::common::StlAllocator<entt::entity>{allocator});
   stack.push_back(root);
 
   auto frameStateView
@@ -542,7 +546,8 @@ void Frame::markSubtreeTransformCacheDirty()
 
   markSubtreeCacheDirty(
       dart::simulation::detail::registryOf(*m_world),
-      detail::toRegistryEntity(m_entity));
+      detail::toRegistryEntity(m_entity),
+      m_world->getMemoryManager().getFreeAllocator());
 }
 
 } // namespace dart::simulation

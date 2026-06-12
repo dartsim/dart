@@ -3154,6 +3154,27 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   const Eigen::VectorXd liveUpper = Eigen::VectorXd::Constant(6, 10.0);
   {
     ScopedHeapAllocationCounter heapCounter;
+    liveJoint.setPosition(livePosition);
+    liveJoint.setVelocity(liveVelocity);
+    liveJoint.setForce(liveTorque);
+    liveJoint.setCommandVelocity(liveVelocity);
+    liveJoint.setSpringStiffness(liveUpper);
+    liveJoint.setDampingCoefficient(liveUpper);
+    liveJoint.setRestPosition(livePosition);
+    liveJoint.setArmature(liveUpper);
+    liveJoint.setCoulombFriction(liveUpper);
+    liveJoint.setPositionLimits(liveLower, liveUpper);
+    liveJoint.setVelocityLimits(liveLower, liveUpper);
+    liveJoint.setEffortLimits(liveLower, liveUpper);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "public live 6-DOF joint setters should reuse bounded component "
+           "payloads and route dirty-traversal scratch through the World "
+           "allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  {
+    ScopedHeapAllocationCounter heapCounter;
     liveJointComponent.position = livePosition;
     liveJointComponent.velocity = liveVelocity;
     liveJointComponent.acceleration = liveAcceleration;

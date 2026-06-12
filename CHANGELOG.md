@@ -562,6 +562,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `World::loadBinary()` to the loaded World's free allocator so serialized
     multibody adjacency, deformable persistent payloads, and variational state
     continue through the World memory hierarchy after round-trip.
+  - Routed public experimental `Joint::setPosition()` and frame subtree
+    dirtying traversal scratch through the owning World's free allocator, and
+    extended the persistent-storage allocator gate to cover public 6-DOF joint
+    payload and limit setters under the global heap counter.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
