@@ -9,7 +9,7 @@ description: "DART Architecture: the DART 7 multi-physics, multi-solver, multi-b
 
 # DART 7 Architecture
 
-Load this skill when working on the experimental simulation `World`, on
+Load this skill when working on the DART 7 simulation `World`, on
 solvers/physics domains/compute backends, or whenever a task needs the
 big-picture map of how DART 7 is generalized for multi-physics, multi-solver,
 and multi-backend simulation.
@@ -18,10 +18,10 @@ and multi-backend simulation.
 
 The `World` owns topology, time, and a configured set of **solvers**; each
 solver advances the dynamics of the entities in its **physics domain**, and
-**couplers** mediate interactions between domains — all expressed as
-**compute-graph** work that any **backend executor** runs. Users configure
-method families and policies, never solver registries, component storage, or
-execution backends.
+**couplers** mediate interactions between domains — with parallelizable work
+expressed as **compute-graph** nodes that any **backend executor** runs.
+Users configure method families and policies, never solver registries,
+component storage, or execution backends.
 
 ## Why three axes of choice
 
@@ -34,12 +34,21 @@ execution backends.
   path stays trivial; the backend seam is designed for later platform/scene-scale
   awareness without changing the public API.
 
-## Visual one-paper (read this first)
+## Design vs current state (read both)
 
-`docs/readthedocs/architecture.md` — the single-page map: the pipeline as
-abstracted boxes, the available options at each seam (physics domains, solver
-families, coupling, collision/contacts, compute graph, executors), status
-markers, and the source-of-truth map. Published on the docs site as **Architecture**.
+`docs/readthedocs/architecture.md` is the single-page map of the design and
+the options at each seam, with honest status markers.
+`docs/design/dart7_architecture_assessment.md` is the verified record of
+where the implementation still diverges from that design (no internal solver
+contract yet, conceptual-only Model/State split, executor seam unused by
+dynamics stages, missing apples-to-apples substrate) and owns the standing
+rule: new solver families enter only through
+`docs/plans/solver-family-intake.md`, including contract conformance and
+machine-recorded solver identity in all benchmark evidence. The fixes are
+executed as PLAN-091 work packets
+(`docs/plans/091-architecture-hardening.md`) under the orchestrator/executor
+model in `docs/ai/orchestration.md`. Do not write new code that copies a
+pattern the assessment lists as a verified finding.
 
 ## Key owner documents
 
@@ -47,12 +56,13 @@ The architecture page's **Source-of-truth map** is the single owner of the full
 topic → owner-doc mapping (solver, API, extension, compute, differentiable,
 clean-break, north-star). The docs an agent most often needs inline:
 
-| Topic                                                     | Document                                                                                              |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Solver abstraction, domain assignment, coupling, schedule | `docs/design/simulation_solver_architecture.md`                                                       |
-| Public C++ / dartpy API shape and promotion rules         | `docs/design/simulation_experimental_cpp_api.md`, `docs/design/simulation_experimental_python_api.md` |
-| CPU / SIMD / GPU decision framework                       | `docs/design/scalable_compute_decisions.md`                                                           |
-| DART 7 vs DART 6 topology · live progress / parity gates  | `docs/design/dart7_clean_break_strategy.md`, `docs/plans/dashboard.md`                                |
+| Topic                                                     | Document                                                                    |
+| --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Solver abstraction, domain assignment, coupling, schedule | `docs/design/simulation_solver_architecture.md`                             |
+| Verified findings, standing rule, competitor lessons      | `docs/design/dart7_architecture_assessment.md`                              |
+| Public C++ / dartpy API shape and promotion rules         | `docs/design/simulation_cpp_api.md`, `docs/design/simulation_python_api.md` |
+| CPU / SIMD / GPU decision framework                       | `docs/design/scalable_compute_decisions.md`                                 |
+| DART 7 vs DART 6 topology · live progress / parity gates  | `docs/design/dart7_clean_break_strategy.md`, `docs/plans/dashboard.md`      |
 
 ## Public-facade rules (do not violate)
 
@@ -64,10 +74,13 @@ clean-break, north-star). The docs an agent most often needs inline:
   configuration.
 - Keep the easy path (`World` + `addRigidBody`/`addMultibody` + `step`) free of
   solver vocabulary.
+- Fallbacks must never silently substitute algorithms: validate capabilities
+  at finalize or record the substitution in diagnostics.
 
 ## Verification
 
 Docs-only edits use the docs-only gate set in `docs/ai/verification.md`
 (`pixi run lint`, `pixi run check-docs-policy`, `pixi run docs-build` when the
 Read the Docs site changes). Implementation work that realizes parts of this
-architecture follows the gates in `docs/design/simulation_solver_architecture.md`.
+architecture follows the gates in `docs/design/simulation_solver_architecture.md`
+and the packet gates in `docs/plans/091-architecture-hardening.md`.

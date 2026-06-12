@@ -30,8 +30,13 @@ gh pr list --repo dartsim/dart --state merged --base main --limit 10 \
 Use these practices:
 
 - Keep titles plain, scoped, and outcome-focused. Do not add agent prefixes.
-- Fill the PR template with concrete Summary, Motivation, Changes, Testing,
-  Breaking Changes, and Related Issues details.
+- Fill the PR template in DART's default order: Summary, Motivation / Problem,
+  Changes / Key Changes, optional Before / After, Testing, Breaking Changes,
+  and Related Issues / PRs. Keep Summary first because reviewers need the
+  skimmable outcome before the rationale. If the motivation is necessary to
+  understand the outcome, make the first Summary sentence problem-oriented,
+  then put the fuller why in Motivation / Problem rather than moving Motivation
+  above Summary.
 - Write the opening Summary and Motivation from the perspective of a user or
   downstream maintainer who is not already familiar with the implementation:
   lead with what changes for them, what stays compatible, how they would opt in
