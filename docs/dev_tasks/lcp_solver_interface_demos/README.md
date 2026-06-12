@@ -1,5 +1,42 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Post-SAP Checkpoint
+
+Current branch state after the SAP slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Latest local checkpoint:
+  `64777bcf7da Tune SAP boxed profile regularization`.
+- Tracking state after the checkpoint: ahead of
+  `origin/feature/lcp-solver-interface-demos` by 36 commits.
+- Worktree was clean before this hand-off update.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation; pushes still require
+  explicit maintainer/user approval.
+
+Discarded follow-up investigation:
+
+- Tried changing `BoxedSemiSmoothNewtonSolver` Jacobian assembly from
+  `J.setZero()` plus interior-row copies to `J = A` plus active-row rewrites.
+- Focused before/after
+  `BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BoxedSemiSmoothNewton/` showed
+  a clear regression: mean ratio `1.844`, best `1.080`, worst `2.271`, with
+  every row slower.
+- The draft was reverted completely and should not be reattempted without new
+  evidence.
+- The line-search sweep also did not justify a broad default change: more
+  search steps only helped the 16-contact friction-index sweep row modestly
+  while leaving other rows unchanged or slower.
+
+Immediate next step:
+
+- Continue from the refreshed profile after the SAP checkpoint. The clearest
+  remaining targets are Standard `Lemke`, `InteriorPoint`, `Baraff`, and
+  Newton-family rows; Boxed `Admm`, `BoxedSemiSmoothNewton`, and
+  `ShockPropagation`; and FrictionIndex `BoxedSemiSmoothNewton`,
+  `BlockedJacobi`, `BGS`, `ShockPropagation`, and `Staggering`. For
+  `BoxedSemiSmoothNewton`, avoid the reverted Jacobian-copy approach above.
+
 ## 2026-06-12 Current Continuation - SAP Boxed Profile Regularization
 
 After the ADMM checkpoint below, work continued on the next high-ratio bounded
