@@ -1208,6 +1208,59 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
         )
 
 
+def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
+    import numpy as np
+
+    sx = _require_simulation_symbols("RigidBodySolver")
+
+    from examples.demos.scenes.rigid_ipc_tunnel import SCENE, build
+
+    assert SCENE.category == "Rigid IPC"
+    assert SCENE.id == "rigid_ipc_tunnel"
+
+    setup = build()
+    world = setup.info["sx_world"]
+    assert setup.info["rigid_body_solver"] == "ipc"
+    assert world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert setup.info["rigid_ipc_tunnel_capture_first"] is False
+
+    for _ in range(12):
+        setup.pre_step()
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_ipc_tunnel"
+    assert capture_metrics["solver"] == "rigid_ipc"
+    assert capture_metrics["scope"] == "focused_no_tunneling_capability"
+    assert capture_metrics["status"] in {
+        "approaching",
+        "barrier-active",
+        "barrier-held",
+    }
+    assert float(capture_metrics["launch_speed"]) == pytest.approx(8.0)
+    assert float(capture_metrics["time_step_ms"]) == pytest.approx(10.0)
+    assert float(capture_metrics["world_time"]) > 0.0
+    assert float(capture_metrics["history_samples"]) >= 13.0
+    assert float(capture_metrics["min_tunnel_margin"]) > 0.0
+    assert float(capture_metrics["max_wall_crossing"]) < 0.01
+    assert float(capture_metrics["max_step_ms"]) >= 0.0
+    assert np.isfinite(
+        [
+            float(capture_metrics["box_x"]),
+            float(capture_metrics["box_speed"]),
+            float(capture_metrics["box_vx"]),
+            float(capture_metrics["clearance"]),
+            float(capture_metrics["contact_count"]),
+            float(capture_metrics["leading_face_x"]),
+            float(capture_metrics["min_clearance"]),
+            float(capture_metrics["min_tunnel_margin"]),
+            float(capture_metrics["trailing_face_x"]),
+            float(capture_metrics["tunnel_margin"]),
+            float(capture_metrics["wall_left_face_x"]),
+            float(capture_metrics["wall_right_face_x"]),
+        ]
+    ).all()
+
+
 def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
     import numpy as np
 

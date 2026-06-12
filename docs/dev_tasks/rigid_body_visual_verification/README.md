@@ -408,6 +408,17 @@
       demo README now document docked `py-demo-capture --show-ui` commands for
       every non-numbered related-evidence target, and integration coverage keeps
       those commands synchronized with the route table.
+- [x] Related no-tunneling metrics follow-up: `rigid_ipc_tunnel` now exports
+      scene-owned capture metrics for the non-numbered Rigid IPC shelf route:
+      wall clearance, through-wall margin, box velocity, contact count, step
+      timing, and barrier-held status. The focused no-tunneling metrics guard
+      reported `1 passed`, and the real docked 24-frame capture wrote
+      23 PNG frames plus 24 scene-metrics events under
+      `/tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644`, with latest
+      status `barrier-held`, min clearance about `1.22e-6` m, min tunnel
+      margin about `0.500001` m, and max wall crossing `0.0`. The related
+      route/docs drift guard reported `12 passed`; `pixi run lint`, bounded
+      default `pixi run build`, and `git diff --check` passed.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -763,8 +774,11 @@ and the no-tunneling scope decision.
 3. Refresh skipped gates only if the next user/session wants to move from
    handoff into PR-readiness or more implementation.
 4. The numbered workflow capture-metrics pass now reaches the final row. Next,
-   audit remaining non-numbered shelf gaps and PR-readiness rather than adding
-   another numbered row by default.
+   continue auditing remaining non-numbered shelf gaps and PR-readiness rather
+   than adding another numbered row by default. The focused
+   `rigid_ipc_tunnel` no-tunneling route now has capture metrics; audit other
+   related routes only when they add distinct user evidence beyond the numbered
+   row.
 5. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
@@ -780,7 +794,7 @@ and the no-tunneling scope decision.
 9. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
 10. Keep fuller articulated arm/gripper manipulation deferred until the public
-   API/runtime can support it as an interactive verifier. The current audit
-   found rigid-body joints are not IPC-supported, multibody link contacts lack
-   material/friction controls, and scripted IPC two-jaw pinch settings that
-   actually carry an object run at hundreds of milliseconds per step.
+    API/runtime can support it as an interactive verifier. The current audit
+    found rigid-body joints are not IPC-supported, multibody link contacts lack
+    material/friction controls, and scripted IPC two-jaw pinch settings that
+    actually carry an object run at hundreds of milliseconds per step.

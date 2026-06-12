@@ -72,8 +72,8 @@
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
   link center-of-mass offsets, link-origin Jacobian mapping, multibody
-  solver-family routing, loop-closure family selection, and stack-packet
-  physics/runtime fields in
+  solver-family routing, loop-closure family selection, no-tunneling IPC, and
+  stack-packet physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -86,6 +86,34 @@
 
 ## Testing
 
+- Latest no-tunneling related-shelf capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_ipc_tunnel.py` now publishes
+    scene-owned capture metrics for the non-numbered focused Rigid IPC
+    no-tunneling route: row identity, no-tunneling scope, IPC solver label,
+    launch speed, wall/box extents, wall clearance, through-wall margin, box
+    velocity, contact count, step timing, barrier status, and compact history
+    extrema.
+  - `python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics`
+    asserts the capture hook mirrors live IPC state and that the fast box keeps
+    positive through-wall margin.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644`
+    - nonblank docked capture, 23 PNG frames, 24 scene-metrics events, final
+      contacts `0`, status `barrier-held`, min clearance about `1.22e-6` m,
+      min tunnel margin about `0.500001` m, max wall crossing `0.0`, and world
+      time `0.24` s
+  - Focused route/docs drift guard with row ordering, viewer-title numbering,
+    docs-count, sidecar, related-evidence route/capture-command, README,
+    capture-command, stack-packet, tunnel-metrics, and high-value panel
+    coverage
+    - `12 passed`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 pixi run build`
+    - passed, `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest loop-closure capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_loop_closure.py` now publishes
     scene-owned capture metrics for the row 36 loop-closure family verifier:

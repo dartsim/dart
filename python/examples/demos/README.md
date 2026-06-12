@@ -179,7 +179,10 @@ For the focused IPC no-tunneling capability view, use
 **`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
 numbered World Rigid Body workflow because it is an IPC-only capability scene,
 not a broad side-by-side solver row. In the viewer, the `Rigid Solver Compare`
-row exposes it as a `Related shelf` route.
+row exposes it as a `Related shelf` route. Its capture metrics report wall
+clearance, through-wall margin, velocity, contact count, step timing, and
+whether the IPC barrier held the fast box before it tunneled through the thin
+wall.
 
 The older **`floating_base`** and **`articulated`** rows stay in the broader
 **World Rigid Body** catalog outside the numbered verifier block. In the
@@ -697,7 +700,8 @@ For scenes that expose `SceneSetup.info["capture_metrics"]`,
 scene-owned physics/runtime stream in `manifest.json`: first and latest events,
 per-key presence counts, and numeric ranges for top-level metrics. The step
 diagnostics and contact-scale budget rows use that path for profiling, memory,
-contact, and frame-budget evidence, while the stack packet uses it for
+contact, and frame-budget evidence; the IPC no-tunneling route uses it for
+clearance and through-wall margin evidence; and the stack packet uses it for
 clearance, drift, wall time, and benchmark metadata.
 
 When forward rigid contact looks correct but a differentiable optimization is

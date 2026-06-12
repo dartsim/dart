@@ -2,20 +2,17 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed handoff commit `3864dbf331a`, completed
-the row-35 `rigid_multibody_solver_family` capture-metrics checkpoint, and is
-now carrying the row-36 `rigid_loop_closure` capture-metrics slice with focused
-test plus fresh docked capture evidence. The user then explicitly stopped the
-verification path and requested handoff/push only, so do not assume any
-post-handoff lint/build/diff refresh happened. The branch had no associated
-GitHub PR at resume time.
+Latest continuation resumed from pushed handoff commit `c69ee66ace9`, audited
+the next non-numbered related-shelf gap, and added capture metrics to the
+focused Rigid IPC no-tunneling route `rigid_ipc_tunnel`. This is the first
+post-numbered-workflow shelf hardening slice, not a new numbered row. The branch
+had no associated GitHub PR at resume time.
 
 Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Before the final handoff push, origin was at `3864dbf331a` and local `HEAD`
-  was `d0532eeb560`.
-- The final handoff checkpoint should include row-36 loop-closure capture
+- Origin and local `HEAD` were `c69ee66ace9` before this local continuation.
+- The current local checkpoint should include `rigid_ipc_tunnel` capture
   metrics, focused assertions, docs, docked capture evidence, and this refreshed
   handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
@@ -41,12 +38,13 @@ Recent checkpoints:
 - `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
 - `3864dbf331a` (`Hand off rigid link Jacobian metrics`)
 - `d0532eeb560` (`Expose rigid multibody solver family capture metrics`)
+- `c69ee66ace9` (`Hand off rigid loop closure metrics`)
 - the local checkpoint containing this file
 
-Current local slice: `rigid_loop_closure` row capture metrics. The checkpoint
+Current local slice: `rigid_ipc_tunnel` related-shelf capture metrics. The checkpoint
 touches:
 
-- `python/examples/demos/scenes/rigid_loop_closure.py`
+- `python/examples/demos/scenes/rigid_ipc_tunnel.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -57,58 +55,60 @@ touches:
 
 What changed in code/test:
 
-- `python/examples/demos/scenes/rigid_loop_closure.py` now imports
+- `python/examples/demos/scenes/rigid_ipc_tunnel.py` now imports
   `CAPTURE_METRICS_INFO_KEY` and registers
   `SceneSetup.info["capture_metrics"]`.
-- `_RigidLoopClosureVerifier.capture_metrics()` serializes the current
-  controller state without stepping or resetting. If no latest metrics exist,
-  it records the current metrics snapshot once.
-- The payload exports row identity, solver
-  `variational_rigid_multibody_loop_closure`, scope
-  `point_distance_rigid_closure_family_selection`, executor, time step, world
-  time, gravity-scale controls, family order, policy order, case order/count,
-  per-case family/policy/closure metadata, target/anchor points, serialized live
-  metrics, flattened residual/tip/distance/orientation/joint-speed/step fields,
-  per-family residual ratios, and compact histories.
-- `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`
-  now asserts the capture hook mirrors the live controller metrics, controls,
-  case metadata, residual ratios, and history maxima.
+- The scene now wraps `bridge.pre_step()` so it samples no-tunneling metrics on
+  each viewer step: wall clearance, through-wall margin, leading/trailing face
+  positions, box velocity/speed, contact count, step timing, barrier status,
+  and history extrema.
+- The payload exports row identity, solver `rigid_ipc`, scope
+  `focused_no_tunneling_capability`, time step, world time, launch speed,
+  wall/box extents, current and min clearance, min tunnel margin, max wall
+  crossing, min box velocity, max contact count, max step timing, and sample
+  count.
+- `python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics`
+  now asserts the capture hook mirrors live IPC state, keeps positive
+  through-wall margin, and exposes finite manifest-friendly top-level fields.
 
-Validation status for the loop-closure checkpoint:
+Validation status for the no-tunneling related-shelf checkpoint:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_metrics_1781239815`
-  wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
+- `pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644`
+  wrote a nonblank docked capture with 23 PNG frames, 24 scene-metrics events,
   screenshot
-  `/tmp/dart_capture_loop_closure_metrics_1781239815/rigid_loop_closure.png`,
+  `/tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644/rigid_ipc_tunnel.png`,
   and final contacts `0`.
-- Latest captured payload details: row `rigid_loop_closure`, solver
-  `variational_rigid_multibody_loop_closure`, scope
-  `point_distance_rigid_closure_family_selection`, executor `Sequential`,
-  gravity scale `1.0`, six cases, latest POINT/DISTANCE/RIGID residual ratios
-  about `7.595e11`/`7.458e11`/`7.740e11`, latest POINT residual/solved
-  residual about `0.7595`/`7.03e-13`, DISTANCE residual/solved residual about
-  `0.7458`/`9.44e-15`, RIGID residual/solved residual about
-  `0.7740`/`1.20e-13`, RIGID residual orientation error about `0.1490`,
-  history samples `73`, and finite manifest ranges for residuals, tip
-  errors/heights, distance errors, orientation errors, joint speeds, step
-  timing, residual ratios, and world time.
-- The broader workflow/doc drift guard with row ordering, viewer-title
-  numbering, sidecar/README/capture-command drift checks, passive-parameter
-  coverage, screw-pitch coverage, dynamics-terms coverage, link center-of-mass
-  coverage, link-Jacobian coverage, solver-family coverage, replay snapshot
-  coverage, and high-value panel coverage reported `16 passed`.
-- A pre-handoff `pixi run lint` had passed before the final handoff edits; a
-  later lint was in flight when the user stopped verification, and its result
-  was not used for this handoff.
+- Latest captured payload details: row `rigid_ipc_tunnel`, solver `rigid_ipc`,
+  scope `focused_no_tunneling_capability`, status `barrier-held`, launch speed
+  `8.0`, time step `10.0` ms, world time `0.24`, latest clearance about
+  `1.23e-6` m, minimum clearance about `1.22e-6` m, minimum tunnel margin about
+  `0.500001` m, max wall crossing `0.0`, box-vx range about
+  `[-1.01e-6, 8.0]`, 24 event payloads, and finite manifest ranges for
+  clearance, tunnel margin, box position/velocity, wall faces, step timing, and
+  world time.
+- The focused route/docs drift guard with row ordering, viewer-title numbering,
+  docs-count, sidecar, related-evidence route/capture-command, README,
+  capture-command, stack-packet, tunnel-metrics, and high-value panel coverage
+  reported `12 passed`.
+- `pixi run lint` passed.
 - Bounded
   `DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 pixi run build`
-  passed and reported `ninja: no work to do` before the final handoff edits.
-- `git diff --check` passed before the final handoff edits, but was not rerun
-  after the explicit stop request.
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
 
 Completed local checkpoint immediately before this slice:
+
+- Commit `c69ee66ace9` (`Hand off rigid loop closure metrics`) completes the
+  row-36 loop-closure handoff and pushes row-35 plus row-36 checkpoint state to
+  origin.
+- That row publishes POINT/DISTANCE/RIGID loop-closure capture metrics for
+  residual-only versus solved policies, residuals, tip/distance/orientation
+  errors, residual ratios, joint speed, and step timing. Focused test and real
+  docked capture evidence were recorded; post-stop lint/diff refresh was
+  intentionally skipped in that handoff because the user explicitly requested
+  no further verification.
 
 - Commit `d0532eeb560` (`Expose rigid multibody solver family capture metrics`)
   completes row 35, `rigid_multibody_solver_family`.
@@ -387,13 +387,13 @@ Validation collected for the dynamics-terms slice so far:
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. If this handoff commit has not reached origin, push it only with explicit
-   maintainer/user approval.
-3. Before any PR or further implementation, decide whether to refresh the
-   skipped post-handoff lint/diff gates. They were intentionally not rerun
-   after the stop request.
-4. After row 36 is gated, audit remaining non-numbered shelf or PR-readiness
-   gaps instead of assuming another numbered workflow row.
+2. If the no-tunneling local checkpoint has not been committed yet, commit it
+   after lint/focused gates are recorded.
+3. Continue the non-numbered shelf audit only where a related route adds
+   distinct user evidence beyond the numbered row; do not add another numbered
+   row by default.
+4. Push, PR creation, comments, review replies, CI retriggers, merges, or other
+   GitHub mutations still require explicit maintainer/user approval.
 
 ## Last Session Summary
 
@@ -820,10 +820,9 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 ## Immediate Next Step
 
 Use the current handoff snapshot at the top of this file for live branch state.
-After the local row-29 checkpoint is committed, continue the capture-metrics
-hardening pass with
-`rigid_joint_passive_parameters` unless a fresh audit finds a higher-priority
-missing rigid-body GUI evidence gap.
+After the no-tunneling metrics checkpoint is committed, continue with
+PR-readiness or non-numbered shelf audit only where a route adds distinct user
+evidence beyond the numbered workflow.
 
 ## Context That Would Be Lost
 

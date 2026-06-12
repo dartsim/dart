@@ -118,7 +118,10 @@ answers.
 
 `rigid_ipc_tunnel` remains an existing Rigid IPC capability scene rather than a
 numbered World Rigid Body workflow row. Capture it directly when the user wants
-the focused IPC no-tunneling view:
+the focused IPC no-tunneling view. Its scene-owned metrics report the fast
+box's wall clearance, through-wall margin, velocity, contact count, step
+timing, and barrier-held status so the related route is not screenshot-only
+evidence:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
@@ -191,9 +194,11 @@ expose `SceneSetup.info["capture_metrics"]`; `rigid_step_diagnostics` and
 `rigid_contact_scale_budget` summarize their profiling, memory, contact, and
 budget metrics into `manifest.json` as first/latest events, per-key presence
 counts, and top-level numeric ranges. The `contact` row uses the same hook for
-multibody-link drop/slide/pusher lane summaries, while `rigid_ipc_stack_packet`
-mirrors clearance, contact, drift, height, wall-time, frame-budget, and
-benchmark values through the same schema.
+multibody-link drop/slide/pusher lane summaries, `rigid_ipc_tunnel` mirrors
+no-tunneling clearance, through-wall margin, velocity, contact, step-timing,
+and barrier-held status, and `rigid_ipc_stack_packet` mirrors clearance,
+contact, drift, height, wall-time, frame-budget, and benchmark values through
+the same schema.
 
 ## Regenerating Visual Evidence
 
@@ -823,6 +828,21 @@ Evidence recorded for this slice:
   `0.000267` m, top drift `0.000360` m, max speed `0.0493` m/s, last-step wall
   time `805.087` ms, and max observed wall time `3508.939` ms, confirming why
   this packet remains outside the live numbered workflow.
+- Latest non-numbered no-tunneling metrics follow-up:
+  `rigid_ipc_tunnel` now exports scene-owned capture metrics for the related
+  Rigid IPC shelf route: row identity, no-tunneling scope, IPC solver label,
+  launch speed, wall/box extents, wall clearance, through-wall margin, box
+  velocity, contact count, step timing, barrier status, and compact history
+  extrema. The focused guard
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics -q`
+  reported `1 passed`. The real docked capture
+  `pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644`
+  wrote a nonblank 960x540 screenshot, 23 PNG frames, 24 scene-metrics events,
+  final contacts `0`, latest status `barrier-held`, minimum clearance about
+  `1.22e-6` m, minimum through-wall margin about `0.500001` m, max wall
+  crossing `0.0`, and world time `0.24` s.
+  The related route/docs drift guard reported `12 passed`; `pixi run lint`,
+  bounded default `pixi run build`, and `git diff --check` passed.
 - Focused behavior tests across the packet cover the ordered rigid workflow:
   default front door, body modes, free flight, external and point loads,
   time-step sensitivity, step diagnostics, contact-scale frame-budget
