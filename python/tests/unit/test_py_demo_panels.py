@@ -1236,6 +1236,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_joint_breakage,
+            (
+                "text:comparison axis: fixed break-force lifecycle",
+                "text:held fixed: AVBD rigid joints | static base | payload mass 1.0 | offset 0.62 m | time step 4.0 ms",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

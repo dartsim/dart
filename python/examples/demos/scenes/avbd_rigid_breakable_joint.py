@@ -179,29 +179,47 @@ def build_breakable_joint_scene(
         speed_values = list(speed_history)
         release_values = list(release_history)
         broken_values = list(broken_history)
-        payload: dict[str, object] = {
+        captured_offset = float(np.linalg.norm(_CAPTURED_OFFSET))
+        captured_offset_error = float(_last_metrics["captured_offset_error"])
+        payload_speed = float(_last_metrics["payload_speed"])
+        payload_height = float(_last_metrics["payload_height"])
+        payload_release_distance = float(_last_metrics["payload_release_distance"])
+        broken = float(_last_metrics["broken"])
+        break_force = float(_last_metrics["break_force"])
+        status = str(_last_metrics["status"])
+        metrics_payload: dict[str, object] = {
             "row": row_id,
+            "comparison_axis": "fixed_break_force_lifecycle",
             "solver": "avbd_rigid_joints",
             "constraint": "fixed_break_force_lifecycle",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(world.time),
             "joint_name": str(breakable_joint.name),
+            "held_fixed": {
+                "base": "static",
+                "captured_offset_m": captured_offset,
+                "ground_friction": float(ground.friction),
+                "payload_mass": float(payload.mass),
+                "solver": "AVBD rigid joints",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "break_force": float(_BREAK_FORCE),
                 "reset_break_force": float(_RESET_BREAK_FORCE),
             },
+            "breakage_payload_release_distance": payload_release_distance,
+            "breakage_broken": broken,
+            "breakage_captured_offset_error": captured_offset_error,
+            "breakage_payload_speed": payload_speed,
+            "breakage_status": status,
             "metrics": {
-                "captured_offset_error": float(
-                    _last_metrics["captured_offset_error"]
-                ),
-                "payload_speed": float(_last_metrics["payload_speed"]),
-                "payload_height": float(_last_metrics["payload_height"]),
-                "payload_release_distance": float(
-                    _last_metrics["payload_release_distance"]
-                ),
-                "broken": float(_last_metrics["broken"]),
-                "break_force": float(_last_metrics["break_force"]),
-                "status": str(_last_metrics["status"]),
+                "captured_offset_error": captured_offset_error,
+                "payload_speed": payload_speed,
+                "payload_height": payload_height,
+                "payload_release_distance": payload_release_distance,
+                "broken": broken,
+                "break_force": break_force,
+                "status": status,
             },
             "history": {
                 "samples": float(len(offset_values)),
@@ -212,8 +230,8 @@ def build_breakable_joint_scene(
             },
         }
         if related_source_row is not None:
-            payload["related_source_row"] = related_source_row
-        return payload
+            metrics_payload["related_source_row"] = related_source_row
+        return metrics_payload
 
     def capture_replay_state() -> dict[str, Any]:
         if not _last_metrics:
@@ -359,7 +377,14 @@ def build_breakable_joint_scene(
         metrics = _last_metrics or record_metrics()
         offset_error = float(metrics["captured_offset_error"])
         speed = float(metrics["payload_speed"])
+        captured_offset = float(np.linalg.norm(_CAPTURED_OFFSET))
 
+        builder.text("comparison axis: fixed break-force lifecycle")
+        builder.text(
+            "held fixed: AVBD rigid joints | static base | payload mass "
+            f"{float(payload.mass):.1f} | offset {captured_offset:.2f} m | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: AVBD fixed joint with break-force threshold")
         builder.text(f"joint: {breakable_joint.name}")
         builder.text(f"state: {'broken' if breakable_joint.is_broken else 'intact'}")

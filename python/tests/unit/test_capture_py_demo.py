@@ -1184,6 +1184,29 @@ def test_rigid_workflow_latest_signals_prioritize_fixed_joint_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_breakage_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "breakage_broken": 1.0,
+            "breakage_captured_offset_error": 0.028,
+            "breakage_payload_release_distance": 0.41,
+            "breakage_payload_speed": 0.72,
+            "breakage_status": "broken",
+            "comparison_axis": "fixed_break_force_lifecycle",
+            "solver": "avbd_rigid_joints",
+        }
+    )
+
+    assert highlights[:6] == [
+        "breakage payload release distance: 0.41",
+        "breakage broken: 1",
+        "breakage captured offset error: 0.028",
+        "breakage payload speed: 0.72",
+        "breakage status: broken",
+        "solver: avbd_rigid_joints",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

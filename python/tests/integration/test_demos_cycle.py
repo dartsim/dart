@@ -5183,9 +5183,29 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_joint_breakage"
+    assert capture_metrics["comparison_axis"] == "fixed_break_force_lifecycle"
     assert capture_metrics["solver"] == "avbd_rigid_joints"
     assert capture_metrics["constraint"] == "fixed_break_force_lifecycle"
     assert capture_metrics["joint_name"] == joint.name
+    assert capture_metrics["held_fixed"] == {
+        "base": "static",
+        "captured_offset_m": pytest.approx(0.62),
+        "ground_friction": pytest.approx(0.6),
+        "payload_mass": pytest.approx(1.0),
+        "solver": "AVBD rigid joints",
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
+    assert capture_metrics["breakage_payload_release_distance"] == pytest.approx(
+        capture_metrics["metrics"]["payload_release_distance"]
+    )
+    assert capture_metrics["breakage_broken"] == pytest.approx(1.0)
+    assert capture_metrics["breakage_captured_offset_error"] == pytest.approx(
+        capture_metrics["metrics"]["captured_offset_error"]
+    )
+    assert capture_metrics["breakage_payload_speed"] == pytest.approx(
+        capture_metrics["metrics"]["payload_speed"]
+    )
+    assert capture_metrics["breakage_status"] == "broken"
     assert capture_metrics["metrics"]["broken"] == pytest.approx(1.0)
     assert capture_metrics["metrics"]["status"] == "broken"
     assert capture_metrics["metrics"]["payload_release_distance"] > 1.0e-2

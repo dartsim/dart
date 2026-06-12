@@ -203,7 +203,7 @@ plus a warning block if any selected row is missing those fields.
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | IPC grip/slip vs SI caveat, speed, friction, executor | Tangential axis, box travel, slip, caveat, contacts           |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts       |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Sequential joints, static base, perturbation, reset   | Fixed-transform axis, pose error, payload speed, Replay marks |
-| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks   |
+| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | AVBD joints, weak break force, static base            | Break-force axis, broken state, release distance, reset       |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks             |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks          |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks             |
@@ -637,9 +637,12 @@ fixed break-force threshold, turns the connector red when `is_broken` becomes
 true, and exposes `reset_breakage()` behavior without claiming
 sequential-impulse or IPC parity. The panel also has a `Reset breakage lifecycle`
 button that clears the broken flag, restores the captured body poses, clears
-loads, and restarts the row timing. The shared Replay panel uses payload
-release distance as its value track and marks broken or released frames so
-saved-state scrubbing jumps to the breakage event.
+loads, and restarts the row timing. The panel and capture metrics label the
+fixed break-force lifecycle comparison axis, the held-fixed AVBD/static-base
+context, and top-level breakage signals for release distance, broken state,
+captured-offset error, payload speed, and status. The shared Replay panel uses
+payload release distance as its value track and marks broken or released frames
+so saved-state scrubbing jumps to the breakage event.
 
 The **`rigid_distance_spring`** scene shows the public
 `World.add_rigid_body_distance_spring()` path on free rigid bodies before users

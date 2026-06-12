@@ -2,59 +2,69 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 25 now gives the fixed-joint verifier the same
-reviewable comparison shape as the surrounding rigid workflow rows.
-`rigid_fixed_joint` names `fixed_relative_transform_recovery` as its comparison
-axis in the panel and capture metrics, records the held-fixed sequential-joint
-context, exports top-level pose-recovery metrics, and feeds decisive latest
-signals into the workflow review index.
+Latest local slice: row 26 now gives the AVBD-pinned fixed-joint breakage row
+the same reviewable comparison shape as the surrounding rigid workflow rows.
+`rigid_joint_breakage` names `fixed_break_force_lifecycle` as its comparison
+axis in the panel and capture metrics, records the held-fixed AVBD/static-base
+context, exports top-level breakage metrics, and feeds decisive latest signals
+into the workflow review index.
 
 Evidence for this slice:
 
-- Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
+- Focused row/panel/docs-order/review-index pytest subset reported `7 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_fixed_joint_verifier_restores_captured_transform`
-  and the unit guard that row-25 latest signals prioritize fixed-joint
-  translation error, orientation error, payload speed, angular speed, and
-  solver.
-- Real row-25 workflow capture completed under
-  `/tmp/dart_capture_rigid_fixed_joint_row_25_1781299686` with
+  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage`
+  and the unit guard that row-26 latest signals prioritize payload release
+  distance, broken state, captured-offset error, payload speed, status, and
+  solver. The existing reset-lifecycle panel test was also included in the
+  focused run.
+- Real row-26 workflow capture completed under
+  `/tmp/dart_capture_rigid_joint_breakage_row_26_1781299982` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 25 reported
-  `comparison_axis=fixed_relative_transform_recovery`, held-fixed
-  `base=static`, `captured_offset_m=0.85`, `gravity_z=-9.81`,
-  `payload_mass=1.0`, `solver=Sequential rigid joints`,
-  `time_step_ms=5.0`, controls `perturbation=0.18`,
-  `fixed_joint_translation_error=2.1673896011265015e-10`,
-  `fixed_joint_orientation_error=0.0`, `fixed_joint_payload_speed=0.0`,
-  `fixed_joint_payload_angular_speed=1.3685710649607e-35`, and history maxima
-  `max_translation_error=1.0890922275130777e-08`,
-  `max_orientation_error=2.6656007498500305e-07`.
-- `review_index.html` showed the row-25 card with `axis`, `held fixed`,
+- Row 26 reported `comparison_axis=fixed_break_force_lifecycle`, held-fixed
+  `base=static`, `captured_offset_m=0.62`, `ground_friction=0.6`,
+  `payload_mass=1.0`, `solver=AVBD rigid joints`, `time_step_ms=4.0`,
+  controls `break_force=1e-12`, `reset_break_force=1e12`,
+  `breakage_payload_release_distance=0.41319290960568955`,
+  `breakage_broken=1.0`,
+  `breakage_captured_offset_error=0.27164249515625993`,
+  `breakage_payload_speed=1.331957542419467`,
+  `breakage_status=broken`, and history maxima
+  `max_payload_release_distance=0.59045308585389`,
+  `max_payload_speed=49.220347596711996`.
+- `review_index.html` showed the row-26 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and visible latest
-  signals for fixed-joint translation error, orientation error, payload speed,
-  angular speed, solver, and history samples.
-- The per-scene capture wrote a nonblank docked screenshot and 23 PNG frames
-  for `rigid_fixed_joint` from the 24-frame workflow row capture.
+  signals for payload release distance, broken state, captured-offset error,
+  payload speed, status, and solver.
+- The per-scene capture wrote a nonblank docked screenshot and 47 PNG frames
+  for `rigid_joint_breakage` from the 48-frame workflow row capture.
 
 Repository state notes:
 
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed commit before this slice:
-  `e19671fa052 Surface kinematic driver workflow signals`.
+  `4f89ad99bcd Surface fixed joint workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  fixed-joint workflow signals; otherwise inspect the uncommitted diff for the
-  row-25 follow-up.
+  joint-breakage workflow signals; otherwise inspect the uncommitted diff for
+  the row-26 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-25 review-index/evidence direction before broadening
+current row-15-through-row-26 review-index/evidence direction before broadening
 to another rigid branch.
+
+Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
+comparison shape as the surrounding rigid workflow rows. `rigid_fixed_joint`
+names `fixed_relative_transform_recovery` as its comparison axis in the panel
+and capture metrics, records the held-fixed sequential-joint context, exports
+top-level pose-recovery metrics, and feeds fixed-joint translation error,
+orientation error, payload speed, angular speed, and solver into the workflow
+review index.
 
 Previous checkpoint: row 23 gives the tangential kinematic-driver row the same
 reviewable comparison shape as the surrounding rigid contact rows.
