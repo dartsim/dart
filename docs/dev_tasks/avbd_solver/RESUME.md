@@ -29,6 +29,18 @@ focused rigid-block target, the focused angular-motor filter, full
 `git diff --check`. This validates only the narrow source-row scratch cleanup;
 it does not close a source CPU-win, GPU, or paper-number gate.
 
+Current resumed source follow-up: rigid distance-spring row extraction now has
+`AvbdRigidDistanceSpringRowScratch` for the large-input active-row pointer list.
+The existing small-input stack-backed path remains unchanged, while the world
+contact solve scratch now owns and reserves this distance-spring scratch so
+configured worlds can reuse it across frames like point-joint and motor row
+scratch. Validation for this slice passed the focused rigid-block/world
+targets, the focused distance-spring/motor rigid-block filter (4 tests), the
+focused AVBD world filter (4 tests), full `test_avbd_rigid_block` (95 tests),
+`pixi run build`, `pixi run lint`, and `git diff --check`. This is a narrow
+source-row extraction cleanup and does not close any source CPU-win, GPU, or
+paper-number gate.
+
 Current resumed note: after the pushed handoff checkpoint at `7a9e24b487b`,
 implementation resumed on `avbd/source-row-extraction-precheck` for small
 source-row overhead slices. One committed local follow-up,
@@ -50,9 +62,11 @@ value and direction assembly, avoid redundant tangent contact-anchor world
 transforms by treating same-point tangent anchors as zero-relative-position, and
 cache each active contact's body-local anchors once in
 `buildAvbdRigidContactManifoldRows()` for reuse by both normal and paired
-tangent friction rows. The newest local source-row cleanup avoids per-call heap
+tangent friction rows. Recent local source-row cleanups avoid per-call heap
 scratch for small point-joint and standalone angular-motor row builders by
-using stack-backed active row/descriptor storage and source config pointers.
+using stack-backed active row/descriptor storage and source config pointers,
+and add reusable large-input active-row scratch for rigid distance-spring row
+extraction.
 Before the critical stop, focused rigid-block checks, the full
 `test_avbd_rigid_block` binary, `pixi run lint`, and `pixi run build` had
 passed for earlier resumed source-row slices; the point-joint cleanup also
@@ -92,9 +106,10 @@ Current continuation state:
   zero-relative-position cleanup, and the latest contact-manifold local-anchor
   reuse cleanup. The current resumed slice also makes small point-joint
   source-row builders use stack-backed active row/descriptor storage and pointer
-  rows instead of copying full point-joint configs per active axis, and extends
-  the same pattern to standalone rigid angular-motor row construction. The
-  latest pushed parent before these source-row cleanup commits was
+  rows instead of copying full point-joint configs per active axis, extends the
+  same pattern to standalone rigid angular-motor row construction, and adds
+  reusable large-input scratch for rigid distance-spring source-row extraction.
+  The latest pushed parent before these source-row cleanup commits was
   `f380bf9bc04` (`Checkpoint AVBD contact local-anchor handoff`). Do not require a
   fresh session to inspect or apply local stashes before continuing. Keep this
   as the one consolidated local continuation branch for source-row cleanup until
@@ -139,6 +154,24 @@ Current continuation state:
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
+
+Latest resumed local follow-up:
+
+- `buildAvbdRigidDistanceSpringRows()` now has a scratch-backed overload for
+  large-input active row pointers, while preserving the existing stack-backed
+  small-input path.
+- `AvbdRigidWorldContactSolveScratch` now owns and reserves
+  `AvbdRigidDistanceSpringRowScratch`, and
+  `solveAvbdRigidWorldContactSnapshot()` passes it into distance-spring row
+  extraction so configured worlds can reuse that active-row storage across
+  frames.
+- Local validation for this slice passed:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block test_world`,
+  the focused rigid-block distance-spring/motor filter (4 tests), the focused
+  AVBD world filter (4 tests), full `test_avbd_rigid_block` (95 tests),
+  `pixi run build`, `pixi run lint`, and `git diff --check`.
+- This is only a narrow source-row extraction cleanup; it does not close any
+  source CPU-win, GPU, or paper-number gate.
 
 Latest resumed local follow-up:
 
@@ -542,14 +575,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff                         | State and handling                                                                                                   |
-| -------------------------------------- | --------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `ada568afa85` plus this validation-doc update | Current checkout and single resume branch. Latest angular-motor slice is locally validated; push only with approval. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                 | Active #2977 branch; pushed, latest known state was waiting on hosted Linux Debug Tests.                             |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                 | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                   |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                 | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                   |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                 | Unrelated local branch; do not touch during AVBD handoff.                                                            |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                                 | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.  |
+| Branch                                 | Upstream                                      | Local head at handoff                                       | State and handling                                                                                                  |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `ada568afa85` plus local validation/distance-spring commits | Current checkout and single resume branch. Latest source-row slices are locally validated; push only with approval. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                               | Active #2977 branch; pushed, latest known state was waiting on hosted Linux Debug Tests.                            |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                               | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                               | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                               | Unrelated local branch; do not touch during AVBD handoff.                                                           |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                                               | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session. |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest critical handoff-only stop. The branches above are intentionally left in
@@ -598,11 +631,11 @@ Fresh-session plan after this progress checkpoint:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-3. The newest angular-motor source-row cleanup now has local validation
-   recorded above. Before reviewer-facing PR work, refresh against the intended
-   base and rerun the appropriate lint/build/test checks if new source changes
-   are added. Keep source-row overhead claims separate from CPU-win, GPU, and
-   paper-number gates.
+3. The newest distance-spring source-row cleanup has local validation recorded
+   above. Before reviewer-facing PR work, refresh against the intended base and
+   rerun the appropriate lint/build/test checks if new source changes are added.
+   Keep source-row overhead claims separate from CPU-win, GPU, and paper-number
+   gates.
 4. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
    issue. Run `pixi run lint` before committing.

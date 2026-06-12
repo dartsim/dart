@@ -9,6 +9,16 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed follow-up (2026-06-11): rigid distance-spring source-row
+  extraction now has reusable private active-row scratch for the large-input
+  path, and the world contact solve scratch reserves/reuses it alongside joint
+  and motor row scratch. The existing small-input stack path remains unchanged.
+  Local validation passed the focused rigid-block/world targets, the focused
+  distance-spring/motor rigid-block filter (4 tests), the focused AVBD world
+  filter (4 tests), the full `test_avbd_rigid_block` binary (95 tests),
+  `pixi run build`, `pixi run lint`, and `git diff --check`. This is still
+  only source-row extraction overhead cleanup, not a source CPU-win, GPU, or
+  paper-number claim.
 - Latest resumed validation (2026-06-11): the angular-motor source-row cleanup
   checkpoint `ada568afa85` has now been validated after the earlier
   no-verification handoff. The focused rigid-block target, the focused

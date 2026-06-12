@@ -1995,6 +1995,11 @@ struct AvbdRigidAngularMotorRowScratch
   std::vector<AvbdScalarRowDescriptor> descriptors;
 };
 
+struct AvbdRigidDistanceSpringRowScratch
+{
+  std::vector<const AvbdRigidBodyPointPairDistanceSpringRow*> activeRows;
+};
+
 //==============================================================================
 inline void buildAvbdRigidContactManifoldRows(
     const std::vector<AvbdRigidBodyState>& states,
@@ -2852,6 +2857,7 @@ inline void buildAvbdRigidDistanceSpringRows(
     std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
     AvbdScalarRowInventory& springInventory,
     std::vector<AvbdRigidBodyPointPairDistanceSpringRow>& springRows,
+    AvbdRigidDistanceSpringRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   const auto appendSpringRows = [&](const auto& activeRows,
@@ -2906,7 +2912,8 @@ inline void buildAvbdRigidDistanceSpringRows(
     return;
   }
 
-  std::vector<const AvbdRigidBodyPointPairDistanceSpringRow*> activeRows;
+  auto& activeRows = scratch.activeRows;
+  activeRows.clear();
   activeRows.reserve(springs.size());
   for (const AvbdRigidBodyPointPairDistanceSpringRow& spring : springs) {
     if (!detail::isValidAvbdRigidDistanceSpring(spring, states.size())) {
@@ -2941,6 +2948,19 @@ inline void buildAvbdRigidDistanceSpringRows(
       },
       warmStartOptions);
   appendSpringRows(activeRows, activeRows.size());
+}
+
+//==============================================================================
+inline void buildAvbdRigidDistanceSpringRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidBodyPointPairDistanceSpringRow> springs,
+    AvbdScalarRowInventory& springInventory,
+    std::vector<AvbdRigidBodyPointPairDistanceSpringRow>& springRows,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidDistanceSpringRowScratch scratch;
+  buildAvbdRigidDistanceSpringRows(
+      states, springs, springInventory, springRows, scratch, warmStartOptions);
 }
 
 //==============================================================================
