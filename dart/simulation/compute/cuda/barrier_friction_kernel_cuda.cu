@@ -115,6 +115,75 @@ __device__ double squaredNorm(const Vec3 value)
   return dot(value, value);
 }
 
+__device__ bool isFinite(const Vec3 value)
+{
+  return isfinite(value.x) && isfinite(value.y) && isfinite(value.z);
+}
+
+__device__ bool normalize(const Vec3 value, Vec3& normalizedValue)
+{
+  constexpr double kTangentBasisEpsilon = 64.0 * 2.2204460492503131e-16;
+  if (!isFinite(value)) {
+    normalizedValue = {};
+    return false;
+  }
+
+  const double normSquared = squaredNorm(value);
+  if (!(normSquared > kTangentBasisEpsilon)) {
+    normalizedValue = {};
+    return false;
+  }
+
+  normalizedValue = scale(1.0 / sqrt(normSquared), value);
+  return true;
+}
+
+__device__ Vec3 unitOrthogonal(const Vec3 normal)
+{
+  if (fabs(normal.x) > fabs(normal.z)) {
+    const double invNorm
+        = 1.0 / sqrt(normal.x * normal.x + normal.y * normal.y);
+    return {-normal.y * invNorm, normal.x * invNorm, 0.0};
+  }
+
+  const double invNorm = 1.0 / sqrt(normal.y * normal.y + normal.z * normal.z);
+  return {0.0, -normal.z * invNorm, normal.y * invNorm};
+}
+
+__device__ void fallbackBasisFromNormal(
+    const Vec3 normal, Vec3& basis0, Vec3& basis1)
+{
+  Vec3 unitNormal;
+  if (!normalize(normal, unitNormal)) {
+    unitNormal = {0.0, 0.0, 1.0};
+  }
+
+  basis0 = unitOrthogonal(unitNormal);
+  Vec3 crossed = cross(unitNormal, basis0);
+  if (!normalize(crossed, basis1)) {
+    basis1 = {0.0, 1.0, 0.0};
+  }
+}
+
+__device__ std::uint8_t basisFromFirstTangentAndSecondHint(
+    const Vec3 firstTangent,
+    const Vec3 secondHint,
+    const Vec3 fallbackNormal,
+    Vec3& basis0,
+    Vec3& basis1)
+{
+  if (normalize(firstTangent, basis0)) {
+    const Vec3 orthogonalHint
+        = subtract(secondHint, scale(dot(secondHint, basis0), basis0));
+    if (normalize(orthogonalHint, basis1)) {
+      return 0u;
+    }
+  }
+
+  fallbackBasisFromNormal(fallbackNormal, basis0, basis1);
+  return 1u;
+}
+
 __device__ bool isDegenerateSegmentDevice(const double squaredLength)
 {
   constexpr double kDoubleMin = 2.2250738585072014e-308;
@@ -257,6 +326,35 @@ __device__ PointTriangleDistanceDevice pointTriangleSquaredDistanceDevice(
   return result;
 }
 
+__device__ void pointTriangleCoordinatesDevice(
+    const Vec3 p,
+    const Vec3 a,
+    const Vec3 b,
+    const Vec3 c,
+    double& beta1,
+    double& beta2)
+{
+  constexpr double kTangentBasisEpsilon = 64.0 * 2.2204460492503131e-16;
+  const Vec3 ab = subtract(b, a);
+  const Vec3 ac = subtract(c, a);
+  const double aa = dot(ab, ab);
+  const double acDot = dot(ab, ac);
+  const double cc = dot(ac, ac);
+  const double determinant = aa * cc - acDot * acDot;
+  if (isfinite(determinant) && fabs(determinant) > kTangentBasisEpsilon) {
+    const Vec3 ap = subtract(p, a);
+    const double rhs0 = dot(ap, ab);
+    const double rhs1 = dot(ap, ac);
+    beta1 = (cc * rhs0 - acDot * rhs1) / determinant;
+    beta2 = (aa * rhs1 - acDot * rhs0) / determinant;
+    return;
+  }
+
+  const auto distance = pointTriangleSquaredDistanceDevice(p, a, b, c);
+  beta1 = distance.barycentric[1];
+  beta2 = distance.barycentric[2];
+}
+
 __device__ void writePointTriangleDistanceGradient(
     const PointTriangleDistanceDevice& distance, const Vec3 p, double* gradient)
 {
@@ -271,6 +369,51 @@ __device__ void writePointTriangleDistanceGradient(
     gradient[3 * block] = blocks[block].x;
     gradient[3 * block + 1] = blocks[block].y;
     gradient[3 * block + 2] = blocks[block].z;
+  }
+}
+
+__device__ void writePointTriangleTangentStencil(
+    const PointTriangleTangentInput& input,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t& fallbackBasis)
+{
+  const Vec3 p = makeVec3(input.point);
+  const Vec3 a = makeVec3(input.triangleA);
+  const Vec3 b = makeVec3(input.triangleB);
+  const Vec3 c = makeVec3(input.triangleC);
+  const Vec3 ab = subtract(b, a);
+  const Vec3 ac = subtract(c, a);
+  const Vec3 triangleNormal = cross(ab, ac);
+
+  Vec3 basis0;
+  Vec3 basis1;
+  fallbackBasis = basisFromFirstTangentAndSecondHint(
+      ab, cross(triangleNormal, ab), subtract(p, a), basis0, basis1);
+  basisValues[0] = basis0.x;
+  basisValues[1] = basis0.y;
+  basisValues[2] = basis0.z;
+  basisValues[3] = basis1.x;
+  basisValues[4] = basis1.y;
+  basisValues[5] = basis1.z;
+
+  double beta1 = 0.0;
+  double beta2 = 0.0;
+  pointTriangleCoordinatesDevice(p, a, b, c, beta1, beta2);
+  coordinates[0] = beta1;
+  coordinates[1] = beta2;
+
+  const double coefficients[4] = {1.0, -1.0 + beta1 + beta2, -beta1, -beta2};
+  for (int block = 0; block < 4; ++block) {
+    const double coefficient = coefficients[block];
+    const int offset = 6 * block;
+    projectionValues[offset] = coefficient * basis0.x;
+    projectionValues[offset + 1] = coefficient * basis0.y;
+    projectionValues[offset + 2] = coefficient * basis0.z;
+    projectionValues[offset + 3] = coefficient * basis1.x;
+    projectionValues[offset + 4] = coefficient * basis1.y;
+    projectionValues[offset + 5] = coefficient * basis1.z;
   }
 }
 
@@ -445,6 +588,41 @@ __global__ void pointTriangleBarrierGradientKernel(
   }
 }
 
+__global__ void pointTriangleTangentStencilKernel(
+    const PointTriangleTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  const std::size_t basisOffset = 6 * index;
+  const std::size_t coordinateOffset = 2 * index;
+  const std::size_t projectionOffset = 24 * index;
+  for (int entry = 0; entry < 6; ++entry) {
+    basisValues[basisOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  coordinates[coordinateOffset] = 0.0;
+  coordinates[coordinateOffset + 1] = 0.0;
+  for (int entry = 0; entry < 24; ++entry) {
+    projectionValues[projectionOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  fallbackBases[index] = 0u;
+
+  writePointTriangleTangentStencil(
+      inputs[index],
+      basisValues + basisOffset,
+      coordinates + coordinateOffset,
+      projectionValues + projectionOffset,
+      fallbackBases[index]);
+}
+
 } // namespace
 
 //==============================================================================
@@ -506,6 +684,32 @@ cudaError_t launchPointTriangleBarrierGradientKernel(
       barrierValues,
       barrierGradients,
       activeBarriers,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointTriangleTangentStencilKernel(
+    const PointTriangleTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointTriangleTangentStencilKernel<<<gridSize, blockSize>>>(
+      inputs,
+      basisValues,
+      coordinates,
+      projectionValues,
+      fallbackBases,
       inputCount);
 
   return cudaGetLastError();

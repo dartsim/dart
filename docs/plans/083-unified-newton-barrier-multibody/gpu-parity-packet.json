@@ -174,8 +174,8 @@
       "timing_policy": "Report setup, transfer, barrier kernel, friction kernel, PSD/local projection timing where used, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over DART CPU local-kernel timing before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Private scalar barrier/friction local-kernel parity plus point-triangle primitive barrier-gradient parity packets exist. Tangent-basis construction, Hessian assembly, PSD coupling, runtime contact rows, and runtime speedup remain future evidence.",
-      "notes_or_gap": "The packet measured max_result_abs_error=3.982848877516439e-14 for 65536 scalar and point-triangle gradient samples on 2026-06-11. Scalar local-kernel speedup was 1.2775769646627904x and point-triangle barrier-gradient speedup was 2.1942837793960255x, but the row remains in-progress because local-kernel packets are not runtime contact evidence.",
+      "limitation_status": "Private scalar barrier/friction local-kernel parity, point-triangle primitive barrier-gradient parity, and point-triangle tangent-stencil parity packets exist. Edge-edge/point-edge/point-point tangent bases, Hessian assembly, PSD coupling, runtime contact rows, and runtime speedup remain future evidence.",
+      "notes_or_gap": "The packet measured max_result_abs_error=3.982848877516439e-14 for 65536 scalar, point-triangle gradient, and point-triangle tangent-stencil samples on 2026-06-11. Point-triangle barrier-gradient speedup was 6.510892386677649x and point-triangle tangent-stencil speedup was 1.7041788688311987x, but the top-level packet speedup was 0.8762590115862129x under the current scalar local-kernel timing run, so this row remains in-progress rather than measured.",
       "same_scene_cpu_gpu": true,
       "sample_count": 65536,
       "active_barrier_count": 52428,
@@ -185,14 +185,14 @@
       "max_friction_work": 1.02,
       "max_result_abs_error": 3.982848877516439e-14,
       "result_abs_error_tolerance": 1e-10,
-      "speedup": 1.2775769646627904,
+      "speedup": 0.8762590115862129,
       "min_speedup": 1.25,
       "timing_ns": {
-        "setup": 3304639.0,
-        "host_to_device": 1478570.0,
-        "kernel": 438666.0,
+        "setup": 735140.0,
+        "host_to_device": 348028.0,
+        "kernel": 337336.0,
         "solve": 0.0,
-        "device_to_host": 2353274.0,
+        "device_to_host": 915102.0,
         "readback": 0.0
       },
       "scalar_local": {
@@ -203,14 +203,14 @@
         "max_barrier_value": 5.691895854036562,
         "max_friction_work": 1.02,
         "max_result_abs_error": 5.551115123125783e-17,
-        "speedup": 1.2775769646627904,
-        "meets_speedup_gate": true,
+        "speedup": 0.8762590115862129,
+        "meets_speedup_gate": false,
         "timing_ns": {
-          "setup": 3304639.0,
-          "host_to_device": 1478570.0,
-          "kernel": 438666.0,
+          "setup": 735140.0,
+          "host_to_device": 348028.0,
+          "kernel": 337336.0,
           "solve": 0.0,
-          "device_to_host": 2353274.0,
+          "device_to_host": 915102.0,
           "readback": 0.0
         },
         "cpu_benchmark_row": "BM_Plan083BarrierFrictionLocalCpu/65536",
@@ -221,18 +221,35 @@
         "active_barrier_count": 57670,
         "max_barrier_value": 0.872872069188204,
         "max_result_abs_error": 3.982848877516439e-14,
-        "speedup": 2.1942837793960255,
+        "speedup": 6.510892386677649,
         "meets_speedup_gate": true,
         "timing_ns": {
-          "setup": 28699626.0,
-          "host_to_device": 5709336.0,
-          "kernel": 865285.0,
+          "setup": 1442883.0,
+          "host_to_device": 1080952.0,
+          "kernel": 455178.0,
           "solve": 0.0,
-          "device_to_host": 5601661.0,
+          "device_to_host": 1403084.0,
           "readback": 0.0
         },
         "cpu_benchmark_row": "BM_Plan083PointTriangleBarrierGradientCpu/65536",
         "gpu_benchmark_row": "BM_Plan083PointTriangleBarrierGradientCuda/65536"
+      },
+      "point_triangle_tangent_stencil": {
+        "sample_count": 65536,
+        "fallback_basis_count": 0,
+        "max_result_abs_error": 6.661338147750939e-16,
+        "speedup": 1.7041788688311987,
+        "meets_speedup_gate": true,
+        "timing_ns": {
+          "setup": 7122337.0,
+          "host_to_device": 957512.0,
+          "kernel": 592944.0,
+          "solve": 0.0,
+          "device_to_host": 2981355.0,
+          "readback": 0.0
+        },
+        "cpu_benchmark_row": "BM_Plan083PointTriangleTangentStencilCpu/65536",
+        "gpu_benchmark_row": "BM_Plan083PointTriangleTangentStencilCuda/65536"
       }
     },
     {

@@ -31,6 +31,7 @@
 
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
+#include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
 
 #include <benchmark/benchmark.h>
 #include <dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cuh>
@@ -82,10 +83,25 @@ struct CpuPointTriangleResult
   double maxBarrierValue = 0.0;
 };
 
+struct CpuPointTriangleTangentResult
+{
+  std::vector<double> basisValues;
+  std::vector<double> coordinates;
+  std::vector<double> projectionValues;
+  std::vector<std::uint8_t> fallbackBases;
+  std::size_t fallbackBasisCount = 0;
+};
+
 struct PointTriangleFixture
 {
   std::vector<cuda::PointTriangleBarrierInput> inputs;
   CpuPointTriangleResult cpu;
+};
+
+struct PointTriangleTangentFixture
+{
+  std::vector<cuda::PointTriangleTangentInput> inputs;
+  CpuPointTriangleTangentResult cpu;
 };
 
 cuda::BarrierFrictionLocalInput makeInput(const int i)
@@ -146,6 +162,31 @@ cuda::PointTriangleBarrierInput makePointTriangleInput(const int i)
   return input;
 }
 
+cuda::PointTriangleTangentInput makePointTriangleTangentInput(const int i)
+{
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const bool outsideEdge = (i % 7) == 0;
+
+  const Eigen::Vector3d a(0.0, 0.0, 0.0);
+  const Eigen::Vector3d b(1.0 + 0.001 * static_cast<double>(i % 13), 0.0, 0.0);
+  const Eigen::Vector3d c(
+      0.02 * static_cast<double>(i % 5),
+      1.0 + 0.001 * static_cast<double>(i % 17),
+      0.03 * static_cast<double>(i % 11));
+  const Eigen::Vector3d p(
+      outsideEdge ? 1.1 : 0.1 + 0.6 * column,
+      outsideEdge ? -0.2 : 0.1 + 0.6 * row,
+      0.03 + 0.0001 * static_cast<double>(i % 19));
+
+  cuda::PointTriangleTangentInput input;
+  writeVec3(input.point, p);
+  writeVec3(input.triangleA, a);
+  writeVec3(input.triangleB, b);
+  writeVec3(input.triangleC, c);
+  return input;
+}
+
 void resizeCpuResult(CpuLocalResult& result, const std::size_t count)
 {
   result.barrierValues.assign(count, 0.0);
@@ -173,6 +214,16 @@ void resizeCpuResult(CpuPointTriangleResult& result, const std::size_t count)
   result.activeBarriers.assign(count, 0u);
   result.activeBarrierCount = 0;
   result.maxBarrierValue = 0.0;
+}
+
+void resizeCpuResult(
+    CpuPointTriangleTangentResult& result, const std::size_t count)
+{
+  result.basisValues.assign(6 * count, 0.0);
+  result.coordinates.assign(2 * count, 0.0);
+  result.projectionValues.assign(24 * count, 0.0);
+  result.fallbackBases.assign(count, 0u);
+  result.fallbackBasisCount = 0;
 }
 
 void evaluateCpu(
@@ -245,6 +296,52 @@ void evaluateCpu(
   }
 }
 
+void evaluateCpu(
+    const std::vector<cuda::PointTriangleTangentInput>& inputs,
+    CpuPointTriangleTangentResult& result)
+{
+  resizeCpuResult(result, inputs.size());
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto stencil = nb::pointTriangleTangentStencil(
+        readVec3(input.point),
+        readVec3(input.triangleA),
+        readVec3(input.triangleB),
+        readVec3(input.triangleC));
+
+    const std::size_t basisOffset = 6 * i;
+    for (int component = 0; component < 3; ++component) {
+      result.basisValues[basisOffset + static_cast<std::size_t>(component)]
+          = stencil.basis(component, 0);
+      result.basisValues[basisOffset + 3u + static_cast<std::size_t>(component)]
+          = stencil.basis(component, 1);
+    }
+
+    const std::size_t coordinateOffset = 2 * i;
+    result.coordinates[coordinateOffset] = stencil.coordinates.x();
+    result.coordinates[coordinateOffset + 1] = stencil.coordinates.y();
+
+    const std::size_t projectionOffset = 24 * i;
+    for (int block = 0; block < 4; ++block) {
+      for (int component = 0; component < 3; ++component) {
+        const std::size_t blockOffset
+            = projectionOffset + static_cast<std::size_t>(6 * block);
+        result
+            .projectionValues[blockOffset + static_cast<std::size_t>(component)]
+            = stencil.projection(0, 3 * block + component);
+        result.projectionValues
+            [blockOffset + 3u + static_cast<std::size_t>(component)]
+            = stencil.projection(1, 3 * block + component);
+      }
+    }
+
+    if (stencil.usedFallbackBasis) {
+      result.fallbackBases[i] = 1u;
+      ++result.fallbackBasisCount;
+    }
+  }
+}
+
 LocalFixture makeFixture(const int sampleCount)
 {
   LocalFixture fixture;
@@ -262,6 +359,18 @@ PointTriangleFixture makePointTriangleFixture(const int sampleCount)
   fixture.inputs.reserve(static_cast<std::size_t>(sampleCount));
   for (int i = 0; i < sampleCount; ++i) {
     fixture.inputs.push_back(makePointTriangleInput(i));
+  }
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
+PointTriangleTangentFixture makePointTriangleTangentFixture(
+    const int sampleCount)
+{
+  PointTriangleTangentFixture fixture;
+  fixture.inputs.reserve(static_cast<std::size_t>(sampleCount));
+  for (int i = 0; i < sampleCount; ++i) {
+    fixture.inputs.push_back(makePointTriangleTangentInput(i));
   }
   evaluateCpu(fixture.inputs, fixture.cpu);
   return fixture;
@@ -325,6 +434,21 @@ double maxOutputError(
   return maxError;
 }
 
+double maxOutputError(
+    const CpuPointTriangleTangentResult& expected,
+    const cuda::PointTriangleTangentStencilResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.basisValues, actual.basisValues));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.coordinates, actual.coordinates));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.projectionValues, actual.projectionValues));
+  return maxError;
+}
+
 void recordCounters(
     benchmark::State& state, const LocalFixture& fixture, const double maxError)
 {
@@ -351,6 +475,19 @@ void recordCounters(
   state.counters["active_barriers"]
       = static_cast<double>(fixture.cpu.activeBarrierCount);
   state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
+void recordCounters(
+    benchmark::State& state,
+    const PointTriangleTangentFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["fallback_bases"]
+      = static_cast<double>(fixture.cpu.fallbackBasisCount);
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
@@ -458,6 +595,55 @@ static void BM_Plan083PointTriangleBarrierGradientCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointTriangleBarrierGradientCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleTangentStencilCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointTriangleTangentFixture(static_cast<int>(state.range(0)));
+  CpuPointTriangleTangentResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.projectionValues.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointTriangleTangentStencilCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleTangentStencilCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointTriangleTangentFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleTangentStencilResult result;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleTangentStencilsCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.projectionValues.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_fallback_bases"]
+      = static_cast<double>(result.fallbackBasisCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointTriangleTangentStencilCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

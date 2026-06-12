@@ -11,13 +11,17 @@ merged into `main`. A fresh Claude/Codex session should resume from #2978,
 check hosted CI/review state, and keep any remaining PLAN-083 commits on the
 same branch.
 
-Stop-handoff checkpoint (2026-06-11): after the CUDA point-triangle
-barrier-gradient parity push, the maintainer instructed the agent to stop
-implementation and focus only on hand-off without further verification. The last
-code/evidence checkpoint before this note was
-`bb971df9890f6f2e7b15e4489d9c7f792b6c4a93` (`Add CUDA point-triangle barrier
-gradient parity`). This hand-off update intentionally did not run lint, build,
-tests, PR checks, or fresh review polling after that stop request.
+Critical hand-off checkpoint (2026-06-11): the maintainer instructed the agent
+to stop implementation and focus only on hand-off without further verification.
+The active #2978 branch now carries private CUDA point-triangle tangent-stencil
+parity in the barrier/friction packet, plus the required packet writer/tests and
+honest plan/dev-task updates. The tangent subpacket measured
+`max_result_abs_error=6.661338147750939e-16` and
+`speedup=1.7041788688311987x` before the stop request, but the row remains
+`in-progress` because remaining primitive-family tangent bases, Hessian
+assembly, PSD coupling, runtime contact rows, and the top-level speedup gate
+remain future evidence. No lint, build, test, benchmark, PR-check polling, or
+fresh review request was run after the critical stop request.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
@@ -185,11 +189,11 @@ tests, PR checks, or fresh review polling after that stop request.
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
-  - [x] Add private scalar barrier/friction local-kernel and point-triangle
-        primitive barrier-gradient packets with exact CPU/GPU local-output
-        parity; keep the row in-progress because tangent-basis construction,
-        Hessian assembly, PSD coupling, runtime contact rows, and runtime speedup
-        remain unproven.
+  - [x] Add private scalar barrier/friction local-kernel, point-triangle
+        primitive barrier-gradient, and point-triangle tangent-stencil packets
+        with exact CPU/GPU local-output parity; keep the row in-progress because
+        remaining primitive-family tangent bases, Hessian assembly, PSD
+        coupling, runtime contact rows, and runtime speedup remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene
@@ -335,8 +339,8 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. This session stopped without further verification by
    maintainer request; a fresh session should resume the branch/PR context
-   first, then verify the current #2978 CI and Codex review state after the
-   barrier-gradient push only if verification is allowed.
+   first and only verify #2978 CI/review state if the maintainer explicitly
+   resumes verification or implementation.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

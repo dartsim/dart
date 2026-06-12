@@ -58,6 +58,14 @@ struct PointTriangleBarrierInput
   double stiffness = 1.0;
 };
 
+struct PointTriangleTangentInput
+{
+  double point[3] = {0.0, 0.0, 0.0};
+  double triangleA[3] = {0.0, 0.0, 0.0};
+  double triangleB[3] = {0.0, 0.0, 0.0};
+  double triangleC[3] = {0.0, 0.0, 0.0};
+};
+
 struct BarrierFrictionLocalTiming
 {
   double setupNs = 0.0;
@@ -97,6 +105,16 @@ struct PointTriangleBarrierGradientResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct PointTriangleTangentStencilResult
+{
+  std::vector<double> basisValues;
+  std::vector<double> coordinates;
+  std::vector<double> projectionValues;
+  std::vector<std::uint8_t> fallbackBases;
+  std::size_t fallbackBasisCount = 0;
+  BarrierFrictionLocalTiming timing;
+};
+
 /// Evaluate private local barrier and friction scalar kernels on CUDA.
 ///
 /// This packet covers the clamped-log scalar barrier and smoothed Coulomb
@@ -115,5 +133,15 @@ void evaluateBarrierFrictionLocalKernelsCuda(
 void evaluatePointTriangleBarrierGradientsCuda(
     const std::vector<PointTriangleBarrierInput>& inputs,
     PointTriangleBarrierGradientResult& result);
+
+/// Evaluate private point-triangle tangent stencils on CUDA.
+///
+/// This packet extends local-kernel evidence to tangent basis construction and
+/// projection assembly for the point-triangle primitive family. It
+/// intentionally does not cover Hessian assembly, PSD coupling, runtime contact
+/// rows, or a public GPU backend.
+void evaluatePointTriangleTangentStencilsCuda(
+    const std::vector<PointTriangleTangentInput>& inputs,
+    PointTriangleTangentStencilResult& result);
 
 } // namespace dart::simulation::compute::cuda
