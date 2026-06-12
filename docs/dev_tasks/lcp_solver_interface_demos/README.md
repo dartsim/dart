@@ -1,5 +1,92 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Post-PLAN-091 Merge / Harness Alignment
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 69]`.
+- Latest local commit:
+  `b6b1b12544e Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`.
+- Latest LCP implementation checkpoint:
+  `d35a3ffa099 Use LLT for Lemke and Baraff standard exact paths`.
+- The latest `origin/main` was fetched via HTTPS because the SSH remote was not
+  reachable from this environment, then merged locally.
+- The merged `origin/main` includes PR #2986:
+  `bb851f45360 Add DART 7 architecture assessment, PLAN-091 hardening plan, and work-packet harness (#2986)`.
+- This branch has not been pushed after the merge. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+DART 7 harness alignment from PR #2986:
+
+- `docs/ai/orchestration.md` now defines the packet executor model. For this
+  existing LCP task, keep future slices bounded like work packets: one
+  objective, explicit scope/non-goals, concrete acceptance evidence, and clear
+  handoff notes.
+- `docs/design/dart7_architecture_assessment.md` identifies apples-to-apples
+  solver comparison substrate and internal solver contracts as load-bearing DART
+  7 gaps.
+- `docs/plans/solver-family-intake.md` now requires solver-family work to
+  record how it enters the internal solver contract and requires benchmark or
+  evidence packets to machine-record the resolved solver configuration.
+- `docs/plans/091-architecture-hardening.md` is now the standing hardening plan
+  for those contract/identity gaps. This LCP work predates PLAN-091, so do not
+  invent a new schema inside this dev-task. Instead, keep every new LCP evidence
+  packet explicit about the current interim identity mechanism and leave any
+  durable schema migration to PLAN-091-aligned work.
+
+Current LCP identity/evidence stance:
+
+- `BM_LcpCompare` rows currently encode the problem family, manifest solver
+  name, and benchmark size in the benchmark name.
+- `scripts/lcp_performance_profile.py` derives profile rows from those benchmark
+  names plus `contract_ok` and timing fields.
+- `python/examples/demos/scenes/lcp_physics.py` exposes solver manifest metadata
+  and native support checks for the demo panels.
+- Until a PLAN-091 resolved-identity schema lands, handoff notes and profile
+  updates must explicitly state this interim identity path instead of implying
+  that full DART 7 resolved solver identity is already implemented.
+
+Latest verified checkpoint before the merge:
+
+- `d35a3ffa099` moved `LemkeSolver` and `BaraffSolver` Standard
+  strict-interior exact paths to
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- The regenerated full profile after that checkpoint showed the largest
+  remaining rows as:
+  - Standard: `Jacobi 1.64`, `BlockedJacobi 1.62`, `Apgd 1.59`,
+    `RedBlackGaussSeidel 1.57`, and `Sap 1.57`.
+  - Boxed: `NNCG 1.71`, `RedBlackGaussSeidel 1.66`,
+    `SymmetricPsor 1.63`, `ShockPropagation 1.59`,
+    `BoxedSemiSmoothNewton 1.55`, and `SubspaceMinimization 1.51`.
+  - FrictionIndex: `ShockPropagation 1.71`, `Admm 1.59`, `NNCG 1.58`,
+    `Sap 1.56`, and `Apgd 1.53`.
+- Pre-merge verification for that checkpoint passed:
+  - Focused Python demo metadata test.
+  - CSV shape check.
+  - Focused C++ build and CTest for LCP validation/solver coverage.
+  - `pixi run build`.
+  - `pixi run test-unit` (`161/161`).
+  - `pixi run lint`.
+  - `git diff --check`.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and confirm the latest commit is the
+   `origin/main` merge commit above.
+2. Treat the PR #2986 harness docs as active constraints for any further solver
+   performance/evidence slice.
+3. If continuing optimization, start with a focused baseline for Standard
+   `Jacobi` and `BlockedJacobi`, or choose Boxed `NNCG`; record the interim
+   resolved-identity path in this dev-task for any new evidence packet.
+4. Before any checkpoint commit, run `pixi run lint` as required by
+   `AGENTS.md`. Run broader build/test gates when code or behavior changes.
+5. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Lemke/Baraff Standard LLT Paths
 
 This is the latest hand-off state. Sections below are historical checkpoints

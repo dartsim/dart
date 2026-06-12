@@ -1,5 +1,67 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Post-PLAN-091 Merge / Harness Alignment
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 69]`
+- Latest local commit:
+  `b6b1b12544e Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+- Latest LCP implementation checkpoint:
+  `d35a3ffa099 Use LLT for Lemke and Baraff standard exact paths`
+- Latest `origin/main` was fetched via HTTPS because SSH to GitHub was not
+  reachable, then merged locally.
+- The merged `origin/main` contains PR #2986:
+  `bb851f45360 Add DART 7 architecture assessment, PLAN-091 hardening plan, and work-packet harness (#2986)`.
+- There is no associated PR yet.
+- This branch has not been pushed after the merge.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness constraints now active:
+
+- Follow `docs/ai/orchestration.md` by keeping continuation slices packet-like:
+  one objective, bounded scope, explicit acceptance evidence, and a clear
+  handoff.
+- Follow `docs/design/dart7_architecture_assessment.md` and
+  `docs/plans/091-architecture-hardening.md` for the DART 7 gaps around solver
+  contracts and apples-to-apples comparison substrate.
+- Follow `docs/plans/solver-family-intake.md` items 9-10 for solver-family
+  contract entry and machine-recorded benchmark identity.
+- This LCP task predates PLAN-091. Until a durable resolved-identity schema
+  lands, record the interim identity path explicitly: `BM_LcpCompare` benchmark
+  names encode problem family, manifest solver name, and benchmark size;
+  `scripts/lcp_performance_profile.py` derives profile rows from those names
+  plus `contract_ok` and timing fields; `lcp_physics.py` exposes solver manifest
+  metadata and native support checks for demo panels.
+
+Latest verified checkpoint before the merge:
+
+- `d35a3ffa099` moved `LemkeSolver` and `BaraffSolver` Standard
+  strict-interior exact paths to
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- Pre-merge gates passed: focused Python demo metadata test, CSV shape check,
+  focused C++ build/CTest for LCP validation, `pixi run build`,
+  `pixi run test-unit` (`161/161`), `pixi run lint`, and `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If continuing optimization, start with a focused baseline for Standard `Jacobi`
+and `BlockedJacobi`, or choose Boxed `NNCG`. Any new evidence packet should
+state the current interim solver identity path above. Do not push without
+explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Lemke/Baraff Standard LLT Paths
 
 This is the latest hand-off. Older sections below are historical checkpoints
