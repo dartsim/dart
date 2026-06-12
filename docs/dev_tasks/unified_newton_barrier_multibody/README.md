@@ -9,16 +9,17 @@ keeping all remaining PLAN-083 work consolidated on this single branch/PR. Do
 not push, PR-comment, resolve review threads, trigger CI, open or close PRs,
 delete branches, or clean branches without explicit maintainer approval.
 
-This resume validated the uncommitted scene-owned point-triangle and
-point-edge barrier-Hessian packet checkpoint and refreshed the packet evidence.
-The latest generated packet records 512 scene-owned point-triangle candidates
-and 1,536 scene-derived point-edge candidates from one deformable scene body
-with 2,560 nodes and 768 surface triangles. CPU/GPU barrier-Hessian parity
-holds within `1.7763568394002505e-15` for the point-triangle runtime row and
-`8.881784197001252e-16` for the point-edge runtime row. The top-level
-barrier/friction packet records
+This resume validated the uncommitted scene-owned point-triangle, point-edge,
+and point-point barrier-Hessian packet checkpoint and refreshed the packet
+evidence. The latest generated packet records 512 scene-owned point-triangle
+candidates, 1,536 scene-derived point-edge candidates, and 1,536
+scene-derived point-point candidates from one deformable scene body with 2,560
+nodes and 768 surface triangles. CPU/GPU barrier-Hessian parity holds within
+`1.7763568394002505e-15` for the point-triangle runtime row,
+`8.881784197001252e-16` for the point-edge runtime row, and `0` for the
+point-point runtime row. The top-level barrier/friction packet records
 `max_result_abs_error=7.844391802791506e-12` and
-`speedup=0.21241612527625914x` (`meets_speedup_gate=false`).
+`speedup=0.2016402329495093x` (`meets_speedup_gate=false`).
 
 Stop-only handoff (2026-06-12): the maintainer explicitly stopped further
 implementation and verification here. Do not continue work, run validation,
@@ -36,25 +37,27 @@ remaining PLAN-083 work consolidated on that single branch/PR. Do not push,
 PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
 branches, or clean up branches without explicit maintainer approval.
 
-This checkpoint adds reduced scene-owned point-triangle and point-edge
-barrier-Hessian runtime rows to the private GPU barrier/friction packet. The
-benchmark builds one DART `World` deformable surface, extracts motion-aware
-point-triangle contact candidates from the runtime scene surface, expands each
-candidate over its three triangle edges for the point-edge row, evaluates the
+This checkpoint adds reduced scene-owned point-triangle, point-edge, and
+point-point barrier-Hessian runtime rows to the private GPU barrier/friction
+packet. The benchmark builds one DART `World` deformable surface, extracts
+motion-aware point-triangle contact candidates from the runtime scene surface,
+expands each candidate over its three triangle edges for the point-edge row and
+over its three triangle vertices for the point-point row, evaluates the
 candidate barrier Hessians on CPU and CUDA, and records scene body/node/triangle
 counts.
 
-Fresh packet evidence records 512 scene-owned point-triangle candidates and
-1,536 scene-derived point-edge candidates from one deformable scene body with
-2,560 nodes and 768 surface triangles. CPU/GPU barrier-Hessian parity holds
-within `1.7763568394002505e-15` for the point-triangle runtime row and
-`8.881784197001252e-16` for the point-edge runtime row. The top-level
-barrier/friction packet records
+Fresh packet evidence records 512 scene-owned point-triangle candidates, 1,536
+scene-derived point-edge candidates, and 1,536 scene-derived point-point
+candidates from one deformable scene body with 2,560 nodes and 768 surface
+triangles. CPU/GPU barrier-Hessian parity holds within
+`1.7763568394002505e-15` for the point-triangle runtime row,
+`8.881784197001252e-16` for the point-edge runtime row, and `0` for the
+point-point runtime row. The top-level barrier/friction packet records
 `max_result_abs_error=7.844391802791506e-12` and
-`speedup=0.21241612527625914x` (`meets_speedup_gate=false`). This is reduced
-scene-owned point-triangle and point-edge barrier-Hessian evidence only:
-broader sparse Hessian assembly, full GPU `World::step`, and speedup-gate
-completion remain future work.
+`speedup=0.2016402329495093x` (`meets_speedup_gate=false`). This is reduced
+scene-owned point-triangle, point-edge, and point-point barrier-Hessian evidence
+only: broader sparse Hessian assembly, additional runtime rows, full GPU
+`World::step`, and speedup-gate completion remain future work.
 
 Latest validation passed:
 
@@ -658,8 +661,9 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         primitive barrier-gradient, point-triangle/edge-edge/point-edge/
         point-point tangent-stencil, and point-triangle/point-point/point-edge
         primitive barrier-Hessian packets, plus point-triangle/point-point/
-        point-edge Hessian PSD-projection parity, plus a reduced scene-owned
-        point-triangle barrier-Hessian runtime row, with exact CPU/GPU
+        point-edge Hessian PSD-projection parity, plus reduced scene-owned
+        point-triangle/point-edge/point-point barrier-Hessian runtime rows,
+        with exact CPU/GPU
         local-output parity; keep the row in-progress because broader sparse
         Hessian assembly, additional runtime contact rows, full GPU
         `World::step`, and runtime speedup remain unproven.

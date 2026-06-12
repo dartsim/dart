@@ -112,6 +112,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "|PointTriangleBarrierHessian(Cpu|Cuda)"
         "|SceneRuntimePointTriangleBarrierHessian(Cpu|Cuda)"
         "|SceneRuntimePointEdgeBarrierHessian(Cpu|Cuda)"
+        "|SceneRuntimePointPointBarrierHessian(Cpu|Cuda)"
         "|PointTriangleBarrierHessianPsd(Cpu|Cuda)"
         "|PointPointBarrierHessian(Cpu|Cuda)"
         "|PointPointBarrierHessianPsd(Cpu|Cuda)"
@@ -208,6 +209,12 @@ def _representative_rows(
         ),
         "scene_runtime_point_edge_hessian_gpu": (
             f"BM_Plan083SceneRuntimePointEdgeBarrierHessianCuda/{sample_count}"
+        ),
+        "scene_runtime_point_point_hessian_cpu": (
+            f"BM_Plan083SceneRuntimePointPointBarrierHessianCpu/{sample_count}"
+        ),
+        "scene_runtime_point_point_hessian_gpu": (
+            f"BM_Plan083SceneRuntimePointPointBarrierHessianCuda/{sample_count}"
         ),
         "point_triangle_hessian_psd_cpu": (
             f"BM_Plan083PointTriangleBarrierHessianPsdCpu/{sample_count}"
@@ -343,6 +350,12 @@ def make_packet(
     scene_runtime_point_edge_hessian_gpu_row = representative_rows[
         "scene_runtime_point_edge_hessian_gpu"
     ]
+    scene_runtime_point_point_hessian_cpu_row = representative_rows[
+        "scene_runtime_point_point_hessian_cpu"
+    ]
+    scene_runtime_point_point_hessian_gpu_row = representative_rows[
+        "scene_runtime_point_point_hessian_gpu"
+    ]
     point_triangle_hessian_psd_cpu_row = representative_rows[
         "point_triangle_hessian_psd_cpu"
     ]
@@ -383,6 +396,12 @@ def make_packet(
     )
     scene_runtime_point_edge_hessian_gpu_ns = benchmark_timing_ns(
         scene_runtime_point_edge_hessian_gpu_row
+    )
+    scene_runtime_point_point_hessian_cpu_ns = benchmark_timing_ns(
+        scene_runtime_point_point_hessian_cpu_row
+    )
+    scene_runtime_point_point_hessian_gpu_ns = benchmark_timing_ns(
+        scene_runtime_point_point_hessian_gpu_row
     )
     point_triangle_hessian_psd_cpu_ns = benchmark_timing_ns(
         point_triangle_hessian_psd_cpu_row
@@ -425,6 +444,12 @@ def make_packet(
         ),
         "scene-runtime point-edge Hessian CPU": scene_runtime_point_edge_hessian_cpu_ns,
         "scene-runtime point-edge Hessian GPU": scene_runtime_point_edge_hessian_gpu_ns,
+        "scene-runtime point-point Hessian CPU": (
+            scene_runtime_point_point_hessian_cpu_ns
+        ),
+        "scene-runtime point-point Hessian GPU": (
+            scene_runtime_point_point_hessian_gpu_ns
+        ),
         "point-triangle Hessian PSD CPU": point_triangle_hessian_psd_cpu_ns,
         "point-triangle Hessian PSD GPU": point_triangle_hessian_psd_gpu_ns,
         "point-point Hessian CPU": point_point_hessian_cpu_ns,
@@ -460,6 +485,9 @@ def make_packet(
     scene_runtime_point_edge_hessian_max_error = _counter(
         scene_runtime_point_edge_hessian_gpu_row, "max_result_abs_error"
     )
+    scene_runtime_point_point_hessian_max_error = _counter(
+        scene_runtime_point_point_hessian_gpu_row, "max_result_abs_error"
+    )
     point_triangle_hessian_psd_max_error = _counter(
         point_triangle_hessian_psd_gpu_row, "max_result_abs_error"
     )
@@ -493,6 +521,7 @@ def make_packet(
         point_triangle_hessian_max_error,
         scene_runtime_point_triangle_hessian_max_error,
         scene_runtime_point_edge_hessian_max_error,
+        scene_runtime_point_point_hessian_max_error,
         point_triangle_hessian_psd_max_error,
         point_point_hessian_max_error,
         point_point_hessian_psd_max_error,
@@ -742,6 +771,137 @@ def make_packet(
             "the point-triangle runtime row"
         )
 
+    scene_runtime_point_point_hessian_cpu_active = int(
+        _counter(scene_runtime_point_point_hessian_cpu_row, "active_barriers")
+    )
+    scene_runtime_point_point_hessian_gpu_active = int(
+        _counter(scene_runtime_point_point_hessian_gpu_row, "gpu_active_barriers")
+    )
+    if (
+        scene_runtime_point_point_hessian_cpu_active
+        != scene_runtime_point_point_hessian_gpu_active
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point Hessian active_barriers count "
+            f"{scene_runtime_point_point_hessian_cpu_active} "
+            "!= gpu_active_barriers count "
+            f"{scene_runtime_point_point_hessian_gpu_active}"
+        )
+    scene_runtime_point_point_candidates = int(
+        _counter(
+            scene_runtime_point_point_hessian_cpu_row,
+            "runtime_point_point_candidates",
+        )
+    )
+    if scene_runtime_point_point_candidates <= 0:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point Hessian row has no candidates"
+        )
+    scene_runtime_point_point_gpu_candidates = int(
+        _counter(
+            scene_runtime_point_point_hessian_gpu_row,
+            "runtime_point_point_candidates",
+        )
+    )
+    if scene_runtime_point_point_candidates != scene_runtime_point_point_gpu_candidates:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point candidate count "
+            f"{scene_runtime_point_point_candidates} != "
+            f"{scene_runtime_point_point_gpu_candidates}"
+        )
+    scene_runtime_point_point_source_candidates = int(
+        _counter(
+            scene_runtime_point_point_hessian_cpu_row,
+            "source_point_triangle_candidates",
+        )
+    )
+    scene_runtime_point_point_gpu_source_candidates = int(
+        _counter(
+            scene_runtime_point_point_hessian_gpu_row,
+            "source_point_triangle_candidates",
+        )
+    )
+    if (
+        scene_runtime_point_point_source_candidates
+        != scene_runtime_point_point_gpu_source_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point source candidate count "
+            f"{scene_runtime_point_point_source_candidates} != "
+            f"{scene_runtime_point_point_gpu_source_candidates}"
+        )
+    if (
+        scene_runtime_point_point_source_candidates
+        != scene_runtime_point_triangle_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point source point-triangle count "
+            f"{scene_runtime_point_point_source_candidates} != "
+            f"{scene_runtime_point_triangle_candidates}"
+        )
+    if (
+        scene_runtime_point_point_candidates
+        != 3 * scene_runtime_point_point_source_candidates
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point candidate count "
+            f"{scene_runtime_point_point_candidates} != 3 * "
+            f"{scene_runtime_point_point_source_candidates}"
+        )
+    scene_runtime_point_point_body_count = int(
+        _counter(scene_runtime_point_point_hessian_cpu_row, "scene_bodies")
+    )
+    scene_runtime_point_point_gpu_body_count = int(
+        _counter(scene_runtime_point_point_hessian_gpu_row, "scene_bodies")
+    )
+    if scene_runtime_point_point_body_count != scene_runtime_point_point_gpu_body_count:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point scene_bodies count "
+            f"{scene_runtime_point_point_body_count} != "
+            f"{scene_runtime_point_point_gpu_body_count}"
+        )
+    if scene_runtime_point_point_body_count != scene_runtime_body_count:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point scene_bodies count "
+            f"{scene_runtime_point_point_body_count} != "
+            f"{scene_runtime_body_count}"
+        )
+    scene_runtime_point_point_node_count = int(
+        _counter(scene_runtime_point_point_hessian_cpu_row, "scene_nodes")
+    )
+    scene_runtime_point_point_gpu_node_count = int(
+        _counter(scene_runtime_point_point_hessian_gpu_row, "scene_nodes")
+    )
+    scene_runtime_point_point_triangle_count = int(
+        _counter(scene_runtime_point_point_hessian_cpu_row, "scene_triangles")
+    )
+    scene_runtime_point_point_gpu_triangle_count = int(
+        _counter(scene_runtime_point_point_hessian_gpu_row, "scene_triangles")
+    )
+    if scene_runtime_point_point_node_count != scene_runtime_point_point_gpu_node_count:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point scene_nodes count "
+            f"{scene_runtime_point_point_node_count} != "
+            f"{scene_runtime_point_point_gpu_node_count}"
+        )
+    if (
+        scene_runtime_point_point_triangle_count
+        != scene_runtime_point_point_gpu_triangle_count
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point scene_triangles count "
+            f"{scene_runtime_point_point_triangle_count} != "
+            f"{scene_runtime_point_point_gpu_triangle_count}"
+        )
+    if (
+        scene_runtime_point_point_node_count != scene_runtime_node_count
+        or scene_runtime_point_point_triangle_count != scene_runtime_triangle_count
+    ):
+        raise Plan083GpuBarrierFrictionPacketError(
+            "scene-runtime point-point scene topology does not match "
+            "the point-triangle runtime row"
+        )
+
     point_triangle_hessian_psd_cpu_active = int(
         _counter(point_triangle_hessian_psd_cpu_row, "active_barriers")
     )
@@ -905,6 +1065,10 @@ def make_packet(
         scene_runtime_point_edge_hessian_cpu_ns
         / scene_runtime_point_edge_hessian_gpu_ns
     )
+    scene_runtime_point_point_hessian_speedup = (
+        scene_runtime_point_point_hessian_cpu_ns
+        / scene_runtime_point_point_hessian_gpu_ns
+    )
     point_triangle_hessian_psd_speedup = (
         point_triangle_hessian_psd_cpu_ns / point_triangle_hessian_psd_gpu_ns
     )
@@ -932,6 +1096,7 @@ def make_packet(
         point_triangle_hessian_speedup,
         scene_runtime_point_triangle_hessian_speedup,
         scene_runtime_point_edge_hessian_speedup,
+        scene_runtime_point_point_hessian_speedup,
         point_triangle_hessian_psd_speedup,
         point_point_hessian_speedup,
         point_point_hessian_psd_speedup,
@@ -950,6 +1115,9 @@ def make_packet(
     )
     scene_runtime_point_edge_hessian_timing_ns = _timing_ns(
         scene_runtime_point_edge_hessian_gpu_row
+    )
+    scene_runtime_point_point_hessian_timing_ns = _timing_ns(
+        scene_runtime_point_point_hessian_gpu_row
     )
     point_triangle_hessian_psd_timing_ns = _timing_ns(
         point_triangle_hessian_psd_gpu_row
@@ -1079,6 +1247,32 @@ def make_packet(
                 ),
                 "gpu_benchmark_row": _packet_row_name(
                     scene_runtime_point_edge_hessian_gpu_row
+                ),
+            },
+            "point_point_scene_runtime_barrier_hessian": {
+                "candidate_count": scene_runtime_point_point_candidates,
+                "source_point_triangle_candidate_count": (
+                    scene_runtime_point_point_source_candidates
+                ),
+                "active_barrier_count": (scene_runtime_point_point_hessian_cpu_active),
+                "scene_body_count": scene_runtime_point_point_body_count,
+                "scene_node_count": scene_runtime_point_point_node_count,
+                "scene_triangle_count": scene_runtime_point_point_triangle_count,
+                "max_barrier_value": _counter(
+                    scene_runtime_point_point_hessian_cpu_row,
+                    "max_barrier_value",
+                ),
+                "max_result_abs_error": scene_runtime_point_point_hessian_max_error,
+                "speedup": scene_runtime_point_point_hessian_speedup,
+                "meets_speedup_gate": (
+                    scene_runtime_point_point_hessian_speedup >= speedup_gate
+                ),
+                "timing_ns": scene_runtime_point_point_hessian_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(
+                    scene_runtime_point_point_hessian_cpu_row
+                ),
+                "gpu_benchmark_row": _packet_row_name(
+                    scene_runtime_point_point_hessian_gpu_row
                 ),
             },
             "point_triangle_barrier_hessian_psd_projection": {

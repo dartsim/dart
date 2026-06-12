@@ -164,6 +164,37 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_runtime_point_point_hessian_cpu = _row(
+        "BM_Plan083SceneRuntimePointPointBarrierHessianCpu/1024",
+        samples=1536,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_point_triangle_candidates=512,
+        runtime_point_point_candidates=1536,
+        active_barriers=768,
+        max_barrier_value=0.75,
+        max_result_abs_error=0.0,
+    )
+    scene_runtime_point_point_hessian_gpu = _row(
+        "BM_Plan083SceneRuntimePointPointBarrierHessianCuda/1024",
+        real_time=6.0,
+        cpu_time=6.0,
+        samples=1536,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_point_triangle_candidates=512,
+        runtime_point_point_candidates=1536,
+        active_barriers=768,
+        gpu_active_barriers=768,
+        max_barrier_value=0.75,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_triangle_hessian_psd_cpu = _row(
         "BM_Plan083PointTriangleBarrierHessianPsdCpu/1024",
         samples=1024,
@@ -361,6 +392,8 @@ def _benchmark_data(**overrides):
             scene_runtime_point_triangle_hessian_gpu,
             scene_runtime_point_edge_hessian_cpu,
             scene_runtime_point_edge_hessian_gpu,
+            scene_runtime_point_point_hessian_cpu,
+            scene_runtime_point_point_hessian_gpu,
             point_triangle_hessian_psd_cpu,
             point_triangle_hessian_psd_gpu,
             point_point_hessian_cpu,
@@ -440,6 +473,25 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     )
     assert (
         row["point_edge_scene_runtime_barrier_hessian"]["max_result_abs_error"] == 1e-12
+    )
+    assert row["point_point_scene_runtime_barrier_hessian"]["candidate_count"] == 1536
+    assert (
+        row["point_point_scene_runtime_barrier_hessian"][
+            "source_point_triangle_candidate_count"
+        ]
+        == 512
+    )
+    assert (
+        row["point_point_scene_runtime_barrier_hessian"]["active_barrier_count"] == 768
+    )
+    assert row["point_point_scene_runtime_barrier_hessian"]["scene_body_count"] == 1
+    assert row["point_point_scene_runtime_barrier_hessian"]["scene_node_count"] == 2560
+    assert (
+        row["point_point_scene_runtime_barrier_hessian"]["scene_triangle_count"] == 768
+    )
+    assert (
+        row["point_point_scene_runtime_barrier_hessian"]["max_result_abs_error"]
+        == 1e-12
     )
     assert (
         row["point_triangle_barrier_hessian_psd_projection"]["active_barrier_count"]
