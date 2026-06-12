@@ -9,6 +9,19 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): local session branch consolidation is
+  complete. The single non-main local resume branch is
+  `avbd/source-row-extraction-precheck`; it contains the PR #2977
+  `avbd/source-row-perf-slice` work, the later friction-sweep evidence, and the
+  current handoff docs. The local `avbd/source-row-perf-slice` branch was
+  removed after confirming its head is already an ancestor of the consolidated
+  branch. The local `feature/avbd-articulated-masked-rows` branch was removed
+  as a superseded raw 33-hour checkpoint; its remote ref remains on origin as
+  archive only and should not be used as the fresh-session starting point. The
+  unrelated local `feature/free-joint-energy-benchmarks` branch was also
+  removed locally and remains on origin. Fresh agents should resume with
+  `git switch avbd/source-row-extraction-precheck`, not from the old branch
+  names or stashes.
 - Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
   skips the Coulomb tangent-row inventory entirely when every active contact has
   a zero friction-force limit. The implementation preserves the existing

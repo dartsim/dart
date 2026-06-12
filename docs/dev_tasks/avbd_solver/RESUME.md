@@ -18,15 +18,18 @@ normal rows alive, removes useless zero-limit friction rows for frictionless
 manifolds, and preserves the existing descriptor layout whenever any contact in
 the manifold can carry positive friction.
 
-Current checkout snapshot after final push:
+Current branch-consolidation snapshot:
 
 - Branch: `avbd/source-row-extraction-precheck`.
 - Upstream: `origin/avbd/source-row-extraction-precheck`.
+- This is now the single non-main local branch to use for fresh-session AVBD
+  resumption.
 - Zero-limit friction-row implementation commit:
   `8b576ce2174 Skip zero-limit AVBD contact friction rows`.
-- After this doc-only handoff correction is committed and pushed, current
-  local/upstream HEAD should be the latest commit on
-  `origin/avbd/source-row-extraction-precheck`.
+- Branch-consolidation handoff docs are committed after
+  `2f15556ef8b Record AVBD zero-limit friction handoff push`; current
+  local/upstream HEAD should be the latest pushed commit on
+  `avbd/source-row-extraction-precheck`.
 - Current branch had no associated GitHub PR in the latest read-only
   `gh pr list --head "$(git branch --show-current)"` snapshot.
 - The zero-limit friction-row skip slice was pushed to
@@ -35,6 +38,14 @@ Current checkout snapshot after final push:
   stash operation, branch cleanup, or hosted merge was performed for this
   resumed checkpoint. External mutations still require explicit maintainer/user
   approval.
+- Local branch cleanup performed for consolidation:
+  `avbd/source-row-perf-slice` was deleted locally after confirming its head
+  `5297462d34b` is already contained in `avbd/source-row-extraction-precheck`;
+  `feature/avbd-articulated-masked-rows` was deleted locally as a superseded
+  raw checkpoint branch whose remote ref remains on origin; and unrelated local
+  `feature/free-joint-energy-benchmarks` was deleted locally while leaving its
+  remote ref intact. Do not re-expand these local branch names for routine
+  resume work.
 
 Current local validation for the zero-limit friction-row skip slice:
 
@@ -74,14 +85,18 @@ Current friction-coefficient sweep evidence after the zero-limit skip:
 
 Current local branch inventory:
 
-| Branch                                 | Upstream                                      | Local head at handoff                              | State and handling                                                                                    |
-| -------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | latest pushed HEAD                                 | Current consolidated continuation branch; includes implementation commit `8b576ce2174`.               |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                      | PR #2977 branch in earlier work; do not mutate without explicit approval and refresh first.           |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                      | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                      | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                      | Unrelated local branch; do not touch during AVBD handoff.                                             |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7` local, `bb851f45360` remote-tracking | Local main is stale versus the latest fetched `origin/main`; refresh before using it as a base.       |
+| Branch                                | Upstream                                     | Local head at handoff | State and handling                                                                                             |
+| ------------------------------------- | -------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck` | `origin/avbd/source-row-extraction-precheck` | latest pushed HEAD    | Current consolidated continuation branch. It contains PR #2977's local work and all current AVBD handoff docs. |
+| `main`                                | `origin/main`                                | `bb851f45360`         | Keep as base branch. Refresh before using it as a base.                                                        |
+
+Retired local branch names now preserved only by remote refs or docs:
+
+| Retired local branch                   | Remote ref                                    | Handling                                                                                                                                                               |
+| -------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | Local branch deleted because `5297462d34b` is already contained in the consolidated branch. PR #2977 may still exist remotely; do not resume locally from this branch. |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | Local branch deleted as a superseded raw 33-hour checkpoint. Treat the remote as archive only unless a human explicitly asks for forensic recovery.                    |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | Local branch deleted as unrelated to AVBD session resume. Remote ref remains untouched.                                                                                |
 
 Current local stash inventory. Do not apply or drop these by default:
 
