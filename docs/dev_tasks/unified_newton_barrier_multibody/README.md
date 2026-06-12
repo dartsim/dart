@@ -14,13 +14,14 @@ same branch.
 Current #2978 checkpoint (2026-06-11): the active branch now carries private
 CUDA point-triangle primitive barrier-gradient parity plus point-triangle,
 edge-edge, point-edge, and point-point tangent-stencil parity in the
-barrier/friction packet. The latest packet measured point-edge tangent-stencil
-`max_result_abs_error=1.1268763699945339e-14` and
-`speedup=1.623508438779482x`, plus point-point tangent-stencil
-`max_result_abs_error=3.3306690738754696e-16` and
-`speedup=0.9786534468698057x`. The row remains `in-progress` because Hessian
-assembly, PSD coupling, runtime contact rows, and the top-level speedup gate
-remain future evidence.
+barrier/friction packet, and the current hand-off package adds a private CUDA
+point-point primitive barrier-Hessian row. The latest point-point
+barrier-Hessian packet measured
+`max_result_abs_error=2.4868995751603507e-14` and
+`speedup=2.2036790873726364x`, while the top-level packet still measured
+`speedup=0.18351053106151646x` with `meets_speedup_gate=false`. The row remains
+`in-progress` because broader Hessian assembly, PSD coupling, runtime contact
+rows, and the top-level speedup gate remain future evidence.
 
 Validated hand-off checkpoint (2026-06-11): the formerly unverified
 point-edge/point-point tangent-stencil WIP has now passed lint, CUDA build,
@@ -33,6 +34,12 @@ to stop implementation and focus only on hand-off, with no further verification.
 Use `HANDOFF.md` plus `RESUME.md` as the fresh-session entry point; this
 hand-off step did not run new lint/build/test/benchmark gates after that
 directive.
+
+Fresh-session continuation: first inspect #2978, the branch head, hosted CI, and
+new review comments. Then sync the durable PLAN-083 plan sidecars for the
+point-point barrier-Hessian row before continuing with broader Hessian
+assembly, PSD coupling, runtime contact rows, or speedup-gate work. Do not open
+another PLAN-083 PR.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
@@ -201,10 +208,11 @@ directive.
         because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
-        primitive barrier-gradient, and point-triangle/edge-edge/point-edge/
-        point-point tangent-stencil packets with exact CPU/GPU local-output
-        parity; keep the row in-progress because Hessian assembly, PSD
-        coupling, runtime contact rows, and runtime speedup remain unproven.
+        primitive barrier-gradient, point-triangle/edge-edge/point-edge/
+        point-point tangent-stencil, and point-point primitive barrier-Hessian
+        packets with exact CPU/GPU local-output parity; keep the row
+        in-progress because broader Hessian assembly, PSD coupling, runtime
+        contact rows, and runtime speedup remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene

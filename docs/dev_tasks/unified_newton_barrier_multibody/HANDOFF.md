@@ -23,33 +23,37 @@ from this hand-off step after that directive.
 ## Current Local Slice
 
 The current hand-off slice extends the private barrier/friction CUDA packet
-with point-edge and point-point tangent-stencil parity on the same #2978
-branch. It also fixes a CPU/CUDA determinism issue in the point-point tangent
-basis selection.
+with a point-point primitive barrier-Hessian evaluator on the same #2978
+branch. It builds on the already-pushed point-triangle primitive
+barrier-gradient plus point-triangle, edge-edge, point-edge, and point-point
+tangent-stencil packet work.
 
-Changed implementation and coverage surfaces:
+Changed implementation and coverage surfaces in this hand-off package:
 
-- `dart/simulation/detail/newton_barrier/tangent_stencil.hpp` and
-  `dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cu` now use the
-  same deterministic point-point tangent-basis tie-break instead of comparing
-  squared cross-product norms that can round differently on CPU and CUDA.
+- `dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cuh` adds private
+  point-point barrier-Hessian input/result packet contracts.
+- `dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cpp` validates
+  those inputs, manages device buffers, and exposes
+  `evaluatePointPointBarrierHessiansCuda`.
+- `dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cu` adds the CUDA
+  kernel and launcher for point-point barrier values, gradients, and compact
+  6x6 Hessians.
 - `tests/unit/simulation/cuda/test_barrier_friction_kernel_cuda.cpp` adds
-  generated point-edge and point-point parity cases that exercise the same
-  fixture families used by the benchmark packet.
+  fixed and generated CPU/CUDA parity coverage for the point-point
+  barrier-Hessian path, plus non-finite input rejection.
 - `tests/benchmark/simulation/bm_plan083_gpu_barrier_friction.cpp`,
   `scripts/write_plan083_gpu_barrier_friction_packet.py`, and
-  `tests/test_plan083_gpu_barrier_friction_packet.py` carry the point-edge and
-  point-point tangent-stencil packet rows.
-- `docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json`,
-  `completion-audit.md`, `paper-deck-manifest.md`, `docs/plans/dashboard.md`,
-  `README.md`, and `RESUME.md` record the packet as in-progress evidence, not
-  completion.
+  `tests/test_plan083_gpu_barrier_friction_packet.py` add benchmark packet and
+  writer/test coverage for the new point-point barrier-Hessian row.
 
-The packet now has exact local-output parity evidence for the private
-point-triangle primitive barrier gradient plus point-triangle, edge-edge,
-point-edge, and point-point tangent stencils. The overall barrier/friction row
-remains `in-progress` because Hessian assembly, PSD coupling, runtime contact
-rows, and the top-level/runtime speedup gate remain future evidence.
+The current code has local-output parity evidence for the private
+point-triangle primitive barrier gradient, all four primitive-family tangent
+stencils, and now the first primitive-family barrier Hessian row. The overall
+barrier/friction row remains `in-progress` because broader Hessian assembly,
+PSD coupling, runtime contact rows, and the top-level/runtime speedup gate
+remain future evidence. Durable plan sidecars still need a normal follow-up
+sync for the point-point barrier-Hessian row after work resumes; this stop-only
+handoff intentionally updates the dev-task handoff surfaces first.
 
 ## Last Evidence Gathered Before Stop
 
@@ -67,7 +71,8 @@ critical no-more-verification stop request:
 - focused packet/audit Python tests (13 passed)
 - `git diff --check`
 
-The latest measured packet values from that evidence were:
+The latest measured point-edge/point-point tangent-stencil packet values from
+that evidence were:
 
 - `point_edge_tangent_stencil.max_result_abs_error =
 1.1268763699945339e-14`
@@ -79,6 +84,27 @@ The latest measured packet values from that evidence were:
 - top-level `speedup = 0.9375876271274418`
 - top-level `meets_speedup_gate = false`
 
+Additional point-point barrier-Hessian evidence had also been gathered before
+the maintainer's critical stop request:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+  (4 passed)
+- `pixi run -e cuda build-cuda Release`
+- focused `test_barrier_friction_kernel_cuda` CTest
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
+The point-point barrier-Hessian packet measured:
+
+- `point_point_barrier_hessian.sample_count = 65536`
+- `point_point_barrier_hessian.active_barrier_count = 59578`
+- `point_point_barrier_hessian.max_result_abs_error =
+  2.4868995751603507e-14`
+- `point_point_barrier_hessian.speedup = 2.2036790873726364`
+- `point_point_barrier_hessian.meets_speedup_gate = true`
+- top-level `max_result_abs_error = 3.982848877516439e-14`
+- top-level `speedup = 0.18351053106151646`
+- top-level `meets_speedup_gate = false`
+
 No additional validation was run after the critical stop request.
 
 ## Resume Guidance
@@ -86,9 +112,10 @@ No additional validation was run after the critical stop request.
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
 2. Inspect the current branch, latest pushed commit, hosted CI, and new review
    comments before editing. Do not reply to bot comments.
-3. Continue on the same PR with the remaining PLAN-083 runtime/parity gaps:
-   Hessian assembly, PSD coupling, runtime contact rows, and packet speedup
-   gates.
+3. Continue on the same PR by first syncing the durable PLAN-083 plan sidecars
+   for the point-point barrier-Hessian row, then proceed with the remaining
+   runtime/parity gaps: broader Hessian assembly, PSD coupling, runtime contact
+   rows, and packet speedup gates.
 4. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

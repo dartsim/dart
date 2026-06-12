@@ -836,6 +836,87 @@ __global__ void pointTriangleBarrierGradientKernel(
   }
 }
 
+__global__ void pointPointBarrierHessianKernel(
+    const PointPointBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    double* barrierHessians,
+    std::uint8_t* activeBarriers,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  squaredDistances[index] = 0.0;
+  barrierValues[index] = 0.0;
+  activeBarriers[index] = 0u;
+
+  const std::size_t gradientOffset = 6 * index;
+  const std::size_t hessianOffset = 36 * index;
+  double distanceGradient[6];
+  for (double& entry : distanceGradient) {
+    entry = 0.0;
+  }
+  for (int entry = 0; entry < 6; ++entry) {
+    barrierGradients[gradientOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  for (int entry = 0; entry < 36; ++entry) {
+    barrierHessians[hessianOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+
+  const PointPointBarrierInput input = inputs[index];
+  const Vec3 a = makeVec3(input.pointA);
+  const Vec3 b = makeVec3(input.pointB);
+  const Vec3 residual = subtract(a, b);
+  const double squaredDistance = squaredNorm(residual);
+  squaredDistances[index] = squaredDistance;
+
+  distanceGradient[0] = 2.0 * residual.x;
+  distanceGradient[1] = 2.0 * residual.y;
+  distanceGradient[2] = 2.0 * residual.z;
+  distanceGradient[3] = -2.0 * residual.x;
+  distanceGradient[4] = -2.0 * residual.y;
+  distanceGradient[5] = -2.0 * residual.z;
+
+  const double stiffness
+      = isfinite(input.stiffness) ? fmax(0.0, input.stiffness) : 0.0;
+  const BarrierScalar barrier
+      = c2ClampedLogBarrierDevice(squaredDistance, input.squaredActivationDistance);
+  if (barrier.active == 0u || !(stiffness > 0.0)) {
+    return;
+  }
+
+  activeBarriers[index] = 1u;
+  barrierValues[index] = stiffness * barrier.value;
+  for (int entry = 0; entry < 6; ++entry) {
+    barrierGradients[gradientOffset + static_cast<std::size_t>(entry)]
+        = stiffness * barrier.firstDerivative * distanceGradient[entry];
+  }
+
+  for (int row = 0; row < 6; ++row) {
+    for (int col = 0; col < 6; ++col) {
+      const int rowPoint = row < 3 ? 0 : 1;
+      const int colPoint = col < 3 ? 0 : 1;
+      const int rowComponent = row % 3;
+      const int colComponent = col % 3;
+      const double distanceHessian
+          = rowComponent == colComponent
+                ? (rowPoint == colPoint ? 2.0 : -2.0)
+                : 0.0;
+      barrierHessians
+          [hessianOffset + static_cast<std::size_t>(6 * row + col)]
+          = stiffness
+            * (barrier.secondDerivative * distanceGradient[row]
+                   * distanceGradient[col]
+               + barrier.firstDerivative * distanceHessian);
+    }
+  }
+}
+
 __global__ void pointTriangleTangentStencilKernel(
     const PointTriangleTangentInput* inputs,
     double* basisValues,
@@ -1056,6 +1137,34 @@ cudaError_t launchPointTriangleTangentStencilKernel(
       coordinates,
       projectionValues,
       fallbackBases,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointPointBarrierHessianKernel(
+    const PointPointBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    double* barrierHessians,
+    std::uint8_t* activeBarriers,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointPointBarrierHessianKernel<<<gridSize, blockSize>>>(
+      inputs,
+      squaredDistances,
+      barrierValues,
+      barrierGradients,
+      barrierHessians,
+      activeBarriers,
       inputCount);
 
   return cudaGetLastError();

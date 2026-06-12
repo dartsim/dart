@@ -83,6 +83,27 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    point_point_hessian_cpu = _row(
+        "BM_Plan083PointPointBarrierHessianCpu/1024",
+        samples=1024,
+        active_barriers=900,
+        max_barrier_value=1.5,
+        max_result_abs_error=0.0,
+    )
+    point_point_hessian_gpu = _row(
+        "BM_Plan083PointPointBarrierHessianCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        active_barriers=900,
+        gpu_active_barriers=900,
+        max_barrier_value=1.5,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_triangle_tangent_cpu = _row(
         "BM_Plan083PointTriangleTangentStencilCpu/1024",
         samples=1024,
@@ -166,6 +187,8 @@ def _benchmark_data(**overrides):
             gpu,
             point_triangle_cpu,
             point_triangle_gpu,
+            point_point_hessian_cpu,
+            point_point_hessian_gpu,
             point_triangle_tangent_cpu,
             point_triangle_tangent_gpu,
             edge_edge_tangent_cpu,
@@ -199,6 +222,8 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     assert row["scalar_local"]["active_barrier_count"] == 819
     assert row["point_triangle_barrier_gradient"]["active_barrier_count"] == 930
     assert row["point_triangle_barrier_gradient"]["max_result_abs_error"] == 1e-12
+    assert row["point_point_barrier_hessian"]["active_barrier_count"] == 900
+    assert row["point_point_barrier_hessian"]["max_result_abs_error"] == 1e-12
     assert row["point_triangle_tangent_stencil"]["fallback_basis_count"] == 0
     assert row["point_triangle_tangent_stencil"]["max_result_abs_error"] == 1e-12
     assert row["edge_edge_tangent_stencil"]["fallback_basis_count"] == 0
