@@ -13,7 +13,8 @@ native and marking larger standard packets as delegated.
 The latest continuation exposed the broader DART 7 contact-pipeline benchmark
 comparison sweeps in the LCP py-demo metadata while keeping the exact
 `active_friction_index_contact` row pointed at its two-solver regression
-benchmark.
+benchmark. It then added `billiard_symmetry_error` to the live LCP py-demo so
+billiard symmetry is tracked alongside momentum and kinetic-energy error.
 
 ## Current Branch
 
@@ -88,6 +89,9 @@ solver/interface/demo gap at a time.
   `python/tests/unit/test_py_demo_panels.py` passed 43 tests;
   `pixi run bm lcp_compare -- --benchmark_list_tests` listed the referenced
   sweep benchmarks; and `pixi run lint` passed.
+- `billiard_symmetry_error` is the maximum lateral drift of either billiard
+  ball from its initial collision line. The focused panel test passed 43 tests
+  after adding the metric.
 
 ## How to Resume
 

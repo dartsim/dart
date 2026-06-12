@@ -45,7 +45,7 @@ _LIVE_PACKET_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "packet": "Billiard collision",
-        "metric": "momentum and kinetic-energy error",
+        "metric": "symmetry, momentum, kinetic-energy error",
         "benchmark": "contact solver invariant packets",
     },
     {
@@ -399,6 +399,9 @@ class _ComparisonCase:
         default_factory=lambda: deque(maxlen=_HISTORY)
     )
     energy_error_history: deque[float] = field(
+        default_factory=lambda: deque(maxlen=_HISTORY)
+    )
+    billiard_symmetry_history: deque[float] = field(
         default_factory=lambda: deque(maxlen=_HISTORY)
     )
     stack_drift_history: deque[float] = field(
@@ -810,6 +813,12 @@ def _update_metrics(case: _ComparisonCase, step_ms: float) -> None:
         abs(energy - case.initial_billiard_energy)
         / max(abs(case.initial_billiard_energy), 1.0e-12)
     )
+    case.billiard_symmetry_history.append(
+        max(
+            abs(_translation(bodies[key])[1] - case.initial_positions[key][1])
+            for key in ("cue_ball", "target_ball")
+        )
+    )
 
     stack_drift = 0.0
     for key in ("stack_light", "stack_mid", "stack_heavy"):
@@ -844,6 +853,7 @@ def _metrics_snapshot(
             "ramp_slide": _last(case.ramp_slide_history),
             "billiard_momentum_error": _last(case.momentum_error_history),
             "billiard_energy_error": _last(case.energy_error_history),
+            "billiard_symmetry_error": _last(case.billiard_symmetry_history),
             "stack_lateral_drift": _last(case.stack_drift_history),
             "card_spread": _last(case.card_spread_history),
             "card_height_loss": _last(case.card_height_loss_history),
@@ -1369,6 +1379,12 @@ def build() -> SceneSetup:
                 "billiard energy error",
                 f"{_last(sequential.energy_error_history):.3e}",
                 f"{_last(boxed_lcp.energy_error_history):.3e}",
+            )
+            _write_metric_row(
+                builder,
+                "billiard symmetry error",
+                f"{_last(sequential.billiard_symmetry_history):.4f} m",
+                f"{_last(boxed_lcp.billiard_symmetry_history):.4f} m",
             )
             _write_metric_row(
                 builder,

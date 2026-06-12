@@ -20,6 +20,8 @@
       no further verification or implementation work.
 - [x] Exposed the DART 7 contact-pipeline comparison sweeps in py-demo LCP
       benchmark metadata.
+- [x] Added a live billiard symmetry-error metric alongside momentum and energy
+      error in the LCP py-demo.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -198,6 +200,25 @@ Observed results:
 - Benchmark listing built `BM_LCP_COMPARE` and listed the referenced sweep
   benchmarks.
 - `pixi run lint`: passed.
+
+## Billiard Symmetry Metric Checkpoint
+
+The LCP py-demo already tracked billiard momentum and kinetic-energy error.
+This checkpoint adds `billiard_symmetry_error`, measured as the maximum lateral
+drift of either billiard ball from its initial collision line, so the live
+headless and GUI surfaces directly expose the symmetry invariant called out in
+the LCP representative-example goal.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+```
+
+Observed result:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 
 ## Verification Snapshot
 

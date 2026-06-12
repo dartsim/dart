@@ -1015,6 +1015,7 @@ def test_lcp_physics_updates_live_metrics_headlessly() -> None:
         "sliding_speed",
         "billiard_momentum_error",
         "billiard_energy_error",
+        "billiard_symmetry_error",
         "stack_lateral_drift",
         "card_spread",
         "card_height_loss",
