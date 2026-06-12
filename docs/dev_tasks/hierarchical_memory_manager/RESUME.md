@@ -1,5 +1,41 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-12)
+
+Stop point for a fresh Claude/Codex session: resume from exactly one branch,
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This branch is the single
+entry point for the current HMM follow-up unless a maintainer explicitly
+redirects the work. It currently has no open PR.
+
+This handoff is documentation-only. No further allocator optimization, scene
+expansion, CI triage, build, lint, or test verification was run after the
+maintainer's hard-stop instruction. Treat the validation logs below as prior
+slice evidence only; rerun the relevant gates from a fresh clean checkout
+before publishing, opening a PR, or using this branch as green evidence.
+
+Latest implementation commits beneath this handoff:
+
+- `52ff319a922` (`Rebind loaded World component allocators`): `World::loadBinary()`
+  rebinds loaded allocator-aware component vectors for multibody adjacency,
+  deformable persistent payloads/boundaries, variational multibody history,
+  and variational contact state to the loaded World's free allocator.
+- `502e5045e23` (`Route live joint storage through World allocator`): live
+  joint component payloads use bounded `JointVector` storage, multibody
+  adjacency vectors use `common::StlAllocator`, and the persistent-storage
+  gate covers 6-DOF joint creation/direct component payload assignment.
+
+Fresh-session rules:
+
+- Start by checking out `pr/hmm-phase45-replay-snapshot-allocators` and reading
+  this file plus `README.md`; do not resume from older HMM branches.
+- Do not assume the next public-setter no-heap slice is implemented. The known
+  next audit remains `Joint::setPosition()` subtree dirtying traversal scratch
+  before any public setter no-heap claim.
+- Keep follow-up work bounded. Remaining HMM candidates are the public joint
+  setter audit, EnTT steady-state comparative rows, and focused Phase 4/5
+  deformable projected-Newton/default-solver or production-scale probes.
+
 ## Current Continuation (2026-06-12, Live Joint and Loaded Component Allocators)
 
 Resume from exactly one branch:
