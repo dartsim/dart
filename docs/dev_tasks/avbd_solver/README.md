@@ -10,16 +10,17 @@ Corpus matrix:
 ## Current Status
 
 - Latest resumed checkpoint (2026-06-12): direct private same-multibody
-  prismatic and spherical point-joint reset coverage now matches the
+  fixed, prismatic, and spherical point-joint reset coverage now matches the
   neighboring direct private revolute movable-pair reset path. The new C++
-  regressions use explicit off-origin anchors, cover a non-cardinal prismatic
-  slider basis plus spherical linear-only rows, force broken-row drift, and
-  prove the existing private `AvbdRigidWorldPointJointConfig` re-engages the
-  expected masked hard rows across two movable endpoints. Local validation
-  passed the focused `test_variational_integration` target build, a focused
-  five-test movable-pair reset filter, `pixi run build`, `pixi run lint`, and
-  `git diff --check`. This is narrow articulated lifecycle evidence only, not
-  a CPU-win, GPU, or paper-number claim.
+  regressions use explicit off-origin anchors, cover all-axis fixed rows, a
+  non-cardinal prismatic slider basis, and spherical linear-only rows, force
+  broken-row drift, and prove the existing private
+  `AvbdRigidWorldPointJointConfig` re-engages the expected masked hard rows
+  across two movable endpoints. Local validation passed the focused
+  `test_variational_integration` target build, a focused six-test movable-pair
+  reset filter, `pixi run build`, `pixi run lint`, and `git diff --check`.
+  This is narrow articulated lifecycle evidence only, not a CPU-win, GPU, or
+  paper-number claim.
 - Critical stop handoff (2026-06-12): the user explicitly directed the session
   to stop all further work and only ensure the hand-off docs. Do not continue
   implementation, verification, branch cleanup, PR mutation, hosted CI work,

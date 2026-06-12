@@ -923,9 +923,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-anchored public one-DOF motor break/reset
   re-engagement, movable-movable same-multibody revolute/prismatic motor
   break/reset with explicit off-origin anchors covered in C++/dartpy,
-  direct/private movable-pair revolute/prismatic reset plus direct/private and
-  current-pose spherical linear-row reset, current-pose movable-pair
-  revolute/prismatic reset, and non-cardinal motor-axis coverage, public
+  direct/private movable-pair fixed/revolute/prismatic reset plus
+  direct/private and current-pose spherical linear-row reset, current-pose
+  movable-pair fixed/revolute/prismatic reset, and non-cardinal motor-axis
+  coverage, public
   same-multibody/world-anchored articulated revolute/prismatic
   floating-endpoint plus selected off-origin-anchor facade non-cardinal
   motor-axis coverage,
@@ -997,7 +998,6 @@ its own line so status updates remain git-history friendly.
   broken-state save/load/reset coverage with non-cardinal axis-basis checks,
   private generated current-pose movable-pair fixed, one-DOF, and spherical
   broken-state save/load/reset coverage,
-  private fixed-row reset,
   narrow breakable benchmark rows, world-fixed reset,
   same-multibody/world-anchored one-DOF motor break/skip and
   reset/re-engagement, including the focused dartpy same-multibody/world-link
