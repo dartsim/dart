@@ -9,18 +9,24 @@ Corpus matrix:
 
 ## Current Status
 
-- Handoff refresh: the active checkout is
-  `avbd/source-row-extraction-precheck`, with merge head `6b3b7a21d05` plus
-  this docs handoff commit on top. It is ahead of
-  `origin/avbd/source-row-extraction-precheck` by seven local commits after
-  merging the published #2977 branch into the stacked continuation. PR #2977
-  (`avbd/source-row-perf-slice`, head `5297462d34b`) is still open and blocked
-  only by hosted checks that are queued/running; ReadTheDocs and several
-  lightweight matrix changes jobs have passed, and no new compiler/test failure
-  is visible. No additional AVBD implementation should be added to #2977 while
-  that PR is waiting on CI. `RESUME.md` is the detailed source of truth for the
-  current plan, local branch inventory, stashes, validation, and branch-cleanup
-  rules for a fresh session.
+- Consolidated branch handoff: resume from
+  `avbd/source-row-extraction-precheck`. It is the single branch for the next
+  fresh Claude/Codex session and includes the #2977 source-row prep fix, the
+  stacked source-row extraction precheck work, the current handoff docs, and the
+  formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path
+  with focused rigid-block coverage. Local stashes may still exist as
+  historical recovery points, but fresh work should not depend on them. PR
+  #2977 (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open and
+  should only receive CI-fix commits if its hosted checks reveal a concrete
+  failure. `RESUME.md` is the detailed source of truth for the current plan,
+  branch inventory, validation, and branch-cleanup rules.
+- Latest local follow-up: `normalizeAvbdRigidOrientation()` now uses a
+  squared-norm fast path, keeps exact unit quaternions exact without division,
+  and preserves scaled-input normalization plus invalid-input identity fallback.
+  Focused `test_avbd_rigid_block` validation passes. This trims a repeated
+  rigid-row orientation helper used by contact, joint, motor, and spring source
+  rows; it is only a narrow overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: `RigidBodyContactStage::execute()` now uses
   storage-level AVBD point-joint and distance-spring prechecks before running
   the exact extraction views. This avoids scanning the same AVBD config sets

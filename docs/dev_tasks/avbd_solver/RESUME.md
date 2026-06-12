@@ -9,6 +9,13 @@ gates require dedicated corpus evidence.
 
 Current stop state:
 
+- Consolidated resume branch: use `avbd/source-row-extraction-precheck` for the
+  next fresh Claude/Codex session. This branch is intended to be the single
+  continuation branch for current AVBD source-row work; it contains the pushed
+  #2977 parent changes, the stacked extraction-precheck changes, the current
+  handoff docs, and the formerly stash-only quaternion normalization fast path.
+  Do not require a fresh session to inspect or apply local stashes before
+  continuing.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
@@ -22,15 +29,25 @@ Current stop state:
   compiler, test, or CodeQL failure is visible on the current head.
 - The active local checkout is `avbd/source-row-extraction-precheck`, with
   merge head `6b3b7a21d05` plus this docs handoff commit on top. After this
-  handoff commit it is ahead of `origin/avbd/source-row-extraction-precheck` by
-  seven local commits. This stacked branch has merged
-  `avbd/source-row-perf-slice`, including the #2977 follow-up and latest
-  `origin/main`. The merge conflicts were docs-only in
-  `docs/dev_tasks/avbd_solver/README.md` and `RESUME.md`, and were resolved by
-  preserving both #2977 handoff status and the stacked continuation status.
-- The working tree was clean before this docs handoff edit and should be clean
-  after committing it. Do not add unrelated commits to #2977 while it waits on
-  hosted CI.
+  consolidation update it also contains the quaternion normalization fast path
+  and test that previously lived only in `stash@{1}`. This stacked branch has
+  merged `avbd/source-row-perf-slice`, including the #2977 follow-up and latest
+  `origin/main`; a pre-push `git fetch` over HTTPS plus
+  `git merge --no-ff FETCH_HEAD` reported `Already up to date`.
+- The working tree should be clean after committing and pushing this handoff.
+  Do not add unrelated commits to #2977 while it waits on hosted CI.
+
+Latest consolidated local follow-up:
+
+- `normalizeAvbdRigidOrientation()` now uses `squaredNorm()` to reject invalid
+  inputs before normalization, returns exact unit quaternions without division,
+  and normalizes scaled finite inputs with `std::sqrt(squaredNorm)`.
+- `AvbdRigidBlock.NormalizeRigidOrientationKeepsUnitAndRejectsInvalid` covers
+  exact identity preservation, scaled normalization, zero fallback, and NaN
+  fallback.
+- This is a narrow repeated-helper overhead cleanup for rigid contact, joint,
+  motor, and spring source rows. It does not close any source CPU-win, GPU, or
+  paper-number gate.
 
 Current #2977 technical scope:
 
@@ -73,16 +90,32 @@ Local validation already run for #2977 head `5297462d34b`:
   redirected the task to #2977; do not claim full CUDA `test-all` evidence from
   that aborted run.
 
+Local validation for the consolidated branch after folding in the quaternion
+fast path:
+
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.NormalizeRigidOrientationKeepsUnitAndRejectsInvalid' --gtest_brief=1"`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1"`
+  passed, 90 tests.
+- `pixi run test-unit` was attempted, but the host load was about 50 and the
+  DART CTest wrapper waited behind `--test-load 22` without starting child test
+  processes. The run was stopped rather than left running in the background; do
+  not claim final consolidation `test-unit` evidence from that attempt.
+
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head                   | State and handling                                                                                                                                    |
-| -------------------------------------- | --------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `6b3b7a21d05` + docs handoff | Current checkout; ahead by seven commits after merging #2977 and committing this handoff. Stacked continuation branch; do not push until appropriate. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                | Active #2977 branch; pushed, waiting on hosted CI.                                                                                                    |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                                    |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                                    |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                | Unrelated local branch; do not touch during AVBD handoff.                                                                                             |
-| `main`                                 | `origin/main`                                 | `906a6c0241f`                | Local `main` is behind fetched `origin/main` `7d05d7b9ea7`; fast-forward before using it.                                                             |
+| Branch                                 | Upstream                                      | Local head               | State and handling                                                                                |
+| -------------------------------------- | --------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | final consolidation head | Current checkout and single resume branch. Push this branch; fresh sessions should continue here. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`            | Active #2977 branch; pushed, waiting on hosted CI.                                                |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`            | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`            | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`            | Unrelated local branch; do not touch during AVBD handoff.                                         |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`            | Local `main` matches fetched `origin/main` at the latest checked base. Refresh before using it.   |
 
 Remote-only AVBD split branches still visible:
 
@@ -96,12 +129,13 @@ Local stashes at this handoff:
   `codex-pr2977-switch-preserve-extraction-precheck-wip`. It touches
   `world_step_stage.cpp`, `rigid_block_kernel.hpp`, this dev-task README/RESUME,
   and `test_avbd_rigid_block.cpp`. The `world_step_stage.cpp` hunk is the
-  contact-query warmup already present in #2977; do not reapply that hunk. The
-  still-relevant part is the quaternion normalization fast path/test plus any
-  matching dev-task notes.
+  contact-query warmup already present in #2977. The quaternion
+  normalization/test content has now been folded into the consolidated branch.
+  Treat this stash as a historical recovery point, not required resume input.
 - `stash@{1}` on `avbd/source-row-extraction-precheck`:
   `codex-avbd-normalize-fastpath-wip`. It contains the same quaternion
-  normalization fast path/test without the #2977 contact-query overlap.
+  normalization fast path/test without the #2977 contact-query overlap; this has
+  now been folded into the consolidated branch. Treat it as historical only.
 - `stash@{2}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-https-origin-main-merge-20260609220658`.
 - `stash@{3}` on `feature/avbd-articulated-masked-rows`:
@@ -117,7 +151,8 @@ Local stashes at this handoff:
 
 Fresh-session plan after this stop:
 
-1. Start with `git status --short --branch`, `git fetch origin main`, and
+1. Start with `git switch avbd/source-row-extraction-precheck`,
+   `git status --short --branch`, `git fetch origin main`, and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
 2. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
@@ -131,9 +166,9 @@ Fresh-session plan after this stop:
    split AVBD work is safely landed, and leave
    `feature/free-joint-energy-benchmarks` alone.
 5. Continue stacked work on `avbd/source-row-extraction-precheck` only after
-   merging the latest parent branch. Apply only the still-relevant hunks from
-   `stash@{0}` or `stash@{1}`; the quaternion normalization fast path is
-   separate from #2977, and the duplicate `world_step_stage.cpp` hunk should be
+   merging the latest parent branch. Do not apply local stashes by default; the
+   known still-relevant quaternion hunk has already been committed to the
+   consolidated branch, and the duplicate `world_step_stage.cpp` hunk should be
    skipped.
 6. Keep updating this handoff with every plan/progress change that affects the
    next session, including branch heads, stashes, PR state, validation, and

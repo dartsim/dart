@@ -64,13 +64,17 @@ inline constexpr double kAvbdRigidMinDistanceSpringLength = 1e-12;
 inline Eigen::Quaterniond normalizeAvbdRigidOrientation(
     const Eigen::Quaterniond& orientation)
 {
-  const double norm = orientation.norm();
-  if (std::isfinite(norm) && norm > 0.0) {
-    Eigen::Quaterniond normalized = orientation;
-    normalized.coeffs() /= norm;
-    return normalized;
+  const double squaredNorm = orientation.squaredNorm();
+  if (!std::isfinite(squaredNorm) || squaredNorm <= 0.0) {
+    return Eigen::Quaterniond::Identity();
   }
-  return Eigen::Quaterniond::Identity();
+  if (squaredNorm == 1.0) {
+    return orientation;
+  }
+
+  Eigen::Quaterniond normalized = orientation;
+  normalized.coeffs() /= std::sqrt(squaredNorm);
+  return normalized;
 }
 
 //==============================================================================

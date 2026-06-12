@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -81,6 +82,38 @@ std::size_t findEntityIndex(
 }
 
 } // namespace
+
+//==============================================================================
+TEST(AvbdRigidBlock, NormalizeRigidOrientationKeepsUnitAndRejectsInvalid)
+{
+  const Eigen::Quaterniond unit = Eigen::Quaterniond::Identity();
+  const Eigen::Quaterniond normalizedUnit
+      = vbd::normalizeAvbdRigidOrientation(unit);
+
+  EXPECT_DOUBLE_EQ(normalizedUnit.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.x(), 0.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.y(), 0.0);
+  EXPECT_DOUBLE_EQ(normalizedUnit.z(), 0.0);
+
+  const Eigen::Quaterniond scaled(2.0, 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedScaled
+      = vbd::normalizeAvbdRigidOrientation(scaled);
+  EXPECT_NEAR(normalizedScaled.norm(), 1.0, 1e-15);
+  EXPECT_DOUBLE_EQ(normalizedScaled.w(), 1.0);
+
+  const Eigen::Quaterniond zero(0.0, 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedZero
+      = vbd::normalizeAvbdRigidOrientation(zero);
+  EXPECT_DOUBLE_EQ(normalizedZero.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedZero.x(), 0.0);
+
+  const Eigen::Quaterniond invalid(
+      std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0, 0.0);
+  const Eigen::Quaterniond normalizedInvalid
+      = vbd::normalizeAvbdRigidOrientation(invalid);
+  EXPECT_DOUBLE_EQ(normalizedInvalid.w(), 1.0);
+  EXPECT_DOUBLE_EQ(normalizedInvalid.x(), 0.0);
+}
 
 //==============================================================================
 TEST(AvbdRigidBlock, RigidStepUpdatesTranslationAndOrientation)
