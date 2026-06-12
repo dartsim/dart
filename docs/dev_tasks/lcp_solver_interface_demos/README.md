@@ -83,6 +83,8 @@
 - [x] Filtered grouped serial/parallel batch benchmark registrations through
       concrete generated grouped-batch support for their exact published
       variants.
+- [x] Removed residual manifest-family prechecks from `lcp_compare`
+      registration paths that already use concrete generated problem filters.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -122,9 +124,50 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the grouped batch support-routing
-slice, following the generated coverage support-routing and heavyweight contact
-benchmark support-gating slices.
+The latest implementation checkpoint is the benchmark concrete-gate cleanup
+slice, following the grouped batch support-routing, generated coverage
+support-routing, and heavyweight contact benchmark support-gating slices.
+
+## Benchmark Concrete-Gate Cleanup Checkpoint
+
+The latest implementation checkpoint removes the last coarse manifest-family
+prechecks from benchmark registration paths that already had concrete generated
+problem filters:
+
+- `BM_LcpCompare`, `BM_LcpActiveSetTransition`, `BM_LcpBatchSerial`, and
+  `BM_LcpBatchParallel` now rely on concrete generated packet support checks to
+  decide whether rows should be published.
+- `bm_lcp_compare.cpp` no longer contains registration-time checks of the form
+  `supportsProblem(solver, getProblemSupport(...))`; the remaining benchmark
+  support gates instantiate solvers and call `supportsProblem(problem)` on the
+  generated packet or problem list.
+
+Verification for this checkpoint:
+
+```bash
+rg -n "supportsProblem\\(solver, getProblemSupport|supportsProblem\\(solverEntry|supportsProblem\\(solver,|supportsProblem\\(\\*solverEntry" \
+  tests/benchmark/lcpsolver/bm_lcp_compare.cpp
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpCompare/Standard/(Direct|MPRGP|Baraff)|BM_LcpActiveSetTransition/Standard/(Direct|MPRGP|Baraff)|BM_LcpBatch(Serial|Parallel)/Standard/(Direct|MPRGP|Baraff)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpCompare/Standard/MPRGP/12|BM_LcpActiveSetTransition/Standard/Baraff|BM_LcpBatchSerial/Standard/Direct/3/4' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+```
+
+Observed results:
+
+- The `rg` check found no remaining `supportsProblem(solver,
+getProblemSupport(...))` registration patterns in `bm_lcp_compare.cpp`.
+- The benchmark-list check rebuilt `BM_LCP_COMPARE` and preserved concrete
+  standard rows for Direct, MPRGP, and Baraff across single, active-set, and
+  serial/parallel batch families; Direct remained absent from the active-set
+  transition row.
+- The short benchmark execution reported `contract_ok=1` for
+  `BM_LcpCompare/Standard/MPRGP/12`,
+  `BM_LcpActiveSetTransition/Standard/Baraff`, and
+  `BM_LcpBatchSerial/Standard/Direct/3/4`.
+- `pixi run lint`: passed.
 
 ## Grouped Batch Benchmark Support-Routing Checkpoint
 

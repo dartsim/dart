@@ -12041,10 +12041,6 @@ void RegisterManifestBenchmarks()
 
   for (const auto family : families) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!dart::test::supportsProblem(solver, getProblemSupport(family))) {
-        continue;
-      }
-
       const auto args = GetConcreteBenchmarkArgs(solver, family);
       if (args.empty()) {
         continue;
@@ -12070,8 +12066,7 @@ void RegisterActiveSetTransitionBenchmarks()
   for (const auto family : families) {
     const auto problem = MakeActiveSetTransitionBenchmarkProblem(family);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!dart::test::supportsProblem(solver, getProblemSupport(family))
-          || !SolverSupportsConcreteProblem(solver, problem)) {
+      if (!SolverSupportsConcreteProblem(solver, problem)) {
         continue;
       }
 
@@ -12928,10 +12923,6 @@ void RegisterBatchBenchmarks()
 
   for (const auto family : families) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!dart::test::supportsProblem(solver, getProblemSupport(family))) {
-        continue;
-      }
-
       const auto args = GetConcreteBatchBenchmarkArgs(solver, family);
       if (args.empty()) {
         continue;
@@ -12985,10 +12976,6 @@ void RegisterParallelBatchBenchmarks()
 
   for (const auto family : families) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!dart::test::supportsProblem(solver, getProblemSupport(family))) {
-        continue;
-      }
-
       const auto args = GetConcreteBatchBenchmarkArgs(solver, family);
       if (args.empty()) {
         continue;
