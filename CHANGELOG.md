@@ -3738,6 +3738,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Added opt-in solver-internal CPU worker threads for the Red-Black
     Gauss-Seidel and Blocked Jacobi LCP solvers, with focused correctness tests
     and benchmark counters for threaded color/block updates.
+  - Added DART 7 LCP benchmark identity counters so `BM_LcpCompare` rows
+    machine-record the solver identity schema version and manifest index, and
+    the checked performance-profile evidence CSV rejects name/identity
+    mismatches.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))

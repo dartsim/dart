@@ -42,8 +42,14 @@ except ImportError:
     HAS_MATPLOTLIB = False
 
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
+_MANIFEST_NAME_BY_ID: dict[int, str] | None = None
 
 PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
+SOLVER_IDENTITY_SCHEMA_VERSION = 1
+SOLVER_IDENTITY_COUNTERS = (
+    "solver_identity_schema_version",
+    "solver_manifest_index",
+)
 FORM_SUPPORT_COUNTER_BY_CATEGORY = {
     "Standard": "solver_supports_standard",
     "Boxed": "solver_supports_boxed",
@@ -70,6 +76,16 @@ def canonical_solver_name(name: str) -> str:
             entry.name.lower(): entry.name for entry in parse_cpp_manifest()
         }
     return _MANIFEST_NAME_BY_LOWER.get(name.lower(), name)
+
+
+def manifest_name_by_id() -> dict[int, str]:
+    global _MANIFEST_NAME_BY_ID
+    if _MANIFEST_NAME_BY_ID is None:
+        _MANIFEST_NAME_BY_ID = {
+            index: entry.name
+            for index, entry in enumerate(parse_cpp_manifest(), start=1)
+        }
+    return _MANIFEST_NAME_BY_ID
 
 
 def run_benchmarks(
@@ -165,6 +181,8 @@ def parse_benchmark_results(data: dict) -> dict:
             "contract_ok": contract_ok,
             "residual": bm.get("residual", 0),
             "complementarity": bm.get("complementarity", 0),
+            "solver_identity_schema_version": bm.get("solver_identity_schema_version"),
+            "solver_manifest_index": bm.get("solver_manifest_index"),
             "solver_supports_standard": bm.get("solver_supports_standard"),
             "solver_supports_boxed": bm.get("solver_supports_boxed"),
             "solver_supports_friction_index": bm.get("solver_supports_friction_index"),
@@ -185,6 +203,20 @@ def load_native_support_by_category() -> dict[str, set[str]]:
         "Boxed": {entry.name for entry in manifest if entry.boxed},
         "FrictionIndex": {entry.name for entry in manifest if entry.findex},
     }
+
+
+def _counter_to_int(value) -> int | None:
+    if value is None:
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    rounded = int(round(numeric))
+    if abs(numeric - rounded) > 1e-9:
+        return None
+    return rounded
 
 
 def check_native_profile_coverage(
@@ -222,6 +254,19 @@ def check_native_profile_coverage(
                 != 1
             )
         )
+        solver_identity_mismatches = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if any(data.get(key) is not None for key in SOLVER_IDENTITY_COUNTERS)
+            and (
+                _counter_to_int(data.get("solver_identity_schema_version"))
+                != SOLVER_IDENTITY_SCHEMA_VERSION
+                or manifest_name_by_id().get(
+                    _counter_to_int(data.get("solver_manifest_index"))
+                )
+                != solver
+            )
+        )
 
         if unknown:
             errors.append(
@@ -243,6 +288,11 @@ def check_native_profile_coverage(
             errors.append(
                 f"{category}: current-schema rows disagree with problem_type "
                 f"counters for {problem_type_mismatches}"
+            )
+        if solver_identity_mismatches:
+            errors.append(
+                f"{category}: current-schema rows disagree with solver identity "
+                f"counters for {solver_identity_mismatches}"
             )
 
     if not errors:
@@ -351,6 +401,8 @@ def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
         "category",
         "solver",
         "problem_size",
+        "solver_identity_schema_version",
+        "solver_manifest_index",
         "time_ns",
         "contract_ok",
         "residual",

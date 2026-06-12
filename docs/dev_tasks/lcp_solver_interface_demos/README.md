@@ -1,5 +1,95 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Solver Identity Counters
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the PR #2986 DART 7 harness remains present
+  via merge commit `bb851f45360`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 80]`.
+- Last committed checkpoint:
+  `f27d12c110d Add LCP performance profile evidence CSV`.
+- Checkpoint target:
+  `Record LCP benchmark solver identity counters`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 81 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- `tests/common/lcpsolver/lcp_solver_manifest.hpp` now owns
+  `kLcpSolverIdentitySchemaVersion = 1` and a stable 1-based manifest index
+  helper for benchmark identity evidence.
+- `BM_LcpCompare` rows now emit `solver_identity_schema_version` and
+  `solver_manifest_index` counters in addition to the previous support and
+  problem-type counters.
+- `scripts/lcp_performance_profile.py` preserves those identity counters,
+  rejects current-schema rows whose benchmark-name solver disagrees with the
+  manifest index, and writes both fields into
+  `docs/background/lcp/figures/performance_profile_evidence.csv`.
+- The Python LCP demo performance-profile metadata was refreshed from the new
+  full-profile run and continues to point at the row-level evidence CSV.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `tests/common/lcpsolver/lcp_solver_manifest.hpp`
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`
+- `scripts/lcp_performance_profile.py`
+- `docs/background/lcp/figures/performance_profile_evidence.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_lcp_performance_profile.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main`
+  and `git merge --no-edit origin/main`: up to date.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with `7 passed`.
+- `cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"`
+  passed with the safe parallelism cap.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=build/lcp_identity_counters_probe.json --benchmark_out_format=json`
+  passed; the JSON row emitted `solver_identity_schema_version=1.0` and
+  `solver_manifest_index=1.0`.
+- `PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900`
+  completed, cached current-schema benchmark JSON, and regenerated the checked
+  profile/evidence CSVs with populated identity counters.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_py_demo_panels.py -q`
+  passed with `50 passed`.
+- `pixi run lint` passed; it reformatted
+  `scripts/lcp_performance_profile.py`.
+- After lint, the focused parser/demo tests were rerun and passed with
+  `50 passed`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with
+   `Record LCP benchmark solver identity counters`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Row-Level Profile Evidence
 
 This is the latest hand-off state. Sections below are historical checkpoints

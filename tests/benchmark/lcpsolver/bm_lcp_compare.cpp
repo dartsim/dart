@@ -3090,6 +3090,15 @@ void AddBackendBuildCounters(benchmark::State& state)
       = DART_BM_LCP_COMPARE_HAS_SIMULATION ? 1.0 : 0.0;
 }
 
+void AddSolverIdentityCounters(
+    benchmark::State& state, const dart::test::LcpSolverManifestEntry& solver)
+{
+  state.counters["solver_identity_schema_version"]
+      = static_cast<double>(dart::test::kLcpSolverIdentitySchemaVersion);
+  state.counters["solver_manifest_index"]
+      = static_cast<double>(dart::test::getLcpSolverManifestIndex(solver.name));
+}
+
 void AddSolverProblemSupportCounters(
     benchmark::State& state,
     const dart::math::LcpSolver& solver,
@@ -7168,6 +7177,7 @@ void RunManifestBenchmark(
       MakeLabel(
           std::string(solverEntry.name),
           std::string(getProblemFamilyName(family))));
+  AddSolverIdentityCounters(state, solverEntry);
 
   if (family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = problemArg;

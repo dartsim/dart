@@ -208,6 +208,18 @@ inline constexpr std::array<LcpSolverManifestEntry, 24> kLcpSolverManifest{{
      &createLcpSolver<dart::math::BoxedSemiSmoothNewtonSolver>},
 }};
 
+inline constexpr std::size_t kLcpSolverIdentitySchemaVersion = 1;
+
+inline constexpr std::size_t getLcpSolverManifestIndex(std::string_view name)
+{
+  for (std::size_t i = 0; i < kLcpSolverManifest.size(); ++i) {
+    if (kLcpSolverManifest[i].name == name) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
 inline constexpr bool supportsProblem(
     const LcpSolverManifestEntry& solver, LcpProblemSupport support)
 {

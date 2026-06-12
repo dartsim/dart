@@ -1,5 +1,91 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Solver Identity Counters
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the PR #2986 DART 7 harness remains present
+  via merge commit `bb851f45360`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 80]`
+- Last committed checkpoint:
+  `f27d12c110d Add LCP performance profile evidence CSV`
+- Checkpoint target:
+  `Record LCP benchmark solver identity counters`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 81 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `tests/common/lcpsolver/lcp_solver_manifest.hpp` owns
+  `kLcpSolverIdentitySchemaVersion = 1` and a stable 1-based manifest index
+  helper.
+- `BM_LcpCompare` rows emit `solver_identity_schema_version` and
+  `solver_manifest_index` counters.
+- `scripts/lcp_performance_profile.py` preserves both counters, rejects
+  current-schema profile rows whose benchmark-name solver disagrees with the
+  emitted manifest index, and writes both fields into
+  `performance_profile_evidence.csv`.
+- `python/examples/demos/scenes/lcp_physics.py` was refreshed to match the new
+  full-profile summary and keeps the row-level evidence CSV visible in the
+  performance-profile table.
+
+Verification completed:
+
+```bash
+git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main
+git merge --no-edit origin/main
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"
+pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=build/lcp_identity_counters_probe.json --benchmark_out_format=json
+PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+git diff --check
+```
+
+Results:
+
+- `origin/main` fetch/merge: up to date.
+- Parser tests: `7 passed`.
+- Focused benchmark target build: passed.
+- Focused JSON probe:
+  `BM_LcpCompare/Standard/Dantzig/12` emitted
+  `solver_identity_schema_version=1.0`, `solver_manifest_index=1.0`,
+  `solver_supports_problem=1.0`, and `problem_type_standard=1.0`.
+- Full profile refresh: completed and regenerated Standard, Boxed,
+  FrictionIndex, and evidence CSVs with populated identity counters.
+- Focused parser/demo tests: `50 passed`.
+- `pixi run lint`: passed and reformatted
+  `scripts/lcp_performance_profile.py`.
+- Focused parser/demo tests rerun after lint: `50 passed`.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Record LCP benchmark solver identity counters`. Continue from a fresh bounded
+DART 7 LCP interface/demo gap; avoid retrying the rejected SAP FrictionIndex
+exact shortcut or ShockPropagation exact-path probe without a materially
+different hypothesis. Do not push without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Row-Level Profile Evidence
 
 This is the latest hand-off. Older sections below are historical checkpoints
