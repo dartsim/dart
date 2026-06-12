@@ -488,7 +488,9 @@ auto result = solver.solve(problem, x, options);
 > DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
 > to `DantzigSolver` for boxed or larger blocks. Singleton blocks with fixed
 > bounds use the scalar projected solve directly, which preserves the Jacobi
-> update while avoiding local solver setup overhead.
+> update while avoiding local solver setup overhead. Fixed-bound problems also
+> precompute the Jacobi snapshot product once per iteration so independent
+> blocks do not repeat dense row products.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
 Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with

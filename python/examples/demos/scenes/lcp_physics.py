@@ -234,7 +234,7 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Pgs/Tgs; Jacobi remains close",
+        "current_leaders": "Tgs; Pgs/Jacobi remain close",
         "current_laggards": "Sap, BGS, Admm, BoxedSemiSmoothNewton",
         "takeaway": (
             "Projection methods lead active-bound rows; SAP, BGS, ADMM, and "
@@ -249,7 +249,7 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "4, 16, 64",
         "current_leaders": "Pgs; Tgs remains close",
         "current_laggards": (
-            "BoxedSemiSmoothNewton, BlockedJacobi, BGS, ShockPropagation"
+            "BoxedSemiSmoothNewton, BlockedJacobi, ShockPropagation, Staggering"
         ),
         "takeaway": (
             "PGS/TGS lead current contact-scale rows; boxed semi-smooth "

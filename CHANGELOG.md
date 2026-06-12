@@ -1475,6 +1475,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projected update, avoiding per-block local solver setup for singleton-heavy
     standard and boxed profile rows while preserving the existing block solve
     fallback for coupled friction-index blocks.
+  - Optimized `BlockedJacobiSolver` fixed-bound iterations by snapshotting
+    `A * x` once per Jacobi step and reusing it for block right-hand sides,
+    while keeping coupled friction-index blocks on their previous row-product
+    path.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

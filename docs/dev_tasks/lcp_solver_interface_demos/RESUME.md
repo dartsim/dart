@@ -1,5 +1,120 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 BlockedJacobi Snapshot Product
+
+After the singleton fast path checkpoint, work continued on the same
+`BlockedJacobiSolver` profile target. The remaining hot loop repeated
+`A.row(i).dot(xPrev)` inside every block update. Fixed-bound Standard and Boxed
+problems now precompute the Jacobi snapshot product `A * xPrev` once per
+iteration and reuse it for block right-hand sides. Coupled friction-index
+problems keep the prior row-product path because an unconditional snapshot
+slightly slowed those rows during focused testing.
+
+Latest implementation slice:
+
+- `dart/math/lcp/projection/blocked_jacobi_solver.cpp` passes an optional
+  snapshot product into `solveBlock()`.
+- Standard and Boxed fixed-bound problems use the snapshot product for singleton
+  and non-singleton block RHS construction.
+- Friction-index problems continue using per-row products inside their coupled
+  block path.
+- `docs/background/lcp/06_other-methods.md` documents the fixed-bound snapshot
+  product.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated again.
+- The Python demo profile summary and panel test were adjusted for the refreshed
+  Boxed and FrictionIndex leader/laggard text.
+- `CHANGELOG.md` records the follow-up `BlockedJacobiSolver` optimization.
+
+Focused before/after `BM_LcpCompare` evidence for this slice:
+
+- Standard profile rows: runtime ratios `0.989`, `0.838`, `0.811`, and `0.654`
+  for sizes 12, 24, 48, and 96 relative to the pre-change focused run.
+- Boxed profile rows: runtime ratios `1.023`, `0.923`, and `0.832` for sizes
+  12, 24, and 48; the smallest row is within benchmark noise while larger rows
+  improve.
+- FrictionIndex profile rows: runtime ratios `0.912`, `0.858`, and `0.904` for
+  contact counts 4, 16, and 64.
+- Mean focused ratio was `0.874`; best `0.654`; worst `1.023`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `BlockedJacobi` average ratio improved from `5.66` to `4.60`;
+  current leaders are `Tgs`/`Sap`/`Pgs` on scalable rows and `Direct` on tiny
+  rows.
+- Boxed: `BlockedJacobi` average ratio improved from `3.59` to `3.30`; current
+  leader is `Tgs`, with `Pgs`/`Jacobi` close.
+- FrictionIndex: `BlockedJacobi` average ratio improved from `20.45` to
+  `15.08`; it remains a future optimization target.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_lcp_projection_solvers \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_projection_solvers|lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BlockedJacobi/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/blocked_jacobi_profile_ax_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Affected C++ targets rebuilt successfully.
+- LCP projection, comparison, generated coverage, and validation solver tests
+  passed through CTest: `100% tests passed, 0 tests failed out of 4`.
+- Focused BlockedJacobi after-run showed all Standard, Boxed, and
+  FrictionIndex profile rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.60s`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization or interface audit from the refreshed
+  profile. Fresh high-ratio targets include Standard `Lemke`, `InteriorPoint`,
+  `Baraff`, and `ShockPropagation`; Boxed `Sap`, `Admm`, `BGS`, and
+  `BoxedSemiSmoothNewton`; and FrictionIndex `BoxedSemiSmoothNewton`,
+  `BlockedJacobi`, `ShockPropagation`, `Staggering`, and `BGS`.
+- Do not push without explicit approval.
+
 ## Current Reality - 2026-06-12 BlockedJacobi Singleton Fast Path
 
 After the stop-only hand-off below, work resumed on the selected

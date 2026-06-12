@@ -410,11 +410,16 @@ LcpResult BlockedJacobiSolver::solve(
 
   auto solveBlock = [&](const BlockData& block,
                         const Eigen::VectorXd& xPrev,
+                        const Eigen::VectorXd* AxPrev,
                         Eigen::VectorXd& xNext) {
     const auto m = std::ssize(block.indices);
+    auto axAt = [&](const int globalIndex) {
+      return AxPrev ? (*AxPrev)[globalIndex] : A.row(globalIndex).dot(xPrev);
+    };
+
     if (m == 1 && block.findex[0] < 0) {
       const int globalIndex = block.indices[0];
-      const double axBlock = A.row(globalIndex).dot(xPrev);
+      const double axBlock = axAt(globalIndex);
       const double axSelf = block.A(0, 0) * xPrev[globalIndex];
       const double bEff = block.baseB[0] - (axBlock - axSelf);
       double value = 0.0;
@@ -436,7 +441,7 @@ LcpResult BlockedJacobiSolver::solve(
     Eigen::VectorXd AxBlock(m);
     for (int r = 0; r < m; ++r) {
       const int globalIndex = block.indices[r];
-      AxBlock[r] = A.row(globalIndex).dot(xPrev);
+      AxBlock[r] = axAt(globalIndex);
     }
 
     const Eigen::VectorXd AxSelf = block.A * xBlock;
@@ -465,18 +470,28 @@ LcpResult BlockedJacobiSolver::solve(
   const int requestedWorkers = std::max(1, params->workerThreads);
   const int workerCount = std::min(
       requestedWorkers, std::max(1, static_cast<int>(blocks.size())));
+  const bool useSnapshotProduct = (findex.array() < 0).all();
 
   for (int iter = 0; iter < maxIterations && !converged; ++iter) {
     iterationsUsed = iter + 1;
 
     const Eigen::VectorXd xPrev = x;
+    Eigen::VectorXd AxPrev;
+    const Eigen::VectorXd* axPrevSnapshot = nullptr;
+    if (useSnapshotProduct) {
+      AxPrev = A * xPrev;
+      axPrevSnapshot = &AxPrev;
+    }
     Eigen::VectorXd xNext = x;
 
     std::vector<LcpResult> blockResults(blocks.size());
     auto solveBlockRange = [&](const int begin, const int end) {
       for (int blockIndex = begin; blockIndex < end; ++blockIndex) {
         blockResults[static_cast<std::size_t>(blockIndex)] = solveBlock(
-            blocks[static_cast<std::size_t>(blockIndex)], xPrev, xNext);
+            blocks[static_cast<std::size_t>(blockIndex)],
+            xPrev,
+            axPrevSnapshot,
+            xNext);
       }
     };
 
