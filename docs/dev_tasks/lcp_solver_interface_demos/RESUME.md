@@ -1,5 +1,46 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality — 2026-06-11 Critical Hand-Off
+
+The latest user instruction was to stop implementation and focus on hand-off
+only, with no further verification. The latest implementation commit before
+this docs-only checkpoint is
+`8f0242c2442 Filter LCP contact benchmark rows concretely` on
+`feature/lcp-solver-interface-demos`.
+
+Before this docs-only hand-off edit, the working tree was clean and local
+status showed:
+
+```text
+## feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 5]
+```
+
+Do not treat that local tracking ref as definitive remote state: this checkout
+previously pushed over HTTPS, which did not refresh the SSH remote-tracking ref.
+A fresh session should fetch and inspect the remote branch directly.
+
+No lint, build, tests, benchmark listing, solver execution, or additional
+implementation work was run after the critical stop instruction. Historical
+verification notes below belong to their named implementation checkpoints only.
+
+Immediate resume target: continue the broad LCP interface/demo audit from one
+bounded remaining gap. The strongest known benchmark-routing gaps are dense
+world-box contact, articulated unified contact, and contact batch registrations
+in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, which still use
+manifest-level friction-index gates because naive concrete filtering would
+construct very large 256-contact fixtures during benchmark registration.
+
+Current first-parent stack before this docs-only checkpoint:
+
+```text
+8f0242c2442 Filter LCP contact benchmark rows concretely
+4c63db30bd7 Filter LCP benchmark args concretely
+be4643d1743 Document consolidated LCP handoff state
+02c6d0acb4b Filter active-set LCP benchmark rows concretely
+b2e212db5c4 Add active friction-index LCP benchmark rows
+d143d0dc355 Document latest LCP handoff state
+```
+
 ## Last Session Summary
 
 The current work is consolidated on `feature/lcp-solver-interface-demos`.
@@ -111,20 +152,25 @@ contact batch rows still use manifest-level friction-index gates because
 eagerly constructing the largest 256-contact fixtures during benchmark
 registration needs a separate strategy.
 
+The final requested work is this no-verification hand-off checkpoint. It is
+documentation-only and is intended to preserve the current branch state for a
+fresh AI session.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the world/contact benchmark routing slice:
+Current reality after the world/contact benchmark routing slice and before this
+docs-only hand-off checkpoint:
 
 - The latest implementation checkpoints changed `CHANGELOG.md`,
   `python/examples/demos/scenes/lcp_physics.py`,
   `python/tests/unit/test_py_demo_panels.py`, and
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`.
-- This slice changes `CHANGELOG.md`,
+- The latest implementation slice changed `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
-- Local HEAD before this slice was
-  `4c63db30bd7 Filter LCP benchmark args concretely`.
+- Local implementation HEAD before this docs-only hand-off checkpoint was
+  `8f0242c2442 Filter LCP contact benchmark rows concretely`.
 - The configured SSH remote-tracking ref still showed
   `origin/feature/lcp-solver-interface-demos` at
   `d143d0dc355c Document latest LCP handoff state` immediately after the prior
@@ -133,10 +179,9 @@ Current reality after the world/contact benchmark routing slice:
   `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 - No PR was associated with the branch when checked earlier in the session.
 
-After this slice is committed, the local branch should contain one additional
-additive checkpoint on top of the pushed consolidated branch. Do not push
-without explicit maintainer/user approval; merge latest `main` first if a later
-push is approved.
+After this docs-only hand-off checkpoint is committed and pushed, the single
+consolidated branch should be the source of truth for a fresh session. Merge
+latest `main` before any later push.
 
 ## Immediate Next Step
 

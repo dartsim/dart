@@ -68,6 +68,9 @@
       comparison benchmark rows through concrete generated contact packets
       while avoiding registration-time generation of the largest dense
       box/articulated fixtures.
+- [x] Captured the critical no-verification hand-off after local implementation
+      commit `8f0242c2442` so a fresh session can resume from the consolidated
+      branch without relying on chat context.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -108,7 +111,52 @@ rediscovering the current branch state.
 ## Latest Code Checkpoint
 
 The latest implementation checkpoint is the world/contact benchmark routing
-slice.
+slice at local commit `8f0242c2442 Filter LCP contact benchmark rows
+concretely`.
+
+The latest task checkpoint is hand-off only: no lint, build, tests, benchmark
+listing, solver execution, or additional implementation work was run after the
+user's critical stop instruction.
+
+## Critical No-Verification Hand-Off
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+
+Local first-parent stack at the hand-off point, before this docs-only
+checkpoint:
+
+- `8f0242c2442 Filter LCP contact benchmark rows concretely`
+- `4c63db30bd7 Filter LCP benchmark args concretely`
+- `be4643d1743 Document consolidated LCP handoff state`
+- `02c6d0acb4b Filter active-set LCP benchmark rows concretely`
+- `b2e212db5c4 Add active friction-index LCP benchmark rows`
+- `d143d0dc355 Document latest LCP handoff state`
+
+Important state:
+
+- The working tree was clean before this docs-only hand-off edit.
+- Local tracking showed the branch ahead of
+  `origin/feature/lcp-solver-interface-demos` by five commits because previous
+  HTTPS pushes did not refresh the SSH remote-tracking ref in this checkout.
+  A fresh session should inspect the remote branch directly before assuming the
+  tracking ref is authoritative.
+- The latest user instruction explicitly prohibited further verification. Any
+  future session should treat verification data below as historical evidence
+  for the checkpoint that recorded it, not as evidence for this final docs-only
+  checkpoint.
+- The broad LCP objective is not complete. This dev-task folder should remain
+  active until remaining follow-up work is completed or moved into durable
+  planning/design docs.
+
+Resume from:
+
+1. Fetch the branch and inspect `git status --short --branch` and
+   `git log --oneline --decorate --max-count=12 --first-parent`.
+2. Read this file and `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+3. Continue with one bounded checkpoint, preferably a remaining concrete
+   support-routing gap in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`.
 
 ## World/Contact Benchmark Routing Checkpoint
 
@@ -794,16 +842,16 @@ metadata, packet generation, or benchmark rows.
 ## Immediate Next Steps
 
 1. Resume on `feature/lcp-solver-interface-demos`.
-2. Check that `origin/feature/lcp-solver-interface-demos` contains the final
-   hand-off commit from this session. If it does not, push only after explicit
-   maintainer/user approval is still in force.
-3. Fetch `origin/main`; if it moved, merge it into this branch before the next
+2. Check that the remote `feature/lcp-solver-interface-demos` branch contains
+   the final hand-off checkpoint from this session; do not trust the stale
+   local tracking ref without fetching.
+3. Fetch `origin/main`; if it moved, merge it into this branch before any later
    push.
 4. Continue the LCP interface/demo audit from the next concrete gap. Good
    starting points are remaining manifest-level benchmark gates in
-   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, the older
-   `active_friction_index_contact` demo benchmark filter, and any solver whose
-   native mathematical domain is still broader in docs than in
+   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially dense world-box
+   contact, articulated unified contact, and contact batch registrations, plus
+   any solver whose native mathematical domain is still broader in docs than in
    `supportsProblem(problem)`.
 5. Prefer a bounded checkpoint: one benchmark/demo routing gap, focused tests,
    `pixi run lint`, then an additive commit.
