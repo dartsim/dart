@@ -9,6 +9,9 @@ hooks, but two related routes did not identify their owning numbered source row
 and the capture-first IPC stack packet did not identify its own row in the
 metrics payload.
 
+Code checkpoint before this evidence-refresh docs edit:
+`601845c4197` (`Harden rigid visual capture metric ownership`).
+
 Current local slice: self-describing capture metrics for every numbered,
 related, and capture-first rigid visual route. The checkpoint touches:
 
@@ -47,13 +50,31 @@ Validation collected so far:
   `test_rigid_joint_breakage_marks_and_resets_breakage`, and
   `test_avbd_breakable_joint_demo_marks_and_resets_joint` reported
   `6 passed` before and after lint.
+- Real docked capture evidence under
+  `/tmp/dart_capture_metric_ownership_1781249077`:
+  - `rigid_ipc_tunnel` wrote 23 PNG frames and 24 scene-metrics events; the
+    screenshot was docked and nonblank with 2524 unique RGB values. Latest
+    metrics recorded row `rigid_ipc_tunnel`, related source row
+    `rigid_solver_compare`, status `barrier-held`, min tunnel margin about
+    `0.500001`, max wall crossing `0.0`, and world time about `0.24`.
+  - `rigid_ipc_stack_packet` wrote 23 PNG frames and 24 scene-metrics events;
+    the screenshot was docked and nonblank with 2658 unique RGB values. Latest
+    metrics recorded row `rigid_ipc_stack_packet`, `capture_first=true`,
+    benchmark owner `bm_rigid_ipc_solver`, status `capture-first`, world time
+    about `0.10`, and last step time about `674.9` ms.
+  - `avbd_rigid_breakable_joint` wrote 71 PNG frames and 72 scene-metrics
+    events; the screenshot was docked and nonblank with 2721 unique RGB values.
+    Latest metrics recorded row `avbd_rigid_breakable_joint`, related source
+    row `rigid_joint_breakage`, status `broken`, `saw_broken=1.0`, payload
+    release distance about `0.365`, and world time about `0.288`.
 - `pixi run lint` passed.
 - `git diff --check` passed.
 
 Immediate next step:
 
-1. Commit locally. Do not push, open a PR, comment, or mutate GitHub state
-   unless the user explicitly approves it.
+1. Continue the next bounded rigid visual-verification slice, or push/open the
+   PR only after explicit user approval. Do not comment, re-trigger CI, or
+   otherwise mutate GitHub state without that approval.
 
 ## Critical Stop Handoff - 2026-06-12 Full Stop
 
@@ -144,14 +165,17 @@ continue implementation unless the user explicitly resumes it.
       already merged, confirmed no PR is associated with the branch, ran
       bounded `pixi run build` (`DART safe jobs: 2`, `ninja: no work to do`),
       and ran full `pixi run test-py` (`950 passed, 10 skipped`, `DART safe
-  jobs: 1`). No push or GitHub mutation was performed.
+jobs: 1`). No push or GitHub mutation was performed.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,
       and a registry-level invariant keeps every numbered rigid row,
       related-evidence route, and capture-first IPC packet self-identifying.
       The focused six-test route ownership guard reported `6 passed` before
-      and after lint; `pixi run lint` and `git diff --check` passed.
+      and after lint; real docked captures for the three affected scenes wrote
+      nonblank screenshots, PNG frame sequences, and scene-metrics sidecars
+      with the expected row/source ownership fields; `pixi run lint` and
+      `git diff --check` passed.
 - [x] Shared Replay panel follow-up: `articulated`, `floating_base`,
       `avbd_rigid_revolute_motor`, `avbd_rigid_prismatic_motor`, and
       `rigid_ipc_tunnel` now publish `replay_sync` plus

@@ -6,6 +6,9 @@ The latest continuation resumed after the pushed full-stop handoff
 `c552ce83e2b` because the active goal was explicitly continued. It does not
 push or mutate GitHub state.
 
+Code checkpoint before this evidence-refresh docs edit:
+`601845c4197` (`Harden rigid visual capture metric ownership`).
+
 Current local slice: self-describing capture metrics for rigid visual
 verification routes. The continuation fixed three payload gaps:
 
@@ -27,13 +30,24 @@ Validation collected so far:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_avbd_breakable_joint_demo_marks_and_resets_joint -q`
 - reported `6 passed` before and after lint.
+- Real docked captures under `/tmp/dart_capture_metric_ownership_1781249077`
+  verified the manifest path for all three changed payloads:
+  `rigid_ipc_tunnel` wrote 23 PNG frames and 24 scene-metrics events with row
+  `rigid_ipc_tunnel` and related source row `rigid_solver_compare`;
+  `rigid_ipc_stack_packet` wrote 23 PNG frames and 24 scene-metrics events
+  with row `rigid_ipc_stack_packet` and `capture_first=true`; and
+  `avbd_rigid_breakable_joint` wrote 71 PNG frames and 72 scene-metrics events
+  with row `avbd_rigid_breakable_joint`, related source row
+  `rigid_joint_breakage`, and broken-state evidence. All three screenshots
+  were docked and nonblank.
 - `pixi run lint` passed.
 - `git diff --check` passed.
 
 Immediate next step:
 
-1. Commit the local slice. Do not push, open a PR, comment, or mutate GitHub
-   state unless the user explicitly approves it.
+1. Continue the next bounded rigid visual-verification slice, or push/open the
+   PR only after explicit user approval. Do not comment, re-trigger CI, or
+   otherwise mutate GitHub state without that approval.
 
 ## Critical Stop Handoff - 2026-06-12 Full Stop
 

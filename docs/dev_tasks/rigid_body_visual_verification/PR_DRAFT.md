@@ -15,6 +15,10 @@ verification packet:
 - A registry-level invariant now verifies every sidecar-defined numbered row,
   related-evidence route, and capture-first IPC packet has a self-identifying
   capture metrics payload.
+- Real docked captures under `/tmp/dart_capture_metric_ownership_1781249077`
+  verified that the generated `manifest.json` and `scene_metrics.jsonl`
+  artifacts contain the new ownership fields for `rigid_ipc_tunnel`,
+  `rigid_ipc_stack_packet`, and `avbd_rigid_breakable_joint`.
 
 ## Current Stop Handoff - 2026-06-12
 
@@ -151,6 +155,21 @@ GitHub mutation were performed after this stop-handoff docs edit.
     - passed
   - `git diff --check`
     - passed
+  - Real docked capture artifacts under
+    `/tmp/dart_capture_metric_ownership_1781249077`
+    - `rigid_ipc_tunnel`: 23 PNG frames, 24 scene-metrics events, docked
+      nonblank screenshot with 2524 unique RGB values, row
+      `rigid_ipc_tunnel`, related source row `rigid_solver_compare`, status
+      `barrier-held`, min tunnel margin about `0.500001`, and max wall
+      crossing `0.0`
+    - `rigid_ipc_stack_packet`: 23 PNG frames, 24 scene-metrics events,
+      docked nonblank screenshot with 2658 unique RGB values, row
+      `rigid_ipc_stack_packet`, `capture_first=true`, benchmark
+      `bm_rigid_ipc_solver`, and status `capture-first`
+    - `avbd_rigid_breakable_joint`: 71 PNG frames, 72 scene-metrics events,
+      docked nonblank screenshot with 2721 unique RGB values, row
+      `avbd_rigid_breakable_joint`, related source row
+      `rigid_joint_breakage`, status `broken`, and `saw_broken=1.0`
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,
