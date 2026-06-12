@@ -521,7 +521,9 @@ travel, pusher-target gap, contact/proximity evidence, target speed, lateral
 drift, solver divergence, and per-step timing.
 Capture metrics record the solver pair, executor, controls, per-solver target
 travel, pusher gap, contact count, target speed, lateral drift, goal error,
-step timing, travel divergence, and compact history ranges.
+step timing, travel divergence, and compact history ranges. The shared Replay
+panel uses travel divergence as its value track and marks pusher contact,
+proximity, target-motion, and solver-divergence frames for fast scrubbing.
 
 ## Rigid kinematic driver
 

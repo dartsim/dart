@@ -3252,6 +3252,50 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     assert capture_metrics["travel_divergence"] == pytest.approx(
         controller._divergence_history[-1]
     )
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Travel divergence"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._divergence_history[-1]
+    )
+    assert timeline["markers"]({"divergence_history": [0.0, 0.012]}) == pytest.approx(
+        1.0
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "case": {
+                        "contact_count": 0.0,
+                        "gap": 0.010,
+                        "status": "approaching",
+                        "target_travel": 0.02,
+                    }
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"contact_history": {"case": [0.0, 1.0]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "divergence_history": [0.004],
+                "last_metrics": {
+                    "case": {
+                        "contact_count": 0.0,
+                        "gap": 0.080,
+                        "status": "approaching",
+                        "target_travel": 0.02,
+                    }
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._travel_history["Sequential impulse"])
     )

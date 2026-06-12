@@ -202,7 +202,8 @@
     sequential impulse and rigid IPC on a table-push task with executor,
     pusher-speed, friction, pusher-mass, target-travel, gap,
     contact/proximity, drift, goal-error, divergence, and step-profile
-    diagnostics plus scene-owned capture metrics.
+    diagnostics plus scene-owned capture metrics and Replay timeline markers
+    for contact/proximity/progress frames.
   - Added `rigid_kinematic_driver` to Python `py-demos`, showing IPC
     prescribed-motion rigid supports carrying a box through friction, a
     zero-friction slip baseline, and the current sequential-impulse

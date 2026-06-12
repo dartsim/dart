@@ -2,18 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint is hand-off documentation only. The user explicitly stopped
-all further implementation and verification, asked for the current work to be
-resumable from a fresh Claude/Codex session, and previously asked for the
-hand-off to be pushed. No code, tests, lint, dry-runs, or diff checks were run
-for this checkpoint.
-
-The newest implementation checkpoint remains `cc8431ef6f9 Add stack stability
-replay timeline`, which added replay-guided timeline metadata to
-`rigid_stack_stability` after the live open-command workflow follow-up. The
-stack row uses top-x divergence as its Replay value track and marks frames
-where overlap, low clearance, visible top-block drift, or solver-family
-divergence make the stack worth scrubbing.
+This checkpoint adds replay-guided timeline metadata to
+`rigid_contact_manipulation` after the pushed hand-off checkpoint. The contact
+row now uses travel divergence as its Replay value track and marks frames where
+the pusher contacts or approaches the target, the target starts moving, or the
+two solver-family lanes diverge.
 
 Expected repository state after this hand-off:
 
@@ -26,19 +19,12 @@ Expected repository state after this hand-off:
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command and stack Replay timeline checkpoints.
-- `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
-  checkpoint after the workflow-video packet slice.
-- Before this hand-off doc was committed, the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by five local commits:
-  `d5c6de2bee1 Describe optional rigid workflow rows`,
-  `5a4529f0083 Audit rigid workflow guidance coverage`,
-  `ad013e62069 Refresh rigid guidance audit handoff`,
-  `4395ba51f35 Expose rigid workflow live open commands`, and
-  `cc8431ef6f9 Add stack stability replay timeline`.
-- This docs-only hand-off commit is intended to be pushed together with those
-  five parent commits because the user explicitly requested pushing the
-  hand-off and then stopping.
+  live open-command, stack Replay timeline, pushed hand-off, and contact
+  manipulation Replay timeline checkpoints.
+- `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
+  checkpoint after the stack Replay timeline slice.
+- The current contact-manipulation Replay timeline checkpoint is local and
+  unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -49,8 +35,11 @@ Expected repository state after this hand-off:
 - The stack Replay timeline continuation added `replay_timeline` metadata to
   `rigid_stack_stability`, updated tests and docs, and ran focused tests plus a
   real docked capture.
-- After this pushed hand-off, do not push any new implementation or handoff
-  commit without explicit approval in a future session.
+- The contact-manipulation Replay timeline continuation added
+  `replay_timeline` metadata to `rigid_contact_manipulation`, updated tests and
+  docs, and ran focused tests plus a real docked capture.
+- Do not push this new implementation or handoff commit without explicit
+  approval in a future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -126,9 +115,8 @@ Expected repository state after this hand-off:
 - [x] `rigid_stack_stability` now exposes a Replay timeline value track for
       top-x divergence and markers for overlap, low-clearance, top-drift, or
       solver-divergence frames.
-- [x] The final action in this checkpoint is docs-only hand-off cleanup after
-      the user explicitly instructed the agent to stop all further work and
-      verification.
+- [x] `rigid_contact_manipulation` now exposes a Replay timeline value track
+      for travel divergence and markers for contact/proximity/progress frames.
 
 ## Goal
 
@@ -157,15 +145,12 @@ are easy to inspect, cycle, capture, and regression-test.
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command and stack Replay timeline checkpoints.
-- `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
-  checkpoint.
-- Immediately before this hand-off doc was committed, the branch was ahead of
-  origin by five commits: `d5c6de2bee1`,
-  `5a4529f0083`, `ad013e62069`, `4395ba51f35`, and
-  `cc8431ef6f9`.
-- This docs-only hand-off commit is expected to be pushed with those five
-  parents because the user explicitly requested it.
+  live open-command, stack Replay timeline, pushed hand-off, and current
+  contact-manipulation Replay timeline checkpoints.
+- `d98abdde973 Refresh rigid visual verification handoff` is a pushed
+  docs-only checkpoint.
+- The current contact-manipulation Replay timeline checkpoint is local and
+  unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -788,28 +773,60 @@ Observed results:
   historical maximum top-x divergence about `0.00405`, and IPC minimum
   clearance `0.0`.
 
+## Verified In The Contact Manipulation Replay Timeline Continuation
+
+The current continuation makes the `rigid_contact_manipulation` row easier to
+debug from the shared Replay panel:
+
+- `python/examples/demos/scenes/rigid_contact_manipulation.py` adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata.
+- `python/tests/integration/test_demos_cycle.py` covers the
+  `Travel divergence` timeline label, signal, contact/proximity/progress
+  markers, and quiet-frame behavior.
+- `CHANGELOG.md`, `python/examples/demos/README.md`, and
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+  describe the contact-manipulation timeline value track and markers.
+
+Focused validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_manipulation_timeline_1781272246
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.travel_divergence, .scene_metrics.latest.metrics.history.max_travel_divergence, .scene_metrics.latest.metrics.history.ipc_max_target_travel, .scene_metrics.latest.metrics.history.sequential_impulse_min_gap' /tmp/dart_capture_contact_manipulation_timeline_1781272246/manifest.json
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+```
+
+Observed results:
+
+- Focused Replay/contact pytest reported `2 passed`.
+- The real docked capture completed with exit code 0 and wrote a nonblank
+  960x540 screenshot with docked UI detected, 71 PNG frames, and
+  72 scene-metric events.
+- The capture manifest reported row `rigid_contact_manipulation`, current and
+  historical maximum travel divergence about `0.0217`, IPC target travel about
+  `0.2243` m, and sequential-impulse minimum gap about `-0.0017` m.
+- The sidecar/README/capture-command drift guard reported `4 passed`.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the optional-row metadata, guidance-audit, handoff,
-   live-open-command, stack Replay timeline, and final docs-only hand-off
-   commits to be present. If this hand-off push succeeded, expect them on
-   `origin/feature/rigid-body-gui-visual-verification`.
-3. Do not continue implementation until the user explicitly asks for more work.
-4. Re-evaluate the durable sidecar before selecting any next bounded rigid
+   live-open-command, stack Replay timeline, pushed docs-only hand-off, and
+   contact-manipulation Replay timeline commits to be present. The contact
+   timeline commit may still be local and unpushed.
+3. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice.
-5. Rerun the repository-mandated `pixi run lint` before any future commit.
-6. Retire this dev-task folder only if the maintainer explicitly accepts the
+4. Rerun the repository-mandated `pixi run lint` before any future commit.
+5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-7. Do not push again unless the user explicitly approves pushing in that
+6. Do not push again unless the user explicitly approves pushing in that
    session.
 
 ## Commit And Push Notes
 
 - Do not commit without following the repository pre-commit rule:
   `pixi run lint` is mandatory before every commit.
-- Exception for this final docs-only checkpoint: lint was intentionally not run
-  because the user explicitly requested no further verification.
 - Do not push unless the user explicitly approves pushing in that session.
 - Before pushing an existing PR branch, merge the latest base branch into the
   branch first; do not rebase a published PR branch.

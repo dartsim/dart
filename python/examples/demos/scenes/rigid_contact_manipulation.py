@@ -516,6 +516,59 @@ class _RigidContactManipulation:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        history = snapshot.get("divergence_history", [])
+        if not history:
+            return 0.0
+        try:
+            return float(history[-1])
+        except (TypeError, ValueError):
+            return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            for case_metrics in metrics.values():
+                if not isinstance(case_metrics, dict):
+                    continue
+                if case_metrics.get("status") in {"push contact", "object pushed"}:
+                    return 1.0
+                try:
+                    if float(case_metrics.get("contact_count", 0.0)) >= 1.0:
+                        return 1.0
+                    if float(case_metrics.get("gap", 1.0)) <= 0.025:
+                        return 1.0
+                    if float(case_metrics.get("target_travel", 0.0)) >= 0.08:
+                        return 1.0
+                except (TypeError, ValueError):
+                    continue
+        contact_histories = snapshot.get("contact_history", {})
+        if isinstance(contact_histories, dict):
+            for values in contact_histories.values():
+                try:
+                    if values and float(values[-1]) >= 1.0:
+                        return 1.0
+                except (TypeError, ValueError, IndexError):
+                    continue
+        gap_histories = snapshot.get("gap_history", {})
+        if isinstance(gap_histories, dict):
+            for values in gap_histories.values():
+                try:
+                    if values and float(values[-1]) <= 0.025:
+                        return 1.0
+                except (TypeError, ValueError, IndexError):
+                    continue
+        try:
+            if float(self.replay_timeline_signal(snapshot)) >= 0.01:
+                return 1.0
+        except (TypeError, ValueError):
+            return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -661,6 +714,11 @@ def build() -> SceneSetup:
             "replay_capture_state": manipulation.capture_replay_state,
             "replay_restore_state": manipulation.restore_replay_state,
             "replay_sync": manipulation._sync,
+            "replay_timeline": {
+                "signal_label": "Travel divergence",
+                "signal": manipulation.replay_timeline_signal,
+                "markers": manipulation.replay_timeline_marker,
+            },
         },
     )
 
