@@ -537,6 +537,87 @@ class _RigidKinematicDriver:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        histories = snapshot.get("box_history", {})
+        if not isinstance(histories, dict):
+            return 0.0
+        history = histories.get("ipc_grip", [])
+        if not history:
+            return 0.0
+        try:
+            return float(history[-1])
+        except (TypeError, ValueError):
+            return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        grip_driver_travel = 0.0
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            grip = metrics.get("ipc_grip", {})
+            if isinstance(grip, dict):
+                try:
+                    grip_driver_travel = float(grip.get("driver_travel", 0.0))
+                    if float(grip.get("contact_count", 0.0)) >= 1.0:
+                        return 1.0
+                    if float(grip.get("box_travel", 0.0)) >= 0.04:
+                        return 1.0
+                    if grip.get("status") == "carried":
+                        return 1.0
+                except (TypeError, ValueError):
+                    pass
+            slip = metrics.get("ipc_slip", {})
+            if isinstance(slip, dict):
+                try:
+                    if float(slip.get("slip", 0.0)) >= 0.08:
+                        return 1.0
+                except (TypeError, ValueError):
+                    pass
+            caveat = metrics.get("si_caveat", {})
+            if isinstance(caveat, dict) and caveat.get("status") == "static-like caveat":
+                if grip_driver_travel >= 0.04:
+                    return 1.0
+        driver_histories = snapshot.get("driver_history", {})
+        if isinstance(driver_histories, dict):
+            try:
+                values = driver_histories.get("ipc_grip", [])
+                if values:
+                    grip_driver_travel = max(grip_driver_travel, float(values[-1]))
+            except (TypeError, ValueError, IndexError):
+                pass
+            if grip_driver_travel >= 0.04:
+                caveat = metrics.get("si_caveat", {}) if isinstance(metrics, dict) else {}
+                if (
+                    isinstance(caveat, dict)
+                    and caveat.get("status") == "static-like caveat"
+                ):
+                    return 1.0
+        contact_histories = snapshot.get("contact_history", {})
+        if isinstance(contact_histories, dict):
+            try:
+                values = contact_histories.get("ipc_grip", [])
+                if values and float(values[-1]) >= 1.0:
+                    return 1.0
+            except (TypeError, ValueError, IndexError):
+                pass
+        slip_histories = snapshot.get("slip_history", {})
+        if isinstance(slip_histories, dict):
+            try:
+                values = slip_histories.get("ipc_slip", [])
+                if values and float(values[-1]) >= 0.08:
+                    return 1.0
+            except (TypeError, ValueError, IndexError):
+                pass
+        try:
+            if float(self.replay_timeline_signal(snapshot)) >= 0.04:
+                return 1.0
+        except (TypeError, ValueError):
+            return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.drive_speed = float(controls.get("drive_speed", self.drive_speed))
@@ -657,6 +738,11 @@ def build() -> SceneSetup:
             "replay_capture_state": driver.capture_replay_state,
             "replay_restore_state": driver.restore_replay_state,
             "replay_sync": driver._sync,
+            "replay_timeline": {
+                "signal_label": "IPC grip box travel",
+                "signal": driver.replay_timeline_signal,
+                "markers": driver.replay_timeline_marker,
+            },
         },
     )
 

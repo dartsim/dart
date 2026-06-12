@@ -537,7 +537,9 @@ speed ratio, support gap, and step timing.
 Capture metrics record the IPC grip/slip lanes, the sequential-impulse caveat
 lane, solver enums, friction modes, controls, per-lane driver travel, box
 travel, slip, speed ratio, support gap, contact count, status, step timing, and
-compact history ranges.
+compact history ranges. The shared Replay panel uses the IPC grip lane's box
+travel as its value track and marks contact, carried-progress, slip, and
+static-like caveat frames.
 
 The **`rigid_kinematic_normal_push`** scene keeps the next prescribed-motion
 question separate: what happens when a kinematic paddle moves normally into a

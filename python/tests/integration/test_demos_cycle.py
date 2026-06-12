@@ -3381,6 +3381,72 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     assert capture_metrics["history"]["ipc_grip_max_box_travel"] > 0.07
     assert capture_metrics["history"]["ipc_slip_max_slip"] > 0.08
     assert capture_metrics["history"]["si_caveat_max_abs_driver_travel"] < 1.0e-6
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "IPC grip box travel"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._box_history["ipc_grip"][-1]
+    )
+    assert (
+        timeline["markers"]({"box_history": {"ipc_grip": [0.0, 0.041]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"slip_history": {"ipc_slip": [0.0, 0.081]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"last_metrics": {"ipc_grip": {"contact_count": 1.0}}}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "ipc_grip": {
+                        "box_travel": 0.02,
+                        "contact_count": 0.0,
+                        "driver_travel": 0.05,
+                        "status": "partial drag",
+                    },
+                    "si_caveat": {"status": "static-like caveat"},
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "driver_history": {"ipc_grip": [0.0, 0.05]},
+                "last_metrics": {
+                    "si_caveat": {"status": "static-like caveat"},
+                },
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "box_history": {"ipc_grip": [0.01]},
+                "last_metrics": {
+                    "ipc_grip": {
+                        "box_travel": 0.01,
+                        "contact_count": 0.0,
+                        "driver_travel": 0.02,
+                        "status": "partial drag",
+                    },
+                    "ipc_slip": {"slip": 0.02},
+                    "si_caveat": {"status": "static-like caveat"},
+                },
+                "slip_history": {"ipc_slip": [0.02]},
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:

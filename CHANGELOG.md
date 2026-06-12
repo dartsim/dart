@@ -208,7 +208,8 @@
     prescribed-motion rigid supports carrying a box through friction, a
     zero-friction slip baseline, and the current sequential-impulse
     static-like caveat with driver-travel, box-travel, slip, speed-ratio,
-    support-gap, step-profile diagnostics, and scene-owned capture metrics.
+    support-gap, step-profile diagnostics, scene-owned capture metrics, and
+    Replay timeline markers for contact/carry/slip/caveat frames.
   - Added `rigid_kinematic_normal_push` to Python `py-demos`, showing explicit
     normal prescribed motion with IPC normal/heavy penetration-caveat lanes and
     a sequential-impulse push lane, including target travel, analytic gap,
