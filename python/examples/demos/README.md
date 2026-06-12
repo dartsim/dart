@@ -176,44 +176,44 @@ try-first action, inspect signals, healthy signal, and scope note. The manifest
 also records guidance completeness, and the review index shows a guidance badge
 plus a warning block if any selected row is missing those fields.
 
-| Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
-| ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
-| 01/36 | `rigid_body`                     | What is the baseline World rigid-body path?        | Solver, materials, replay, force drag, reset          | Speed, height, energy, contacts, step timing                   |
-| 02/36 | `rigid_body_modes`               | Which body mode should I choose?                   | Solver, executor, gravity, force, kinematic speed     | Dynamic fall, static drift, kinematic path error               |
-| 03/36 | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?     | Executor, launch speed/angle, gravity, spin/inertia   | Path error, momentum residual, energy drift, spin ratio        |
-| 04/36 | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?     | Executor, body yaw/path, local offset/yaw             | Parent frame, world pose, relative/world residuals             |
-| 05/36 | `rigid_external_loads`           | How do external loads move and spin bodies?        | Force/torque magnitude, mass/inertia ratio, executor  | Acceleration, angular speed, pulse clear, static drift         |
-| 06/36 | `rigid_link_point_loads`         | Do point forces create lever-arm torque?           | Force, point offset, body yaw, executor               | Translation, yaw acceleration, pulse clear, frame split        |
-| 07/36 | `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Solver, executor, base time step, gravity scale       | Free-fall error, contact timing, clearance, step time          |
-| 08/36 | `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Solver, executor, reset                               | Stage/domain/backend status, ECS, scratch, contacts            |
-| 09/36 | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Solver, executor, frame budget, friction              | Contact count, wall ms, per-contact cost, scratch              |
-| 10/36 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend                  |
-| 11/36 | `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas          |
-| 12/36 | `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape ids, metrics        |
-| 13/36 | `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids           |
-| 14/36 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins, metrics    |
-| 15/36 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time            |
-| 16/36 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics    |
-| 17/36 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence             |
-| 18/36 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel            |
-| 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | IPC fixed, executor, ramp angle, controlled friction  | Friction-threshold axis, drift, speed, clearance, metrics      |
-| 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | SI fixed, executor, friction, speed, backspin         | Spin/roll axis, slip speed, roll ratio, spin change, metrics   |
-| 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics  |
-| 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | SI vs IPC, pusher speed, friction, pusher mass        | Pusher-contact axis, travel divergence, contact/proximity      |
-| 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | IPC grip/slip vs SI caveat, speed, friction, executor | Tangential axis, box travel, slip, caveat, contacts            |
-| 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts        |
-| 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
-| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
-| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks              |
-| 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks           |
-| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks              |
-| 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks        |
-| 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks            |
-| 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Response gap, coupling, torque load, Replay marks              |
-| 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks      |
-| 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link speed, Jacobian gap, wrench load, Replay marks            |
-| 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks             |
-| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks             |
+| Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                            |
+| ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| 01/36 | `rigid_body`                     | What is the baseline World rigid-body path?        | Solver, materials, replay, force drag, reset          | Speed, height, energy, contacts, step timing                  |
+| 02/36 | `rigid_body_modes`               | Which body mode should I choose?                   | Solver, executor, gravity, force, kinematic speed     | Dynamic fall, static drift, kinematic path error              |
+| 03/36 | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?     | Executor, launch speed/angle, gravity, spin/inertia   | Path error, momentum residual, energy drift, spin ratio       |
+| 04/36 | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?     | Executor, body yaw/path, local offset/yaw             | Parent frame, world pose, relative/world residuals            |
+| 05/36 | `rigid_external_loads`           | How do external loads move and spin bodies?        | Force/torque magnitude, mass/inertia ratio, executor  | Acceleration, angular speed, pulse clear, static drift        |
+| 06/36 | `rigid_link_point_loads`         | Do point forces create lever-arm torque?           | Force, point offset, body yaw, executor               | Translation, yaw acceleration, pulse clear, frame split       |
+| 07/36 | `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Solver, executor, base time step, gravity scale       | Free-fall error, contact timing, clearance, step time         |
+| 08/36 | `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Solver, executor, reset                               | Stage/domain/backend status, ECS, scratch, contacts           |
+| 09/36 | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Solver, executor, frame budget, friction              | Contact count, wall ms, per-contact cost, scratch             |
+| 10/36 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend                 |
+| 11/36 | `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas         |
+| 12/36 | `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape ids, metrics       |
+| 13/36 | `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids          |
+| 14/36 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins, metrics   |
+| 15/36 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time           |
+| 16/36 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics   |
+| 17/36 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence            |
+| 18/36 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel           |
+| 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | IPC fixed, executor, ramp angle, controlled friction  | Friction-threshold axis, drift, speed, clearance, metrics     |
+| 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | SI fixed, executor, friction, speed, backspin         | Spin/roll axis, slip speed, roll ratio, spin change, metrics  |
+| 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics |
+| 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | SI vs IPC, pusher speed, friction, pusher mass        | Pusher-contact axis, travel divergence, contact/proximity     |
+| 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | IPC grip/slip vs SI caveat, speed, friction, executor | Tangential axis, box travel, slip, caveat, contacts           |
+| 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts       |
+| 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Sequential joints, static base, perturbation, reset   | Fixed-transform axis, pose error, payload speed, Replay marks |
+| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks   |
+| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks             |
+| 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks          |
+| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks             |
+| 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks       |
+| 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks           |
+| 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Response gap, coupling, torque load, Replay marks             |
+| 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks     |
+| 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link speed, Jacobian gap, wrench load, Replay marks           |
+| 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks            |
+| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks            |
 
 For the focused IPC no-tunneling capability view, use
 **`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
@@ -620,11 +620,16 @@ penetration depth, SI target travel, and target-travel divergence.
 ## Rigid joint constraints
 
 The **`rigid_fixed_joint`** scene is a focused fixed-constraint verifier. Its
-panel can deliberately perturb the child body away from the captured relative
-transform, then plots relative offset error, orientation error, and residual
-payload speed as the constraint projects the payload back to the fixed pose.
-The shared Replay panel uses fixed-joint offset error as its value track and
-marks pose-error or residual-motion frames during recovery.
+panel labels the fixed-relative-transform recovery axis and held-fixed
+sequential joint context, can deliberately perturb the child body away from the
+captured relative transform, then plots relative offset error, orientation
+error, and residual payload speed as the constraint projects the payload back
+to the fixed pose. Capture metrics expose the same axis, held-fixed context,
+top-level translation/orientation error, payload speed, angular speed, and
+nested history summaries so the workflow review card can show the final
+fixed-joint pose-recovery signals directly. The shared Replay panel uses
+fixed-joint offset error as its value track and marks pose-error or
+residual-motion frames during recovery.
 
 The **`rigid_joint_breakage`** scene is the next fixed-joint lifecycle row. It
 is explicitly AVBD-pinned: a very weak fixed joint starts intact, crosses a

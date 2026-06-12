@@ -190,28 +190,42 @@ class _RigidFixedJointVerifier:
             self._record_metrics()
         translation_history = list(self._translation_error_history)
         orientation_history = list(self._orientation_error_history)
+        translation_error = float(self._last_metrics["translation_error"])
+        orientation_error = float(self._last_metrics["orientation_error"])
+        payload_speed = float(self._last_metrics["payload_speed"])
+        payload_angular_speed = float(self._last_metrics["payload_angular_speed"])
+        captured_offset = float(
+            np.linalg.norm(self._captured_relative_transform[:3, 3])
+        )
         return {
             "row": "rigid_fixed_joint",
+            "comparison_axis": "fixed_relative_transform_recovery",
             "solver": "sequential_rigid_joints",
             "constraint": "fixed_relative_transform",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "joint_name": str(self.fixed_joint.name),
             "fixed_joint_count": float(self.world.num_rigid_body_fixed_joints),
+            "held_fixed": {
+                "base": "static",
+                "captured_offset_m": captured_offset,
+                "gravity_z": -9.81,
+                "payload_mass": float(self.payload.mass),
+                "solver": "Sequential rigid joints",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "perturbation": float(self.perturbation),
             },
+            "fixed_joint_translation_error": translation_error,
+            "fixed_joint_orientation_error": orientation_error,
+            "fixed_joint_payload_speed": payload_speed,
+            "fixed_joint_payload_angular_speed": payload_angular_speed,
             "metrics": {
-                "translation_error": float(
-                    self._last_metrics["translation_error"]
-                ),
-                "orientation_error": float(
-                    self._last_metrics["orientation_error"]
-                ),
-                "payload_speed": float(self._last_metrics["payload_speed"]),
-                "payload_angular_speed": float(
-                    self._last_metrics["payload_angular_speed"]
-                ),
+                "translation_error": translation_error,
+                "orientation_error": orientation_error,
+                "payload_speed": payload_speed,
+                "payload_angular_speed": payload_angular_speed,
             },
             "history": {
                 "samples": float(len(translation_history)),
@@ -323,7 +337,16 @@ class _RigidFixedJointVerifier:
         found_joint = self.world.get_rigid_body_fixed_joint(
             self.fixed_joint.name
         ) or self.fixed_joint
+        captured_offset = float(
+            np.linalg.norm(self._captured_relative_transform[:3, 3])
+        )
         builder.separator()
+        builder.text("comparison axis: fixed relative transform recovery")
+        builder.text(
+            "held fixed: sequential rigid joints | static base | payload mass "
+            f"{float(self.payload.mass):.1f} | offset {captured_offset:.2f} m | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("constraint: fixed relative transform")
         builder.text(f"name: {found_joint.name}")
         builder.text(f"fixed joints: {self.world.num_rigid_body_fixed_joints}")

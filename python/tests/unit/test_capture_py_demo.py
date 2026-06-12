@@ -1162,6 +1162,28 @@ def test_rigid_workflow_latest_signals_prioritize_kinematic_driver_values() -> N
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_fixed_joint_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "comparison_axis": "fixed_relative_transform_recovery",
+            "constraint": "fixed_relative_transform",
+            "fixed_joint_orientation_error": 0.00012,
+            "fixed_joint_payload_angular_speed": 0.0034,
+            "fixed_joint_payload_speed": 0.0023,
+            "fixed_joint_translation_error": 0.00025,
+            "solver": "sequential_rigid_joints",
+        }
+    )
+
+    assert highlights[:5] == [
+        "fixed joint translation error: 0.00025",
+        "fixed joint orientation error: 0.00012",
+        "fixed joint payload speed: 0.0023",
+        "fixed joint payload angular speed: 0.0034",
+        "solver: sequential_rigid_joints",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

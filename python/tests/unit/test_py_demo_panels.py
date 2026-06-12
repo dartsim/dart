@@ -1229,6 +1229,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_fixed_joint,
+            (
+                "text:comparison axis: fixed relative transform recovery",
+                "text:held fixed: sequential rigid joints | static base | payload mass 1.0 | offset 0.85 m | time step 5.0 ms",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

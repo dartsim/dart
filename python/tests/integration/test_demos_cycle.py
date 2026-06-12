@@ -5071,10 +5071,31 @@ def test_rigid_fixed_joint_verifier_restores_captured_transform() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_fixed_joint"
+    assert capture_metrics["comparison_axis"] == "fixed_relative_transform_recovery"
     assert capture_metrics["solver"] == "sequential_rigid_joints"
     assert capture_metrics["constraint"] == "fixed_relative_transform"
     assert capture_metrics["joint_name"] == controller.fixed_joint.name
     assert capture_metrics["fixed_joint_count"] == pytest.approx(1.0)
+    assert capture_metrics["held_fixed"] == {
+        "base": "static",
+        "captured_offset_m": pytest.approx(0.85),
+        "gravity_z": pytest.approx(-9.81),
+        "payload_mass": pytest.approx(1.0),
+        "solver": "Sequential rigid joints",
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
+    assert capture_metrics["fixed_joint_translation_error"] == pytest.approx(
+        float(metrics["translation_error"])
+    )
+    assert capture_metrics["fixed_joint_orientation_error"] == pytest.approx(
+        float(metrics["orientation_error"])
+    )
+    assert capture_metrics["fixed_joint_payload_speed"] == pytest.approx(
+        float(metrics["payload_speed"])
+    )
+    assert capture_metrics["fixed_joint_payload_angular_speed"] == pytest.approx(
+        float(metrics["payload_angular_speed"])
+    )
     assert capture_metrics["metrics"]["translation_error"] == pytest.approx(
         float(metrics["translation_error"])
     )

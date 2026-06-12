@@ -2,30 +2,30 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 23 now gives the tangential kinematic-driver row the
-same reviewable comparison shape as the surrounding rigid contact rows.
-`rigid_kinematic_driver` names `prescribed_tangential_contact_response` as its
-comparison axis in the panel and capture metrics, records the held-fixed
-tangential-support context, exports solver/case/lane metadata, and feeds
-decisive latest-signal values into the workflow review index.
+Latest local slice: row 25 now gives the fixed-joint verifier the same
+reviewable comparison shape as the surrounding rigid workflow rows.
+`rigid_fixed_joint` names `fixed_relative_transform_recovery` as its comparison
+axis in the panel and capture metrics, records the held-fixed sequential-joint
+context, exports top-level pose-recovery metrics, and feeds decisive latest
+signals into the workflow review index.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed commit before this slice was
-  `d2a69b4de70 Surface contact manipulation workflow signals`; if this slice
-  has been committed, expect one additional local commit for kinematic-driver
-  workflow signals.
+  `e19671fa052 Surface kinematic driver workflow signals`; if this slice has
+  been committed, expect one additional local commit for fixed-joint workflow
+  signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-23 diff first. If it is
+- If this slice is still uncommitted, inspect the row-25 diff first. If it is
   committed, the immediate next step is a fresh audit for the next concrete
   rigid GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-24 evidence direction before broadening further.
+  row-15-through-row-25 evidence direction before broadening further.
 
-Files touched by this row-23 slice:
+Files touched by this row-25 slice:
 
-- `python/examples/demos/scenes/rigid_kinematic_driver.py`
+- `python/examples/demos/scenes/rigid_fixed_joint.py`
 - `scripts/capture_py_demo.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/tests/unit/test_capture_py_demo.py`
@@ -35,76 +35,51 @@ Files touched by this row-23 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 
-Row-23 kinematic-driver slice:
+Row-25 fixed-joint slice:
 
-- `rigid_kinematic_driver` now exports
-  `comparison_axis=prescribed_tangential_contact_response`, held-fixed context
-  (`box_mass=1.0`, `executor=Sequential`, `gravity_z=-9.81`,
-  `kinematic_driver=tangential support`, 4 ms time step), solver/case/lane
-  metadata, and top-level capture metrics including `ipc_grip_box_travel`,
-  `ipc_grip_speed_ratio`, `ipc_slip_slip`, `si_caveat_driver_travel`, and
-  `ipc_grip_min_abs_support_gap`.
-- Its GUI panel labels the comparison axis, held-fixed tangential support
-  context, and solver lanes.
-- `scripts/capture_py_demo.py` prioritizes row-23 latest-signal keys so the
-  visible review card shows IPC grip box travel, grip speed ratio,
-  low-friction slip, sequential-impulse caveat driver travel, IPC proximity
-  gap, and solver pair.
+- `rigid_fixed_joint` now exports
+  `comparison_axis=fixed_relative_transform_recovery`, held-fixed context
+  (`base=static`, captured offset 0.85 m, gravity, payload mass, sequential
+  rigid joints, 5 ms time step), controls, and top-level capture metrics for
+  fixed-joint translation error, orientation error, payload speed, and angular
+  speed.
+- Its GUI panel labels the comparison axis and held-fixed sequential-joint
+  context before the existing fixed-transform diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-25 latest-signal keys so the
+  visible review card shows fixed-joint translation error, orientation error,
+  payload speed, angular speed, and solver.
 - `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
-  document the rows 22-24 packet with row-22 pusher contact, row-23 tangential
-  kinematic driver, and row-24 normal contact comparison axes.
+  document the fixed-transform recovery axis and held-fixed context.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc`
-  and the unit guard that row-23 latest signals prioritize IPC grip box travel,
-  grip speed ratio, low-friction slip, sequential-impulse caveat driver travel,
-  IPC proximity gap, and solver pair.
-- Real rows 22-24 workflow capture completed under
-  `/tmp/dart_capture_rigid_contact_kinematic_rows_22_24_1781299153` with
-  `status=complete`, `capture_count=3`, `completed_count=3`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_fixed_joint_verifier_restores_captured_transform`
+  and the unit guard that row-25 latest signals prioritize fixed-joint
+  translation error, orientation error, payload speed, angular speed, and
+  solver.
+- Real row-25 workflow capture completed under
+  `/tmp/dart_capture_rigid_fixed_joint_row_25_1781299686` with
+  `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 22 in that capture reported the intended comparison axis, held-fixed
-  context, controls `friction=0.18`, `launch_speed=1.2`,
-  `pusher_mass=10.0`, solver pair `SEQUENTIAL_IMPULSE / IPC`,
-  `travel_divergence=0.021727719348242358`, SI target travel
-  `0.20253235976416473`, IPC target travel `0.22426007911240708`, SI max
-  contact count `4.0`, and IPC minimum gap `0.001615760232517638`.
-- Row 23 reported
-  `comparison_axis=prescribed_tangential_contact_response`, held-fixed
-  `box_mass=1.0`, `executor=Sequential`, `gravity_z=-9.81`,
-  `kinematic_driver=tangential support`, `time_step_ms=4.0`, controls
-  `drive_speed=0.35`, `grip_friction=0.8`, solver pair
-  `IPC / IPC / SEQUENTIAL_IMPULSE`, case pair
-  `IPC kinematic grip / IPC low-friction slip / Sequential impulse caveat`,
-  `ipc_grip_box_travel=0.08960047185099543`,
-  `ipc_grip_speed_ratio=1.0097876000991173`,
-  `ipc_slip_slip=0.10081434588320548`,
-  `si_caveat_driver_travel=0.0`, and
-  `ipc_grip_min_abs_support_gap=0.0005031687973142962`.
-- Row 24 in the same capture reported
-  `comparison_axis=prescribed_normal_contact_response`, held-fixed
-  `contact_friction=0.0`, `executor=Sequential`,
-  `kinematic_driver=normal paddle`, `time_step_ms=4.0`, controls
-  `push_speed=0.45`, `target_mass=1.0`, solver pair
-  `IPC / IPC / SEQUENTIAL_IMPULSE`, case pair
-  `IPC normal-push caveat / IPC heavy-target caveat / Sequential impulse push`,
-  `target_travel_divergence=0.1227970002919199`,
-  `si_caveat_target_travel=0.12304999999999999`,
-  `ipc_normal_max_depth=0.12514700029191989`, and
-  `ipc_heavy_max_depth=0.1251493119265266`.
-- `review_index.html` showed the row-22 card with `axis`, `held fixed`,
+- Row 25 reported
+  `comparison_axis=fixed_relative_transform_recovery`, held-fixed
+  `base=static`, `captured_offset_m=0.85`, `gravity_z=-9.81`,
+  `payload_mass=1.0`, `solver=Sequential rigid joints`,
+  `time_step_ms=5.0`, controls `perturbation=0.18`,
+  `fixed_joint_translation_error=2.1673896011265015e-10`,
+  `fixed_joint_orientation_error=0.0`, `fixed_joint_payload_speed=0.0`,
+  `fixed_joint_payload_angular_speed=1.3685710649607e-35`, and history maxima
+  `max_translation_error=1.0890922275130777e-08`,
+  `max_orientation_error=2.6656007498500305e-07`.
+- `review_index.html` showed the row-25 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and visible latest
-  signals for travel divergence, both solver lanes' target travel,
-  sequential-impulse contact evidence, IPC proximity gap, and solver pair. The
-  same packet kept the previously improved row-24 card adjacent and showed row
-  23 with IPC grip box travel, grip speed ratio, low-friction slip,
-  sequential-impulse caveat driver travel, IPC proximity gap, and solver pair.
-  Per-scene captures wrote nonblank docked screenshots and 71 PNG frames for
-  rows 22-24.
+  signals for fixed-joint translation error, orientation error, payload speed,
+  angular speed, solver, and history samples. The per-scene capture wrote a
+  nonblank docked screenshot and 23 PNG frames from the 24-frame workflow row
+  capture.
 
 Immediate next step if resumed after commit:
 
@@ -113,6 +88,14 @@ Immediate next step if resumed after commit:
 2. Continue from a fresh audit of the next rigid workflow gap; do not assume the
    broader DART 7 rigid showcase goal is complete.
 3. Preserve the no-push rule until the user explicitly approves a push.
+
+Previous checkpoint: row 23 exposes the tangential kinematic-driver row as a
+reviewable comparison packet. `rigid_kinematic_driver` labels the prescribed
+tangential-contact response axis, records held-fixed tangential-support
+context, exports solver/case/lane metrics, and gives the workflow
+`review_index.html` visible latest signals for IPC grip travel, grip speed
+ratio, low-friction slip, sequential-impulse caveat driver travel, IPC
+proximity gap, and solver pair.
 
 Previous checkpoint: row 24 exposes the normal kinematic-push caveat as a
 reviewable comparison packet. `rigid_kinematic_normal_push` labels the
