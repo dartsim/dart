@@ -2,6 +2,30 @@
 
 ## Current Status
 
+Latest barrier-Hessian edge-edge checkpoint (2026-06-12): the latest
+`origin/main` has been merged into
+`simx/plan083-gpu-contact-candidate-packet`, bringing in the DART 7
+architecture hardening/work-packet harness from PR #2986. Continue to keep
+PLAN-083 follow-up work consolidated on PR #2978; do not push, PR-comment,
+resolve review threads, trigger CI, open or close PRs, delete branches, or
+claim unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint adds private CUDA edge-edge barrier-Hessian evaluation to the
+barrier/friction packet. It records both a conditioned 65,536-sample primitive
+edge-edge Hessian row and a reduced scene-owned runtime edge-edge row extracted
+from the same DART `World` deformable surface as the point-triangle,
+point-edge, and point-point runtime rows. Fresh packet evidence records 59,578
+active primitive edge-edge barriers with
+`max_result_abs_error=3.623767952376511e-13` and
+`speedup=1.7306665572591047x`. The scene-owned edge-edge runtime row consumes
+1,536 runtime edge-edge candidates, records 1,280 active barriers from one
+scene body with 2,560 nodes and 768 surface triangles, and has
+`max_result_abs_error=2.220446049250313e-15` with
+`speedup=0.7331964574092038x`. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.22387419658591434x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
 Resumed barrier-Hessian packet checkpoint (2026-06-12): the maintainer gave a
 fresh `continue` instruction after the stop-only handoff. Work may resume
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, while
@@ -659,14 +683,14 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         scene-level line-search feasibility remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
         primitive barrier-gradient, point-triangle/edge-edge/point-edge/
-        point-point tangent-stencil, and point-triangle/point-point/point-edge
-        primitive barrier-Hessian packets, plus point-triangle/point-point/
-        point-edge Hessian PSD-projection parity, plus reduced scene-owned
-        point-triangle/point-edge/point-point barrier-Hessian runtime rows,
-        with exact CPU/GPU
-        local-output parity; keep the row in-progress because broader sparse
-        Hessian assembly, additional runtime contact rows, full GPU
-        `World::step`, and runtime speedup remain unproven.
+        point-point tangent-stencil, and point-triangle/point-point/point-edge/
+        edge-edge primitive barrier-Hessian packets, plus point-triangle/
+        point-point/point-edge Hessian PSD-projection parity, plus reduced
+        scene-owned point-triangle/point-edge/point-point/edge-edge
+        barrier-Hessian runtime rows, with exact CPU/GPU local-output parity;
+        keep the row in-progress because broader sparse Hessian assembly,
+        additional runtime contact rows, full GPU `World::step`, and runtime
+        speedup remain unproven.
   - [x] Add private reduced diagonal assembly/solve and pair-slot off-diagonal
         sparse-block assembly packets with exact CPU/GPU local-output parity;
         keep the row in-progress because equality reduction, global sparse
@@ -776,10 +800,12 @@ storage, or backend resources as public API.
   opening per-packet PRs.
 - Current PR #2978 head includes the CUDA CCD review fix plus the private
   barrier/friction point-triangle gradient, all four primitive-family
-  tangent-stencil packet rows, and point-triangle/point-point/point-edge
-  primitive barrier-Hessian plus point-triangle/point-point/point-edge Hessian
-  PSD-projection packet evidence. Continue monitoring CI/review on the same
-  branch and keep further PLAN-083 slices consolidated there.
+  tangent-stencil packet rows, point-triangle/point-point/point-edge/edge-edge
+  primitive barrier-Hessian, point-triangle/point-point/point-edge Hessian
+  PSD-projection, and reduced scene-owned point-triangle/point-edge/
+  point-point/edge-edge barrier-Hessian runtime packet evidence. Continue
+  monitoring CI/review on the same branch and keep further PLAN-083 slices
+  consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is

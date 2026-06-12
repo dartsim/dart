@@ -333,10 +333,11 @@ its own line so status updates remain git-history friendly.
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
   plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
-  tangent-stencil parity, point-triangle/point-point/point-edge primitive
-  barrier-Hessian parity, point-triangle/point-point/point-edge primitive
-  barrier-Hessian PSD-projection parity, reduced scene-owned point-triangle,
-  point-edge, and point-point barrier-Hessian runtime rows, reduced diagonal assembly/solve plus
+  tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge
+  primitive barrier-Hessian parity, point-triangle/point-point/point-edge
+  primitive barrier-Hessian PSD-projection parity, reduced scene-owned
+  point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
+  rows, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime

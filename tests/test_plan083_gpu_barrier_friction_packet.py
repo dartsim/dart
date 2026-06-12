@@ -195,6 +195,37 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_runtime_edge_edge_hessian_cpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCpu/1024",
+        samples=512,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_edge_edge_candidates=512,
+        runtime_edge_edge_candidates=512,
+        active_barriers=256,
+        max_barrier_value=0.5,
+        max_result_abs_error=0.0,
+    )
+    scene_runtime_edge_edge_hessian_gpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        samples=512,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        source_edge_edge_candidates=512,
+        runtime_edge_edge_candidates=512,
+        active_barriers=256,
+        gpu_active_barriers=256,
+        max_barrier_value=0.5,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_triangle_hessian_psd_cpu = _row(
         "BM_Plan083PointTriangleBarrierHessianPsdCpu/1024",
         samples=1024,
@@ -303,6 +334,27 @@ def _benchmark_data(**overrides):
         psd_projection_ns=7.0,
         device_to_host_ns=4.0,
     )
+    edge_edge_hessian_cpu = _row(
+        "BM_Plan083EdgeEdgeBarrierHessianCpu/1024",
+        samples=1024,
+        active_barriers=870,
+        max_barrier_value=1.3,
+        max_result_abs_error=0.0,
+    )
+    edge_edge_hessian_gpu = _row(
+        "BM_Plan083EdgeEdgeBarrierHessianCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        active_barriers=870,
+        gpu_active_barriers=870,
+        max_barrier_value=1.3,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_triangle_tangent_cpu = _row(
         "BM_Plan083PointTriangleTangentStencilCpu/1024",
         samples=1024,
@@ -394,6 +446,8 @@ def _benchmark_data(**overrides):
             scene_runtime_point_edge_hessian_gpu,
             scene_runtime_point_point_hessian_cpu,
             scene_runtime_point_point_hessian_gpu,
+            scene_runtime_edge_edge_hessian_cpu,
+            scene_runtime_edge_edge_hessian_gpu,
             point_triangle_hessian_psd_cpu,
             point_triangle_hessian_psd_gpu,
             point_point_hessian_cpu,
@@ -404,6 +458,8 @@ def _benchmark_data(**overrides):
             point_edge_hessian_gpu,
             point_edge_hessian_psd_cpu,
             point_edge_hessian_psd_gpu,
+            edge_edge_hessian_cpu,
+            edge_edge_hessian_gpu,
             point_triangle_tangent_cpu,
             point_triangle_tangent_gpu,
             edge_edge_tangent_cpu,
@@ -493,6 +549,20 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
         row["point_point_scene_runtime_barrier_hessian"]["max_result_abs_error"]
         == 1e-12
     )
+    assert row["edge_edge_scene_runtime_barrier_hessian"]["candidate_count"] == 512
+    assert (
+        row["edge_edge_scene_runtime_barrier_hessian"][
+            "source_edge_edge_candidate_count"
+        ]
+        == 512
+    )
+    assert row["edge_edge_scene_runtime_barrier_hessian"]["active_barrier_count"] == 256
+    assert row["edge_edge_scene_runtime_barrier_hessian"]["scene_body_count"] == 1
+    assert row["edge_edge_scene_runtime_barrier_hessian"]["scene_node_count"] == 2560
+    assert row["edge_edge_scene_runtime_barrier_hessian"]["scene_triangle_count"] == 768
+    assert (
+        row["edge_edge_scene_runtime_barrier_hessian"]["max_result_abs_error"] == 1e-12
+    )
     assert (
         row["point_triangle_barrier_hessian_psd_projection"]["active_barrier_count"]
         == 930
@@ -524,6 +594,8 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
         == 1e-12
     )
     assert row["point_edge_barrier_hessian_psd_projection"]["psd_projection_ns"] == 7.0
+    assert row["edge_edge_barrier_hessian"]["active_barrier_count"] == 870
+    assert row["edge_edge_barrier_hessian"]["max_result_abs_error"] == 1e-12
     assert row["point_triangle_tangent_stencil"]["fallback_basis_count"] == 0
     assert row["point_triangle_tangent_stencil"]["max_result_abs_error"] == 1e-12
     assert row["edge_edge_tangent_stencil"]["fallback_basis_count"] == 0

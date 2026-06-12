@@ -1,5 +1,37 @@
 # Unified Newton-Barrier Handoff
 
+## Edge-Edge Barrier-Hessian Packet Checkpoint (2026-06-12)
+
+The latest `origin/main` has been merged into
+`simx/plan083-gpu-contact-candidate-packet`, bringing in the DART 7
+architecture hardening/work-packet harness from PR #2986. Continue to keep
+PLAN-083 follow-up work consolidated on PR #2978; do not push, PR-comment,
+resolve review threads, trigger CI, open or close PRs, delete branches, or
+claim unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint adds private CUDA edge-edge barrier-Hessian evaluation to the
+barrier/friction packet. It records both a conditioned 65,536-sample primitive
+edge-edge Hessian row and a reduced scene-owned runtime edge-edge row extracted
+from the same DART `World` deformable surface as the point-triangle,
+point-edge, and point-point runtime rows.
+
+Fresh packet evidence records 59,578 active primitive edge-edge barriers with
+`max_result_abs_error=3.623767952376511e-13` and
+`speedup=1.7306665572591047x`. The scene-owned edge-edge runtime row consumes
+1,536 runtime edge-edge candidates, records 1,280 active barriers from one
+scene body with 2,560 nodes and 768 surface triangles, and has
+`max_result_abs_error=2.220446049250313e-15` with
+`speedup=0.7331964574092038x`. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.22387419658591434x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest local gates so far:
+
+- focused barrier/friction packet pytest
+- `pixi run -e cuda run-cpp-target test_barrier_friction_kernel_cuda`
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
 ## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)
 
 The maintainer gave a fresh `continue` instruction after the stop-only

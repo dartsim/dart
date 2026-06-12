@@ -182,6 +182,24 @@ cuda::PointEdgeBarrierInput makePointEdgeBarrierInput(
   return input;
 }
 
+cuda::EdgeEdgeBarrierInput makeEdgeEdgeBarrierInput(
+    const Eigen::Vector3d& a0,
+    const Eigen::Vector3d& a1,
+    const Eigen::Vector3d& b0,
+    const Eigen::Vector3d& b1,
+    const double squaredActivationDistance,
+    const double stiffness)
+{
+  cuda::EdgeEdgeBarrierInput input;
+  writeVec3(input.edgeA0, a0);
+  writeVec3(input.edgeA1, a1);
+  writeVec3(input.edgeB0, b0);
+  writeVec3(input.edgeB1, b1);
+  input.squaredActivationDistance = squaredActivationDistance;
+  input.stiffness = stiffness;
+  return input;
+}
+
 std::vector<cuda::PointTriangleBarrierInput> makePointTriangleFixture()
 {
   return {
@@ -407,6 +425,40 @@ std::vector<cuda::PointEdgeBarrierInput> makePointEdgeBarrierFixture()
   };
 }
 
+std::vector<cuda::EdgeEdgeBarrierInput> makeEdgeEdgeBarrierFixture()
+{
+  return {
+      makeEdgeEdgeBarrierInput(
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.1, 0.0),
+          Eigen::Vector3d(0.2, 0.25, 0.1),
+          Eigen::Vector3d(0.2, 1.25, 0.35),
+          0.25,
+          2.0),
+      makeEdgeEdgeBarrierInput(
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(-0.08, 0.04, 0.05),
+          Eigen::Vector3d(-0.08, 0.8, 0.15),
+          0.16,
+          1.5),
+      makeEdgeEdgeBarrierInput(
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.2, 0.1),
+          Eigen::Vector3d(1.12, 0.25, 0.18),
+          Eigen::Vector3d(1.12, 0.9, 0.45),
+          0.16,
+          1.75),
+      makeEdgeEdgeBarrierInput(
+          Eigen::Vector3d(-0.2, 0.1, 0.0),
+          Eigen::Vector3d(0.8, 0.4, 0.2),
+          Eigen::Vector3d(0.3, 1.5, 1.2),
+          Eigen::Vector3d(0.9, 1.8, 1.5),
+          0.25,
+          3.0),
+  };
+}
+
 cuda::PointPointBarrierInput makeGeneratedPointPointBarrierInput(const int i)
 {
   const bool inactive = (i % 11) == 0;
@@ -450,6 +502,41 @@ cuda::PointEdgeBarrierInput makeGeneratedPointEdgeBarrierInput(const int i)
   const Eigen::Vector3d p = a + t * edge + offset * normal;
   return makePointEdgeBarrierInput(
       p, a, a + edge, 0.25, 1.0 + 0.125 * static_cast<double>(i % 13));
+}
+
+cuda::EdgeEdgeBarrierInput makeGeneratedEdgeEdgeBarrierInput(const int i)
+{
+  const bool inactive = (i % 11) == 0;
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const Eigen::Vector3d a0(
+      -0.2 + 0.15 * row,
+      0.05 * static_cast<double>(i % 11),
+      0.02 * static_cast<double>(i % 17));
+  const Eigen::Vector3d edgeA(
+      1.0 + 0.001 * static_cast<double>(i % 13),
+      0.25 + 0.1 * row,
+      0.15 + 0.01 * static_cast<double>(i % 7));
+  Eigen::Vector3d normal = edgeA.cross(Eigen::Vector3d::UnitZ());
+  if (normal.squaredNorm() < 1e-12) {
+    normal = edgeA.cross(Eigen::Vector3d::UnitY());
+  }
+  normal.normalize();
+
+  const double s = 0.15 + 0.7 * column;
+  const double offset = inactive ? 0.75 : 0.03 + 0.0005 * (i % 23);
+  const Eigen::Vector3d b0 = a0 + s * edgeA + offset * normal;
+  const Eigen::Vector3d edgeB(
+      0.02 * static_cast<double>((i + 3) % 7),
+      0.75 + 0.002 * static_cast<double>(i % 17),
+      0.2 + 0.001 * static_cast<double>(i % 19));
+  return makeEdgeEdgeBarrierInput(
+      a0,
+      a0 + edgeA,
+      b0,
+      b0 + edgeB,
+      0.25,
+      1.0 + 0.125 * static_cast<double>(i % 13));
 }
 
 Eigen::Vector3d readVec3(const double values[3])
@@ -852,6 +939,107 @@ TEST(BarrierFrictionKernelCuda, ProjectsPointEdgeBarrierHessiansToPsd)
 }
 
 //==============================================================================
+TEST(BarrierFrictionKernelCuda, MatchesCpuEdgeEdgeBarrierHessians)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto inputs = makeEdgeEdgeBarrierFixture();
+  for (int i = 0; i < 4096; ++i) {
+    inputs.push_back(makeGeneratedEdgeEdgeBarrierInput(i));
+  }
+
+  cuda::EdgeEdgeBarrierHessianResult result;
+  cuda::evaluateEdgeEdgeBarrierHessiansCuda(inputs, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), inputs.size());
+  ASSERT_EQ(result.barrierValues.size(), inputs.size());
+  ASSERT_EQ(result.barrierGradients.size(), 12 * inputs.size());
+  ASSERT_EQ(result.barrierHessians.size(), 144 * inputs.size());
+  ASSERT_EQ(result.activeBarriers.size(), inputs.size());
+
+  std::size_t activeCount = 0;
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto expected = nb::edgeEdgeBarrier(
+        readVec3(input.edgeA0),
+        readVec3(input.edgeA1),
+        readVec3(input.edgeB0),
+        readVec3(input.edgeB1),
+        input.squaredActivationDistance,
+        input.stiffness);
+
+    activeCount += expected.active ? 1u : 0u;
+    EXPECT_EQ(result.activeBarriers[i] != 0u, expected.active) << i;
+    EXPECT_NEAR(result.squaredDistances[i], expected.squaredDistance, 1e-12)
+        << i;
+    EXPECT_NEAR(result.barrierValues[i], expected.value, 1e-12) << i;
+    for (int entry = 0; entry < 12; ++entry) {
+      EXPECT_NEAR(
+          result.barrierGradients[12 * i + static_cast<std::size_t>(entry)],
+          expected.gradient[entry],
+          1e-10)
+          << "fixture=" << i << " gradient entry=" << entry;
+    }
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        EXPECT_NEAR(
+            result.barrierHessians
+                [144 * i + static_cast<std::size_t>(12 * row + col)],
+            expected.hessian(row, col),
+            1e-7)
+            << "fixture=" << i << " hessian row=" << row << " col=" << col;
+      }
+    }
+  }
+  EXPECT_EQ(result.activeBarrierCount, activeCount);
+}
+
+//==============================================================================
+TEST(BarrierFrictionKernelCuda, ProjectsEdgeEdgeBarrierHessiansToPsd)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto inputs = makeEdgeEdgeBarrierFixture();
+  for (int i = 0; i < 4096; ++i) {
+    inputs.push_back(makeGeneratedEdgeEdgeBarrierInput(i));
+  }
+
+  std::vector<double> expected(144 * inputs.size(), 0.0);
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::edgeEdgeBarrier(
+        readVec3(input.edgeA0),
+        readVec3(input.edgeA1),
+        readVec3(input.edgeB0),
+        readVec3(input.edgeB1),
+        input.squaredActivationDistance,
+        input.stiffness);
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        expected[144 * i + static_cast<std::size_t>(12 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+  cuda::projectSymmetricBlocksToPsdReference(expected, 12, inputs.size());
+
+  cuda::EdgeEdgeBarrierHessianResult result;
+  cuda::evaluateEdgeEdgeBarrierHessiansCuda(inputs, result);
+  cuda::projectSymmetricBlocksToPsdCuda(
+      result.barrierHessians, 12, inputs.size());
+
+  ASSERT_EQ(result.barrierHessians.size(), expected.size());
+  for (std::size_t entry = 0; entry < expected.size(); ++entry) {
+    EXPECT_NEAR(result.barrierHessians[entry], expected[entry], 1e-7)
+        << "entry=" << entry;
+  }
+}
+
+//==============================================================================
 TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleTangentStencils)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -1185,6 +1373,16 @@ TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
   EXPECT_THROW(
       cuda::evaluatePointEdgeBarrierHessiansCuda(
           pointEdgeBarrierInputs, pointEdgeBarrierResult),
+      dart::simulation::InvalidArgumentException);
+
+  auto edgeEdgeBarrierInputs = makeEdgeEdgeBarrierFixture();
+  edgeEdgeBarrierInputs.front().edgeB1[0]
+      = std::numeric_limits<double>::quiet_NaN();
+
+  cuda::EdgeEdgeBarrierHessianResult edgeEdgeBarrierResult;
+  EXPECT_THROW(
+      cuda::evaluateEdgeEdgeBarrierHessiansCuda(
+          edgeEdgeBarrierInputs, edgeEdgeBarrierResult),
       dart::simulation::InvalidArgumentException);
 
   auto tangentInputs = makePointTriangleTangentFixture();

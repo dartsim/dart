@@ -125,6 +125,17 @@ struct CpuPointEdgeBarrierResult
   double maxBarrierValue = 0.0;
 };
 
+struct CpuEdgeEdgeBarrierResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<double> barrierValues;
+  std::vector<double> barrierGradients;
+  std::vector<double> barrierHessians;
+  std::vector<std::uint8_t> activeBarriers;
+  std::size_t activeBarrierCount = 0;
+  double maxBarrierValue = 0.0;
+};
+
 struct CpuPointTriangleTangentResult
 {
   std::vector<double> basisValues;
@@ -169,6 +180,12 @@ struct PointEdgeBarrierFixture
 {
   std::vector<cuda::PointEdgeBarrierInput> inputs;
   CpuPointEdgeBarrierResult cpu;
+};
+
+struct EdgeEdgeBarrierFixture
+{
+  std::vector<cuda::EdgeEdgeBarrierInput> inputs;
+  CpuEdgeEdgeBarrierResult cpu;
 };
 
 struct PointTriangleTangentFixture
@@ -219,6 +236,16 @@ struct ScenePointPointBarrierFixture
   std::vector<cuda::PointPointBarrierInput> inputs;
   CpuPointPointBarrierResult cpu;
   std::size_t sourcePointTriangleCandidateCount = 0;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+};
+
+struct SceneEdgeEdgeBarrierFixture
+{
+  std::vector<cuda::EdgeEdgeBarrierInput> inputs;
+  CpuEdgeEdgeBarrierResult cpu;
+  std::size_t sourceEdgeEdgeCandidateCount = 0;
   std::size_t sceneBodyCount = 0;
   std::size_t sceneNodeCount = 0;
   std::size_t sceneTriangleCount = 0;
@@ -345,6 +372,43 @@ cuda::PointEdgeBarrierInput makePointEdgeBarrierInput(const int i)
   writeVec3(input.point, p);
   writeVec3(input.edgeA, a);
   writeVec3(input.edgeB, a + edge);
+  input.squaredActivationDistance = 0.25;
+  input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
+  return input;
+}
+
+cuda::EdgeEdgeBarrierInput makeEdgeEdgeBarrierInput(const int i)
+{
+  const bool inactive = (i % 11) == 0;
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const Eigen::Vector3d a(
+      -0.2 + 0.15 * row,
+      0.05 * static_cast<double>(i % 11),
+      0.02 * static_cast<double>(i % 17));
+  const Eigen::Vector3d edgeA(
+      1.0 + 0.001 * static_cast<double>(i % 13),
+      0.25 + 0.1 * row,
+      0.15 + 0.01 * static_cast<double>(i % 7));
+  Eigen::Vector3d normal = edgeA.cross(Eigen::Vector3d::UnitZ());
+  if (normal.squaredNorm() < 1e-12) {
+    normal = edgeA.cross(Eigen::Vector3d::UnitY());
+  }
+  normal.normalize();
+
+  const double s = 0.15 + 0.7 * column;
+  const double offset = inactive ? 0.75 : 0.08 + 0.0005 * (i % 23);
+  const Eigen::Vector3d edgeB
+      = normal.cross(edgeA).normalized()
+            * (0.75 + 0.002 * static_cast<double>(i % 17))
+        + edgeA.normalized() * (0.02 * static_cast<double>((i + 3) % 7));
+  const Eigen::Vector3d c = a + s * edgeA - 0.5 * edgeB + offset * normal;
+
+  cuda::EdgeEdgeBarrierInput input;
+  writeVec3(input.edgeA0, a);
+  writeVec3(input.edgeA1, a + edgeA);
+  writeVec3(input.edgeB0, c);
+  writeVec3(input.edgeB1, c + edgeB);
   input.squaredActivationDistance = 0.25;
   input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
   return input;
@@ -545,6 +609,17 @@ void resizeCpuResult(CpuPointEdgeBarrierResult& result, const std::size_t count)
   result.maxBarrierValue = 0.0;
 }
 
+void resizeCpuResult(CpuEdgeEdgeBarrierResult& result, const std::size_t count)
+{
+  result.squaredDistances.assign(count, 0.0);
+  result.barrierValues.assign(count, 0.0);
+  result.barrierGradients.assign(12 * count, 0.0);
+  result.barrierHessians.assign(144 * count, 0.0);
+  result.activeBarriers.assign(count, 0u);
+  result.activeBarrierCount = 0;
+  result.maxBarrierValue = 0.0;
+}
+
 void resizeCpuResult(
     CpuPointTriangleTangentResult& result, const std::size_t count)
 {
@@ -711,6 +786,42 @@ void evaluateCpu(
     for (int row = 0; row < 9; ++row) {
       for (int col = 0; col < 9; ++col) {
         result.barrierHessians[81 * i + static_cast<std::size_t>(9 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+}
+
+void evaluateCpu(
+    const std::vector<cuda::EdgeEdgeBarrierInput>& inputs,
+    CpuEdgeEdgeBarrierResult& result)
+{
+  resizeCpuResult(result, inputs.size());
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::edgeEdgeBarrier(
+        readVec3(input.edgeA0),
+        readVec3(input.edgeA1),
+        readVec3(input.edgeB0),
+        readVec3(input.edgeB1),
+        input.squaredActivationDistance,
+        input.stiffness);
+    result.squaredDistances[i] = barrier.squaredDistance;
+    result.barrierValues[i] = barrier.value;
+    if (barrier.active) {
+      result.activeBarriers[i] = 1u;
+      ++result.activeBarrierCount;
+      result.maxBarrierValue
+          = std::max(result.maxBarrierValue, result.barrierValues[i]);
+    }
+    for (int entry = 0; entry < 12; ++entry) {
+      result.barrierGradients[12 * i + static_cast<std::size_t>(entry)]
+          = barrier.gradient[entry];
+    }
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        result
+            .barrierHessians[144 * i + static_cast<std::size_t>(12 * row + col)]
             = barrier.hessian(row, col);
       }
     }
@@ -944,6 +1055,17 @@ PointEdgeBarrierFixture makePointEdgeBarrierFixture(const int sampleCount)
   return fixture;
 }
 
+EdgeEdgeBarrierFixture makeEdgeEdgeBarrierFixture(const int sampleCount)
+{
+  EdgeEdgeBarrierFixture fixture;
+  fixture.inputs.reserve(static_cast<std::size_t>(sampleCount));
+  for (int i = 0; i < sampleCount; ++i) {
+    fixture.inputs.push_back(makeEdgeEdgeBarrierInput(i));
+  }
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
 PointTriangleTangentFixture makePointTriangleTangentFixture(
     const int sampleCount)
 {
@@ -1132,6 +1254,39 @@ ScenePointPointBarrierFixture makeSceneRuntimePointPointBarrierFixture(
   return fixture;
 }
 
+SceneEdgeEdgeBarrierFixture makeSceneRuntimeEdgeEdgeBarrierFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeBarrierSurface surface
+      = makeSceneRuntimeBarrierSurface(sampleCount);
+
+  SceneEdgeEdgeBarrierFixture fixture;
+  fixture.sceneBodyCount = surface.sceneBodyCount;
+  fixture.sceneNodeCount = surface.sceneNodeCount;
+  fixture.sceneTriangleCount = surface.sceneTriangleCount;
+  fixture.sourceEdgeEdgeCandidateCount
+      = surface.candidates.edgeEdgeCandidates.size();
+  fixture.inputs.reserve(surface.candidates.edgeEdgeCandidates.size());
+
+  for (const auto& candidate : surface.candidates.edgeEdgeCandidates) {
+    const auto& edgeA = surface.candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = surface.candidates.surfaceEdges[candidate.edgeB];
+    cuda::EdgeEdgeBarrierInput input;
+    writeVec3(input.edgeA0, surface.end[edgeA.nodeA]);
+    writeVec3(input.edgeA1, surface.end[edgeA.nodeB]);
+    writeVec3(input.edgeB0, surface.end[edgeB.nodeA]);
+    writeVec3(input.edgeB1, surface.end[edgeB.nodeB]);
+    input.squaredActivationDistance = kSceneRuntimeBarrierActivationDistance
+                                      * kSceneRuntimeBarrierActivationDistance;
+    input.stiffness
+        = 1.0 + 0.125 * static_cast<double>(fixture.inputs.size() % 13u);
+    fixture.inputs.push_back(input);
+  }
+
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
 template <typename Lhs, typename Rhs>
 double maxAbsDifference(const Lhs& lhs, const Rhs& rhs)
 {
@@ -1251,6 +1406,25 @@ double maxPsdProjectedHessianError(
 double maxOutputError(
     const CpuPointEdgeBarrierResult& expected,
     const cuda::PointEdgeBarrierHessianResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.squaredDistances, actual.squaredDistances));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.barrierValues, actual.barrierValues));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierGradients, actual.barrierGradients));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierHessians, actual.barrierHessians));
+  return maxError;
+}
+
+double maxOutputError(
+    const CpuEdgeEdgeBarrierResult& expected,
+    const cuda::EdgeEdgeBarrierHessianResult& actual)
 {
   double maxError = 0.0;
   maxError = std::max(
@@ -1396,6 +1570,20 @@ void recordCounters(
 
 void recordCounters(
     benchmark::State& state,
+    const EdgeEdgeBarrierFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["active_barriers"]
+      = static_cast<double>(fixture.cpu.activeBarrierCount);
+  state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
+void recordCounters(
+    benchmark::State& state,
     const PointTriangleTangentFixture& fixture,
     const double maxError)
 {
@@ -1501,6 +1689,28 @@ void recordCounters(
   state.counters["source_point_triangle_candidates"]
       = static_cast<double>(fixture.sourcePointTriangleCandidateCount);
   state.counters["runtime_point_point_candidates"]
+      = static_cast<double>(fixture.inputs.size());
+  state.counters["active_barriers"]
+      = static_cast<double>(fixture.cpu.activeBarrierCount);
+  state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
+void recordCounters(
+    benchmark::State& state,
+    const SceneEdgeEdgeBarrierFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["source_edge_edge_candidates"]
+      = static_cast<double>(fixture.sourceEdgeEdgeCandidateCount);
+  state.counters["runtime_edge_edge_candidates"]
       = static_cast<double>(fixture.inputs.size());
   state.counters["active_barriers"]
       = static_cast<double>(fixture.cpu.activeBarrierCount);
@@ -1821,6 +2031,57 @@ BENCHMARK(BM_Plan083SceneRuntimePointPointBarrierHessianCuda)
     ->UseRealTime();
 
 //==============================================================================
+static void BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeEdgeEdgeBarrierFixture(
+      static_cast<int>(state.range(0)));
+  CpuEdgeEdgeBarrierResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCpu)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeEdgeEdgeBarrierFixture(
+      static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateEdgeEdgeBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeBarrierHessianCuda)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
 static void BM_Plan083PointTriangleBarrierHessianPsdCpu(benchmark::State& state)
 {
   const auto fixture
@@ -2096,6 +2357,57 @@ static void BM_Plan083PointEdgeBarrierHessianPsdCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointEdgeBarrierHessianPsdCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeBarrierHessianCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeEdgeEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  CpuEdgeEdgeBarrierResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083EdgeEdgeBarrierHessianCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeBarrierHessianCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeEdgeEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateEdgeEdgeBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083EdgeEdgeBarrierHessianCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();
