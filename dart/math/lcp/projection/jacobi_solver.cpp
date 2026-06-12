@@ -48,7 +48,7 @@
 namespace dart::math {
 namespace {
 
-constexpr int kMaxStrictInteriorFastPathSize = 24;
+constexpr int kMaxStrictInteriorFastPathSize = 96;
 constexpr int kMaxFrictionIndexExactFastPathSize = 192;
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
@@ -170,7 +170,7 @@ LcpResult JacobiSolver::solve(
   if (options.customOptions == nullptr && !options.warmStart) {
     const double validationTolerance = std::max(absTol, compTolOpt);
     if (n <= kMaxStrictInteriorFastPathSize && problem.isStandardLcp(absTol)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
     } else if (
         n <= kMaxFrictionIndexExactFastPathSize && problem.hasFrictionIndex()) {

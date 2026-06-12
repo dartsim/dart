@@ -225,13 +225,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
             "Direct/Admm/Dantzig/BlockedJacobi/InteriorPoint/ShockPropagation/"
-            "Baraff/NNCG/BGS/RedBlackGaussSeidel and strict-interior "
+            "Jacobi/NNCG/BGS/RedBlackGaussSeidel and strict-interior "
             "FischerBurmeisterNewton/Pgs/BoxedSemiSmoothNewton/"
             "PenalizedFischerBurmeisterNewton/Lemke rows"
         ),
         "current_laggards": (
-            "No Standard solver average is above 1.6x; Jacobi is the largest "
-            "row; MPRGP, Sap, BoxedSemiSmoothNewton, and Apgd are the next "
+            "No Standard solver average is above 1.6x; Baraff is the largest "
+            "row; MPRGP, Pgs, Tgs, and Apgd are the next "
             "largest rows"
         ),
         "takeaway": (
@@ -241,8 +241,8 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "block hot rows. The LLT-first Newton/interior-point exact helper "
             "plus Dantzig, Lemke, Baraff, Symmetric PSOR, "
             "SubspaceMinimization, BGS, NNCG, BlockedJacobi, and RedBlack "
-            "Gauss-Seidel standard exact paths, plus APGD and SAP, move every "
-            "Standard average below 1.6x."
+            "Gauss-Seidel standard exact paths, plus APGD, SAP, and a raised "
+            "Jacobi exact gate, keep every Standard average below 1.6x."
         ),
     },
     {
@@ -278,9 +278,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "SymmetricPsor/BlockedJacobi/BGS are the current leading group"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 1.6x; Apgd and "
-            "ShockPropagation are the largest rows; Sap, BoxedSemiSmoothNewton, "
-            "Admm, SubspaceMinimization, and NNCG are the next largest rows"
+            "Apgd is the only row above 1.6x; ShockPropagation, Sap, Admm, "
+            "SubspaceMinimization, BoxedSemiSmoothNewton, and NNCG are the "
+            "next largest rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "

@@ -1574,6 +1574,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     shortcuts through the validated LLT-first helper, moving their refreshed
     Standard averages to `1.40x` and `1.46x` respectively and leaving no
     Standard profile row above `1.6x`.
+  - Raised `JacobiSolver`'s standard strict-interior exact gate through the
+    96-row comparison packet and routed that path through the validated
+    LLT-first helper, moving its refreshed Standard average from `1.59x` to
+    `1.22x`.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

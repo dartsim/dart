@@ -1,5 +1,91 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Jacobi Standard Gate / LLT Path
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 73]`
+- Last committed checkpoint:
+  `343949c66f3 Use LLT for APGD and SAP standard exact paths`
+- Checkpoint target:
+  `Raise Jacobi standard exact gate and use LLT`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 74 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `JacobiSolver` allows Standard strict-interior exact solves through the 96-row
+  comparison packet and routes that path through
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- A gate-only 48-row probe that kept the LU helper was rejected because it did
+  not materially improve the 48-row path and worsened the 24/96 focused rows.
+- The slice follows the PR #2986 harness stance captured below: evidence uses
+  the current interim LCP solver identity path from `BM_LcpCompare` benchmark
+  names, `contract_ok` counters, timing fields, manifest metadata, and native
+  support checks.
+
+Evidence:
+
+- Baseline:
+  `build/standard_jacobi_gate_baseline.json`.
+- Rejected gate-only probe:
+  `build/standard_jacobi_gate48_probe.json`.
+- Accepted focused probe:
+  `build/standard_jacobi_gate96_llt_probe.json`.
+- Focused Standard `Jacobi` timings:
+  - `Jacobi/12`: `825.00ns -> 781.00ns`.
+  - `Jacobi/24`: `2659.00ns -> 2145.00ns`.
+  - `Jacobi/48`: `10198.00ns -> 9424.00ns`.
+  - `Jacobi/96`: `55301.00ns -> 40143.00ns`.
+- Latest regenerated profile highlights:
+  - Standard: `Jacobi 1.22`; no solver average is above `1.6x`; highest rows
+    are `Baraff 1.57`, `MPRGP 1.44`, `Pgs 1.40`, and `Tgs 1.35`.
+  - Boxed: no solver average is above `1.6x`; highest rows are
+    `RedBlackGaussSeidel 1.51`, `ShockPropagation 1.48`,
+    `SymmetricPsor 1.47`, and `NNCG 1.36`.
+  - FrictionIndex: `Apgd 1.61`; next rows are `ShockPropagation 1.57`,
+    `Sap 1.51`, and `Admm 1.45`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline, rejected gate-only probe, and accepted focused probe for
+    `BM_LcpCompare/Standard/Jacobi/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks and commit
+with `Raise Jacobi standard exact gate and use LLT`. If it is already
+committed, investigate Boxed `RedBlackGaussSeidel 1.51`, Boxed
+`ShockPropagation 1.48`, or FrictionIndex `Apgd 1.61` under the same
+packet-like evidence rules. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 APGD/SAP Standard LLT Paths
 
 This is the latest hand-off. Older sections below are historical checkpoints
