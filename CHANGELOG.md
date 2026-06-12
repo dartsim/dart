@@ -105,6 +105,9 @@
     Add scene-owned Replay timeline metadata to the multibody solver-family
     row so saved-state scrubbing can track residual solve ratio and jump to
     solve-advantage, residual-drift, or solved-tight frames.
+    Add scene-owned Replay timeline metadata to the loop-closure row so
+    saved-state scrubbing can track max closure residual ratio and jump to
+    solve-advantage, family-drift, distance-tip, or rigid-orientation frames.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,
@@ -370,6 +373,9 @@
     DISTANCE, and RIGID loop-closure families with residual-only versus solved
     lanes, gravity-scale controls, closure residuals, tip/distance/orientation
     diagnostics, residual-ratio histories, and scene-owned capture metrics.
+    The scene now also publishes Replay timeline metadata using max closure
+    residual ratio as the value track and markers for solve-advantage,
+    family-drift, distance-tip, or rigid-orientation frames.
   - Updated the differentiable `diff_drone_liftoff` Python `py-demos` scene so
     rigid-contact users can inspect contact-gradient mode behavior with thrust,
     loss, thrust-gradient, analytic-loss, and height histories plus

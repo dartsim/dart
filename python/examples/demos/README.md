@@ -207,7 +207,7 @@ plus a warning block if any selected row is missing those fields.
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks      |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link speed, Jacobian gap, wrench load, Replay marks            |
 | 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks             |
-| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals, solved ratios, metrics       |
+| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks             |
 
 For the focused IPC no-tunneling capability view, use
 **`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
@@ -699,6 +699,9 @@ choose the narrowest closure family that matches the model.
 per-case family/policy labels, residuals, tip/distance/orientation errors,
 joint speeds, step timing, solved ratios, and compact history metrics into the
 manifest sidecar.
+The shared Replay panel uses max closure residual ratio as its value track and
+marks solve-advantage, residual-versus-solved separation, distance-family tip
+drift, and rigid-orientation frames.
 
 Use the workflow mode to plan or run the full numbered rigid capture set. It
 writes a top-level manifest that points at every per-scene manifest and a

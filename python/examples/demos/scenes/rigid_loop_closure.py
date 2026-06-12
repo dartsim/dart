@@ -55,6 +55,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _LoopClosureCase:
     key: str
@@ -599,6 +608,121 @@ class _RigidLoopClosureVerifier:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        ratio_histories = snapshot.get("residual_ratio_history", {})
+        if isinstance(ratio_histories, dict):
+            ratios = [
+                value
+                for value in (
+                    _last_float(ratio_histories.get(family_label, []))
+                    for family_label, _family, _description in self._families
+                )
+                if value is not None
+            ]
+            if ratios:
+                return max(0.0, max(ratios))
+
+        top_level_ratios: list[float] = []
+        for family_label, _family, _description in self._families:
+            try:
+                key = f"{family_label.lower()}_residual_ratio"
+                if key in snapshot:
+                    top_level_ratios.append(float(snapshot[key]))
+            except (TypeError, ValueError):
+                continue
+        if top_level_ratios:
+            return max(0.0, max(top_level_ratios))
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            ratios: list[float] = []
+            for family_label, _family, _description in self._families:
+                residual_metrics = metrics.get(f"{family_label} residual", {})
+                solved_metrics = metrics.get(f"{family_label} solved", {})
+                if isinstance(residual_metrics, dict) and isinstance(
+                    solved_metrics, dict
+                ):
+                    try:
+                        residual = float(residual_metrics.get("residual", 0.0))
+                        solved = max(
+                            float(solved_metrics.get("residual", 0.0)),
+                            1.0e-12,
+                        )
+                        ratios.append(residual / solved)
+                    except (TypeError, ValueError):
+                        continue
+            if ratios:
+                return max(0.0, max(ratios))
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 1.0e8:
+            return 1.0
+
+        residuals = snapshot.get("residual_history", {})
+        if isinstance(residuals, dict):
+            for family_label, _family, _description in self._families:
+                residual = _last_float(residuals.get(f"{family_label} residual", []))
+                solved = _last_float(residuals.get(f"{family_label} solved", []))
+                if (
+                    residual is not None
+                    and solved is not None
+                    and residual >= 0.75
+                    and solved <= 1.0e-8
+                ):
+                    return 1.0
+
+        orientations = snapshot.get("orientation_error_history", {})
+        if isinstance(orientations, dict):
+            rigid_residual = _last_float(orientations.get("RIGID residual", []))
+            rigid_solved = _last_float(orientations.get("RIGID solved", []))
+            if rigid_residual is not None and rigid_residual >= 0.10:
+                return 1.0
+            if (
+                rigid_residual is not None
+                and rigid_solved is not None
+                and rigid_residual >= 0.05
+                and rigid_solved <= 1.0e-8
+            ):
+                return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                distance_solved = metrics.get("DISTANCE solved", {})
+                if isinstance(distance_solved, dict):
+                    distance_error = float(distance_solved.get("distance_error", 0.0))
+                    tip_error = float(distance_solved.get("tip_error", 0.0))
+                    if distance_error <= 1.0e-8 and tip_error >= 0.10:
+                        return 1.0
+
+                rigid_residual = metrics.get("RIGID residual", {})
+                rigid_solved = metrics.get("RIGID solved", {})
+                if isinstance(rigid_residual, dict) and isinstance(
+                    rigid_solved, dict
+                ):
+                    residual_orientation = float(
+                        rigid_residual.get("orientation_error", 0.0)
+                    )
+                    solved_orientation = float(
+                        rigid_solved.get("orientation_error", 0.0)
+                    )
+                    if residual_orientation >= 0.10:
+                        return 1.0
+                    if (
+                        residual_orientation >= 0.05
+                        and solved_orientation <= 1.0e-8
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -732,6 +856,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Max closure residual ratio",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
             "replay_sync": verifier._sync,
         },
     )

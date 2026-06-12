@@ -6811,6 +6811,89 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
         assert history["max_step_ms"] == pytest.approx(
             max(controller._step_ms_history[case.label])
         )
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_ratio = max(
+        controller._residual_ratio_history[family_label][-1]
+        for family_label in ("POINT", "DISTANCE", "RIGID")
+    )
+    assert timeline["signal_label"] == "Max closure residual ratio"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_ratio)
+    assert timeline["signal"](
+        {
+            "point_residual_ratio": 14.0,
+            "distance_residual_ratio": 22.0,
+            "rigid_residual_ratio": 18.0,
+        }
+    ) == pytest.approx(22.0)
+    assert timeline["signal"](
+        {
+            "last_metrics": {
+                "POINT residual": {"residual": 0.90},
+                "POINT solved": {"residual": 0.03},
+                "DISTANCE residual": {"residual": 0.50},
+                "DISTANCE solved": {"residual": 0.05},
+                "RIGID residual": {"residual": 0.60},
+                "RIGID solved": {"residual": 0.12},
+            }
+        }
+    ) == pytest.approx(30.0)
+    assert timeline["markers"](
+        {"residual_ratio_history": {"POINT": [1.0e9]}}
+    ) == pytest.approx(1.0)
+    assert (
+        timeline["markers"](
+            {
+                "residual_history": {
+                    "POINT residual": [0.90],
+                    "POINT solved": [1.0e-9],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"orientation_error_history": {"RIGID residual": [0.20]}}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "DISTANCE solved": {
+                        "distance_error": 1.0e-9,
+                        "tip_error": 0.20,
+                    }
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "residual_ratio_history": {
+                    "POINT": [10.0],
+                    "DISTANCE": [12.0],
+                    "RIGID": [11.0],
+                },
+                "residual_history": {
+                    "POINT residual": [0.20],
+                    "POINT solved": [0.10],
+                },
+                "orientation_error_history": {"RIGID residual": [0.02]},
+                "last_metrics": {
+                    "DISTANCE solved": {
+                        "distance_error": 0.02,
+                        "tip_error": 0.04,
+                    }
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_multibody_solver_family_routes_solved_closures() -> None:

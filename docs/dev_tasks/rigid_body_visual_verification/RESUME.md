@@ -2,20 +2,20 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_multibody_solver_family` Replay timeline
-slice after the link-Jacobian checkpoint. The World multibody solver-family row
-now uses residual solve ratio as its Replay value track and marks
-solve-advantage, residual-only drift, and solved-tight frames while residual
-rows remain loose.
+This checkpoint completes the `rigid_loop_closure` Replay timeline slice after
+the multibody solver-family checkpoint. The variational rigid multibody
+loop-closure row now uses max closure residual ratio as its Replay value track
+and marks solve-advantage, residual-versus-solved separation, distance-family
+tip drift, and rigid-orientation frames.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Local `HEAD` before the multibody solver-family implementation work:
-  `075a809177d Add link Jacobian replay timeline`.
-- `git status -sb` before this implementation resumed showed the branch ahead
-  of `origin/feature/rigid-body-gui-visual-verification` by thirteen commits
-  with uncommitted row 35 scene/test edits and stop-only hand-off docs; this
+- Local `HEAD` before the loop-closure implementation work:
+  `1add2036097 Add multibody solver family replay timeline`.
+- `git status -sb` before this continuation resumed showed the branch ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by fourteen commits with
+  uncommitted row 36 scene/test edits and stop-only hand-off docs; this
   checkpoint supersedes that hand-off state.
 - Latest implementation checkpoints covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
@@ -32,8 +32,8 @@ Expected repository state after this hand-off:
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
   multibody dynamics-terms Replay timeline, link center-of-mass Replay
-  timeline, link-Jacobian Replay timeline, and multibody solver-family Replay
-  timeline checkpoint.
+  timeline, link-Jacobian Replay timeline, multibody solver-family Replay
+  timeline, and loop-closure Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before the link center-of-mass implementation commit was
@@ -118,10 +118,16 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Residual solve ratio`, with markers for solve-advantage, residual-only
   drift, or solved-tight frames while residual rows remain loose.
+- The current loop-closure Replay timeline slice adds
+  `_last_float(...)`, `replay_timeline_signal(...)`,
+  `replay_timeline_marker(...)`, and `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_loop_closure.py`. The intended value
+  track label is `Max closure residual ratio`, with markers for large closure
+  solve advantage, residual-versus-solved separation, distance-family tip
+  drift, and rigid-orientation solve frames.
 - There is no PR associated with this branch at checkpoint time.
-- The next adjacent durable sidecar row appears to be `rigid_loop_closure`, but
-  a future session should inspect the sidecar and scene/test internals before
-  implementing or revising it.
+- The numbered rigid workflow Replay timeline pass is now complete through row 36. A future session should re-evaluate the durable sidecar and dashboard
+  before selecting the next bounded rigid visual-verification slice.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
   hand-off-only stop checkpoint.
@@ -176,6 +182,15 @@ Expected repository state after this hand-off:
   metadata to `rigid_link_center_of_mass`, updated tests and docs, and ran
   focused tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
+- The multibody solver-family Replay timeline continuation added
+  `replay_timeline` metadata to `rigid_multibody_solver_family`, updated tests
+  and docs, ran focused tests, drift guards, a real docked capture,
+  `pixi run lint`, and `git diff --check`, then committed locally as
+  `1add2036097 Add multibody solver family replay timeline`.
+- The loop-closure Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_loop_closure`, updated tests and docs, and ran focused
+  tests plus a real docked capture. Drift guards, lint, and diff checks are
+  recorded in the validation section below.
 - Do not push these local commits without explicit approval in a future
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -419,18 +434,26 @@ solve ratio as its value track and marks solve-advantage, residual-only drift,
 or solved-tight frames while residual rows remain loose. Focused pytest and a
 real docked capture passed before this hand-off update.
 
+The latest continuation completes the next Replay timeline slice for
+`rigid_loop_closure`. The shared Replay panel now uses max closure residual
+ratio as its value track and marks solve-advantage,
+residual-versus-solved separation, distance-family tip drift, and
+rigid-orientation frames. Focused pytest and a real docked capture passed
+before the continuation resumed; drift guards, lint, and diff checks are
+recorded below.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
 
 Current snapshot:
 
-- Current multibody solver-family checkpoint is local until explicitly pushed
-  in a future approved session. At the start of this continuation, local
-  `HEAD` was `075a809177d Add link Jacobian replay timeline`, and
-  `git status -sb` showed the branch thirteen commits ahead of origin with
-  modified `python/examples/demos/scenes/rigid_multibody_solver_family.py`,
-  `python/tests/integration/test_demos_cycle.py`, and stop-only hand-off docs.
+- Local `HEAD` before the loop-closure implementation work was
+  `1add2036097 Add multibody solver family replay timeline`, which is local
+  until explicitly pushed in a future approved session. `git status -sb` before
+  this continuation resumed showed the branch fourteen commits ahead of origin
+  with uncommitted row 36 scene/test edits and stop-only hand-off docs; this
+  checkpoint supersedes that hand-off state.
 - Latest implementation checkpoints covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
@@ -446,8 +469,8 @@ Current snapshot:
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
   multibody dynamics-terms Replay timeline, link center-of-mass Replay
-  timeline, link-Jacobian Replay timeline, and multibody solver-family Replay
-  timeline checkpoint.
+  timeline, link-Jacobian Replay timeline, multibody solver-family Replay
+  timeline, and loop-closure Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before the link center-of-mass implementation commit was
@@ -468,8 +491,9 @@ Current snapshot:
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
   passive-parameters, screw-joint pitch, multibody dynamics-terms, link
-  center-of-mass, link-Jacobian, and multibody solver-family Replay timeline
-  checkpoints are local and unpushed until explicit future approval.
+  center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
+  Replay timeline checkpoints are local and unpushed until explicit future
+  approval.
 - There is no PR associated with this branch at checkpoint time.
 - This checkpoint remains local. Do not push without explicit future approval.
 
@@ -479,12 +503,12 @@ Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
 motor-limits, passive-parameters, screw-joint pitch, multibody dynamics-terms,
-link center-of-mass, link-Jacobian, and multibody solver-family Replay
-timeline slices after the pushed docs-only handoff. Re-evaluate the durable
-sidecar before selecting the next bounded rigid visual-verification slice; the
-next adjacent constraints row is likely `rigid_loop_closure`, but do not assume
-it without inspecting current evidence. Do not push without explicit approval
-in that session.
+link center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
+Replay timeline slices after the pushed docs-only handoff. Re-evaluate the
+durable sidecar and dashboard before selecting the next bounded rigid
+visual-verification slice. The numbered Replay timeline pass now covers all 36
+current rigid workflow rows. Do not push without explicit approval in that
+session.
 
 Passive-parameters checks for this slice:
 
@@ -759,6 +783,20 @@ max world/body gap about `0.2055`, and historical max absolute torques about
   behavior. Its real docked capture wrote 71 PNG frames and 72 scene-metric
   events under
   `/tmp/dart_capture_multibody_solver_family_timeline_1781281303`.
+- The completed row 36 slice in
+  `python/examples/demos/scenes/rigid_loop_closure.py` adds `_last_float(...)`,
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track is
+  `Max closure residual ratio`.
+- The row 36 test edit in
+  `python/tests/integration/test_demos_cycle.py` extends
+  `test_rigid_loop_closure_compares_closure_families` with label, current
+  snapshot signal, top-level and `last_metrics` signal fallback, solve-ratio
+  marker, residual marker, rigid-orientation marker, distance-tip marker, and
+  quiet-frame assertions.
+- Row 36 marker intent: flag large closure solve advantage, residual-versus-
+  solved closure separation, distance-family tip drift with near-zero distance
+  error, and rigid-orientation solve frames.
 
 ## How To Resume
 
@@ -798,6 +836,30 @@ capture wrote a nonblank 960x540 docked screenshot, 71 PNG frames, and
 72 scene-metric events under
 `/tmp/dart_capture_multibody_solver_family_timeline_1781281303`. `pixi run
 lint` passed.
+
+Current loop-closure validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q
+pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_timeline_1781285000
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run lint
+git diff --check
+```
+
+The row 36 focused pytest reported `1 passed`; the focused Replay/row 36
+pytest plus sidecar/README/capture-command drift guards reported `6 passed`;
+the real docked capture wrote a nonblank 960x540 docked screenshot, 71 PNG
+frames, and 72 scene-metric events under
+`/tmp/dart_capture_loop_closure_timeline_1781285000`. The manifest recorded row
+`rigid_loop_closure`, solver
+`variational_rigid_multibody_loop_closure`, scope
+`point_distance_rigid_closure_family_selection`, executor `Sequential`, gravity
+scale `1.0`, six cases, point/distance/rigid residual ratios about
+`7.595e11`, `7.458e11`, and `7.740e11`, rigid residual orientation error about
+`0.149`, solved orientation error near `2.8e-17`, distance solved distance
+error near `9.4e-15`, and distance solved tip error about `0.439`.
+`pixi run lint` passed and `git diff --check` was clean.
 
 Focused validation already run:
 
