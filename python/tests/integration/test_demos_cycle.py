@@ -1740,6 +1740,23 @@ def test_rigid_visual_motion_capture_video_flags_are_documented() -> None:
         assert expected_tokens in text
 
 
+def test_root_readme_source_checkout_points_to_py_demos_rigid_front_door() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    text = (root / "README.md").read_text(encoding="utf-8")
+    source_checkout = text.split("### Source checkout", maxsplit=1)[1].split(
+        "## Documentation",
+        maxsplit=1,
+    )[0]
+
+    python_smoke = "pixi run py-demos -- --scene rigid_body --headless --frames 1"
+    cxx_smoke = "pixi run demos -- --scene rigid_body --headless --frames 1"
+    assert python_smoke in source_checkout
+    assert "pixi run py-demos" in source_checkout
+    assert "pixi run py-demos -- --scene rigid_solver_compare" in source_checkout
+    assert cxx_smoke in source_checkout
+    assert source_checkout.index(python_smoke) < source_checkout.index(cxx_smoke)
+
+
 def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None:
     root = pathlib.Path(__file__).resolve().parents[3]
     sidecar = (

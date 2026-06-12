@@ -127,6 +127,14 @@ DART 7 C++ artifacts are published.
 
 ```bash
 pixi install
+# Smoke the Python-first DART 7 rigid-body demo surface.
+pixi run py-demos -- --scene rigid_body --headless --frames 1
+
+# Open the curated rigid-body GUI verifier.
+pixi run py-demos
+pixi run py-demos -- --scene rigid_solver_compare
+
+# Optional C++ World-only companion smoke.
 pixi run demos -- --scene rigid_body --headless --frames 1
 ```
 

@@ -1,5 +1,39 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 Root README Front Door
+
+Local checkpoint `7caa0f6ab6e` (`Clarify rigid comparison axes and capture
+evidence`) completed the previous comparison-axis/backend-search/video-evidence
+slice. The current active local slice aligns the repository source-checkout
+front door with PLAN-103: the root `README.md` now points new source users to
+the Python-first `py-demos` rigid-body GUI verifier before the smaller C++
+World-only companion smoke.
+
+Current local slice touches:
+
+- `README.md`
+- `CHANGELOG.md`
+- `docs/plans/103-examples-strategy.md`
+- `python/tests/integration/test_demos_cycle.py`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+Fresh-session instructions:
+
+1. Inspect `git status -sb` and preserve user changes.
+2. Review the current diff and commit locally if it still only contains this
+   root README front-door slice.
+3. Do not push, open a PR, comment, re-trigger CI, or otherwise mutate GitHub
+   state without explicit user approval.
+
+Validation collected for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
 ## Current Active Snapshot - 2026-06-12 Resumed Comparison Axis Slice
 
 The previous stop-only handoff was superseded by a goal-continuation turn. The
@@ -421,6 +455,10 @@ jobs: 1`). No push or GitHub mutation was performed.
       to the executor row while backend-status search stays on diagnostics; and
       README/PLAN-103 document MP4 capture with `--video --fps 24`. Focused
       panel/search/capture docs tests reported `7 passed`.
+- [x] Root source-checkout front door: the root README now leads with the
+      Python-first `py-demos` rigid-body GUI verifier and keeps the smaller C++
+      companion smoke as optional. Focused README drift test reported
+      `1 passed`, `pixi run lint` passed, and `git diff --check` passed.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

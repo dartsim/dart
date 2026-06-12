@@ -1,5 +1,37 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Fresh-Session Entry - 2026-06-12 Root README Front Door
+
+Local checkpoint `7caa0f6ab6e` (`Clarify rigid comparison axes and capture
+evidence`) completed the previous comparison-axis/backend-search/video-evidence
+slice. The current uncommitted slice aligns the root source-checkout guidance
+with PLAN-103 so new source users see the Python-first `py-demos` rigid-body
+GUI verifier before the smaller C++ companion smoke.
+
+Current local slice:
+
+- `README.md` source checkout now runs
+  `pixi run py-demos -- --scene rigid_body --headless --frames 1`, then shows
+  interactive `pixi run py-demos` and `rigid_solver_compare` commands before
+  the optional `pixi run demos` C++ smoke.
+- `python/tests/integration/test_demos_cycle.py` adds a root README drift guard
+  for that ordering.
+- `docs/plans/103-examples-strategy.md`, `CHANGELOG.md`, and this dev-task
+  folder record the front-door alignment.
+
+Immediate next step:
+
+1. Run `git diff --check` and inspect the diff.
+2. Commit locally if clean. Do not push, open a PR, comment, re-trigger CI, or
+   otherwise mutate GitHub state without explicit approval.
+
+Validation collected for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
 ## Current Fresh-Session Entry - 2026-06-12 Resumed Comparison Axis Slice
 
 The previous stop-only handoff has been superseded by a goal-continuation turn.

@@ -68,6 +68,9 @@
     `rigid_contact_solver_compare` panels and capture metrics with explicit
     comparison-axis labels so users can distinguish solver-family, executor,
     and contact-policy rows while reviewing GUI captures.
+  - Pointed the root README source-checkout path at the Python-first
+    `py-demos` rigid-body GUI verifier before the smaller C++ companion smoke,
+    so new source users land on the curated DART 7 visual debugging workflow.
   - Upgraded the Python `py-demos` `contact` scene into the numbered rigid
     visual-verification workflow as `Rigid Link Contact`, showing multibody
     links dropping, friction-sliding, and pushing a rigid target with link

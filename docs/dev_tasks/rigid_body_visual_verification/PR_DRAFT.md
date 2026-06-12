@@ -52,6 +52,10 @@ hardening rather than new GUI rows:
 - The Python demo README and PLAN-103 sidecar now show the docked motion
   evidence path with `py-demo-capture --video --fps 24`, guarded by a focused
   docs test when the helper exposes those flags.
+- The root README source-checkout path now points first to the Python-first
+  `py-demos` rigid-body GUI verifier, including the baseline smoke and
+  `rigid_solver_compare` interactive route, before the smaller C++ companion
+  smoke.
 - A PR-readiness audit found no obvious next implementation row in the curated
   36-row workflow; remaining publication work is final validation, dev-task
   cleanup decision, and explicit maintainer/user approval before any GitHub
@@ -260,6 +264,19 @@ hardening rather than new GUI rows:
     - passed
   - Next local resume gate: commit if the worktree still only shows this
     comparison-axis slice.
+- Latest root README front-door follow-up:
+  - `README.md` source checkout now leads with
+    `pixi run py-demos -- --scene rigid_body --headless --frames 1`, then shows
+    interactive `pixi run py-demos` and `rigid_solver_compare` routes before the
+    optional C++ `pixi run demos` companion smoke.
+  - `test_root_readme_source_checkout_points_to_py_demos_rigid_front_door`
+    guards the README ordering.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+    - `1 passed`
+  - `pixi run lint`
+    - passed
+  - `git diff --check`
+    - passed
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,
