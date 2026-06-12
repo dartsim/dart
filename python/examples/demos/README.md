@@ -167,7 +167,7 @@ infer.
 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time              |
 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion          |
 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics         |
-| `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration          |
+| `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration, metrics |
 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error        |
 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response             |
 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker       |
@@ -520,6 +520,9 @@ Coulomb stiction versus slip under held efforts, and direct versus
 armature-loaded drive. The panel exposes spring stiffness, rest position,
 damping, Coulomb friction, drive force, armature, acceleration-versus-expected
 diagnostics, energy histories, and step timing.
+`py-demo-capture` records the same lane order, executor, spring/rest/damping,
+Coulomb friction, slip/stiction, armature, acceleration, energy, step-timing,
+and compact history metrics into the manifest sidecar.
 
 The **`rigid_screw_joint_pitch`** scene shows the public screw-joint pitch
 semantics: pitch is axial translation per radian of rotation. Zero, fine,

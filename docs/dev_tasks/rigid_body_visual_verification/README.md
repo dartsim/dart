@@ -187,6 +187,18 @@
 - [x] Passive joint-parameter slice: `rigid_joint_passive_parameters` shows the
       World multibody spring/rest, damping, Coulomb friction, and armature paths
       in contact-free prismatic lanes with acceleration and energy diagnostics.
+- [x] Passive joint-parameter capture-metrics handoff:
+      `rigid_joint_passive_parameters` now publishes row identity, passive
+      joint-parameter scope, executor, spring/rest/damping, Coulomb friction,
+      slip/stiction, armature, acceleration, energy, step-timing, lane order,
+      per-lane metrics, and compact history fields through the capture hook.
+      The focused passive-parameter guard reported `1 passed`, and the real
+      docked 120-frame capture wrote 119 PNG frames and 120 scene-metrics
+      events under
+      `/tmp/dart_capture_joint_passive_parameters_metrics_1781235045`.
+      The broader workflow/doc drift guard, `pixi run lint`, bounded default
+      `pixi run build`, and `git diff --check` were not run after the user's
+      critical stop/no-further-verification instruction.
 - [x] Screw-joint pitch slice: `rigid_screw_joint_pitch` shows zero, fine,
       coarse, and reverse World multibody screw-pitch lanes with gravity,
       mass/inertia controls, pitch-ratio, effective-mass, and acceleration
@@ -449,12 +461,15 @@
       branch to origin, and refreshed validation. The conflict-resolution
       `pixi run test-py` command ran the full Python suite and reported
       `942 passed, 9 skipped`; `pixi run lint` also passed.
-- [x] Current handoff refresh: after the validated link-contact
-      capture-metrics slice, the branch records fresh resume context for
+- [x] Current handoff refresh: after the row-30 passive joint-parameter
+      capture-metrics WIP, the branch records fresh resume context for
       `feature/rigid-body-gui-visual-verification`, notes that no published PR
-      was found for the branch on 2026-06-11, and points the next fresh session
-      toward a bounded `rigid_contact_inspector` capture-metrics follow-up. The
-      docs-only handoff refresh passed `pixi run lint` and `git diff --check`.
+      was found before this handoff, and points the next fresh session toward
+      running the skipped broad guard, `pixi run lint`, bounded
+      `pixi run build`, and `git diff --check` before continuing toward the
+      next likely capture-metrics row, `rigid_screw_joint_pitch`. This refresh
+      was intentionally not verified after the user's critical
+      stop/no-further-verification instruction.
 
 ## Goal
 

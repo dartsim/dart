@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -423,6 +423,144 @@ class _RigidJointPassiveParameterVerifier:
     def renderable_provider(self) -> list[Any]:
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics(
+                previous_positions={
+                    lane.key: _joint_scalar(lane.joint.position)
+                    for lane in self.lanes
+                },
+                previous_velocities={
+                    lane.key: _joint_scalar(lane.joint.velocity)
+                    for lane in self.lanes
+                },
+            )
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(lane_key: str) -> dict[str, float | str]:
+            serialized: dict[str, float | str] = {}
+            for key, value in self._last_metrics[lane_key].items():
+                if isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def lane_value(lane_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[lane_key][metric_key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "kind": lane.kind,
+                "joint": lane.joint.name,
+                "metrics": serialized_metrics(lane.key),
+            }
+            for lane in self.lanes
+        }
+        spring_energy = lane_value("spring_only", "energy")
+        damped_energy = lane_value("spring_damper", "energy")
+        reference_acceleration = lane_value("armature_reference", "acceleration")
+        armature_acceleration = lane_value("armature_heavy", "acceleration")
+        payload: dict[str, Any] = {
+            "row": "rigid_joint_passive_parameters",
+            "solver": "world_multibody_passive_joint_parameters",
+            "scope": "contact_free_prismatic_lanes",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "executor_index": float(executor_index),
+                "spring_stiffness": float(self.spring_stiffness),
+                "damping_coefficient": float(self.damping_coefficient),
+                "rest_position": float(self.rest_position),
+                "coulomb_friction": float(self.coulomb_friction),
+                "hold_force": float(self.hold_force),
+                "slip_force": float(self.slip_force),
+                "armature_force": float(self.armature_force),
+                "armature": float(self.armature),
+            },
+            "lane_order": [lane.key for lane in self.lanes],
+            "lane_count": float(len(self.lanes)),
+            "lanes": lanes,
+            "spring_energy": spring_energy,
+            "damped_energy": damped_energy,
+            "damped_energy_ratio": damped_energy / max(spring_energy, 1.0e-12),
+            "stiction_position": lane_value("stiction", "position"),
+            "stiction_speed": lane_value("stiction", "speed"),
+            "slip_position": lane_value("slip", "position"),
+            "slip_speed": lane_value("slip", "speed"),
+            "slip_acceleration": lane_value("slip", "acceleration"),
+            "slip_expected_acceleration": lane_value(
+                "slip", "expected_acceleration"
+            ),
+            "slip_acceleration_error": lane_value("slip", "acceleration_error"),
+            "armature_reference_acceleration": reference_acceleration,
+            "armature_heavy_acceleration": armature_acceleration,
+            "armature_acceleration_gap": reference_acceleration
+            - armature_acceleration,
+            "armature_position_gap": lane_value(
+                "armature_reference", "position"
+            )
+            - lane_value("armature_heavy", "position"),
+            "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_step_ms": max(self._step_ms_history, default=0.0),
+                "max_spring_energy": max(
+                    self._energy_history["spring_only"], default=0.0
+                ),
+                "max_damped_energy": max(
+                    self._energy_history["spring_damper"], default=0.0
+                ),
+                "max_slip_position": max(
+                    self._position_history["slip"], default=0.0
+                ),
+                "max_armature_position_gap": max(
+                    (
+                        reference - heavy
+                        for reference, heavy in zip(
+                            self._position_history["armature_reference"],
+                            self._position_history["armature_heavy"],
+                            strict=False,
+                        )
+                    ),
+                    default=0.0,
+                ),
+            },
+        }
+        for lane in self.lanes:
+            lane_metrics = self._last_metrics[lane.key]
+            for metric_key in (
+                "position",
+                "velocity",
+                "speed",
+                "acceleration",
+                "expected_acceleration",
+                "acceleration_error",
+                "energy",
+            ):
+                payload[f"{lane.key}_{metric_key}"] = float(
+                    lane_metrics[metric_key]
+                )
+            payload["history"][f"{lane.key}_max_abs_position"] = max_abs(
+                self._position_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_speed"] = max(
+                self._speed_history[lane.key], default=0.0
+            )
+            payload["history"][f"{lane.key}_max_abs_acceleration"] = max_abs(
+                self._accel_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_energy"] = max(
+                self._energy_history[lane.key], default=0.0
+            )
+        return payload
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -610,6 +748,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": controller.world,
             "rigid_joint_passive_parameters_controller": controller,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
         },

@@ -69,7 +69,8 @@
   collision casts, solver comparison, executor equivalence, contact-policy
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
   stack stability, contact manipulation, kinematic driver,
-  fixed/breakage/one-DOF joint constraint errors, and stack-packet
+  fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
+  passive joint parameters, and stack-packet
   physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
@@ -83,6 +84,29 @@
 
 ## Testing
 
+- Latest passive joint-parameter capture-metrics handoff:
+  - `python/examples/demos/scenes/rigid_joint_passive_parameters.py` now
+    publishes a scene-owned capture hook for the row 30 passive parameter
+    verifier: controls, lane order, spring/rest/damping, Coulomb friction,
+    stiction/slip, armature, acceleration, energy, step timing, per-lane
+    metrics, and compact histories.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_passive_parameters_metrics_1781235045`
+    - nonblank docked capture, 119 PNG frames, 120 scene-metrics events, row
+      `rigid_joint_passive_parameters`, solver
+      `world_multibody_passive_joint_parameters`, scope
+      `contact_free_prismatic_lanes`, executor `Sequential`, lane count `6`,
+      latest spring/damped energy about `2.1583/1.3403`, damped-energy ratio
+      about `0.6210`, stiction position `0`, slip position about `0.17424`,
+      slip speed about `0.72`, armature reference/heavy acceleration about
+      `3.0/0.75`, armature acceleration gap about `2.25`, armature position
+      gap about `0.26136`, latest step time about `0.0534 ms`, and manifest
+      ranges for passive response, step-timing, time-step, and world-time
+      fields
+  - Not run after the user's critical stop/no-further-verification instruction:
+    broader workflow/doc drift guard, `pixi run lint`, bounded
+    `pixi run build`, and `git diff --check`.
 - Latest joint motor/limit capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_joint_motor_limits.py` now publishes a
     scene-owned capture hook for the row 29 multibody actuator verifier:

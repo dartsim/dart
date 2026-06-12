@@ -2,22 +2,24 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from the pushed handoff commit `30d65d4229c` and
-continued the interrupted row-29 capture-metrics slice for
-`rigid_joint_motor_limits`. The branch had no associated GitHub PR, and the
-only dirty implementation/test files were
-`python/examples/demos/scenes/rigid_joint_motor_limits.py` and
-`python/tests/integration/test_demos_cycle.py`.
+Latest continuation started from local commit `8f2119d7cf1` and moved the next
+capture-metrics slice to row 30, `rigid_joint_passive_parameters`. The branch
+had no associated GitHub PR before this handoff. The user then explicitly
+requested handoff only, push to origin, and no further verification, so this
+checkpoint records the exact WIP state instead of running the usual
+lint/build/diff gates.
 
-Expected branch/worktree state after this local checkpoint:
+Expected branch/worktree state after this pushed handoff checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch head remains `30d65d4229c` unless a maintainer/user explicitly
-  approves another push.
-- The completed local checkpoint should include row-29 motor-limit capture
-  metrics, tests, docs, and refreshed handoff state.
+- Pushed branch should include `8f2119d7cf1` plus the handoff checkpoint
+  containing this file.
+- The handoff checkpoint includes row-30 passive joint-parameter capture
+  metrics, focused assertions, docs, and refreshed task state, but it was
+  committed without additional lint/build/diff verification at the user's
+  instruction.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
-  or other GitHub mutations still require explicit maintainer/user approval.
+  or other GitHub mutations require fresh explicit maintainer/user approval.
 
 Recent checkpoints:
 
@@ -30,7 +32,8 @@ Recent checkpoints:
 - `b68f216ebe9` (`Expose rigid contact manipulation capture metrics`)
 - `9947ab1285a` (`Expose rigid kinematic driver capture metrics`)
 - `30d65d4229c` (`Document rigid visual verification handoff`)
-- the local checkpoint containing this file (`Expose rigid joint motor limit capture metrics`)
+- `8f2119d7cf1` (`Expose rigid joint motor limit capture metrics`)
+- the handoff checkpoint containing this file (`Hand off rigid passive joint parameter capture metrics`)
 
 Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
 checkpoint touches:
@@ -95,7 +98,7 @@ Validation collected for the kinematic-driver slice:
   scene-metrics events; `pixi run lint`, bounded build, and `git diff --check`
   passed.
 
-Current local slice: `rigid_joint_motor_limits` row capture metrics. The local
+Previous local checkpoint: `rigid_joint_motor_limits` row capture metrics. The
 checkpoint touches:
 
 - `python/examples/demos/scenes/rigid_joint_motor_limits.py`
@@ -124,7 +127,7 @@ What changed in code/test:
   `python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort`
   that the capture hook mirrors the controller state and exposes history maxima.
 
-Validation collected for the motor-limit slice so far:
+Validation collected for the motor-limit slice:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
   reported `1 passed` after fixing the assertions to compare latest top-level
@@ -151,11 +154,63 @@ Validation collected for the motor-limit slice so far:
   passed and reported `ninja: no work to do`.
 - `git diff --check` passed.
 
+Current handoff slice: `rigid_joint_passive_parameters` row capture metrics. The
+handoff checkpoint touches:
+
+- `python/examples/demos/scenes/rigid_joint_passive_parameters.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `CAPTURE_METRICS_INFO_KEY` wiring in
+  `python/examples/demos/scenes/rigid_joint_passive_parameters.py`.
+- Scene-owned payload fields for row identity, solver
+  `world_multibody_passive_joint_parameters`, scope
+  `contact_free_prismatic_lanes`, executor, time step, world time, controls,
+  lane order/count, serialized lane metrics, latest spring/damped energy,
+  damping ratio, stiction/slip position/speed/acceleration/error, armature
+  acceleration and position gaps, step timing, flattened per-lane metric
+  fields, and compact history maxima.
+- Focused assertions in
+  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response`
+  that the capture hook mirrors controller controls, lane metadata, latest
+  metrics, and history maxima.
+
+Validation collected for the passive-parameter slice before the stop request:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response -q`
+  reported `1 passed`.
+- `pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_passive_parameters_metrics_1781235045`
+  wrote a nonblank docked capture with 119 PNG frames, 120 scene-metrics
+  events, and screenshot
+  `/tmp/dart_capture_joint_passive_parameters_metrics_1781235045/rigid_joint_passive_parameters.png`.
+- Latest captured payload details: row `rigid_joint_passive_parameters`,
+  solver `world_multibody_passive_joint_parameters`, scope
+  `contact_free_prismatic_lanes`, executor `Sequential`, lane count `6`,
+  latest spring energy about `2.1583`, damped energy about `1.3403`,
+  damped-energy ratio about `0.6210`, stiction position `0`, slip position
+  about `0.17424`, slip speed about `0.72`, armature reference/heavy
+  acceleration about `3.0/0.75`, armature acceleration gap about `2.25`,
+  armature position gap about `0.26136`, latest step time about `0.0534 ms`,
+  history samples `121`, and max observed step time about `0.1003 ms`.
+- Not run after the user's critical stop/no-further-verification instruction:
+  broader workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`,
+  and `git diff --check`.
+
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Continue the capture-metrics hardening pass. The likely next missing row is
-   `rigid_joint_passive_parameters`.
+2. Inspect the handoff commit and run the skipped gates before more code edits:
+   broader workflow/doc drift guard, `pixi run lint`, bounded
+   `pixi run build`, and `git diff --check`.
+3. Continue the capture-metrics hardening pass after the passive row is
+   verified. A likely next row to inspect is `rigid_screw_joint_pitch`.
 
 ## Last Session Summary
 
@@ -670,6 +725,15 @@ missing rigid-body GUI evidence gap.
   960x540 PNG frames plus 72 scene-metrics events, `pixi run lint` passed,
   bounded `pixi run build` passed with `DART safe jobs: 5`, and
   `git diff --check` passed.
+- Latest passive joint-parameter capture-metrics handoff:
+  focused passive-parameter guard reported `1 passed`, and the docked capture
+  under `/tmp/dart_capture_joint_passive_parameters_metrics_1781235045` wrote
+  a nonblank 960x540 screenshot, 119 PNG frames, and 120 scene-metrics events
+  with manifest ranges for spring/damped energy, stiction/slip, armature
+  acceleration/position gaps, step timing, time step, and world time. The
+  broader workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`,
+  and `git diff --check` were not run after the user's critical
+  stop/no-further-verification instruction.
 - Latest loop-closure follow-up validation passed: the focused
   category/order/behavior/replay/panel command reported `5 passed`;
   `rigid_loop_closure` visual capture wrote a nonblank 960x540 screenshot and

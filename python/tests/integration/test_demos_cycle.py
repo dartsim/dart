@@ -4153,6 +4153,89 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
         assert controller._energy_history[lane.key]
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_joint_passive_parameters"
+    assert capture_metrics["solver"] == "world_multibody_passive_joint_parameters"
+    assert capture_metrics["scope"] == "contact_free_prismatic_lanes"
+    assert (
+        capture_metrics["executor"]
+        == controller._executors[int(controller.executor_index)][0]
+    )
+    assert capture_metrics["controls"]["spring_stiffness"] == pytest.approx(
+        controller.spring_stiffness
+    )
+    assert capture_metrics["controls"]["damping_coefficient"] == pytest.approx(
+        controller.damping_coefficient
+    )
+    assert capture_metrics["controls"]["rest_position"] == pytest.approx(
+        controller.rest_position
+    )
+    assert capture_metrics["controls"]["coulomb_friction"] == pytest.approx(
+        controller.coulomb_friction
+    )
+    assert capture_metrics["controls"]["slip_force"] == pytest.approx(
+        controller.slip_force
+    )
+    assert capture_metrics["controls"]["armature"] == pytest.approx(
+        controller.armature
+    )
+    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
+    assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
+    assert capture_metrics["lanes"]["spring_only"]["kind"] == "spring"
+    assert (
+        capture_metrics["lanes"]["spring_only"]["joint"]
+        == controller.lanes[0].joint.name
+    )
+    assert capture_metrics["lanes"]["slip"]["metrics"]["status"] == str(
+        slip["status"]
+    )
+    assert capture_metrics["spring_only_position"] == pytest.approx(
+        float(spring["position"])
+    )
+    assert capture_metrics["spring_energy"] == pytest.approx(float(spring["energy"]))
+    assert capture_metrics["damped_energy"] == pytest.approx(float(damped["energy"]))
+    assert capture_metrics["damped_energy_ratio"] == pytest.approx(
+        float(damped["energy"]) / float(spring["energy"])
+    )
+    assert capture_metrics["stiction_position"] == pytest.approx(
+        float(stiction["position"])
+    )
+    assert capture_metrics["stiction_speed"] == pytest.approx(float(stiction["speed"]))
+    assert capture_metrics["slip_position"] == pytest.approx(float(slip["position"]))
+    assert capture_metrics["slip_acceleration"] == pytest.approx(
+        float(slip["acceleration"])
+    )
+    assert capture_metrics["slip_acceleration_error"] == pytest.approx(
+        float(slip["acceleration_error"])
+    )
+    assert capture_metrics["armature_reference_acceleration"] == pytest.approx(
+        float(armature_reference["acceleration"])
+    )
+    assert capture_metrics["armature_heavy_acceleration"] == pytest.approx(
+        float(armature_heavy["acceleration"])
+    )
+    assert capture_metrics["armature_acceleration_gap"] == pytest.approx(
+        float(armature_reference["acceleration"])
+        - float(armature_heavy["acceleration"])
+    )
+    assert capture_metrics["armature_position_gap"] == pytest.approx(
+        float(armature_reference["position"]) - float(armature_heavy["position"])
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["max_damped_energy"] == pytest.approx(
+        max(controller._energy_history["spring_damper"])
+    )
+    assert capture_metrics["history"]["slip_max_speed"] == pytest.approx(
+        max(controller._speed_history["slip"])
+    )
+    assert capture_metrics["history"]["armature_heavy_max_abs_acceleration"] == pytest.approx(
+        max(abs(value) for value in controller._accel_history["armature_heavy"])
+    )
+
 
 def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     import numpy as np
