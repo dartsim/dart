@@ -1045,6 +1045,50 @@ def _workflow_scene_argv(
     return scene_argv
 
 
+def _workflow_rerun_output_dir(
+    output_dir: pathlib.Path, order: int, scene: str
+) -> pathlib.Path:
+    return output_dir / "reruns" / f"{order:02d}_{scene}"
+
+
+def _workflow_row_rerun_argv(
+    args: argparse.Namespace,
+    order: int,
+    scene: str,
+    output_dir: pathlib.Path,
+) -> list[str]:
+    rerun_argv = ["--rigid-workflow"]
+    if getattr(args, "include_related", False):
+        rerun_argv.append("--include-related")
+    if getattr(args, "include_ipc_shelf", False):
+        rerun_argv.append("--include-ipc-shelf")
+    if getattr(args, "include_packets", False):
+        rerun_argv.append("--include-packets")
+    if getattr(args, "continue_on_failure", False):
+        rerun_argv.append("--continue-on-failure")
+    rerun_argv.extend(
+        [
+            "--workflow-start-row",
+            str(order),
+            "--workflow-end-row",
+            str(order),
+        ]
+    )
+    if args.backend:
+        rerun_argv.extend(["--backend", args.backend])
+    if args.allow_noop:
+        rerun_argv.append("--allow-noop")
+    if args.video:
+        rerun_argv.extend(["--video", "--fps", str(args.fps)])
+    rerun_argv.extend(
+        [
+            "--output-dir",
+            str(_workflow_rerun_output_dir(output_dir, order, scene)),
+        ]
+    )
+    return rerun_argv
+
+
 def _public_command(argv: list[str]) -> str:
     return "pixi run py-demo-capture -- " + " ".join(shlex.quote(arg) for arg in argv)
 
@@ -1102,6 +1146,9 @@ def _workflow_plan_entries(
                 "output_dir": str(scene_output),
                 "manifest": str(scene_output / "manifest.json"),
                 "command": _public_command(argv),
+                "workflow_rerun_command": _public_command(
+                    _workflow_row_rerun_argv(args, order, scene, output_dir)
+                ),
                 "viewer_command": _viewer_command(scene, width, height, args.backend),
                 "status": "planned",
             }
@@ -1345,6 +1392,7 @@ def _workflow_failed_rows(
                 "manifest_exists": capture.get("manifest_exists"),
                 "manifest": capture.get("manifest"),
                 "command": capture.get("command"),
+                "workflow_rerun_command": capture.get("workflow_rerun_command"),
             }
         )
     return failed_rows
@@ -1361,11 +1409,18 @@ def _workflow_failure_summary(failed_rows: list[dict[str, object]]) -> str:
         reason = entry.get("failure_reason", "unknown")
         return_code = entry.get("return_code")
         rc_text = f" return code {return_code}" if return_code is not None else ""
+        workflow_command = entry.get("workflow_rerun_command")
+        workflow_command_html = ""
+        if isinstance(workflow_command, str) and workflow_command:
+            workflow_command_html = (
+                '<p class="command-label">rerun workflow row</p>'
+                f"<pre>{html.escape(workflow_command)}</pre>"
+            )
         command = entry.get("command")
         command_html = ""
         if isinstance(command, str) and command:
             command_html = (
-                '<p class="command-label">rerun failed row</p>'
+                '<p class="command-label">capture scene directly</p>'
                 f"<pre>{html.escape(command)}</pre>"
             )
         items.append(
@@ -1373,6 +1428,7 @@ def _workflow_failure_summary(failed_rows: list[dict[str, object]]) -> str:
             f"<strong>{html.escape(str(order))}/{html.escape(str(count))} "
             f"{html.escape(str(scene))}</strong>: "
             f"{html.escape(str(reason))}{html.escape(rc_text)}"
+            f"{workflow_command_html}"
             f"{command_html}"
             "</li>"
         )

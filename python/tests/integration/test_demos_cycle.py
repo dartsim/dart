@@ -2025,6 +2025,7 @@ def test_rigid_visual_workflow_continue_on_failure_is_documented() -> None:
         assert "continue_on_failure=true" in text
         assert "failed_rows" in text
         assert "Failed Rows summary" in text
+        assert "workflow row-range rerun" in text
         assert expected_tokens in text
 
 

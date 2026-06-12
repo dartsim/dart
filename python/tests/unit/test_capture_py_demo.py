@@ -423,6 +423,12 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         manifest["captures"][0]["viewer_command"]
         == "pixi run py-demos -- --scene rigid_body --width 960 --height 540"
     )
+    assert (
+        manifest["captures"][0]["workflow_rerun_command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 1 "
+        "--workflow-end-row 1 --output-dir "
+        f"{output}/reruns/01_rigid_body"
+    )
     assert manifest["captures"][0]["workflow_label"] == "Baseline"
     assert (
         manifest["captures"][0]["user_question"]
@@ -1107,6 +1113,9 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
             "manifest_exists": False,
             "manifest": str(output / "scenes" / "01_rigid_body" / "manifest.json"),
             "command": manifest["captures"][0]["command"],
+            "workflow_rerun_command": manifest["captures"][0][
+                "workflow_rerun_command"
+            ],
         }
     ]
     first_capture = manifest["captures"][0]
@@ -1120,7 +1129,9 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     assert "Failed Rows" in review_html
     assert "1/2 rigid_body" in review_html
     assert "missing_manifest" in review_html
-    assert "rerun failed row" in review_html
+    assert "rerun workflow row" in review_html
+    assert "capture scene directly" in review_html
+    assert "--workflow-start-row 1" in review_html
 
 
 def test_rigid_workflow_can_continue_after_scene_failure(
@@ -1171,6 +1182,9 @@ def test_rigid_workflow_can_continue_after_scene_failure(
     assert manifest["failed_rows"][0]["failure_reason"] == "return_code"
     assert manifest["failed_rows"][0]["return_code"] == 9
     assert manifest["failed_rows"][0]["manifest_exists"] is False
+    assert "--continue-on-failure" in manifest["failed_rows"][0][
+        "workflow_rerun_command"
+    ]
     assert [capture["status"] for capture in manifest["captures"]] == [
         "failed",
         "captured",
@@ -1187,9 +1201,72 @@ def test_rigid_workflow_can_continue_after_scene_failure(
     assert "continue" in review_html
     assert "Failed Rows" in review_html
     assert "1/2 rigid_body" in review_html
-    assert "rerun failed row" in review_html
+    assert "rerun workflow row" in review_html
+    assert "capture scene directly" in review_html
     assert "return_code" in review_html
     assert "rigid_solver_compare" in review_html
+
+
+def test_rigid_workflow_failed_row_rerun_preserves_packet_flags(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_CAPTURE_SPECS",
+        (("rigid_body", 24, 960, 540, True),),
+    )
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_RELATED_CAPTURE_SPECS",
+        (("floating_base", 72, 960, 540, True),),
+    )
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS",
+        (("rigid_ipc", 72, 960, 540, True),),
+    )
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_PACKET_CAPTURE_SPECS",
+        (("rigid_ipc_stack_packet", 24, 960, 540, True),),
+    )
+
+    def fake_run(argv: list[str]) -> int:
+        assert argv[argv.index("--scene") + 1] == "rigid_ipc_stack_packet"
+        return 7
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--include-related",
+            "--include-ipc-shelf",
+            "--include-packets",
+            "--continue-on-failure",
+            "--workflow-start-row",
+            "4",
+            "--workflow-end-row",
+            "4",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 7
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert len(manifest["failed_rows"]) == 1
+    rerun_command = manifest["failed_rows"][0]["workflow_rerun_command"]
+    assert "--include-related" in rerun_command
+    assert "--include-ipc-shelf" in rerun_command
+    assert "--include-packets" in rerun_command
+    assert "--continue-on-failure" in rerun_command
+    assert "--workflow-start-row 4 --workflow-end-row 4" in rerun_command
+    assert str(output / "reruns" / "04_rigid_ipc_stack_packet") in rerun_command
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "rerun workflow row" in review_html
+    assert "--include-related --include-ipc-shelf --include-packets" in review_html
 
 
 def test_rigid_workflow_run_can_resume_from_selected_row(

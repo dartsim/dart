@@ -284,7 +284,8 @@ pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigi
 For long review packets, add `--continue-on-failure` when later rows should
 still be captured after one row fails. The manifest records
 `continue_on_failure=true` plus a `failed_rows` list, and
-`review_index.html` shows a Failed Rows summary with rerun commands. The final
+`review_index.html` shows a Failed Rows summary with workflow row-range rerun
+commands that preserve the packet flags and absolute row numbering. The final
 workflow status and process exit code still report failure if any selected row
 failed.
 
@@ -419,12 +420,14 @@ Evidence recorded for this slice:
   failed workflow manifest and returning a failing process exit code when any
   row failed. The top-level manifest records `continue_on_failure` and
   `failed_rows`; the review index summary records the failure mode and shows a
-  Failed Rows block with rerun commands; and the in-viewer `Rigid Workflow`
-  panel exposes a resilient extended-packet command for long 36-52 row review
-  packets. The focused pytest covering failed-row summaries, fail-fast behavior,
+  Failed Rows block with workflow row-range rerun commands that preserve packet
+  flags and absolute row numbering; and the in-viewer `Rigid Workflow` panel
+  exposes a resilient extended-packet command for long 36-52 row review
+  packets. The focused pytest covering failed-row summaries, workflow row
+  rerun commands, fail-fast behavior,
   continue mode,
   workflow-only flag validation, panel command rendering, and README/PLAN-103
-  documentation reported `10 passed`. The public dry-run
+  documentation reported `11 passed`. The public dry-run
   `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --continue-on-failure --workflow-start-row 51 --workflow-end-row 52 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_continue_on_failure_dry_run_1781288150`
   reported `status=planned`, `dry_run=true`, `continue_on_failure=true`,
   `capture_count=2`, `workflow_total_count=52`, selected rows `51-52`,
@@ -434,6 +437,10 @@ Evidence recorded for this slice:
   `/tmp/dart_capture_rigid_workflow_failed_rows_dry_run_1781289000` confirmed
   `failed_rows` length `0` for the planned packet and a review-index
   `failure mode` badge of `continue`.
+  `/tmp/dart_capture_rigid_workflow_failed_row_rerun_dry_run_1781289350`
+  confirmed planned rows 51 and 52 also carry `workflow_rerun_command` values
+  preserving `--include-related --include-ipc-shelf --include-packets
+--continue-on-failure` and their absolute row ids.
 - Latest heavy Rigid IPC stack packet slice:
   `python -m py_compile python/examples/demos/scenes/rigid_ipc_stack_packet.py scripts/capture_py_demo.py python/tests/integration/test_demos_cycle.py python/tests/unit/test_py_demo_panels.py python/tests/unit/test_capture_py_demo.py`
   passed. The focused Python suite covering registry/category placement,
