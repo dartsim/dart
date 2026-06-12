@@ -2,6 +2,43 @@
 
 ## Current Status
 
+Scene-owned runtime sweep checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on that single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval.
+
+This checkpoint adds reduced scene-owned point-triangle and edge-edge runtime
+sweep broad-phase packet rows. The benchmark builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, runs private device-sorted swept-AABB
+sweep-and-prune rows on that scene-owned surface, and records `scene_body_count`
+for the CPU/GPU rows.
+
+Fresh packet evidence records exact CPU/GPU endpoint-distance parity within
+`5.551115123125783e-17`. The point-triangle scene sweep covers 1,966,080
+possible pairs over 2,560 points and 768 triangles, emits 512 compact
+candidates, and records `speedup=0.07057754068474563x`. The edge-edge scene
+sweep covers 5,308,416 possible pairs over 2,304 surface edges, emits 1,536
+compact candidates, and records `speedup=0.06350297113311432x`. The top-level
+contact-candidate packet now records `candidate_pair_count=7667712` and
+`speedup=0.024497841563440446x` (`meets_speedup_gate=false`). This is reduced
+scene-owned sweep evidence only: full runtime scene filtering, GPU
+`World::step` contact candidate construction, and speedup-gate completion
+remain future work.
+
+Latest validation passed:
+
+- focused contact-candidate packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit` (161/161)
+
 Current continuation handoff (2026-06-12): work has resumed after the prior
 maintainer stop-only handoff. Continue only from
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083 work
@@ -548,8 +585,10 @@ the same PR. Do not open another PLAN-083 PR.
         compacted candidate ids plus distance metadata, and compact runtime
         sweep-buffer endpoint-distance packets that consume CPU sweep candidate
         keys plus reduced scene-owned runtime candidate-buffer packets from one
-        DART `World` deformable surface; keep the row in-progress because
-        runtime scene filtering and speedup remain unproven.
+        DART `World` deformable surface plus scene-owned runtime sweep
+        broad-phase packets from that same surface; keep the row in-progress
+        because full runtime scene filtering, GPU `World::step` contact
+        candidate construction, and speedup remain unproven.
   - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and

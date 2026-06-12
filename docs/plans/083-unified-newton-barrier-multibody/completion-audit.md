@@ -64,8 +64,10 @@ moves entirely into durable plan sidecars.
   swept-AABB point-triangle/edge-edge candidate-list packets, device-sorted
   sweep-and-prune broad-phase packets, and compact runtime sweep-buffer
   endpoint-distance packets that consume CPU sweep candidate keys plus reduced
-  scene-owned runtime candidate buffers extracted from one DART `World`
-  deformable surface, but runtime scene filtering and speedup remain unproven.
+  scene-owned runtime candidate buffers and scene-owned runtime sweep
+  broad-phase rows extracted from one DART `World` deformable surface, but full
+  runtime scene filtering, GPU `World::step` contact candidate construction,
+  and speedup remain unproven.
   The
   endpoint-linear point-triangle and edge-edge CCD/line-search packet is
   in-progress because parity exists for reduced endpoint-linear fixtures but

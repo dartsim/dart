@@ -1,5 +1,46 @@
 # Unified Newton-Barrier Handoff
 
+## Scene-Owned Runtime Sweep Checkpoint (2026-06-12)
+
+Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on this single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval. Before any
+future push, merge latest `origin/main` into this published branch, rerun the
+required gates, and push only with explicit approval.
+
+This checkpoint adds reduced scene-owned point-triangle and edge-edge runtime
+sweep broad-phase packet rows. The benchmark builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, runs private device-sorted swept-AABB
+sweep-and-prune rows on that scene-owned surface, and records `scene_body_count`
+for the CPU/GPU rows.
+
+Fresh packet evidence records exact CPU/GPU endpoint-distance parity within
+`5.551115123125783e-17`. The point-triangle scene sweep covers 1,966,080
+possible pairs over 2,560 points and 768 triangles, emits 512 compact
+candidates, and records `speedup=0.07057754068474563x`. The edge-edge scene
+sweep covers 5,308,416 possible pairs over 2,304 surface edges, emits 1,536
+compact candidates, and records `speedup=0.06350297113311432x`. The top-level
+contact-candidate packet now records `candidate_pair_count=7667712` and
+`speedup=0.024497841563440446x` (`meets_speedup_gate=false`).
+
+This is reduced scene-owned sweep evidence only. It does not claim full
+runtime scene filtering, GPU `World::step` contact candidate construction, or
+contact-candidate speedup-gate completion.
+
+Latest local gates:
+
+- focused contact-candidate packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit` (161/161)
+
 ## Current Continuation Handoff (2026-06-12)
 
 Work has resumed after the prior maintainer stop-only handoff. Continue local

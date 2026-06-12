@@ -302,8 +302,9 @@ its own line so status updates remain git-history friendly.
   candidate masks and motion-aware swept-AABB point-triangle/edge-edge
   candidate-list packets with device-side compacted candidate ids and distance
   metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
-  compact runtime sweep-buffer endpoint-distance packets and reduced
-  scene-owned runtime candidate-buffer packets,
+  compact runtime sweep-buffer endpoint-distance packets, reduced
+  scene-owned runtime candidate-buffer packets, and reduced scene-owned
+  runtime sweep broad-phase packets,
   endpoint-linear
   point-triangle and
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity

@@ -114,6 +114,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "SweptEdgeEdgeCandidateMask|"
         "SweptPointTriangleSweep|"
         "SweptEdgeEdgeSweep|"
+        "SceneRuntimePointTriangleSweep|"
+        "SceneRuntimeEdgeEdgeSweep|"
         "RuntimePointTriangleCandidateBuffer|"
         "RuntimeEdgeEdgeCandidateBuffer|"
         "SceneRuntimePointTriangleCandidateBuffer|"
@@ -254,6 +256,24 @@ def _expected_runtime_edge_edge_candidate_buffer_row_names(
     )
 
 
+def _expected_scene_runtime_point_triangle_sweep_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SceneRuntimePointTriangleSweepCpu/{pair_count}",
+        f"BM_Plan083SceneRuntimePointTriangleSweepCuda/{pair_count}",
+    )
+
+
+def _expected_scene_runtime_edge_edge_sweep_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SceneRuntimeEdgeEdgeSweepCpu/{pair_count}",
+        f"BM_Plan083SceneRuntimeEdgeEdgeSweepCuda/{pair_count}",
+    )
+
+
 def _expected_scene_runtime_point_triangle_candidate_buffer_row_names(
     pair_count: int,
 ) -> tuple[str, str]:
@@ -285,6 +305,12 @@ def _representative_rows(
     )
     expected_names.update(_expected_swept_point_triangle_sweep_row_names(stencil_count))
     expected_names.update(_expected_swept_edge_edge_sweep_row_names(stencil_count))
+    expected_names.update(
+        _expected_scene_runtime_point_triangle_sweep_row_names(stencil_count)
+    )
+    expected_names.update(
+        _expected_scene_runtime_edge_edge_sweep_row_names(stencil_count)
+    )
     expected_names.update(
         _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
     )
@@ -598,11 +624,12 @@ def _validate_swept_point_triangle_sweep(
     *,
     cpu_row: Mapping[str, Any],
     gpu_row: Mapping[str, Any],
-    pair_capacity: int,
+    pair_capacity: int | None,
     tolerance: float,
     speedup_gate: float,
+    label: str = "swept point-triangle sweep broad phase",
+    include_scene_bodies: bool = False,
 ) -> dict[str, Any]:
-    label = "swept point-triangle sweep broad phase"
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
@@ -645,10 +672,13 @@ def _validate_swept_point_triangle_sweep(
 
     cpu_capacity = int(_counter(cpu_row, "pair_capacity"))
     gpu_capacity = int(_counter(gpu_row, "gpu_pair_capacity"))
-    if cpu_capacity != pair_capacity or gpu_capacity != pair_capacity:
+    if gpu_capacity != cpu_capacity:
         raise Plan083GpuContactCandidatePacketError(
-            f"{label} expected {pair_capacity} pair capacity, got "
-            f"CPU={cpu_capacity}, GPU={gpu_capacity}"
+            f"{label} CPU/GPU pair capacity mismatch: " f"{cpu_capacity}/{gpu_capacity}"
+        )
+    if pair_capacity is not None and cpu_capacity != pair_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} expected {pair_capacity} pair capacity, got {cpu_capacity}"
         )
 
     cpu_points = int(_counter(cpu_row, "points"))
@@ -660,6 +690,16 @@ def _validate_swept_point_triangle_sweep(
             f"{label} CPU/GPU shape mismatch: points {cpu_points}/{gpu_points}, "
             f"triangles {cpu_triangles}/{gpu_triangles}"
         )
+    scene_body_count: int | None = None
+    if include_scene_bodies:
+        cpu_scene_bodies = int(_counter(cpu_row, "scene_bodies"))
+        gpu_scene_bodies = int(_counter(gpu_row, "scene_bodies"))
+        if cpu_scene_bodies != gpu_scene_bodies:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU scene body mismatch: "
+                f"{cpu_scene_bodies}/{gpu_scene_bodies}"
+            )
+        scene_body_count = cpu_scene_bodies
 
     speedup = cpu_ns / gpu_ns
     timing_ns = {
@@ -671,8 +711,8 @@ def _validate_swept_point_triangle_sweep(
         "readback": 0.0,
     }
 
-    return {
-        "pair_capacity": pair_capacity,
+    row = {
+        "pair_capacity": cpu_capacity,
         "point_count": cpu_points,
         "triangle_count": cpu_triangles,
         "accepted_count": cpu_accepted,
@@ -686,17 +726,21 @@ def _validate_swept_point_triangle_sweep(
         "cpu_benchmark_row": _packet_row_name(cpu_row),
         "gpu_benchmark_row": _packet_row_name(gpu_row),
     }
+    if scene_body_count is not None:
+        row["scene_body_count"] = scene_body_count
+    return row
 
 
 def _validate_swept_edge_edge_sweep(
     *,
     cpu_row: Mapping[str, Any],
     gpu_row: Mapping[str, Any],
-    pair_capacity: int,
+    pair_capacity: int | None,
     tolerance: float,
     speedup_gate: float,
+    label: str = "swept edge-edge sweep broad phase",
+    include_scene_bodies: bool = False,
 ) -> dict[str, Any]:
-    label = "swept edge-edge sweep broad phase"
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
@@ -736,10 +780,13 @@ def _validate_swept_edge_edge_sweep(
 
     cpu_capacity = int(_counter(cpu_row, "pair_capacity"))
     gpu_capacity = int(_counter(gpu_row, "gpu_pair_capacity"))
-    if cpu_capacity != pair_capacity or gpu_capacity != pair_capacity:
+    if gpu_capacity != cpu_capacity:
         raise Plan083GpuContactCandidatePacketError(
-            f"{label} expected {pair_capacity} pair capacity, got "
-            f"CPU={cpu_capacity}, GPU={gpu_capacity}"
+            f"{label} CPU/GPU pair capacity mismatch: " f"{cpu_capacity}/{gpu_capacity}"
+        )
+    if pair_capacity is not None and cpu_capacity != pair_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} expected {pair_capacity} pair capacity, got {cpu_capacity}"
         )
 
     cpu_edges = int(_counter(cpu_row, "edges"))
@@ -748,6 +795,16 @@ def _validate_swept_edge_edge_sweep(
         raise Plan083GpuContactCandidatePacketError(
             f"{label} CPU/GPU shape mismatch: edges {cpu_edges}/{gpu_edges}"
         )
+    scene_body_count: int | None = None
+    if include_scene_bodies:
+        cpu_scene_bodies = int(_counter(cpu_row, "scene_bodies"))
+        gpu_scene_bodies = int(_counter(gpu_row, "scene_bodies"))
+        if cpu_scene_bodies != gpu_scene_bodies:
+            raise Plan083GpuContactCandidatePacketError(
+                f"{label} CPU/GPU scene body mismatch: "
+                f"{cpu_scene_bodies}/{gpu_scene_bodies}"
+            )
+        scene_body_count = cpu_scene_bodies
 
     speedup = cpu_ns / gpu_ns
     timing_ns = {
@@ -759,8 +816,8 @@ def _validate_swept_edge_edge_sweep(
         "readback": 0.0,
     }
 
-    return {
-        "pair_capacity": pair_capacity,
+    row = {
+        "pair_capacity": cpu_capacity,
         "edge_count": cpu_edges,
         "accepted_count": cpu_accepted,
         "compacted_edge_a_count": gpu_compacted_a,
@@ -773,6 +830,9 @@ def _validate_swept_edge_edge_sweep(
         "cpu_benchmark_row": _packet_row_name(cpu_row),
         "gpu_benchmark_row": _packet_row_name(gpu_row),
     }
+    if scene_body_count is not None:
+        row["scene_body_count"] = scene_body_count
+    return row
 
 
 def _validate_runtime_point_triangle_candidate_buffer(
@@ -1012,6 +1072,30 @@ def make_packet(
         tolerance=tolerance,
         speedup_gate=speedup_gate,
     )
+    scene_sweep_point_cpu, scene_sweep_point_gpu = (
+        _expected_scene_runtime_point_triangle_sweep_row_names(stencil_count)
+    )
+    scene_runtime_point_triangle_sweep = _validate_swept_point_triangle_sweep(
+        cpu_row=representative_rows[scene_sweep_point_cpu],
+        gpu_row=representative_rows[scene_sweep_point_gpu],
+        pair_capacity=None,
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+        label="scene runtime point-triangle sweep broad phase",
+        include_scene_bodies=True,
+    )
+    scene_sweep_edge_cpu, scene_sweep_edge_gpu = (
+        _expected_scene_runtime_edge_edge_sweep_row_names(stencil_count)
+    )
+    scene_runtime_edge_edge_sweep = _validate_swept_edge_edge_sweep(
+        cpu_row=representative_rows[scene_sweep_edge_cpu],
+        gpu_row=representative_rows[scene_sweep_edge_gpu],
+        pair_capacity=None,
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+        label="scene runtime edge-edge sweep broad phase",
+        include_scene_bodies=True,
+    )
     runtime_point_cpu, runtime_point_gpu = (
         _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
     )
@@ -1065,6 +1149,8 @@ def make_packet(
         "edge_edge_swept_aabb_candidates": swept_edge_edge_candidate_construction,
         "point_triangle_sweep_broad_phase": swept_point_triangle_sweep,
         "edge_edge_sweep_broad_phase": swept_edge_edge_sweep,
+        "point_triangle_scene_runtime_sweep": scene_runtime_point_triangle_sweep,
+        "edge_edge_scene_runtime_sweep": scene_runtime_edge_edge_sweep,
         "point_triangle_runtime_sweep_buffer": (
             runtime_point_triangle_candidate_buffer
         ),
