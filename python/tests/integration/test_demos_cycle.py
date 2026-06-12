@@ -4221,6 +4221,30 @@ def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
     assert max(controller._position_divergence) < 1.0e-9
     assert max(controller._velocity_divergence) < 1.0e-9
     assert max(controller._contact_delta) == 0.0
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Pose divergence"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._position_divergence[-1]
+    )
+    assert (
+        timeline["markers"]({"position_divergence": [0.0], "contact_delta": [0.0]})
+        == pytest.approx(0.0)
+    )
+    assert (
+        timeline["markers"]({"position_divergence": [2.0e-8], "contact_delta": [0.0]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"velocity_divergence": [2.0e-8], "contact_delta": [0.0]}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"position_divergence": [0.0], "contact_delta": [1.0]})
+        == pytest.approx(1.0)
+    )
     for metrics in controller._last_metrics.values():
         assert float(metrics["contact_count"]) >= 0.0
         assert float(metrics["step_ms"]) >= 0.0

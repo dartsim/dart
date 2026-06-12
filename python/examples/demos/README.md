@@ -399,7 +399,10 @@ can tell executor performance changes apart from physics changes. The panel
 names the comparison axis as executor-only. Its capture metrics record the same
 comparison axis, same-solver identity, selected solver index, controls,
 per-executor contact/timing metrics, divergence ranges, and fallback executor
-label when parallel execution is unavailable.
+label when parallel execution is unavailable. The shared `Replay` panel uses
+pose divergence as the timeline signal and marks frames where executor
+divergence or contact-count mismatch appears, matching the solver-family and
+contact-policy comparison rows.
 
 ## Rigid contact solver comparison
 

@@ -1,5 +1,56 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Fresh-Session Entry - 2026-06-12 Executor Replay Timeline
+
+Local checkpoint `eb949071f4d` (`Link root README to rigid workflow capture
+docs`) completed the root README workflow-link/capture slice. A specialized
+implementation audit then found that `rigid_executor_equivalence` was the only
+one of the three adjacent comparison rows without shared Replay timeline
+metadata.
+
+The latest continuation explicitly resumes the broader rigid-body
+visual-verification goal. Continue this local slice by verifying and
+checkpointing it; do not push, open a PR, comment, re-trigger CI, or otherwise
+mutate GitHub state without explicit user approval.
+
+Current local slice:
+
+- `rigid_executor_equivalence` now adds `SceneSetup.info["replay_timeline"]`
+  with signal label `Pose divergence`.
+- The signal reads the latest `position_divergence` from captured replay state.
+- The marker flags nonzero executor pose/velocity divergence above tolerance or
+  contact-count mismatch during replay scrubbing.
+- `test_rigid_executor_equivalence_keeps_parallel_rollout_matched` now asserts
+  the timeline signal and marker contract.
+- Python demo README, PLAN-103 sidecar, CHANGELOG, and this dev-task folder
+  record the alignment.
+
+Current local state to preserve:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Latest local checkpoint: `Add executor equivalence replay timeline`.
+- The replay-timeline slice is committed locally; no uncommitted
+  replay-timeline diff should remain after this checkpoint.
+- No push, PR creation, GitHub comment, CI retrigger, or other GitHub mutation
+  has been performed for this slice.
+- The focused test below, mandatory `pixi run lint`, and `git diff --check`
+  passed in this continuation.
+
+Immediate next step:
+
+1. Start with `git status -sb` and preserve user changes.
+2. Select the next bounded rigid GUI visual-verification improvement or prepare
+   for PR-readiness cleanup.
+3. Do not push, open a PR, comment, re-trigger CI, or otherwise mutate GitHub
+   state without explicit user approval.
+
+Validation collected in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
 ## Current Fresh-Session Entry - 2026-06-12 Root Workflow Link And Capture
 
 Local checkpoint `f6fc7ec7f43` (`Route source checkout to Python rigid demos`)

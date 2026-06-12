@@ -1,5 +1,58 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 Executor Replay Timeline
+
+Local checkpoint `eb949071f4d` (`Link root README to rigid workflow capture
+docs`) completed the root README workflow-link/capture slice. A specialized
+implementation audit then found that `rigid_executor_equivalence` was the only
+one of the three adjacent comparison rows without shared Replay timeline
+metadata. The current local slice adds a pose-divergence timeline signal and a
+marker for executor divergence or contact-count mismatch so executor
+equivalence scrubbing matches `rigid_solver_compare` and
+`rigid_contact_solver_compare`.
+
+The latest continuation explicitly resumes the broader rigid-body
+visual-verification goal. Continue this local slice by verifying and
+checkpointing it; do not push, open a PR, comment, re-trigger CI, or otherwise
+mutate GitHub state without explicit user approval.
+
+Current local slice touches:
+
+- `python/examples/demos/scenes/rigid_executor_equivalence.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `CHANGELOG.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+Current local state to preserve:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Latest local checkpoint: `Add executor equivalence replay timeline`.
+- The replay-timeline slice is committed locally; no uncommitted
+  replay-timeline diff should remain after this checkpoint.
+- No push, PR creation, GitHub comment, CI retrigger, or other GitHub mutation
+  has been performed for this slice.
+- The focused test below, mandatory `pixi run lint`, and `git diff --check`
+  passed in this continuation.
+
+Immediate next step:
+
+1. Start with `git status -sb` and preserve user changes.
+2. Select the next bounded rigid GUI visual-verification improvement or prepare
+   for PR-readiness cleanup.
+3. Do not push, open a PR, comment, re-trigger CI, or otherwise mutate GitHub
+   state without explicit user approval.
+
+Validation collected in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
 ## Current Active Snapshot - 2026-06-12 Root README Workflow Link And Capture
 
 Local checkpoint `f6fc7ec7f43` (`Route source checkout to Python rigid demos`)
@@ -491,11 +544,16 @@ jobs: 1`). No push or GitHub mutation was performed.
       Python-first `py-demos` rigid-body GUI verifier and keeps the smaller C++
       companion smoke as optional. Focused README drift test reported
       `1 passed`, `pixi run lint` passed, and `git diff --check` passed.
-- [ ] Root workflow link and capture command: the root README now links to the
+- [x] Root workflow link and capture command: the root README now links to the
       full 36-row rigid-body verifier docs and shows a docked
       `py-demo-capture` solver-comparison command before the optional C++ demo
       smoke. Focused README drift test reported `1 passed`, and
-      `pixi run lint` passed. Diff-check is pending for this slice.
+      `pixi run lint` and `git diff --check` passed.
+- [x] Executor-equivalence replay timeline: `rigid_executor_equivalence` now
+      publishes shared Replay timeline metadata with pose-divergence signal and
+      mismatch markers, matching the neighboring solver-family and
+      contact-policy comparison rows. Focused test reported `1 passed`; lint
+      and diff-check passed for this slice.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

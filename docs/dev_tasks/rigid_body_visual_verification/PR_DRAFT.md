@@ -10,14 +10,18 @@ explicitly approves that action.
 Current state to preserve for a fresh session:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Last checked state: local branch ahead of origin by 2 commits.
-- Last local commit before the current uncommitted slice:
-  `35ec0a8610c` (`Number rigid workflow README quick path`).
-- Current uncommitted slice: comparison-axis labels, backend/executor search
-  aliases, motion-evidence docs, focused tests, and this resumed handoff-doc
-  update.
-- Focused tests, `pixi run lint`, and `git diff --check` had passed before the
-  stop-only handoff; rerun required checks before committing.
+- Latest local checkpoint: `Add executor equivalence replay timeline`.
+- Local commits added in the latest resumed pass:
+  `7caa0f6ab6e` (`Clarify rigid comparison axes and capture evidence`),
+  `f6fc7ec7f43` (`Route source checkout to Python rigid demos`), and
+  `eb949071f4d` (`Link root README to rigid workflow capture docs`), followed
+  by the executor-equivalence Replay timeline checkpoint.
+- Latest local slice: executor-equivalence Replay timeline metadata, tests,
+  docs, CHANGELOG, and this resumed handoff-doc update.
+- Focused executor-equivalence pytest reported `1 passed`; mandatory
+  `pixi run lint` and `git diff --check` passed in this continuation.
+- No push, PR creation, GitHub comment, CI retrigger, or other GitHub mutation
+  has been performed for this slice.
 
 Inspect the worktree before committing. Pushes, PR creation, comments, CI
 retriggers, and other GitHub mutations require explicit approval.
@@ -45,6 +49,10 @@ hardening rather than new GUI rows:
 - The core comparison panels and capture metrics now explicitly label their
   comparison axes so users can tell solver-family, executor-only, and
   contact-policy rows apart in the live GUI and in capture artifacts.
+- `rigid_executor_equivalence` now also exposes a shared Replay timeline using
+  pose divergence as the signal and mismatch markers for divergence/contact
+  deltas, matching the neighboring solver-family and contact-policy comparison
+  rows.
 - Backend search now splits status/diagnostics intent from comparison intent:
   `accelerated backend` stays on `rigid_step_diagnostics`, while
   `backend comparison` and related executor phrases route to
@@ -291,7 +299,19 @@ hardening rather than new GUI rows:
   - `pixi run lint`
     - passed
   - `git diff --check`
-    - pending
+    - passed
+- Latest executor-equivalence replay timeline follow-up:
+  - `rigid_executor_equivalence` now adds `SceneSetup.info["replay_timeline"]`
+    with `Pose divergence` signal extraction from replay snapshots and mismatch
+    markers for executor pose/velocity divergence or contact-count deltas.
+  - `test_rigid_executor_equivalence_keeps_parallel_rollout_matched` now
+    verifies the timeline signal and marker contract.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched -q`
+    - `1 passed`
+  - `pixi run lint`
+    - passed
+  - `git diff --check`
+    - passed
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,

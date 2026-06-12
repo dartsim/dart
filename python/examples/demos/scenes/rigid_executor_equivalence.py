@@ -401,6 +401,35 @@ class _RigidExecutorEquivalence:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        history = snapshot.get("position_divergence", [])
+        if not history:
+            return 0.0
+        try:
+            return float(history[-1])
+        except (TypeError, ValueError):
+            return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        for key in ("position_divergence", "velocity_divergence"):
+            history = snapshot.get(key, [])
+            try:
+                if history and abs(float(history[-1])) > 1.0e-8:
+                    return 1.0
+            except (TypeError, ValueError):
+                continue
+        contact_delta = snapshot.get("contact_delta", [])
+        try:
+            if contact_delta and abs(float(contact_delta[-1])) > 0.0:
+                return 1.0
+        except (TypeError, ValueError):
+            return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.solver_index = max(
@@ -530,6 +559,11 @@ def build() -> SceneSetup:
             "replay_capture_state": equivalence.capture_replay_state,
             "replay_restore_state": equivalence.restore_replay_state,
             "replay_sync": equivalence._sync,
+            "replay_timeline": {
+                "signal_label": "Pose divergence",
+                "signal": equivalence.replay_timeline_signal,
+                "markers": equivalence.replay_timeline_marker,
+            },
             CAPTURE_METRICS_INFO_KEY: equivalence.capture_metrics,
         },
     )
