@@ -595,10 +595,11 @@ its own line so status updates remain git-history friendly.
   visual/benchmark evidence, while
   `BM_AvbdPaperScaleHighRatioChainIterationSweep` adds dashboard-selected
   25/50/100/200 max-iteration sweep coverage for that same paper-scale fixture
-  with tracked benchmark/plot-data evidence in
-  [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json).
-  The same-hardware comparison, rendered convergence/stability plot, and GPU
-  gates remain open.
+  with finite replay counters, tracked benchmark/stability evidence in
+  [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+  and a rendered
+  [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
+  The same-hardware comparison and GPU gates remain open.
   Public
   empty-scene corpus baseline coverage is now visible through
   `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
@@ -978,7 +979,8 @@ its own line so status updates remain git-history friendly.
   `BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
   through configured `World::step()` solve-budget fields, the new
   `BM_AvbdPaperScaleHighRatioChainIterationSweep` dashboard-selected
-  25/50/100/200 max-iteration sweep row plus benchmark/plot-data packet,
+  25/50/100/200 max-iteration sweep row plus benchmark/stability packet and
+  rendered SVG plot,
   world-anchor coverage, and a
   per-multibody link-index cache in the
   articulated point-joint extractor so same-multibody/world-link AVBD private

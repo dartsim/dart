@@ -219,7 +219,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     row over 25, 50, 100, and 200 max-iteration budgets for the same
     paper-scale high-ratio chain fixture with a tracked
     `avbd-paper-scale-high-ratio-iteration-sweep-packet.json`
-    benchmark/plot-data packet,
+    benchmark/stability packet and
+    `avbd-paper-scale-high-ratio-iteration-sweep-plot.svg` rendered plot,
     plus tracked `avbd-rigid-revolute-motor-packet.json` and
     `avbd-rigid-prismatic-motor-packet.json` visual/benchmark packets for the
     public free-rigid revolute and prismatic motor rows,

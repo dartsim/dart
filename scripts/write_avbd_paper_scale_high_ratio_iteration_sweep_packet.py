@@ -29,6 +29,9 @@ TOLERANCE = 1e-9
 EXPECTED_MAX_ITERATIONS = (25, 50, 100, 200)
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
+_SVG_SIZE_RE = re.compile(
+    r"<svg\b[^>]*\bwidth=\"([0-9.]+)\"[^>]*\bheight=\"([0-9.]+)\""
+)
 
 
 class AvbdPaperScaleHighRatioIterationSweepPacketError(RuntimeError):
@@ -38,6 +41,7 @@ class AvbdPaperScaleHighRatioIterationSweepPacketError(RuntimeError):
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark-json", type=Path, required=True)
+    parser.add_argument("--plot-svg", type=Path)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     return parser.parse_args(argv)
 
@@ -66,6 +70,30 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _validate_plot(plot_svg: Path) -> dict[str, Any]:
+    try:
+        text = plot_svg.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise AvbdPaperScaleHighRatioIterationSweepPacketError(
+            f"{plot_svg}: plot SVG not found"
+        ) from exc
+    if "<svg" not in text:
+        raise AvbdPaperScaleHighRatioIterationSweepPacketError(
+            f"{plot_svg}: plot artifact must be SVG"
+        )
+    match = _SVG_SIZE_RE.search(text)
+    if match is None:
+        raise AvbdPaperScaleHighRatioIterationSweepPacketError(
+            f"{plot_svg}: plot SVG missing width/height"
+        )
+    return {
+        "file": str(plot_svg),
+        "sha256": _sha256(plot_svg),
+        "width": float(match.group(1)),
+        "height": float(match.group(2)),
+    }
 
 
 def _row_name(row: dict[str, Any]) -> str:
@@ -103,6 +131,15 @@ def _require_counter(row: dict[str, Any], key: str, expected: float) -> None:
         )
 
 
+def _require_positive_counter(row: dict[str, Any], key: str) -> float:
+    value = _finite_counter(row, key)
+    if value <= 0.0:
+        raise AvbdPaperScaleHighRatioIterationSweepPacketError(
+            f"{BENCHMARK_NAME}: expected positive {key}, got {value:g}"
+        )
+    return value
+
+
 def _is_representative(row: dict[str, Any]) -> bool:
     run_type = row.get("run_type", "iteration")
     aggregate_name = row.get("aggregate_name")
@@ -126,6 +163,8 @@ def _validate_representative_row(row: dict[str, Any], max_iterations: int) -> No
     _require_counter(row, "tolerance", TOLERANCE)
     _require_counter(row, "replay_seconds", REPLAY_SECONDS)
     _require_counter(row, "replay_steps", float(REPLAY_STEPS))
+    _require_counter(row, "finite_replay", 1.0)
+    _require_positive_counter(row, "max_abs_position")
     for key in ("real_time", "cpu_time"):
         _finite_counter(row, key)
 
@@ -186,6 +225,8 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
                 "max_iterations": budget,
                 "cpu_time_per_step_ns": _finite_counter(timing_row, "cpu_time"),
                 "real_time_per_step_ns": _finite_counter(timing_row, "real_time"),
+                "max_abs_position_rad": _finite_counter(timing_row, "max_abs_position"),
+                "finite_replay": _finite_counter(timing_row, "finite_replay"),
                 "time_unit": timing_row.get("time_unit", "ns"),
             }
         )
@@ -218,12 +259,13 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
             "replay_seconds": REPLAY_SECONDS,
             "max_iterations": list(EXPECTED_MAX_ITERATIONS),
             "tolerance": TOLERANCE,
+            "finite_replay": True,
         },
     }
 
 
-def make_packet(benchmark_json: Path) -> dict[str, Any]:
-    return {
+def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str, Any]:
+    packet = {
         "schema_version": 1,
         "packet": "avbd_paper_scale_high_ratio_iteration_sweep",
         "scene": SCENE_ID,
@@ -255,15 +297,22 @@ def make_packet(benchmark_json: Path) -> dict[str, Any]:
                 "--benchmark_out=<benchmark-json> --benchmark_out_format=json"
             )
         },
-        "remaining_gates": [
-            "rendered convergence/stability plot for the iteration-count sweep",
-            "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
-            "two-heavy-ball chain visual and invariant",
-            "broad articulated hard-constraint stability coverage",
-            "GPU AVBD row parity and same-hardware benchmark packets",
-            "paper/site/video scene visual and performance packets",
-        ],
     }
+    if plot_svg is not None:
+        packet["rendered_plot"] = _validate_plot(plot_svg)
+    remaining_gates = [
+        "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
+        "two-heavy-ball chain visual and invariant",
+        "broad articulated hard-constraint stability coverage",
+        "GPU AVBD row parity and same-hardware benchmark packets",
+        "paper/site/video scene visual and performance packets",
+    ]
+    if plot_svg is None:
+        remaining_gates.insert(
+            0, "rendered convergence/stability plot for the iteration-count sweep"
+        )
+    packet["remaining_gates"] = remaining_gates
+    return packet
 
 
 def write_packet(path: Path, packet: dict[str, Any]) -> None:
@@ -274,7 +323,7 @@ def write_packet(path: Path, packet: dict[str, Any]) -> None:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     try:
-        packet = make_packet(args.benchmark_json)
+        packet = make_packet(args.benchmark_json, args.plot_svg)
     except AvbdPaperScaleHighRatioIterationSweepPacketError as exc:
         raise SystemExit(str(exc)) from exc
     write_packet(args.output, packet)

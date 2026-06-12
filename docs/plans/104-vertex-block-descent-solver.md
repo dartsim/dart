@@ -314,11 +314,13 @@ dashboard row with tracked
 visual/benchmark evidence, without closing same-hardware paper-number or GPU
 parity gates. `BM_AvbdPaperScaleHighRatioChainIterationSweep` now adds the
 first dashboard-selected max-iteration sweep for that same fixture over
-25/50/100/200 iterations, with tracked benchmark/plot-data evidence in
-[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json);
-it still needs a rendered convergence/stability plot, same-hardware
-paper-number comparison, and GPU parity before counting as a completed
-parameter sweep.
+25/50/100/200 iterations, with finite replay counters, tracked
+benchmark/stability-plot evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+and a rendered
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
+it still needs same-hardware paper-number comparison and GPU parity before
+counting as a completed parameter sweep.
 Public free-rigid-body revolute/prismatic velocity actuators now also extract
 to private AVBD angular/linear motor rows. Both paths have categorized
 `avbd_rigid_revolute_motor` / `avbd_rigid_prismatic_motor` py-demos,
@@ -803,10 +805,12 @@ matching paper-scale CPU dashboard row with
 visual/benchmark evidence but no same-hardware paper-number claim.
 `BM_AvbdPaperScaleHighRatioChainIterationSweep` is now selected by the
 dashboard runner over 25/50/100/200 max-iteration budgets for the same
-paper-scale fixture, with tracked benchmark/plot-data evidence in
-[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json);
-the rendered convergence/stability plot, same-hardware paper-number
-comparison, and GPU evidence remain open.
+paper-scale fixture, with finite replay counters, tracked benchmark/stability
+evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+and rendered plot evidence in
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
+the same-hardware paper-number comparison and GPU evidence remain open.
 The private
 endpoint classifier now separates free rigid-body endpoints from multibody
 links, with
@@ -1018,9 +1022,9 @@ implementation work should prefer one of these gaps, in order:
    same-hardware comparison. The companion
    `BM_AvbdPaperScaleHighRatioChainIterationSweep` row adds first
    dashboard-selected iteration-budget coverage over 25/50/100/200 max
-   iterations with a tracked benchmark/plot-data packet, still without a
-   rendered convergence/stability plot, same-hardware paper-number comparison,
-   or GPU parity.
+   iterations with finite replay counters, a tracked benchmark/stability packet,
+   and a rendered SVG plot, still without a same-hardware paper-number
+   comparison or GPU parity.
    Direct private movable-pair fixed/revolute/prismatic and current-pose
    movable-pair fixed/revolute/prismatic break/reset regressions now verify
    broken rows stay skipped under opposing endpoint forces and re-enter with an

@@ -38,6 +38,8 @@ def _benchmark_row(
     tolerance: float = 1e-9,
     replay_steps: float = 32.0,
     replay_seconds: float = 0.16,
+    finite_replay: float = 1.0,
+    max_abs_position: float | None = None,
 ) -> dict[str, object]:
     suffix = f"/{budget}"
     name = f"BM_AvbdPaperScaleHighRatioChainIterationSweep{suffix}"
@@ -55,6 +57,12 @@ def _benchmark_row(
         "run_type": run_type,
         "time_unit": "ns",
         "tolerance": tolerance,
+        "finite_replay": finite_replay,
+        "max_abs_position": (
+            float(budget) * 0.001
+            if max_abs_position is None
+            else max_abs_position
+        ),
     }
     if aggregate_name is not None:
         row["aggregate_name"] = aggregate_name
@@ -146,6 +154,7 @@ def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_data(
         "BM_AvbdPaperScaleHighRatioChainIterationSweep"
     )
     assert packet["benchmark"]["invariants"] == {
+        "finite_replay": True,
         "links": 50,
         "mass_ratio": 50000.0,
         "max_iterations": [25, 50, 100, 200],
@@ -157,24 +166,32 @@ def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_data(
     assert packet["benchmark"]["plot_data"] == [
         {
             "cpu_time_per_step_ns": 25000.0,
+            "finite_replay": 1.0,
+            "max_abs_position_rad": 0.025,
             "max_iterations": 25,
             "real_time_per_step_ns": 27500.0,
             "time_unit": "ns",
         },
         {
             "cpu_time_per_step_ns": 50000.0,
+            "finite_replay": 1.0,
+            "max_abs_position_rad": 0.05,
             "max_iterations": 50,
             "real_time_per_step_ns": 55000.0,
             "time_unit": "ns",
         },
         {
             "cpu_time_per_step_ns": 100000.0,
+            "finite_replay": 1.0,
+            "max_abs_position_rad": 0.1,
             "max_iterations": 100,
             "real_time_per_step_ns": 110000.0,
             "time_unit": "ns",
         },
         {
             "cpu_time_per_step_ns": 200000.0,
+            "finite_replay": 1.0,
+            "max_abs_position_rad": 0.2,
             "max_iterations": 200,
             "real_time_per_step_ns": 220000.0,
             "time_unit": "ns",
@@ -183,6 +200,43 @@ def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_data(
     assert (
         "rendered convergence/stability plot for the iteration-count sweep"
         in packet["remaining_gates"]
+    )
+
+
+def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_artifact(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    benchmark_json = _write_benchmark_json(tmp_path)
+    plot_svg = tmp_path / "plot.svg"
+    plot_svg.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420"></svg>',
+        encoding="utf-8",
+    )
+    output = tmp_path / "packet.json"
+
+    assert (
+        module.main(
+            [
+                "--benchmark-json",
+                str(benchmark_json),
+                "--plot-svg",
+                str(plot_svg),
+                "--output",
+                str(output),
+            ]
+        )
+        == 0
+    )
+
+    packet = json.loads(output.read_text())
+    assert packet["rendered_plot"]["file"] == str(plot_svg)
+    assert packet["rendered_plot"]["width"] == 720.0
+    assert packet["rendered_plot"]["height"] == 420.0
+    assert "sha256" in packet["rendered_plot"]
+    assert (
+        "rendered convergence/stability plot for the iteration-count sweep"
+        not in packet["remaining_gates"]
     )
 
 

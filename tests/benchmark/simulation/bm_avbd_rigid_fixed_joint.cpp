@@ -2550,6 +2550,33 @@ void resetArticulatedHighRatioChain(std::vector<sx::Joint>& joints)
   }
 }
 
+struct ArticulatedHighRatioReplayEnvelope
+{
+  double maxAbsPosition = 0.0;
+  bool allFinite = true;
+};
+
+ArticulatedHighRatioReplayEnvelope measureArticulatedHighRatioReplayEnvelope(
+    ArticulatedHighRatioChainFixture& fixture)
+{
+  fixture.world->restoreReplayFrame(0);
+  ArticulatedHighRatioReplayEnvelope envelope;
+  for (std::size_t step = 0; step < kPaperScaleHighRatioReplaySteps; ++step) {
+    fixture.world->step();
+    for (const auto& joint : fixture.joints) {
+      if (!joint.getPosition().allFinite()
+          || !joint.getVelocity().allFinite()) {
+        envelope.allFinite = false;
+        continue;
+      }
+      envelope.maxAbsPosition
+          = std::max(envelope.maxAbsPosition, std::abs(joint.getPosition()[0]));
+    }
+  }
+  fixture.world->restoreReplayFrame(0);
+  return envelope;
+}
+
 std::vector<sx::Joint> makeRigidFixedJoints(
     sx::World& world, std::size_t jointCount)
 {
@@ -3573,6 +3600,9 @@ static void BM_AvbdPaperScaleHighRatioChainStep(benchmark::State& state)
   state.counters["replay_seconds"] = kPaperScaleHighRatioReplaySeconds;
   state.counters["replay_steps"]
       = static_cast<double>(kPaperScaleHighRatioReplaySteps);
+  const auto envelope = measureArticulatedHighRatioReplayEnvelope(fixture);
+  state.counters["finite_replay"] = envelope.allFinite ? 1.0 : 0.0;
+  state.counters["max_abs_position"] = envelope.maxAbsPosition;
 }
 BENCHMARK(BM_AvbdPaperScaleHighRatioChainStep);
 
@@ -3609,6 +3639,9 @@ static void BM_AvbdPaperScaleHighRatioChainIterationSweep(
   state.counters["replay_seconds"] = kPaperScaleHighRatioReplaySeconds;
   state.counters["replay_steps"]
       = static_cast<double>(kPaperScaleHighRatioReplaySteps);
+  const auto envelope = measureArticulatedHighRatioReplayEnvelope(fixture);
+  state.counters["finite_replay"] = envelope.allFinite ? 1.0 : 0.0;
+  state.counters["max_abs_position"] = envelope.maxAbsPosition;
 }
 BENCHMARK(BM_AvbdPaperScaleHighRatioChainIterationSweep)
     ->Arg(25)

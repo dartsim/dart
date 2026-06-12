@@ -10,17 +10,20 @@ Corpus matrix:
 ## Current Status
 
 - Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
-  iteration sweep now has a tracked benchmark/plot-data packet,
+  iteration sweep now has finite replay stability counters, a tracked
+  benchmark/stability-plot packet,
   [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
+  and a rendered SVG plot,
+  [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](../../plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg),
   generated from a real
   `BM_AvbdPaperScaleHighRatioChainIterationSweep` run over 25, 50, 100, and
   200 max iterations. The packet validates the 50-link/50,000:1 fixture
-  counters and records sorted timing plot data for each budget. This still does
-  not provide a rendered convergence/stability plot, same-hardware
+  counters, requires finite 32-step replay for each budget, and records sorted
+  timing/stability plot data. This still does not provide a same-hardware
   paper-number comparison, broad articulated stability proof, or GPU parity.
-  Local validation passed the focused packet-writer pytest, the focused
+  Local validation passed the focused packet/plot writer pytest, the focused
   benchmark target build, the actual sweep benchmark run with three
-  repetitions, packet generation, `pixi run lint`, `pixi run build`, and
+  repetitions, packet/plot generation, `pixi run lint`, `pixi run build`, and
   `git diff --check`.
 - Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
   articulated-chain benchmark now includes

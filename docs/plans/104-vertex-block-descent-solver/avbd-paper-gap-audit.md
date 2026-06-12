@@ -703,9 +703,10 @@ visual/benchmark evidence. `BM_AvbdPaperScaleHighRatioChainIterationSweep`
 now adds dashboard-selected 25/50/100/200 max-iteration coverage for that same
 fixture, and
 [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](avbd-paper-scale-high-ratio-iteration-sweep-packet.json)
-records validated benchmark JSON plus sorted plot data. No rendered
-convergence/stability plot, same-hardware paper-number comparison, or GPU
-parity exists yet. DART still cannot reproduce
+records validated benchmark JSON plus finite replay plot data, and
+[`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](avbd-paper-scale-high-ratio-iteration-sweep-plot.svg)
+renders the timing/stability sweep. No same-hardware paper-number comparison or
+GPU parity exists yet. DART still cannot reproduce
 the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes.
 The next implementation slice should either optimize the measured

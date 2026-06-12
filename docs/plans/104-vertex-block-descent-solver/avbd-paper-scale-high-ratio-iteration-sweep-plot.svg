@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420">
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#111827}
+.title{font-size:22px;font-weight:700}
+.subtitle{font-size:13px;fill:#4b5563}
+.panel-title{font-size:14px;font-weight:700}
+.axis{stroke:#6b7280;stroke-width:1.4}
+.tick{font-size:11px;fill:#4b5563}
+</style>
+<rect width="720" height="420" fill="#ffffff"/>
+<text x="32" y="34" class="title">AVBD Paper-Scale High-Ratio Iteration Sweep</text>
+<text x="32" y="54" class="subtitle">50 links, 50,000:1 tip mass, 32-step replay envelope; lower CPU time is better, finite replay required.</text>
+<text x="76" y="56" class="panel-title">CPU time per step (ms)</text>
+<line x1="76" y1="198" x2="682" y2="198" class="axis"/>
+<line x1="76" y1="76" x2="76" y2="198" class="axis"/>
+<text x="18" y="83" class="tick">0.936</text>
+<text x="18" y="202" class="tick">0</text>
+<polyline points="76.00,94.19 162.57,100.81 335.71,92.89 682.00,85.04" fill="none" stroke="#2563eb" stroke-width="3"/>
+<circle cx="76.00" cy="94.19" r="5" fill="#2563eb"/>
+<text x="76.00" y="220" class="tick" text-anchor="middle">25</text>
+<circle cx="162.57" cy="100.81" r="5" fill="#2563eb"/>
+<text x="162.57" y="220" class="tick" text-anchor="middle">50</text>
+<circle cx="335.71" cy="92.89" r="5" fill="#2563eb"/>
+<text x="335.71" y="220" class="tick" text-anchor="middle">100</text>
+<circle cx="682.00" cy="85.04" r="5" fill="#2563eb"/>
+<text x="682.00" y="220" class="tick" text-anchor="middle">200</text>
+<text x="76" y="236" class="panel-title">Replay stability: max absolute joint position (rad)</text>
+<line x1="76" y1="378" x2="682" y2="378" class="axis"/>
+<line x1="76" y1="256" x2="76" y2="378" class="axis"/>
+<text x="18" y="263" class="tick">0.0276</text>
+<text x="18" y="382" class="tick">0</text>
+<polyline points="76.00,265.04 162.57,265.04 335.71,265.04 682.00,265.04" fill="none" stroke="#16a34a" stroke-width="3"/>
+<circle cx="76.00" cy="265.04" r="5" fill="#16a34a"/>
+<text x="76.00" y="400" class="tick" text-anchor="middle">25</text>
+<circle cx="162.57" cy="265.04" r="5" fill="#16a34a"/>
+<text x="162.57" y="400" class="tick" text-anchor="middle">50</text>
+<circle cx="335.71" cy="265.04" r="5" fill="#16a34a"/>
+<text x="335.71" y="400" class="tick" text-anchor="middle">100</text>
+<circle cx="682.00" cy="265.04" r="5" fill="#16a34a"/>
+<text x="682.00" y="400" class="tick" text-anchor="middle">200</text>
+<text x="379" y="412" class="subtitle" text-anchor="middle">Max solver iterations</text>
+</svg>
