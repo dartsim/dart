@@ -987,3 +987,32 @@ Observed capture evidence:
 - `rigid_limited_joints`: nonblank 960x540 docked screenshot, 23 PNG frames, 24
   scene-metrics events, latest hinge radius/z and slider orthogonal errors
   `0.0`.
+
+## 2026-06-11 Joint-Breakage Capture Metrics Follow-Up
+
+The current follow-up adds scene-owned `capture_metrics` to the shared
+`avbd_rigid_breakable_joint` builder and tags the numbered
+`rigid_joint_breakage` row with its own row id. The metric stream records the
+AVBD fixed break-force lifecycle: intact/broken status, captured-offset error,
+payload release distance, payload speed, dynamic break-force value, and whether
+the capture saw a broken state. This keeps the row AVBD-pinned and does not add
+sequential-impulse or IPC breakage claims.
+
+Validation so far:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest \
+    python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage \
+    python/tests/integration/test_demos_cycle.py::test_avbd_breakable_joint_demo_marks_and_resets_joint -q
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest \
+    python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle -q
+pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_breakage_metrics_1781223331
+pixi run lint
+DART_PARALLEL_JOBS=${DART_SAFE_JOBS:-5} CTEST_PARALLEL_LEVEL=${DART_SAFE_JOBS:-5} CMAKE_BUILD_PARALLEL_LEVEL=${DART_SAFE_JOBS:-5} pixi run build
+```
+
+Observed capture evidence:
+
+- `rigid_joint_breakage`: nonblank 960x540 docked screenshot, 47 PNG frames,
+  48 scene-metrics events, latest status `broken`, `saw_broken=1.0`, and latest
+  `payload_release_distance=0.41319290960568955`.

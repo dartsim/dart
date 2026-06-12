@@ -10,8 +10,9 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
+_TIME_STEP = 0.004
 _BASE_HALF = np.array([0.18, 0.18, 0.18])
 _PAYLOAD_HALF = np.array([0.24, 0.14, 0.14])
 _GROUND_HALF = np.array([1.3, 0.55, 0.08])
@@ -54,8 +55,12 @@ def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
     return transform
 
 
-def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> SceneSetup:
-    world = sx.World(time_step=0.004, gravity=(0.0, 0.0, -9.81))
+def build_breakable_joint_scene(
+    panel_title: str = "AVBD Breakable Joint",
+    *,
+    row_id: str = "avbd_rigid_breakable_joint",
+) -> SceneSetup:
+    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, -9.81))
 
     ground = world.add_rigid_body("avbd_breakable_joint_ground")
     ground.is_static = True
@@ -131,11 +136,82 @@ def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> Sc
         bridge.sync()
         sync_connector()
 
+    offset_history: deque[float] = deque(maxlen=160)
+    speed_history: deque[float] = deque(maxlen=160)
+    broken_history: deque[float] = deque(maxlen=160)
+    _last_metrics: dict[str, float | str] = {}
+
+    def sample_metrics() -> dict[str, float | str]:
+        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
+        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
+        offset_error = float(np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET))
+        speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
+        broken = 1.0 if breakable_joint.is_broken else 0.0
+        return {
+            "captured_offset_error": offset_error,
+            "payload_speed": speed,
+            "payload_height": float(payload_pos[2]),
+            "payload_release_distance": float(
+                np.linalg.norm(payload_pos - (payload_position + _PAYLOAD_PRESTRAIN))
+            ),
+            "broken": broken,
+            "break_force": float(breakable_joint.break_force),
+            "world_time": float(world.time),
+            "status": "broken" if breakable_joint.is_broken else "intact",
+        }
+
+    def record_metrics() -> dict[str, float | str]:
+        _last_metrics.clear()
+        _last_metrics.update(sample_metrics())
+        offset_history.append(float(_last_metrics["captured_offset_error"]))
+        speed_history.append(float(_last_metrics["payload_speed"]))
+        broken_history.append(float(_last_metrics["broken"]))
+        return _last_metrics
+
+    def capture_metrics() -> dict[str, object]:
+        if not _last_metrics:
+            record_metrics()
+        offset_values = list(offset_history)
+        speed_values = list(speed_history)
+        broken_values = list(broken_history)
+        return {
+            "row": row_id,
+            "solver": "avbd_rigid_joints",
+            "constraint": "fixed_break_force_lifecycle",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(world.time),
+            "joint_name": str(breakable_joint.name),
+            "controls": {
+                "break_force": float(_BREAK_FORCE),
+                "reset_break_force": float(_RESET_BREAK_FORCE),
+            },
+            "metrics": {
+                "captured_offset_error": float(
+                    _last_metrics["captured_offset_error"]
+                ),
+                "payload_speed": float(_last_metrics["payload_speed"]),
+                "payload_height": float(_last_metrics["payload_height"]),
+                "payload_release_distance": float(
+                    _last_metrics["payload_release_distance"]
+                ),
+                "broken": float(_last_metrics["broken"]),
+                "break_force": float(_last_metrics["break_force"]),
+                "status": str(_last_metrics["status"]),
+            },
+            "history": {
+                "samples": float(len(offset_values)),
+                "max_captured_offset_error": max(offset_values, default=0.0),
+                "max_payload_speed": max(speed_values, default=0.0),
+                "saw_broken": max(broken_values, default=0.0),
+            },
+        }
+
     def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
         payload.linear_velocity = (0.0, 0.0, 0.0)
         payload.angular_velocity = (0.0, 0.0, 0.0)
         breakable_joint.break_force = float(break_force)
         breakable_joint.reset_breakage()
+        record_metrics()
         sync_connector()
 
     def rearm_weak_joint() -> None:
@@ -143,14 +219,8 @@ def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> Sc
 
     def pre_step() -> None:
         bridge.pre_step()
+        record_metrics()
         sync_connector()
-
-    bridge.sync()
-    sync_connector()
-
-    offset_history: deque[float] = deque(maxlen=160)
-    speed_history: deque[float] = deque(maxlen=160)
-    broken_history: deque[float] = deque(maxlen=160)
 
     def reset_breakage_lifecycle() -> None:
         breakable_joint.reset_breakage()
@@ -173,20 +243,20 @@ def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> Sc
         speed_history.clear()
         broken_history.clear()
         world.update_kinematics()
+        record_metrics()
         replay_sync()
+
+    bridge.sync()
+    sync_connector()
+    record_metrics()
 
     def build_panel(builder: object, context: object) -> None:
         if builder.button("Reset breakage lifecycle"):
             reset_breakage_lifecycle()
 
-        base_pos = np.asarray(base.translation, dtype=float).reshape(3)
-        payload_pos = np.asarray(payload.translation, dtype=float).reshape(3)
-        offset_error = float(np.linalg.norm((payload_pos - base_pos) - _CAPTURED_OFFSET))
-        speed = float(np.linalg.norm(np.asarray(payload.linear_velocity, dtype=float)))
-        broken = 1.0 if breakable_joint.is_broken else 0.0
-        offset_history.append(offset_error)
-        speed_history.append(speed)
-        broken_history.append(broken)
+        metrics = _last_metrics or record_metrics()
+        offset_error = float(metrics["captured_offset_error"])
+        speed = float(metrics["payload_speed"])
 
         builder.text("solver: AVBD fixed joint with break-force threshold")
         builder.text(f"joint: {breakable_joint.name}")
@@ -220,6 +290,7 @@ def build_breakable_joint_scene(panel_title: str = "AVBD Breakable Joint") -> Sc
             "captured_offset": _CAPTURED_OFFSET.copy(),
             "captured_payload_transform": captured_payload_transform,
             "captured_payload_rotation": captured_payload_rotation,
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
             "reset_breakage_lifecycle": reset_breakage_lifecycle,

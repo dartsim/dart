@@ -3519,12 +3519,25 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
     assert np.linalg.norm(base_translation - initial_base) < 1.0e-9
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-2
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_joint_breakage"
+    assert capture_metrics["solver"] == "avbd_rigid_joints"
+    assert capture_metrics["constraint"] == "fixed_break_force_lifecycle"
+    assert capture_metrics["joint_name"] == joint.name
+    assert capture_metrics["metrics"]["broken"] == pytest.approx(1.0)
+    assert capture_metrics["metrics"]["status"] == "broken"
+    assert capture_metrics["metrics"]["payload_release_distance"] > 1.0e-2
+    assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
 
     setup.info["reset_breakage_lifecycle"]()
     assert not joint.is_broken
     reset_payload = np.asarray(payload.translation, dtype=float).reshape(3)
     assert np.linalg.norm(reset_payload - initial_payload) < 1.0e-9
     assert sx_world.time == pytest.approx(0.0)
+    reset_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert reset_metrics["metrics"]["status"] == "intact"
+    assert reset_metrics["history"]["samples"] == pytest.approx(1.0)
 
 
 def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None:
@@ -7878,6 +7891,11 @@ def test_avbd_breakable_joint_demo_marks_and_resets_joint() -> None:
     payload_translation = np.asarray(payload.translation, dtype=float).reshape(3)
     assert np.linalg.norm(base_translation - initial_base) < 1.0e-9
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-2
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "avbd_rigid_breakable_joint"
+    assert capture_metrics["metrics"]["status"] == "broken"
+    assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
 
     reset_joint = setup.info["reset_joint"]
     reset_joint(float(setup.info["reset_break_force"]))

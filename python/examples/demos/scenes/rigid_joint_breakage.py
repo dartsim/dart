@@ -7,7 +7,10 @@ from .avbd_rigid_breakable_joint import build_breakable_joint_scene
 
 
 def build() -> SceneSetup:
-    return build_breakable_joint_scene(panel_title="Rigid Joint Breakage")
+    return build_breakable_joint_scene(
+        panel_title="Rigid Joint Breakage",
+        row_id="rigid_joint_breakage",
+    )
 
 
 SCENE = PythonDemoScene(

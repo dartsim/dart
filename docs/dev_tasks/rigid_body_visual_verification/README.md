@@ -78,7 +78,8 @@
       constraint-error histories with scene-owned capture metrics.
 - [x] Breakage lifecycle slice: `rigid_joint_breakage` exposes AVBD-pinned
       fixed-joint break-force, broken-state, connector color, payload release,
-      and reset behavior without claiming sequential-impulse or IPC parity.
+      reset behavior, and scene-owned capture metrics without claiming
+      sequential-impulse or IPC parity.
 - [x] Distance-spring slice: `rigid_distance_spring` shows the public
       `World.add_rigid_body_distance_spring()` path with unsprung, soft, stiff,
       and off-center anchor lanes, replay controls, capture metrics, and
@@ -262,7 +263,7 @@
 - [x] Visual smoke: `rigid_fixed_joint` capture writes nonblank PNGs with the
       docked ImGui workspace and scene-owned fixed-joint metrics.
 - [x] Visual smoke: `rigid_joint_breakage` capture writes nonblank PNGs with the
-      docked ImGui workspace.
+      docked ImGui workspace and scene-owned breakage-lifecycle metrics.
 - [x] Visual smoke: `rigid_distance_spring` capture writes nonblank PNGs with
       the docked ImGui workspace and scene-owned distance-spring metrics.
 - [x] Visual smoke: `rigid_limited_joints` capture writes nonblank PNGs with the

@@ -154,8 +154,8 @@
     and replay-control diagnostics.
   - Added `rigid_joint_breakage` to Python `py-demos`, an AVBD-pinned fixed
     joint break-force row that shows broken state, connector color, offset
-    error, payload speed, and an explicit reset lifecycle without claiming
-    sequential-impulse or IPC breakage parity.
+    error, payload speed, capture metrics, and an explicit reset lifecycle
+    without claiming sequential-impulse or IPC breakage parity.
   - Prefixed the interactive Python `py-demos` Demos navigator titles for the
     36-row World Rigid Body visual-verification workflow with their position
     and role while keeping `--list` scene titles and ids stable for scripts.
@@ -163,9 +163,10 @@
     rigid-body distance springs with unsprung, soft, stiff, and off-center
     anchor lanes plus replay controls and capture metrics while documenting
     that IPC and multibody worlds reject this public API.
-  - Added scene-owned capture metrics to the `rigid_fixed_joint` and
-    `rigid_limited_joints` Python `py-demos` rows so fixed/revolute/prismatic
-    constraint-error evidence is recorded in `py-demo-capture` artifacts.
+  - Added scene-owned capture metrics to the `rigid_fixed_joint`,
+    `rigid_joint_breakage`, and `rigid_limited_joints` Python `py-demos` rows
+    so fixed/revolute/prismatic constraint-error and breakage-lifecycle
+    evidence is recorded in `py-demo-capture` artifacts.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity
