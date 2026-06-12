@@ -52,10 +52,23 @@ stable scene titles and ids for scripts. These rows also receive a runner-owned
 `Rigid Workflow` panel with the row's maintained user question, what to try
 first, the main signals to inspect, the known scope/limitation, and the
 previous/next numbered route, restart command, direct row selector, and
-ranked row filter as scene-switch rows. The filter prioritizes row ids, scene
-ids, labels, questions, positive signals, and explicit aliases such as `SI`,
-`boxed LCP`, and `accelerated backend` before scope caveats, so intent searches
-such as `contact`, `solver`, `step profile`, `backend comparison`, or
+ranked row filter as scene-switch rows. The panel also shows the exact
+per-row `pixi run py-demo-capture` command, frame count, resolution, and
+docked-UI mode so visual evidence can be regenerated from the viewer context.
+Rows that compare solvers, executors, contact policies, time-step
+multipliers, workload sizes, or passive joint parameter families label the
+comparison axis and held-fixed controls directly in both the panel and capture
+metrics.
+The workflow capture helper also writes `review_index.html` beside the
+top-level manifest. That static contact sheet links every numbered row's
+manifest, screenshot, frame directory, command, and comparison/metrics summary
+so a reviewer can scan all 36 captures without opening each scene folder.
+The filter prioritizes row ids, scene
+ids, labels, questions, positive signals, and explicit aliases such as
+`RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
+`contact solver policy`, `Taskflow executor`, `backend/executor`,
+`worker count`, and `accelerated backend` before scope caveats, so intent
+searches such as `contact`, `solver`, `step profile`, `backend comparison`, or
 `sequential impulse` surface the relevant debugging rows instead of early rows
 that only say what not to infer.
 
@@ -221,6 +234,16 @@ helper prints the output directory, writes PNG frames, rejects blank captures,
 and applies Linux software-Mesa defaults so the same command works on headless
 dev hosts. Visual artifacts are intentionally not checked in.
 
+Use the workflow mode when you want one command to plan or run every numbered
+rigid verifier capture. It writes a top-level manifest that points at each
+per-scene manifest plus `review_index.html`, a static contact sheet for scanning
+all 36 screenshots and metric summaries from one page:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --dry-run
+pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow
+```
+
 For motion evidence, add `--video --fps 24` to the same docked capture path.
 The helper encodes an MP4 when `ffmpeg` is available and still keeps the PNG
 frames as inspectable evidence:
@@ -274,6 +297,24 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest full workflow-capture follow-up:
+  `pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow_full_review_index_1781259714`
+  completed all 36 numbered rigid verifier captures. The workflow manifest
+  `/tmp/dart_capture_rigid_workflow_full_review_index_1781259714/manifest.json`
+  reported
+  `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, and `elapsed_s=314.278`; every capture entry had
+  `return_code=0`, `status=captured`, and `manifest_exists=true`. The first
+  per-scene manifest was
+  `scenes/01_rigid_body/manifest.json`, the last was
+  `scenes/36_rigid_loop_closure/manifest.json`, and each row wrote a docked
+  screenshot plus PNG frame sequence through the same capture helper path. The
+  workflow manifest also pointed at
+  `/tmp/dart_capture_rigid_workflow_full_review_index_1781259714/review_index.html`;
+  that generated contact sheet contained 36 screenshot thumbnails and linked
+  the first and last row screenshots plus comparison/held-fixed metric
+  summaries for the solver, executor, contact-policy, time-step, workload, and
+  passive-parameter rows.
 - Latest distance-spring follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_jump_selector_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
   reported `17 passed` before and after `pixi run lint`. The real docked

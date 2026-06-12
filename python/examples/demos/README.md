@@ -140,13 +140,22 @@ In the interactive viewer, every numbered **World Rigid Body** row also gets a
 compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
 the current row as a small checklist: what to try first, what to look for, and
 what not to infer from that row. The panel also has selectable previous/next
-numbered rows, a restart command, a direct row selector, and a ranked text
+numbered rows, a restart command, a direct row selector, a per-row
+`py-demo-capture` command with frame/resolution/UI settings, and a ranked text
 filter over row ids, scene ids, labels, questions, signals, and explicit
-aliases such as `SI`, `boxed LCP`, and `accelerated backend` that request
-in-viewer scene switches. Scope caveats remain visible in the row, but the
-filter ranks positive intent matches first so searches such as `contact`,
-`solver`, `step profile`, `backend comparison`, and `sequential impulse` do not
-get dominated by early rows that only mention what not to infer.
+aliases such as `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
+`Taskflow executor`, `backend/executor`, `worker count`, and
+`accelerated backend` that request in-viewer scene switches. Scope caveats
+remain visible in the row, but the filter ranks positive intent matches first
+so searches such as `contact`, `solver`, `step profile`, `backend comparison`,
+and `sequential impulse` do not get dominated by early rows that only mention
+what not to infer. Comparison and parameter rows also label the comparison axis
+and held-fixed controls in the panel and capture metrics so solver, executor,
+contact-policy, workload-size, and parameter-family changes are not conflated.
+The full workflow capture writes a top-level `review_index.html` contact sheet
+next to `manifest.json` so all numbered screenshots, per-scene manifests,
+frame directories, commands, and metric summaries can be reviewed from one
+page.
 
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -629,6 +638,17 @@ choose the narrowest closure family that matches the model.
 per-case family/policy labels, residuals, tip/distance/orientation errors,
 joint speeds, step timing, solved ratios, and compact history metrics into the
 manifest sidecar.
+
+Use the workflow mode to plan or run the full numbered rigid capture set. It
+writes a top-level manifest that points at every per-scene manifest and a
+`review_index.html` contact sheet for scanning the 36 screenshots and metric
+summaries from one page:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --dry-run
+pixi run py-demo-capture -- --rigid-workflow \
+    --output-dir /tmp/dart_capture_rigid_workflow
+```
 
 Capture the focused rigid verifier scenes with the docked UI visible:
 

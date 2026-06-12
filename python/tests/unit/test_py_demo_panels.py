@@ -9,6 +9,7 @@ from examples.demos.runner import (
     DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
+    RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     ScenePanel,
     SceneSetup,
@@ -1055,9 +1056,32 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
 
 
 def test_rigid_comparison_panels_label_the_compared_axis() -> None:
-    _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod")
+    _require_simulation_symbols(
+        "RigidBodySolver", "ContactSolverMethod", "World", "JointSpec"
+    )
 
     cases = [
+        (
+            rigid_timestep_sensitivity,
+            (
+                "text:comparison axis: time-step multiplier",
+                "text:held fixed: solver Sequential impulse | executor Sequential | gravity scale 1.00",
+            ),
+        ),
+        (
+            rigid_step_diagnostics,
+            (
+                "text:comparison axis: workload shape",
+                "text:held fixed: solver Sequential impulse | executor Sequential | time step 4.0 ms",
+            ),
+        ),
+        (
+            rigid_contact_scale_budget,
+            (
+                "text:comparison axis: contact workload size",
+                "text:held fixed: solver Sequential impulse | executor Sequential | friction 0.72",
+            ),
+        ),
         (
             rigid_solver_compare,
             (
@@ -1079,6 +1103,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:comparison axis: contact solver method",
                 "text:shared rigid-body solver: sequential impulse",
                 "text:contact-policy pair: sequential impulses vs boxed LCP",
+            ),
+        ),
+        (
+            rigid_joint_passive_parameters,
+            (
+                "text:comparison axis: passive joint parameter family",
+                "text:held fixed: World prismatic joints | gravity off | contacts off",
             ),
         ),
     ]
@@ -1160,6 +1191,14 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert f"text:{guide.healthy_signal}" in events
         assert "text:Do not infer" in events
         assert f"text:{guide.scope}" in events
+        assert "text:Capture evidence" in events
+        assert (
+            "text:"
+            f"{guide.capture_frames} frames | "
+            f"{guide.capture_width}x{guide.capture_height} | docked UI"
+        ) in events
+        assert f"text:{guide.capture_command}" in events
+        assert "tooltip:Run from the repository root to regenerate this row." in events
         assert "text:Route" in events
         if guide.previous_scene_id is None:
             assert f"text:{previous_text}" in events
@@ -1443,6 +1482,15 @@ def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> N
     ]
     assert "rigid_joint_breakage" not in sequential_impulse_ids[:2]
     assert si_ids[:1] == ["rigid_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("RigidBodySolver")
+    ][:1] == ["rigid_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("rigid-body solver")
+    ][:1] == ["rigid_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("solver method")
+    ][:1] == ["rigid_solver_compare"]
 
 
 def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
@@ -1459,6 +1507,9 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
         guide.scene_id for guide in _workflow_matching_guides("memory diagnostics")
     ][:1] == ["rigid_step_diagnostics"]
     assert [
+        guide.scene_id for guide in _workflow_matching_guides("worker count")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
         guide.scene_id for guide in _workflow_matching_guides("backend comparison")
     ][:1] == ["rigid_executor_equivalence"]
     assert [
@@ -1467,6 +1518,56 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
     assert [
         guide.scene_id for guide in _workflow_matching_guides("compute executor")
     ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("compute backend")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("backend/executor")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("same physics solver")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("taskflow executor")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("threaded executor")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("contact solver policy")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("solver policy")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("lcp")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("ContactSolverMethod")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("contact-policy pair")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("contact model")
+    ][:1] == ["rigid_contact_solver_compare"]
+
+
+def test_rigid_workflow_guides_expose_capture_commands() -> None:
+    assert len(RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS) == len(RIGID_VISUAL_WORKFLOW_GUIDES)
+    for scene_id, frames, width, height, show_ui in RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS:
+        guide = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id]
+        assert guide.capture_frames == frames
+        assert guide.capture_width == width
+        assert guide.capture_height == height
+        assert guide.capture_show_ui is show_ui
+        expected_command = (
+            "pixi run py-demo-capture -- "
+            f"--scene {scene_id} --frames {frames} --width {width} --height {height}"
+        )
+        if show_ui:
+            expected_command = f"{expected_command} --show-ui"
+        assert guide.capture_command == expected_command
 
 
 def test_rigid_workflow_search_finds_related_evidence_targets() -> None:

@@ -99,6 +99,52 @@ RIGID_VISUAL_WORKFLOW_LABELS = (
     ("rigid_loop_closure", "Loop closure"),
 )
 
+RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS: tuple[
+    tuple[str, int, int, int, bool], ...
+] = (
+    ("rigid_body", 24, 960, 540, True),
+    ("rigid_body_modes", 72, 960, 540, True),
+    ("rigid_free_flight", 96, 960, 540, True),
+    ("rigid_frame_hierarchy", 72, 960, 540, True),
+    ("rigid_external_loads", 72, 960, 540, True),
+    ("rigid_link_point_loads", 72, 960, 540, True),
+    ("rigid_timestep_sensitivity", 96, 960, 540, True),
+    ("rigid_step_diagnostics", 72, 960, 540, True),
+    ("rigid_contact_scale_budget", 72, 960, 540, True),
+    ("rigid_restitution_ladder", 96, 960, 540, True),
+    ("rigid_material_mixing", 72, 960, 540, True),
+    ("rigid_contact_inspector", 24, 960, 540, True),
+    ("rigid_collision_query_options", 24, 960, 540, True),
+    ("rigid_collision_casts", 48, 960, 540, True),
+    ("rigid_solver_compare", 24, 960, 540, True),
+    ("rigid_executor_equivalence", 24, 960, 540, True),
+    ("rigid_contact_solver_compare", 72, 960, 540, True),
+    ("contact", 144, 960, 540, True),
+    ("rigid_friction_threshold", 24, 960, 540, True),
+    ("rigid_spin_roll_coupling", 96, 960, 540, True),
+    ("rigid_stack_stability", 24, 960, 540, True),
+    ("rigid_contact_manipulation", 72, 960, 540, True),
+    ("rigid_kinematic_driver", 72, 960, 540, True),
+    ("rigid_kinematic_normal_push", 72, 960, 540, True),
+    ("rigid_fixed_joint", 24, 960, 540, True),
+    ("rigid_joint_breakage", 48, 960, 540, True),
+    ("rigid_distance_spring", 72, 960, 540, True),
+    ("rigid_limited_joints", 24, 960, 540, True),
+    ("rigid_joint_motor_limits", 72, 960, 540, True),
+    ("rigid_joint_passive_parameters", 120, 960, 540, True),
+    ("rigid_screw_joint_pitch", 96, 960, 540, True),
+    ("rigid_multibody_dynamics_terms", 96, 960, 540, True),
+    ("rigid_link_center_of_mass", 72, 960, 540, True),
+    ("rigid_link_jacobian", 96, 960, 540, True),
+    ("rigid_multibody_solver_family", 72, 960, 540, True),
+    ("rigid_loop_closure", 72, 960, 540, True),
+)
+
+_RIGID_VISUAL_WORKFLOW_CAPTURE_BY_SCENE = {
+    scene_id: (frames, width, height, show_ui)
+    for scene_id, frames, width, height, show_ui in RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS
+}
+
 
 @dataclass(frozen=True)
 class RigidWorkflowGuide:
@@ -113,6 +159,11 @@ class RigidWorkflowGuide:
     scope: str
     previous_scene_id: str | None
     next_scene_id: str | None
+    capture_frames: int
+    capture_width: int
+    capture_height: int
+    capture_show_ui: bool
+    capture_command: str
 
 
 @dataclass(frozen=True)
@@ -467,6 +518,8 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
         "backend active",
         "backend status",
         "memory diagnostics",
+        "thread count",
+        "worker count",
     ),
     "rigid_contact_scale_budget": (
         "performance",
@@ -474,32 +527,83 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
         "contact budget",
     ),
     "rigid_solver_compare": (
+        "method family",
+        "rigid body solver",
+        "rigid body solver family",
+        "rigid solver method",
+        "rigid-body solver",
+        "rigid-body solver family",
+        "rigidbodysolver",
         "si",
         "si vs ipc",
         "sequential impulse",
         "sequential impulse vs ipc",
+        "solver method",
         "ipc",
     ),
     "rigid_executor_equivalence": (
+        "backend executor",
         "backend comparison",
         "backend equivalence",
+        "backend/executor",
+        "compute backend",
         "compute executor",
+        "execution backend",
+        "executor backend",
         "executor comparison",
+        "executor only",
+        "multithreaded executor",
         "parallel backend",
         "parallel executor",
+        "parallel rollout",
+        "parallelism",
+        "same solver parallel",
+        "same physics solver",
+        "taskflow",
+        "taskflow executor",
+        "threaded executor",
     ),
     "rigid_contact_solver_compare": (
         "boxed lcp",
         "boxed-lcp",
+        "complementarity-aware",
+        "contact complementarity",
+        "contact formulation",
+        "contact method",
+        "contact model",
         "contact policy",
+        "contact solvermethod",
+        "contact solver method",
+        "contact solver policy",
+        "contact-policy pair",
+        "contact-solver method",
+        "contactsolvermethod",
+        "lcp",
         "sequential impulse contacts",
         "sequential impulse vs boxed lcp",
+        "solver policy",
     ),
     "rigid_friction_threshold": ("ipc friction",),
     "rigid_stack_stability": ("sequential impulse vs ipc stack", "ipc stack"),
     "rigid_kinematic_driver": ("ipc kinematic",),
     "rigid_kinematic_normal_push": ("ipc normal", "sequential impulse normal"),
 }
+
+
+def _rigid_workflow_capture_command(
+    scene_id: str,
+    frames: int,
+    width: int,
+    height: int,
+    show_ui: bool,
+) -> str:
+    command = (
+        "pixi run py-demo-capture -- "
+        f"--scene {scene_id} --frames {frames} --width {width} --height {height}"
+    )
+    if show_ui:
+        command = f"{command} --show-ui"
+    return command
 
 
 def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
@@ -511,6 +615,9 @@ def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
     ):
         question, inspect, scope = _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT[scene_id]
         try_first, healthy_signal = _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT[scene_id]
+        frames, width, height, show_ui = _RIGID_VISUAL_WORKFLOW_CAPTURE_BY_SCENE[
+            scene_id
+        ]
         guides[scene_id] = RigidWorkflowGuide(
             scene_id=scene_id,
             index=index,
@@ -523,6 +630,13 @@ def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
             scope=scope,
             previous_scene_id=scene_ids[index - 2] if index > 1 else None,
             next_scene_id=scene_ids[index] if index < count else None,
+            capture_frames=frames,
+            capture_width=width,
+            capture_height=height,
+            capture_show_ui=show_ui,
+            capture_command=_rigid_workflow_capture_command(
+                scene_id, frames, width, height, show_ui
+            ),
         )
     return guides
 
@@ -1740,6 +1854,15 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.separator()
         builder.text("Do not infer")
         builder.text(guide.scope)
+        builder.separator()
+        builder.text("Capture evidence")
+        ui_mode = "docked UI" if guide.capture_show_ui else "headless"
+        builder.text(
+            f"{guide.capture_frames} frames | "
+            f"{guide.capture_width}x{guide.capture_height} | {ui_mode}"
+        )
+        builder.text(guide.capture_command)
+        builder.item_tooltip("Run from the repository root to regenerate this row.")
         builder.separator()
         builder.text("Route")
         _workflow_replay_row(builder, _context, guide)

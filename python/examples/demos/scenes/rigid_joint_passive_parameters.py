@@ -468,9 +468,16 @@ class _RigidJointPassiveParameterVerifier:
         armature_acceleration = lane_value("armature_heavy", "acceleration")
         payload: dict[str, Any] = {
             "row": "rigid_joint_passive_parameters",
+            "comparison_axis": "passive_joint_parameter_family",
             "solver": "world_multibody_passive_joint_parameters",
             "scope": "contact_free_prismatic_lanes",
             "executor": self._executors[executor_index][0],
+            "held_fixed": {
+                "solver": "world_multibody_passive_joint_parameters",
+                "joint_family": "prismatic",
+                "gravity": "off",
+                "contacts": "off",
+            },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "controls": {
@@ -686,6 +693,8 @@ class _RigidJointPassiveParameterVerifier:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: passive joint parameter family")
+        builder.text("held fixed: World prismatic joints | gravity off | contacts off")
         builder.text("solver: World multibody joints | gravity: off | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(

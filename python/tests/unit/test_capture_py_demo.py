@@ -292,6 +292,183 @@ def test_visual_capture_manifest_records_image_evidence(
         assert stats["docked_workspace"] is True
 
 
+def test_rigid_workflow_dry_run_writes_capture_plan(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_solver_compare", 24, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        ["--rigid-workflow", "--dry-run", "--output-dir", str(output)]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["workflow"] == "rigid_visual_verification"
+    assert manifest["dry_run"] is True
+    assert manifest["status"] == "planned"
+    assert manifest["capture_count"] == len(specs)
+    assert manifest["completed_count"] == 0
+    assert pathlib.Path(manifest["artifacts"]["review_index"]).is_file()
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_body",
+        "rigid_solver_compare",
+    ]
+    assert manifest["captures"][0]["command"].startswith(
+        "pixi run py-demo-capture -- --scene rigid_body"
+    )
+    assert manifest["captures"][0]["manifest"].endswith(
+        "scenes/01_rigid_body/manifest.json"
+    )
+    review_index = pathlib.Path(manifest["artifacts"]["review_index"])
+    review_html = review_index.read_text()
+    assert "DART rigid workflow review index" in review_html
+    assert "rigid_solver_compare" in review_html
+    assert "scenes/01_rigid_body/manifest.json" in review_html
+
+
+def test_rigid_workflow_run_aggregates_scene_manifests(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_executor_equivalence", 24, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    rendered: list[str] = []
+
+    def fake_run(argv: list[str]) -> int:
+        scene = argv[argv.index("--scene") + 1]
+        frames = int(argv[argv.index("--frames") + 1])
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        screenshot = output_dir / f"{scene}.png"
+        screenshot.write_bytes(b"fake-png")
+        (output_dir / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "scene": scene,
+                    "capture": {"requested_frames": frames},
+                    "artifacts": {
+                        "frames": str(output_dir / "png_frames"),
+                        "screenshot": str(screenshot),
+                    },
+                    "scene_metrics": {
+                        "latest": {
+                            "metrics": {
+                                "comparison_axis": "test_axis",
+                                "held_fixed": {"solver": "si"},
+                            },
+                        },
+                        "metric_key_counts": {
+                            "comparison_axis": 1,
+                            "held_fixed": 1,
+                        },
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        rendered.append(scene)
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(["--rigid-workflow", "--output-dir", str(output)])
+
+    assert rc == 0
+    assert rendered == ["rigid_body", "rigid_executor_equivalence"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["dry_run"] is False
+    assert manifest["status"] == "complete"
+    assert manifest["completed_count"] == len(specs)
+    assert manifest["failed_count"] == 0
+    assert [capture["status"] for capture in manifest["captures"]] == [
+        "captured",
+        "captured",
+    ]
+    assert all(capture["manifest_exists"] for capture in manifest["captures"])
+    review_index = pathlib.Path(manifest["artifacts"]["review_index"])
+    assert review_index.is_file()
+    review_html = review_index.read_text()
+    assert "scenes/01_rigid_body/rigid_body.png" in review_html
+    assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
+    assert "test_axis" in review_html
+    assert "comparison_axis, held_fixed" in review_html
+
+
+def test_rigid_workflow_fails_when_scene_manifest_is_missing(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_solver_compare", 24, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    rendered: list[str] = []
+
+    def fake_run(argv: list[str]) -> int:
+        rendered.append(argv[argv.index("--scene") + 1])
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(["--rigid-workflow", "--output-dir", str(output)])
+
+    assert rc == 1
+    assert rendered == ["rigid_body"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["dry_run"] is False
+    assert manifest["status"] == "failed"
+    assert manifest["completed_count"] == 0
+    assert manifest["failed_count"] == 1
+    first_capture = manifest["captures"][0]
+    assert first_capture["scene"] == "rigid_body"
+    assert first_capture["status"] == "failed"
+    assert first_capture["manifest_exists"] is False
+    assert first_capture["failure_reason"] == "missing_manifest"
+    review_index = pathlib.Path(manifest["artifacts"]["review_index"])
+    assert review_index.is_file()
+    assert "missing_manifest" in review_index.read_text()
+
+
+def test_rigid_workflow_scene_capture_runs_in_child_process(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class _Completed:
+        returncode = 7
+
+    def fake_run(command: list[str], *, check: bool) -> _Completed:
+        captured["command"] = command
+        captured["check"] = check
+        return _Completed()
+
+    monkeypatch.setattr(capture_py_demo.subprocess, "run", fake_run)
+
+    rc = capture_py_demo._run_scene_capture_from_argv(["--scene", "rigid_body"])
+
+    command = captured["command"]
+    assert rc == 7
+    assert captured["check"] is False
+    assert command[0] == capture_py_demo.sys.executable
+    assert command[1].endswith("scripts/capture_py_demo.py")
+    assert command[2:] == ["--scene", "rigid_body"]
+
+
 def test_linux_render_env_defaults_to_software_gl(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

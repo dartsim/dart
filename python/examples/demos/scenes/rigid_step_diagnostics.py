@@ -444,7 +444,13 @@ class _RigidStepDiagnostics:
 
     def capture_metrics(self) -> dict[str, Any]:
         return {
+            "comparison_axis": "workload_shape",
             "executor": self._executor_label(),
+            "held_fixed": {
+                "solver": self._solver_label(),
+                "executor": self._executor_label(),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "lanes": {
                 lane.key: dict(self._last_metrics.get(lane.key) or self._sample(lane))
                 for lane in self.lanes
@@ -606,6 +612,11 @@ class _RigidStepDiagnostics:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: workload shape")
+        builder.text(
+            f"held fixed: solver {self._solver_label()} | "
+            f"executor {self._executor_label()} | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(
             f"solver: {self._solver_label()} | executor: {self._executor_label()} | "

@@ -365,6 +365,7 @@ class _RigidContactScaleBudget:
     def capture_metrics(self) -> dict[str, Any]:
         return {
             "budget_ms": float(self.budget_ms),
+            "comparison_axis": "contact_workload_size",
             "dense_single_ratio": (
                 float(self._dense_single_ratio[-1])
                 if self._dense_single_ratio
@@ -372,6 +373,12 @@ class _RigidContactScaleBudget:
             ),
             "executor": self._executor_label(),
             "friction": float(self.friction),
+            "held_fixed": {
+                "solver": self._solver_label(),
+                "executor": self._executor_label(),
+                "friction": float(self.friction),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "lanes": {
                 lane.key: dict(self._last_metrics.get(lane.key) or self._sample(lane))
                 for lane in self.lanes
@@ -546,6 +553,11 @@ class _RigidContactScaleBudget:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: contact workload size")
+        builder.text(
+            f"held fixed: solver {self._solver_label()} | "
+            f"executor {self._executor_label()} | friction {self.friction:.2f}"
+        )
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(
             f"solver: {self._solver_label()} | executor: {self._executor_label()} | "

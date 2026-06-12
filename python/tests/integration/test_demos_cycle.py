@@ -33,6 +33,7 @@ import pytest
 from examples.demos import make_demo_scenes, run  # noqa: E402
 from examples.demos.runner import (  # noqa: E402
     CAPTURE_METRICS_INFO_KEY,
+    RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     RIGID_VISUAL_WORKFLOW_LABELS,
     PythonDemoScene,
@@ -1728,6 +1729,19 @@ def test_rigid_visual_verification_capture_commands_match_workflow() -> None:
     assert table_specs == sidecar_capture_specs
     assert readme_capture_specs == table_specs
     assert [scene_id for scene_id, *_rest in table_specs] == workflow_ids
+    assert list(RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS) == table_specs
+    for scene_id, frames, width, height, show_ui in table_specs:
+        command = RIGID_VISUAL_WORKFLOW_GUIDES[scene_id].capture_command
+        expected_command = (
+            "pixi run py-demo-capture -- "
+            f"--scene {scene_id} --frames {frames} --width {width} --height {height}"
+        )
+        if show_ui:
+            expected_command = f"{expected_command} --show-ui"
+        assert command == expected_command
+        assert show_ui is True
+    capture_py_demo = _capture_py_demo_module()
+    assert list(capture_py_demo.rigid_workflow_capture_specs()) == table_specs
     assert all(
         (width, height, show_ui) == (960, 540, True)
         for _scene_id, _frames, width, height, show_ui in table_specs
@@ -2336,9 +2350,17 @@ def test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size() -> None
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_timestep_sensitivity"
+    assert capture_metrics["comparison_axis"] == "time_step_multiplier"
     assert capture_metrics["solver"] == "Sequential impulse"
     assert capture_metrics["solver_enum"] == controller._solver().name
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["held_fixed"] == {
+        "solver": "Sequential impulse",
+        "solver_enum": controller._solver().name,
+        "executor": controller._executors[0][0],
+        "display_step_ms": pytest.approx(controller.base_time_step * 4.0 * 1000.0),
+        "gravity_scale": pytest.approx(controller.gravity_scale),
+    }
     assert set(capture_metrics["lanes"]) == set(metrics)
     assert capture_metrics["fine_freefall_error"] == pytest.approx(
         metrics["fine"]["freefall_error"]
@@ -2374,8 +2396,14 @@ def test_rigid_step_diagnostics_reports_profile_and_memory_counters() -> None:
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert set(metrics) == {"single", "contact", "stack"}
     assert capture_metrics["row"] == "rigid_step_diagnostics"
+    assert capture_metrics["comparison_axis"] == "workload_shape"
     assert capture_metrics["solver"] == controller._solver_label()
     assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"] == {
+        "solver": controller._solver_label(),
+        "executor": controller._executor_label(),
+        "time_step_ms": pytest.approx(4.0),
+    }
     assert capture_metrics["time_step_ms"] == pytest.approx(4.0)
     assert capture_metrics["world_time"] > 0.0
     assert set(capture_metrics["lanes"]) == set(metrics)
@@ -2453,8 +2481,15 @@ def test_rigid_contact_scale_budget_orders_contact_loads() -> None:
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert set(metrics) == {"single", "medium", "dense"}
     assert capture_metrics["row"] == "rigid_contact_scale_budget"
+    assert capture_metrics["comparison_axis"] == "contact_workload_size"
     assert capture_metrics["solver"] == controller._solver_label()
     assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"] == {
+        "solver": controller._solver_label(),
+        "executor": controller._executor_label(),
+        "friction": pytest.approx(controller.friction),
+        "time_step_ms": pytest.approx(4.0),
+    }
     assert capture_metrics["budget_ms"] == pytest.approx(controller.budget_ms)
     assert capture_metrics["friction"] == pytest.approx(controller.friction)
     assert capture_metrics["time_step_ms"] == pytest.approx(4.0)
@@ -4709,8 +4744,15 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_joint_passive_parameters"
+    assert capture_metrics["comparison_axis"] == "passive_joint_parameter_family"
     assert capture_metrics["solver"] == "world_multibody_passive_joint_parameters"
     assert capture_metrics["scope"] == "contact_free_prismatic_lanes"
+    assert capture_metrics["held_fixed"] == {
+        "solver": "world_multibody_passive_joint_parameters",
+        "joint_family": "prismatic",
+        "gravity": "off",
+        "contacts": "off",
+    }
     assert (
         capture_metrics["executor"]
         == controller._executors[int(controller.executor_index)][0]

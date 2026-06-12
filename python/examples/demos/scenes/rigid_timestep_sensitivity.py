@@ -126,10 +126,20 @@ class _RigidTimeStepSensitivity:
         self.solver_index = index
         return _SOLVERS[index][1]
 
+    def _solver_label(self) -> str:
+        index = max(0, min(int(self.solver_index), len(_SOLVERS) - 1))
+        self.solver_index = index
+        return _SOLVERS[index][0]
+
     def _executor(self) -> Any:
         index = max(0, min(int(self.executor_index), len(self._executors) - 1))
         self.executor_index = index
         return self._executors[index][1]
+
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
 
     def _gravity(self) -> tuple[float, float, float]:
         return (0.0, 0.0, _GRAVITY_Z * max(0.0, float(self.gravity_scale)))
@@ -383,9 +393,19 @@ class _RigidTimeStepSensitivity:
         )
         return {
             "row": "rigid_timestep_sensitivity",
+            "comparison_axis": "time_step_multiplier",
             "solver": _SOLVERS[int(self.solver_index)][0],
             "solver_enum": self._solver().name,
             "executor": self._executors[int(self.executor_index)][0],
+            "held_fixed": {
+                "solver": _SOLVERS[int(self.solver_index)][0],
+                "solver_enum": self._solver().name,
+                "executor": self._executors[int(self.executor_index)][0],
+                "display_step_ms": float(
+                    max(0.0005, self.base_time_step) * 4.0 * 1000.0
+                ),
+                "gravity_scale": float(self.gravity_scale),
+            },
             "scope": "matched_time_step_freefall_contact_sensitivity",
             "base_time_step_ms": float(max(0.0005, self.base_time_step) * 1000.0),
             "display_step_ms": float(max(0.0005, self.base_time_step) * 4.0 * 1000.0),
@@ -548,6 +568,11 @@ class _RigidTimeStepSensitivity:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: time-step multiplier")
+        builder.text(
+            f"held fixed: solver {self._solver_label()} | "
+            f"executor {self._executor_label()} | gravity scale {self.gravity_scale:.2f}"
+        )
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(
             f"display step: {self.base_time_step * 4.0 * 1000.0:.1f} ms | "

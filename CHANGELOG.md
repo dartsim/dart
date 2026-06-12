@@ -53,6 +53,17 @@
   - Fixed `pixi run py-demos -- --cycle-scenes --frames N` so `N` is the
     per-scene cycle budget instead of a global viewer stop, and added per-scene
     progress output for long catalog smokes.
+  - Added `pixi run py-demo-capture -- --rigid-workflow` to plan or run all
+    numbered rigid visual-verification captures through one command, with a
+    workflow-level manifest pointing at each per-scene manifest plus a static
+    `review_index.html` contact sheet for scanning every screenshot, command,
+    and metric summary from one page. The in-viewer rigid workflow panel now
+    shows each row's capture command, and the rigid workflow search recognizes
+    DART 7 user terminology such as
+    `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and
+    backend/executor aliases. Adjacent comparison/parameter rows now label
+    their comparison axis and held-fixed controls in both the panel and capture
+    metrics.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 import os
 import pathlib
+import shlex
 import shutil
 import struct
 import subprocess
@@ -251,6 +253,50 @@ def _default_output_dir(scene: str) -> pathlib.Path:
     if not safe:
         safe = "scene"
     return pathlib.Path(tempfile.gettempdir()) / "dart_py_demo_capture" / safe
+
+
+RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+    ("rigid_body", 24, 960, 540, True),
+    ("rigid_body_modes", 72, 960, 540, True),
+    ("rigid_free_flight", 96, 960, 540, True),
+    ("rigid_frame_hierarchy", 72, 960, 540, True),
+    ("rigid_external_loads", 72, 960, 540, True),
+    ("rigid_link_point_loads", 72, 960, 540, True),
+    ("rigid_timestep_sensitivity", 96, 960, 540, True),
+    ("rigid_step_diagnostics", 72, 960, 540, True),
+    ("rigid_contact_scale_budget", 72, 960, 540, True),
+    ("rigid_restitution_ladder", 96, 960, 540, True),
+    ("rigid_material_mixing", 72, 960, 540, True),
+    ("rigid_contact_inspector", 24, 960, 540, True),
+    ("rigid_collision_query_options", 24, 960, 540, True),
+    ("rigid_collision_casts", 48, 960, 540, True),
+    ("rigid_solver_compare", 24, 960, 540, True),
+    ("rigid_executor_equivalence", 24, 960, 540, True),
+    ("rigid_contact_solver_compare", 72, 960, 540, True),
+    ("contact", 144, 960, 540, True),
+    ("rigid_friction_threshold", 24, 960, 540, True),
+    ("rigid_spin_roll_coupling", 96, 960, 540, True),
+    ("rigid_stack_stability", 24, 960, 540, True),
+    ("rigid_contact_manipulation", 72, 960, 540, True),
+    ("rigid_kinematic_driver", 72, 960, 540, True),
+    ("rigid_kinematic_normal_push", 72, 960, 540, True),
+    ("rigid_fixed_joint", 24, 960, 540, True),
+    ("rigid_joint_breakage", 48, 960, 540, True),
+    ("rigid_distance_spring", 72, 960, 540, True),
+    ("rigid_limited_joints", 24, 960, 540, True),
+    ("rigid_joint_motor_limits", 72, 960, 540, True),
+    ("rigid_joint_passive_parameters", 120, 960, 540, True),
+    ("rigid_screw_joint_pitch", 96, 960, 540, True),
+    ("rigid_multibody_dynamics_terms", 96, 960, 540, True),
+    ("rigid_link_center_of_mass", 72, 960, 540, True),
+    ("rigid_link_jacobian", 96, 960, 540, True),
+    ("rigid_multibody_solver_family", 72, 960, 540, True),
+    ("rigid_loop_closure", 72, 960, 540, True),
+)
+
+
+def rigid_workflow_capture_specs() -> tuple[tuple[str, int, int, int, bool], ...]:
+    return RIGID_WORKFLOW_CAPTURE_SPECS
 
 
 def _safe_stem(value: str) -> str:
@@ -503,6 +549,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Capture a Python demo through the real Filament viewer."
     )
+    parser.add_argument(
+        "--rigid-workflow",
+        action="store_true",
+        help="Capture or plan the full PLAN-103 rigid visual workflow.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Write the rigid workflow capture plan without rendering.",
+    )
     parser.add_argument("--scene", default="rigid_body")
     parser.add_argument("--frames", type=int, default=24)
     parser.add_argument("--width", type=int, default=640)
@@ -561,9 +617,564 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _workflow_output_dir(args: argparse.Namespace) -> pathlib.Path:
+    return args.output_dir or _default_output_dir("rigid_workflow")
+
+
+def _workflow_scene_output_dir(
+    output_dir: pathlib.Path, order: int, scene: str
+) -> pathlib.Path:
+    return output_dir / "scenes" / f"{order:02d}_{_safe_stem(scene)}"
+
+
+def _workflow_scene_argv(
+    args: argparse.Namespace,
+    order: int,
+    spec: tuple[str, int, int, int, bool],
+    output_dir: pathlib.Path,
+) -> list[str]:
+    scene, frames, width, height, show_ui = spec
+    scene_output = _workflow_scene_output_dir(output_dir, order, scene)
+    scene_argv = [
+        "--scene",
+        scene,
+        "--frames",
+        str(frames),
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+        "--output-dir",
+        str(scene_output),
+    ]
+    if show_ui:
+        scene_argv.append("--show-ui")
+    if args.backend:
+        scene_argv.extend(["--backend", args.backend])
+    if args.allow_noop:
+        scene_argv.append("--allow-noop")
+    return scene_argv
+
+
+def _public_command(argv: list[str]) -> str:
+    return "pixi run py-demo-capture -- " + " ".join(shlex.quote(arg) for arg in argv)
+
+
+def _workflow_plan_entries(
+    args: argparse.Namespace, output_dir: pathlib.Path
+) -> list[dict[str, object]]:
+    entries: list[dict[str, object]] = []
+    count = len(rigid_workflow_capture_specs())
+    for order, spec in enumerate(rigid_workflow_capture_specs(), start=1):
+        scene, frames, width, height, show_ui = spec
+        scene_output = _workflow_scene_output_dir(output_dir, order, scene)
+        argv = _workflow_scene_argv(args, order, spec, output_dir)
+        entries.append(
+            {
+                "order": order,
+                "count": count,
+                "scene": scene,
+                "frames": frames,
+                "width": width,
+                "height": height,
+                "show_ui": show_ui,
+                "output_dir": str(scene_output),
+                "manifest": str(scene_output / "manifest.json"),
+                "command": _public_command(argv),
+                "status": "planned",
+            }
+        )
+    return entries
+
+
+def _workflow_review_index_path(output_dir: pathlib.Path) -> pathlib.Path:
+    return output_dir / "review_index.html"
+
+
+def _workflow_href(target: pathlib.Path, base_dir: pathlib.Path) -> str:
+    try:
+        href = os.path.relpath(target, start=base_dir)
+    except ValueError:
+        href = str(target)
+    return href.replace(os.sep, "/")
+
+
+def _workflow_scene_manifest_summary(
+    capture: dict[str, object], output_dir: pathlib.Path
+) -> dict[str, object]:
+    manifest_value = capture.get("manifest")
+    if not isinstance(manifest_value, str):
+        return {}
+    manifest_path = pathlib.Path(manifest_value)
+    summary: dict[str, object] = {
+        "manifest_href": _workflow_href(manifest_path, output_dir),
+    }
+    if not manifest_path.is_file():
+        return summary
+
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        summary["read_error"] = str(exc)
+        return summary
+    if not isinstance(payload, dict):
+        summary["read_error"] = "manifest payload is not an object"
+        return summary
+
+    artifacts = payload.get("artifacts")
+    if isinstance(artifacts, dict):
+        screenshot = artifacts.get("screenshot")
+        if isinstance(screenshot, str) and screenshot:
+            screenshot_path = pathlib.Path(screenshot)
+            if not screenshot_path.is_absolute():
+                screenshot_path = manifest_path.parent / screenshot_path
+            summary["screenshot_href"] = _workflow_href(screenshot_path, output_dir)
+        frames = artifacts.get("frames")
+        if isinstance(frames, str) and frames:
+            frames_path = pathlib.Path(frames)
+            if not frames_path.is_absolute():
+                frames_path = manifest_path.parent / frames_path
+            summary["frames_href"] = _workflow_href(frames_path, output_dir)
+
+    scene_metrics = payload.get("scene_metrics")
+    if isinstance(scene_metrics, dict):
+        metric_key_counts = scene_metrics.get("metric_key_counts")
+        if isinstance(metric_key_counts, dict):
+            summary["metric_keys"] = sorted(
+                key for key in metric_key_counts if isinstance(key, str)
+            )
+        latest = scene_metrics.get("latest")
+        if isinstance(latest, dict):
+            metrics = latest.get("metrics")
+            if isinstance(metrics, dict):
+                comparison_axis = metrics.get("comparison_axis")
+                if isinstance(comparison_axis, str):
+                    summary["comparison_axis"] = comparison_axis
+                held_fixed = metrics.get("held_fixed")
+                if isinstance(held_fixed, dict):
+                    summary["held_fixed_keys"] = sorted(
+                        key for key in held_fixed if isinstance(key, str)
+                    )
+
+    return summary
+
+
+def _workflow_badge(label: str, value: object) -> str:
+    return (
+        '<span class="badge">'
+        f"<strong>{html.escape(label)}</strong> {html.escape(str(value))}"
+        "</span>"
+    )
+
+
+def _workflow_detail(label: str, value: object) -> str:
+    return f"<dt>{html.escape(label)}</dt>" f"<dd>{html.escape(str(value))}</dd>"
+
+
+def _workflow_link(label: str, href: object) -> str:
+    return (
+        f'<a href="{html.escape(str(href), quote=True)}">' f"{html.escape(label)}</a>"
+    )
+
+
+def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) -> str:
+    summary = _workflow_scene_manifest_summary(capture, output_dir)
+    order = capture.get("order", "?")
+    count = capture.get("count", "?")
+    scene = str(capture.get("scene", "unknown"))
+    status = str(capture.get("status", "planned"))
+    title = f"{order}/{count} {scene}"
+    command = str(capture.get("command", ""))
+    image_href = summary.get("screenshot_href")
+    if isinstance(image_href, str):
+        image = (
+            f'<a class="thumb" href="{html.escape(image_href, quote=True)}">'
+            f'<img src="{html.escape(image_href, quote=True)}" '
+            f'alt="{html.escape(scene, quote=True)} screenshot" loading="lazy">'
+            "</a>"
+        )
+    else:
+        image = (
+            '<div class="thumb placeholder">'
+            f"{html.escape(status.replace('_', ' '))}"
+            "</div>"
+        )
+
+    links: list[str] = []
+    manifest_href = summary.get("manifest_href")
+    if isinstance(manifest_href, str):
+        links.append(_workflow_link("manifest", manifest_href))
+    frames_href = summary.get("frames_href")
+    if isinstance(frames_href, str):
+        links.append(_workflow_link("frames", frames_href))
+    if isinstance(image_href, str):
+        links.append(_workflow_link("screenshot", image_href))
+    link_html = " | ".join(links) if links else "manifest pending"
+
+    details = [
+        _workflow_detail("frames", capture.get("frames", "")),
+        _workflow_detail(
+            "size",
+            f"{capture.get('width', '')}x{capture.get('height', '')}",
+        ),
+        _workflow_detail("ui", "docked" if capture.get("show_ui") else "headless"),
+    ]
+    return_code = capture.get("return_code")
+    if return_code is not None:
+        details.append(_workflow_detail("return code", return_code))
+    failure_reason = capture.get("failure_reason")
+    if failure_reason is not None:
+        details.append(_workflow_detail("failure", failure_reason))
+    comparison_axis = summary.get("comparison_axis")
+    if isinstance(comparison_axis, str):
+        details.append(_workflow_detail("axis", comparison_axis))
+    held_fixed_keys = summary.get("held_fixed_keys")
+    if isinstance(held_fixed_keys, list) and held_fixed_keys:
+        details.append(_workflow_detail("held fixed", ", ".join(held_fixed_keys)))
+    metric_keys = summary.get("metric_keys")
+    if isinstance(metric_keys, list) and metric_keys:
+        shown = ", ".join(str(key) for key in metric_keys[:8])
+        if len(metric_keys) > 8:
+            shown = f"{shown}, +{len(metric_keys) - 8} more"
+        details.append(_workflow_detail("metrics", shown))
+    read_error = summary.get("read_error")
+    if isinstance(read_error, str):
+        details.append(_workflow_detail("manifest error", read_error))
+
+    status_class = "".join(ch if ch.isalnum() else "-" for ch in status.lower())
+    return f"""
+<article class="card {html.escape(status_class, quote=True)}">
+  <div class="card-header">
+    <h2>{html.escape(title)}</h2>
+    <span class="status">{html.escape(status)}</span>
+  </div>
+  {image}
+  <div class="card-body">
+    <p class="links">{link_html}</p>
+    <dl>{''.join(details)}</dl>
+    <pre>{html.escape(command)}</pre>
+  </div>
+</article>
+"""
+
+
+def _write_workflow_review_index(
+    output_dir: pathlib.Path,
+    *,
+    dry_run: bool,
+    status: str,
+    captures: list[dict[str, object]],
+    started_at: float,
+) -> pathlib.Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    index = _workflow_review_index_path(output_dir)
+    completed = sum(1 for capture in captures if capture.get("status") == "captured")
+    failed = sum(1 for capture in captures if capture.get("status") == "failed")
+    elapsed_s = round(time.monotonic() - started_at, 3)
+    cards = "\n".join(
+        _workflow_review_card(capture, output_dir) for capture in captures
+    )
+    badges = " ".join(
+        [
+            _workflow_badge("status", status),
+            _workflow_badge("captures", len(captures)),
+            _workflow_badge("complete", completed),
+            _workflow_badge("failed", failed),
+            _workflow_badge("elapsed s", elapsed_s),
+            _workflow_badge("mode", "plan" if dry_run else "capture"),
+        ]
+    )
+    index.write_text(
+        f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DART Rigid Workflow Review Index</title>
+  <style>
+    :root {{
+      color-scheme: light;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f8fa;
+      color: #24292f;
+    }}
+    body {{
+      margin: 0;
+    }}
+    header {{
+      padding: 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #d0d7de;
+    }}
+    h1 {{
+      margin: 0 0 12px;
+      font-size: 24px;
+      font-weight: 650;
+    }}
+    h2 {{
+      margin: 0;
+      font-size: 15px;
+      font-weight: 650;
+    }}
+    .summary {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }}
+    .badge {{
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding: 4px 8px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      background: #f6f8fa;
+      font-size: 12px;
+    }}
+    main {{
+      padding: 16px;
+    }}
+    .grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }}
+    .card {{
+      background: #ffffff;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      overflow: hidden;
+    }}
+    .card-header {{
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #d0d7de;
+    }}
+    .status {{
+      flex: 0 0 auto;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ddf4ff;
+      color: #0550ae;
+      font-size: 12px;
+      font-weight: 650;
+    }}
+    .captured .status {{
+      background: #dafbe1;
+      color: #116329;
+    }}
+    .failed .status {{
+      background: #ffebe9;
+      color: #cf222e;
+    }}
+    .thumb {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 16 / 9;
+      background: #d8dee4;
+      color: #57606a;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 650;
+    }}
+    .thumb img {{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }}
+    .card-body {{
+      padding: 12px;
+    }}
+    .links {{
+      margin: 0 0 10px;
+      font-size: 13px;
+    }}
+    dl {{
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 4px 10px;
+      margin: 0 0 10px;
+      font-size: 13px;
+    }}
+    dt {{
+      color: #57606a;
+      font-weight: 650;
+    }}
+    dd {{
+      margin: 0;
+      overflow-wrap: anywhere;
+    }}
+    pre {{
+      margin: 0;
+      padding: 8px;
+      border-radius: 6px;
+      background: #f6f8fa;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      font-size: 12px;
+      line-height: 1.35;
+    }}
+    a {{
+      color: #0969da;
+    }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DART rigid workflow review index</h1>
+    <div class="summary">{badges}</div>
+    <p>Generated by <code>scripts/capture_py_demo.py</code>. Open this file after
+    <code>py-demo-capture -- --rigid-workflow</code> to inspect all numbered
+    rigid visual-verification captures from one page.</p>
+    <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
+  </header>
+  <main>
+    <section class="grid">
+{cards}
+    </section>
+  </main>
+</body>
+</html>
+""",
+        encoding="utf-8",
+    )
+    return index
+
+
+def _write_workflow_manifest(
+    output_dir: pathlib.Path,
+    *,
+    dry_run: bool,
+    status: str,
+    captures: list[dict[str, object]],
+    started_at: float,
+) -> pathlib.Path:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest = output_dir / "manifest.json"
+    review_index = _write_workflow_review_index(
+        output_dir,
+        dry_run=dry_run,
+        status=status,
+        captures=captures,
+        started_at=started_at,
+    )
+    completed = sum(1 for capture in captures if capture.get("status") == "captured")
+    failed = sum(1 for capture in captures if capture.get("status") == "failed")
+    _write_json(
+        manifest,
+        {
+            "schema_version": 1,
+            "workflow": "rigid_visual_verification",
+            "dry_run": dry_run,
+            "status": status,
+            "capture_count": len(captures),
+            "completed_count": completed,
+            "failed_count": failed,
+            "elapsed_s": round(time.monotonic() - started_at, 3),
+            "output_dir": str(output_dir),
+            "artifacts": {
+                "review_index": str(review_index),
+            },
+            "captures": captures,
+        },
+    )
+    return manifest
+
+
+def _run_scene_capture_from_argv(argv: list[str]) -> int:
+    return subprocess.run(
+        [sys.executable, str(pathlib.Path(__file__).resolve()), *argv],
+        check=False,
+    ).returncode
+
+
+def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
+    has_force_drag = bool(args.force_drag_target) or args.force_drag_pixel is not None
+    if args.switch_scene or has_force_drag:
+        raise SystemExit(
+            "--rigid-workflow cannot be combined with scripted switch or force drag"
+        )
+    if args.video:
+        raise SystemExit("--video is only supported for single-scene captures")
+
+
+def _run_rigid_workflow(args: argparse.Namespace) -> int:
+    _validate_rigid_workflow_args(args)
+    output_dir = _workflow_output_dir(args)
+    started_at = time.monotonic()
+    captures = _workflow_plan_entries(args, output_dir)
+    if args.dry_run:
+        manifest = _write_workflow_manifest(
+            output_dir,
+            dry_run=True,
+            status="planned",
+            captures=captures,
+            started_at=started_at,
+        )
+        for capture in captures:
+            print(capture["command"], flush=True)
+        print(f"manifest: {manifest}", flush=True)
+        return 0
+
+    manifest = _write_workflow_manifest(
+        output_dir,
+        dry_run=False,
+        status="running",
+        captures=captures,
+        started_at=started_at,
+    )
+    for order, spec in enumerate(rigid_workflow_capture_specs(), start=1):
+        capture = captures[order - 1]
+        scene = str(capture["scene"])
+        print(f"[{order}/{len(captures)}] capturing {scene}", flush=True)
+        rc = _run_scene_capture_from_argv(
+            _workflow_scene_argv(args, order, spec, output_dir)
+        )
+        capture["return_code"] = rc
+        scene_manifest = pathlib.Path(str(capture["manifest"]))
+        capture["manifest_exists"] = scene_manifest.is_file()
+        if rc == 0 and scene_manifest.is_file():
+            capture["status"] = "captured"
+            status = "running"
+        else:
+            capture["status"] = "failed"
+            capture["failure_reason"] = "return_code" if rc != 0 else "missing_manifest"
+            status = "failed"
+        manifest = _write_workflow_manifest(
+            output_dir,
+            dry_run=False,
+            status=status,
+            captures=captures,
+            started_at=started_at,
+        )
+        if capture["status"] == "failed":
+            print(f"manifest: {manifest}", flush=True)
+            return rc if rc != 0 else 1
+
+    manifest = _write_workflow_manifest(
+        output_dir,
+        dry_run=False,
+        status="complete",
+        captures=captures,
+        started_at=started_at,
+    )
+    print(f"workflow manifest: {manifest}", flush=True)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.rigid_workflow:
+        return _run_rigid_workflow(args)
+    if args.dry_run:
+        raise SystemExit("--dry-run requires --rigid-workflow")
     if args.frames < 1:
         raise SystemExit("--frames must be positive")
     if args.width < 1 or args.height < 1:
