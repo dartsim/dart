@@ -29,10 +29,10 @@ and the
 
 > The `World` owns topology, time, and a configured set of **solvers**; each
 > solver advances the dynamics of the entities in its **physics domain**, and
-> **couplers** mediate interactions between domains — all expressed as
-> **compute-graph** work that any **backend executor** can run. Users configure
-> method families and policies, never solver registries, component storage, or
-> execution backends.
+> **couplers** mediate interactions between domains — with parallelizable work
+> expressed as **compute-graph** nodes that any **backend executor** can run.
+> Users configure method families and policies, never solver registries,
+> component storage, or execution backends.
 
 Everything else on this page is a consequence of that sentence: each abstracted
 box in the pipeline is a seam where DART can offer more than one option, and the
@@ -93,41 +93,54 @@ PHYSICS DOMAINS — each entity assigned to a solver by its physical model
                                   ▼
 SOLVERS — one method family advances each domain
   rigid:       sequential-impulse [A] · IPC [X] · boxed-LCP [X]
-  multibody:   semi-implicit ABA [A] · variational integrator [X]
+  multibody:   semi-implicit joint-space [A] · variational [X]
   deformable:  mass-spring · neo-Hookean FEM · projected-Newton · VBD [X]
-  diff. grad:  analytic [A] · complementarity-aware · pre-contact [X]
+  diff. grad:  analytic · complementarity-aware · pre-contact [X]
                                   │
                                   ▼
 COLLISION / CONTACTS — dart::collision::native [A]
   AABB broad-phase · narrow-phase · contact manifolds ·
-  persistent manifold cache · SDF · swept/CCD  →
-  typed contact buffers consumed by solvers / couplers
+  swept/CCD casts [A] · persistent manifold cache · SDF
+  (library capability; World contact-path integration [P])
+  → typed contact buffers consumed by solvers / couplers
                                   │
                                   ▼
-COMPUTE GRAPH — solver/coupler work = nodes + explicit deps [A]
-  stage metadata · profiling · DOT visualization ·
-  WorldStepPipeline / WorldStepStage composition seams
+COMPUTE GRAPH — solver/coupler work = nodes + explicit deps
+  kinematics + free-rigid integration run as graphs [A];
+  graph execution of the remaining stages [P] (today they
+  run inside the ordered stage schedule) · stage metadata ·
+  profiling · DOT visualization ·
+  WorldStepPipeline / WorldStepStage composition seams [A]
                                   │
                                   ▼
 COMPUTE BACKEND — injected through the ComputeExecutor seam
   sequential (reference, default)                [A]
   parallel — Taskflow-backed multi-core CPU      [A]
   CUDA / GPU — opt-in sidecar, CPU fallback      [X]
-  SIMD multi-ISA foundation (SSE…AVX-512 / NEON) [A]
+  SIMD multi-ISA foundation (SSE…AVX-512 / NEON)
+  — library available; simulation-pipeline use   [P]
 
 Status:  [A] available in the DART 7 stack today  ·
          [X] experimental / opt-in  ·  [P] planned
 ```
 
-### Per-substep step schedule
+### Step schedule: current and planned
 
-Within one `World::step()` the schedule below runs for each substep. For a
-single-domain world with no cross-domain coupling the `couple` phase is empty
-and the schedule collapses to a plain solver step — no overhead for the common
-case.
+**Today** one `World::step()` runs a flat, content-aware ordered stage
+schedule (owned internally by `detail/world_step_schedule.hpp`): the `World`
+enters simulation mode (freezing topology and preparing each active stage),
+emits only the stage slots whose domains have entities, executes them in
+order, then advances time/frame counters and refreshes kinematics for fresh
+reads. There are no substeps and no coupling phases in the current schedule.
+
+**Planned** [P] — when cross-domain couplers land, the schedule generalizes
+to substep windowing so heterogeneous solvers can interact without knowing
+about each other. For a single-domain world with no coupling the `couple`
+phase is empty and the schedule collapses to today's plain ordered step — no
+overhead for the common case.
 
 ```
-World::step()
+World::step()                                            (planned [P] shape)
   └─ enter simulation mode (freeze topology, finalize each active solver)
   └─ for each substep:
         refresh collision / contact generation
@@ -174,7 +187,7 @@ same shape is usable across domains and `World::add*` stays uniform.
 | Rigid      | IPC (incremental potential contact)                                                 | 🧪 experimental | `WorldOptions::rigidBodySolver` or `World::setRigidBodySolver(...)`         |
 | Rigid      | Contact normal/friction: sequential-impulse / boxed-LCP                             | 🧪 experimental | `WorldOptions::contactSolverMethod`                                         |
 | Rigid      | Differentiable gradient: analytic / complementarity-aware / pre-contact surrogate   | 🧪 experimental | `WorldOptions::differentiable`, `WorldOptions::contactGradientMode`, setter |
-| Multibody  | Semi-implicit articulated-body forward dynamics (default)                           | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
+| Multibody  | Semi-implicit joint-space forward dynamics (default)                                | ✅ available    | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
 | Multibody  | Variational integrator (discrete-mechanics; linear-time form is PLAN-082, proposed) | 🧪 experimental | `WorldOptions::multibodyOptions` or `World::setMultibodyOptions(...)`       |
 | Deformable | Mass-spring (default) / stable neo-Hookean FEM (opt-in)                             | 🧪 experimental | `DeformableBodyOptions`                                                     |
 | Deformable | Projected-Newton + self-contact barrier / friction; VBD block descent               | 🧪 experimental | `World::configureDeformableSolver`                                          |
@@ -200,21 +213,21 @@ collision world — reached through `World::collide()` and the internal contact
 generation that feeds the solvers. It is not a multi-backend choice: the classic
 DART 6 FCL / Bullet / ODE backends are **not** part of the DART 7 pipeline.
 
-| Capability                                                  | Status          | Notes                                                                  |
-| ----------------------------------------------------------- | --------------- | ---------------------------------------------------------------------- |
-| Native collision world (`dart::collision::native`)          | ✅ available    | AABB broad-phase + narrow-phase, contact manifolds, collision filters. |
-| Persistent manifold cache, signed-distance-field (SDF) path | ✅ available    | Stable contacts across steps; SDF-based queries.                       |
-| Swept / continuous (CCD) sphere & capsule casts             | ✅ available    | Time-of-impact queries.                                                |
-| Typed contact buffers (`contacts` views)                    | 🧪 experimental | Consumed by solvers and couplers; public contact views deferred.       |
+| Capability                                                  | Status          | Notes                                                                                                                           |
+| ----------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Native collision world (`dart::collision::native`)          | ✅ available    | AABB broad-phase + narrow-phase, contact manifolds, collision filters.                                                          |
+| Persistent manifold cache, signed-distance-field (SDF) path | 📋 planned      | Implemented in the collision library, but not yet consumed by the DART 7 `World` contact path; pipeline integration is planned. |
+| Swept / continuous (CCD) sphere & capsule casts             | ✅ available    | Time-of-impact queries.                                                                                                         |
+| Typed contact buffers (`contacts` views)                    | 🧪 experimental | Consumed by solvers and couplers; public contact views deferred.                                                                |
 
 ### Compute backends (executor seam)
 
-| Backend / executor   | Status                 | Notes                                                                                                                                    |
-| -------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `SequentialExecutor` | ✅ available           | Reference path; defines deterministic semantics.                                                                                         |
-| `ParallelExecutor`   | ✅ available           | Taskflow-backed multi-core CPU; independent compute-graph nodes run concurrently. (`TaskflowExecutor` is a compatibility alias for it.)  |
-| CUDA / GPU           | 🧪 experimental opt-in | Sidecar packaging; never a default dependency; requires an identical-semantics CPU fallback. Validated go/no-go (see compute decisions). |
-| SIMD (foundation)    | ✅ available           | Multi-ISA (SSE4.2 … AVX-512, ARM NEON) batch math under `dart/simd/`.                                                                    |
+| Backend / executor   | Status                 | Notes                                                                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SequentialExecutor` | ✅ available           | Reference path; defines deterministic semantics.                                                                                                                                                                                                                                           |
+| `ParallelExecutor`   | ✅ available           | Taskflow-backed multi-core CPU; independent compute-graph nodes run concurrently. Today only the kinematics and free-rigid integration stages emit multi-node graphs; dynamics/contact stages run sequentially within the ordered schedule. (`TaskflowExecutor` is a compatibility alias.) |
+| CUDA / GPU           | 🧪 experimental opt-in | Sidecar packaging; never a default dependency; requires an identical-semantics CPU fallback. Validated go/no-go (see compute decisions).                                                                                                                                                   |
+| SIMD (foundation)    | 📋 planned             | Multi-ISA (SSE4.2 … AVX-512, ARM NEON) batch math library exists under `dart/simd/`, but it is not yet consumed by the simulation pipeline, so it remains planned as a pipeline backend.                                                                                                   |
 
 The executor is injected through the abstract `compute::ComputeExecutor`
 boundary — the only public concurrency seam. No `entt`, thread-pool, GPU device,
@@ -231,7 +244,7 @@ Multi-everything must not make the common path hard. The configuration contract:
 
 - **Default selection from content.** A free-rigid world gets the
   sequential-impulse path, an articulated multibody world gets the
-  semi-implicit articulated-body path, and deformable bodies get the deformable
+  semi-implicit joint-space path, and deformable bodies get the deformable
   dynamics path. The built-in schedule emits only the domains that are present,
   so the easy path remains `World` → `addRigidBody`/`addMultibody`/
   `addDeformableBody` → `step` with no solver vocabulary.
@@ -269,6 +282,7 @@ This page is a synthesis. Each detailed rule has one owner:
 | Topic                                                          | Owner document                                                                                                                                                                       |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Mission and the three research dimensions                      | [north-star](https://github.com/dartsim/dart/blob/main/docs/ai/north-star.md)                                                                                                        |
+| Verified architecture findings and standing rules              | [dart7_architecture_assessment](https://github.com/dartsim/dart/blob/main/docs/design/dart7_architecture_assessment.md)                                                              |
 | Solver abstraction, domain assignment, coupling, step schedule | [simulation_solver_architecture](https://github.com/dartsim/dart/blob/main/docs/design/simulation_solver_architecture.md)                                                            |
 | Public C++ object model and promotion rules                    | [simulation_cpp_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_cpp_api.md)                                                                                    |
 | dartpy surface                                                 | [simulation_python_api](https://github.com/dartsim/dart/blob/main/docs/design/simulation_python_api.md)                                                                              |
