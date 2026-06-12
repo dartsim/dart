@@ -1028,6 +1028,24 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         row["surface"]: row for row in info["performance_profile_rows"]
     }
     assert set(profile_by_surface) == {"Standard", "Boxed", "FrictionIndex"}
+    evidence_schema_by_fields = {
+        row["fields"]: row
+        for row in info["performance_profile_evidence_schema_rows"]
+    }
+    assert (
+        "solver_identity_schema_version, solver_manifest_index"
+        in evidence_schema_by_fields
+    )
+    assert (
+        "solver_supports_standard, solver_supports_boxed, "
+        "solver_supports_friction_index, solver_supports_problem"
+        in evidence_schema_by_fields
+    )
+    assert "lcp_dimension, contact_count" in evidence_schema_by_fields
+    assert (
+        "residual, complementarity, bound_violation"
+        in evidence_schema_by_fields
+    )
     assert profile_by_surface["Standard"]["artifact"].endswith(
         "performance_profile_standard.csv"
     )
@@ -1272,6 +1290,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Current leaders,Current laggards,Takeaway"
         in builder.events
     )
+    assert (
+        "table:lcp_performance_profile_evidence_schema:Field(s),Meaning"
+        in builder.events
+    )
+    for evidence_field in (
+        "solver_identity_schema_version, solver_manifest_index",
+        "solver_supports_standard, solver_supports_boxed, "
+        "solver_supports_friction_index, solver_supports_problem",
+        "lcp_dimension, contact_count",
+        "residual, complementarity, bound_violation",
+    ):
+        assert any(evidence_field in event for event in builder.events)
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Challenge,Native,"
         "Delegated,Max residual,Fastest native"

@@ -1484,6 +1484,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Surfaced the checked LCP performance-profile CSVs in the Python
     `lcp_physics` demo metadata and panel, with current leader/laggard summaries
     for Standard, Boxed, and FrictionIndex apples-to-apples solver profiles.
+  - Added the DART 7 LCP performance-profile evidence schema to the Python
+    `lcp_physics` panel so the roster identity, native-support, problem-form,
+    dimension, iteration, and feasibility counters are visible with the checked
+    CSV artifact.
   - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
     Jacobian solve before falling back to regularized least squares, and kept
     friction-index moving-bound updates local to accepted line-search trials.

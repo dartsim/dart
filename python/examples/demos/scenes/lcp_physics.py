@@ -222,6 +222,38 @@ _PERFORMANCE_PROFILE_REFRESH_COMMAND = (
 _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT = (
     "docs/background/lcp/figures/performance_profile_evidence.csv"
 )
+_PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
+    {
+        "fields": "solver_identity_schema_version, solver_manifest_index",
+        "meaning": "Roster-stable solver identity emitted by the C++ benchmark.",
+    },
+    {
+        "fields": (
+            "solver_supports_standard, solver_supports_boxed, "
+            "solver_supports_friction_index, solver_supports_problem"
+        ),
+        "meaning": "Concrete native support flags for each solver and problem row.",
+    },
+    {
+        "fields": (
+            "problem_type_standard, problem_type_boxed, "
+            "problem_type_friction_index, problem_type_invalid"
+        ),
+        "meaning": "Problem-form counters checked against the benchmark category.",
+    },
+    {
+        "fields": "lcp_dimension, contact_count",
+        "meaning": "Linear system dimension plus FrictionIndex contact count.",
+    },
+    {
+        "fields": "contract_ok, iterations",
+        "meaning": "Per-row solver contract result and iteration count.",
+    },
+    {
+        "fields": "residual, complementarity, bound_violation",
+        "meaning": "Numerical feasibility metrics required by the roster guard.",
+    },
+)
 _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
     {
         "surface": "Standard",
@@ -1870,6 +1902,15 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["current_laggards"])
                     _write_table_cell(builder, row["takeaway"])
                 builder.end_table()
+            if builder.begin_table(
+                "lcp_performance_profile_evidence_schema",
+                ["Field(s)", "Meaning"],
+            ):
+                for row in _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["fields"])
+                    _write_table_cell(builder, row["meaning"])
+                builder.end_table()
 
         if builder.collapsing_header("Standalone solver smoke", default_open=False):
             if builder.begin_table(
@@ -2014,6 +2055,9 @@ def build() -> SceneSetup:
             "live_metrics_snapshot": live_metrics_snapshot,
             "benchmark_packet_rows": _copy_rows(_BENCHMARK_PACKET_ROWS),
             "performance_profile_rows": _copy_rows(_PERFORMANCE_PROFILE_ROWS),
+            "performance_profile_evidence_schema_rows": _copy_rows(
+                _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+            ),
             "solver_rows": _copy_rows(_SOLVER_SUPPORT_ROWS),
             "standalone_solver_rows": [dict(row) for row in standalone_solver_rows],
             "standalone_problem_rows": [

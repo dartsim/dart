@@ -1,5 +1,70 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Profile Evidence Schema Panel
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`
+  (`bb851f453606`).
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 85]`.
+- Last committed checkpoint:
+  `7298ccde11c Expose LCP representative challenge labels`.
+- Checkpoint target:
+  `Expose LCP profile evidence schema`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 86 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+Py-demo DART 7 harness alignment:
+
+- The Python `lcp_physics` panel now includes a
+  `lcp_performance_profile_evidence_schema` table under Performance profiles.
+- The table makes the checked evidence CSV's harness-critical counters visible
+  in the demo: solver identity schema/version, solver manifest index, native
+  support flags, problem-type counters, `lcp_dimension`, `contact_count`,
+  `contract_ok`, `iterations`, `residual`, `complementarity`, and
+  `bound_violation`.
+- The setup metadata also exposes
+  `performance_profile_evidence_schema_rows` so headless tests and future
+  hand-off sessions can assert the evidence contract without parsing the CSV.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with `43 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with `Expose LCP profile evidence schema`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Representative Challenge Labels
 
 This is the latest hand-off state. Sections below are historical checkpoints
