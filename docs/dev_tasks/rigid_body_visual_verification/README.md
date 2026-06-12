@@ -3,13 +3,13 @@
 ## Current Handoff (2026-06-12)
 
 This checkpoint adds the next workflow evidence usability follow-up after the
-workflow-video packet slice. Extended rigid workflow packets now make optional
-related-evidence, direct Rigid IPC shelf, and capture-first packet rows
-self-describing in the generated `manifest.json` and `review_index.html`. These
-non-numbered rows now carry the same role, user question, try-first action,
-inspect signals, healthy signal, and scope fields that the numbered workflow
-rows already carried, so packet reviewers can understand every selected row
-without opening the live GUI.
+optional-row metadata slice. Extended rigid workflow packets now self-audit
+guidance coverage in the generated `manifest.json` and `review_index.html`.
+The manifest records whether every selected row has role, user question,
+try-first action, inspect signals, healthy signal, and scope fields, and the
+review index mirrors that with a guidance badge plus a warning block for any
+unlabeled row. This keeps future related-evidence, direct Rigid IPC shelf, and
+capture-first packet additions from silently becoming screenshot-only evidence.
 
 Expected repository state after this hand-off:
 
@@ -18,13 +18,21 @@ Expected repository state after this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `3c5b9e517d3 Enable rigid workflow video packets`.
+  by `3c5b9e517d3 Enable rigid workflow video packets` and
+  `d5c6de2bee1 Describe optional rigid workflow rows`, plus the local
+  guidance-audit commit from this checkpoint.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
   checkpoint after the workflow-video packet slice.
+- `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed at
+  this checkpoint; after committing this guidance-audit slice, the branch is
+  ahead of `origin/feature/rigid-body-gui-visual-verification` by two local
+  commits.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
-  goal after the stop checkpoint. Do not push any new implementation commit
-  without explicit approval in that future session.
+  goal and finished the pending guidance-audit checks after the previous
+  hand-off-only stop checkpoint.
+- Do not push any new implementation commit without explicit approval in that
+  future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -91,6 +99,9 @@ Expected repository state after this hand-off:
 - [x] Optional related-evidence, direct Rigid IPC shelf, and capture-first
       packet rows now carry self-describing row guidance into generated
       workflow manifests and review indexes.
+- [x] Workflow manifests and review indexes now self-audit guidance coverage
+      for the selected packet, and focused tests guard the full extended packet
+      against unlabeled rows.
 
 ## Goal
 
@@ -115,11 +126,13 @@ are easy to inspect, cycle, capture, and regression-test.
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `3c5b9e517d3 Enable rigid workflow video packets`.
+  by `3c5b9e517d3 Enable rigid workflow video packets` and
+  `d5c6de2bee1 Describe optional rigid workflow rows`, plus the local
+  guidance-audit commit from this checkpoint.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
   checkpoint.
-- Current validation for the optional-row metadata and workflow-video packet
-  slices is recorded below.
+- `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed.
+- The guidance-coverage audit is local and unpushed at this checkpoint.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -599,6 +612,50 @@ Observed results:
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Guidance-Audit Continuation
+
+The current guidance-audit continuation adds a self-audit for rigid workflow
+row guidance coverage:
+
+- `scripts/capture_py_demo.py` adds required workflow guidance fields, reports
+  missing self-description rows in `manifest.json`, and shows a guidance badge
+  plus warning block in `review_index.html`.
+- `python/tests/unit/test_capture_py_demo.py` adds coverage for complete
+  guidance in the full extended packet and for manifest/review-index reporting
+  when a row is missing guidance.
+- `CHANGELOG.md`,
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`, and
+  `python/examples/demos/README.md` describe the generated guidance audit.
+
+Focused validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_direct_ipc_shelf python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_range_preserves_requested_extra_groups python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_manifest_reports_missing_guidance -q
+```
+
+Public dry-run and artifact inspection:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_guidance_audit_dry_run_current
+jq -r '.guidance_complete, .guidance_missing_count, (.guidance_missing_rows | length), .capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].workflow_label, .captures[10].workflow_label, .captures[14].workflow_label' /tmp/dart_capture_rigid_workflow_guidance_audit_dry_run_current/manifest.json
+rg -n "<strong>guidance</strong> complete|Rows Missing Guidance|Related evidence|Rigid IPC shelf|Capture-first packet|37/51 floating_base|51/51 rigid_ipc_stack_packet" /tmp/dart_capture_rigid_workflow_guidance_audit_dry_run_current/review_index.html
+```
+
+Observed results:
+
+- Focused pytest reported `7 passed`.
+- The public dry-run selected rows 37-51 from the fully extended packet and
+  wrote `capture_count=15`, `workflow_total_count=51`,
+  `workflow_row_start=37`, and `workflow_row_end=51`.
+- The generated manifest reported `guidance_complete=true`,
+  `guidance_missing_count=0`, and an empty `guidance_missing_rows` list.
+- The selected packet carried row labels for `Related evidence`,
+  `Rigid IPC shelf`, and `Capture-first packet`.
+- The generated `review_index.html` contained
+  `<strong>guidance</strong> complete`, the absolute
+  `37/51 floating_base` and `51/51 rigid_ipc_stack_packet` rows, and no
+  `Rows Missing Guidance` warning.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -611,16 +668,23 @@ Observed results:
 - Two read-only explorer subagents informed the latest work:
   one recommended a single rigid workflow capture mode, and one recommended
   additional solver/backend/contact-policy search aliases.
+- A later read-only explorer recommended this guidance-audit shape:
+  non-failing completeness reporting over selected captures, required fields
+  for role label, user question, try-first action, inspect signals, healthy
+  signal, and scope, plus manifest fields and review-index warning surfacing
+  missing guidance.
 
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. If the latest optional-row metadata commit is present, choose the next
-   bounded rigid visual-verification gap from the durable sidecar.
-3. Rerun the repository-mandated `pixi run lint` before any future commit.
-4. Retire this dev-task folder only if the maintainer explicitly accepts the
+2. Expect the optional-row metadata and guidance-audit commits to be local and
+   unpushed unless a future session already pushed them with explicit approval.
+3. Choose the next bounded rigid visual-verification gap from the durable
+   sidecar.
+4. Rerun the repository-mandated `pixi run lint` before any future commit.
+5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-5. Do not push again unless the user explicitly approves pushing in that
+6. Do not push again unless the user explicitly approves pushing in that
    session.
 
 ## Commit And Push Notes

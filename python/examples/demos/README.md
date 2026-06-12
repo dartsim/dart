@@ -164,7 +164,9 @@ review index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
-try-first action, inspect signals, healthy signal, and scope note.
+try-first action, inspect signals, healthy signal, and scope note. The manifest
+also records guidance completeness, and the review index shows a guidance badge
+plus a warning block if any selected row is missing those fields.
 
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -671,7 +673,8 @@ the in-viewer `Rigid Workflow` panel also shows the full numbered packet,
 current-row rerun, and extended related/IPC-shelf/packet commands.
 Optional related, direct IPC shelf, and capture-first packet rows carry the
 same row-guidance fields in the manifest and review index, so extended packets
-remain readable without opening the live GUI.
+remain readable without opening the live GUI. The same outputs also include a
+guidance-completeness audit for the selected packet.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run

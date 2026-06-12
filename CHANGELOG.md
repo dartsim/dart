@@ -89,7 +89,9 @@
     make optional related-evidence, direct Rigid IPC shelf, and capture-first
     packet rows self-describing in `manifest.json` and `review_index.html`,
     with role, user question, try-first action, inspect signals, healthy
-    signal, and scope notes.
+    signal, and scope notes. The workflow manifest and review index now also
+    report guidance completeness for the selected packet so unlabeled rows are
+    visible before relying on the packet as reviewer-facing evidence.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

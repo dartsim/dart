@@ -74,6 +74,10 @@ Optional related-evidence, direct Rigid IPC shelf, and capture-first packet
 rows use the same manifest/review-index metadata fields, so extended packets
 also explain the row's role, user question, first action, inspect signals,
 healthy signal, and scope instead of only exposing a workflow group label.
+The manifest records `guidance_complete`, `guidance_missing_count`, and
+`guidance_missing_rows`, and the review index mirrors that state with a
+guidance badge plus a warning block for any selected row missing required
+self-description fields.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,

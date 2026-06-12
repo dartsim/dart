@@ -1138,6 +1138,15 @@ _WORKFLOW_GROUP_LABELS = {
     "capture_first_packet": "packets",
 }
 
+_WORKFLOW_GUIDANCE_REQUIRED_FIELDS = (
+    "workflow_label",
+    "user_question",
+    "try_first",
+    "inspect",
+    "healthy_signal",
+    "scope",
+)
+
 
 def _workflow_group_labels(captures: list[dict[str, object]]) -> str:
     labels: list[str] = []
@@ -1166,6 +1175,66 @@ def _workflow_requested_group_labels(
     if requested_include_flags.get("include_packets", False):
         labels.append("packets")
     return ", ".join(labels)
+
+
+def _workflow_guidance_missing(
+    captures: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    missing: list[dict[str, object]] = []
+    for capture in captures:
+        missing_fields: list[str] = []
+        for field in _WORKFLOW_GUIDANCE_REQUIRED_FIELDS:
+            value = capture.get(field)
+            if field == "inspect":
+                if not isinstance(value, list) or not value:
+                    missing_fields.append(field)
+            elif not isinstance(value, str) or not value:
+                missing_fields.append(field)
+        if missing_fields:
+            missing.append(
+                {
+                    "order": capture.get("order"),
+                    "scene": capture.get("scene"),
+                    "workflow_group": capture.get("workflow_group"),
+                    "missing_fields": missing_fields,
+                }
+            )
+    return missing
+
+
+def _workflow_guidance_status(missing: list[dict[str, object]]) -> str:
+    if not missing:
+        return "complete"
+    return f"missing {len(missing)}"
+
+
+def _workflow_guidance_warning(missing: list[dict[str, object]]) -> str:
+    if not missing:
+        return ""
+    items: list[str] = []
+    for entry in missing:
+        order = entry.get("order", "?")
+        scene = entry.get("scene", "unknown")
+        fields = entry.get("missing_fields", [])
+        if isinstance(fields, list):
+            field_text = ", ".join(str(field) for field in fields)
+        else:
+            field_text = str(fields)
+        items.append(
+            "<li>"
+            f"{html.escape(str(order))} {html.escape(str(scene))}: "
+            f"{html.escape(field_text)}"
+            "</li>"
+        )
+    return (
+        '<section class="guidance-warning">'
+        "<h2>Rows Missing Guidance</h2>"
+        "<p>These selected rows are missing self-description fields in the "
+        "workflow manifest and should be fixed before relying on the packet "
+        "as reviewer-facing evidence.</p>"
+        f"<ul>{''.join(items)}</ul>"
+        "</section>"
+    )
 
 
 def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) -> str:
@@ -1295,6 +1364,8 @@ def _write_workflow_review_index(
         requested_include_flags,
         fallback=selected_groups,
     )
+    guidance_missing = _workflow_guidance_missing(captures)
+    guidance_warning = _workflow_guidance_warning(guidance_missing)
     capture_orders = [
         int(capture["order"])
         for capture in captures
@@ -1321,6 +1392,7 @@ def _write_workflow_review_index(
             _workflow_badge("rows", row_span),
             _workflow_badge("requested groups", requested_groups),
             _workflow_badge("selected groups", selected_groups),
+            _workflow_badge("guidance", _workflow_guidance_status(guidance_missing)),
             _workflow_badge("complete", completed),
             _workflow_badge("failed", failed),
             _workflow_badge("elapsed s", elapsed_s),
@@ -1374,6 +1446,23 @@ def _write_workflow_review_index(
       border-radius: 6px;
       background: #f6f8fa;
       font-size: 12px;
+    }}
+    .guidance-warning {{
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #f0b429;
+      border-radius: 6px;
+      background: #fff8c5;
+    }}
+    .guidance-warning h2 {{
+      margin-bottom: 8px;
+    }}
+    .guidance-warning p {{
+      margin: 0 0 8px;
+    }}
+    .guidance-warning ul {{
+      margin: 0;
+      padding-left: 20px;
     }}
     main {{
       padding: 16px;
@@ -1478,6 +1567,7 @@ def _write_workflow_review_index(
     <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
   </header>
   <main>
+    {guidance_warning}
     <section class="grid">
 {cards}
     </section>
@@ -1539,6 +1629,7 @@ def _write_workflow_manifest(
         if captures
         else 0
     )
+    guidance_missing = _workflow_guidance_missing(captures)
     _write_json(
         manifest,
         {
@@ -1558,6 +1649,9 @@ def _write_workflow_manifest(
             "capture_count": len(captures),
             "completed_count": completed,
             "failed_count": failed,
+            "guidance_complete": not guidance_missing,
+            "guidance_missing_count": len(guidance_missing),
+            "guidance_missing_rows": guidance_missing,
             "elapsed_s": round(time.monotonic() - started_at, 3),
             "output_dir": str(output_dir),
             "artifacts": {

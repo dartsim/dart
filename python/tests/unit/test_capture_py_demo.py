@@ -383,6 +383,9 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["status"] == "planned"
     assert manifest["capture_count"] == len(specs)
     assert manifest["completed_count"] == 0
+    assert manifest["guidance_complete"] is True
+    assert manifest["guidance_missing_count"] == 0
+    assert manifest["guidance_missing_rows"] == []
     assert pathlib.Path(manifest["artifacts"]["review_index"]).is_file()
     assert [capture["scene"] for capture in manifest["captures"]] == [
         "rigid_body",
@@ -406,6 +409,8 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "DART rigid workflow review index" in review_html
     assert "requested groups" in review_html
     assert "selected groups" in review_html
+    assert "<strong>guidance</strong> complete" in review_html
+    assert "Rows Missing Guidance" not in review_html
     assert "1-2 / 2" in review_html
     assert "numbered" in review_html
     assert "What is the baseline DART 7 World rigid-body path?" in review_html
@@ -768,6 +773,104 @@ def test_rigid_workflow_row_range_preserves_requested_extra_groups(
     assert "ipc shelf, packets" in review_html
     assert "Rigid IPC shelf" in review_html
     assert "Capture-first packet" in review_html
+
+
+def test_rigid_workflow_full_extended_plan_has_complete_guidance(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--include-related",
+            "--include-ipc-shelf",
+            "--include-packets",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    expected_count = (
+        len(capture_py_demo.rigid_workflow_capture_specs())
+        + len(capture_py_demo.rigid_workflow_related_capture_specs())
+        + len(capture_py_demo.rigid_workflow_ipc_shelf_capture_specs())
+        + len(capture_py_demo.rigid_workflow_packet_capture_specs())
+    )
+    assert manifest["capture_count"] == expected_count
+    assert manifest["workflow_total_count"] == expected_count
+    assert manifest["guidance_complete"] is True
+    assert manifest["guidance_missing_count"] == 0
+    assert manifest["guidance_missing_rows"] == []
+    for capture in manifest["captures"]:
+        assert capture["workflow_label"]
+        assert capture["user_question"]
+        assert capture["try_first"]
+        assert capture["inspect"]
+        assert capture["healthy_signal"]
+        assert capture["scope"]
+
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "<strong>guidance</strong> complete" in review_html
+    assert "Rows Missing Guidance" not in review_html
+    assert "Related evidence" in review_html
+    assert "Rigid IPC shelf" in review_html
+    assert "Capture-first packet" in review_html
+
+
+def test_rigid_workflow_manifest_reports_missing_guidance(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("unlabeled_scene", 1, 320, 180, False),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["guidance_complete"] is False
+    assert manifest["guidance_missing_count"] == 1
+    assert manifest["guidance_missing_rows"] == [
+        {
+            "order": 1,
+            "scene": "unlabeled_scene",
+            "workflow_group": "numbered",
+            "missing_fields": [
+                "workflow_label",
+                "user_question",
+                "try_first",
+                "inspect",
+                "healthy_signal",
+                "scope",
+            ],
+        }
+    ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "<strong>guidance</strong> missing 1" in review_html
+    assert "Rows Missing Guidance" in review_html
+    assert "unlabeled_scene" in review_html
+    assert "workflow_label, user_question, try_first" in review_html
 
 
 def test_rigid_workflow_run_aggregates_scene_manifests(
