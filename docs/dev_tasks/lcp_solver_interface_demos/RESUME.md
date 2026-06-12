@@ -20,8 +20,11 @@ Current implementation slice:
   benchmark sweeps such as `BM_LcpAdmmRhoSweep`,
   `BM_LcpSapRegularizationSweep`, and
   `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep`.
-- Updates `CHANGELOG.md`, the LCP roster lint guard, the generated API
-  boundary inventory, and these dev-task docs.
+- Adds a Python LCP demo parameter table that reports those advanced solver
+  knobs, defaults, and matching benchmark sweep filters in `setup.info` and
+  the GUI panel.
+- Updates `CHANGELOG.md`, focused py-demo tests, the LCP roster lint guard, the
+  generated API boundary inventory, and these dev-task docs.
 
 Verification completed for this slice:
 
@@ -30,6 +33,8 @@ DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
   CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
 PYTHONPATH=build/default/cpp/Release/python:python \
   pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
 pixi run python scripts/check_lcp_solver_roster.py
 pixi run lint
 ```
@@ -38,6 +43,7 @@ Observed results:
 
 - `pixi run build-py-dev` rebuilt and linked `dartpy`.
 - `python/tests/unit/math/test_lcp.py`: `66 passed`.
+- `python/tests/unit/test_py_demo_panels.py`: `43 passed`.
 - LCP solver roster check: `24 solvers, 24 standard, 16 boxed/findex`.
 - `pixi run lint` passed.
 
@@ -756,10 +762,9 @@ push.
 
 ## Immediate Next Step
 
-Commit the current advanced-solver dartpy parameter slice locally if it has not
-already been committed. Do not push without explicit approval. After that,
-continue the broader LCP interface/demo audit from the next concrete gap. Do
-not treat the broad LCP objective as complete.
+Continue the broader LCP interface/demo audit from the next concrete gap. Do
+not push without explicit approval. Do not treat the broad LCP objective as
+complete.
 
 ## Context That Would Be Lost
 

@@ -1362,6 +1362,59 @@ def _summarize_standalone_solver_profiles(
     return profiles
 
 
+def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
+    admm = dart.AdmmSolverParameters()
+    sap = dart.SapSolverParameters()
+    newton = dart.BoxedSemiSmoothNewtonSolverParameters()
+
+    return [
+        {
+            "solver": "Admm",
+            "surface": "boxed/findex",
+            "parameters": (
+                "rho_init, mu_prox, adaptive_rho_tolerance, adaptive_rho"
+            ),
+            "defaults": (
+                f"rho_init={admm.rho_init:g}, mu_prox={admm.mu_prox:.0e}, "
+                f"adaptive_rho_tolerance={admm.adaptive_rho_tolerance:g}, "
+                f"adaptive_rho={str(admm.adaptive_rho).lower()}"
+            ),
+            "benchmark_filter": "BM_LcpAdmmRhoSweep",
+        },
+        {
+            "solver": "Sap",
+            "surface": "boxed/findex",
+            "parameters": (
+                "regularization, armijos_parameter, backtracking_factor, "
+                "max_line_search_iterations"
+            ),
+            "defaults": (
+                f"regularization={sap.regularization:.0e}, "
+                f"armijos_parameter={sap.armijos_parameter:.0e}, "
+                f"backtracking_factor={sap.backtracking_factor:g}, "
+                f"max_line_search_iterations={sap.max_line_search_iterations}"
+            ),
+            "benchmark_filter": "BM_LcpSapRegularizationSweep",
+        },
+        {
+            "solver": "BoxedSemiSmoothNewton",
+            "surface": "boxed/findex",
+            "parameters": (
+                "max_line_search_steps, step_reduction, sufficient_decrease, "
+                "min_step, jacobian_regularization"
+            ),
+            "defaults": (
+                f"max_line_search_steps={newton.max_line_search_steps}, "
+                f"step_reduction={newton.step_reduction:g}, "
+                f"sufficient_decrease={newton.sufficient_decrease:.0e}, "
+                f"min_step={newton.min_step:.0e}, "
+                f"jacobian_regularization={newton.jacobian_regularization:.0e}"
+            ),
+            "benchmark_filter": "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep",
+        },
+    ]
+
+
 def build() -> SceneSetup:
     state: dict[str, list[_ComparisonCase]] = {"cases": _make_cases()}
     standalone_solver_rows = _run_standalone_solver_smoke()
@@ -1372,6 +1425,7 @@ def build() -> SceneSetup:
     standalone_solver_profile_rows = _summarize_standalone_solver_profiles(
         standalone_problem_rows
     )
+    advanced_solver_parameter_rows = _advanced_solver_parameter_rows()
 
     def reset() -> None:
         state["cases"] = _make_cases()
@@ -1661,6 +1715,19 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["slowest_case"])
                 builder.end_table()
 
+            if builder.begin_table(
+                "lcp_advanced_solver_parameters",
+                ["Solver", "Surface", "Parameters", "Defaults", "Benchmark"],
+            ):
+                for row in advanced_solver_parameter_rows:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["solver"])
+                    _write_table_cell(builder, row["surface"])
+                    _write_table_cell(builder, row["parameters"])
+                    _write_table_cell(builder, row["defaults"])
+                    _write_table_cell(builder, row["benchmark_filter"])
+                builder.end_table()
+
         builder.separator()
         boxed_lcp.bridge.build_control_panel(builder, context)
 
@@ -1693,6 +1760,9 @@ def build() -> SceneSetup:
             ],
             "standalone_solver_profile_rows": [
                 dict(row) for row in standalone_solver_profile_rows
+            ],
+            "advanced_solver_parameter_rows": [
+                dict(row) for row in advanced_solver_parameter_rows
             ],
             "solver_manifest_summary": _solver_manifest_summary(),
             "benchmark_command": _BENCHMARK_COMMAND,

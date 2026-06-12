@@ -16,6 +16,9 @@ Current slice:
   `getParameters()` APIs.
 - Python LCP tests cover default values, round-tripping customized settings,
   and solving a small boxed problem with customized advanced solver parameters.
+- The Python LCP demo now reports the advanced solver parameter names, default
+  values, and matching benchmark sweep filters in `setup.info` and the GUI
+  panel.
 - The manual dartpy stubs, generated API boundary inventory, LCP roster lint
   guard, and changelog describe the new Python-facing surface.
 
@@ -26,6 +29,8 @@ DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
   CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
 PYTHONPATH=build/default/cpp/Release/python:python \
   pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
 pixi run python scripts/check_lcp_solver_roster.py
 pixi run lint
 ```
@@ -34,6 +39,7 @@ Observed results:
 
 - `pixi run build-py-dev` rebuilt and linked `dartpy`.
 - `python/tests/unit/math/test_lcp.py`: `66 passed`.
+- `python/tests/unit/test_py_demo_panels.py`: `43 passed`.
 - LCP solver roster check: `24 solvers, 24 standard, 16 boxed/findex`.
 - `pixi run lint` passed.
 
@@ -256,6 +262,8 @@ That stop-only state is historical after the current continuation.
       coverage, and dartpy.
 - [x] Expose advanced boxed/friction-index solver parameter objects and
       `parameters` properties in dartpy, with focused Python tests and lint.
+- [x] Add the advanced solver parameter summary to the Python LCP demo panel
+      and metadata, with focused py-demo panel tests.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -295,11 +303,10 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The current implementation checkpoint is the in-progress dartpy advanced
-solver-parameter slice. It exposes Python parameter objects and solver
-`parameters` properties for ADMM, SAP, and boxed semi-smooth Newton so the
-Python demos can tune the same advanced boxed/friction-index solver knobs that
-the C++ benchmark sweeps exercise.
+The current implementation checkpoint is the dartpy advanced solver-parameter
+slice. It exposes Python parameter objects and solver `parameters` properties
+for ADMM, SAP, and boxed semi-smooth Newton, then surfaces those tunable knobs
+in the Python LCP demo next to the matching benchmark sweeps.
 
 ## Py-Demo Representative Scale Metadata Checkpoint
 
@@ -1644,7 +1651,6 @@ metadata, packet generation, or benchmark rows.
 1. Resume on `feature/lcp-solver-interface-demos` and inspect
    `git status --short --branch` plus
    `git log --oneline --decorate --max-count=15`.
-2. Commit the current dartpy advanced-solver parameter slice locally if it has
-   not already been committed.
+2. Continue the broader LCP interface/demo audit from the next concrete gap.
 3. If publishing later, fetch/merge latest `origin/main` before any push and do
    not push without explicit approval.

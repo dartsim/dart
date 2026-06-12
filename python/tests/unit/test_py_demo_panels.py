@@ -824,12 +824,27 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     problem_rows = info["standalone_problem_rows"]
     problem_summary_rows = info["standalone_problem_summary_rows"]
     solver_profile_rows = info["standalone_solver_profile_rows"]
+    parameter_rows = info["advanced_solver_parameter_rows"]
     problem_summary_by_case = {row["case"]: row for row in problem_summary_rows}
     solver_profile_by_name = {row["solver"]: row for row in solver_profile_rows}
+    parameter_by_solver = {row["solver"]: row for row in parameter_rows}
     assert len(problem_rows) == sum(expected_problem_counts.values())
     assert set(problem_summary_by_case) == set(expected_problem_counts)
     assert len(solver_profile_rows) == summary["solver_count"]
     assert set(solver_profile_by_name) == expected_solver_names
+    assert set(parameter_by_solver) == {"Admm", "Sap", "BoxedSemiSmoothNewton"}
+    assert "rho_init" in parameter_by_solver["Admm"]["parameters"]
+    assert "regularization" in parameter_by_solver["Sap"]["parameters"]
+    assert "max_line_search_steps" in parameter_by_solver["BoxedSemiSmoothNewton"][
+        "parameters"
+    ]
+    assert parameter_by_solver["Admm"]["benchmark_filter"] == "BM_LcpAdmmRhoSweep"
+    assert parameter_by_solver["Sap"]["benchmark_filter"] == (
+        "BM_LcpSapRegularizationSweep"
+    )
+    assert parameter_by_solver["BoxedSemiSmoothNewton"]["benchmark_filter"] == (
+        "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep"
+    )
     assert {row["surface"] for row in problem_summary_rows} == {
         "standard",
         "boxed",
@@ -1040,6 +1055,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert (
         "table:lcp_solver_profile:Solver,Native cases,OK,Total us,Worst error,"
         "Worst residual,Slowest case"
+        in builder.events
+    )
+    assert (
+        "table:lcp_advanced_solver_parameters:Solver,Surface,Parameters,Defaults,"
+        "Benchmark"
         in builder.events
     )
     for plot_prefix in (
