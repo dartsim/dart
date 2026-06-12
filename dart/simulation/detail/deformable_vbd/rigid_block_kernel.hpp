@@ -1979,7 +1979,7 @@ struct AvbdRigidContactManifoldRowScratch
 
 struct AvbdRigidPointJointActiveAxis
 {
-  AvbdRigidPointJoint joint;
+  const AvbdRigidPointJoint* joint = nullptr;
   std::uint8_t axis = 0;
 };
 
@@ -2224,12 +2224,88 @@ inline void buildAvbdRigidPointJointRows(
     AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
+  const auto appendLinearRows = [&](const auto& activeRows,
+                                    std::size_t activeRowCount) {
+    linearRows.clear();
+    linearRows.reserve(linearInventory.size());
+    for (std::size_t recordIndex = 0; recordIndex < activeRowCount;
+         ++recordIndex) {
+      if (recordIndex >= linearInventory.size()) {
+        return;
+      }
+
+      const AvbdRigidPointJoint& joint = *activeRows[recordIndex].joint;
+      const std::uint8_t axis = activeRows[recordIndex].axis;
+      const AvbdScalarRowRecord& record = linearInventory[recordIndex];
+      AvbdRigidBodyPointPairRow indexedRow;
+      indexedRow.bodyA = joint.bodyA;
+      indexedRow.bodyB = joint.bodyB;
+      indexedRow.row.localPointA = joint.localPointA;
+      indexedRow.row.localPointB = joint.localPointB;
+      indexedRow.row.axis = normalizedAvbdRigidPointPairAxis(
+          joint.linearAxes.col(axis), Eigen::Vector3d::Unit(axis));
+      indexedRow.row.state = record.state;
+      indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
+      indexedRow.row.bounds = record.descriptor.bounds;
+      if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
+        indexedRow.row.previousConstraintValue
+            = avbdRigidPointPairConstraintValue(
+                states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+      }
+      linearRows.push_back(indexedRow);
+    }
+  };
+
+  const std::size_t maxActiveRows = 3 * joints.size();
+  if (maxActiveRows <= detail::kAvbdRigidSmallRowStackCapacity) {
+    std::array<
+        AvbdRigidPointJointActiveAxis,
+        detail::kAvbdRigidSmallRowStackCapacity>
+        activeRows;
+    std::array<AvbdScalarRowDescriptor, detail::kAvbdRigidSmallRowStackCapacity>
+        descriptors;
+    std::size_t activeRowCount = 0u;
+    for (const AvbdRigidPointJoint& joint : joints) {
+      if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
+        continue;
+      }
+
+      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+        if (!detail::avbdRigidJointAxisEnabled(joint.linearAxisMask, axis)) {
+          continue;
+        }
+
+        activeRows[activeRowCount] = AvbdRigidPointJointActiveAxis{
+            &joint,
+            axis,
+        };
+        descriptors[activeRowCount]
+            = detail::makeAvbdRigidJointLinearRowDescriptor(
+                joint.endpointA,
+                joint.endpointB,
+                joint.startStiffness,
+                joint.linearMaterialStiffness,
+                joint.maxStiffness,
+                joint.row,
+                axis);
+        ++activeRowCount;
+      }
+    }
+
+    linearInventory.syncActiveRows(
+        std::span<const AvbdScalarRowDescriptor>{
+            descriptors.data(), activeRowCount},
+        warmStartOptions);
+    appendLinearRows(activeRows, activeRowCount);
+    return;
+  }
+
   auto& activeRows = scratch.activeRows;
   activeRows.clear();
-  activeRows.reserve(3 * joints.size());
+  activeRows.reserve(maxActiveRows);
   auto& descriptors = scratch.descriptors;
   descriptors.clear();
-  descriptors.reserve(3 * joints.size());
+  descriptors.reserve(maxActiveRows);
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
       continue;
@@ -2240,7 +2316,7 @@ inline void buildAvbdRigidPointJointRows(
         continue;
       }
 
-      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{&joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointLinearRowDescriptor(
               joint.endpointA,
@@ -2255,35 +2331,7 @@ inline void buildAvbdRigidPointJointRows(
 
   linearInventory.reserve(descriptors.size());
   linearInventory.syncActiveRows(descriptors, warmStartOptions);
-
-  linearRows.clear();
-  linearRows.reserve(linearInventory.size());
-  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
-       ++recordIndex) {
-    if (recordIndex >= linearInventory.size()) {
-      return;
-    }
-
-    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
-    const std::uint8_t axis = activeRows[recordIndex].axis;
-    const AvbdScalarRowRecord& record = linearInventory[recordIndex];
-    AvbdRigidBodyPointPairRow indexedRow;
-    indexedRow.bodyA = joint.bodyA;
-    indexedRow.bodyB = joint.bodyB;
-    indexedRow.row.localPointA = joint.localPointA;
-    indexedRow.row.localPointB = joint.localPointB;
-    indexedRow.row.axis = normalizedAvbdRigidPointPairAxis(
-        joint.linearAxes.col(axis), Eigen::Vector3d::Unit(axis));
-    indexedRow.row.state = record.state;
-    indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
-    indexedRow.row.bounds = record.descriptor.bounds;
-    if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-      indexedRow.row.previousConstraintValue
-          = avbdRigidPointPairConstraintValue(
-              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-    }
-    linearRows.push_back(indexedRow);
-  }
+  appendLinearRows(activeRows, activeRows.size());
 }
 
 //==============================================================================
@@ -2308,12 +2356,87 @@ inline void buildAvbdRigidPointJointAngularRows(
     AvbdRigidPointJointRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
+  const auto appendAngularRows = [&](const auto& activeRows,
+                                     std::size_t activeRowCount) {
+    angularRows.clear();
+    angularRows.reserve(angularInventory.size());
+    for (std::size_t recordIndex = 0; recordIndex < activeRowCount;
+         ++recordIndex) {
+      if (recordIndex >= angularInventory.size()) {
+        return;
+      }
+
+      const AvbdRigidPointJoint& joint = *activeRows[recordIndex].joint;
+      const std::uint8_t axis = activeRows[recordIndex].axis;
+      const AvbdScalarRowRecord& record = angularInventory[recordIndex];
+      AvbdRigidBodyAngularPairRow indexedRow;
+      indexedRow.bodyA = joint.bodyA;
+      indexedRow.bodyB = joint.bodyB;
+      indexedRow.row = makeAvbdRigidJointAngularRow(
+          joint.targetRelativeOrientation,
+          joint.angularAxes.col(axis),
+          record.state);
+      indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
+      indexedRow.row.bounds = record.descriptor.bounds;
+      if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
+        indexedRow.row.previousConstraintValue
+            = avbdRigidAngularPairConstraintValue(
+                states[joint.bodyA], states[joint.bodyB], indexedRow.row);
+      }
+      angularRows.push_back(indexedRow);
+    }
+  };
+
+  const std::size_t maxActiveRows = 3 * joints.size();
+  if (maxActiveRows <= detail::kAvbdRigidSmallRowStackCapacity) {
+    std::array<
+        AvbdRigidPointJointActiveAxis,
+        detail::kAvbdRigidSmallRowStackCapacity>
+        activeRows;
+    std::array<AvbdScalarRowDescriptor, detail::kAvbdRigidSmallRowStackCapacity>
+        descriptors;
+    std::size_t activeRowCount = 0u;
+    for (const AvbdRigidPointJoint& joint : joints) {
+      if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
+        continue;
+      }
+
+      for (std::uint8_t axis = 0; axis < 3u; ++axis) {
+        if (!detail::avbdRigidJointAxisEnabled(joint.angularAxisMask, axis)) {
+          continue;
+        }
+
+        activeRows[activeRowCount] = AvbdRigidPointJointActiveAxis{
+            &joint,
+            axis,
+        };
+        descriptors[activeRowCount]
+            = detail::makeAvbdRigidJointAngularRowDescriptor(
+                joint.endpointA,
+                joint.endpointB,
+                joint.startStiffness,
+                joint.angularMaterialStiffness,
+                joint.maxStiffness,
+                joint.row,
+                axis);
+        ++activeRowCount;
+      }
+    }
+
+    angularInventory.syncActiveRows(
+        std::span<const AvbdScalarRowDescriptor>{
+            descriptors.data(), activeRowCount},
+        warmStartOptions);
+    appendAngularRows(activeRows, activeRowCount);
+    return;
+  }
+
   auto& activeRows = scratch.activeRows;
   activeRows.clear();
-  activeRows.reserve(3 * joints.size());
+  activeRows.reserve(maxActiveRows);
   auto& descriptors = scratch.descriptors;
   descriptors.clear();
-  descriptors.reserve(3 * joints.size());
+  descriptors.reserve(maxActiveRows);
   for (const AvbdRigidPointJoint& joint : joints) {
     if (!detail::isValidAvbdRigidPointJoint(joint, states.size())) {
       continue;
@@ -2324,7 +2447,7 @@ inline void buildAvbdRigidPointJointAngularRows(
         continue;
       }
 
-      activeRows.push_back(AvbdRigidPointJointActiveAxis{joint, axis});
+      activeRows.push_back(AvbdRigidPointJointActiveAxis{&joint, axis});
       descriptors.push_back(
           detail::makeAvbdRigidJointAngularRowDescriptor(
               joint.endpointA,
@@ -2339,34 +2462,7 @@ inline void buildAvbdRigidPointJointAngularRows(
 
   angularInventory.reserve(descriptors.size());
   angularInventory.syncActiveRows(descriptors, warmStartOptions);
-
-  angularRows.clear();
-  angularRows.reserve(angularInventory.size());
-  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
-       ++recordIndex) {
-    if (recordIndex >= angularInventory.size()) {
-      return;
-    }
-
-    const AvbdRigidPointJoint& joint = activeRows[recordIndex].joint;
-    const std::uint8_t axis = activeRows[recordIndex].axis;
-    const AvbdScalarRowRecord& record = angularInventory[recordIndex];
-    AvbdRigidBodyAngularPairRow indexedRow;
-    indexedRow.bodyA = joint.bodyA;
-    indexedRow.bodyB = joint.bodyB;
-    indexedRow.row = makeAvbdRigidJointAngularRow(
-        joint.targetRelativeOrientation,
-        joint.angularAxes.col(axis),
-        record.state);
-    indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
-    indexedRow.row.bounds = record.descriptor.bounds;
-    if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-      indexedRow.row.previousConstraintValue
-          = avbdRigidAngularPairConstraintValue(
-              states[joint.bodyA], states[joint.bodyB], indexedRow.row);
-    }
-    angularRows.push_back(indexedRow);
-  }
+  appendAngularRows(activeRows, activeRows.size());
 }
 
 //==============================================================================

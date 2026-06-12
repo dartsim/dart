@@ -76,9 +76,11 @@ Current continuation state:
   point-attachment/distance-spring direction helper slice, plus the newest
   point-attachment world-point reuse cleanup, the contact-manifold friction
   zero-relative-position cleanup, and the latest contact-manifold local-anchor
-  reuse cleanup. The latest contact-manifold local-anchor cleanup is captured by
-  this handoff commit; its parent is `ae19e3b0822`
-  (`Avoid redundant AVBD contact tangent anchor transform`). Do not require a
+  reuse cleanup. The current resumed slice also makes small point-joint
+  source-row builders use stack-backed active row/descriptor storage and pointer
+  rows instead of copying full point-joint configs per active axis. The latest
+  pushed parent before this point-joint cleanup was `f380bf9bc04`
+  (`Checkpoint AVBD contact local-anchor handoff`). Do not require a
   fresh session to inspect or apply local stashes before continuing. Keep this
   as the one consolidated local continuation branch for source-row cleanup until
   the user explicitly redirects or approves PR updates.
@@ -101,15 +103,14 @@ Current continuation state:
   latest pushed head at the start of these resumed slices was
   `8fc57deb9d6 Checkpoint AVBD handoff state`; before this final handoff, the
   remote continuation head was `bf4a2cc8582 Record AVBD critical handoff state`
-  and local HEAD was `ae19e3b0822 Avoid redundant AVBD contact tangent anchor
-  transform`. The current helper checkpoint sequence includes
+  and the contact-local-anchor parent was `ae19e3b0822`. The current helper
+  checkpoint sequence includes
   `52ccfd3187e Checkpoint AVBD source-row handoff state`,
   `63e3a1d44a1 Record AVBD source-row helper validation`,
   `8fc57deb9d6 Checkpoint AVBD handoff state`,
-  `bf4a2cc8582 Record AVBD critical handoff state`, `ae19e3b0822 Avoid
-  redundant AVBD contact tangent anchor transform`, and this final critical-stop
-  handoff commit. The final handoff commit is intentionally not accompanied by
-  new post-stop lint/build/test evidence after the user stopped verification.
+  `bf4a2cc8582 Record AVBD critical handoff state`, `ae19e3b0822`,
+  `f380bf9bc04 Checkpoint AVBD contact local-anchor handoff`, and this
+  point-joint cleanup commit once committed.
 - The earlier no-verification stop applied only to the previous handoff
   checkpoint. Work resumed afterward; the origin-anchor follow-ups have fresh
   local validation recorded below. No hosted CI rerun, PR comment, PR update,
@@ -118,6 +119,25 @@ Current continuation state:
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
+
+Latest resumed local follow-up:
+
+- `buildAvbdRigidPointJointRows()` and
+  `buildAvbdRigidPointJointAngularRows()` now take the same small-row path used
+  by adjacent motor/distance-spring builders: for up to
+  `kAvbdRigidSmallRowStackCapacity` possible active axes, active row metadata
+  and descriptors live on the stack instead of in scratch vectors.
+- `AvbdRigidPointJointActiveAxis` now keeps a pointer to the input
+  `AvbdRigidPointJoint` and an axis index instead of copying the full joint
+  config once per enabled linear/angular axis. The rows are consumed within the
+  builder call, so scratch does not become a persistent owner of joint data.
+- Local validation for this slice passed:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`,
+  the focused point-joint builder/config filter (11 tests), full
+  `test_avbd_rigid_block` (95 tests), `pixi run lint`, `pixi run build`, and
+  `git diff --check`.
+- This is only a narrow source-row extraction cleanup. It does not close any
+  source CPU-win, GPU, or paper-number gate.
 
 Latest resumed local follow-up:
 
@@ -484,14 +504,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff                     | State and handling                                                                                                  |
-| -------------------------------------- | --------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | final handoff commit on top of `ae19e3b0822` | Current checkout and single resume branch. Latest local slice has pre-stop focused source-row validation recorded above. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                             | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                           |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                             | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                             | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                             | Unrelated local branch; do not touch during AVBD handoff.                                                           |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                             | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session. |
+| Branch                                 | Upstream                                      | Local head at handoff                               | State and handling                                                                                                  |
+| -------------------------------------- | --------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | current point-joint cleanup on top of `f380bf9bc04` | Current checkout and single resume branch. Latest local slice has focused source-row validation recorded above.     |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                       | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                           |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                       | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                       | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                       | Unrelated local branch; do not touch during AVBD handoff.                                                           |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                                       | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session. |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest critical handoff-only stop. The branches above are intentionally left in
@@ -540,12 +560,10 @@ Fresh-session plan after this progress checkpoint:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-3. The newest contact-manifold local-anchor checkpoint has pre-stop local
-   validation recorded above. Before using it for reviewer-facing PR work,
-   refresh against the intended base and rerun the appropriate lint/build/test
-   checks because the final critical-stop handoff intentionally skipped
-   post-stop verification. Keep source-row overhead claims separate from
-   CPU-win, GPU, and paper-number gates.
+3. The newest point-joint source-row cleanup has local validation recorded
+   above. Before reviewer-facing PR work, refresh against the intended base and
+   rerun the appropriate lint/build/test checks. Keep source-row overhead
+   claims separate from CPU-win, GPU, and paper-number gates.
 4. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
    issue. Run `pixi run lint` before committing.

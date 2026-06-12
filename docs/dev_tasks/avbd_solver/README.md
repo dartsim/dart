@@ -9,6 +9,15 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed follow-up (2026-06-12): rigid point-joint linear and angular
+  source-row builders now use stack-backed active row/descriptor storage for
+  small inputs and keep only pointers to source joint configs instead of
+  copying the full `AvbdRigidPointJoint` once per active axis. This is a narrow
+  point-joint source-row extraction cleanup for the current consolidated branch,
+  not a source CPU-win, GPU, or paper-number claim. Local validation passed the
+  focused rigid-block target, the point-joint builder/config focused filter (11
+  tests), the full `test_avbd_rigid_block` binary (95 tests), `pixi run lint`,
+  `pixi run build`, and `git diff --check`.
 - Latest critical handoff stop (2026-06-11): the user explicitly redirected
   this session to stop implementation and focus only on hand-off, with no
   further verification. The consolidated continuation branch remains
