@@ -5,20 +5,25 @@
 The current work is consolidated on `feature/lcp-solver-interface-demos`.
 Recent checkpoints added active friction-index demo/benchmark coverage, refined
 Dantzig friction-index fixed-bound re-solves, and exposed direct LCP problem
-validation diagnostics in C++ and dartpy. The branch was pushed through
-`Map LCP demo to active friction benchmarks`; this handoff checkpoint adds the
-validation API, tests, docs, changelog, and this dev-task state.
+validation diagnostics in C++ and dartpy. The latest checkpoint tightens
+`supportsProblem(problem)` so solver-specific native limits are visible to
+py-demos, starting with `DirectSolver` treating only n <= 3 standard packets as
+native and marking larger standard packets as delegated.
 
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — expected clean and pushed to
-`origin/feature/lcp-solver-interface-demos` after the handoff commit.
+`feature/lcp-solver-interface-demos` — pushed to
+`origin/feature/lcp-solver-interface-demos` at
+`b2f5632b277 Expose LCP problem validation diagnostics`. The next local
+checkpoint is `Report Direct LCP native support precisely`; push still requires
+explicit maintainer/user approval.
 
 ## Immediate Next Step
 
-Start a fresh audit for the next bounded DART 7 LCP gap. Do not assume the
-broad LCP goal is complete. First verify branch state, fetch `origin/main`, and
-merge it into the branch if main has moved.
+Resume by inspecting branch state and then selecting the next bounded LCP
+solver/interface/demo gap. If `Report Direct LCP native support precisely` is
+still uncommitted, commit it first. Fetch `origin/main` and merge it into the
+branch before any future push if main has moved.
 
 ## Context That Would Be Lost
 
@@ -32,6 +37,24 @@ merge it into the branch if main has moved.
   raw matrix/vector validation call sites.
 - The active friction-index contact packet is meant to exercise moving tangent
   bounds where a single Dantzig pass could leave stale fixed bounds.
+- Current Direct support change: `DirectSolver` still solves larger standard
+  packets through Dantzig fallback, but `supportsProblem()` returns false for
+  those packets so demo native vs delegated rows match the actual route.
+- `LcpSolver::supportsProblem(problem)` is virtual in the working tree so
+  dartpy calls through the base binding can dispatch to `DirectSolver`'s
+  override.
+- `python/tests/unit/test_py_demo_panels.py` now expects Direct to be the only
+  non-native solver for the 4-row near-singular standard case and the 12-row
+  moderate-scale standard case.
+- Verification for the Direct checkpoint passed: `pixi run lint`;
+  clean rebuild of `UNIT_math_lcp_math_lcp_lcp_generated_coverage`; direct
+  Ninja rebuild of all `UNIT_math_lcp_*` binaries after the clean; CTest
+  `-R '^UNIT_math_lcp_'` passed 17/17; `python/tests/unit/math/test_lcp.py`
+  passed 59 tests; and `python/tests/unit/test_py_demo_panels.py` passed
+  43 tests.
+- The first `pixi run test-lcpsolver` attempt exposed stale local vtable state
+  after adding virtual methods to `LcpSolver`; a clean rebuild of the generated
+  coverage binary removed the segfault.
 - The branch should remain one additive published branch. Merge latest `main`
   before future pushes; avoid rebasing unless explicitly requested.
 
@@ -43,6 +66,20 @@ git status --short --branch
 git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main
 git log --oneline --decorate --max-count=12
 ```
+
+Expected files in the Direct support checkpoint:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/lcp_solver.hpp`
+- `dart/math/lcp/pivoting/direct_solver.cpp`
+- `dart/math/lcp/pivoting/direct_solver.hpp`
+- `docs/background/lcp/02_overview.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `docs/onboarding/python-bindings.md`
+- `python/tests/unit/math/test_lcp.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
 
 Then read:
 
@@ -59,18 +96,45 @@ If `origin/main` is not an ancestor of `HEAD`, merge it before continuing:
 git merge origin/main
 ```
 
-For the next change, choose one bounded gap and keep the same verification
-shape:
+If the Direct support checkpoint is still uncommitted, confirm the working tree
+matches the expected files above and commit it with:
 
-```bash
-cmake --build build/default/cpp/Release \
-  --target UNIT_math_lcp_math_lcp_lcp_types dartpy --parallel "$JOBS"
-pixi run test-lcpsolver
-PYTHONPATH=build/default/cpp/Release/python:python \
-  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
-pixi run lint
+```text
+Report Direct LCP native support precisely
 ```
 
-Also run `python/tests/unit/test_py_demo_panels.py` or relevant LCP benchmark
-smoke rows if touching demo metadata, benchmark manifests, or generated
-representative packets.
+Verification already run for that checkpoint:
+
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+  --clean-first --parallel "$JOBS"
+ninja -C build/default/cpp/Release -j "$JOBS" \
+  UNIT_math_lcp_math_lcp_additional_solvers \
+  UNIT_math_lcp_math_lcp_all_solvers_smoke \
+  UNIT_math_lcp_math_lcp_dantzig_misc \
+  UNIT_math_lcp_math_lcp_dantzig_solver \
+  UNIT_math_lcp_math_lcp_dantzig_vs_ode \
+  UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+  UNIT_math_lcp_math_lcp_lcp_edge_cases \
+  UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+  UNIT_math_lcp_math_lcp_lcp_newton_solvers \
+  UNIT_math_lcp_math_lcp_lcp_projection_solvers \
+  UNIT_math_lcp_math_lcp_lcp_solvers_stress \
+  UNIT_math_lcp_math_lcp_lcp_problems \
+  UNIT_math_lcp_math_lcp_lcp_types \
+  UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  UNIT_math_lcp_math_lcp_lemke \
+  UNIT_math_lcp_math_lcp_pgs \
+  UNIT_math_lcp_math_lcp_pivot_matrix
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^UNIT_math_lcp_' -j "$JOBS"
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+```
+
+Also run relevant LCP benchmark smoke rows if touching demo metadata, benchmark
+manifests, or generated representative packets.

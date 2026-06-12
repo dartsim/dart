@@ -143,8 +143,11 @@ before comparing solver results.
 coverage, which lets py-demos separate direct apples-to-apples rows from
 boxed/findex paths that are solved through fallback delegation. The optional
 standard tolerance mirrors C++ `LcpProblem::getType(tol)` for near-canonical
-standard forms; invalid dimensions, non-finite problem data, invalid bound
-directions, or invalid `findex` references report no native support.
+standard forms; solver-specific native limits are included, so
+`DirectSolver.supports_problem()` reports false for standard packets above its
+tiny direct-enumeration size even though `solve()` can still delegate. Invalid
+dimensions, non-finite problem data, invalid bound directions, or invalid
+`findex` references report no native support.
 
 ### Binding Conventions
 

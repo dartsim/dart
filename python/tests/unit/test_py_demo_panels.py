@@ -799,13 +799,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     expected_native_problem_counts = {
         "standard_spd": 24,
         "ill_conditioned_standard": 24,
-        "near_singular_standard": 24,
+        "near_singular_standard": 23,
         "boxed_active_bounds": 16,
         "mass_ratio_boxed": 16,
         "singular_degenerate_boxed": 16,
         "friction_index_contact": 16,
         "active_friction_index_contact": 16,
-        "moderate_scale_standard": 24,
+        "moderate_scale_standard": 23,
     }
     expected_problem_types = {
         "standard_spd": "Standard",
@@ -872,6 +872,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         expected_native_case_count = (
             4 + 3 * int(manifest_row["boxed"]) + 2 * int(manifest_row["findex"])
         )
+        if solver_name == "Direct":
+            expected_native_case_count = 2
         assert profile_row["problem_count"] == len(expected_problem_counts)
         assert profile_row["native_case_count"] == expected_native_case_count
         assert (
@@ -895,6 +897,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "standard, boxed, findex"
     )
     assert solver_profile_by_name["MPRGP"]["native_surfaces"] == "standard"
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "near_singular_standard" and not row["native_supported"]
+    } == {"Direct"}
+    assert {
+        row["solver"]
+        for row in problem_rows
+        if row["case"] == "moderate_scale_standard" and not row["native_supported"]
+    } == {"Direct"}
     assert {
         row["solver"]
         for row in problem_rows

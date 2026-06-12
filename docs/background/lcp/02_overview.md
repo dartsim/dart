@@ -60,10 +60,12 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
 - `LcpSolver::supportsStandardLcp()`, `supportsBoxedLcp()`,
   `supportsFrictionIndex()`, and `supportsProblem(problem)` expose each
-  solver's native problem-form support for DART 7 research comparisons. These
-  are capability predicates, not dispatch guarantees: several standard-only
-  algorithms still delegate boxed/findex problems to Dantzig so the unified
-  `solve()` path remains usable.
+  solver's native problem support for DART 7 research comparisons. The
+  per-problem predicate includes solver-specific native limits such as Direct's
+  tiny 2D/3D standard-LCP enumeration window. These are capability predicates,
+  not dispatch guarantees: several standard-only algorithms still delegate
+  boxed/findex problems to Dantzig so the unified `solve()` path remains
+  usable.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 - Problem classification and solvers validate basic invariants (e.g., finite

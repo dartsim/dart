@@ -253,6 +253,20 @@ def test_lcp_solver_supports_problem_uses_default_standard_tolerance() -> None:
     assert solver.supports_problem(near_standard, standard_tolerance=1e-8)
 
 
+def test_direct_solver_reports_only_tiny_standard_problems_as_native() -> None:
+    small = dart.LcpProblem(np.eye(3), np.array([1.0, 2.0, 3.0]))
+    large = dart.LcpProblem(np.eye(4), np.array([1.0, 2.0, 3.0, 4.0]))
+
+    solver = dart.DirectSolver()
+    assert solver.supports_standard_lcp()
+    assert solver.supports_problem(small)
+    assert not solver.supports_problem(large)
+
+    result, solution = solver.solve(large)
+    assert result.status == dart.LcpSolverStatus.SUCCESS
+    np.testing.assert_allclose(solution, np.array([1.0, 2.0, 3.0, 4.0]))
+
+
 def test_lcp_solver_rejects_wrong_initial_guess_size() -> None:
     problem = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]))
     solver = dart.DantzigSolver()

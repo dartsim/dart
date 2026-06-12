@@ -58,6 +58,14 @@ DirectSolver::DirectSolver()
 }
 
 //==============================================================================
+bool DirectSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  return LcpSolver::supportsProblem(problem, standardTolerance)
+         && problem.size() <= kMaxDimension;
+}
+
+//==============================================================================
 LcpResult DirectSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {

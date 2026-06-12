@@ -38,6 +38,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -182,6 +183,7 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
   const auto standard = LcpProblemFactory::standard2dSpd();
   const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
   const auto friction = LcpProblemFactory::singleContactFriction();
+  const auto largeStandard = LcpProblemFactory::standard4dSpd();
 
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
@@ -194,6 +196,11 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
         solver->supportsProblem(friction.problem),
         solverCase.supportsFrictionIndex)
         << solverCase.name;
+    EXPECT_EQ(
+        solver->supportsProblem(largeStandard.problem),
+        std::string_view(solverCase.name) != "Direct")
+        << solverCase.name
+        << " should report only actual native per-problem support";
   }
 }
 
@@ -302,7 +309,11 @@ TEST_F(AllSolversSmokeTest, NearSingularStandardProblemProducesExpectedIterates)
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
     ASSERT_NE(solver, nullptr) << solverCase.name;
-    ASSERT_TRUE(solver->supportsProblem(problem.problem)) << solverCase.name;
+    EXPECT_EQ(
+        solver->supportsProblem(problem.problem),
+        std::string_view(solverCase.name) != "Direct")
+        << solverCase.name
+        << " should report native support only for actual direct solves";
 
     Eigen::VectorXd x;
     LcpOptions options = LcpOptions::highAccuracy();

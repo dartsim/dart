@@ -94,7 +94,7 @@ public:
   /// The no-tolerance overload uses the solver's default absolute tolerance so
   /// capability checks match the tolerance-aware standard-form detection used
   /// by the standard-only solver implementations.
-  bool supportsProblem(const LcpProblem& problem) const
+  virtual bool supportsProblem(const LcpProblem& problem) const
   {
     return supportsProblem(problem, mDefaultOptions.absoluteTolerance);
   }
@@ -105,7 +105,7 @@ public:
   /// \param[in] standardTolerance Lower-bound tolerance for recognizing
   /// near-canonical standard LCP storage, passed through to
   /// LcpProblem::getType.
-  bool supportsProblem(
+  virtual bool supportsProblem(
       const LcpProblem& problem, double standardTolerance) const
   {
     switch (problem.getType(standardTolerance)) {

@@ -1419,6 +1419,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Exposed `LcpProblem::isValid()` / `getValidationMessage()` and Python
     `LcpProblem.is_valid()` / `get_validation_message()` so LCP demos and tests
     can report shared problem-invariant diagnostics before solver dispatch.
+  - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
+    per-problem native limits, starting with `DirectSolver` reporting only its
+    tiny standard-LCP enumeration window as native while larger standard
+    packets remain solvable through fallback delegation.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly
