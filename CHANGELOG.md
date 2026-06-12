@@ -1411,6 +1411,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     cone semantics of a fixed interval and removes false negatives for DART 7
     friction-index rows whose tangent bounds collapse when the normal impulse is
     zero.
+  - Refined Dantzig friction-index LCP solves by re-solving fixed tangent bounds
+    when the final normal-scaled friction bounds shift during coupled contact
+    pivots, preventing stale single-pass contact solutions. The Python LCP demo
+    now includes a coupled two-contact active-bound packet in its representative
+    solver suite.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly
