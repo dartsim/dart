@@ -18,19 +18,23 @@ normal rows alive, removes useless zero-limit friction rows for frictionless
 manifolds, and preserves the existing descriptor layout whenever any contact in
 the manifold can carry positive friction.
 
-Current checkout snapshot before final commit/push work:
+Current checkout snapshot after final push:
 
 - Branch: `avbd/source-row-extraction-precheck`.
 - Upstream: `origin/avbd/source-row-extraction-precheck`.
-- Pre-slice committed local/upstream HEAD:
-  `1f3aae319a5 Add AVBD friction sweep visual captures`.
-- If this zero-limit friction-row skip has since been committed, use the latest
-  local HEAD as the resume point.
+- Zero-limit friction-row implementation commit:
+  `8b576ce2174 Skip zero-limit AVBD contact friction rows`.
+- After this doc-only handoff correction is committed and pushed, current
+  local/upstream HEAD should be the latest commit on
+  `origin/avbd/source-row-extraction-precheck`.
 - Current branch had no associated GitHub PR in the latest read-only
   `gh pr list --head "$(git branch --show-current)"` snapshot.
-- No hosted CI rerun, PR mutation, stash operation, branch cleanup, or hosted
-  merge was performed for this resumed checkpoint before this handoff update.
-  External mutations still require explicit maintainer/user approval.
+- The zero-limit friction-row skip slice was pushed to
+  `origin/avbd/source-row-extraction-precheck` via one-off HTTPS Git because
+  SSH to GitHub was unavailable on this host. No hosted CI rerun, PR mutation,
+  stash operation, branch cleanup, or hosted merge was performed for this
+  resumed checkpoint. External mutations still require explicit maintainer/user
+  approval.
 
 Current local validation for the zero-limit friction-row skip slice:
 
@@ -72,7 +76,7 @@ Current local branch inventory:
 
 | Branch                                 | Upstream                                      | Local head at handoff                              | State and handling                                                                                    |
 | -------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `1f3aae319a5` before this pending slice            | Current consolidated continuation branch; matched origin before the zero-limit friction-row skip.     |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | latest pushed HEAD                                 | Current consolidated continuation branch; includes implementation commit `8b576ce2174`.               |
 | `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                      | PR #2977 branch in earlier work; do not mutate without explicit approval and refresh first.           |
 | `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                      | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
 | `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                      | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
@@ -89,9 +93,7 @@ Current local stash inventory. Do not apply or drop these by default:
   `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
 
 Local-only commits above `origin/avbd/source-row-extraction-precheck`: none
-before committing this zero-limit friction-row skip. If this slice has since
-been committed locally, inspect
-`git log --oneline --decorate origin/avbd/source-row-extraction-precheck..HEAD`.
+after the final handoff-doc push.
 
 Next preferred local gaps: the frictionless max-friction-0 case and GPU parity
 remain open for the friction coefficient comparison. Broader PLAN-104 gaps also
