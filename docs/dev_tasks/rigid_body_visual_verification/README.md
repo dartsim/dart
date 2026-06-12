@@ -888,9 +888,9 @@ Expected repository state for that earlier checkpoint:
 - [x] A fresh full 36-row rigid workflow capture after the Replay metadata
       change completed successfully and showed nineteen Replay-labeled review
       cards, matching the sidecar-documented Replay rows.
-- [x] A real extended optional-row capture for rows 37-51 completed the
-      related-evidence, direct Rigid IPC shelf, and capture-first packet groups
-      with docked screenshots, frame sequences, metric events, complete
+- [x] A real extended optional-row capture for rows 37-52 completed the
+      related-evidence, direct Rigid IPC shelf, and both capture-first packet
+      groups with docked screenshots, frame sequences, metric events, complete
       guidance, and no failed rows.
 - [x] The optional capture-first packet group now includes the six-box
       `rigid_ipc_heavy_stack_packet` row after the existing four-box packet;
@@ -932,10 +932,11 @@ removes this working folder in the same change.
 
 Evidence supporting readiness:
 
-- Current local branch state is clean at
-  `30bedef795c Add rigid workflow failed-row reruns`, four commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification`; `gh pr status` reported
-  no pull request for this branch during the latest recon.
+- Before this handoff refresh, the latest local evidence commit was
+  `082f8c6e7b4 Record optional rigid workflow capture evidence`, and the
+  branch was 33 commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`; a `gh pr list` query for
+  the current branch reported no pull request during the latest recon.
 - The durable sidecar
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
   curated 36-row workflow, optional related/IPC-shelf/packet rows, public
@@ -943,15 +944,15 @@ Evidence supporting readiness:
 - The user-facing `python/examples/demos/README.md` describes the same ordered
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.
-- The recorded full workflow capture completed all 36 numbered rows with
-  `failed_count=0`, guidance complete, docked screenshots, frame sequences,
-  nontrivial screenshots, and nineteen Replay-labeled review cards.
-- The recorded optional extended packet completed rows 37-51 with
-  `failed_count=0`, guidance complete, and all selected related, direct IPC
-  shelf, and original capture-first packet groups present. The newer
-  capture-first heavy packet expands the full optional packet shape to 52 rows;
-  a targeted dry-run verified rows 51-52 / 52 and a real row-52 capture verified
-  the heavy packet.
+- The fresh full workflow capture
+  `build/captures/rigid_workflow_rows_01_36_1781305407` completed all 36
+  numbered rows with `failed_count=0`, guidance complete, docked screenshots,
+  frame sequences, and a generated `review_index.html`.
+- The fresh optional extended packet
+  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` completed rows
+  37-52 with `failed_count=0`, guidance complete, and all selected related,
+  direct IPC shelf, and capture-first packet groups present, including the
+  heavy stack packet at row 52.
 - Long optional packets now have an explicit failure-recovery path:
   `--continue-on-failure` records `failed_rows`, review-index Failed Rows
   summaries, and workflow row-range rerun commands that preserve
@@ -963,11 +964,13 @@ Evidence supporting readiness:
   capture-command sync, deferred public API gaps, workflow guidance, optional
   packet guidance completeness, Replay timeline metadata, and review-index
   manifest fields.
-- A current API-gap audit still finds direct rigid-body impulse, sleep/wake,
-  island activation, and loop-closure compliance rows blocked by missing public
-  `dartpy` surfaces; point-force, joint-space impulse response, energy/momentum,
-  breakage, and spring/compliance-like rows are already covered or intentionally
-  scoped by existing rows.
+- The current API-gap guard
+  `test_rigid_visual_verification_deferred_api_gaps_are_documented` passed, and
+  live `dartpy` introspection still finds direct rigid-body impulse,
+  sleep/wake, island activation, and loop-closure compliance rows blocked by
+  missing public surfaces. Point-force, joint-space impulse response,
+  energy/momentum, breakage, and spring/compliance-like rows are already covered
+  or intentionally scoped by existing rows.
 
 Remaining before retirement:
 

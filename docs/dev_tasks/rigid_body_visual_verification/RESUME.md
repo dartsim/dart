@@ -1082,40 +1082,33 @@ recorded below.
 
 Current snapshot:
 
-- Latest local commit being handed off is titled
-  `Add rigid workflow failed-row reruns`; it builds on the
-  `Summarize rigid workflow failed rows` triage slice, the
-  `Let rigid workflow packets continue after failures` failure-resilience slice,
-  the row-range guidance commit, and the earlier heavy-packet implementation
-  commit.
-- The previous local slice refreshes the README/PLAN-103 row-range packet
-  examples and guard for rows 47-48.
-- The newest local slice adds `--continue-on-failure` for workflow packets.
-- The current follow-up adds `failed_rows` to workflow manifests and a Failed
-  Rows summary with workflow row-range rerun commands to `review_index.html`.
-- The origin tip before these local slices was
-  `bdf757db2c9 Refresh rigid handoff stop state`.
-- The previous heavy-packet slice adds the verified
-  `rigid_ipc_heavy_stack_packet` capture-first packet and was verified with
-  focused tests, a dry-run, a real row capture, lint, and diff checks before
-  its local commit.
-- There is no PR associated with this branch at checkpoint time.
-- No push was performed for this slice. Do not push without explicit approval
-  in the session that performs the push.
+- The latest local evidence commit before this docs refresh was
+  `082f8c6e7b4 Record optional rigid workflow capture evidence`, which records
+  the fresh optional rows 37-52 capture evidence after the row-36 implementation
+  and full rows 01-36 capture evidence commits.
+- The latest implementation commit for the row-15-through-row-36 pass remains
+  `608a8792afa Surface loop closure workflow signals`.
+- Before this docs refresh, the branch was clean and 33 commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`; expect this handoff
+  refresh to add one local docs-only commit if it has been committed.
+- `gh pr list --head "$(git branch --show-current)"` reported no pull request
+  for this branch at checkpoint time.
+- No push was performed for this slice. Do not push without explicit approval in
+  the session that performs the push.
 
 ## Immediate Next Step
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
-first. Expect the latest completed local implementation commit to be
-`Surface workflow review latest signals` if this slice has been committed;
-otherwise inspect the uncommitted diff for the latest-signals review-index
-follow-up.
+first. Expect the latest evidence commit to be
+`Record optional rigid workflow capture evidence`, possibly followed by a newer
+handoff-only docs refresh or cleanup commit.
 
-If the tree is clean with that slice present, the next concrete unblocked
-GUI-verification follow-up is the rows 19-21 contact-failure comparison
-mini-packet: `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
-`rigid_stack_stability`. Do not push without explicit approval in the session
-that performs the push.
+If the tree is clean with that slice present, the next concrete unblocked step
+is maintainer review/acceptance of the current scope or final cleanup in the
+same completing PR. The direct rigid-body impulse, sleep/wake or island
+activation, and loop-closure compliance rows remain deferred until public
+`dartpy` APIs exist. Do not push without explicit approval in the session that
+performs the push.
 
 Replay capture-metadata checks for this slice:
 
