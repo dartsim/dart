@@ -1,6 +1,6 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Transient Replay Restore Allocators)
+## Current Continuation (2026-06-12, Live Deformable Storage Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -9,19 +9,55 @@ Resume from exactly one branch:
 merged. Treat `pr/hmm-phase45-follow-up-clean` and older HMM branches as
 historical base branches unless a maintainer explicitly redirects the work.
 
-Hard stop state: the last implementation commit before this hand-off update is
-`675ec79a5c7` (`Route replay transient restore allocations through World
-memory`). Do not continue implementation on this branch as part of the stopped
-session. A fresh Claude/Codex session should start from this branch HEAD,
-review this section, and only then choose the next bounded follow-up slice.
+Latest local slice: live deformable persistent component payloads are being
+routed through the World free allocator during `World::addDeformableBody()`.
+The pre-fix gap was that replay-owned `DeformableNodeState` snapshots were
+allocator-aware, but the live `DeformableNodeState` and adjacent persistent
+deformable component vectors still used plain `std::vector` storage.
 
-Latest completed slice: transient replay restore now reinserts recorded
+The fix has four parts:
+
+- `DeformableNodeState`, `DeformableSpringModel`,
+  `DeformableMeshTopology`, and `DeformableBoundaryConditions` now expose
+  allocator-aware vector storage plus World-allocator constructors;
+- `World::addDeformableBody()` prepares and emplaces those components with
+  `world.getMemoryManager().getFreeAllocator()`;
+- serializer helpers and VBD/block-descent APIs accept allocator-neutral
+  vectors via spans/templates instead of requiring default-allocator
+  `std::vector` payloads;
+- the stable neo-Hookean FEM input path stores tetrahedra as a span, so
+  allocator-aware topology vectors remain compatible with the default solver.
+
+New regression coverage:
+
+- `World.WorldPersistentStorageUsesWorldFreeAllocator` now wraps creation of a
+  minimal deformable body and asserts zero global-heap allocations while the
+  World free-list allocation count grows. In debug builds it also checks the
+  live node-state and rest-position vector payloads are owned by the World
+  memory manager.
+
+Focused validation run for this local slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target test_world test_vbd_combined_descent \
+           test_vbd_parallel_block_descent test_vbd_stepper \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_vbd_combined_descent --gtest_color=no
+build/default/cpp/Release/bin/test_vbd_parallel_block_descent --gtest_color=no
+build/default/cpp/Release/bin/test_vbd_stepper --gtest_color=no
+```
+
+Previous completed slice: transient replay restore reinserts recorded
 `MultibodyVariationalState` and `VariationalContactDualState` components
 without global-heap allocation when those transient components are missing
 live. The pre-fix probe reproduced 21 global allocations / 793 bytes during
 `restoreReplayFrame(1)` after manually removing the live transient components.
 
-The fix has three parts:
+That fix has three parts:
 
 - replay transient restore uses World-allocated scratch and allocator-aware
   construction/copy for the two variational transient payload types;
@@ -63,16 +99,17 @@ git log --oneline --decorate -8
 git diff --stat
 ```
 
-The transient replay restore / compute graph metadata slice is committed as
-`675ec79a5c7`. This hand-off update intentionally does not add more
-verification. Before any future implementation, publishing, or PR work, rerun
-the relevant lint/build/test gates from a clean source state.
+Before any future publishing or PR work, rerun the relevant lint/build/test
+gates from a clean source state. The branch currently has no open PR.
 
 Immediate follow-up candidates for the next fresh session:
 
-- Persistent deformable storage: replay-owned `DeformableNodeState` snapshots
-  are allocator-aware, but live `DeformableNodeState` component storage still
-  uses plain `std::vector`.
+- Broaden deformable creation gates beyond the minimal node/rest-position case
+  once validation-time uniqueness maps and derived topology scratch are routed
+  through World memory or explicitly scoped out of the persistent-storage gate.
+- Live joint component storage still uses `Eigen::VectorXd`; replay snapshots
+  are allocator-aware but live multibody dynamic payload storage remains a
+  separate evidence-first slice.
 - Allocator comparative matrix: remaining standard/foonathan misses are still
   EnTT steady-state registry rows. Do not tune thresholds or keep allocator
   policy changes without a clean, apple-to-apples EnTT matrix improvement.

@@ -3195,6 +3195,67 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     EXPECT_EQ(heapCounter.allocationBytes(), 0u);
   }
 
+  sx::World deformableStorageWorld;
+  sx::DeformableBodyOptions storageOptions;
+  storageOptions.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(1.0, 1.0, 0.0),
+         Eigen::Vector3d(0.5, 0.5, 1.0)};
+  storageOptions.velocities.assign(
+      storageOptions.positions.size(), Eigen::Vector3d::Zero());
+  storageOptions.masses.assign(storageOptions.positions.size(), 1.0);
+  storageOptions.fixedNodes = {0, 3};
+  auto& deformableStorageFreeList
+      = deformableStorageWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeDeformableStorage
+      = deformableStorageFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    deformableStorageWorld.addDeformableBody("d", storageOptions);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "live deformable node payloads should allocate through the World "
+           "free allocator during body creation, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(
+      deformableStorageFreeList.getAllocationCount(),
+      allocationsBeforeDeformableStorage);
+#if !defined(NDEBUG)
+  {
+    const auto& registry
+        = sx::detail::storageOf(deformableStorageWorld).registry;
+    auto view = registry.view<
+        sx::comps::DeformableNodeState,
+        sx::comps::DeformableMeshTopology>();
+    ASSERT_EQ(view.size_hint(), 1u);
+    for (const auto entity : view) {
+      const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& topology
+          = view.get<sx::comps::DeformableMeshTopology>(entity);
+      auto& memory = deformableStorageWorld.getMemoryManager();
+      EXPECT_TRUE(memory.hasAllocated(
+          state.positions.data(),
+          state.positions.size() * sizeof(Eigen::Vector3d)));
+      EXPECT_TRUE(memory.hasAllocated(
+          state.previousPositions.data(),
+          state.previousPositions.size() * sizeof(Eigen::Vector3d)));
+      EXPECT_TRUE(memory.hasAllocated(
+          state.velocities.data(),
+          state.velocities.size() * sizeof(Eigen::Vector3d)));
+      EXPECT_TRUE(memory.hasAllocated(
+          state.masses.data(), state.masses.size() * sizeof(double)));
+      EXPECT_TRUE(memory.hasAllocated(
+          state.fixed.data(), state.fixed.size() * sizeof(std::uint8_t)));
+      EXPECT_TRUE(memory.hasAllocated(
+          topology.restPositions.data(),
+          topology.restPositions.size() * sizeof(Eigen::Vector3d)));
+    }
+  }
+#endif
+
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
   auto& freeList = memoryManager.getFreeListAllocator();

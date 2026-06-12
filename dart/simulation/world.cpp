@@ -2250,7 +2250,7 @@ bool hasRepeatedNodes(std::span<const std::size_t> nodes)
 
 //==============================================================================
 double signedTetrahedronVolume(
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const comps::DeformableTetrahedron& tetrahedron)
 {
   const auto& a = positions[tetrahedron.nodeA];
@@ -2262,7 +2262,7 @@ double signedTetrahedronVolume(
 
 //==============================================================================
 double surfaceTriangleAreaSquared(
-    const std::vector<Eigen::Vector3d>& positions,
+    std::span<const Eigen::Vector3d> positions,
     const comps::DeformableSurfaceTriangle& triangle)
 {
   const auto& a = positions[triangle.nodeA];
@@ -2300,15 +2300,38 @@ void validateDeformableMaterial(const DeformableMaterialProperties& material)
 //==============================================================================
 struct PreparedDeformableBodyData
 {
-  std::vector<Eigen::Vector3d> positions;
-  std::vector<Eigen::Vector3d> restPositions;
-  std::vector<Eigen::Vector3d> velocities;
-  std::vector<double> masses;
-  std::vector<std::uint8_t> fixed;
-  std::vector<comps::DeformableSpringEdge> edges;
-  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
-  std::vector<comps::DeformableTetrahedron> tetrahedra;
-  std::vector<double> tetrahedronRestVolumes;
+  using Vector3Vector = comps::DeformableNodeState::Vector3Vector;
+  using ScalarVector = comps::DeformableNodeState::ScalarVector;
+  using MaskVector = comps::DeformableNodeState::MaskVector;
+  using EdgeVector = comps::DeformableSpringModel::EdgeVector;
+  using SurfaceTriangleVector
+      = comps::DeformableMeshTopology::SurfaceTriangleVector;
+  using TetrahedronVector = comps::DeformableMeshTopology::TetrahedronVector;
+
+  explicit PreparedDeformableBodyData(common::MemoryAllocator& allocator)
+    : positions(common::StlAllocator<Eigen::Vector3d>{allocator}),
+      restPositions(common::StlAllocator<Eigen::Vector3d>{allocator}),
+      velocities(common::StlAllocator<Eigen::Vector3d>{allocator}),
+      masses(common::StlAllocator<double>{allocator}),
+      fixed(common::StlAllocator<std::uint8_t>{allocator}),
+      edges(common::StlAllocator<comps::DeformableSpringEdge>{allocator}),
+      surfaceTriangles(
+          common::StlAllocator<comps::DeformableSurfaceTriangle>{allocator}),
+      tetrahedra(common::StlAllocator<comps::DeformableTetrahedron>{allocator}),
+      tetrahedronRestVolumes(common::StlAllocator<double>{allocator}),
+      boundaryConditions(allocator)
+  {
+  }
+
+  Vector3Vector positions;
+  Vector3Vector restPositions;
+  Vector3Vector velocities;
+  ScalarVector masses;
+  MaskVector fixed;
+  EdgeVector edges;
+  SurfaceTriangleVector surfaceTriangles;
+  TetrahedronVector tetrahedra;
+  ScalarVector tetrahedronRestVolumes;
   comps::DeformableMaterial material;
   comps::DeformableBoundaryConditions boundaryConditions;
   double stiffness = 0.0;
@@ -2470,8 +2493,7 @@ void validateBoundaryNodes(
 
 //==============================================================================
 void validateNoBoundaryConflicts(
-    const DeformableBodyOptions& options,
-    const std::vector<std::uint8_t>& fixed)
+    const DeformableBodyOptions& options, std::span<const std::uint8_t> fixed)
 {
   for (std::size_t dirichletIndex = 0;
        dirichletIndex < options.dirichletBoundaryConditions.size();
@@ -2544,10 +2566,12 @@ void validateNoBoundaryConflicts(
 }
 
 //==============================================================================
-std::vector<comps::DeformableSurfaceTriangle>
-validateDeformableSurfaceTriangles(const DeformableBodyOptions& options)
+comps::DeformableMeshTopology::SurfaceTriangleVector
+validateDeformableSurfaceTriangles(
+    const DeformableBodyOptions& options, common::MemoryAllocator& allocator)
 {
-  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  comps::DeformableMeshTopology::SurfaceTriangleVector surfaceTriangles(
+      common::StlAllocator<comps::DeformableSurfaceTriangle>{allocator});
   surfaceTriangles.reserve(options.surfaceTriangles.size());
 
   std::set<std::array<std::size_t, 3>> uniqueFaces;
@@ -2611,8 +2635,10 @@ void addBoundaryFace(
 }
 
 //==============================================================================
-std::vector<comps::DeformableSurfaceTriangle> deriveDeformableBoundarySurface(
-    const std::vector<comps::DeformableTetrahedron>& tetrahedra)
+comps::DeformableMeshTopology::SurfaceTriangleVector
+deriveDeformableBoundarySurface(
+    std::span<const comps::DeformableTetrahedron> tetrahedra,
+    common::MemoryAllocator& allocator)
 {
   std::map<
       std::array<std::size_t, 3>,
@@ -2625,7 +2651,8 @@ std::vector<comps::DeformableSurfaceTriangle> deriveDeformableBoundarySurface(
     addBoundaryFace(faces, {tet.nodeB, tet.nodeC, tet.nodeD});
   }
 
-  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  comps::DeformableMeshTopology::SurfaceTriangleVector surfaceTriangles(
+      common::StlAllocator<comps::DeformableSurfaceTriangle>{allocator});
   for (const auto& [_, faceAndCount] : faces) {
     if (faceAndCount.second == 1u) {
       surfaceTriangles.push_back(faceAndCount.first);
@@ -2636,7 +2663,7 @@ std::vector<comps::DeformableSurfaceTriangle> deriveDeformableBoundarySurface(
 
 //==============================================================================
 PreparedDeformableBodyData prepareDeformableBodyOptions(
-    const DeformableBodyOptions& options)
+    const DeformableBodyOptions& options, common::MemoryAllocator& allocator)
 {
   const auto nodeCount = options.positions.size();
   DART_SIMULATION_THROW_T_IF(
@@ -2644,8 +2671,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       InvalidArgumentException,
       "DeformableBodyOptions.positions must not be empty");
 
-  PreparedDeformableBodyData data;
-  data.positions = options.positions;
+  PreparedDeformableBodyData data(allocator);
+  data.positions.assign(options.positions.begin(), options.positions.end());
   data.restPositions = data.positions;
   data.velocities.assign(nodeCount, Eigen::Vector3d::Zero());
   data.masses.assign(nodeCount, 1.0);
@@ -2730,9 +2757,11 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
     data.tetrahedronRestVolumes.push_back(volume);
   }
 
-  data.surfaceTriangles = validateDeformableSurfaceTriangles(options);
+  data.surfaceTriangles
+      = validateDeformableSurfaceTriangles(options, allocator);
   if (data.surfaceTriangles.empty() && !data.tetrahedra.empty()) {
-    data.surfaceTriangles = deriveDeformableBoundarySurface(data.tetrahedra);
+    data.surfaceTriangles
+        = deriveDeformableBoundarySurface(data.tetrahedra, allocator);
   }
 
   DART_SIMULATION_THROW_T_IF(
@@ -2820,8 +2849,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
     validateBoundaryTimeRange(
         boundary.startTime, boundary.endTime, "dirichletBoundaryConditions");
 
-    comps::DeformableDirichletBoundary internal;
-    internal.nodes = boundary.nodes;
+    comps::DeformableDirichletBoundary internal(allocator);
+    internal.nodes.assign(boundary.nodes.begin(), boundary.nodes.end());
     internal.referencePositions.reserve(boundary.nodes.size());
     for (const auto node : boundary.nodes) {
       internal.referencePositions.push_back(data.restPositions[node]);
@@ -2845,8 +2874,8 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
     validateBoundaryTimeRange(
         boundary.startTime, boundary.endTime, "neumannBoundaryConditions");
 
-    comps::DeformableNeumannBoundary internal;
-    internal.nodes = boundary.nodes;
+    comps::DeformableNeumannBoundary internal(allocator);
+    internal.nodes.assign(boundary.nodes.begin(), boundary.nodes.end());
     internal.acceleration = boundary.acceleration;
     internal.startTime = boundary.startTime;
     internal.endTime = boundary.endTime;
@@ -4577,7 +4606,8 @@ DeformableBody World::addDeformableBody(
     std::string_view name, const DeformableBodyOptions& options)
 {
   ensureDesignMode();
-  auto data = prepareDeformableBodyOptions(options);
+  auto& allocator = m_memoryManager.getFreeAllocator();
+  auto data = prepareDeformableBodyOptions(options, allocator);
 
   std::string candidateName;
   if (name.empty()) {
@@ -4600,21 +4630,22 @@ DeformableBody World::addDeformableBody(
   m_storage->registry.emplace<comps::Name>(entity, candidateName);
   m_storage->registry.emplace<comps::DeformableBodyTag>(entity);
 
-  auto& state = m_storage->registry.emplace<comps::DeformableNodeState>(entity);
+  auto& state = m_storage->registry.emplace<comps::DeformableNodeState>(
+      entity, allocator);
   state.positions = std::move(data.positions);
   state.previousPositions = state.positions;
   state.velocities = std::move(data.velocities);
   state.masses = std::move(data.masses);
   state.fixed = std::move(data.fixed);
 
-  auto& model
-      = m_storage->registry.emplace<comps::DeformableSpringModel>(entity);
+  auto& model = m_storage->registry.emplace<comps::DeformableSpringModel>(
+      entity, allocator);
   model.edges = std::move(data.edges);
   model.stiffness = data.stiffness;
   model.damping = data.damping;
 
-  auto& topology
-      = m_storage->registry.emplace<comps::DeformableMeshTopology>(entity);
+  auto& topology = m_storage->registry.emplace<comps::DeformableMeshTopology>(
+      entity, allocator);
   topology.restPositions = std::move(data.restPositions);
   topology.surfaceTriangles = std::move(data.surfaceTriangles);
   topology.tetrahedra = std::move(data.tetrahedra);
@@ -4628,7 +4659,7 @@ DeformableBody World::addDeformableBody(
       || !data.boundaryConditions.neumann.empty()) {
     auto& boundaryConditions
         = m_storage->registry.emplace<comps::DeformableBoundaryConditions>(
-            entity);
+            entity, allocator);
     boundaryConditions = std::move(data.boundaryConditions);
   }
 

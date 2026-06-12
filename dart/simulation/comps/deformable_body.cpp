@@ -39,9 +39,8 @@ namespace dart::simulation::comps {
 namespace {
 
 //==============================================================================
-template <typename T, typename Write>
-void writeVector(
-    std::ostream& output, const std::vector<T>& values, Write write)
+template <typename Vector, typename Write>
+void writeVector(std::ostream& output, const Vector& values, Write write)
 {
   io::writePOD(output, values.size());
   for (const auto& value : values) {
@@ -50,8 +49,8 @@ void writeVector(
 }
 
 //==============================================================================
-template <typename T, typename Read>
-void readVector(std::istream& input, std::vector<T>& values, Read read)
+template <typename Vector, typename Read>
+void readVector(std::istream& input, Vector& values, Read read)
 {
   std::size_t size = 0;
   io::readPOD(input, size);

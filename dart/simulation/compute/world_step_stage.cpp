@@ -4857,7 +4857,7 @@ std::size_t accumulateContactDistanceDiagnostics(
 // model. Null preserves the spring objective exactly.
 struct FemElasticityInputs
 {
-  const std::vector<comps::DeformableTetrahedron>* tetrahedra = nullptr;
+  std::span<const comps::DeformableTetrahedron> tetrahedra;
   std::span<const fem::TetRestShape> restShapes;
   fem::LameParameters lame;
   // Selects the isotropic material: false (default) is the inversion-robust
@@ -4906,10 +4906,10 @@ double addFemElasticityEnergy(
     const FemElasticityInputs& inputs,
     comps::DeformableSolverScratch::Vector3Vector* gradient)
 {
-  if (inputs.tetrahedra == nullptr || inputs.restShapes.empty()) {
+  if (inputs.tetrahedra.empty() || inputs.restShapes.empty()) {
     return 0.0;
   }
-  const auto& tets = *inputs.tetrahedra;
+  const auto tets = inputs.tetrahedra;
   const auto rests = inputs.restShapes;
   const std::size_t count = std::min(tets.size(), rests.size());
   double energy = 0.0;
@@ -7035,7 +7035,7 @@ void runVbdDeformableSolve(
         vbdScratch.coloring,
         options,
         config.workerThreads,
-        &state.positions,
+        state.positions,
         contactPlanes,
         frictionCoeff,
         selfContact,
@@ -7144,8 +7144,8 @@ bool computeProjectedNewtonDirection(
               : 0u;
     const std::size_t matrixFreeBlockEstimate
         = 4 * nodeCount + 4 * model.edges.size()
-          + (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
-                 ? 16 * femElasticity->tetrahedra->size()
+          + (femElasticity != nullptr && !femElasticity->tetrahedra.empty()
+                 ? 16 * femElasticity->tetrahedra.size()
                  : 0u)
           + 16 * activeContactCount;
     matrixFreeHessian.blocks.reserve(matrixFreeBlockEstimate);
@@ -7248,9 +7248,9 @@ bool computeProjectedNewtonDirection(
   // over its 12x12 block through the same batched seam as the spring and
   // barrier blocks. Null femElasticity (the default mass-spring path) skips
   // this entirely, so spring bodies assemble exactly as before.
-  if (femElasticity != nullptr && femElasticity->tetrahedra != nullptr
+  if (femElasticity != nullptr && !femElasticity->tetrahedra.empty()
       && !femElasticity->restShapes.empty()) {
-    const auto& tets = *femElasticity->tetrahedra;
+    const auto tets = femElasticity->tetrahedra;
     const auto rests = femElasticity->restShapes;
     const std::size_t tetCount = std::min(tets.size(), rests.size());
     constexpr std::size_t kTetBlockEntries = 144; // 12x12
@@ -7785,7 +7785,7 @@ void advanceDeformableBody(
   if (material.useFiniteElementElasticity && !topology.tetrahedra.empty()
       && topology.restPositions.size() == nodeCount) {
     syncFemRestShapeScratch(nodeCount, topology, material, contactScratch);
-    femElasticity.tetrahedra = &topology.tetrahedra;
+    femElasticity.tetrahedra = topology.tetrahedra;
     femElasticity.restShapes = std::span<const fem::TetRestShape>(
         contactScratch.femRestShapes.data(),
         contactScratch.femRestShapes.size());

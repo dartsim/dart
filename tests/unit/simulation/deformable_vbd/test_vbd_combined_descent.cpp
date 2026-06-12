@@ -498,7 +498,7 @@ TEST(VbdCombinedDescent, RayleighDampingIsStableAndChangesResult)
         scene.timeStep,
         coloring,
         options,
-        &stepStart);
+        stepStart);
     residualOut = stats.finalResidualNormSquared;
     return scene.positions;
   };
@@ -580,7 +580,7 @@ TEST(VbdCombinedDescent, RayleighDampingIgnoresSelfContactBarrierStiffness)
         /*timeStep=*/0.01,
         coloring,
         options,
-        &stepStart,
+        stepStart,
         {},
         0.0,
         &selfContact);
