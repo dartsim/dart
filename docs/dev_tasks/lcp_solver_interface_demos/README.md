@@ -1,5 +1,67 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation — Staggering Form-Level Native Capabilities
+
+After checkpoint `1b4e3827618 Report Staggering native support precisely`, the
+remaining interface mismatch was Staggering's form-level capability methods:
+`supportsProblem(problem)` correctly reported standard and boxed no-friction
+packets as delegated, but `supportsStandardLcp()` and `supportsBoxedLcp()`
+still advertised native support.
+
+Current slice:
+
+- `StaggeringSolver::supportsStandardLcp()` and
+  `StaggeringSolver::supportsBoxedLcp()` now return false.
+- `StaggeringSolver::supportsFrictionIndex()` remains true, and
+  `supportsProblem(problem)` still requires a friction-index packet with both
+  normal and friction rows for native Staggering support.
+- The C++ solver manifest, comparison-harness coverage table, dartpy LCP tests,
+  Python LCP demo metadata, py-demo panel tests, and solver-roster checker now
+  expect 24 total solvers, 23 standard-native solvers, 15 boxed-native solvers,
+  and 16 friction-index-native solvers.
+- Standard and boxed no-friction packets remain solvable through `solve()`
+  fallback delegation.
+- `CHANGELOG.md` records the capability-method alignment.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_all_solvers_smoke \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           dartpy \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_all_solvers_smoke \
+  --gtest_filter='AllSolversSmokeTest.ManifestMatchesConstructedSolverMetadata:AllSolversSmokeTest.SolverCapabilityPredicatesClassifyProblemForms:AllSolversSmokeTest.SolverCapabilityPredicatesUseDefaultToleranceForNearStandardForm:AllSolversSmokeTest.StaggeringReportsOnlyFrictionBlockProblemsAsNative'
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+  --gtest_filter='LcpComparisonHarness.ManifestMatchesFixtureCoverage:LcpComparisonHarness.StaggeringOnStandardAndBoxedFixtures:LcpComparisonHarness.StaggeringOnFrictionIndexFixtures'
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run python scripts/check_lcp_solver_roster.py
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+pixi run lint
+```
+
+Observed results:
+
+- Focused C++ all-solvers smoke coverage passed 4/4 tests.
+- Focused C++ comparison-harness coverage passed 3/3 tests.
+- `python/tests/unit/math/test_lcp.py`: 78 passed.
+- `python/tests/unit/test_py_demo_panels.py`: 43 passed.
+- LCP solver roster check passed:
+  `24 solvers, 23 standard, 15 boxed, 16 findex`.
+- `pixi run test-lcpsolver`: 17/17 C++ LCP tests passed.
+- `pixi run lint` passed, including the updated LCP solver roster gate.
+
+Immediate next step after this checkpoint:
+
+- Continue the broad DART 7 LCP objective with the next concrete solver,
+  interface, demo, or performance gap. Do not mark the overall goal complete
+  from this focused capability-method slice.
+
 ## 2026-06-12 Current Continuation — Staggering Native Support Reporting
 
 After the stop-only hand-off, work resumed on the broad LCP solver/interface

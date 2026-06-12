@@ -67,7 +67,7 @@ void ExpectSolverPassesFixture(
 //==============================================================================
 TEST(LcpComparisonHarness, ManifestMatchesFixtureCoverage)
 {
-  constexpr std::array<std::string_view, 24> kStandardCoverage{
+  constexpr std::array<std::string_view, 23> kStandardCoverage{
       "Dantzig",
       "Lemke",
       "Baraff",
@@ -88,11 +88,10 @@ TEST(LcpComparisonHarness, ManifestMatchesFixtureCoverage)
       "InteriorPoint",
       "MPRGP",
       "ShockPropagation",
-      "Staggering",
       "Admm",
       "Sap",
       "BoxedSemiSmoothNewton"};
-  constexpr std::array<std::string_view, 16> kBoxedCoverage{
+  constexpr std::array<std::string_view, 15> kBoxedCoverage{
       "Dantzig",
       "Pgs",
       "SymmetricPsor",
@@ -105,7 +104,6 @@ TEST(LcpComparisonHarness, ManifestMatchesFixtureCoverage)
       "Apgd",
       "Tgs",
       "ShockPropagation",
-      "Staggering",
       "Admm",
       "Sap",
       "BoxedSemiSmoothNewton"};

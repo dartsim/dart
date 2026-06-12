@@ -1450,6 +1450,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for friction-index packets with both normal and friction rows; standard and
     boxed no-friction packets remain solvable through fallback delegation but
     are no longer advertised as native Staggering comparisons.
+  - Aligned Staggering's form-level native capability methods and Python demo
+    metadata with its friction-index-only native route, while preserving
+    standard and boxed fallback solve behavior through `solve()`.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

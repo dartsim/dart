@@ -378,8 +378,8 @@ _SOLVER_SUPPORT_ROWS: tuple[dict[str, Any], ...] = (
     {
         "name": "Staggering",
         "family": "Other",
-        "standard": True,
-        "boxed": True,
+        "standard": False,
+        "boxed": False,
         "findex": True,
         "role": "contact pipeline staggering",
     },

@@ -45,7 +45,6 @@ BOXED_SOLVERS = {
     dart.ApgdSolver,
     dart.TgsSolver,
     dart.ShockPropagationSolver,
-    dart.StaggeringSolver,
     dart.AdmmSolver,
     dart.SapSolver,
     dart.BoxedSemiSmoothNewtonSolver,
@@ -219,7 +218,9 @@ def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> No
 
     assert solver.get_name()
     assert solver.get_category()
-    assert solver.supports_standard_lcp()
+    assert solver.supports_standard_lcp() is (
+        solver_type is not dart.StaggeringSolver
+    )
     assert solver.supports_boxed_lcp() is supports_boxed
     assert solver.supports_friction_index() is supports_findex
     assert solver.supports_problem(problem) is (
@@ -274,6 +275,9 @@ def test_staggering_solver_reports_only_friction_blocks_as_native() -> None:
     assert not solver.supports_problem(standard)
     assert not solver.supports_problem(boxed)
     assert solver.supports_problem(findex)
+    assert not solver.supports_standard_lcp()
+    assert not solver.supports_boxed_lcp()
+    assert solver.supports_friction_index()
 
     result, solution = solver.solve(standard)
     assert result.status == dart.LcpSolverStatus.SUCCESS

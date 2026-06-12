@@ -760,8 +760,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
 
     assert summary == {
         "solver_count": 24,
-        "standard_count": 24,
-        "boxed_count": 16,
+        "standard_count": 23,
+        "boxed_count": 15,
         "findex_count": 16,
     }
     assert len(solver_rows) == summary["solver_count"]
@@ -797,15 +797,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "moderate_scale_standard": 24,
     }
     expected_native_problem_counts = {
-        "standard_spd": 24,
-        "ill_conditioned_standard": 24,
-        "near_singular_standard": 23,
-        "boxed_active_bounds": 16,
-        "mass_ratio_boxed": 16,
-        "singular_degenerate_boxed": 16,
+        "standard_spd": 23,
+        "ill_conditioned_standard": 23,
+        "near_singular_standard": 22,
+        "boxed_active_bounds": 15,
+        "mass_ratio_boxed": 15,
+        "singular_degenerate_boxed": 15,
         "friction_index_contact": 16,
         "active_friction_index_contact": 16,
-        "moderate_scale_standard": 23,
+        "moderate_scale_standard": 22,
     }
     expected_problem_types = {
         "standard_spd": "Standard",
@@ -922,7 +922,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
         expected_native_case_count = (
-            4 + 3 * int(manifest_row["boxed"]) + 2 * int(manifest_row["findex"])
+            4 * int(manifest_row["standard"])
+            + 3 * int(manifest_row["boxed"])
+            + 2 * int(manifest_row["findex"])
         )
         if solver_name == "Direct":
             expected_native_case_count = 2
@@ -954,12 +956,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         row["solver"]
         for row in problem_rows
         if row["case"] == "near_singular_standard" and not row["native_supported"]
-    } == {"Direct"}
+    } == {"Direct", "Staggering"}
     assert {
         row["solver"]
         for row in problem_rows
         if row["case"] == "moderate_scale_standard" and not row["native_supported"]
-    } == {"Direct"}
+    } == {"Direct", "Staggering"}
     assert {
         row["solver"]
         for row in problem_rows

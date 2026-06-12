@@ -150,8 +150,8 @@ class AllSolversSmokeTest : public ::testing::Test
 TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
 {
   EXPECT_EQ(kLcpSolverManifest.size(), 24u);
-  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Standard), 24u);
-  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Boxed), 16u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Standard), 23u);
+  EXPECT_EQ(countSolversSupporting(LcpProblemSupport::Boxed), 15u);
   EXPECT_EQ(countSolversSupporting(LcpProblemSupport::FrictionIndex), 16u);
 
   for (const auto& solverCase : kLcpSolverManifest) {
@@ -159,7 +159,8 @@ TEST_F(AllSolversSmokeTest, ManifestMatchesConstructedSolverMetadata)
     ASSERT_NE(solver, nullptr) << solverCase.name;
     EXPECT_EQ(solver->getName(), std::string(solverCase.name))
         << solverCase.name;
-    EXPECT_TRUE(solver->supportsStandardLcp()) << solverCase.name;
+    EXPECT_EQ(solver->supportsStandardLcp(), solverCase.supportsStandard)
+        << solverCase.name;
     EXPECT_EQ(solver->supportsBoxedLcp(), solverCase.supportsBoxed)
         << solverCase.name;
     EXPECT_EQ(solver->supportsFrictionIndex(), solverCase.supportsFrictionIndex)
@@ -180,11 +181,10 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
     const bool isDirect = std::string_view(solverCase.name) == "Direct";
     const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
 
-    EXPECT_EQ(solver->supportsProblem(standard.problem), !isStaggering)
-        << solverCase.name;
     EXPECT_EQ(
-        solver->supportsProblem(boxed.problem),
-        solverCase.supportsBoxed && !isStaggering)
+        solver->supportsProblem(standard.problem), solverCase.supportsStandard)
+        << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(boxed.problem), solverCase.supportsBoxed)
         << solverCase.name;
     EXPECT_EQ(
         solver->supportsProblem(friction.problem),
@@ -215,16 +215,14 @@ TEST_F(
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
     ASSERT_NE(solver, nullptr) << solverCase.name;
-    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
-    EXPECT_EQ(solver->supportsProblem(problem), !isStaggering)
+    EXPECT_EQ(solver->supportsProblem(problem), solverCase.supportsStandard)
         << solverCase.name
         << " should use its native route with the default tolerance";
-    EXPECT_EQ(
-        solver->supportsProblem(problem, 0.0),
-        solverCase.supportsBoxed && !isStaggering)
+    EXPECT_EQ(solver->supportsProblem(problem, 0.0), solverCase.supportsBoxed)
         << solverCase.name
         << " should still allow exact classification when requested";
-    EXPECT_EQ(solver->supportsProblem(problem, 1e-8), !isStaggering)
+    EXPECT_EQ(
+        solver->supportsProblem(problem, 1e-8), solverCase.supportsStandard)
         << solverCase.name;
   }
 }
@@ -236,6 +234,9 @@ TEST_F(AllSolversSmokeTest, StaggeringReportsOnlyFrictionBlockProblemsAsNative)
   const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
   const auto friction = LcpProblemFactory::singleContactFriction();
 
+  EXPECT_FALSE(solver.supportsStandardLcp());
+  EXPECT_FALSE(solver.supportsBoxedLcp());
+  EXPECT_TRUE(solver.supportsFrictionIndex());
   EXPECT_FALSE(solver.supportsProblem(standard.problem));
   EXPECT_FALSE(solver.supportsProblem(boxed.problem));
   EXPECT_TRUE(solver.supportsProblem(friction.problem));

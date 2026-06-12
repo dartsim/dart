@@ -198,7 +198,7 @@ def check_roster() -> None:
     standard_count = sum(1 for entry in manifest if entry.standard)
     boxed_count = sum(1 for entry in manifest if entry.boxed)
     findex_count = sum(1 for entry in manifest if entry.findex)
-    if (standard_count, boxed_count, findex_count) != (24, 16, 16):
+    if (standard_count, boxed_count, findex_count) != (23, 15, 16):
         raise AssertionError(
             "unexpected LCP support counts: "
             f"standard={standard_count}, boxed={boxed_count}, findex={findex_count}"
@@ -279,7 +279,9 @@ def main() -> int:
         print(f"LCP solver roster check failed: {exc}", file=sys.stderr)
         return 1
 
-    print("LCP solver roster check passed: 24 solvers, 24 standard, 16 boxed/findex.")
+    print(
+        "LCP solver roster check passed: 24 solvers, 23 standard, 15 boxed, 16 findex."
+    )
     return 0
 
 

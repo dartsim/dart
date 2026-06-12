@@ -58,9 +58,14 @@ public:
   bool supportsProblem(
       const LcpProblem& problem, double standardTolerance) const override;
 
+  bool supportsStandardLcp() const override
+  {
+    return false;
+  }
+
   bool supportsBoxedLcp() const override
   {
-    return true;
+    return false;
   }
 
   bool supportsFrictionIndex() const override
