@@ -312,7 +312,9 @@ When a row range selects only part of a larger packet, the top-level manifest
 keeps the requested packet shape in `include_related`, `include_ipc_shelf`, and
 `include_packets`. The selected slice is reported separately through
 `selected_include_related`, `selected_include_ipc_shelf`, and
-`selected_include_packets`.
+`selected_include_packets`. The generated `review_index.html` header mirrors
+that packet context with row-span, requested-groups, and selected-groups
+badges.
 
 For motion evidence, add `--video --fps 24` to the same docked capture path.
 The helper encodes an MP4 when `ffmpeg` is available and still keeps the PNG

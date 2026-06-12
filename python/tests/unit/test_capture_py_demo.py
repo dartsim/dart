@@ -345,6 +345,10 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     review_index = pathlib.Path(manifest["artifacts"]["review_index"])
     review_html = review_index.read_text()
     assert "DART rigid workflow review index" in review_html
+    assert "requested groups" in review_html
+    assert "selected groups" in review_html
+    assert "1-2 / 2" in review_html
+    assert "numbered" in review_html
     assert "What is the baseline DART 7 World rigid-body path?" in review_html
     assert "Healthy: contacts settle" in review_html
     assert "rigid_solver_compare" in review_html
@@ -629,6 +633,10 @@ def test_rigid_workflow_row_range_preserves_requested_extra_groups(
         "rigid_ipc",
         "rigid_ipc_stack_packet",
     ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "3-4 / 4" in review_html
+    assert "numbered, related, ipc shelf, packets" in review_html
+    assert "ipc shelf, packets" in review_html
 
 
 def test_rigid_workflow_run_aggregates_scene_manifests(

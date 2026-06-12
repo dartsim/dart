@@ -77,7 +77,8 @@
     shelf scenes can be appended to the same workflow manifest and review
     index without changing the default 36-row workflow. Row-range workflow
     manifests now preserve requested optional packet groups separately from the
-    optional groups present in the selected slice.
+    optional groups present in the selected slice, and the generated review
+    index mirrors the row span plus requested/selected group summary.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

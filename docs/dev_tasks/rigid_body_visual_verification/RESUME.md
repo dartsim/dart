@@ -6,7 +6,9 @@ This checkpoint adds a workflow-manifest semantics follow-up after the direct
 Rigid IPC shelf capture bundle. Row-range workflow manifests now keep the
 requested optional packet groups in `include_related`, `include_ipc_shelf`, and
 `include_packets`, while separate `selected_include_*` fields report which
-optional groups are present in the selected row range.
+optional groups are present in the selected row range. The generated
+`review_index.html` mirrors that context with row-span, requested-groups, and
+selected-groups badges.
 
 Expected repository state after this hand-off:
 
@@ -126,7 +128,8 @@ row-range workflow manifests now keep `include_related`, `include_ipc_shelf`,
 and `include_packets` tied to the requested packet shape, while new
 `selected_include_related`, `selected_include_ipc_shelf`, and
 `selected_include_packets` fields describe the optional groups actually present
-in the selected rows.
+in the selected rows. The workflow `review_index.html` header shows the same
+row-span, requested-groups, and selected-groups context for reviewers.
 
 ## Current Branch
 
@@ -419,23 +422,30 @@ combined row-range dry-run with related evidence, IPC shelf rows, and packets
 selected rows 47-51; it reported the direct IPC shelf rows as absolute 47-50
 and `rigid_ipc_stack_packet` as the explicit combined-mode row 51.
 
-Current workflow manifest metadata validation already run:
+Current workflow manifest and review index metadata validation already run:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_direct_ipc_shelf python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_range_preserves_requested_extra_groups python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 47 --workflow-end-row 51 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current
 jq -r '.include_related, .include_ipc_shelf, .include_packets, .selected_include_related, .selected_include_ipc_shelf, .selected_include_packets, .capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].workflow_group, .captures[0].scene, .captures[4].workflow_group, .captures[4].scene' /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current/manifest.json
 rg -n "47/51 rigid_ipc|50/51 rigid_ipc_pile|51/51 rigid_ipc_stack_packet|rigid_ipc_shelf|capture_first_packet" /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current/review_index.html
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_range_preserves_requested_extra_groups python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 47 --workflow-end-row 51 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_review_index_groups_dry_run_current
+jq -r '.include_related, .include_ipc_shelf, .include_packets, .selected_include_related, .selected_include_ipc_shelf, .selected_include_packets, .capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end' /tmp/dart_capture_rigid_workflow_review_index_groups_dry_run_current/manifest.json
+rg -n "<strong>rows</strong> 47-51 / 51|<strong>requested groups</strong> numbered, related, ipc shelf, packets|<strong>selected groups</strong> ipc shelf, packets|47/51 rigid_ipc|51/51 rigid_ipc_stack_packet" /tmp/dart_capture_rigid_workflow_review_index_groups_dry_run_current/review_index.html
 pixi run lint
 git diff --check
 ```
 
-The focused pytest reported `16 passed`. The public combined row-range dry-run
+The focused pytest reported `16 passed` for manifest metadata and `4 passed`
+for the review-index metadata follow-up. The public combined row-range dry-run
 selected rows 47-51 and wrote requested flags `include_related=true`,
 `include_ipc_shelf=true`, and `include_packets=true` while separately
 reporting `selected_include_related=false`,
 `selected_include_ipc_shelf=true`, and `selected_include_packets=true`.
 The manifest also reported `capture_count=5`, `workflow_total_count=51`,
 `workflow_row_start=47`, `workflow_row_end=51`, first selected scene
-`rigid_ipc`, and final selected scene `rigid_ipc_stack_packet`.
-`pixi run lint` passed and `git diff --check` was clean.
+`rigid_ipc`, and final selected scene `rigid_ipc_stack_packet`. The generated
+review index header contained row-span `47-51 / 51`, requested-groups
+`numbered, related, ipc shelf, packets`, and selected-groups
+`ipc shelf, packets`. `pixi run lint` passed and `git diff --check` was clean.

@@ -731,7 +731,8 @@ For row-range packets, manifest fields such as `include_related`,
 `include_ipc_shelf`, and `include_packets` record the requested packet shape;
 `selected_include_related`, `selected_include_ipc_shelf`, and
 `selected_include_packets` record which optional groups are present in the
-selected row range.
+selected row range. The generated `review_index.html` header mirrors this with
+row-span, requested-groups, and selected-groups badges.
 
 Capture the focused rigid verifier scenes with the docked UI visible:
 

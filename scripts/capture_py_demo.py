@@ -954,6 +954,43 @@ def _workflow_link(label: str, href: object) -> str:
     )
 
 
+_WORKFLOW_GROUP_LABELS = {
+    "numbered": "numbered",
+    "related_evidence": "related",
+    "rigid_ipc_shelf": "ipc shelf",
+    "capture_first_packet": "packets",
+}
+
+
+def _workflow_group_labels(captures: list[dict[str, object]]) -> str:
+    labels: list[str] = []
+    for capture in captures:
+        group = capture.get("workflow_group")
+        if not isinstance(group, str):
+            continue
+        label = _WORKFLOW_GROUP_LABELS.get(group, group)
+        if label not in labels:
+            labels.append(label)
+    return ", ".join(labels) if labels else "none"
+
+
+def _workflow_requested_group_labels(
+    requested_include_flags: dict[str, bool] | None,
+    *,
+    fallback: str,
+) -> str:
+    if requested_include_flags is None:
+        return fallback
+    labels = ["numbered"]
+    if requested_include_flags.get("include_related", False):
+        labels.append("related")
+    if requested_include_flags.get("include_ipc_shelf", False):
+        labels.append("ipc shelf")
+    if requested_include_flags.get("include_packets", False):
+        labels.append("packets")
+    return ", ".join(labels)
+
+
 def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) -> str:
     summary = _workflow_scene_manifest_summary(capture, output_dir)
     order = capture.get("order", "?")
@@ -1063,6 +1100,7 @@ def _write_workflow_review_index(
     status: str,
     captures: list[dict[str, object]],
     started_at: float,
+    requested_include_flags: dict[str, bool] | None = None,
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     index = _workflow_review_index_path(output_dir)
@@ -1072,10 +1110,37 @@ def _write_workflow_review_index(
     cards = "\n".join(
         _workflow_review_card(capture, output_dir) for capture in captures
     )
+    selected_groups = _workflow_group_labels(captures)
+    requested_groups = _workflow_requested_group_labels(
+        requested_include_flags,
+        fallback=selected_groups,
+    )
+    capture_orders = [
+        int(capture["order"])
+        for capture in captures
+        if isinstance(capture.get("order"), int)
+    ]
+    workflow_total_count = (
+        max(
+            int(capture.get("count", len(captures)))
+            for capture in captures
+            if isinstance(capture.get("count"), int)
+        )
+        if captures
+        else 0
+    )
+    row_span = (
+        f"{min(capture_orders)}-{max(capture_orders)} / {workflow_total_count}"
+        if capture_orders
+        else f"none / {workflow_total_count}"
+    )
     badges = " ".join(
         [
             _workflow_badge("status", status),
             _workflow_badge("captures", len(captures)),
+            _workflow_badge("rows", row_span),
+            _workflow_badge("requested groups", requested_groups),
+            _workflow_badge("selected groups", selected_groups),
             _workflow_badge("complete", completed),
             _workflow_badge("failed", failed),
             _workflow_badge("elapsed s", elapsed_s),
@@ -1262,6 +1327,7 @@ def _write_workflow_manifest(
         status=status,
         captures=captures,
         started_at=started_at,
+        requested_include_flags=requested_include_flags,
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
