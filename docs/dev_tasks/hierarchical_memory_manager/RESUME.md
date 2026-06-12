@@ -14,9 +14,11 @@ allocator`).
 World allocator`).
 - Committed locally: `6568764f1f8` (`Route replay names through World
 allocator`).
-- Latest local checkpoint in this continuation: replay dynamic joint payloads
-  use World-allocated replay snapshot vectors, with 6-DOF floating-joint
-  record/restore coverage.
+- Committed locally: `20d25cb08e6` (`Route replay joint payloads through World
+allocator`).
+- Latest local checkpoint in this continuation: replay restore rejects live
+  joint vector size drift instead of resizing `Eigen::VectorXd` storage during
+  restore.
 
 Committed replay slice:
 
@@ -61,7 +63,15 @@ Current replay-payload slice:
 - The ownership gate and replay runtime restore test now exercise a 6-DOF
   floating joint to cover multi-coordinate dynamic payloads.
 
-Focused validation for the replay-name and replay-payload slices:
+Current restore-size hardening slice:
+
+- `restoreReplayVector()` now treats live joint vector size drift as a replay
+  layout error instead of resizing live `Eigen::VectorXd` storage.
+- `World.ReplayRecordingRejectsJointRuntimeVectorSizeChanges` covers direct
+  registry corruption of a floating joint runtime vector.
+
+Focused validation for the replay-name, replay-payload, and restore-size
+slices:
 
 ```bash
 pixi run lint
@@ -75,16 +85,17 @@ build/default/cpp/Release/bin/test_world \
 ```
 
 Immediate next step: choose the next evidence-first HMM slice. Good candidates
-are richer replay restore paths that resize live vectors or insert transient
-components, or the EnTT storage-layout investigation for the allocator
-comparative matrix. Do not push or open a PR without explicit maintainer
-approval.
+are richer replay restore paths that insert transient components or touch
+non-joint replay payloads, or the EnTT storage-layout investigation for the
+allocator comparative matrix. Do not push or open a PR without explicit
+maintainer approval.
 
 Remaining replay-specific follow-up: live joint component storage still uses
-`Eigen::VectorXd`; the latest replay change only changes replay-owned snapshot
-payloads. Richer replay restores may still allocate if they have to resize live
-vectors or insert missing transient components. Treat those as separate
-evidence-first slices.
+`Eigen::VectorXd`; the latest replay changes only change replay-owned snapshot
+payloads and reject runtime vector size drift during restore. Richer replay
+restores may still allocate if they insert missing transient components or
+touch non-joint replay payloads that remain native heap-owned. Treat those as
+separate evidence-first slices.
 
 Fresh-session start:
 

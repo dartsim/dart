@@ -497,7 +497,10 @@ void captureReplayVector(const Eigen::VectorXd& source, ReplayVector& target)
 template <typename ReplayVector>
 void restoreReplayVector(const ReplayVector& source, Eigen::VectorXd& target)
 {
-  target.resize(static_cast<Eigen::Index>(source.values.size()));
+  DART_SIMULATION_THROW_T_IF(
+      target.size() != static_cast<Eigen::Index>(source.values.size()),
+      InvalidOperationException,
+      "Cannot restore replay frame: Joint runtime vector size changed");
   for (Eigen::Index i = 0; i < target.size(); ++i) {
     target[i] = source.values[static_cast<std::size_t>(i)];
   }

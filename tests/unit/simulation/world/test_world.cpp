@@ -20117,6 +20117,34 @@ TEST(World, ReplayRecordingRejectsJointDynamicsChanges)
   });
 }
 
+// Test that replay restore rejects internally corrupted joint runtime vector
+// sizes instead of resizing live Eigen storage during restore.
+TEST(World, ReplayRecordingRejectsJointRuntimeVectorSizeChanges)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Floating;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
+  jointComponent.position = Eigen::VectorXd::Zero(1);
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
 // Test that replay restore rejects link physical/collision layout edits that
 // are not mutable per-frame state.
 TEST(World, ReplayRecordingRejectsLinkPhysicalLayoutChanges)

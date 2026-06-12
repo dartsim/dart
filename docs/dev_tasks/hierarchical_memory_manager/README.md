@@ -15,9 +15,11 @@ allocator`).
 World allocator`).
 - Committed locally: `6568764f1f8` (`Route replay names through World
 allocator`).
-- Latest local checkpoint in this continuation: replay dynamic joint payloads
-  use World-allocated replay snapshot vectors, with 6-DOF floating-joint
-  record/restore coverage.
+- Committed locally: `20d25cb08e6` (`Route replay joint payloads through World
+allocator`).
+- Latest local checkpoint in this continuation: replay restore rejects live
+  joint vector size drift instead of resizing `Eigen::VectorXd` storage during
+  restore.
 
 The committed replay slices close the next replay ownership gaps. A new
 non-empty replay ownership assertion first reproduced one global heap
@@ -49,7 +51,14 @@ runtime restore test now exercise a 6-DOF floating joint so the snapshot code
 copies multi-coordinate dynamic payloads rather than only scalar revolute
 payloads.
 
-Focused validation for the replay-name and replay-payload slices:
+The replay-restore hardening slice makes joint runtime vector size drift a
+layout error. Restore now copies into existing live vectors only after checking
+that the live vector size matches the recorded snapshot, and
+`World.ReplayRecordingRejectsJointRuntimeVectorSizeChanges` covers the
+allocation-avoidance invariant.
+
+Focused validation for the replay-name, replay-payload, and restore-size
+slices:
 
 ```bash
 pixi run lint
@@ -62,11 +71,12 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Live joint component storage still uses `Eigen::VectorXd`; the replay change
-only changes replay-owned snapshot payloads. Richer replay restores may still
-allocate if they have to resize live vectors or insert missing transient
-components. Treat those as separate evidence-first slices; do not claim full
-World replay zero-heap coverage from the current snapshot-payload gates.
+Live joint component storage still uses `Eigen::VectorXd`; the replay changes
+only change replay-owned snapshot payloads and reject runtime vector size drift
+during restore. Richer replay restores may still allocate if they insert
+missing transient components or touch non-joint replay payloads that remain
+native heap-owned. Treat those as separate evidence-first slices; do not claim
+full World replay zero-heap coverage from the current snapshot-payload gates.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -88,11 +98,11 @@ git diff --stat
 ```
 
 Next implementation slice should be evidence-first: either stress richer replay
-restore paths that resize live vectors or insert transient components, or
-return to the EnTT storage-layout investigation for the allocator comparative
-matrix. Before publishing or opening a PR, run `pixi run lint` plus the
-selected focused test/build gate for the final changed scope. Do not push/open
-a PR without explicit maintainer approval.
+restore paths that insert transient components or touch non-joint replay
+payloads, or return to the EnTT storage-layout investigation for the allocator
+comparative matrix. Before publishing or opening a PR, run `pixi run lint` plus
+the selected focused test/build gate for the final changed scope. Do not
+push/open a PR without explicit maintainer approval.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
