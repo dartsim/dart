@@ -81,7 +81,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--pair-count",
         type=int,
         default=DEFAULT_PAIR_COUNT,
-        help="Representative point-triangle CCD pair count for the packet row.",
+        help="Representative CCD pair count per primitive family.",
     )
     parser.add_argument(
         "--tolerance",
@@ -105,7 +105,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
-    filter_expr = f"^BM_Plan083CcdLineSearch(Cpu|Cuda)/{args.pair_count}(/real_time)?$"
+    filter_expr = (
+        "^BM_Plan083(EdgeEdge)?CcdLineSearch(Cpu|Cuda)"
+        f"/{args.pair_count}(/real_time)?$"
+    )
     command = [
         sys.executable,
         "scripts/run_cpp_benchmark.py",
@@ -160,11 +163,24 @@ def _packet_row_name(row: Mapping[str, Any]) -> str:
     return name
 
 
+def _expected_row_names(pair_count: int) -> dict[str, tuple[str, str]]:
+    return {
+        "point_triangle": (
+            f"BM_Plan083CcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083CcdLineSearchCuda/{pair_count}",
+        ),
+        "edge_edge": (
+            f"BM_Plan083EdgeEdgeCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083EdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
+    }
+
+
 def _representative_rows(
     rows: list[Mapping[str, Any]], pair_count: int
-) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
-    cpu_name = f"BM_Plan083CcdLineSearchCpu/{pair_count}"
-    gpu_name = f"BM_Plan083CcdLineSearchCuda/{pair_count}"
+) -> dict[str, Mapping[str, Any]]:
+    expected_rows = _expected_row_names(pair_count)
+    expected_names = {name for names in expected_rows.values() for name in names}
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
 
@@ -174,21 +190,91 @@ def _representative_rows(
             errors.append("benchmark row is missing a name")
             continue
         canonical = _packet_row_name(row)
-        if canonical not in {cpu_name, gpu_name}:
+        if canonical not in expected_names:
             errors.append(f"unexpected benchmark row: {name}")
             continue
         if row.get("aggregate_name") == "median":
             found[canonical] = row
         errors.extend(benchmark_timing_field_errors(row, name))
 
-    for expected in (cpu_name, gpu_name):
+    for expected in expected_names:
         if expected not in found:
             errors.append(f"missing median benchmark row: {expected}")
 
     if errors:
         raise Plan083GpuCcdLineSearchPacketError("\n".join(errors))
 
-    return found[cpu_name], found[gpu_name]
+    return found
+
+
+def _validate_primitive_family(
+    *,
+    family: str,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    pair_count: int,
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} CCD max error {max_error:.3g} exceeds tolerance "
+            f"{tolerance:.3g}"
+        )
+
+    cpu_hits = _counter(cpu_row, "hits")
+    gpu_hits = _counter(gpu_row, "gpu_hits")
+    if int(cpu_hits) != int(gpu_hits):
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} CPU hit count {cpu_hits:g} != GPU hit count {gpu_hits:g}"
+        )
+
+    cpu_pairs = int(_counter(cpu_row, "pairs"))
+    gpu_pairs = int(_counter(gpu_row, "pairs"))
+    if cpu_pairs != pair_count or gpu_pairs != pair_count:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} expected {pair_count} pairs, got "
+            f"CPU={cpu_pairs}, GPU={gpu_pairs}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
+    if missing:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} packet timing is missing {sorted(missing)}"
+        )
+
+    return {
+        "pair_count": pair_count,
+        "hit_count": int(cpu_hits),
+        "min_step_bound": _counter(cpu_row, "min_step_bound"),
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
 
 
 def make_packet(
@@ -205,64 +291,47 @@ def make_packet(
     if len(typed_rows) != len(rows):
         raise Plan083GpuCcdLineSearchPacketError("benchmark JSON has non-object rows")
 
-    cpu_row, gpu_row = _representative_rows(typed_rows, pair_count)
-    cpu_ns = benchmark_timing_ns(cpu_row)
-    gpu_ns = benchmark_timing_ns(gpu_row)
-    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
-        raise Plan083GpuCcdLineSearchPacketError("CPU benchmark timing is not positive")
-    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
-        raise Plan083GpuCcdLineSearchPacketError("GPU benchmark timing is not positive")
-
-    max_error = _counter(gpu_row, "max_result_abs_error")
-    if max_error > tolerance:
-        raise Plan083GpuCcdLineSearchPacketError(
-            f"CCD max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
+    representative_rows = _representative_rows(typed_rows, pair_count)
+    primitive_families = {}
+    for family, (cpu_name, gpu_name) in _expected_row_names(pair_count).items():
+        primitive_families[family] = _validate_primitive_family(
+            family=family,
+            cpu_row=representative_rows[cpu_name],
+            gpu_row=representative_rows[gpu_name],
+            pair_count=pair_count,
+            tolerance=tolerance,
+            speedup_gate=speedup_gate,
         )
 
-    cpu_hits = _counter(cpu_row, "hits")
-    gpu_hits = _counter(gpu_row, "gpu_hits")
-    if int(cpu_hits) != int(gpu_hits):
-        raise Plan083GpuCcdLineSearchPacketError(
-            f"CPU hit count {cpu_hits:g} != GPU hit count {gpu_hits:g}"
-        )
-
-    cpu_pairs = int(_counter(cpu_row, "pairs"))
-    gpu_pairs = int(_counter(gpu_row, "pairs"))
-    if cpu_pairs != pair_count or gpu_pairs != pair_count:
-        raise Plan083GpuCcdLineSearchPacketError(
-            f"expected {pair_count} pairs, got CPU={cpu_pairs}, GPU={gpu_pairs}"
-        )
-
-    speedup = cpu_ns / gpu_ns
-    timing_ns = {
-        "setup": _counter(gpu_row, "host_setup_ns"),
-        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
-        "kernel": _counter(gpu_row, "kernel_ns"),
-        "solve": 0.0,
-        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
-        "readback": 0.0,
-    }
-    missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
-    if missing:
-        raise Plan083GpuCcdLineSearchPacketError(
-            f"packet timing is missing {sorted(missing)}"
-        )
+    point_triangle = primitive_families["point_triangle"]
+    max_error = max(
+        family["max_result_abs_error"] for family in primitive_families.values()
+    )
+    speedup = min(family["speedup"] for family in primitive_families.values())
+    meets_speedup_gate = all(
+        family["meets_speedup_gate"] for family in primitive_families.values()
+    )
 
     return {
         "plan083_gpu_ccd_line_search_packet": {
             "row_id": "ccd-line-search",
             "same_scene_cpu_gpu": True,
-            "pair_count": pair_count,
-            "hit_count": int(cpu_hits),
-            "min_step_bound": _counter(cpu_row, "min_step_bound"),
+            "primitive_families": primitive_families,
+            "pair_count": pair_count * len(primitive_families),
+            "hit_count": sum(
+                family["hit_count"] for family in primitive_families.values()
+            ),
+            "min_step_bound": min(
+                family["min_step_bound"] for family in primitive_families.values()
+            ),
             "max_result_abs_error": max_error,
             "result_abs_error_tolerance": tolerance,
             "speedup": speedup,
             "speedup_gate": speedup_gate,
-            "meets_speedup_gate": speedup >= speedup_gate,
-            "timing_ns": timing_ns,
-            "cpu_benchmark_row": _packet_row_name(cpu_row),
-            "gpu_benchmark_row": _packet_row_name(gpu_row),
+            "meets_speedup_gate": meets_speedup_gate,
+            "timing_ns": point_triangle["timing_ns"],
+            "cpu_benchmark_row": point_triangle["cpu_benchmark_row"],
+            "gpu_benchmark_row": point_triangle["gpu_benchmark_row"],
         },
         "benchmarks": rows,
     }

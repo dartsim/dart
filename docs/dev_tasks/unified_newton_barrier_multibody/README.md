@@ -164,9 +164,9 @@
         with exact CPU/GPU parity for preassembled primitive stencils; keep the
         row in-progress because broad-phase construction, runtime scene
         filtering, and speedup remain unproven.
-  - [x] Add a private endpoint-linear point-triangle CCD/line-search packet
-        with exact CPU/GPU step-bound parity; keep the row in-progress because
-        edge-edge CCD, rigid curved trajectories, runtime candidate sets, and
+  - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
+        packets with exact CPU/GPU step-bound parity; keep the row in-progress
+        because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
   - [x] Add a private scalar barrier/friction local-kernel packet with exact
         CPU/GPU local-output parity; keep the row in-progress because primitive
@@ -266,7 +266,7 @@ storage, or backend resources as public API.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
 - No public or `World`-integrated ABD runtime stage.
-- No GPU speedup claim.
+- No full scene-level or paper-scale GPU speedup claim.
 
 ## Key Decisions
 
@@ -276,6 +276,9 @@ storage, or backend resources as public API.
   internal phases into one PR when that keeps review clearer. Commits within the
   branch stay atomic and self-describing. Split only for public-API boundaries,
   unrelated CI/build infrastructure, or reviewability.
+- For the remaining PLAN-083 follow-up work, PR #2978 is the consolidated
+  review unit; keep additional packet/runtime slices on that branch instead of
+  opening per-packet PRs.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -306,8 +309,9 @@ storage, or backend resources as public API.
 
 ## Immediate Next Steps
 
-1. Use merged PRs #2960, #2961, #2970, and #2971 as the baseline for remaining
-   work; do not reopen the old phase-scoped stack.
+1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
+   and keep remaining work in consolidated PR #2978 instead of reopening the
+   old phase-scoped stack.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

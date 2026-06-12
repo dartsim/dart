@@ -54,8 +54,30 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    edge_cpu = _row(
+        "BM_Plan083EdgeEdgeCcdLineSearchCpu/1024",
+        pairs=1024,
+        hits=512,
+        min_step_bound=0.25,
+        max_result_abs_error=0.0,
+    )
+    edge_gpu = _row(
+        "BM_Plan083EdgeEdgeCcdLineSearchCuda/1024",
+        real_time=8.0,
+        cpu_time=8.0,
+        pairs=1024,
+        hits=512,
+        gpu_hits=512,
+        min_step_bound=0.25,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.5,
+        host_to_device_ns=2.5,
+        kernel_ns=3.5,
+        device_to_host_ns=4.5,
+    )
     gpu.update(overrides)
-    return {"benchmarks": [cpu, gpu]}
+    edge_gpu.update(overrides)
+    return {"benchmarks": [cpu, gpu, edge_cpu, edge_gpu]}
 
 
 def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
@@ -71,9 +93,11 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     row = packet["plan083_gpu_ccd_line_search_packet"]
     assert row["row_id"] == "ccd-line-search"
     assert row["same_scene_cpu_gpu"] is True
-    assert row["hit_count"] == 768
-    assert row["min_step_bound"] == 0.5
-    assert row["max_result_abs_error"] == 1e-12
+    assert row["pair_count"] == 2048
+    assert row["hit_count"] == 1280
+    assert row["min_step_bound"] == 0.25
+    assert row["max_result_abs_error"] == 2e-12
+    assert set(row["primitive_families"]) == {"point_triangle", "edge_edge"}
     assert row["meets_speedup_gate"] is True
 
 

@@ -281,8 +281,8 @@ its own line so status updates remain git-history friendly.
 - Dimension: Algorithm extensibility
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
-  private GPU assembly/solve follow-up on
-  `simx/plan083-gpu-assembly-solve-packet`. PR #2960 landed
+  consolidated follow-up on
+  `simx/plan083-gpu-contact-candidate-packet` / PR #2978. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -298,12 +298,12 @@ its own line so status updates remain git-history friendly.
   packets without claiming gear assets, Bullet/reference baselines, GPU parity,
   or paper-scale parity. PR #2978 is the single consolidated follow-up for the
   remaining private packet work: it adds point-triangle and edge-edge contact
-  stencil parity, endpoint-linear point-triangle CCD/line-search parity,
-  scalar barrier/friction local-kernel parity, reduced diagonal assembly/solve
-  parity, reduced hanging-bridge scene state-batch CPU/GPU parity and speedup,
-  reduced ABD complex-geometry packets, and an ABD/FEM coupled micro-solve
-  packet. It still keeps broad-phase/runtime GPU candidate construction,
-  edge-edge CCD, rigid curved trajectories, primitive gradients, tangent-basis
+  stencil parity, endpoint-linear point-triangle and edge-edge CCD/line-search
+  parity, scalar barrier/friction local-kernel parity, reduced diagonal
+  assembly/solve parity, reduced hanging-bridge scene state-batch CPU/GPU
+  parity and speedup, reduced ABD complex-geometry packets, and an ABD/FEM
+  coupled micro-solve packet. It still keeps broad-phase/runtime GPU candidate
+  construction, rigid curved trajectories, primitive gradients, tangent-basis
   construction, Hessian assembly, PSD coupling, off-diagonal sparse assembly,
   global factorization, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The

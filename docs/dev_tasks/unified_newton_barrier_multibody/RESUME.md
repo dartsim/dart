@@ -6,6 +6,9 @@ PR granularity: default to one branch and PR per implementation-roadmap phase,
 but consolidate adjacent small internal phases into one PR when that keeps
 review clearer. Keep commits atomic within the branch. Split only for
 public-API boundaries, unrelated CI/build infrastructure, or reviewability.
+For the current remaining PLAN-083 follow-up work, use PR #2978 as the single
+consolidated review unit and keep additional packet/runtime slices on that
+branch.
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
@@ -333,20 +336,26 @@ build/CTest entries.
 
 ## Current Branch
 
-`simx/plan083-gpu-scene-parity-packet` - continues private GPU parity evidence
-after the assembly/solve packet branch. This branch adds a reduced
-hanging-bridge scene state-batch packet through DART scene extraction plus the
-private rigid-body state-batch CUDA rollout. Keep the packet row
-`in-progress`: GPU `World::step`, contact candidate construction, CCD,
-barrier/friction assembly, sparse equality reduction, and global Newton solving
-remain future evidence.
+`simx/plan083-gpu-contact-candidate-packet` - the single consolidated PLAN-083
+follow-up PR for the remaining private packet work. This branch now carries
+point-triangle and edge-edge contact-stencil filtering, endpoint-linear
+point-triangle and edge-edge CCD/line-search packets, scalar barrier/friction
+local kernels, reduced assembly/solve parity, reduced scene state-batch parity,
+and reduced ABD complex-geometry/FEM coupling evidence. Keep rows
+`in-progress` unless their full row policy is satisfied: broad-phase/runtime
+GPU candidate construction, rigid curved trajectories, runtime scene line
+search, primitive gradients/tangent/Hessian assembly, sparse global solving,
+GPU `World::step`, paper-scale assets, and accepted reference timings remain
+future evidence.
 
 ## Immediate Next Step
 
-Finish and review `simx/plan083-gpu-scene-parity-packet`, then keep the
-dev-task folder active because PLAN-083 acceptance criteria are still unmet. If
-the task later moves out of this folder, get maintainer direction before
-deleting it and keep the remaining planned manifest plus in-progress
+Keep all remaining PLAN-083 follow-up work on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
+small PRs. Continue with the next blocker from the completion audit, then keep
+the dev-task folder active because PLAN-083 acceptance criteria are still
+unmet. If the task later moves out of this folder, get maintainer direction
+before deleting it and keep the remaining planned manifest plus in-progress
 CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost

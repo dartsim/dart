@@ -55,6 +55,16 @@ cudaError_t launchPointTriangleCcdLineSearchKernel(
     std::uint8_t* indeterminate,
     std::size_t pairCount);
 
+cudaError_t launchEdgeEdgeCcdLineSearchKernel(
+    const EdgeEdgeCcdLineSearchPair* pairs,
+    double minSeparation,
+    double tolerance,
+    int maxIterations,
+    double* stepBounds,
+    std::uint8_t* hits,
+    std::uint8_t* indeterminate,
+    std::size_t pairCount);
+
 } // namespace detail
 namespace {
 
@@ -80,11 +90,11 @@ void validateOptions(const CcdLineSearchOptions& options)
   DART_SIMULATION_THROW_T_IF(
       !std::isfinite(options.minSeparation),
       sx::InvalidArgumentException,
-      "evaluatePointTriangleCcdLineSearchCuda expects finite minSeparation");
+      "CCD line-search CUDA evaluator expects finite minSeparation");
   DART_SIMULATION_THROW_T_IF(
       !std::isfinite(options.tolerance),
       sx::InvalidArgumentException,
-      "evaluatePointTriangleCcdLineSearchCuda expects finite tolerance");
+      "CCD line-search CUDA evaluator expects finite tolerance");
 }
 
 } // namespace
@@ -139,6 +149,74 @@ void evaluatePointTriangleCcdLineSearchCuda(
   deviceHits.copyFromDevice(result.hits, "CCD line-search hits copy");
   deviceIndeterminate.copyFromDevice(
       result.indeterminate, "CCD line-search indeterminate copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  result.minStepBound = 1.0;
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    if (result.hits[i] != 0u) {
+      ++result.hitCount;
+      result.minStepBound = std::min(result.minStepBound, result.stepBounds[i]);
+    }
+  }
+}
+
+//==============================================================================
+void evaluateEdgeEdgeCcdLineSearchCuda(
+    const std::vector<EdgeEdgeCcdLineSearchPair>& pairs,
+    const CcdLineSearchOptions& options,
+    EdgeEdgeCcdLineSearchResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateOptions(options);
+
+  result = EdgeEdgeCcdLineSearchResult{};
+  result.stepBounds.resize(pairs.size(), 1.0);
+  result.hits.resize(pairs.size(), 0u);
+  result.indeterminate.resize(pairs.size(), 0u);
+
+  if (pairs.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<EdgeEdgeCcdLineSearchPair> devicePairs(pairs.size());
+  DeviceBuffer<double> deviceStepBounds(pairs.size());
+  DeviceBuffer<std::uint8_t> deviceHits(pairs.size());
+  DeviceBuffer<std::uint8_t> deviceIndeterminate(pairs.size());
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  devicePairs.copyToDevice(pairs, "edge-edge CCD line-search pairs copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchEdgeEdgeCcdLineSearchKernel(
+          devicePairs.data(),
+          std::max(0.0, options.minSeparation),
+          std::max(0.0, options.tolerance),
+          options.maxIterations,
+          deviceStepBounds.data(),
+          deviceHits.data(),
+          deviceIndeterminate.data(),
+          pairs.size()),
+      "edge-edge CCD line-search kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "edge-edge CCD line-search synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceStepBounds.copyFromDevice(
+      result.stepBounds, "edge-edge CCD line-search step bounds copy");
+  deviceHits.copyFromDevice(result.hits, "edge-edge CCD line-search hits copy");
+  deviceIndeterminate.copyFromDevice(
+      result.indeterminate, "edge-edge CCD line-search indeterminate copy");
   const auto d2hEnd = Clock::now();
 
   result.timing.setupNs = elapsedNs(setupStart, setupEnd);

@@ -63,6 +63,30 @@ cuda::PointTriangleCcdLineSearchPair makePair(
   return pair;
 }
 
+cuda::EdgeEdgeCcdLineSearchPair makeEdgeEdgePair(
+    const Eigen::Vector3d& edgeA0Start,
+    const Eigen::Vector3d& edgeA0End,
+    const Eigen::Vector3d& edgeA1Start,
+    const Eigen::Vector3d& edgeA1End,
+    const Eigen::Vector3d& edgeB0Start,
+    const Eigen::Vector3d& edgeB0End,
+    const Eigen::Vector3d& edgeB1Start,
+    const Eigen::Vector3d& edgeB1End)
+{
+  cuda::EdgeEdgeCcdLineSearchPair pair;
+  for (int i = 0; i < 3; ++i) {
+    pair.edgeA0Start[i] = edgeA0Start[i];
+    pair.edgeA0End[i] = edgeA0End[i];
+    pair.edgeA1Start[i] = edgeA1Start[i];
+    pair.edgeA1End[i] = edgeA1End[i];
+    pair.edgeB0Start[i] = edgeB0Start[i];
+    pair.edgeB0End[i] = edgeB0End[i];
+    pair.edgeB1Start[i] = edgeB1Start[i];
+    pair.edgeB1End[i] = edgeB1End[i];
+  }
+  return pair;
+}
+
 Eigen::Vector3d vec3(const double values[3])
 {
   return {values[0], values[1], values[2]};
@@ -87,6 +111,26 @@ dc::ContinuousCollisionStepResult cpuResult(
       cpuOptions);
 }
 
+dc::ContinuousCollisionStepResult cpuEdgeEdgeResult(
+    const cuda::EdgeEdgeCcdLineSearchPair& pair,
+    const cuda::CcdLineSearchOptions& options)
+{
+  dc::ContinuousCollisionStepOptions cpuOptions;
+  cpuOptions.minSeparation = options.minSeparation;
+  cpuOptions.tolerance = options.tolerance;
+  cpuOptions.maxIterations = options.maxIterations;
+  return dc::edgeEdgeStepBound(
+      vec3(pair.edgeA0Start),
+      vec3(pair.edgeA0End),
+      vec3(pair.edgeA1Start),
+      vec3(pair.edgeA1End),
+      vec3(pair.edgeB0Start),
+      vec3(pair.edgeB0End),
+      vec3(pair.edgeB1Start),
+      vec3(pair.edgeB1End),
+      cpuOptions);
+}
+
 std::vector<cuda::PointTriangleCcdLineSearchPair> makeFixture()
 {
   const Eigen::Vector3d a(-1.0, -1.0, 0.0);
@@ -97,6 +141,41 @@ std::vector<cuda::PointTriangleCcdLineSearchPair> makeFixture()
       makePair({0.25, 0.0, 0.2}, {0.25, 0.0, 0.1}, a, b, c),
       makePair({2.0, 0.0, 0.2}, {2.0, 0.0, -0.2}, a, b, c),
       makePair({0.0, 0.0, 0.3}, {0.0, 0.0, -0.1}, a, b, c),
+  };
+}
+
+std::vector<cuda::EdgeEdgeCcdLineSearchPair> makeEdgeEdgeFixture()
+{
+  const Eigen::Vector3d staticB0(0.0, -0.5, 0.0);
+  const Eigen::Vector3d staticB1(0.0, 0.5, 0.0);
+  return {
+      makeEdgeEdgePair(
+          {-0.5, 0.0, 0.0},
+          {0.5, 0.0, 0.0},
+          {-0.5, 1.0, 0.0},
+          {0.5, 1.0, 0.0},
+          staticB0,
+          staticB0,
+          staticB1,
+          staticB1),
+      makeEdgeEdgePair(
+          {-0.5, 0.0, 0.0},
+          {-0.25, 0.0, 0.0},
+          {-0.5, 1.0, 0.0},
+          {-0.25, 1.0, 0.0},
+          staticB0,
+          staticB0,
+          staticB1,
+          staticB1),
+      makeEdgeEdgePair(
+          {0.0, -0.5, 0.0},
+          {0.0, -0.5, 0.0},
+          {0.0, 0.5, 0.0},
+          {0.0, 0.5, 0.0},
+          {-0.5, 0.0, 0.0},
+          {-0.5, 0.0, 0.0},
+          {0.5, 0.0, 0.0},
+          {0.5, 0.0, 0.0}),
   };
 }
 
@@ -127,6 +206,38 @@ TEST(CcdLineSearchCuda, MatchesCpuPointTriangleStepBounds)
     EXPECT_EQ(result.indeterminate[i] != 0u, expected.indeterminate) << i;
     EXPECT_NEAR(result.stepBounds[i], expected.stepBound, 1e-8) << i;
   }
+}
+
+//==============================================================================
+TEST(CcdLineSearchCuda, MatchesCpuEdgeEdgeStepBounds)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector<cuda::EdgeEdgeCcdLineSearchPair> pairs
+      = makeEdgeEdgeFixture();
+  const cuda::CcdLineSearchOptions options;
+
+  cuda::EdgeEdgeCcdLineSearchResult result;
+  cuda::evaluateEdgeEdgeCcdLineSearchCuda(pairs, options, result);
+
+  ASSERT_EQ(result.stepBounds.size(), pairs.size());
+  ASSERT_EQ(result.hits.size(), pairs.size());
+  ASSERT_EQ(result.indeterminate.size(), pairs.size());
+  EXPECT_LT(result.minStepBound, 1.0);
+
+  std::size_t expectedHits = 0;
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto expected = cpuEdgeEdgeResult(pairs[i], options);
+    if (expected.hit) {
+      ++expectedHits;
+    }
+    EXPECT_EQ(result.hits[i] != 0u, expected.hit) << i;
+    EXPECT_EQ(result.indeterminate[i] != 0u, expected.indeterminate) << i;
+    EXPECT_NEAR(result.stepBounds[i], expected.stepBound, 1e-8) << i;
+  }
+  EXPECT_EQ(result.hitCount, expectedHits);
 }
 
 //==============================================================================

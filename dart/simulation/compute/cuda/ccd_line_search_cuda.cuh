@@ -47,10 +47,23 @@ struct PointTriangleCcdLineSearchPair
   double triangleC[3]{};
 };
 
+struct EdgeEdgeCcdLineSearchPair
+{
+  double edgeA0Start[3]{};
+  double edgeA0End[3]{};
+  double edgeA1Start[3]{};
+  double edgeA1End[3]{};
+  double edgeB0Start[3]{};
+  double edgeB0End[3]{};
+  double edgeB1Start[3]{};
+  double edgeB1End[3]{};
+};
+
 struct CcdLineSearchOptions
 {
   double minSeparation = 0.0;
   double tolerance = 1e-6;
+  int maxIterations = 64;
 };
 
 struct CcdLineSearchTiming
@@ -61,7 +74,7 @@ struct CcdLineSearchTiming
   double deviceToHostNs = 0.0;
 };
 
-struct PointTriangleCcdLineSearchResult
+struct CcdLineSearchResult
 {
   std::vector<double> stepBounds;
   std::vector<std::uint8_t> hits;
@@ -70,6 +83,9 @@ struct PointTriangleCcdLineSearchResult
   double minStepBound = 1.0;
   CcdLineSearchTiming timing;
 };
+
+using PointTriangleCcdLineSearchResult = CcdLineSearchResult;
+using EdgeEdgeCcdLineSearchResult = CcdLineSearchResult;
 
 /// Evaluate a private endpoint-linear point-triangle CCD line-search packet.
 ///
@@ -80,5 +96,16 @@ void evaluatePointTriangleCcdLineSearchCuda(
     const std::vector<PointTriangleCcdLineSearchPair>& pairs,
     const CcdLineSearchOptions& options,
     PointTriangleCcdLineSearchResult& result);
+
+/// Evaluate a private endpoint-linear edge-edge CCD line-search packet.
+///
+/// The CUDA packet covers independently moving segment endpoints and matches
+/// the internal CPU additive conservative-advancement contract for reduced
+/// edge-edge fixtures. It is private staged GPU evidence, not a public CCD
+/// backend.
+void evaluateEdgeEdgeCcdLineSearchCuda(
+    const std::vector<EdgeEdgeCcdLineSearchPair>& pairs,
+    const CcdLineSearchOptions& options,
+    EdgeEdgeCcdLineSearchResult& result);
 
 } // namespace dart::simulation::compute::cuda
