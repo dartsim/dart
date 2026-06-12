@@ -1427,6 +1427,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard packets matching its configured symmetric positive-definite native
     path; boxed, friction-indexed, non-symmetric, and non-positive-definite
     packets remain solvable through fallback delegation.
+  - Updated `BaraffSolver::supportsProblem()` to report native support only for
+    standard packets matching its symmetric positive-semidefinite native path;
+    boxed, friction-indexed, non-symmetric, and indefinite packets now delegate
+    to Dantzig through the unified `solve()` path.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

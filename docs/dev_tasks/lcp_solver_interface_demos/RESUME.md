@@ -41,6 +41,12 @@ SPD support, boxed false support, non-symmetric false support, default
 indefinite false support, and the C++ parameter case where
 `checkPositiveDefinite = false`.
 
+The next continuation applies the same native-route audit to Baraff: Baraff now
+reports native support only for symmetric positive-semidefinite standard
+packets, and non-standard, non-symmetric, or indefinite packets delegate to
+Dantzig before the active-set loop. Focused C++ and dartpy tests cover SPD,
+PSD, boxed, non-symmetric, indefinite, and fallback solve behavior.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work. At
@@ -54,6 +60,12 @@ At the start of the MPRGP predicate slice, the branch was clean at
 `origin/feature/lcp-solver-interface-demos`. After committing this slice, the
 local branch may be one commit ahead unless the maintainer explicitly requests a
 push.
+
+After the MPRGP checkpoint commit, the local branch was clean at
+`ee08bbe8ce0 Report MPRGP native support precisely` and one commit ahead of
+`origin/feature/lcp-solver-interface-demos`. After committing the Baraff slice,
+the local branch may be two commits ahead unless the maintainer explicitly
+requests a push.
 
 The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
 succeeded. `origin/main` was refreshed over HTTPS and confirmed to be an
@@ -204,6 +216,27 @@ unless the maintainer/user gives explicit approval in the current turn.
     `cmake --build build/default/cpp/Release --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy`;
     `ctest -R '^UNIT_math_lcp_math_lcp_all_solvers_smoke$'`;
     `python/tests/unit/math/test_lcp.py` with 60 passed;
+    `python/tests/unit/test_py_demo_panels.py` with 43 passed; and
+    `pixi run python scripts/check_lcp_solver_roster.py`.
+- Completed Baraff predicate checkpoint:
+  - `dart/math/lcp/pivoting/baraff_solver.hpp` now preserves the base overloads
+    with `using LcpSolver::supportsProblem` and overrides the tolerance-aware
+    predicate.
+  - `dart/math/lcp/pivoting/baraff_solver.cpp` now checks symmetric
+    positive-semidefinite matrix support and delegates unsupported standard
+    packets to Dantzig before the active-set loop.
+  - `tests/unit/math/lcp/test_all_solvers_smoke.cpp` covers SPD, PSD, boxed,
+    non-symmetric, indefinite, and fallback solve behavior.
+  - `python/tests/unit/math/test_lcp.py` covers the same dartpy-visible support
+    and fallback behavior.
+  - `docs/background/lcp/02_overview.md`,
+    `docs/background/lcp/03_pivoting-methods.md`,
+    `docs/onboarding/python-bindings.md`, and `CHANGELOG.md` document the
+    native-support behavior.
+  - Focused verification passed:
+    `cmake --build build/default/cpp/Release --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy`;
+    `ctest -R '^UNIT_math_lcp_math_lcp_all_solvers_smoke$'`;
+    `python/tests/unit/math/test_lcp.py` with 61 passed;
     `python/tests/unit/test_py_demo_panels.py` with 43 passed; and
     `pixi run python scripts/check_lcp_solver_roster.py`.
 

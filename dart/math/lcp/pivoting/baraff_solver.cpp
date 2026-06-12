@@ -36,6 +36,7 @@
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <iterator>
@@ -60,6 +61,40 @@ double matrixInfinityNorm(const Eigen::MatrixXd& A)
 double vectorInfinityNorm(const Eigen::VectorXd& v)
 {
   return v.size() > 0 ? v.cwiseAbs().maxCoeff() : 0.0;
+}
+
+bool isSymmetric(const Eigen::MatrixXd& A, double tol)
+{
+  if (A.rows() != A.cols()) {
+    return false;
+  }
+
+  if (A.size() == 0) {
+    return true;
+  }
+
+  return (A - A.transpose()).cwiseAbs().maxCoeff() <= tol;
+}
+
+bool isPositiveSemidefinite(const Eigen::MatrixXd& A, double tol)
+{
+  if (A.size() == 0) {
+    return true;
+  }
+
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenSolver(
+      A, Eigen::EigenvaluesOnly);
+  if (eigenSolver.info() != Eigen::Success) {
+    return false;
+  }
+
+  return eigenSolver.eigenvalues().minCoeff() >= -tol;
+}
+
+bool hasNativeBaraffMatrixSupport(const Eigen::MatrixXd& A, double tolerance)
+{
+  const double tol = tolerance > 0.0 ? tolerance : 0.0;
+  return isSymmetric(A, tol) && isPositiveSemidefinite(A, tol);
 }
 
 enum class SetType
@@ -94,6 +129,14 @@ BaraffSolver::BaraffSolver()
   mDefaultOptions.maxIterations = std::numeric_limits<int>::max();
   mDefaultOptions.validateSolution = true;
   mDefaultOptions.warmStart = false;
+}
+
+//==============================================================================
+bool BaraffSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  return LcpSolver::supportsProblem(problem, standardTolerance)
+         && hasNativeBaraffMatrixSupport(problem.A, standardTolerance);
 }
 
 //==============================================================================
@@ -136,6 +179,10 @@ LcpResult BaraffSolver::solve(
                              ? options.complementarityTolerance
                              : mDefaultOptions.complementarityTolerance;
   if (!problem.isStandardLcp(absTol)) {
+    DantzigSolver fallback;
+    return fallback.solve(problem, x, options);
+  }
+  if (!hasNativeBaraffMatrixSupport(A, absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }

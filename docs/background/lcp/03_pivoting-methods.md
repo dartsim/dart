@@ -374,6 +374,9 @@ auto result = solver.solve(problem, x, options);
 
 > Note: DART's implementation assumes symmetric PSD matrices and currently uses
 > direct solves per pivot (no incremental factorization yet).
+> `supportsProblem(problem)` reports only that native symmetric-PSD subset;
+> boxed, friction-indexed, non-symmetric, and indefinite packets delegate to the
+> boxed-capable pivoting solver through `solve()`.
 
 ### Properties
 

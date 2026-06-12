@@ -265,6 +265,39 @@ TEST_F(AllSolversSmokeTest, MprgpReportsOnlyNativeSpdStandardProblems)
   EXPECT_FALSE(solver.supportsProblem(spd.problem));
 }
 
+TEST_F(AllSolversSmokeTest, BaraffReportsOnlyNativePsdStandardProblems)
+{
+  BaraffSolver solver;
+  const auto spd = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+
+  Eigen::Matrix2d psd;
+  psd << 1.0, 0.0, 0.0, 0.0;
+  const LcpProblem psdProblem(psd, Eigen::Vector2d(1.0, 0.0));
+
+  Eigen::Matrix2d nonsymmetric;
+  nonsymmetric << 2.0, 1.0, 0.0, 2.0;
+  const LcpProblem nonsymmetricProblem(nonsymmetric, Eigen::Vector2d(1.0, 2.0));
+
+  Eigen::Matrix2d indefinite;
+  indefinite << 1.0, 0.0, 0.0, -1.0;
+  const LcpProblem indefiniteProblem(indefinite, Eigen::Vector2d(1.0, -1.0));
+
+  EXPECT_TRUE(solver.supportsProblem(spd.problem));
+  EXPECT_TRUE(solver.supportsProblem(psdProblem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_FALSE(solver.supportsProblem(indefiniteProblem));
+
+  Eigen::VectorXd x;
+  const auto result
+      = solver.solve(indefiniteProblem, x, solver.getDefaultOptions());
+  EXPECT_EQ(result.status, LcpSolverStatus::Success)
+      << "Baraff should delegate non-PSD standard packets to Dantzig";
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_TRUE(x.allFinite());
+}
+
 TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
 {
   const auto documentedNames = readDocumentedSolverManifestNames();

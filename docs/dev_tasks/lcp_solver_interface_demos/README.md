@@ -36,6 +36,9 @@
 - [x] Tightened MPRGP per-problem native support reporting so non-symmetric and
       non-positive-definite standard packets are marked delegated instead of
       native.
+- [x] Tightened Baraff per-problem native support reporting so non-symmetric and
+      indefinite standard packets delegate to Dantzig instead of entering the
+      native active-set loop.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -75,7 +78,46 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint makes MPRGP's per-problem support
+The latest implementation checkpoint makes Baraff's per-problem support
+predicate match its documented symmetric-PSD native path:
+
+- `dart/math/lcp/pivoting/baraff_solver.hpp` and `.cpp` now override
+  `supportsProblem(problem, standardTolerance)` while preserving the base
+  overloads.
+- Baraff now reports native support only for standard problems with symmetric
+  positive-semidefinite matrices.
+- Boxed, friction-indexed, non-symmetric, and indefinite packets now delegate to
+  Dantzig through the unified `solve()` path before entering the native Baraff
+  active-set loop.
+- C++ and dartpy tests cover the SPD native case, PSD native case, boxed false
+  case, non-symmetric false case, indefinite false case, and fallback solve
+  success for an indefinite standard packet.
+
+Verification for this checkpoint:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=$N cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy --parallel "$N"
+CTEST_PARALLEL_LEVEL=1 ctest --test-dir build/default/cpp/Release \
+  --output-on-failure -R '^UNIT_math_lcp_math_lcp_all_solvers_smoke$' -j 1
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run python scripts/check_lcp_solver_roster.py
+```
+
+Observed results:
+
+- Targeted C++ build: passed.
+- `UNIT_math_lcp_math_lcp_all_solvers_smoke`: passed.
+- `python/tests/unit/math/test_lcp.py`: 61 tests passed.
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- `scripts/check_lcp_solver_roster.py`: passed.
+
+## MPRGP Support Predicate Checkpoint
+
+The MPRGP support predicate checkpoint makes MPRGP's per-problem support
 predicate match its actual native path:
 
 - `dart/math/lcp/other/mprgp_solver.hpp` and `.cpp` now override
