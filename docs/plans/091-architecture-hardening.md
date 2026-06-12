@@ -42,8 +42,13 @@ acceptance the orchestrator replaces the marker with
 source of truth for availability; within a workstream, available packets are
 picked in document order.
 
-Sequencing rule: WS0 packets gate the refactor-heavy packets in WS1–WS4
-(behavior lock before behavior-adjacent restructuring). The standing rule in
+Sequencing rule: WS0 runs first in priority order, and the behavior-lock
+guardrail (WP-091.2 golden trajectories) hard-gates the refactor-heavy
+packets through their own Dependencies lines — the only availability source.
+The remaining WS0 packets are sequenced ahead of later workstreams by
+document order but are deliberately not blockers, so a stalled
+evidence-integrity packet (for example one waiting on a maintainer decision)
+does not freeze WS1–WS4. The standing rule in
 the assessment doc applies for the lifetime of this plan: new solver-family
 work routes through
 [`solver-family-intake.md`](solver-family-intake.md) and must not bypass the
@@ -305,7 +310,9 @@ contracts this plan is landing.
 - Acceptance evidence: decision recorded in the allocator design doc; if
   wired, a no-alloc-in-step test for one reference scene passes.
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
-- Dependencies: WP-091.20 preferred, not required.
+- Dependencies: none. Sequencing note: landing WP-091.20 first reduces
+  rework, since the component split converts most heap-fragmented payloads
+  into slab storage — prefer it when both are available.
 
 #### WP-091.23 Stable serialization identity
 
