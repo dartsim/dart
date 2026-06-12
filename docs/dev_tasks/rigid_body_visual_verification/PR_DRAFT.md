@@ -90,6 +90,26 @@
 
 ## Testing
 
+- Latest shared Replay follow-up:
+  - `python/examples/demos/scenes/articulated.py`,
+    `floating_base.py`, `avbd_rigid_revolute_motor.py`,
+    `avbd_rigid_prismatic_motor.py`, and `rigid_ipc_tunnel.py` now publish
+    `replay_sync: bridge.sync` and `replay_live_step_is_stateless: True`.
+  - This lets the runner attach the shared bottom `Replay` panel to
+    replay-capable scenes whose custom `pre_step` callbacks only run bridge
+    stepping and derived metrics/history sampling.
+  - Triggering failure: full `pixi run test-py` initially reported
+    `python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls`
+    failed on `articulated`; a replay-gap audit then identified the full
+    affected set above.
+  - Pre-stop evidence: `py_compile` passed for the five edited files; the
+    focused `test_registered_world_scenes_receive_shared_replay_controls`
+    invariant passed; the replay-gap audit printed `[]`; and full
+    `pixi run test-py` reported `950 passed, 10 skipped`.
+  - Post-doc-refresh evidence: the focused shared-replay invariant reported
+    `1 passed`; the replay-gap audit still printed `[]`; `pixi run lint`
+    passed; and `git diff --check` passed.
+  - No push or GitHub mutation has been performed for this follow-up.
 - Latest fundamental numbered-row capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_body_modes.py`,
     `rigid_free_flight.py`, `rigid_frame_hierarchy.py`,

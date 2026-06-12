@@ -181,6 +181,8 @@ def build() -> SceneSetup:
             "target_speed": _TARGET_SPEED,
             "max_force": _MAX_FORCE,
             "base_position": _BASE_POS.copy(),
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )

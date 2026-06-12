@@ -1,5 +1,60 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Checkpoint Snapshot - 2026-06-11 Shared Replay Follow-Up
+
+The latest continuation lands a local checkpoint named
+`Attach shared replay to related rigid scenes` after starting from
+`7c853bee1af8` (`Expose fundamental rigid workflow capture metrics`). It closes
+the shared Replay panel gap exposed by the broader Python demo suite. The
+branch still has no associated GitHub PR in the latest checked state, and no
+push or GitHub mutation has been performed for this follow-up.
+
+Current local slice: shared Replay panel attachment for replay-capable related
+rigid scenes with custom `pre_step` callbacks. The checkpoint touches:
+
+- `python/examples/demos/scenes/articulated.py`
+- `python/examples/demos/scenes/floating_base.py`
+- `python/examples/demos/scenes/avbd_rigid_revolute_motor.py`
+- `python/examples/demos/scenes/avbd_rigid_prismatic_motor.py`
+- `python/examples/demos/scenes/rigid_ipc_tunnel.py`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code:
+
+- `articulated`, `floating_base`, `avbd_rigid_revolute_motor`,
+  `avbd_rigid_prismatic_motor`, and `rigid_ipc_tunnel` now publish
+  `SceneSetup.info["replay_sync"] = bridge.sync` and
+  `SceneSetup.info["replay_live_step_is_stateless"] = True`.
+- These scenes use custom `pre_step` callbacks to run the bridge step and
+  update derived metrics/histories, but they do not need separate
+  replay-owned scene state to scrub saved DART 7 World frames. Marking them as
+  stateless lets the runner attach the shared bottom `Replay` panel instead of
+  silently skipping it.
+- The triggering failure was
+  `python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls`,
+  which first reported `articulated` and then a replay-gap audit identified
+  the full affected set above.
+
+Validation collected for this slice:
+
+- `python -m py_compile` over the five edited scene files passed.
+- The focused
+  `python/tests/unit/test_py_demo_panels.py::test_registered_world_scenes_receive_shared_replay_controls`
+  guard passed with `1 passed`.
+- A replay-gap audit over `make_demo_scenes()` printed `[]`.
+- A broader `pixi run test-py` rerun reported `950 passed, 10 skipped` before
+  this docs evidence refresh.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Continue the next bounded rigid visual-verification slice from the dev-task
+   state, or push/open PR only after explicit user approval. Do not comment,
+   re-trigger CI, or otherwise mutate GitHub state without that approval.
+
 ## Current Checkpoint Snapshot - 2026-06-11 Fundamental Workflow Metrics
 
 The continuation resumed from pushed handoff commit `4a2fb7a0714` and closed

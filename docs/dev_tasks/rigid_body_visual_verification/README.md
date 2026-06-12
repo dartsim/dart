@@ -1,5 +1,19 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-11 Shared Replay Follow-Up
+
+The latest continuation lands a local checkpoint named
+`Attach shared replay to related rigid scenes` after starting from
+`7c853bee1af8` (`Expose fundamental rigid workflow capture metrics`). It closes
+the shared Replay panel gap exposed by `pixi run test-py`: `articulated`,
+`floating_base`, `avbd_rigid_revolute_motor`,
+`avbd_rigid_prismatic_motor`, and `rigid_ipc_tunnel` now mark their custom
+`pre_step` callbacks as replay-stateless and provide `bridge.sync` as the
+shared replay sync hook. The focused shared-replay invariant, replay-gap audit,
+full Python suite, `pixi run lint`, and `git diff --check` passed for this
+slice. No PR is associated with this branch in the latest checked GitHub state,
+and no push or GitHub mutation has been performed for this follow-up.
+
 ## Current Active Snapshot - 2026-06-11 Fundamental Workflow Metrics
 
 The latest continuation resumed from pushed handoff commit `4a2fb7a0714` and
@@ -37,6 +51,15 @@ continue implementation unless the user explicitly resumes it.
 
 ## Current Status
 
+- [x] Shared Replay panel follow-up: `articulated`, `floating_base`,
+      `avbd_rigid_revolute_motor`, `avbd_rigid_prismatic_motor`, and
+      `rigid_ipc_tunnel` now publish `replay_sync` plus
+      `replay_live_step_is_stateless`, allowing the registered-scene replay
+      invariant to attach the shared bottom `Replay` panel to every
+      replay-capable non-opt-out world scene. The pre-stop focused invariant
+      passed, the replay-gap audit printed `[]`, and full `pixi run test-py`
+      reported `950 passed, 10 skipped`; the post-doc-refresh focused
+      invariant, `pixi run lint`, and `git diff --check` also passed.
 - [x] Recon: existing `py-demos` are the primary growing example surface.
 - [x] First solver-comparison slice: `rigid_solver_compare` runs sequential
       impulse and rigid IPC side by side in one Python GUI scene with

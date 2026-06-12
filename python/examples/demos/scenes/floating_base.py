@@ -144,6 +144,8 @@ def build() -> SceneSetup:
         info={
             "sx_world": world,
             "dofs": robot.num_dofs,
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )

@@ -158,6 +158,8 @@ def build() -> SceneSetup:
             "joint": motor_joint,
             "target_speed": _TARGET_SPEED,
             "max_torque": _MAX_TORQUE,
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )

@@ -175,6 +175,8 @@ def build() -> SceneSetup:
         panels=[ScenePanel("Rigid IPC Tunnel", build_panel)],
         info={
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
+            "replay_sync": bridge.sync,
+            "replay_live_step_is_stateless": True,
             "rigid_body_solver": "ipc",
             "rigid_ipc_tunnel_capture_first": False,
             "sx_world": world,
