@@ -46,6 +46,15 @@ pytest trio (13 passed). A fresh session should preserve the single #2978
 branch/PR discipline, confirm hosted CI and fresh review for the current head,
 and push further PLAN-083 work only to #2978.
 
+Stop-handoff checkpoint (2026-06-11): maintainer explicitly instructed the
+agent to stop implementation and focus only on hand-off, with no further
+verification. The active branch remains
+`simx/plan083-gpu-contact-candidate-packet` and the active PR remains #2978.
+The last code/evidence checkpoint before this hand-off note was commit
+`bb971df9890f6f2e7b15e4489d9c7f792b6c4a93` (`Add CUDA point-triangle barrier
+gradient parity`). This hand-off update intentionally did not run lint, build,
+tests, PR checks, or fresh review polling after the maintainer stop request.
+
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
 is historical handoff context, not current checkout state. Treat IPC as the
@@ -384,14 +393,16 @@ paper-scale assets, and accepted reference timings remain future evidence.
 
 Keep all remaining PLAN-083 follow-up work on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
-small PRs. First, monitor PR #2978 after the barrier-gradient push: confirm
-hosted CI and the fresh Codex review for the current head, then address only
-actionable failures on the same branch. After the PR is stable, continue with
-the next blocker from the completion audit on this branch. Keep the dev-task
-folder active because PLAN-083 acceptance criteria are still unmet. If the task
-later moves out of this folder, get maintainer direction before deleting it and
-keep the remaining planned manifest plus in-progress CPU/GPU/scene limitations
-in durable sidecars.
+small PRs. This session stopped at the hand-off point without additional
+verification by maintainer request. A fresh session should first resume the
+current branch/PR context, then, if verification is allowed, monitor PR #2978
+after the barrier-gradient push, confirm hosted CI and fresh review for the
+current head, and address only actionable failures on the same branch. After
+the PR is stable, continue with the next blocker from the completion audit on
+this branch. Keep the dev-task folder active because PLAN-083 acceptance
+criteria are still unmet. If the task later moves out of this folder, get
+maintainer direction before deleting it and keep the remaining planned manifest
+plus in-progress CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost
 

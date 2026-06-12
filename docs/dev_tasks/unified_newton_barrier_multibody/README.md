@@ -11,6 +11,14 @@ merged into `main`. A fresh Claude/Codex session should resume from #2978,
 check hosted CI/review state, and keep any remaining PLAN-083 commits on the
 same branch.
 
+Stop-handoff checkpoint (2026-06-11): after the CUDA point-triangle
+barrier-gradient parity push, the maintainer instructed the agent to stop
+implementation and focus only on hand-off without further verification. The last
+code/evidence checkpoint before this note was
+`bb971df9890f6f2e7b15e4489d9c7f792b6c4a93` (`Add CUDA point-triangle barrier
+gradient parity`). This hand-off update intentionally did not run lint, build,
+tests, PR checks, or fresh review polling after that stop request.
+
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
   - [x] Add `detail/newton_barrier` owners for primitive distances, clamped-log
@@ -325,8 +333,10 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
    and keep remaining work in consolidated PR #2978 instead of reopening the
-   old phase-scoped stack. Before further implementation, verify the current
-   #2978 CI and Codex review state after the barrier-gradient push.
+   old phase-scoped stack. This session stopped without further verification by
+   maintainer request; a fresh session should resume the branch/PR context
+   first, then verify the current #2978 CI and Codex review state after the
+   barrier-gradient push only if verification is allowed.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
