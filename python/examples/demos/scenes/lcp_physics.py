@@ -223,11 +223,11 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": "Tgs/Pgs on scale rows; Direct only on tiny 2x/3x",
-        "current_laggards": "Lemke, InteriorPoint, Baraff, BlockedJacobi",
+        "current_leaders": "Pgs/Sap/Tgs on scale rows; Direct only on tiny 2x/3x",
+        "current_laggards": "Lemke, InteriorPoint, Baraff, ShockPropagation",
         "takeaway": (
-            "TGS/PGS lead scalable SPD rows; pivot, barrier, and Newton rows "
-            "are correctness or tuning targets."
+            "PGS/SAP/TGS lead scalable SPD rows; pivot, barrier, and layered "
+            "rows remain correctness or tuning targets."
         ),
     },
     {
@@ -235,10 +235,10 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": "Pgs/Tgs; Jacobi remains close",
-        "current_laggards": "Sap, BlockedJacobi, BGS, Admm",
+        "current_laggards": "Sap, BGS, Admm, BoxedSemiSmoothNewton",
         "takeaway": (
-            "Projection methods lead active-bound rows; SAP, block, and "
-            "operator-splitting routes remain tuning targets."
+            "Projection methods lead active-bound rows; SAP, BGS, ADMM, and "
+            "boxed semi-smooth Newton remain tuning targets."
         ),
     },
     {
@@ -247,14 +247,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Tgs; Sap/Pgs remain close",
+        "current_leaders": "Pgs; Tgs remains close",
         "current_laggards": (
             "BoxedSemiSmoothNewton, BlockedJacobi, BGS, ShockPropagation"
         ),
         "takeaway": (
-            "TGS/SAP/PGS lead current contact-scale rows; boxed "
-            "semi-smooth Newton and block/layered routes are optimization "
-            "targets."
+            "PGS/TGS lead current contact-scale rows; boxed semi-smooth "
+            "Newton and block/layered routes are optimization targets."
         ),
     },
 )

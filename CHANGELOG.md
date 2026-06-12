@@ -1471,6 +1471,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
     Jacobian solve before falling back to regularized least squares, and kept
     friction-index moving-bound updates local to accepted line-search trials.
+  - Optimized `BlockedJacobiSolver` singleton fixed-bound blocks with a scalar
+    projected update, avoiding per-block local solver setup for singleton-heavy
+    standard and boxed profile rows while preserving the existing block solve
+    fallback for coupled friction-index blocks.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

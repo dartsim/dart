@@ -48,6 +48,8 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -82,6 +84,24 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveSingletonBlock(
+    const BlockData& block, const double bEff, double& value)
+{
+  if (block.indices.size() != 1 || block.findex[0] >= 0) {
+    return false;
+  }
+
+  const double diagonal = block.A(0, 0);
+  if (!std::isfinite(diagonal)
+      || diagonal <= std::numeric_limits<double>::epsilon()
+      || !std::isfinite(bEff)) {
+    return false;
+  }
+
+  value = std::clamp(bEff / diagonal, block.lo[0], block.hi[0]);
+  return std::isfinite(value);
 }
 
 bool buildBlockData(
@@ -392,6 +412,22 @@ LcpResult BlockedJacobiSolver::solve(
                         const Eigen::VectorXd& xPrev,
                         Eigen::VectorXd& xNext) {
     const auto m = std::ssize(block.indices);
+    if (m == 1 && block.findex[0] < 0) {
+      const int globalIndex = block.indices[0];
+      const double axBlock = A.row(globalIndex).dot(xPrev);
+      const double axSelf = block.A(0, 0) * xPrev[globalIndex];
+      const double bEff = block.baseB[0] - (axBlock - axSelf);
+      double value = 0.0;
+      if (solveSingletonBlock(block, bEff, value)) {
+        xNext[globalIndex] = value;
+
+        LcpResult blockResult;
+        blockResult.status = LcpSolverStatus::Success;
+        blockResult.iterations = 1;
+        return blockResult;
+      }
+    }
+
     Eigen::VectorXd xBlock(m);
     for (int r = 0; r < m; ++r) {
       xBlock[r] = xPrev[block.indices[r]];

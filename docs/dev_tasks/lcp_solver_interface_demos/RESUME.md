@@ -1,5 +1,180 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 BlockedJacobi Singleton Fast Path
+
+After the stop-only hand-off below, work resumed on the selected
+benchmark-driven target: `BlockedJacobiSolver`.
+
+Latest implementation slice:
+
+- `dart/math/lcp/projection/blocked_jacobi_solver.cpp` now detects singleton
+  blocks with no local `findex` coupling and solves the scalar boxed subproblem
+  with a direct projected update.
+- The fast path requires a finite positive diagonal and finite effective RHS.
+  Non-singleton blocks, local `findex` blocks, non-positive diagonals, and
+  invalid scalar data still use the existing `DirectSolver`/`DantzigSolver`
+  fallback path.
+- `tests/unit/math/lcp/test_lcp_projection_solvers.cpp` now covers singleton
+  boxed blocks that clamp against both lower and upper bounds.
+- `docs/background/lcp/06_other-methods.md` documents the scalar singleton
+  route and corrects the Jacobi block RHS sign in the pseudocode.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated from the optimized solver.
+- `python/examples/demos/scenes/lcp_physics.py` and the panel metadata test now
+  reflect the refreshed current leader/laggard families.
+- `CHANGELOG.md` records the solver optimization.
+
+Focused before/after `BM_LcpCompare` evidence for `BlockedJacobiSolver`:
+
+- Standard profile rows: runtime ratios `0.088`, `0.085`, `0.134`, and `0.169`
+  for sizes 12, 24, 48, and 96 relative to the pre-change focused run.
+- Boxed profile rows: runtime ratios `0.069`, `0.082`, and `0.093` for sizes
+  12, 24, and 48.
+- FrictionIndex profile rows: runtime ratios `0.734`, `0.623`, and `0.661` for
+  contact counts 4, 16, and 64.
+- Mean focused ratio was `0.274`; best `0.069`; worst `0.734`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `BlockedJacobi` average ratio `5.66`; current leaders are
+  `Pgs`/`Sap`/`Tgs` on scalable rows and `Direct` on tiny rows.
+- Boxed: `BlockedJacobi` average ratio `3.59`; current leaders are `Pgs`/`Tgs`
+  with `Jacobi` close.
+- FrictionIndex: `BlockedJacobi` average ratio `20.45`; this remains a future
+  optimization target because coupled contact blocks still use the local block
+  solve path.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_lcp_projection_solvers \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_projection_solvers|lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BlockedJacobi/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/blocked_jacobi_profile_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+pixi run python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Affected C++ targets rebuilt successfully.
+- LCP projection, comparison, generated coverage, and validation solver tests
+  passed through CTest: `100% tests passed, 0 tests failed out of 4`.
+- Focused BlockedJacobi after-run showed all Standard, Boxed, and
+  FrictionIndex profile rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.78s`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization or interface audit from the refreshed
+  profile. Fresh high-ratio targets include Standard `Lemke`, `InteriorPoint`,
+  `Baraff`, and `ShockPropagation`; Boxed `Sap`, `BGS`, `Admm`, and
+  `BoxedSemiSmoothNewton`; and FrictionIndex `BoxedSemiSmoothNewton`,
+  `BlockedJacobi`, `ShockPropagation`, and `BGS`.
+- Do not push without explicit approval.
+
+## Current Reality - 2026-06-12 Stop-Only Hand-Off After BlockedJacobi Recon
+
+The user explicitly stopped further work and requested only hand-off docs, with
+no further verification. Do not infer that lint, tests, builds, benchmarks,
+implementation edits, commits, or pushes were performed after that stop request.
+This update is limited to `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+and this file.
+
+Observed repository state before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `3667401ad1f Optimize boxed semi-smooth Newton LCP step`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 30]`.
+- Worktree: clean before this docs-only hand-off edit.
+- Push was not performed in this stop-only response.
+
+Latest completed local checkpoints:
+
+- `3667401ad1f Optimize boxed semi-smooth Newton LCP step`
+- `d27a0232c37 Show LCP performance profiles in py demo`
+- `f857a380c20 Regenerate LCP performance profiles`
+- `dcf0d835c1b Refresh LCP performance profile tooling`
+- `7df9a018c31 Align LCP performance profile metadata`
+- `00a58f7153e Align Staggering native capability metadata`
+- `1b4e3827618 Report Staggering native support precisely`
+- `0e75c5c3985 Validate remaining LCP solver parameters`
+
+Interrupted continuation slice:
+
+- The next benchmark-driven target selected, but not implemented, was
+  `BlockedJacobiSolver`, because the refreshed full profile still showed it as
+  a high-ratio target across Standard, Boxed, and FrictionIndex rows.
+- Context gathered before the stop request included
+  `dart/math/lcp/projection/blocked_jacobi_solver.cpp`,
+  `dart/math/lcp/projection/blocked_jacobi_solver.hpp`,
+  `docs/background/lcp/02_overview.md`,
+  `docs/background/lcp/06_other-methods.md`, and related LCP unit-test snippets.
+- No BlockedJacobi implementation files were edited.
+- No focused BlockedJacobi baseline benchmark was run.
+- No lint, test, build, benchmark regeneration, commit, or push was run after
+  the stop request.
+
+Likely resume target, if the user explicitly resumes implementation:
+
+- Reinspect the full `BlockedJacobiSolver` update loop before editing.
+- The likely low-risk optimization to evaluate is a singleton-block fast path:
+  default Standard and Boxed auto partitions can produce singleton blocks, and
+  the current solver may be paying full local LCP-solver overhead for those rows.
+  A scalar projected Jacobi update could preserve block-Jacobi semantics while
+  avoiding repeated local solver setup.
+- Measure before changing with a focused run such as:
+
+```bash
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BlockedJacobi/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/blocked_jacobi_profile_before.json
+```
+
+Stop here until the user explicitly resumes. Do not push without explicit
+approval.
+
 ## Current Reality - 2026-06-12 Boxed Semi-Smooth Newton Direct Step
 
 After the Python demo performance-profile surface, work moved into a concrete

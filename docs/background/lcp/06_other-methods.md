@@ -464,7 +464,7 @@ Jacobi splitting applied to blocks (similar to Blocked Gauss-Seidel but with Jac
 # All blocks updated in parallel
 for iter = 1 to max_iter:
   parallel for each block i:
-    r_i = b_i + sum(A_{ij} * x_j^k, j != i)
+    r_i = b_i - sum(A_{ij} * x_j^k, j != i)
     x_i^{k+1} = SolveSubLCP(A_{ii}, r_i)
 ```
 
@@ -486,7 +486,9 @@ auto result = solver.solve(problem, x, options);
 > Note: Block partitions follow `findex` by default (contact blocks), or can be
 > set explicitly via `BlockedJacobiSolver::Parameters::blockSizes`.
 > DART uses `DirectSolver` for standard blocks up to 3 variables and falls back
-> to `DantzigSolver` for boxed or larger blocks.
+> to `DantzigSolver` for boxed or larger blocks. Singleton blocks with fixed
+> bounds use the scalar projected solve directly, which preserves the Jacobi
+> update while avoiding local solver setup overhead.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
 Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with
