@@ -12,7 +12,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_HALF = np.array([0.82, 0.45, 0.04])
 _PLANK_HALF = np.array([0.28, 0.16, 0.055])
@@ -350,6 +350,40 @@ class _RigidContactSolverCompare:
             renderables.extend(case.bridge.renderable_provider())
         return renderables
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        divergence_values = list(self._divergence_history)
+        return {
+            "row": "rigid_contact_solver_compare",
+            "solver": "sequential_impulse_rigid_body",
+            "contact_policy": "sequential_impulse_vs_boxed_lcp",
+            "executor": self._executors[int(self.executor_index)][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "controls": {
+                "friction": float(self.friction),
+                "initial_tilt_deg": float(self.initial_tilt_deg),
+                "launch_speed": float(self.launch_speed),
+                "restitution": float(self.restitution),
+            },
+            "cases": {
+                case.label: {
+                    "contact_solver_method": case.method.name,
+                    "rigid_body_solver": case.world.rigid_body_solver.name,
+                    "metrics": dict(self._last_metrics[case.label]),
+                }
+                for case in self.cases
+            },
+            "divergence": {
+                "current_pose": (
+                    float(divergence_values[-1]) if divergence_values else 0.0
+                ),
+                "max_pose": max(divergence_values, default=0.0),
+                "samples": float(len(divergence_values)),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         secondary = self.cases[1].world
         return {
@@ -577,6 +611,7 @@ def build() -> SceneSetup:
             "rigid_contact_solver_compare_worlds": [
                 case.world for case in comparison.cases
             ],
+            CAPTURE_METRICS_INFO_KEY: comparison.capture_metrics,
             "replay_capture_state": comparison.capture_replay_state,
             "replay_restore_state": comparison.restore_replay_state,
             "replay_sync": comparison._sync,

@@ -1,5 +1,49 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Handoff Snapshot
+
+Current branch: `feature/rigid-body-gui-visual-verification`. The branch was
+merged with latest `origin/main`, pushed through
+`origin/feature/rigid-body-gui-visual-verification`, and this final handoff
+slice is expected to be pushed before the session stops.
+
+Current slice: solver/contact comparison capture metrics. The code changes are
+limited to:
+
+- `python/examples/demos/scenes/rigid_solver_compare.py`
+- `python/examples/demos/scenes/rigid_contact_solver_compare.py`
+- `python/tests/integration/test_demos_cycle.py`
+- this task's handoff docs, the PLAN-103 sidecar, and `CHANGELOG.md`
+
+What changed: both comparison scenes now expose
+`SceneSetup.info["capture_metrics"]`. `rigid_solver_compare` exports row,
+solver family, executor, controls, case solver enums, world time, and x
+divergence; `rigid_contact_solver_compare` exports row, contact policy,
+executor, controls, case contact-method enums, world time, and pose divergence.
+The existing focused tests now assert those payloads, including case names and
+divergence maxima.
+
+Validation already run for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy -q`
+  reported `2 passed`.
+- `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_solver_compare_metrics_1781223785`
+  wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
+  scene-metrics events. Latest metrics had solver
+  `sequential_impulse_vs_ipc`, case solvers `SEQUENTIAL_IMPULSE`/`IPC`, and
+  max x-divergence `0.0012064618479162847`.
+- `pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_solver_compare_metrics_1781223800`
+  wrote a nonblank docked 960x540 screenshot, 71 PNG frames, and 72
+  scene-metrics events. Latest metrics had contact policy
+  `sequential_impulse_vs_boxed_lcp`, case methods
+  `SEQUENTIAL_IMPULSE`/`BOXED_LCP`, and max pose divergence
+  `0.003909716491843896`.
+
+Immediate next step for a fresh session: verify `git status -sb` is clean and
+the branch is up to date with origin. If so, do not redo this capture-metrics
+slice; continue from the next bounded rigid visual-verification follow-up or PR
+review/CI triage after explicit maintainer approval.
+
 ## Last Session Summary
 
 Created the first paired rigid solver comparison scene for Python `py-demos`.
@@ -858,15 +902,28 @@ heavy lanes at `status=ipc penetration caveat` with about 0.125 m depth and
 near-zero target travel, while the sequential-impulse lane reached
 `status=pushed` with about 0.123 m target travel.
 
+Fresh solver/contact comparison capture-metrics follow-up on 2026-06-11:
+`rigid_solver_compare` now records method-family capture metrics for
+sequential impulse vs IPC cases, and `rigid_contact_solver_compare` records
+contact-policy capture metrics for sequential-impulse vs boxed-LCP contact
+methods. The focused guard reported `2 passed`. The real docked captures wrote
+24 and 72 scene-metrics events respectively, with nonblank 960x540 docked
+screenshots and manifest summaries for case enums, controls, executor, world
+time, and divergence histories.
+
 ## How to Resume
 
 ```bash
 git checkout feature/rigid-body-gui-visual-verification
+git fetch origin main feature/rigid-body-gui-visual-verification
 git status -sb
+git log --oneline --decorate --max-count=5
 ```
 
-Then refresh the focused curation guard and use `PR_DRAFT.md` only after
-maintainer approval to commit/push/open a PR:
+If the branch is clean and matches origin after this handoff push, this slice is
+done locally. Use `PR_DRAFT.md` only after maintainer approval to update or open
+a PR. For future implementation work, refresh the focused curation guard before
+editing:
 
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest \

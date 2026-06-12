@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_HALF = np.array([1.35, 0.55, 0.05])
 _WALL_HALF = np.array([0.035, 0.55, 0.35])
@@ -279,6 +279,37 @@ class _RigidSolverComparison:
             renderables.extend(case.bridge.renderable_provider())
         return renderables
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        divergence_values = list(self._delta_history)
+        return {
+            "row": "rigid_solver_compare",
+            "solver": "sequential_impulse_vs_ipc",
+            "executor": self._executors[int(self.executor_index)][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "controls": {
+                "friction": float(self.friction),
+                "launch_speed": float(self.launch_speed),
+                "restitution": float(self.restitution),
+            },
+            "cases": {
+                case.label: {
+                    "rigid_body_solver": case.solver.name,
+                    "metrics": dict(self._last_metrics[case.label]),
+                }
+                for case in self.cases
+            },
+            "divergence": {
+                "current_x": (
+                    float(divergence_values[-1]) if divergence_values else 0.0
+                ),
+                "max_x": max(divergence_values, default=0.0),
+                "samples": float(len(divergence_values)),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         # The shared replay panel records the first world directly. Store the
         # second world, controls, and UI histories so side-by-side replay stays
@@ -456,6 +487,7 @@ def build() -> SceneSetup:
             "rigid_solver_compare": True,
             "rigid_solver_compare_controller": comparison,
             "rigid_solver_compare_worlds": [case.world for case in comparison.cases],
+            CAPTURE_METRICS_INFO_KEY: comparison.capture_metrics,
             "replay_capture_state": comparison.capture_replay_state,
             "replay_restore_state": comparison.restore_replay_state,
             "replay_sync": comparison._sync,

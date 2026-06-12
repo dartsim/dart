@@ -65,11 +65,12 @@
   diagnostics.
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
-  contact-scale budget, fixed/breakage/one-DOF joint constraint errors, and
-  stack-packet physics/runtime fields in `scene_metrics.jsonl` and
-  `manifest.json`. The manifest summarizes the full event stream with
-  first/latest events, per-key presence counts, and top-level numeric ranges so
-  mid-capture metric dropouts are visible.
+  contact-scale budget, solver comparison, contact-policy comparison,
+  fixed/breakage/one-DOF joint constraint errors, and stack-packet
+  physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
+  manifest summarizes the full event stream with first/latest events, per-key
+  presence counts, and top-level numeric ranges so mid-capture metric dropouts
+  are visible.
 - Adds drift tests that keep the registry, PLAN-103 sidecar, README quick table,
   and capture commands synchronized.
 - Keeps heavy IPC stacks, arm/gripper manipulation, arbitrary-point/contact
@@ -79,6 +80,20 @@
 
 ## Testing
 
+- Latest solver/contact comparison capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy -q`
+    - `2 passed`
+  - `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_solver_compare_metrics_1781223785`
+    - nonblank 960x540 screenshot, docked-workspace detection, 23 PNG frames,
+      24 scene-metrics events, latest solver `sequential_impulse_vs_ipc`, case
+      solvers `SEQUENTIAL_IMPULSE`/`IPC`, and max x-divergence
+      `0.0012064618479162847`
+  - `pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_solver_compare_metrics_1781223800`
+    - nonblank 960x540 screenshot, docked-workspace detection, 71 PNG frames,
+      72 scene-metrics events, latest contact policy
+      `sequential_impulse_vs_boxed_lcp`, case methods
+      `SEQUENTIAL_IMPULSE`/`BOXED_LCP`, and max pose divergence
+      `0.003909716491843896`
 - Latest joint-breakage capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_avbd_breakable_joint_demo_marks_and_resets_joint -q`
     - `2 passed`

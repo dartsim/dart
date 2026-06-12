@@ -4,13 +4,16 @@
 
 - [x] Recon: existing `py-demos` are the primary growing example surface.
 - [x] First solver-comparison slice: `rigid_solver_compare` runs sequential
-      impulse and rigid IPC side by side in one Python GUI scene.
+      impulse and rigid IPC side by side in one Python GUI scene with
+      scene-owned capture metrics for solver family, controls, cases, and
+      position divergence.
 - [x] Executor-equivalence slice: `rigid_executor_equivalence` runs matched
       rigid Worlds side by side with the same physics solver and sequential vs
       parallel executors.
 - [x] Contact-solver policy slice: `rigid_contact_solver_compare` runs matched
       Worlds with the same rigid-body solver and sequential-impulse vs boxed-LCP
-      contact methods on a tilted multi-contact plank.
+      contact methods on a tilted multi-contact plank with scene-owned capture
+      metrics for contact policy, controls, cases, and pose divergence.
 - [x] Link-contact slice: `contact` is now the numbered
       `Rigid Link Contact` row, showing multibody links dropping onto ground,
       friction-sliding, and pushing a rigid target through the public World
@@ -33,6 +36,12 @@
       after adding metrics for `rigid_step_diagnostics` and
       `rigid_contact_scale_budget`, and short real captures for both rows wrote
       eight scene-metrics events apiece.
+- [x] Solver/contact comparison capture-metrics follow-up:
+      `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
+      same capture hook so manifests preserve method-family/contact-policy case
+      names, solver/method enums, controls, world time, executor, and
+      divergence histories. The focused two-test guard reported `2 passed`; real
+      docked captures wrote 24 and 72 scene-metrics events respectively.
 - [x] Numbered workflow capture hardening: a real docked
       `rigid_contact_scale_budget` capture now verifies the numbered workflow
       path produces nonblank docked UI artifacts and `scene_metrics` lanes, and
@@ -215,11 +224,11 @@
       `3 passed`, and the docked capture wrote a nonblank 960x540 screenshot,
       23 PNG frames, and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_solver_compare` capture writes nonblank PNGs with
-      the docked ImGui workspace.
+      the docked ImGui workspace and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_executor_equivalence` capture writes nonblank PNGs
       with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_contact_solver_compare` capture writes nonblank PNGs
-      with the docked ImGui workspace.
+      with the docked ImGui workspace and 72 scene-metrics events.
 - [x] Visual smoke: `contact` capture writes nonblank PNGs with the docked
       ImGui workspace.
 - [x] Visual smoke: `rigid_restitution_ladder` capture writes nonblank PNGs
@@ -330,6 +339,10 @@
       branch to origin, and refreshed validation. The conflict-resolution
       `pixi run test-py` command ran the full Python suite and reported
       `942 passed, 9 skipped`; `pixi run lint` also passed.
+- [x] Current handoff refresh: after merging latest `origin/main` and pushing
+      the joint capture-metrics stack, the active branch adds solver-comparison
+      and contact-policy capture metrics, focused tests, real docked captures,
+      and this updated handoff context for a fresh session.
 
 ## Goal
 

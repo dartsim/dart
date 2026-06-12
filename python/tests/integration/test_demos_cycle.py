@@ -2224,6 +2224,20 @@ def test_rigid_solver_compare_records_wall_response() -> None:
         assert controller._clearance_history[case.label]
         assert controller._step_ms_history[case.label]
         assert min(controller._clearance_history[case.label]) < 0.05
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_solver_compare"
+    assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["cases"]) == {case.label for case in controller.cases}
+    assert (
+        capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]
+        == "SEQUENTIAL_IMPULSE"
+    )
+    assert capture_metrics["cases"]["IPC barrier"]["rigid_body_solver"] == "IPC"
+    assert capture_metrics["divergence"]["max_x"] == pytest.approx(
+        max(controller._delta_history)
+    )
 
 
 def test_rigid_restitution_ladder_orders_rebound_height() -> None:
@@ -2495,6 +2509,25 @@ def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
         assert controller._contact_history[case.label]
         assert max(controller._contact_history[case.label]) >= 2.0
         assert controller._depth_history[case.label]
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_contact_solver_compare"
+    assert capture_metrics["solver"] == "sequential_impulse_rigid_body"
+    assert capture_metrics["contact_policy"] == "sequential_impulse_vs_boxed_lcp"
+    assert set(capture_metrics["cases"]) == {case.label for case in controller.cases}
+    assert (
+        capture_metrics["cases"]["Sequential impulse contacts"][
+            "contact_solver_method"
+        ]
+        == "SEQUENTIAL_IMPULSE"
+    )
+    assert (
+        capture_metrics["cases"]["Boxed LCP contacts"]["contact_solver_method"]
+        == "BOXED_LCP"
+    )
+    assert capture_metrics["divergence"]["max_pose"] == pytest.approx(
+        max(controller._divergence_history)
+    )
 
 
 def test_rigid_link_contact_exercises_multibody_contact_response() -> None:

@@ -52,8 +52,9 @@
     implementations.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
-    rigid-body scene with executor selection, clearance, speed, divergence, and
-    step-profile diagnostics for visual debugging.
+    rigid-body scene with executor selection, clearance, speed, divergence,
+    step-profile diagnostics, and scene-owned capture metrics for visual
+    debugging.
   - Added `rigid_executor_equivalence` to Python `py-demos`, showing matched
     rigid-body Worlds stepped by sequential and parallel executors with one
     shared physics solver, pose/velocity divergence, contact-count delta, and
@@ -61,7 +62,8 @@
   - Added `rigid_contact_solver_compare` to Python `py-demos`, comparing the
     default sequential-impulse contact policy and opt-in boxed-LCP contact
     policy on a tilted multi-contact rigid plank with contact-count, depth,
-    clearance, speed, energy, divergence, and step-profile diagnostics.
+    clearance, speed, energy, divergence, step-profile diagnostics, and
+    scene-owned capture metrics.
   - Upgraded the Python `py-demos` `contact` scene into the numbered rigid
     visual-verification workflow as `Rigid Link Contact`, showing multibody
     links dropping, friction-sliding, and pushing a rigid target with link
@@ -188,9 +190,9 @@
   - Added scene-owned capture metrics to `py-demo-capture` manifests for
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
-    manifest. The step-diagnostics, contact-scale budget, and rigid IPC stack
-    packet rows use it to make capture artifacts carry scene-owned
-    physics/runtime evidence.
+    manifest. The solver-comparison, contact-policy, step-diagnostics,
+    contact-scale budget, and rigid IPC stack packet rows use it to make capture
+    artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`
