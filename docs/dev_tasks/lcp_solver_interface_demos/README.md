@@ -77,6 +77,9 @@
       box-contact, articulated unified-contact, and dense box-contact batch rows.
 - [x] Aligned generated LCP correctness coverage with concrete
       `supportsProblem(problem)` predicates instead of manifest-family support.
+- [x] Captured the final no-verification hand-off after the latest two local
+      implementation commits, refreshed against `main`, so a fresh session can
+      resume from the single consolidated branch.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -119,10 +122,72 @@ rediscovering the current branch state.
 The latest implementation checkpoint is the generated coverage support-routing
 slice, following the heavyweight contact benchmark support-gating slice.
 
-The previous task checkpoint was hand-off only: no lint, build, tests,
-benchmark listing, solver execution, or additional implementation work was run
-after that user's critical stop instruction. The current checkpoint resumes
-implementation from that hand-off.
+The current task checkpoint is hand-off only. After the user's critical stop
+instruction, no lint, build, tests, benchmark listing, solver execution, or
+additional implementation work was run.
+
+## 2026-06-11 Final No-Verification Hand-Off Snapshot
+
+The user explicitly stopped implementation work and requested hand-off only,
+with no further verification. This section captures the branch state for a
+fresh Claude/Codex session.
+
+Branch state before this docs-only hand-off checkpoint:
+
+- Current branch: `feature/lcp-solver-interface-demos`.
+- Local implementation HEAD:
+  `fe5b70b32cc1 Route generated LCP coverage by concrete support`.
+- Previous implementation checkpoint:
+  `f86e353df2f Gate heavyweight LCP contact benchmarks concretely`.
+- Remote-tracking branch in this checkout:
+  `origin/feature/lcp-solver-interface-demos` at
+  `737b9c95c11 Document final LCP handoff checkpoint`.
+- Local status before this docs-only edit:
+  `feature/lcp-solver-interface-demos` was ahead of the remote-tracking branch
+  by two commits.
+- `main` was fetched over HTTPS from `https://github.com/dartsim/dart.git` to
+  `7d05d7b9ea72`; `git merge --no-edit FETCH_HEAD` reported
+  `Already up to date.`
+- An SSH fetch from `origin` failed in this environment because GitHub port 22
+  was unreachable; HTTPS fetch succeeded.
+- No PR was associated with the branch when checked earlier in the session.
+
+Current first-parent implementation stack before this docs-only checkpoint:
+
+```text
+fe5b70b32cc Route generated LCP coverage by concrete support
+f86e353df2f Gate heavyweight LCP contact benchmarks concretely
+737b9c95c11 Document final LCP handoff checkpoint
+8f0242c2442 Filter LCP contact benchmark rows concretely
+4c63db30bd7 Filter LCP benchmark args concretely
+be4643d1743 Document consolidated LCP handoff state
+```
+
+Important hand-off constraints:
+
+- The broad LCP objective is still open. Do not mark this dev task complete
+  only because the branch is consolidated and published.
+- Treat verification notes below as historical evidence for their named
+  implementation checkpoints. They are not evidence for this docs-only
+  hand-off checkpoint.
+- A fresh session should fetch
+  `feature/lcp-solver-interface-demos`, read this file and
+  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`, then continue from one
+  bounded remaining LCP support-routing, solver-domain, benchmark, or py-demo
+  gap.
+
+Likely next bounded continuations:
+
+- Inspect the remaining grouped batch benchmark registrations in
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` and route them through
+  concrete generated batch support if they still publish native rows using only
+  manifest-level family checks.
+- Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp` before changing it:
+  some manifest-level checks there may intentionally test solver manifest
+  categories rather than concrete native routing.
+- Continue the solver documentation and py-demo coverage audit only after
+  identifying a concrete mismatch between documented native domains,
+  `supportsProblem(problem)`, benchmark rows, and demo metadata.
 
 ## Generated Coverage Support-Routing Checkpoint
 
