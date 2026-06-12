@@ -1,6 +1,27 @@
 # Resume: Rigid-Body Visual Verification
 
-## Current Handoff Snapshot - 2026-06-11 AVBD Related Metrics
+## Critical Stop Handoff - 2026-06-11 AVBD Related Metrics
+
+The user explicitly stopped further work and requested handoff-only docs with
+no further verification. Treat this section as the fresh-session entry point.
+
+State at the start of this handoff-only docs edit:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Worktree: clean before the docs handoff edit.
+- Local code checkpoint: `4d63d2b24b0c` (`Expose AVBD related route capture
+  metrics`).
+- Origin at that moment: `5f794e65d3f8` (`Document rigid visual verification
+  handoff`).
+- The local branch was ahead of origin by one code/docs checkpoint before this
+  handoff-only docs commit.
+- Last checked GitHub state: no PR associated with this branch.
+
+No tests, lint, build, captures, or `git diff --check` were run after this
+handoff-only docs edit. Do not treat the handoff docs commit itself as freshly
+verified.
+
+## Current Checkpoint Snapshot - 2026-06-11 AVBD Related Metrics
 
 The continuation resumed from pushed handoff commit `5f794e65d3f` and finished
 the AVBD related-route metrics slice that had been partially edited in the
@@ -42,7 +63,7 @@ What changed in code/test:
   related-source identities, compact histories, and finite manifest-friendly
   top-level fields.
 
-Validation collected so far for this slice:
+Validation collected before the stop request for this slice:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_avbd_fixed_joint_contact_demo_exercises_contact_path python/tests/integration/test_demos_cycle.py::test_avbd_revolute_motor_demo_drives_hinge python/tests/integration/test_demos_cycle.py::test_avbd_prismatic_motor_demo_drives_slider python/tests/integration/test_demos_cycle.py::test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only -q`
   reported `4 passed`.

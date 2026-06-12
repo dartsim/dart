@@ -87,6 +87,15 @@
 
 ## Testing
 
+- Handoff-only stop after the AVBD related-route checkpoint:
+  - The user explicitly stopped further work and requested handoff-only docs
+    with no further verification.
+  - State at the start of the handoff edit: local `HEAD` `4d63d2b24b0c`
+    (`Expose AVBD related route capture metrics`), origin
+    `5f794e65d3f8` (`Document rigid visual verification handoff`), and no
+    associated GitHub PR in the last checked state.
+  - No tests, lint, build, captures, or `git diff --check` were run after this
+    docs-only handoff edit.
 - Latest AVBD related-route capture-metrics follow-up:
   - `python/examples/demos/scenes/avbd_rigid_fixed_joint_contact.py`,
     `avbd_rigid_spherical_breakable_joint.py`,
@@ -127,7 +136,6 @@
     - passed, `ninja: no work to do`
   - `git diff --check`
     - passed
-- Previous handoff-only stop:
 - Previous handoff-only stop:
   - The user explicitly stopped implementation after the
     `diff_drone_liftoff` contact-gradient checkpoint and requested handoff only

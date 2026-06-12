@@ -1,5 +1,21 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Critical Stop Handoff - 2026-06-11
+
+The user explicitly stopped further work and requested handoff-only docs with
+no further verification. Fresh sessions should start from this boundary.
+
+- Branch at handoff edit: `feature/rigid-body-gui-visual-verification`.
+- Worktree was clean before the docs handoff edit.
+- Local code checkpoint before this docs-only handoff: `4d63d2b24b0c`
+  (`Expose AVBD related route capture metrics`).
+- Origin at that moment: `5f794e65d3f8` (`Document rigid visual verification
+  handoff`), so the branch was ahead of origin by one code/docs checkpoint.
+- Last checked GitHub state: no PR associated with this branch.
+- No tests, lint, build, captures, or `git diff --check` were run after this
+  handoff-only docs edit. Do not infer fresh verification for the handoff docs
+  commit itself.
+
 ## Current Status
 
 - [x] Recon: existing `py-demos` are the primary growing example surface.
@@ -816,35 +832,37 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
-   `feature/rigid-body-gui-visual-verification`.
-2. The prior stop boundary was superseded by the continuation that implemented
+   `feature/rigid-body-gui-visual-verification`. If this handoff was pushed,
+   expect a docs-only handoff commit on top of code checkpoint `4d63d2b24b0c`.
+2. Do not run tests, lint, build, captures, or whitespace verification unless
+   the user explicitly resumes implementation or asks for verification.
+3. The prior stop boundary was superseded by the continuation that implemented
    the `diff_drone_liftoff` contact-gradient metrics hook. Its focused guard,
    docked capture, lint, bounded build, and whitespace check are recorded
    above.
-3. The numbered workflow capture-metrics pass now reaches the final row, and
+4. The numbered workflow capture-metrics pass now reaches the final row, and
    the focused `rigid_ipc_tunnel` no-tunneling route plus the
    `diff_drone_liftoff` contact-gradient route now have capture metrics. Keep
    both as related shelf routes, not new numbered rigid rows, unless a distinct
    user question appears.
-4. The AVBD related-route metrics slice is implemented locally for fixed-joint
-   contact, spherical breakable joint, revolute motor, and prismatic motor.
-   Keep these as non-numbered related shelf routes unless a distinct numbered
-   workflow question appears.
-5. Keep payloads summary-oriented: row identity, solver/contact scope,
+5. The AVBD related-route metrics slice is implemented in code checkpoint
+   `4d63d2b24b0c` for fixed-joint contact, spherical breakable joint, revolute
+   motor, and prismatic motor. Keep these as non-numbered related shelf routes
+   unless a distinct numbered workflow question appears.
+6. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-6. The branch was pushed for handoff only because the maintainer/user explicitly
-   requested it on 2026-06-11. Future pushes, PR creation, comments, review
-   replies, or other GitHub mutations still require explicit approval.
-7. Refresh validation for any later code/docs changes, then use the local
+7. Future pushes after this handoff, PR creation, comments, review replies, or
+   other GitHub mutations still require explicit approval.
+8. Refresh validation for any later code/docs changes, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-8. Keep related-evidence routes synchronized between the runner-owned
+9. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-9. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+10. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-10. Keep fuller articulated arm/gripper manipulation deferred until the public
+11. Keep fuller articulated arm/gripper manipulation deferred until the public
     API/runtime can support it as an interactive verifier. The current audit
     found rigid-body joints are not IPC-supported, multibody link contacts lack
     material/friction controls, and scripted IPC two-jaw pinch settings that
