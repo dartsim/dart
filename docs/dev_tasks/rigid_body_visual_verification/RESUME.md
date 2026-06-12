@@ -2,60 +2,45 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds reviewer-facing Replay timeline metadata to the capture
-packet after the numbered 36-row Replay timeline pass completed. Single-scene
-`py-demo-capture` manifests now include a JSON-safe
-`scene_metadata.replay_timeline` summary with the Replay panel name, value-track
-label, and signal/marker availability; workflow `review_index.html` cards show
-that Replay track next to the existing row guidance and metric summaries.
+This checkpoint completes the capture-first heavier Rigid IPC stack packet
+slice. The existing four-box `rigid_ipc_stack_packet` now shares a spec-driven
+implementation with a six-box `rigid_ipc_heavy_stack_packet`; both stay in the
+non-numbered Rigid IPC shelf and only enter workflow capture packets through
+the opt-in `--include-packets` group. The default 36-row World Rigid Body
+workflow remains unchanged.
 
-Expected repository state after this hand-off:
+Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Local `HEAD` before this implementation work:
-  `2e3b1c0d4fc Add loop closure replay timeline`.
-- The branch had no associated PR and was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by fifteen commits before
-  this slice.
-- The latest implementation checkpoint covered by this hand-off is the Replay
-  timeline capture-metadata slice: `python/examples/demos/runner.py` emits
-  `scene_capture_metadata` through the existing capture metrics JSONL path,
-  `scripts/capture_py_demo.py` stores it as `scene_metadata` and surfaces the
-  Replay track in workflow review cards, and tests now guard the projection,
-  manifest, review index, and sidecar-documented Replay rows.
-- A real row-36 workflow capture under
-  `/tmp/dart_capture_rigid_workflow_replay_metadata_row36_1781289001` completed
-  with `status=complete`, `capture_count=1`, `completed_count=1`, and
-  `failed_count=0`; the per-scene manifest recorded
-  `Max closure residual ratio`, `has_signal=true`, `has_markers=true`, and
-  panel `Replay`; the review card showed
-  `Max closure residual ratio (signal, markers)`.
-- A full 36-row workflow capture under
-  `/tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053` completed
-  with `status=complete`, `capture_count=36`, `completed_count=36`,
-  `failed_count=0`, `guidance_complete=true`, and nineteen
-  Replay-labeled review cards. All per-scene manifests inspected had positive
-  frame counts, docked screenshots, and nontrivial unique-color counts.
-- A real extended optional-row workflow capture under
-  `/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053` completed
-  rows 37-51 with `status=complete`, `capture_count=15`,
-  `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
-  selected related/IPC-shelf/packet groups all present.
-- The previous hand-off checkpoint was finalized under an explicit
-  stop-and-push instruction. That stop state is historical; future sessions
-  should verify branch status before acting and follow the readiness audit
-  below.
-- Current reality after this continuation: branch
-  `feature/rigid-body-gui-visual-verification` was observed clean and equal to
-  `origin/feature/rigid-body-gui-visual-verification` at
-  `91f53e5ae8e Record rigid workflow handoff evidence`, with no associated PR.
-  This task is active again under the persistent DART 7 rigid
-  visual-verification goal.
-- Before any future commit, rerun the repository-mandated `pixi run lint`.
-- Historical note: immediately before this continuation resumed, the user had
-  requested a stop-only hand-off. That stop state left these same
-  implementation files local and uncommitted; this continuation supersedes that
-  pause by completing the slice and recording verification below.
+  `249cde7a36b Audit rigid visual workflow retirement readiness`, ahead of
+  origin commit `91f53e5ae8e Record rigid workflow handoff evidence`.
+- There is no PR associated with this branch.
+- No push was performed for this slice; push still requires explicit approval.
+- The local implementation adds/updates
+  `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
+  `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/unit/test_capture_py_demo.py`,
+  `python/tests/integration/test_demos_cycle.py`,
+  `python/examples/demos/README.md`, and the PLAN-103 rigid sidecar.
+- Verification for this slice: syntax checks passed; the focused Python suite
+  below reported `11 passed` before and after `pixi run lint`; the extended
+  workflow dry-run planned rows `51-52 / 52` with both packet variants and
+  complete guidance; the real row-52 docked workflow capture completed with one
+  captured row, no failed rows, a nonblank docked screenshot, 11 PNG frames, 12
+  metric events, `box_count=6.0`, `top_mass=4.25`, and
+  `status=capture-first`; `pixi run lint` passed and `git diff --check` was
+  clean.
+
+Previous Replay capture-metadata checkpoint context: this checkpoint added
+reviewer-facing Replay timeline metadata to the capture packet after the
+numbered 36-row Replay timeline pass completed. Single-scene
+`py-demo-capture` manifests include a JSON-safe
+`scene_metadata.replay_timeline` summary with the Replay panel name,
+value-track label, and signal/marker availability; workflow
+`review_index.html` cards show that Replay track next to the existing row
+guidance and metric summaries.
 
 Previous loop-closure checkpoint context: it completed the
 `rigid_loop_closure` Replay timeline slice after
@@ -252,6 +237,13 @@ Expected repository state for that earlier checkpoint:
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
+
+The latest continuation completed the heavy capture-first Rigid IPC stack
+packet. `rigid_ipc_heavy_stack_packet` is a six-box, top-heavy variant that
+shares the stack-packet implementation, stays outside the numbered 36-row
+workflow, and appears only in the optional packet group after
+`rigid_ipc_stack_packet`. Syntax checks, focused pytest, a rows 51-52 extended
+dry-run, a real row-52 docked workflow capture, lint, and diff checks passed.
 
 The previous implementation session fixed `py-demos --cycle-scenes` so a
 bounded `--frames N` value applies to every scene instead of ending the whole
@@ -504,82 +496,27 @@ recorded below.
 
 Current snapshot:
 
-- Local `HEAD` before the Replay capture-metadata implementation work was
-  `2e3b1c0d4fc Add loop closure replay timeline`. The branch was fifteen
-  commits ahead of `origin/feature/rigid-body-gui-visual-verification`, clean,
-  and had no associated PR before this slice.
-- Local `HEAD` before the loop-closure implementation work was
-  `1add2036097 Add multibody solver family replay timeline`, which is local
-  until explicitly pushed in a future approved session. `git status -sb` before
-  this continuation resumed showed the branch fourteen commits ahead of origin
-  with uncommitted row 36 scene/test edits and stop-only hand-off docs; this
-  checkpoint supersedes that hand-off state.
-- Latest implementation checkpoints covered by this hand-off:
-  `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
-  `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
-  `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `3c5b9e517d3 Enable rigid workflow video packets`,
-  `d5c6de2bee1 Describe optional rigid workflow rows`,
-  `5a4529f0083 Audit rigid workflow guidance coverage`, and
-  `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command, stack Replay timeline, pushed hand-off, contact
-  manipulation Replay timeline, kinematic-driver Replay timeline,
-  normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline, distance-spring Replay timeline,
-  limited-joints Replay timeline, motor-limits Replay timeline,
-  passive-parameters Replay timeline, screw-joint pitch Replay timeline,
-  multibody dynamics-terms Replay timeline, link center-of-mass Replay
-  timeline, link-Jacobian Replay timeline, multibody solver-family Replay
-  timeline, and loop-closure Replay timeline checkpoint.
-- `d98abdde973 Refresh rigid visual verification handoff` is a pushed
-  docs-only checkpoint.
-- Local `HEAD` before the link center-of-mass implementation commit was
-  `7438e13cca9 Add multibody dynamics replay timeline`; the branch was
-  observed clean and eleven commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification` before this slice.
-- Local `HEAD` before the link-Jacobian implementation work was
-  `c7042091c2b Add link center of mass replay timeline`; the branch was ahead
-  of `origin/feature/rigid-body-gui-visual-verification` by twelve commits and
-  carried docs-only stop-handoff edits that this checkpoint supersedes.
-- Local `HEAD` before the multibody dynamics-terms implementation commit was
-  `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
-  and ten commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification` before this slice.
-- Local `HEAD` before the screw-joint pitch implementation commit was
-  `6f307966524 Add passive joint replay timeline`; it was nine commits ahead
-  of `origin/feature/rigid-body-gui-visual-verification` before that slice.
-- The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-  joint-breakage, distance-spring, limited-joints, motor-limits,
-  passive-parameters, screw-joint pitch, multibody dynamics-terms, link
-  center-of-mass, link-Jacobian, multibody solver-family, loop-closure, Replay
-  capture-metadata, full workflow refresh, and optional-packet hand-off
-  checkpoints are now expected in branch history through
-  `91f53e5ae8e Record rigid workflow handoff evidence`; verify with
-  `git status -sb` before acting.
+- Local `HEAD` before this implementation work was
+  `249cde7a36b Audit rigid visual workflow retirement readiness`.
+- The origin tip before this slice was
+  `91f53e5ae8e Record rigid workflow handoff evidence`.
+- The latest local slice adds the verified
+  `rigid_ipc_heavy_stack_packet` capture-first packet and was verified with
+  focused tests, a dry-run, a real row capture, lint, and diff checks before the
+  local commit.
 - There is no PR associated with this branch at checkpoint time.
-- Do not push again without explicit approval in that session.
+- No push was performed for this slice. Do not push without explicit approval
+  in the session that performs the push.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` and `git log -5 --oneline` first. The branch should
-include the Replay metadata and optional extended-packet hand-off through
-`91f53e5ae8e Record rigid workflow handoff evidence`; verify current reality
-instead of trusting older local/unpushed notes. The next decision is whether the
-maintainer accepts the maintained 36-row workflow plus optional 15-row packet as
-complete for this dev task. If yes, prepare the completion cleanup PR that
-promotes any final durable close-out note and removes this dev-task folder. If
-no, choose the next bounded slice from the durable PLAN-103 follow-up list. Do
-not push without explicit approval in that session.
-
-Completion/retirement readiness audit: the scoped workflow is close to
-retirement because the durable PLAN-103 sidecar owns the workflow, API-gap
-audit, captures, validation snapshot, and follow-ups; the Python demo README
-owns the user-facing workflow; tests guard sidecar/README ordering,
-capture-command sync, deferred API gaps, workflow guidance, optional packet
-guidance, Replay metadata, and review-index manifest fields; the recorded full
-36-row and optional rows 37-51 captures both completed with zero failed rows.
-Do not delete this folder until explicit maintainer acceptance is recorded and
-the cleanup is included in the completing PR.
+Inspect `git status -sb` and `git log -5 --oneline` first. If the heavy packet
+commit is present and the tree is clean, the next decision returns to the
+completion/retirement readiness audit: either get maintainer acceptance and
+prepare the completion cleanup PR, or choose the next bounded slice from
+durable PLAN-103 follow-ups. If this slice is still uncommitted, rerun or
+inspect the final lint/diff gates before committing. Do not push without
+explicit approval in that session.
 
 Replay capture-metadata checks for this slice:
 
@@ -791,8 +728,9 @@ max world/body gap about `0.2055`, and historical max absolute torques about
   `--include-related` variant appends the related routes as rows 37-46 in the
   generated review packet.
 - The capture-first packet bundle is also opt-in. `--include-packets` appends
-  `rigid_ipc_stack_packet` after the numbered rows and, when present, after the
-  related-evidence rows.
+  `rigid_ipc_stack_packet` and `rigid_ipc_heavy_stack_packet` after the
+  numbered rows and, when present, after related-evidence and direct Rigid IPC
+  shelf rows.
 - Row-range selection is intended for targeted reruns after a long workflow
   packet fails or needs manual inspection. It keeps absolute row labels and
   output directories, so selected packet row 47 appears as `47/47` and writes to

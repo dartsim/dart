@@ -148,6 +148,7 @@ from .scenes.rigid_ipc_edge_drop import SCENE as RIGID_IPC_EDGE_DROP
 from .scenes.rigid_ipc_incline import SCENE as RIGID_IPC_INCLINE
 from .scenes.rigid_ipc_pile import SCENE as RIGID_IPC_PILE
 from .scenes.rigid_ipc_slide import SCENE as RIGID_IPC_SLIDE
+from .scenes.rigid_ipc_stack_packet import HEAVY_SCENE as RIGID_IPC_HEAVY_STACK_PACKET
 from .scenes.rigid_ipc_stack_packet import SCENE as RIGID_IPC_STACK_PACKET
 from .scenes.rigid_ipc_tunnel import SCENE as RIGID_IPC_TUNNEL
 from .scenes.rigid_joint_breakage import SCENE as RIGID_JOINT_BREAKAGE
@@ -321,9 +322,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the
         # intersection-free (no-tunneling) guarantee. Only scenes that run in
-        # real time are registered first; the stack packet is explicitly
+        # real time are registered first; stack packets are explicitly
         # capture-first and benchmark-adjacent so users can record the heavier
-        # stress case without promoting it into the numbered live workflow.
+        # stress cases without promoting them into the numbered live workflow.
         RIGID_IPC,
         RIGID_IPC_SLIDE,
         RIGID_IPC_INCLINE,
@@ -331,6 +332,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         RIGID_IPC_PILE,
         RIGID_IPC_TUNNEL,
         RIGID_IPC_STACK_PACKET,
+        RIGID_IPC_HEAVY_STACK_PACKET,
         # PLAN-083 unified Newton-barrier CPU corpus placeholders. These are
         # launchable py-demo rows with explicit smoke/visual/benchmark commands
         # but intentionally remain planned until runtime mixed stepping exists.

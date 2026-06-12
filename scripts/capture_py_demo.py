@@ -319,6 +319,7 @@ RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], .
 
 RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
     ("rigid_ipc_stack_packet", 24, 960, 540, True),
+    ("rigid_ipc_heavy_stack_packet", 12, 960, 540, True),
 )
 
 _RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
@@ -452,6 +453,39 @@ _RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
         "scope": (
             "Capture-first stress packet; not a numbered workflow row and not "
             "a solver-performance parity claim."
+        ),
+    },
+    "rigid_ipc_heavy_stack_packet": {
+        "workflow_label": "Capture-first packet",
+        "user_question": (
+            "How does a taller, top-heavy IPC stack behave beyond the live demo "
+            "budget?"
+        ),
+        "try_first": (
+            "Use this packet when four boxes are not enough to inspect IPC "
+            "stack stress, but keep it out of the live numbered workflow."
+        ),
+        "inspect": [
+            "friction",
+            "box count",
+            "top mass",
+            "frame-budget threshold",
+            "min clearance",
+            "contact count",
+            "top drift",
+            "height error",
+            "max speed",
+            "wall time",
+            "benchmark pointer",
+        ],
+        "healthy_signal": (
+            "The taller mass-gradient stack stays finite and separated enough "
+            "for capture evidence, with benchmark ownership recorded for "
+            "throughput context."
+        ),
+        "scope": (
+            "Taller capture-first stress packet; not a numbered workflow row "
+            "and not a solver-performance parity claim."
         ),
     },
 }

@@ -1171,22 +1171,37 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 
-    setup = rigid_ipc_stack_packet.build()
-    controller = setup.info["rigid_ipc_stack_packet_controller"]
-    setup.pre_step()
+    cases = [
+        (
+            rigid_ipc_stack_packet.build,
+            "rigid_ipc_stack_packet",
+            "text:capture-first rigid IPC stack",
+        ),
+        (
+            rigid_ipc_stack_packet.build_heavy,
+            "rigid_ipc_heavy_stack_packet",
+            "text:capture-first heavy rigid IPC stack",
+        ),
+    ]
+    for build_scene, scene_id, heading in cases:
+        setup = build_scene()
+        controller = setup.info[f"{scene_id}_controller"]
+        setup.pre_step()
 
-    builder = _ScriptedPanelBuilder()
-    setup.panels[0].build(builder, _FakePanelContext())
+        builder = _ScriptedPanelBuilder()
+        setup.panels[0].build(builder, _FakePanelContext())
 
-    assert setup.info["rigid_ipc_stack_packet_capture_first"] is True
-    assert setup.info["rigid_ipc_stack_packet_benchmark"] == "bm_rigid_ipc_solver"
-    assert "text:capture-first rigid IPC stack" in builder.events
-    assert "text:not a numbered World Rigid Body workflow row" in builder.events
-    assert "text:benchmark owner: bm_rigid_ipc_solver" in builder.events
-    assert any(event.startswith("plot:Step wall ms:") for event in builder.events)
-    assert any(event.startswith("plot:Min clearance:") for event in builder.events)
-    assert any(event.startswith("plot:Contact count:") for event in builder.events)
-    assert controller._last_metrics
+        assert setup.info[f"{scene_id}_capture_first"] is True
+        assert setup.info[f"{scene_id}_benchmark"] == "bm_rigid_ipc_solver"
+        assert setup.info["rigid_ipc_stack_packet_variant"] == scene_id
+        assert heading in builder.events
+        assert "text:not a numbered World Rigid Body workflow row" in builder.events
+        assert "text:benchmark owner: bm_rigid_ipc_solver" in builder.events
+        assert any(event.startswith("text:top mass:") for event in builder.events)
+        assert any(event.startswith("plot:Step wall ms:") for event in builder.events)
+        assert any(event.startswith("plot:Min clearance:") for event in builder.events)
+        assert any(event.startswith("plot:Contact count:") for event in builder.events)
+        assert controller._last_metrics
 
 
 def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:

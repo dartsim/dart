@@ -2,60 +2,45 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds reviewer-facing Replay timeline metadata to the capture
-packet after the numbered 36-row Replay timeline pass completed. Single-scene
-`py-demo-capture` manifests now include a JSON-safe
-`scene_metadata.replay_timeline` summary with the Replay panel name, value-track
-label, and signal/marker availability; workflow `review_index.html` cards show
-that Replay track next to the existing row guidance and metric summaries.
+This checkpoint completes the capture-first heavier Rigid IPC stack packet
+slice. The existing four-box `rigid_ipc_stack_packet` now shares a spec-driven
+implementation with a six-box `rigid_ipc_heavy_stack_packet`; both stay in the
+non-numbered Rigid IPC shelf and only enter workflow capture packets through
+the opt-in `--include-packets` group. The default 36-row World Rigid Body
+workflow remains unchanged.
 
-Expected repository state after this hand-off:
+Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Local `HEAD` before this implementation work:
-  `2e3b1c0d4fc Add loop closure replay timeline`.
-- The branch had no associated PR and was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by fifteen commits before
-  this slice.
-- The latest implementation checkpoint covered by this hand-off is the Replay
-  timeline capture-metadata slice: `python/examples/demos/runner.py` emits
-  `scene_capture_metadata` through the existing capture metrics JSONL path,
-  `scripts/capture_py_demo.py` stores it as `scene_metadata` and surfaces the
-  Replay track in workflow review cards, and tests now guard the projection,
-  manifest, review index, and sidecar-documented Replay rows.
-- A real row-36 workflow capture under
-  `/tmp/dart_capture_rigid_workflow_replay_metadata_row36_1781289001` completed
-  with `status=complete`, `capture_count=1`, `completed_count=1`, and
-  `failed_count=0`; the per-scene manifest recorded
-  `Max closure residual ratio`, `has_signal=true`, `has_markers=true`, and
-  panel `Replay`; the review card showed
-  `Max closure residual ratio (signal, markers)`.
-- A full 36-row workflow capture under
-  `/tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053` completed
-  with `status=complete`, `capture_count=36`, `completed_count=36`,
-  `failed_count=0`, `guidance_complete=true`, and nineteen
-  Replay-labeled review cards. All per-scene manifests inspected had positive
-  frame counts, docked screenshots, and nontrivial unique-color counts.
-- A real extended optional-row workflow capture under
-  `/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053` completed
-  rows 37-51 with `status=complete`, `capture_count=15`,
-  `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
-  selected related/IPC-shelf/packet groups all present.
-- The previous hand-off checkpoint was finalized under an explicit
-  stop-and-push instruction. That stop state is historical; future sessions
-  should verify branch status before acting and follow the readiness audit
-  below.
-- Current reality after this continuation: branch
-  `feature/rigid-body-gui-visual-verification` was observed clean and equal to
-  `origin/feature/rigid-body-gui-visual-verification` at
-  `91f53e5ae8e Record rigid workflow handoff evidence`, with no associated PR.
-  This task is active again under the persistent DART 7 rigid
-  visual-verification goal.
-- Before any future commit, rerun the repository-mandated `pixi run lint`.
-- Historical note: immediately before this continuation resumed, the user had
-  requested a stop-only hand-off. That stop state left these same
-  implementation files local and uncommitted; this continuation supersedes that
-  pause by completing the slice and recording verification below.
+  `249cde7a36b Audit rigid visual workflow retirement readiness`, ahead of
+  origin commit `91f53e5ae8e Record rigid workflow handoff evidence`.
+- There is no PR associated with this branch.
+- No push was performed for this slice; push still requires explicit approval.
+- The local implementation adds/updates
+  `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
+  `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/unit/test_capture_py_demo.py`,
+  `python/tests/integration/test_demos_cycle.py`,
+  `python/examples/demos/README.md`, and the PLAN-103 rigid sidecar.
+- Verification for this slice: syntax checks passed; the focused Python suite
+  below reported `11 passed` before and after `pixi run lint`; the extended
+  workflow dry-run planned rows `51-52 / 52` with both packet variants and
+  complete guidance; the real row-52 docked workflow capture completed with one
+  captured row, no failed rows, a nonblank docked screenshot, 11 PNG frames, 12
+  metric events, `box_count=6.0`, `top_mass=4.25`, and
+  `status=capture-first`; `pixi run lint` passed and `git diff --check` was
+  clean.
+
+Previous Replay capture-metadata checkpoint context: this checkpoint added
+reviewer-facing Replay timeline metadata to the capture packet after the
+numbered 36-row Replay timeline pass completed. Single-scene
+`py-demo-capture` manifests include a JSON-safe
+`scene_metadata.replay_timeline` summary with the Replay panel name,
+value-track label, and signal/marker availability; workflow
+`review_index.html` cards show that Replay track next to the existing row
+guidance and metric summaries.
 
 Previous loop-closure checkpoint context: it completed the
 `rigid_loop_closure` Replay timeline slice after
@@ -283,7 +268,7 @@ Expected repository state for that earlier checkpoint:
       non-numbered related-evidence shelf routes to the same workflow manifest
       and review index.
 - [x] `py-demo-capture -- --rigid-workflow --include-packets` now appends the
-      capture-first rigid IPC stack packet to the same workflow manifest and
+      capture-first rigid IPC stack packets to the same workflow manifest and
       review index without changing the default 36-row workflow.
 - [x] `py-demo-capture -- --rigid-workflow --workflow-start-row N --workflow-end-row M`
       now supports targeted workflow reruns while
@@ -377,6 +362,11 @@ Expected repository state for that earlier checkpoint:
       related-evidence, direct Rigid IPC shelf, and capture-first packet groups
       with docked screenshots, frame sequences, metric events, complete
       guidance, and no failed rows.
+- [x] The optional capture-first packet group now includes the six-box
+      `rigid_ipc_heavy_stack_packet` row after the existing four-box packet;
+      an extended dry-run planned rows 51-52 / 52 with complete guidance, and a
+      real row-52 docked workflow capture completed with finite heavy-stack
+      metrics.
 
 ## Goal
 
@@ -419,7 +409,10 @@ Evidence supporting readiness:
   nontrivial screenshots, and nineteen Replay-labeled review cards.
 - The recorded optional extended packet completed rows 37-51 with
   `failed_count=0`, guidance complete, and all selected related, direct IPC
-  shelf, and capture-first packet groups present.
+  shelf, and original capture-first packet groups present. The newer
+  capture-first heavy packet expands the full optional packet shape to 52 rows;
+  a targeted dry-run verified rows 51-52 / 52 and a real row-52 capture verified
+  the heavy packet.
 - Drift guards in `python/tests/integration/test_demos_cycle.py`,
   `python/tests/unit/test_capture_py_demo.py`, and
   `python/tests/unit/test_py_demo_panels.py` cover sidecar/README ordering,
@@ -430,7 +423,8 @@ Evidence supporting readiness:
 Remaining before retirement:
 
 - Get explicit maintainer acceptance that the maintained 36-row workflow plus
-  optional 15-row packet is the completed scope for this dev task.
+  optional packet groups, now totaling 52 rows when all optional groups are
+  selected, are the completed scope for this dev task.
 - If accepted, do the cleanup in the completing PR: add only a short durable
   close-out note if the sidecar or Python README still lacks it, then
   `git rm -r docs/dev_tasks/rigid_body_visual_verification`.
@@ -1796,25 +1790,48 @@ badges plus representative cards for `37/51 floating_base`,
 `46/51 avbd_rigid_prismatic_motor`, `47/51 rigid_ipc`, and
 `51/51 rigid_ipc_stack_packet`.
 
+## Verified In The Heavy Rigid IPC Stack Packet Slice
+
+This continuation finished the second capture-first Rigid IPC stack packet.
+The new `rigid_ipc_heavy_stack_packet` row is a six-box, top-heavy IPC barrier
+stress packet; it stays outside the numbered workflow and appears only in the
+optional packet group after the existing four-box stack packet.
+
+Commands:
+
+```bash
+python -m py_compile python/examples/demos/scenes/rigid_ipc_stack_packet.py scripts/capture_py_demo.py python/tests/integration/test_demos_cycle.py python/tests/unit/test_py_demo_panels.py python/tests/unit/test_capture_py_demo.py
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_registry_has_scenes python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_ipc_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 51 --workflow-end-row 52 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_heavy_stack_dry_run_1781286611
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 52 --workflow-end-row 52 --output-dir /tmp/dart_capture_rigid_workflow_heavy_stack_row52_1781286631
+```
+
+Observed results: syntax checks passed; focused pytest reported `11 passed`
+before and after `pixi run lint`. The dry-run reported `status=planned`,
+`capture_count=2`,
+`workflow_total_count=52`, selected rows `51-52`,
+`guidance_complete=true`, and `guidance_missing_count=0`; its review index
+showed `51/52 rigid_ipc_stack_packet` and
+`52/52 rigid_ipc_heavy_stack_packet` as capture-first packet rows. The real
+row-52 workflow capture reported `status=complete`, `capture_count=1`,
+`completed_count=1`, `failed_count=0`, `workflow_total_count=52`, selected row
+`52`, `guidance_complete=true`, and `guidance_missing_count=0`. The per-scene
+manifest recorded 11 PNG frames, a docked nonblank screenshot with 3539 unique
+RGB colors, 12 scene-metric events, row `rigid_ipc_heavy_stack_packet`,
+`box_count=6.0`, `top_mass=4.25`, and `status=capture-first`. `pixi run lint`
+passed and `git diff --check` was clean.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the optional-row metadata, guidance-audit, live-open-command, stack
-   Replay timeline, docs-only hand-off, contact-manipulation, kinematic-driver,
-   normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
-   motor-limits, passive-parameters, screw-joint pitch,
-   multibody dynamics-terms, link center-of-mass, link-Jacobian, multibody
-   solver-family, loop-closure Replay timeline, Replay capture-metadata, full
-   workflow refresh, and optional-packet hand-off checkpoints to be present in
-   branch history through `91f53e5ae8e`.
-3. Use the completion/retirement readiness audit above before selecting more
-   work. The default 36-row and optional rows 37-51 capture refreshes are
-   complete; the next decision is whether the maintainer accepts this scoped
-   task as complete. If yes, prepare the completion cleanup PR that removes this
-   dev-task folder after any final durable note. If no, choose the next bounded
-   slice from the durable follow-up list rather than extending the workflow
-   opportunistically.
-4. Rerun the repository-mandated `pixi run lint` before any future commit.
+2. Expect the heavy `rigid_ipc_heavy_stack_packet` slice to be present locally
+   after `249cde7a36b Audit rigid visual workflow retirement readiness`; verify
+   the exact commit hash with `git log`.
+3. If the tree is clean with the heavy-packet commit present, return to the
+   completion/retirement readiness audit: maintainer acceptance is the next
+   decision before deleting this dev-task folder.
+4. If the heavy-packet slice is still uncommitted, inspect the final lint/diff
+   gates and commit it locally before selecting new work.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
 6. Do not push again unless the user explicitly approves pushing in that

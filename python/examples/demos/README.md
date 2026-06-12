@@ -877,19 +877,22 @@ pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 \
     --width 960 --height 540 --show-ui
 ```
 
-Capture the heavier Rigid IPC stack packet when the question is what happens
-beyond the live workflow budget. The scene stays in the **Rigid IPC** shelf,
-outside the numbered workflow, and its panel shows min clearance, contact
-count, top drift, height error, max speed, wall time, and the
+Capture the heavier Rigid IPC stack packets when the question is what happens
+beyond the live workflow budget. These scenes stay in the **Rigid IPC** shelf,
+outside the numbered workflow, and their panels show min clearance, contact
+count, top drift, height error, max speed, wall time, top mass, and the
 `bm_rigid_ipc_solver` benchmark pointer:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 \
     --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_heavy_stack_packet --frames 12 \
+    --width 960 --height 540 --show-ui
 ```
 
-The same packet is included after the numbered rows and optional related
-evidence routes by `py-demo-capture -- --rigid-workflow --include-packets`.
+These packets are included after the numbered rows, optional related evidence
+routes, and optional direct Rigid IPC shelf routes by
+`py-demo-capture -- --rigid-workflow --include-packets`.
 
 For scenes that expose `SceneSetup.info["capture_metrics"]`,
 `py-demo-capture` also writes `scene_metrics.jsonl` and summarizes the full

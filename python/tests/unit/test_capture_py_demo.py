@@ -869,6 +869,18 @@ def test_rigid_workflow_full_extended_plan_has_complete_guidance(
     assert "Related evidence" in review_html
     assert "Rigid IPC shelf" in review_html
     assert "Capture-first packet" in review_html
+    heavy_packet = next(
+        capture
+        for capture in manifest["captures"]
+        if capture["scene"] == "rigid_ipc_heavy_stack_packet"
+    )
+    assert heavy_packet["workflow_group"] == "capture_first_packet"
+    assert heavy_packet["workflow_label"] == "Capture-first packet"
+    assert "top-heavy IPC stack" in heavy_packet["user_question"]
+    assert "top mass" in heavy_packet["inspect"]
+    assert "Taller capture-first stress packet" in heavy_packet["scope"]
+    assert "rigid_ipc_heavy_stack_packet" in review_html
+    assert "top-heavy IPC stack" in review_html
 
 
 def test_rigid_workflow_manifest_reports_missing_guidance(

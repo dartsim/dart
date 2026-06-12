@@ -226,12 +226,13 @@ GUI/capture route for stress cases that currently exceed the default live
 workflow budget, and they point to benchmark evidence instead of making
 solver-performance parity claims.
 
-| Scene id                 | User question                                                                             | Signals                                                                                                                                          | Capture command                                                                                           | Scope note                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `rigid_ipc_stack_packet` | Can a four-box IPC stack stay separated, ordered, and finite beyond the live demo budget? | Friction, box count, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer. | pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui | Capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim. |
+| Scene id                       | User question                                                                             | Signals                                                                                                                                                    | Capture command                                                                                                 | Scope note                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `rigid_ipc_stack_packet`       | Can a four-box IPC stack stay separated, ordered, and finite beyond the live demo budget? | Friction, box count, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer.           | pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui       | Capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim.        |
+| `rigid_ipc_heavy_stack_packet` | How does a taller, top-heavy IPC stack behave beyond the live demo budget?                | Friction, box count, top mass, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer. | pixi run py-demo-capture -- --scene rigid_ipc_heavy_stack_packet --frames 12 --width 960 --height 540 --show-ui | Taller capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim. |
 
-Capture-first rigid IPC packets are also included after the numbered workflow
-and optional related-evidence routes by
+Capture-first rigid IPC packets are also included after the numbered workflow,
+optional related-evidence routes, and optional direct Rigid IPC shelf routes by
 `py-demo-capture -- --rigid-workflow --include-packets`.
 
 The matching benchmark owner remains `bm_rigid_ipc_solver`; use its
@@ -252,8 +253,9 @@ pile gap/speed/contact/timing evidence, `rigid_ipc_tunnel` mirrors
 no-tunneling clearance, through-wall margin, velocity, contact, step-timing,
 and barrier-held status, `rigid_ipc_edge_drop` mirrors degenerate edge-contact
 barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
-status, and `rigid_ipc_stack_packet` mirrors clearance, contact, drift, height,
-wall-time, frame-budget, and benchmark values through the same schema. The
+status, and `rigid_ipc_stack_packet` plus `rigid_ipc_heavy_stack_packet` mirror
+clearance, contact, drift, height, wall-time, frame-budget, mass, and benchmark
+values through the same schema. The
 related `diff_drone_liftoff` route uses the schema for
 contact-gradient mode outcome, target/rest height, analytic versus aware
 thrust/final-height/loss values, height/target-error gaps, fallback status, and
@@ -397,8 +399,30 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest heavy Rigid IPC stack packet slice:
+  `python -m py_compile python/examples/demos/scenes/rigid_ipc_stack_packet.py scripts/capture_py_demo.py python/tests/integration/test_demos_cycle.py python/tests/unit/test_py_demo_panels.py python/tests/unit/test_capture_py_demo.py`
+  passed. The focused Python suite covering registry/category placement,
+  non-numbered workflow placement, capture-first packet docs/spec sync, panel
+  metrics, replay restore, and full extended-packet guidance reported
+  `11 passed` before and after `pixi run lint`. The extended dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 51 --workflow-end-row 52 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_heavy_stack_dry_run_1781286611`
+  reported `status=planned`, `capture_count=2`, `workflow_total_count=52`,
+  selected rows `51-52`, `guidance_complete=true`, and
+  `guidance_missing_count=0`; its review index showed
+  `51/52 rigid_ipc_stack_packet` and
+  `52/52 rigid_ipc_heavy_stack_packet` as capture-first packet rows. The real
+  row-52 workflow capture
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 52 --workflow-end-row 52 --output-dir /tmp/dart_capture_rigid_workflow_heavy_stack_row52_1781286631`
+  completed with `capture_count=1`, `completed_count=1`, `failed_count=0`,
+  `workflow_total_count=52`, `guidance_complete=true`, and
+  `guidance_missing_count=0`; the per-scene manifest for
+  `rigid_ipc_heavy_stack_packet` recorded 11 PNG frames, a docked nonblank
+  screenshot with 3539 unique RGB colors, 12 scene-metric events,
+  `box_count=6.0`, `top_mass=4.25`, row `rigid_ipc_heavy_stack_packet`, and
+  `status=capture-first`. `pixi run lint` passed and `git diff --check` was
+  clean.
 - Latest completion/retirement readiness audit: the maintained 36-row rigid
-  workflow plus optional rows 37-51 packet now has durable sidecar coverage,
+  workflow plus optional rows 37-52 packet now has durable sidecar coverage,
   Python README user guidance, sync/drift tests, full workflow capture evidence,
   optional packet capture evidence, and explicit public-API deferrals. The
   dev-task folder is therefore close to cleanup, but it should remain until the
@@ -1317,9 +1341,9 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   express a stable, interactive gripper without overclaiming IK, actuator
   dynamics, or link-material behavior.
 - Keep taller or heavier rigid IPC stacks benchmark/capture-first before making
-  them part of the default live GUI path. The first four-box stack packet is in
-  the Rigid IPC shelf; future larger packets still need benchmark/capture
-  evidence before any live-workflow claim.
+  them part of the default live GUI path. The four-box and six-box top-heavy
+  stack packets are in the Rigid IPC shelf; future larger packets still need
+  benchmark/capture evidence before any live-workflow claim.
 - Keep related-evidence routes in the runner and this sidecar synchronized.
   They remain labelled as related shelf links rather than numbered workflow
   rows, so non-numbered scenes such as `floating_base`, `articulated`,

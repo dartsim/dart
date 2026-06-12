@@ -9,6 +9,7 @@ cost improves.
 from __future__ import annotations
 
 from collections import deque
+from dataclasses import dataclass
 from typing import Any
 
 import dartpy as dart
@@ -23,13 +24,65 @@ from ..runner import (
     SceneSetup,
 )
 
-_BOX_COUNT = 4
 _BOX_HALF = np.array([0.16, 0.16, 0.12])
 _GROUND_HALF = np.array([0.55, 0.36, 0.04])
 _GAP = 0.004
 _TIME_STEP = 1.0 / 240.0
 _HISTORY = 120
 _DEFAULT_FRAME_BUDGET_MS = 33.3
+
+
+@dataclass(frozen=True)
+class _StackPacketSpec:
+    scene_id: str
+    title: str
+    panel_title: str
+    panel_heading: str
+    summary: str
+    box_count: int
+    box_half: np.ndarray
+    ground_half: np.ndarray
+    lateral_step: float
+    mass_start: float
+    mass_step: float
+    frame_budget_ms: float
+
+
+_STACK_PACKET_SPEC = _StackPacketSpec(
+    scene_id="rigid_ipc_stack_packet",
+    title="Rigid IPC Stack Packet",
+    panel_title="Rigid IPC Stack Packet",
+    panel_heading="capture-first rigid IPC stack",
+    summary=(
+        "A four-box rigid IPC resting stack with wall-time and clearance "
+        "diagnostics for capture-first performance evidence."
+    ),
+    box_count=4,
+    box_half=_BOX_HALF,
+    ground_half=_GROUND_HALF,
+    lateral_step=0.012,
+    mass_start=1.0,
+    mass_step=0.35,
+    frame_budget_ms=_DEFAULT_FRAME_BUDGET_MS,
+)
+
+_HEAVY_STACK_PACKET_SPEC = _StackPacketSpec(
+    scene_id="rigid_ipc_heavy_stack_packet",
+    title="Rigid IPC Heavy Stack Packet",
+    panel_title="Rigid IPC Heavy Stack Packet",
+    panel_heading="capture-first heavy rigid IPC stack",
+    summary=(
+        "A six-box rigid IPC stack with a mass gradient, wall-time, clearance, "
+        "and drift diagnostics for capture-first stress evidence."
+    ),
+    box_count=6,
+    box_half=_BOX_HALF,
+    ground_half=np.array([0.62, 0.40, 0.04]),
+    lateral_step=0.018,
+    mass_start=1.0,
+    mass_step=0.65,
+    frame_budget_ms=_DEFAULT_FRAME_BUDGET_MS,
+)
 
 
 def _full(half_extents: np.ndarray) -> np.ndarray:
@@ -43,9 +96,10 @@ def _transform_at(position: np.ndarray) -> np.ndarray:
 
 
 class _RigidIpcStackPacket:
-    def __init__(self) -> None:
+    def __init__(self, spec: _StackPacketSpec) -> None:
+        self.spec = spec
         self.friction = 0.80
-        self.frame_budget_ms = _DEFAULT_FRAME_BUDGET_MS
+        self.frame_budget_ms = float(spec.frame_budget_ms)
         self.world = sx.World(
             time_step=_TIME_STEP,
             rigid_body_solver=sx.RigidBodySolver.IPC,
@@ -53,26 +107,28 @@ class _RigidIpcStackPacket:
         self.world.step_profiling_enabled = True
 
         self.ground = self.world.add_rigid_body(
-            "ipc_stack_packet_ground",
-            position=(0.0, 0.0, -_GROUND_HALF[2]),
+            f"{spec.scene_id}_ground",
+            position=(0.0, 0.0, -spec.ground_half[2]),
         )
         self.ground.is_static = True
-        self.ground.set_collision_shape(sx.CollisionShape.box(_GROUND_HALF))
+        self.ground.set_collision_shape(sx.CollisionShape.box(spec.ground_half))
 
         self.boxes: list[Any] = []
         self.initial_positions: list[np.ndarray] = []
-        for index in range(_BOX_COUNT):
-            lateral = 0.012 * ((index % 2) - 0.5)
+        for index in range(spec.box_count):
+            lateral = spec.lateral_step * ((index % 2) - 0.5)
             position = np.array(
                 [
                     lateral,
                     0.0,
-                    _BOX_HALF[2] + _GAP + index * (2.0 * _BOX_HALF[2] + _GAP),
+                    spec.box_half[2]
+                    + _GAP
+                    + index * (2.0 * spec.box_half[2] + _GAP),
                 ],
                 dtype=float,
             )
-            box = self.world.add_rigid_body(f"ipc_stack_packet_box{index}")
-            box.set_collision_shape(sx.CollisionShape.box(_BOX_HALF))
+            box = self.world.add_rigid_body(f"{spec.scene_id}_box{index}")
+            box.set_collision_shape(sx.CollisionShape.box(spec.box_half))
             self.boxes.append(box)
             self.initial_positions.append(position)
 
@@ -80,21 +136,21 @@ class _RigidIpcStackPacket:
 
         self.bridge = WorldRenderBridge(
             self.world,
-            name="rigid_ipc_stack_packet_render",
+            name=f"{spec.scene_id}_render",
         )
         self.bridge.add_rigid_body_visual(
             self.ground,
-            dart.BoxShape(_full(_GROUND_HALF)),
+            dart.BoxShape(_full(spec.ground_half)),
             (0.40, 0.42, 0.45),
-            name="ipc_stack_packet_ground_visual",
+            name=f"{spec.scene_id}_ground_visual",
         )
         for index, box in enumerate(self.boxes):
             shade = 0.10 * index
             self.bridge.add_rigid_body_visual(
                 box,
-                dart.BoxShape(_full(_BOX_HALF)),
+                dart.BoxShape(_full(spec.box_half)),
                 (0.90, min(0.30 + shade, 0.75), 0.20),
-                name=f"ipc_stack_packet_box{index}_visual",
+                name=f"{spec.scene_id}_box{index}_visual",
             )
 
         self._step_ms_history: deque[float] = deque(maxlen=_HISTORY)
@@ -109,7 +165,7 @@ class _RigidIpcStackPacket:
         self.ground.friction = float(self.friction)
         self.ground.restitution = 0.0
         for index, box in enumerate(self.boxes):
-            box.mass = 1.0 + 0.35 * index
+            box.mass = self.spec.mass_start + self.spec.mass_step * index
             box.friction = float(self.friction)
             box.restitution = 0.0
 
@@ -154,9 +210,10 @@ class _RigidIpcStackPacket:
         velocities = [
             np.asarray(box.linear_velocity, dtype=float) for box in self.boxes
         ]
-        bottom_clearance = float(positions[0][2] - _BOX_HALF[2])
+        box_half = self.spec.box_half
+        bottom_clearance = float(positions[0][2] - box_half[2])
         inter_box_clearances = [
-            float(positions[index][2] - positions[index - 1][2] - 2.0 * _BOX_HALF[2])
+            float(positions[index][2] - positions[index - 1][2] - 2.0 * box_half[2])
             for index in range(1, len(positions))
         ]
         min_clearance = min([bottom_clearance, *inter_box_clearances])
@@ -165,7 +222,7 @@ class _RigidIpcStackPacket:
             np.linalg.norm((positions[-1] - self.initial_positions[-1])[0:2])
         )
         ideal_top_height = float(
-            _BOX_HALF[2] + _GAP + (len(self.boxes) - 1) * (2.0 * _BOX_HALF[2] + _GAP)
+            box_half[2] + _GAP + (len(self.boxes) - 1) * (2.0 * box_half[2] + _GAP)
         )
         height_error = float(positions[-1][2] - ideal_top_height)
         contact_count = float(len(self.world.collide()))
@@ -206,8 +263,9 @@ class _RigidIpcStackPacket:
                 "capture_first": True,
                 "frame_budget_ms": float(self.frame_budget_ms),
                 "friction": float(self.friction),
-                "row": "rigid_ipc_stack_packet",
+                "row": self.spec.scene_id,
                 "solver": "ipc",
+                "top_mass": float(self.boxes[-1].mass),
                 "world_time": float(self.world.time),
             }
         )
@@ -292,10 +350,11 @@ class _RigidIpcStackPacket:
 
         metrics = self._last_metrics or self._sample()
         builder.separator()
-        builder.text("capture-first rigid IPC stack")
+        builder.text(self.spec.panel_heading)
         builder.text("not a numbered World Rigid Body workflow row")
         builder.text("benchmark owner: bm_rigid_ipc_solver")
-        builder.text(f"solver: rigid IPC | boxes: {_BOX_COUNT}")
+        builder.text(f"solver: rigid IPC | boxes: {self.spec.box_count}")
+        builder.text(f"top mass: {self.boxes[-1].mass:.2f} kg")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(
             f"status {metrics['status']} | step {float(metrics['step_ms']):.3f} ms "
@@ -316,21 +375,22 @@ class _RigidIpcStackPacket:
         self.bridge.build_control_panel(builder, context)
 
 
-def build() -> SceneSetup:
-    packet = _RigidIpcStackPacket()
+def _build_from_spec(spec: _StackPacketSpec) -> SceneSetup:
+    packet = _RigidIpcStackPacket(spec)
     return SceneSetup(
         world=packet.bridge.render_world,
         pre_step=packet.pre_step,
         force_drag=packet.force_drag,
         renderable_provider=packet.renderable_provider,
-        panels=[ScenePanel("Rigid IPC Stack Packet", packet.build_panel)],
+        panels=[ScenePanel(spec.panel_title, packet.build_panel)],
         info={
             "sx_world": packet.world,
             "rigid_body_solver": "ipc",
-            "rigid_ipc_stack_packet": True,
-            "rigid_ipc_stack_packet_benchmark": "bm_rigid_ipc_solver",
-            "rigid_ipc_stack_packet_capture_first": True,
-            "rigid_ipc_stack_packet_controller": packet,
+            f"{spec.scene_id}": True,
+            f"{spec.scene_id}_benchmark": "bm_rigid_ipc_solver",
+            f"{spec.scene_id}_capture_first": True,
+            f"{spec.scene_id}_controller": packet,
+            "rigid_ipc_stack_packet_variant": spec.scene_id,
             "replay_capture_state": packet.capture_replay_state,
             "replay_restore_state": packet.restore_replay_state,
             "replay_sync": packet.bridge.sync,
@@ -339,13 +399,26 @@ def build() -> SceneSetup:
     )
 
 
+def build() -> SceneSetup:
+    return _build_from_spec(_STACK_PACKET_SPEC)
+
+
+def build_heavy() -> SceneSetup:
+    return _build_from_spec(_HEAVY_STACK_PACKET_SPEC)
+
+
 SCENE = PythonDemoScene(
-    id="rigid_ipc_stack_packet",
-    title="Rigid IPC Stack Packet",
+    id=_STACK_PACKET_SPEC.scene_id,
+    title=_STACK_PACKET_SPEC.title,
     category="Rigid IPC",
-    summary=(
-        "A four-box rigid IPC resting stack with wall-time and clearance "
-        "diagnostics for capture-first performance evidence."
-    ),
+    summary=_STACK_PACKET_SPEC.summary,
     build=build,
+)
+
+HEAVY_SCENE = PythonDemoScene(
+    id=_HEAVY_STACK_PACKET_SPEC.scene_id,
+    title=_HEAVY_STACK_PACKET_SPEC.title,
+    category="Rigid IPC",
+    summary=_HEAVY_STACK_PACKET_SPEC.summary,
+    build=build_heavy,
 )

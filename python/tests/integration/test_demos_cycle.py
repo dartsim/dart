@@ -928,6 +928,7 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_ipc_pile",
             "rigid_ipc_tunnel",
             "rigid_ipc_stack_packet",
+            "rigid_ipc_heavy_stack_packet",
         },
         "PLAN-083 Mixed Corpus": {
             "plan083_lying_flat",
@@ -1044,9 +1045,11 @@ def test_rigid_visual_verification_sidecar_matches_registry_order() -> None:
     assert "rigid_ipc_tunnel" not in workflow_ids
     assert "rigid_ipc_edge_drop" not in workflow_ids
     assert "rigid_ipc_stack_packet" not in workflow_ids
+    assert "rigid_ipc_heavy_stack_packet" not in workflow_ids
     assert by_id["rigid_ipc_tunnel"].category == "Rigid IPC"
     assert by_id["rigid_ipc_edge_drop"].category == "Rigid IPC"
     assert by_id["rigid_ipc_stack_packet"].category == "Rigid IPC"
+    assert by_id["rigid_ipc_heavy_stack_packet"].category == "Rigid IPC"
 
 
 def test_rigid_visual_workflow_viewer_titles_are_numbered() -> None:
@@ -1069,6 +1072,10 @@ def test_rigid_visual_workflow_viewer_titles_are_numbered() -> None:
     assert (
         _viewer_catalog_title(by_id["rigid_ipc_stack_packet"])
         == by_id["rigid_ipc_stack_packet"].title
+    )
+    assert (
+        _viewer_catalog_title(by_id["rigid_ipc_heavy_stack_packet"])
+        == by_id["rigid_ipc_heavy_stack_packet"].title
     )
 
 
@@ -1291,7 +1298,14 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
             "Friction, box count, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer.",
             "pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui",
             "Capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim.",
-        )
+        ),
+        (
+            "rigid_ipc_heavy_stack_packet",
+            "How does a taller, top-heavy IPC stack behave beyond the live demo budget?",
+            "Friction, box count, top mass, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer.",
+            "pixi run py-demo-capture -- --scene rigid_ipc_heavy_stack_packet --frames 12 --width 960 --height 540 --show-ui",
+            "Taller capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim.",
+        ),
     ]
     for scene_id, question, signals, command, scope in rows:
         assert scene_id in by_id
@@ -1306,7 +1320,7 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
         scene, frames, width, height, show_ui = _capture_spec_from_command(command)
         assert (scene, frames, width, height, show_ui) == (
             scene_id,
-            24,
+            12 if scene_id == "rigid_ipc_heavy_stack_packet" else 24,
             960,
             540,
             True,
@@ -1735,66 +1749,78 @@ def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
 
     sx = _require_simulation_symbols("RigidBodySolver")
 
-    from examples.demos.scenes.rigid_ipc_stack_packet import SCENE, build
-
-    assert SCENE.category == "Rigid IPC"
-    assert SCENE.id == "rigid_ipc_stack_packet"
-
-    setup = build()
-    controller = setup.info["rigid_ipc_stack_packet_controller"]
-    assert setup.info["rigid_ipc_stack_packet_capture_first"] is True
-    assert setup.info["rigid_ipc_stack_packet_benchmark"] == "bm_rigid_ipc_solver"
-    assert controller.world.rigid_body_solver == sx.RigidBodySolver.IPC
-
-    for _ in range(2):
-        setup.pre_step()
-
-    metrics = controller._last_metrics
-    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
-    assert float(metrics["box_count"]) == pytest.approx(4.0)
-    assert float(metrics["min_clearance"]) > -0.004
-    assert float(metrics["max_speed"]) >= 0.0
-    assert float(metrics["top_drift"]) >= 0.0
-    assert float(metrics["step_ms"]) >= 0.0
-    assert str(metrics["status"]) in {"capture-first", "settling", "standing"}
-    assert capture_metrics["row"] == "rigid_ipc_stack_packet"
-    assert capture_metrics["capture_first"] is True
-    assert capture_metrics["benchmark"] == "bm_rigid_ipc_solver"
-    assert capture_metrics["solver"] == "ipc"
-    assert float(capture_metrics["box_count"]) == pytest.approx(4.0)
-    assert float(capture_metrics["frame_budget_ms"]) > 0.0
-    assert float(capture_metrics["world_time"]) > 0.0
-    assert callable(setup.info["replay_capture_state"])
-    assert callable(setup.info["replay_restore_state"])
-    replay_snapshot = setup.info["replay_capture_state"]()
-    controller.friction = 0.05
-    controller.frame_budget_ms = 12.0
-    controller._step_ms_history.clear()
-    setup.info["replay_restore_state"](replay_snapshot)
-    assert controller.friction == pytest.approx(
-        replay_snapshot["controls"]["friction"]
+    from examples.demos.scenes.rigid_ipc_stack_packet import (
+        HEAVY_SCENE,
+        SCENE,
+        build,
+        build_heavy,
     )
-    assert controller.frame_budget_ms == pytest.approx(
-        replay_snapshot["controls"]["frame_budget_ms"]
-    )
-    assert list(controller._step_ms_history) == pytest.approx(
-        replay_snapshot["step_ms_history"]
-    )
-    assert controller._step_ms_history
-    assert controller._clearance_history
-    assert controller._speed_history
-    assert controller._drift_history
-    assert controller._contact_history
-    assert np.isfinite(
-        [
-            float(metrics["contact_count"]),
-            float(metrics["height_error"]),
-            float(metrics["max_speed"]),
-            float(metrics["min_clearance"]),
-            float(metrics["step_ms"]),
-            float(metrics["top_drift"]),
-        ]
-    ).all()
+
+    cases = [
+        (SCENE, build, "rigid_ipc_stack_packet", 4.0),
+        (HEAVY_SCENE, build_heavy, "rigid_ipc_heavy_stack_packet", 6.0),
+    ]
+    for scene, build_scene, scene_id, box_count in cases:
+        assert scene.category == "Rigid IPC"
+        assert scene.id == scene_id
+
+        setup = build_scene()
+        controller = setup.info[f"{scene_id}_controller"]
+        assert setup.info[f"{scene_id}_capture_first"] is True
+        assert setup.info[f"{scene_id}_benchmark"] == "bm_rigid_ipc_solver"
+        assert setup.info["rigid_ipc_stack_packet_variant"] == scene_id
+        assert controller.world.rigid_body_solver == sx.RigidBodySolver.IPC
+
+        for _ in range(2):
+            setup.pre_step()
+
+        metrics = controller._last_metrics
+        capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+        assert float(metrics["box_count"]) == pytest.approx(box_count)
+        assert float(metrics["min_clearance"]) > -0.004
+        assert float(metrics["max_speed"]) >= 0.0
+        assert float(metrics["top_drift"]) >= 0.0
+        assert float(metrics["step_ms"]) >= 0.0
+        assert str(metrics["status"]) in {"capture-first", "settling", "standing"}
+        assert capture_metrics["row"] == scene_id
+        assert capture_metrics["capture_first"] is True
+        assert capture_metrics["benchmark"] == "bm_rigid_ipc_solver"
+        assert capture_metrics["solver"] == "ipc"
+        assert float(capture_metrics["box_count"]) == pytest.approx(box_count)
+        assert float(capture_metrics["frame_budget_ms"]) > 0.0
+        assert float(capture_metrics["top_mass"]) > 0.0
+        assert float(capture_metrics["world_time"]) > 0.0
+        assert callable(setup.info["replay_capture_state"])
+        assert callable(setup.info["replay_restore_state"])
+        replay_snapshot = setup.info["replay_capture_state"]()
+        controller.friction = 0.05
+        controller.frame_budget_ms = 12.0
+        controller._step_ms_history.clear()
+        setup.info["replay_restore_state"](replay_snapshot)
+        assert controller.friction == pytest.approx(
+            replay_snapshot["controls"]["friction"]
+        )
+        assert controller.frame_budget_ms == pytest.approx(
+            replay_snapshot["controls"]["frame_budget_ms"]
+        )
+        assert list(controller._step_ms_history) == pytest.approx(
+            replay_snapshot["step_ms_history"]
+        )
+        assert controller._step_ms_history
+        assert controller._clearance_history
+        assert controller._speed_history
+        assert controller._drift_history
+        assert controller._contact_history
+        assert np.isfinite(
+            [
+                float(metrics["contact_count"]),
+                float(metrics["height_error"]),
+                float(metrics["max_speed"]),
+                float(metrics["min_clearance"]),
+                float(metrics["step_ms"]),
+                float(metrics["top_drift"]),
+            ]
+        ).all()
 
 
 def test_rigid_visual_workflow_docs_use_current_navigator_count() -> None:
@@ -2044,7 +2070,10 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
 def test_rigid_visual_capture_first_packets_are_documented() -> None:
     root = pathlib.Path(__file__).resolve().parents[3]
     readme = root / "python" / "examples" / "demos" / "README.md"
-    expected_specs = [("rigid_ipc_stack_packet", 24, 960, 540, True)]
+    expected_specs = [
+        ("rigid_ipc_stack_packet", 24, 960, 540, True),
+        ("rigid_ipc_heavy_stack_packet", 12, 960, 540, True),
+    ]
 
     packet_rows = _read_rigid_visual_capture_first_ipc_rows()
     assert [
@@ -2052,7 +2081,7 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
         for _scene_id, _question, _signals, command, _scope in packet_rows
     ] == expected_specs
 
-    marker = "Capture the heavier Rigid IPC stack packet when the question is what happens"
+    marker = "Capture the heavier Rigid IPC stack packets when the question is what happens"
     readme_specs = _read_capture_command_specs(readme, marker)
     assert readme_specs == expected_specs
 
