@@ -1062,25 +1062,38 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Admm" in profile_by_surface["Boxed"]["current_leaders"]
     assert "BlockedJacobi" in profile_by_surface["Boxed"]["current_leaders"]
     assert "BGS" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
     assert "Dantzig" in profile_by_surface["Boxed"]["current_leaders"]
     assert "Nncg" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "Sap" in profile_by_surface["Boxed"]["current_leaders"]
     assert "ShockPropagation" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "SubspaceMinimization" in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
     assert "SymmetricPsor" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "No boxed row above 2x" in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
     assert "Admm" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "BlockedJacobi" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "BGS" not in profile_by_surface["Boxed"]["current_laggards"]
+    assert (
+        "BoxedSemiSmoothNewton"
+        not in profile_by_surface["Boxed"]["current_laggards"]
+    )
     assert "Dantzig" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "Nncg" not in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Sap" not in profile_by_surface["Boxed"]["current_laggards"]
     assert (
         "ShockPropagation"
         not in profile_by_surface["Boxed"]["current_laggards"]
     )
-    assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
-        "current_laggards"
-    ]
-    assert "SubspaceMinimization" in profile_by_surface["Boxed"][
-        "current_laggards"
-    ]
+    assert (
+        "SubspaceMinimization"
+        not in profile_by_surface["Boxed"]["current_laggards"]
+    )
     assert "Pgs/Tgs/Sap" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]

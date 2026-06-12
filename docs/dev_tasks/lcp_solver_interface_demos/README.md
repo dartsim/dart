@@ -1,5 +1,105 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Remaining Boxed Active-Set Fast Paths
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint:
+  `Fast path remaining boxed active-set LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 55 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
+  `SubspaceMinimizationSolver` now extend their non-warm-started exact
+  fast-path gateways to boxed rows without friction-index coupling.
+- `SapSolver` also now uses the shared strict-interior standard-LCP exact solve
+  for non-warm-started high-level solves.
+- The boxed shortcuts use the shared projected-active-set exact solve and are
+  accepted only when the final boxed candidate passes solution validation.
+- Warm-started solves, coupled friction-index rows, and validator-rejected rows
+  stay on each solver's existing semi-smooth Newton, SAP regularized Newton, or
+  PGS-subspace refinement path.
+- Unit coverage now checks lower/upper/free boxed BoxedSemiSmoothNewton, SAP,
+  and SubspaceMinimization packets that solve in zero iterations, plus SAP's
+  standard strict-interior fast path.
+- The checked LCP performance profile CSVs, Python demo metadata, projection,
+  Newton, and Other-methods background docs, changelog, Python metadata
+  assertions, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Boxed/(BoxedSemiSmoothNewton|Sap|SubspaceMinimization)/`.
+- `build/remaining_boxed_projected_active_set_after.json` reported:
+  - `SubspaceMinimization` 12 rows: `1316.947ns`
+  - `SubspaceMinimization` 24 rows: `4338.628ns`
+  - `SubspaceMinimization` 48 rows: `17578.805ns`
+  - `Sap` 12 rows: `1359.414ns`
+  - `Sap` 24 rows: `4524.363ns`
+  - `Sap` 48 rows: `16282.916ns`
+  - `BoxedSemiSmoothNewton` 12 rows: `1268.846ns`
+  - `BoxedSemiSmoothNewton` 24 rows: `4536.356ns`
+  - `BoxedSemiSmoothNewton` 48 rows: `15964.235ns`
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Boxed: `BoxedSemiSmoothNewton` average ratio `1.54`, `Sap` average ratio
+  `1.56`, and `SubspaceMinimization` average ratio `1.52`.
+- No boxed solver is above `2x` in the refreshed profile.
+- Remaining high-ratio targets are now primarily FrictionIndex:
+  `BlockedJacobi`, `ShockPropagation`, `BGS`, `Staggering`,
+  `SubspaceMinimization`, `NNCG`, `Dantzig`, `BoxedSemiSmoothNewton`, and
+  `Admm`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Boxed/(BoxedSemiSmoothNewton|Sap|SubspaceMinimization)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/remaining_boxed_projected_active_set_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run build
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run lint
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The next natural work is reducing
+   FrictionIndex `BlockedJacobi`, `ShockPropagation`, `BGS`, `Staggering`, or
+   `SubspaceMinimization` rows.
+2. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Boxed Block Projection Active-Set Fast Paths
 
 Current branch state:

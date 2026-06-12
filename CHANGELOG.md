@@ -1518,6 +1518,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     to boxed LCPs without friction-index coupling through the shared
     projected-active-set solve, while preserving warm-started, custom
     block-validated, and coupled contact rows on the block iteration paths.
+  - Extended `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
+    `SubspaceMinimizationSolver` validated exact fast paths to boxed LCPs
+    without friction-index coupling through the shared projected-active-set
+    solve; `SapSolver` now also uses the strict-interior standard fast path for
+    non-warm-started high-level solves.
   - Extended the validated strict-interior standard-LCP fast path to APGD,
     Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel standard comparison
     rows, with profile-shaped size guards so larger packets stay on their

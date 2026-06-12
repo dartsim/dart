@@ -1,5 +1,92 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Remaining Boxed Active-Set Fast Paths
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path remaining boxed active-set LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 55 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
+  `SubspaceMinimizationSolver` now try the shared projected-active-set boxed-LCP
+  exact solve for non-warm-started boxed rows without friction-index coupling.
+- `SapSolver` also now tries the shared strict-interior standard-LCP exact
+  solve for non-warm-started high-level solves.
+- Warm-started solves, coupled friction-index rows, and validator-rejected rows
+  stay on each solver's existing semi-smooth Newton, SAP regularized Newton, or
+  PGS-subspace refinement path.
+- Unit coverage now checks lower/upper/free boxed BoxedSemiSmoothNewton, SAP,
+  and SubspaceMinimization packets that solve in zero iterations, plus SAP's
+  standard strict-interior fast path.
+- The Python LCP demo profile summary now moves BoxedSemiSmoothNewton, SAP, and
+  SubspaceMinimization into the close boxed exact-path cluster and records that
+  no boxed row is above `2x` in the refreshed profile.
+
+Evidence:
+
+- Focused
+  `BM_LcpCompare/Boxed/(BoxedSemiSmoothNewton|Sap|SubspaceMinimization)/`
+  wrote `build/remaining_boxed_projected_active_set_after.json`.
+- Focused SubspaceMinimization rows reported `1316.947ns`, `4338.628ns`, and
+  `17578.805ns` for 12, 24, and 48 row packets.
+- Focused SAP rows reported `1359.414ns`, `4524.363ns`, and `16282.916ns` for
+  12, 24, and 48 row packets.
+- Focused BoxedSemiSmoothNewton rows reported `1268.846ns`, `4536.356ns`, and
+  `15964.235ns` for 12, 24, and 48 row packets.
+- All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Regenerated full profile reports Boxed `BoxedSemiSmoothNewton` average ratio
+  `1.54`, Boxed `Sap` average ratio `1.56`, and Boxed
+  `SubspaceMinimization` average ratio `1.52`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/remaining_boxed_projected_active_set_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: no solver above `2x` in the refreshed profile.
+- FrictionIndex: `BlockedJacobi`, `ShockPropagation`, `BGS`, `Staggering`,
+  `SubspaceMinimization`, `NNCG`, `Dantzig`, `BoxedSemiSmoothNewton`, and
+  `Admm`.
+- Standard: moderate spread only; `FischerBurmeisterNewton`,
+  `BoxedSemiSmoothNewton`, `Baraff`, `MinimumMapNewton`, `InteriorPoint`,
+  `Apgd`, `Sap`, and `PenalizedFischerBurmeisterNewton` are the largest
+  current rows.
+
 ## Current Reality - 2026-06-12 Boxed Block Projection Active-Set Fast Paths
 
 This section is the latest state; older sections below are historical

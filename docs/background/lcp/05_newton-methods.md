@@ -434,6 +434,11 @@ self-describing in cached benchmark JSON. Additional
 BoxedSemiSmoothNewton on DART 7 separated sphere-ground, coupled vertical-stack,
 and articulated unified-contact friction-index fixtures, so contact-derived
 evidence is reported separately from the synthetic line-search parameter sweep.
+For non-warm-started high-level solves, strictly interior standard rows use the
+shared validated linear-solve fast path and boxed rows without friction-index
+coupling use the shared projected-active-set exact solve. Warm-started,
+coupled-friction, and validator-rejected rows stay on the semi-smooth
+line-search path.
 
 ## Implementation Strategy
 

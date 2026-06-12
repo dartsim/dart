@@ -477,6 +477,11 @@ solver-specific generated evidence on 16x-coupled mildly ill-conditioned
 friction-index packets at 16 and 24 contacts; the focused correctness slice and
 `BM_LcpMildIllConditioned/ExtremeCoupled*` rows keep that claim separate from
 broader all-solver conditioning coverage.
+For non-warm-started high-level solves, strictly interior standard rows use the
+shared validated linear-solve fast path and boxed rows without friction-index
+coupling use the shared projected-active-set exact solve. Warm-started,
+coupled-friction, and validator-rejected rows stay on SAP's regularized Newton
+path.
 
 ```cpp
 #include <dart/math/lcp/other/sap_solver.hpp>

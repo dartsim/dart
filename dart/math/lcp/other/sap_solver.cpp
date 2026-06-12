@@ -196,6 +196,43 @@ LcpResult SapSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  bool exactFastPath = false;
+  if (!options.warmStart) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    if (problem.isStandardLcp(absTolerance)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolerance);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   const double reg = params->regularization;
   const double armijo = params->armijosParameter;
@@ -338,10 +375,7 @@ LcpResult SapSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(

@@ -548,8 +548,10 @@ friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
 For strictly interior standard LCPs without a warm start,
 `SubspaceMinimizationSolver` first tries the shared validated linear-solve fast
-path. The active-set estimation and subspace refinement path remains the
-fallback for active-bound, boxed, friction-index, and warm-started solves.
+path. Boxed LCPs without friction-index coupling use the shared
+projected-active-set exact solve under the same non-warm-started high-level
+interface. The active-set estimation and subspace refinement path remains the
+fallback for warm-started, coupled friction-index, or validator-rejected solves.
 
 ### Properties
 
