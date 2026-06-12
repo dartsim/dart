@@ -63,9 +63,38 @@ rediscovering the current branch state.
 - Treat the active-bound two-contact friction-index packet as a regression and
   demo benchmark seed for Dantzig and friction-index-capable iterative solvers.
 
-## Latest Checkpoint
+## Latest Code Checkpoint
 
-The latest checkpoint tightens Direct solver native support reporting:
+The latest implementation checkpoint adds GUI plots for billiard momentum,
+kinetic-energy, and symmetry invariant histories in the LCP py-demo:
+
+- `python/examples/demos/scenes/lcp_physics.py` now emits live plot streams for
+  sequential impulse and boxed-LCP billiards:
+  - `Sequential billiard momentum error`
+  - `Boxed LCP billiard momentum error`
+  - `Sequential billiard energy error`
+  - `Boxed LCP billiard energy error`
+  - `Sequential billiard symmetry error`
+  - `Boxed LCP billiard symmetry error`
+- `python/tests/unit/test_py_demo_panels.py` asserts those plot events are
+  exposed by the demo panel.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+```
+
+Observed results:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- `pixi run lint`: passed.
+
+## Direct Support Checkpoint
+
+This checkpoint tightened Direct solver native support reporting:
 
 - `LcpSolver::supportsProblem(problem)` becomes virtual.
 - `DirectSolver::supportsProblem(problem, standardTolerance)` reports native
@@ -134,42 +163,44 @@ Observed results:
 
 ## Hand-Off Snapshot
 
-The current session was stopped for hand-off only after the Direct support
-checkpoint. No implementation work and no verification were run after the user
-requested: "stop and focus on hand-off for all the current work without any
+The current session was stopped for hand-off only after the billiard invariant
+plot checkpoint. No implementation work and no verification were run after the
+user requested: "stop and focus on hand-off for all the current work without any
 further verification."
 
 Branch state at hand-off start:
 
 - Current branch: `feature/lcp-solver-interface-demos`.
-- Local HEAD: `80a31ddb2b5 Report Direct LCP native support precisely`.
+- Local HEAD before this docs-only hand-off update:
+  `cae4efcce30 Plot LCP billiard invariants`.
 - Remote tracking branch before the hand-off docs update:
   `origin/feature/lcp-solver-interface-demos` at
   `b2f5632b277 Expose LCP problem validation diagnostics`.
-- `git fetch origin main` failed in this environment with
-  `ssh: connect to host github.com port 22: Network is unreachable`, so the
-  latest remote `main` could not be refreshed before this hand-off checkpoint.
+- Local branch was six commits ahead of the tracking branch before this
+  docs-only hand-off update.
+- The earlier SSH fetch/push path failed on `github.com:22`, but a later HTTPS
+  fetch of `origin/main` succeeded, and `origin/main` was confirmed to be an
+  ancestor of `HEAD` before the contact-pipeline metadata checkpoint.
 
 Interrupted next-slice reconnaissance, with no code changes made:
 
-- The next bounded gap was going to audit whether demo/benchmark comparison
-  metadata reflects all implemented LCP solver families.
-- `python/examples/demos/scenes/lcp_physics.py` currently maps the
-  `active_friction_index_contact` benchmark packet to the older two-solver
-  filter:
-  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` appears to contain broader
-  manifest-driven contact comparison registrations. Inspect
-  `kContactComparisonSolverNames`, `kContactNormalStandardSolverNames`, the
-  world/contact benchmark functions, and the final registration block before
-  changing demo metadata.
-- `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` looks like an older,
-  narrower benchmark surface for Dantzig, Lemke, and PGS. Confirm whether it is
-  secondary before pointing demos at it.
-- A likely next bounded patch is to update the demo benchmark filter and
-  `python/tests/unit/test_py_demo_panels.py` expectations to use the broader
-  manifest-driven benchmark, if source inspection confirms that is the intended
-  comparison surface.
+- The next bounded gap had shifted from solver coverage metadata to a practical
+  representative benchmark command.
+- `python/examples/demos/scenes/lcp_physics.py` still has a smoke-only command:
+  `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`.
+- The benchmark packet table already contains the representative per-packet
+  filters, including active-set transitions, active friction-index contact,
+  contact-pipeline sweeps, normal-only contact sweeps, degenerate and
+  near-singular packets, batch scaling, billiards, stack, card-pile, and
+  articulated-contact rows.
+- A likely next bounded patch is to add separate metadata such as
+  `representative_benchmark_filter` and `representative_benchmark_command`
+  built from `_BENCHMARK_PACKET_ROWS`, while keeping `benchmark_command` as the
+  quick smoke command for compatibility.
+- Suggested test shape in `python/tests/unit/test_py_demo_panels.py`: split the
+  representative filter on `|` and compare it with the union of every
+  benchmark packet row filter token. Keep the smoke assertion for
+  `BM_LCP_COMPARE_SMOKE`.
 
 ## Contact-Pipeline Metadata Checkpoint
 
