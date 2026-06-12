@@ -425,7 +425,8 @@ public:
 
     for (std::size_t i = 0; i < numKeyframes; ++i) {
       double phase = static_cast<double>(i) / static_cast<double>(numKeyframes);
-      double offset = depth * 0.5 * (1.0 - std::cos(2.0 * M_PI * phase));
+      double offset = depth * 0.5
+                      * (1.0 - std::cos(2.0 * math::constantsd::pi() * phase));
 
       Eigen::Isometry3d pelvisTf = pelvisInitial;
       pelvisTf.translation()[1] -= offset;
