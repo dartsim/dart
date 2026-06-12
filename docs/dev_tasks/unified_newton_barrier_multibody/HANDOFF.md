@@ -70,10 +70,10 @@ critical no-more-verification stop request:
 The latest measured packet values from that evidence were:
 
 - `point_edge_tangent_stencil.max_result_abs_error =
-  1.1268763699945339e-14`
+1.1268763699945339e-14`
 - `point_edge_tangent_stencil.speedup = 1.623508438779482`
 - `point_point_tangent_stencil.max_result_abs_error =
-  3.3306690738754696e-16`
+3.3306690738754696e-16`
 - `point_point_tangent_stencil.speedup = 0.9786534468698057`
 - top-level `max_result_abs_error = 3.982848877516439e-14`
 - top-level `speedup = 0.9375876271274418`
