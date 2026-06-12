@@ -1,5 +1,51 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Critical Stop Handoff
+
+Maintainer requested on 2026-06-11: stop implementation work and focus only on
+handoff, with no further verification. This docs-only handoff must not be read
+as a new validation point; the next agent should start fresh and verify before
+making code changes.
+
+Use exactly one branch for continuation:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM follow-up branches are historical/no-resume targets unless a
+maintainer explicitly says otherwise.
+
+Latest validated source checkpoint before this handoff:
+`e9b2014f3db` (`Prewarm rigid IPC stack solve scratch`). It was pushed and
+validated with lint, build, focused rigid IPC world/barrier tests, and full
+`pixi run test-unit`. The handoff-only docs commit after it intentionally skips
+`pixi run lint`, build, tests, and benchmarks.
+
+Current completed Phase 4/5 slice:
+
+- Rigid IPC projected-Newton solve scratch now persists assembly and
+  line-search buffers on the World allocator.
+- `RigidIpcContactStage::prepare()` prewarms same-shape solve/result surface
+  buffers, articulation rows, active constraint rows, and assembly scratch.
+- The dynamic rigid IPC no-heap gate now covers contact-free dynamics, active
+  static/dynamic mesh barrier, fixed-joint and revolute-joint IPC constraints,
+  and the two-box stack.
+- The measured two-box stack gap was 1 global allocation / 96 bytes over four
+  baked steps from free-list growth during objective assembly; that gap is now
+  closed at the latest validated source checkpoint.
+
+Fresh agent entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `RESUME.md` and the remaining Phase 4/5 follow-up items in this
+file. Continue only after measuring a real remaining allocator/no-heap gap.
+Do not add more work to PR #2956; it is already merged.
+
 ## Current Handoff
 
 Stop state for fresh handoff: use exactly one branch,

@@ -1,5 +1,54 @@
 # Resume: Hierarchical Memory Manager
 
+## Critical Stop Handoff (2026-06-11)
+
+Maintainer requested: stop all implementation/optimization work and produce a
+handoff only, with no further verification. Do not run build, test, lint, or
+benchmark commands for this handoff commit; the next agent should verify from a
+fresh session before changing code.
+
+Use exactly one continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM follow-up branches are historical/no-resume targets unless a
+maintainer explicitly redirects the work.
+
+The latest validated source checkpoint before this docs-only handoff is
+`e9b2014f3db` (`Prewarm rigid IPC stack solve scratch`). That checkpoint was
+pushed and its code slice was verified with `pixi run lint`, `pixi run build`,
+focused rigid IPC world/barrier tests, and `pixi run test-unit` passing. Any
+later handoff-only docs commit intentionally has no fresh verification.
+
+What `e9b2014f3db` closed:
+
+- `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` previously failed
+  for `dynamic rigid IPC two-box stack` with 1 global allocation / 96 bytes
+  over four baked steps.
+- The allocation source was free-list growth during projected-Newton objective
+  assembly after a large aligned triplet-scratch request.
+- `RigidIpcProjectedNewtonSolveScratch` now owns persistent assembly and
+  line-search scratch from the World allocator.
+- `RigidIpcContactStage::prepare()` now prewarms same-shape solve/result
+  surface buffers, articulation rows, active constraint rows, and assembly
+  scratch before counted steps.
+- The baked dynamic rigid IPC no-heap gate now covers contact-free dynamics,
+  active static/dynamic mesh barrier, fixed-joint and revolute-joint IPC
+  constraints, and the two-box stack.
+
+Fresh-session start:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `README.md` in this directory, especially "Remaining Phase 4/5
+follow-up items". Continue only evidence-first: reproduce a real allocation or
+growth gap before editing, and do not add more scenes to old PR #2956.
+
 ## Authoritative Handoff (2026-06-11)
 
 Current branch: use exactly one branch for the post-#2956 HMM handoff and
