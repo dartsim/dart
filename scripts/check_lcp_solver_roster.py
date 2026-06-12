@@ -41,6 +41,8 @@ REQUIRED_EVIDENCE_COLUMNS = (
     "category",
     "solver",
     "problem_size",
+    "lcp_dimension",
+    "contact_count",
     "solver_identity_schema_version",
     "solver_manifest_index",
     "time_ns",
@@ -345,6 +347,44 @@ def check_performance_profile_evidence(
             if problem_size is None or problem_size <= 0:
                 errors.append(
                     f"row {row_number}: invalid problem_size {row['problem_size']!r}"
+                )
+
+            lcp_dimension = _csv_counter_as_int(row, "lcp_dimension")
+            if lcp_dimension is None or lcp_dimension <= 0:
+                errors.append(
+                    f"row {row_number}: invalid lcp_dimension "
+                    f"{row['lcp_dimension']!r}"
+                )
+            elif problem_size is not None:
+                if category == "FrictionIndex":
+                    expected_dimension = 3 * problem_size
+                    if lcp_dimension != expected_dimension:
+                        errors.append(
+                            f"row {row_number}: lcp_dimension "
+                            f"{row['lcp_dimension']!r} does not match "
+                            f"3 * friction contact count {problem_size}"
+                        )
+                elif lcp_dimension != problem_size:
+                    errors.append(
+                        f"row {row_number}: lcp_dimension "
+                        f"{row['lcp_dimension']!r} does not match "
+                        f"problem_size {row['problem_size']!r}"
+                    )
+
+            contact_count = _csv_counter_as_int(row, "contact_count")
+            if category == "FrictionIndex":
+                if contact_count != problem_size:
+                    errors.append(
+                        f"row {row_number}: contact_count "
+                        f"{row['contact_count']!r} does not match "
+                        f"friction profile size {row['problem_size']!r}"
+                    )
+            elif row["contact_count"] != "" and (
+                contact_count is None or contact_count < 0
+            ):
+                errors.append(
+                    f"row {row_number}: invalid contact_count "
+                    f"{row['contact_count']!r}"
                 )
 
             time_ns = _csv_finite_float(row, "time_ns")

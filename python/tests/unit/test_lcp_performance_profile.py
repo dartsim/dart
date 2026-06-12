@@ -32,6 +32,7 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
                     "run_type": "iteration",
                     "cpu_time": 10.0,
                     "contract_ok": 1.0,
+                    "problem_size": 12.0,
                     "iterations": 4.0,
                     "solver_identity_schema_version": 1.0,
                     "solver_manifest_index": 1.0,
@@ -50,6 +51,8 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
     )
 
     row = results["Standard"][("Dantzig", 12)]
+    assert row["lcp_dimension"] == 12.0
+    assert row["contact_count"] is None
     assert row["solver_identity_schema_version"] == 1.0
     assert row["solver_manifest_index"] == 1.0
     assert row["iterations"] == 4.0
@@ -142,6 +145,38 @@ def test_lcp_profile_coverage_rejects_problem_type_name_mismatches() -> None:
         )
 
 
+def test_lcp_profile_coverage_rejects_problem_dimension_counter_mismatches() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "problem_size": 99.0,
+                    "solver_supports_problem": 1.0,
+                    "problem_type_standard": 1.0,
+                    "problem_type_boxed": 0.0,
+                    "problem_type_friction_index": 0.0,
+                    "problem_type_invalid": 0.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="problem dimension counters"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_rejects_form_support_mismatches() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
@@ -221,6 +256,8 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
                     "run_type": "iteration",
                     "cpu_time": 10.0,
                     "contract_ok": 1.0,
+                    "problem_size": 12.0,
+                    "contact_count": None,
                     "iterations": 4.0,
                     "residual": 2.0,
                     "complementarity": 3.0,
@@ -251,6 +288,8 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
             "category": "Boxed",
             "solver": "Dantzig",
             "problem_size": "12",
+            "lcp_dimension": "12",
+            "contact_count": "",
             "solver_identity_schema_version": "1",
             "solver_manifest_index": "1",
             "time_ns": "10",

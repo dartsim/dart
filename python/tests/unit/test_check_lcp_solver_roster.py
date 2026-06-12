@@ -27,6 +27,8 @@ def _valid_evidence_row() -> dict[str, str]:
         "category": "Standard",
         "solver": "Dantzig",
         "problem_size": "12",
+        "lcp_dimension": "12",
+        "contact_count": "",
         "solver_identity_schema_version": "1",
         "solver_manifest_index": "1",
         "time_ns": "10",
@@ -81,4 +83,20 @@ def test_lcp_profile_evidence_rejects_invalid_metric(
         writer.writerow(_valid_evidence_row() | {"bound_violation": ""})
 
     with pytest.raises(AssertionError, match="bound_violation"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
+def test_lcp_profile_evidence_rejects_problem_dimension_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row() | {"lcp_dimension": "99"})
+
+    with pytest.raises(AssertionError, match="lcp_dimension"):
         module.check_performance_profile_evidence(manifest, path)

@@ -177,6 +177,8 @@ def parse_benchmark_results(data: dict) -> dict:
         contract_ok = bm.get("contract_ok", 0)
 
         results[category][(solver_name, problem_size)] = {
+            "lcp_dimension": bm.get("problem_size"),
+            "contact_count": bm.get("contact_count"),
             "time_ns": time_ns,
             "contract_ok": contract_ok,
             "iterations": bm.get("iterations"),
@@ -256,6 +258,18 @@ def check_native_profile_coverage(
                 != 1
             )
         )
+        problem_dimension_mismatches = []
+        for (solver, problem_size), data in results.get(category, {}).items():
+            lcp_dimension = _counter_to_int(data.get("lcp_dimension"))
+            contact_count = _counter_to_int(data.get("contact_count"))
+            if lcp_dimension is None:
+                continue
+            if category == "FrictionIndex":
+                if contact_count != problem_size or lcp_dimension != 3 * problem_size:
+                    problem_dimension_mismatches.append(f"{solver}/{problem_size}")
+            elif lcp_dimension != problem_size:
+                problem_dimension_mismatches.append(f"{solver}/{problem_size}")
+        problem_dimension_mismatches = sorted(problem_dimension_mismatches)
         solver_identity_mismatches = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -290,6 +304,11 @@ def check_native_profile_coverage(
             errors.append(
                 f"{category}: current-schema rows disagree with problem_type "
                 f"counters for {problem_type_mismatches}"
+            )
+        if problem_dimension_mismatches:
+            errors.append(
+                f"{category}: current-schema rows disagree with problem "
+                f"dimension counters for {problem_dimension_mismatches}"
             )
         if solver_identity_mismatches:
             errors.append(
@@ -403,6 +422,8 @@ def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
         "category",
         "solver",
         "problem_size",
+        "lcp_dimension",
+        "contact_count",
         "solver_identity_schema_version",
         "solver_manifest_index",
         "time_ns",

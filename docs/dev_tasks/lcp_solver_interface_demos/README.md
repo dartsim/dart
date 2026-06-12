@@ -1,5 +1,82 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Problem Dimension Evidence Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 83]`.
+- Last committed checkpoint:
+  `de016b4969f Record LCP profile metric evidence`.
+- Checkpoint target:
+  `Record LCP problem dimension evidence`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 84 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- This continues the PR #2986 solver-family-intake rule that benchmark evidence
+  must machine-record problem identity and metrics, not just rely on benchmark
+  name parsing.
+- `scripts/lcp_performance_profile.py` now preserves the emitted
+  `problem_size` counter as `lcp_dimension` and the emitted `contact_count`
+  counter for friction-index rows.
+- Profile `problem_size` remains the profile argument. For Standard/Boxed rows
+  it equals the LCP row dimension; for FrictionIndex rows it is contact count
+  and the emitted `lcp_dimension` is `3 * contact_count`.
+- Both profile ingestion and `scripts/check_lcp_solver_roster.py` reject stale
+  rows where Standard/Boxed dimensions disagree, or where FrictionIndex
+  `contact_count`/`lcp_dimension` do not match the profile size.
+- The checked evidence artifact was regenerated from the existing
+  `build/lcp_profile_full.json` cache, not from a new benchmark run.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `docs/background/lcp/figures/performance_profile_evidence.csv`
+- `scripts/lcp_performance_profile.py`
+- `scripts/check_lcp_solver_roster.py`
+- `python/tests/unit/test_lcp_performance_profile.py`
+- `python/tests/unit/test_check_lcp_solver_roster.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --cache build/lcp_profile_full.json --output docs/background/lcp/figures`
+  completed and regenerated the evidence CSV with populated dimension/contact
+  columns.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with `12 passed`.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` with the expanded
+  dimension/contact evidence guard.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with `Record LCP problem dimension evidence`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Profile Metric Evidence Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
