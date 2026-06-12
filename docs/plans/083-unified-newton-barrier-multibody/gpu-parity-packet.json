@@ -35,22 +35,22 @@
       "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets exist, but they cover preassembled primitive stencils only and do not yet cover broad-phase construction, runtime scene candidate filtering, or the speedup gate.",
-      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils plus 65536 edge-edge stencils on 2026-06-11, but minimum primitive-family speedup was 0.306x against the CPU benchmark row, so this remains in-progress rather than measured.",
+      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets plus a brute-force all-pairs point-triangle candidate-mask packet exist, but they cover reduced primitive fixtures only and do not yet cover sweep broad-phase construction, compacted runtime scene candidate lists, or the speedup gate.",
+      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils, 65536 edge-edge stencils, and a 65536-pair point-triangle all-pairs mask on 2026-06-11. The candidate mask row used 256 candidate points, 256 triangles, and 192 accepted pairs with max_result_abs_error=0.0 and speedup=1.3875084380296558x. The top-level packet speedup was 0.4828002058826909x, so this remains in-progress rather than measured.",
       "same_scene_cpu_gpu": true,
       "primitive_families": {
         "point_triangle": {
           "stencil_count": 65536,
           "accepted_count": 49152,
           "max_result_abs_error": 0.0,
-          "speedup": 0.30612460530860414,
+          "speedup": 0.6780704594040773,
           "meets_speedup_gate": false,
           "timing_ns": {
-            "setup": 495070.0,
-            "host_to_device": 1361184.0,
-            "kernel": 406795.0,
+            "setup": 471808.0,
+            "host_to_device": 1357686.0,
+            "kernel": 393013.0,
             "solve": 0.0,
-            "device_to_host": 179997.0,
+            "device_to_host": 168118.0,
             "readback": 0.0
           },
           "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
@@ -60,32 +60,54 @@
           "stencil_count": 65536,
           "accepted_count": 49152,
           "max_result_abs_error": 0.0,
-          "speedup": 0.7907497417926355,
+          "speedup": 0.4828002058826909,
           "meets_speedup_gate": false,
           "timing_ns": {
-            "setup": 177912.0,
-            "host_to_device": 1066078.0,
-            "kernel": 362291.0,
+            "setup": 911356.0,
+            "host_to_device": 2950938.0,
+            "kernel": 404214.0,
             "solve": 0.0,
-            "device_to_host": 150442.0,
+            "device_to_host": 341815.0,
             "readback": 0.0
           },
           "cpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCpu/65536",
           "gpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCuda/65536"
         }
       },
+      "candidate_construction": {
+        "point_triangle_all_pairs_mask": {
+          "pair_count": 65536,
+          "point_count": 256,
+          "triangle_count": 256,
+          "accepted_count": 192,
+          "max_result_abs_error": 0.0,
+          "speedup": 1.3875084380296558,
+          "meets_speedup_gate": true,
+          "timing_ns": {
+            "setup": 156073.0,
+            "host_to_device": 334593.0,
+            "kernel": 61045.0,
+            "solve": 0.0,
+            "device_to_host": 192799.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCuda/65536"
+        }
+      },
       "stencil_count": 131072,
+      "candidate_pair_count": 65536,
       "accepted_count": 98304,
       "max_result_abs_error": 0.0,
       "result_abs_error_tolerance": 1E-10,
-      "speedup": 0.30612460530860414,
+      "speedup": 0.4828002058826909,
       "min_speedup": 1.25,
       "timing_ns": {
-        "setup": 495070.0,
-        "host_to_device": 1361184.0,
-        "kernel": 406795.0,
+        "setup": 471808.0,
+        "host_to_device": 1357686.0,
+        "kernel": 393013.0,
         "solve": 0.0,
-        "device_to_host": 179997.0,
+        "device_to_host": 168118.0,
         "readback": 0.0
       }
     },

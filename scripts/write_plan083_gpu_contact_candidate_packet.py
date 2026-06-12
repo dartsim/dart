@@ -106,7 +106,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
-        "^BM_Plan083(EdgeEdge)?ContactCandidate(Cpu|Cuda)"
+        "^BM_Plan083((EdgeEdge)?ContactCandidate|PointTriangleCandidateMask)(Cpu|Cuda)"
         f"/{args.stencil_count}(/real_time)?$"
     )
     command = [
@@ -178,11 +178,19 @@ def _expected_row_names(stencil_count: int) -> dict[str, tuple[str, str]]:
     }
 
 
+def _expected_candidate_mask_row_names(pair_count: int) -> tuple[str, str]:
+    return (
+        f"BM_Plan083PointTriangleCandidateMaskCpu/{pair_count}",
+        f"BM_Plan083PointTriangleCandidateMaskCuda/{pair_count}",
+    )
+
+
 def _representative_rows(
     rows: list[Mapping[str, Any]], stencil_count: int
 ) -> dict[str, Mapping[str, Any]]:
     expected_rows = _expected_row_names(stencil_count)
     expected_names = {name for names in expected_rows.values() for name in names}
+    expected_names.update(_expected_candidate_mask_row_names(stencil_count))
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
 
@@ -279,6 +287,88 @@ def _validate_primitive_family(
     }
 
 
+def _validate_candidate_mask(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    pair_count: int,
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask max error "
+            f"{max_error:.3g} exceeds tolerance {tolerance:.3g}"
+        )
+
+    cpu_accepted = _counter(cpu_row, "accepted_count")
+    gpu_accepted = _counter(gpu_row, "gpu_accepted_count")
+    if int(cpu_accepted) != int(gpu_accepted):
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask CPU accepted count "
+            f"{cpu_accepted:g} != GPU accepted count {gpu_accepted:g}"
+        )
+
+    cpu_pairs = int(_counter(cpu_row, "pairs"))
+    gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
+    if cpu_pairs != pair_count or gpu_pairs != pair_count:
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask expected "
+            f"{pair_count} pairs, got CPU={cpu_pairs}, GPU={gpu_pairs}"
+        )
+
+    cpu_points = int(_counter(cpu_row, "points"))
+    gpu_points = int(_counter(gpu_row, "gpu_points"))
+    cpu_triangles = int(_counter(cpu_row, "triangles"))
+    gpu_triangles = int(_counter(gpu_row, "gpu_triangles"))
+    if cpu_points != gpu_points or cpu_triangles != gpu_triangles:
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask CPU/GPU shape mismatch: "
+            f"points {cpu_points}/{gpu_points}, "
+            f"triangles {cpu_triangles}/{gpu_triangles}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
+    if missing:
+        raise Plan083GpuContactCandidatePacketError(
+            f"point-triangle candidate mask timing is missing {sorted(missing)}"
+        )
+
+    return {
+        "pair_count": pair_count,
+        "point_count": cpu_points,
+        "triangle_count": cpu_triangles,
+        "accepted_count": int(cpu_accepted),
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
+
+
 def make_packet(
     benchmark_data: dict[str, Any],
     *,
@@ -309,13 +399,29 @@ def make_packet(
             speedup_gate=speedup_gate,
         )
 
+    candidate_mask_cpu, candidate_mask_gpu = _expected_candidate_mask_row_names(
+        stencil_count
+    )
+    candidate_construction = _validate_candidate_mask(
+        cpu_row=representative_rows[candidate_mask_cpu],
+        gpu_row=representative_rows[candidate_mask_gpu],
+        pair_count=stencil_count,
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+    )
+
     point_triangle = primitive_families["point_triangle"]
     max_error = max(
-        family["max_result_abs_error"] for family in primitive_families.values()
+        [family["max_result_abs_error"] for family in primitive_families.values()]
+        + [candidate_construction["max_result_abs_error"]]
     )
-    speedup = min(family["speedup"] for family in primitive_families.values())
+    speedup = min(
+        [family["speedup"] for family in primitive_families.values()]
+        + [candidate_construction["speedup"]]
+    )
     meets_speedup_gate = all(
-        family["meets_speedup_gate"] for family in primitive_families.values()
+        [family["meets_speedup_gate"] for family in primitive_families.values()]
+        + [candidate_construction["meets_speedup_gate"]]
     )
 
     return {
@@ -323,7 +429,11 @@ def make_packet(
             "row_id": "contact-stencils-candidate-filtering",
             "same_scene_cpu_gpu": True,
             "primitive_families": primitive_families,
+            "candidate_construction": {
+                "point_triangle_all_pairs_mask": candidate_construction,
+            },
             "stencil_count": stencil_count * len(primitive_families),
+            "candidate_pair_count": candidate_construction["pair_count"],
             "accepted_count": sum(
                 family["accepted_count"] for family in primitive_families.values()
             ),

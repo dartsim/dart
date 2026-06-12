@@ -263,6 +263,49 @@ __global__ void filterPointTriangleContactStencilKernel(
   accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
 }
 
+__global__ void buildPointTriangleContactCandidateMaskKernel(
+    const double* positions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    const double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t pairCount = pointCount * triangleCount;
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::size_t pointSlot = index / triangleCount;
+  const std::size_t triangle = index - pointSlot * triangleCount;
+  const std::uint32_t point = pointIndices[pointSlot];
+  const std::size_t triangleBase = 3u * triangle;
+  const std::uint32_t aIndex = triangleIndices[triangleBase];
+  const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+  const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+  if (point == aIndex || point == bIndex || point == cIndex) {
+    squaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const Vec3 p = loadPoint(positions, point);
+  const Vec3 a = loadPoint(positions, aIndex);
+  const Vec3 b = loadPoint(positions, bIndex);
+  const Vec3 c = loadPoint(positions, cIndex);
+
+  const double squaredDistance = pointTriangleSquaredDistance(p, a, b, c);
+  const double threshold = activationDistance * activationDistance;
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double tolerance = kRelativeEpsilon * fmax(1.0, threshold);
+  squaredDistances[index] = squaredDistance;
+  accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
+}
+
 __global__ void filterEdgeEdgeContactStencilKernel(
     const double* positions,
     const EdgeEdgeContactStencil* stencils,
@@ -317,6 +360,37 @@ cudaError_t launchPointTriangleContactStencilFilterKernel(
       squaredDistances,
       accepted,
       stencilCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointTriangleContactCandidateMaskKernel(
+    const double* positions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    std::size_t pointCount,
+    std::size_t triangleCount)
+{
+  const std::size_t pairCount = pointCount * triangleCount;
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  buildPointTriangleContactCandidateMaskKernel<<<gridSize, blockSize>>>(
+      positions,
+      pointIndices,
+      triangleIndices,
+      activationDistance,
+      squaredDistances,
+      accepted,
+      pointCount,
+      triangleCount);
 
   return cudaGetLastError();
 }

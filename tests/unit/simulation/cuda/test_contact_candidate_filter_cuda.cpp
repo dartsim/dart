@@ -120,6 +120,16 @@ Eigen::Vector3d pointAt(
   return {positions[base], positions[base + 1u], positions[base + 2u]};
 }
 
+bool isIncidentPointTriangle(
+    const std::uint32_t point,
+    const std::vector<std::uint32_t>& triangles,
+    const std::size_t triangle)
+{
+  const std::size_t tri = 3u * triangle;
+  return point == triangles[tri] || point == triangles[tri + 1u]
+         || point == triangles[tri + 2u];
+}
+
 std::vector<double> cpuSquaredDistances(const Fixture& fixture)
 {
   std::vector<double> distances;
@@ -151,6 +161,49 @@ std::vector<double> cpuSquaredDistances(const EdgeEdgeFixture& fixture)
   return distances;
 }
 
+struct CandidateMaskExpectation
+{
+  std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::size_t acceptedCount = 0;
+};
+
+CandidateMaskExpectation cpuCandidateMask(
+    const Fixture& fixture,
+    const std::vector<std::uint32_t>& pointIndices,
+    const double activationDistance)
+{
+  CandidateMaskExpectation expected;
+  const std::size_t triangleCount = fixture.triangles.size() / 3u;
+  expected.squaredDistances.reserve(pointIndices.size() * triangleCount);
+  expected.accepted.reserve(pointIndices.size() * triangleCount);
+
+  for (const std::uint32_t point : pointIndices) {
+    for (std::size_t triangle = 0; triangle < triangleCount; ++triangle) {
+      const std::size_t tri = 3u * triangle;
+      double squaredDistance = 0.0;
+      bool accepted = false;
+      if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+        const auto distance = dc::pointTriangleSquaredDistance(
+            pointAt(fixture.positions, point),
+            pointAt(fixture.positions, fixture.triangles[tri]),
+            pointAt(fixture.positions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.positions, fixture.triangles[tri + 2u]));
+        squaredDistance = distance.squaredDistance;
+        accepted = dc::detail::withinActivationDistance(
+            squaredDistance, activationDistance);
+      }
+      expected.squaredDistances.push_back(squaredDistance);
+      expected.accepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++expected.acceptedCount;
+      }
+    }
+  }
+
+  return expected;
+}
+
 } // namespace
 
 //==============================================================================
@@ -175,6 +228,59 @@ TEST(ContactCandidateFilterCuda, MatchesCpuPointTriangleStencilFilter)
   EXPECT_EQ(result.accepted[0], 1u);
   EXPECT_EQ(result.accepted[1], 0u);
   EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuPointTriangleCandidateMask)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const Fixture fixture = makeFixture();
+  const std::vector<std::uint32_t> pointIndices = {3u, 7u};
+  const CandidateMaskExpectation expected
+      = cpuCandidateMask(fixture, pointIndices, 0.05);
+
+  cuda::PointTriangleCandidateBuildResult result;
+  cuda::buildPointTriangleContactCandidateMaskCuda(
+      fixture.positions, pointIndices, fixture.triangles, 0.05, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), expected.squaredDistances.size());
+  ASSERT_EQ(result.accepted.size(), expected.accepted.size());
+  EXPECT_EQ(result.pointCount, pointIndices.size());
+  EXPECT_EQ(result.triangleCount, fixture.triangles.size() / 3u);
+  EXPECT_EQ(result.pairCount, expected.squaredDistances.size());
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+
+  for (std::size_t pair = 0; pair < expected.squaredDistances.size(); ++pair) {
+    EXPECT_NEAR(
+        result.squaredDistances[pair], expected.squaredDistances[pair], 1e-14)
+        << pair;
+    EXPECT_EQ(result.accepted[pair], expected.accepted[pair]) << pair;
+  }
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MasksIncidentPointTriangleCandidatePairs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const Fixture fixture = makeFixture();
+  const std::vector<std::uint32_t> pointIndices = {0u};
+
+  cuda::PointTriangleCandidateBuildResult result;
+  cuda::buildPointTriangleContactCandidateMaskCuda(
+      fixture.positions, pointIndices, fixture.triangles, 0.05, result);
+
+  ASSERT_EQ(result.pairCount, 2u);
+  ASSERT_EQ(result.squaredDistances.size(), 2u);
+  ASSERT_EQ(result.accepted.size(), 2u);
+  EXPECT_EQ(result.squaredDistances[0], 0.0);
+  EXPECT_EQ(result.accepted[0], 0u);
 }
 
 //==============================================================================
@@ -243,6 +349,23 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidStencil)
   EXPECT_THROW(
       cuda::filterPointTriangleContactStencilsCuda(
           fixture.positions, fixture.triangles, fixture.stencils, 0.05, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, RejectsInvalidCandidateMaskInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  Fixture fixture = makeFixture();
+  const std::vector<std::uint32_t> pointIndices = {99u};
+
+  cuda::PointTriangleCandidateBuildResult result;
+  EXPECT_THROW(
+      cuda::buildPointTriangleContactCandidateMaskCuda(
+          fixture.positions, pointIndices, fixture.triangles, 0.05, result),
       dart::simulation::InvalidArgumentException);
 }
 

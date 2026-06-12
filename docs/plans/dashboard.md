@@ -298,8 +298,9 @@ its own line so status updates remain git-history friendly.
   packets without claiming gear assets, Bullet/reference baselines, GPU parity,
   or paper-scale parity. PR #2978 is the single consolidated follow-up for the
   remaining private packet work: it adds point-triangle and edge-edge contact
-  stencil parity, endpoint-linear point-triangle and edge-edge CCD/line-search
-  parity, scalar barrier/friction local-kernel parity plus point-triangle
+  stencil parity plus a brute-force all-pairs point-triangle candidate mask,
+  endpoint-linear point-triangle and edge-edge CCD/line-search parity, scalar
+  barrier/friction local-kernel parity plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
   tangent-stencil parity, point-triangle/point-point/point-edge primitive
   barrier-Hessian parity, point-triangle/point-point/point-edge primitive
@@ -307,9 +308,9 @@ its own line so status updates remain git-history friendly.
   pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge
   scene state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry
   packets, and an ABD/FEM coupled micro-solve packet. It still
-  keeps broad-phase/runtime GPU candidate construction, rigid curved
-  trajectories, equality-reduced/global sparse assembly and factorization,
-  GPU `World::step`, paper-scale assets, full runtime
+  keeps sweep broad-phase/runtime compacted GPU candidate construction, rigid
+  curved trajectories, equality-reduced/global sparse assembly and
+  factorization, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer

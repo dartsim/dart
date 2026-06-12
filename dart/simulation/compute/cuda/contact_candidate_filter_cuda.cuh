@@ -69,6 +69,18 @@ struct PointTriangleCandidateFilterResult
   ContactCandidateFilterTiming timing;
 };
 
+struct PointTriangleCandidateBuildResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
 struct EdgeEdgeCandidateFilterResult
 {
   std::vector<double> squaredDistances;
@@ -90,6 +102,21 @@ void filterPointTriangleContactStencilsCuda(
     const std::vector<PointTriangleContactStencil>& stencils,
     double activationDistance,
     PointTriangleCandidateFilterResult& result);
+
+/// Build a private all-pairs point-triangle candidate mask on CUDA.
+///
+/// This packet evaluates every supplied candidate point against every supplied
+/// triangle and writes a deterministic accepted mask. Incident point-triangle
+/// pairs are masked out. It is stronger than a preassembled stencil filter, but
+/// it intentionally does not cover sweep broad-phase pruning, compacted
+/// candidate-list construction, scene-level solver state, or a public GPU
+/// solver backend.
+void buildPointTriangleContactCandidateMaskCuda(
+    const std::vector<double>& positions,
+    const std::vector<std::uint32_t>& pointIndices,
+    const std::vector<std::uint32_t>& triangleIndices,
+    double activationDistance,
+    PointTriangleCandidateBuildResult& result);
 
 /// Filter preassembled edge-edge contact stencils on CUDA.
 ///

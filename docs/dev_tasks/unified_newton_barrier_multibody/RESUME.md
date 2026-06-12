@@ -2,21 +2,23 @@
 
 ## Current Reality (2026-06-09)
 
-Active continuation handoff (2026-06-11): implementation has resumed from the
-earlier no-verification handoff on `simx/plan083-gpu-contact-candidate-packet`,
-the single consolidated #2978 PR (`Advance unified Newton-barrier runtime and
-parity evidence`). Keep all remaining PLAN-083 work consolidated on this
-branch/PR; do not open another PLAN-083 PR or revive former stack branches.
+Active continuation handoff (2026-06-11): implementation resumed after the
+stop-only handoff. Resume only from
+`simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+PR-comment, resolve review threads, or trigger CI without explicit maintainer
+approval.
 
-The branch has four local committed checkpoints ahead of the last observed
+The branch has five local committed checkpoints ahead of the last observed
 origin head `6746b63973d Record point-point barrier Hessian packet evidence`:
 `48dcfb515cf Add point-edge barrier Hessian packet parity`,
 `1dfb21b24da Add point-triangle barrier Hessian packet parity`,
 `1022b609f8c Add point-triangle Hessian PSD packet parity`, and
-`c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`.
+`c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`, followed
+by `e41941db91c Add off-diagonal sparse block assembly packet parity`.
 
-The current checkpoint adds reduced off-diagonal sparse-block assembly evidence
-on the same branch. Expected implementation and packet surfaces are
+The preceding checkpoint adds reduced off-diagonal sparse-block assembly
+evidence on the same branch. Expected implementation and packet surfaces are
 `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cuh`,
 `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cpp`,
 `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cu`,
@@ -40,12 +42,33 @@ off-diagonal row observed `pairs=4096`, `active_blocks=4096`,
 `block_entries=147456`, `max_result_abs_error=0`, and
 `speedup=0.4342273750294942x`.
 
+The current checkpoint adds a private CUDA point-triangle all-pairs candidate
+mask to the contact-candidate packet. It extends the preassembled stencil
+filter path with
+`buildPointTriangleContactCandidateMaskCuda()`, a CUDA mask kernel, focused
+CUDA unit parity, benchmark rows, packet-writer/test coverage, and tracked
+plan/dev-task sidecar updates. This is still reduced primitive-fixture
+evidence: it is not sweep broad-phase construction, compacted runtime scene
+candidate list construction, or a speedup-gate claim. Focused evidence passed
+`pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`,
+`pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`,
+`pixi run lint`, `pixi run build`, `pixi run test-unit`,
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda`,
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`,
+`pixi run python scripts/check_plan083_gpu_parity_packet.py`, and the focused
+contact-candidate/GPU-parity/completion-audit pytest trio. The generated packet
+recorded
+`pair_count=65536`, `point_count=256`, `triangle_count=256`,
+`accepted_count=192`, `max_result_abs_error=0`,
+`speedup=1.3875084380296558x`, and `meets_speedup_gate=true`; top-level
+contact-candidate packet speedup was `0.4828002058826909x`.
+
 Fresh-session next step: inspect `HANDOFF.md`, `git status -sb`, and the local
-diff. Continue with equality reduction, global sparse factorization, runtime
-scene rows, or speedup-gate work only after this checkpoint is committed with
-required gates. Before any future push to #2978, merge latest `origin/main`
-into the published branch, run required gates, and push only with explicit
-maintainer approval.
+diff. Continue with sweep broad-phase/runtime compacted candidate lists,
+equality reduction, global sparse factorization, runtime scene rows, or
+speedup-gate work only as honest `in-progress` evidence. Before any future push
+to #2978, merge latest `origin/main` into the published branch, run required
+gates, and push only with explicit maintainer approval.
 
 PR granularity: default to one branch and PR per implementation-roadmap phase,
 but consolidate adjacent small internal phases into one PR when that keeps
@@ -632,14 +655,16 @@ paper-scale assets, and accepted reference timings remain future evidence.
 
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
-reviving former stacked branches. The next barrier/friction packet gaps are
-runtime contact rows and speedup-gate work; the next assembly/solve gaps are
-equality reduction, global sparse factorization, runtime scene rows, and
-speedup-gate work. Do not mark either row measured until the top-level speed
-gate and runtime evidence are proven. Keep the dev-task folder active because
-PLAN-083 acceptance criteria are still unmet. If the task later moves out of
-this folder, get maintainer direction before deleting it and keep the remaining
-planned manifest plus in-progress CPU/GPU/scene limitations in durable sidecars.
+reviving former stacked branches. The next contact-candidate packet gaps are
+sweep broad-phase/runtime compacted candidate lists and speedup-gate work; the
+next barrier/friction packet gaps are runtime contact rows and speedup-gate
+work; the next assembly/solve gaps are equality reduction, global sparse
+factorization, runtime scene rows, and speedup-gate work. Do not mark these
+rows measured until the top-level speed gate and runtime evidence are proven.
+Keep the dev-task folder active because PLAN-083 acceptance criteria are still
+unmet. If the task later moves out of this folder, get maintainer direction
+before deleting it and keep the remaining planned manifest plus in-progress
+CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost
 

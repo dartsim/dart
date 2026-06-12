@@ -68,6 +68,19 @@ struct EdgeEdgeCandidateFixture
   std::size_t acceptedCount = 0;
 };
 
+struct CandidateMaskFixture
+{
+  std::vector<double> positions;
+  std::vector<std::uint32_t> pointIndices;
+  std::vector<std::uint32_t> triangles;
+  std::vector<double> cpuSquaredDistances;
+  std::vector<std::uint8_t> cpuAccepted;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+};
+
 void appendPoint(
     CandidateFixture& fixture, const double x, const double y, const double z)
 {
@@ -87,11 +100,32 @@ void appendPoint(
   fixture.positions.push_back(z);
 }
 
+void appendPoint(
+    CandidateMaskFixture& fixture,
+    const double x,
+    const double y,
+    const double z)
+{
+  fixture.positions.push_back(x);
+  fixture.positions.push_back(y);
+  fixture.positions.push_back(z);
+}
+
 Eigen::Vector3d pointAt(
     const std::vector<double>& positions, const std::size_t point)
 {
   const std::size_t base = 3u * point;
   return {positions[base], positions[base + 1u], positions[base + 2u]};
+}
+
+bool isIncidentPointTriangle(
+    const std::uint32_t point,
+    const std::vector<std::uint32_t>& triangles,
+    const std::size_t triangle)
+{
+  const std::size_t tri = 3u * triangle;
+  return point == triangles[tri] || point == triangles[tri + 1u]
+         || point == triangles[tri + 2u];
 }
 
 CandidateFixture makeCandidateFixture(const int stencilCount)
@@ -182,6 +216,61 @@ EdgeEdgeCandidateFixture makeEdgeEdgeCandidateFixture(const int stencilCount)
   return fixture;
 }
 
+CandidateMaskFixture makeCandidateMaskFixture(const int pairCount)
+{
+  const int side = std::max(1, static_cast<int>(std::sqrt(pairCount)));
+  CandidateMaskFixture fixture;
+  fixture.pointCount = static_cast<std::size_t>(side);
+  fixture.triangleCount = static_cast<std::size_t>(side);
+  fixture.pairCount = fixture.pointCount * fixture.triangleCount;
+  fixture.positions.reserve(4u * fixture.triangleCount * 3u);
+  fixture.pointIndices.reserve(fixture.pointCount);
+  fixture.triangles.reserve(3u * fixture.triangleCount);
+  fixture.cpuSquaredDistances.reserve(fixture.pairCount);
+  fixture.cpuAccepted.reserve(fixture.pairCount);
+
+  for (int i = 0; i < side; ++i) {
+    const double x = static_cast<double>(i % 64) * 2.0;
+    const double y = static_cast<double>(i / 64) * 2.0;
+    const std::uint32_t base
+        = static_cast<std::uint32_t>(fixture.positions.size() / 3u);
+    appendPoint(fixture, x, y, 0.0);
+    appendPoint(fixture, x + 1.0, y, 0.0);
+    appendPoint(fixture, x, y + 1.0, 0.0);
+    const bool accepted = (i % 4) != 0;
+    appendPoint(fixture, x + 0.25, y + 0.25, accepted ? 0.02 : 0.08);
+    fixture.triangles.insert(
+        fixture.triangles.end(), {base, base + 1u, base + 2u});
+    fixture.pointIndices.push_back(base + 3u);
+  }
+
+  for (const std::uint32_t point : fixture.pointIndices) {
+    for (std::size_t triangle = 0; triangle < fixture.triangleCount;
+         ++triangle) {
+      const std::size_t tri = 3u * triangle;
+      double squaredDistance = 0.0;
+      bool accepted = false;
+      if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+        const auto distance = dc::pointTriangleSquaredDistance(
+            pointAt(fixture.positions, point),
+            pointAt(fixture.positions, fixture.triangles[tri]),
+            pointAt(fixture.positions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.positions, fixture.triangles[tri + 2u]));
+        squaredDistance = distance.squaredDistance;
+        accepted = dc::detail::withinActivationDistance(
+            squaredDistance, kActivationDistance);
+      }
+      fixture.cpuSquaredDistances.push_back(squaredDistance);
+      fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++fixture.acceptedCount;
+      }
+    }
+  }
+
+  return fixture;
+}
+
 void recordSharedCounters(
     benchmark::State& state,
     const CandidateFixture& fixture,
@@ -204,6 +293,20 @@ void recordSharedCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.stencils.size()));
+}
+
+void recordCandidateMaskCounters(
+    benchmark::State& state,
+    const CandidateMaskFixture& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["points"] = static_cast<double>(fixture.pointCount);
+  state.counters["triangles"] = static_cast<double>(fixture.triangleCount);
+  state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.pairCount));
 }
 
 } // namespace
@@ -275,6 +378,91 @@ static void BM_Plan083ContactCandidateCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083ContactCandidateCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleCandidateMaskCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeCandidateMaskFixture(static_cast<int>(state.range(0)));
+
+  std::size_t acceptedCount = 0;
+  for (auto _ : state) {
+    acceptedCount = 0;
+    for (const std::uint32_t point : fixture.pointIndices) {
+      for (std::size_t triangle = 0; triangle < fixture.triangleCount;
+           ++triangle) {
+        const std::size_t tri = 3u * triangle;
+        double squaredDistance = 0.0;
+        if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+          const auto distance = dc::pointTriangleSquaredDistance(
+              pointAt(fixture.positions, point),
+              pointAt(fixture.positions, fixture.triangles[tri]),
+              pointAt(fixture.positions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.positions, fixture.triangles[tri + 2u]));
+          squaredDistance = distance.squaredDistance;
+          acceptedCount += dc::detail::withinActivationDistance(
+                               squaredDistance, kActivationDistance)
+                               ? 1u
+                               : 0u;
+        }
+        benchmark::DoNotOptimize(squaredDistance);
+      }
+    }
+  }
+
+  benchmark::DoNotOptimize(acceptedCount);
+  recordCandidateMaskCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointTriangleCandidateMaskCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleCandidateMaskCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeCandidateMaskFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleCandidateBuildResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::buildPointTriangleContactCandidateMaskCuda(
+        fixture.positions,
+        fixture.pointIndices,
+        fixture.triangles,
+        kActivationDistance,
+        result);
+    benchmark::DoNotOptimize(result.squaredDistances.data());
+    benchmark::DoNotOptimize(result.accepted.data());
+  }
+
+  for (std::size_t i = 0; i < fixture.cpuSquaredDistances.size(); ++i) {
+    maxError = std::max(
+        maxError,
+        std::abs(result.squaredDistances[i] - fixture.cpuSquaredDistances[i]));
+  }
+
+  recordCandidateMaskCounters(state, fixture, maxError);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_points"] = static_cast<double>(result.pointCount);
+  state.counters["gpu_triangles"] = static_cast<double>(result.triangleCount);
+  state.counters["gpu_accepted_count"]
+      = static_cast<double>(result.acceptedCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointTriangleCandidateMaskCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_Plan083EdgeEdgeContactCandidateCpu(benchmark::State& state)

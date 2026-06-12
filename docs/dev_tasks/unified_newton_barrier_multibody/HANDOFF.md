@@ -2,9 +2,10 @@
 
 ## Active Continuation Handoff (2026-06-11)
 
-Implementation resumed from the earlier no-verification handoff. Continue only
-on `simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all
-remaining PLAN-083 work on this consolidated branch/PR.
+Implementation resumed after the stop-only handoff. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
+PLAN-083 work on this consolidated branch/PR. Do not push, PR-comment, resolve
+review threads, or trigger CI without explicit maintainer approval.
 
 Authoritative current state for a fresh session:
 
@@ -20,10 +21,21 @@ Authoritative current state for a fresh session:
   - `1dfb21b24da Add point-triangle barrier Hessian packet parity`
   - `1022b609f8c Add point-triangle Hessian PSD packet parity`
   - `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`
+  - `e41941db91c Add off-diagonal sparse block assembly packet parity`
+- Current checkpoint: the private CUDA point-triangle all-pairs candidate-mask
+  slice touches the contact-candidate CUDA wrapper/kernel/header, focused CUDA
+  unit test, benchmark packet, packet writer/test, GPU parity sidecar,
+  completion audit, dashboard, and these dev-task handoff docs. Keep it on PR
+  #2978 and do not open a separate PR.
 
-The current checkpoint adds reduced off-diagonal sparse-block assembly evidence
-on the same branch. A fresh session should inspect `git status -sb` and the
-local diff before deciding whether to continue from this checkpoint.
+The preceding committed checkpoint adds reduced off-diagonal sparse-block
+assembly evidence on the same branch. The current checkpoint adds a private
+CUDA point-triangle all-pairs candidate mask to the
+contact-candidate packet, extending the earlier preassembled
+point-triangle/edge-edge stencil filters without claiming sweep broad-phase,
+compacted runtime scene candidate lists, or the speedup gate. A fresh session
+should inspect `git status -sb`, `git log --oneline`, and PR #2978 before
+editing.
 
 Checkpoint surfaces:
 
@@ -60,14 +72,50 @@ off-diagonal row had `pairs=4096`, `active_blocks=4096`,
 `block_entries=147456`, `max_result_abs_error=0`, and
 `speedup=0.4342273750294942x`.
 
+The contact-candidate continuation adds:
+
+- `buildPointTriangleContactCandidateMaskCuda()` and a CUDA all-pairs
+  point-triangle mask kernel.
+- Focused CUDA unit parity for a two-point/two-triangle candidate mask.
+- Contact-candidate benchmark rows
+  `BM_Plan083PointTriangleCandidateMaskCpu/Cuda`.
+- Packet-writer/test coverage for
+  `candidate_construction.point_triangle_all_pairs_mask`.
+- Tracked GPU parity, completion-audit, dashboard, and dev-task sidecar updates.
+
+Focused evidence gathered so far for the candidate-mask checkpoint:
+
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py -q`
+  passed.
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+  passed (13 tests).
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed (161/161).
+- `pixi run -e cuda build-cuda Release` passed after fixing the benchmark
+  fixture helper.
+- `pixi run -e cuda test-cuda` passed, including
+  `test_contact_candidate_filter_cuda`.
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet` passed and wrote
+  the generated contact-candidate packet.
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py` passed.
+- Focused packet pytest for the contact-candidate and GPU parity packet tests
+  passed.
+
+The generated contact-candidate packet reported exact parity for the new
+all-pairs row with `pair_count=65536`, `point_count=256`,
+`triangle_count=256`, `accepted_count=192`, `max_result_abs_error=0`,
+`speedup=1.3875084380296558x`, and `meets_speedup_gate=true`. The top-level
+contact-candidate packet reported `speedup=0.4828002058826909x`, so the row
+stays `in-progress`.
+
 Likely next steps:
 
-1. Finish the required local gates for this checkpoint if they have not run in
-   the current session.
-2. Commit this checkpoint locally after the gates pass.
-3. Continue with equality reduction, global sparse factorization, runtime scene
-   rows, or speedup-gate work only as honest `in-progress` evidence.
-4. Before any push, merge latest
+1. Inspect `git status -sb`, `git log --oneline`, and PR #2978 before editing.
+2. Continue with sweep broad-phase/runtime compacted candidate lists, equality
+   reduction, global sparse factorization, runtime scene rows, or speedup-gate
+   work only as honest `in-progress` evidence.
+3. Before any push, merge latest
    `origin/main` into this published branch, rerun required gates, then push
    only with explicit maintainer approval.
 

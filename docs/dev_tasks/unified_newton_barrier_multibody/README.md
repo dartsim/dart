@@ -2,10 +2,12 @@
 
 ## Current Status
 
-Active continuation state (2026-06-11): implementation has resumed on
+Active continuation state (2026-06-11): implementation resumed after the
+stop-only handoff. Resume only from
 `simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
-(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
-remaining PLAN-083 work consolidated there.
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+PR-comment, resolve review threads, or trigger CI without explicit maintainer
+approval.
 
 Current branch shape for a fresh session:
 
@@ -15,11 +17,15 @@ Current branch shape for a fresh session:
   `48dcfb515cf Add point-edge barrier Hessian packet parity`,
   `1dfb21b24da Add point-triangle barrier Hessian packet parity`,
   `1022b609f8c Add point-triangle Hessian PSD packet parity`, and
-  `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`.
-- The current checkpoint adds a reduced pair-slot off-diagonal sparse-block
-  assembly packet under the private Newton assembly/solve CUDA packet. It is
-  not full sparse global factorization or runtime scene assembly, and it
-  remains an `in-progress` evidence claim.
+  `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`,
+  followed by
+  `e41941db91c Add off-diagonal sparse block assembly packet parity`.
+- The preceding committed checkpoint adds a reduced pair-slot off-diagonal
+  sparse-block assembly packet under the private Newton assembly/solve CUDA
+  packet. The current checkpoint adds a private CUDA
+  point-triangle all-pairs candidate mask to the contact-candidate packet. It is
+  not sweep broad-phase construction, not compacted runtime scene candidate
+  list construction, and not a speedup-gate claim.
 
 Focused evidence gathered for the current assembly checkpoint passed packet
 pytest, CUDA build, focused `test_newton_assembly_solve_cuda` CTest, and
@@ -27,6 +33,15 @@ pytest, CUDA build, focused `test_newton_assembly_solve_cuda` CTest, and
 measured top-level `speedup=0.26051227540244215x` with
 `meets_speedup_gate=false`, so the row stays `in-progress`. `HANDOFF.md` is
 the authoritative fresh-session handoff.
+
+Focused evidence gathered for the current candidate-mask checkpoint passed the
+contact-candidate packet pytest, focused packet/audit pytest trio, lint, build,
+unit tests, CUDA build, `pixi run -e cuda test-cuda`, and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The generated
+packet measured exact parity for 65,536 point-triangle all-pairs candidates
+with `accepted_count=192`, `speedup=1.3875084380296558x`, and
+`meets_speedup_gate=true`; the top-level contact-candidate packet measured
+`speedup=0.4828002058826909x`, so the row stays `in-progress`.
 
 Fresh-session branch discipline: all remaining PLAN-083 follow-up work is
 consolidated on `simx/plan083-gpu-contact-candidate-packet` and PR #2978
@@ -443,7 +458,9 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue downstream Hessian/PSD/runtime contact evidence on the same PR.
+   continue sweep broad-phase/runtime compacted candidate-list work,
+   downstream Hessian/PSD/runtime contact evidence, or assembly/solve evidence
+   on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
