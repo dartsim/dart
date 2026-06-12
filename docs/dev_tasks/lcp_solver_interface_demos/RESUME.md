@@ -1,5 +1,57 @@
 # Resume: LCP Solver Interface And Demos
 
+## Critical Hand-Off — 2026-06-11 Final Stop Point
+
+The latest user instruction was critical: stop implementation work and focus on
+hand-off only, with no further verification. After that instruction, no lint,
+build, tests, benchmark-list commands, benchmark execution, or solver execution
+were run. Historical verification below belongs only to the implementation
+checkpoints that explicitly list it.
+
+Use this as the fresh-session entrypoint:
+
+- Consolidated branch: `feature/lcp-solver-interface-demos`.
+- Latest implementation checkpoint:
+  `9a17ba85aa5 Filter conditioning LCP benchmarks concretely`.
+- Previous checkpoint:
+  `559cda91ace Filter active-set scale LCP benchmarks concretely`.
+- `main` was fetched from `https://github.com/dartsim/dart.git` at
+  `7d05d7b9ea72`; `git merge --no-edit FETCH_HEAD` reported
+  `Already up to date.`.
+- This checkout's `origin` remote is SSH. Previous successful publishes used
+  HTTPS, so a fresh session should fetch the branch from GitHub before relying
+  on local remote-tracking metadata.
+
+Current branch contents to preserve:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` filters mildly
+  ill-conditioned and near-singular benchmark registrations through concrete
+  generated-problem support, including exact serial/parallel batch problem-list
+  checks.
+- `CHANGELOG.md` records the conditioning benchmark-routing checkpoint.
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md` and this resume file
+  capture the full hand-off context.
+
+Resume guidance:
+
+1. Fetch and check out `feature/lcp-solver-interface-demos` from GitHub.
+2. Read `docs/ai/principles.md`, `docs/dev_tasks/README.md`, this file, and
+   the dev-task README before editing.
+3. Inspect the current branch tip and continue one bounded remaining LCP
+   interface/demo audit gap.
+4. Do not treat this hand-off as completion of the broad LCP objective, and do
+   not retire `docs/dev_tasks/lcp_solver_interface_demos/` from this checkpoint
+   alone.
+
+Likely next gaps:
+
+- Continue auditing benchmark/demo/test surfaces that still summarize native
+  solver support without checking concrete generated problems.
+- Review remaining solver-domain predicates against the actual native paths and
+  fallback/delegation behavior.
+- Continue py-demo and benchmark apples-to-apples coverage work after the next
+  session re-establishes local verification.
+
 ## Current Reality — 2026-06-11 Active Continuation
 
 The current continuation resumes from

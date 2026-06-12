@@ -97,6 +97,9 @@
 - [x] Filtered mildly ill-conditioned and near-singular benchmark
       registrations through concrete generated-problem support, including exact
       serial/parallel batch problem-list checks.
+- [x] Captured the latest 2026-06-11 critical hand-off after the conditioning
+      benchmark-routing checkpoint, refreshed the branch against current
+      `main`, and stopped without running further verification.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -136,12 +139,52 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is mildly ill-conditioned and near-singular
-benchmark concrete support-routing, following the larger active-set transition
-benchmark concrete support-routing slice, Python demo concrete native-case
-profile slice, benchmark concrete-gate cleanup, grouped batch support-routing,
-generated coverage support-routing, and heavyweight contact benchmark
-support-gating slices.
+The latest committed implementation checkpoint is
+`9a17ba85aa5 Filter conditioning LCP benchmarks concretely`. It adds mildly
+ill-conditioned and near-singular benchmark concrete support-routing, following
+`559cda91ace Filter active-set scale LCP benchmarks concretely` and the earlier
+Python demo concrete native-case profile, benchmark concrete-gate cleanup,
+grouped batch support-routing, generated coverage support-routing, and
+heavyweight contact benchmark support-gating slices.
+
+## 2026-06-11 Latest Critical Hand-Off Snapshot
+
+The latest user instruction was to stop implementation work and focus on
+hand-off only, with no further verification. After that instruction, no lint,
+build, tests, benchmark-list commands, benchmark execution, or solver execution
+were run. The only remaining work in this checkpoint is repository
+housekeeping: record this hand-off state and publish the consolidated branch.
+
+Branch and base state:
+
+- Consolidated branch: `feature/lcp-solver-interface-demos`.
+- Latest implementation commit:
+  `9a17ba85aa5 Filter conditioning LCP benchmarks concretely`.
+- Current `main` was fetched from `https://github.com/dartsim/dart.git` at
+  `7d05d7b9ea72`; `git merge --no-edit FETCH_HEAD` reported
+  `Already up to date.`.
+- This checkout's `origin` remote is configured as SSH. Earlier successful
+  publishes used HTTPS, so a fresh session should fetch the branch directly
+  from GitHub before trusting stale local remote-tracking metadata.
+
+Fresh-session resume checklist:
+
+1. Fetch and check out `feature/lcp-solver-interface-demos` from GitHub.
+2. Read this file and
+   `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+3. Inspect the branch tip and choose one bounded remaining LCP interface/demo
+   audit gap.
+4. Do not mark the broad LCP objective complete or retire this dev-task folder
+   from this hand-off alone.
+
+Likely remaining follow-ups:
+
+- Continue auditing any benchmark/demo/test surfaces that still summarize
+  solver native support without a concrete `supportsProblem(problem)` check.
+- Review remaining solver-domain predicates against actual native solve paths,
+  especially where public `solve()` delegates internally.
+- Continue py-demo and benchmark apples-to-apples coverage work after the next
+  session has re-established local verification.
 
 ## Mild/Near-Singular Benchmark Support-Routing Checkpoint
 
