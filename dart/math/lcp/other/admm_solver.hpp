@@ -53,7 +53,7 @@ class DART_API AdmmSolver : public LcpSolver
 public:
   struct Parameters
   {
-    double rhoInit{1.0};
+    double rhoInit{4.0};
     double muProx{1e-9};
     double adaptiveRhoTolerance{5.0};
     bool adaptiveRho{true};

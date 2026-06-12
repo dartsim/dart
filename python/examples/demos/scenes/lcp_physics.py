@@ -223,20 +223,20 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": (
-            "Pgs/Tgs/SymmetricPsor on scale rows; Direct only on tiny 2x/3x"
+        "current_leaders": "Tgs/Sap/Pgs on scale rows; Direct only on tiny 2x/3x",
+        "current_laggards": (
+            "Lemke, InteriorPoint, Baraff, FischerBurmeisterNewton"
         ),
-        "current_laggards": "Lemke, InteriorPoint, Baraff, ShockPropagation",
         "takeaway": (
             "PGS/SAP/TGS lead scalable SPD rows; pivot, barrier, and layered "
-            "rows remain correctness or tuning targets."
+            "Newton-family rows remain correctness or tuning targets."
         ),
     },
     {
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Jacobi/Tgs; Pgs remains close",
+        "current_leaders": "Pgs; Jacobi/Tgs remain close",
         "current_laggards": (
             "Sap, Admm, BoxedSemiSmoothNewton, ShockPropagation"
         ),

@@ -1,5 +1,122 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ADMM Default Rho Tuning
+
+After the ShockPropagation checkpoint below, work continued from the refreshed
+profile. A first attempt targeted `BoxedSemiSmoothNewtonSolver` by preallocating
+line-search residual workspaces and skipping non-findex trial-bound copies, but
+focused before/after benchmarking showed it was not worth keeping: mean ratio
+`1.011`, best `0.878`, worst `1.082`, with large Standard and FrictionIndex
+rows regressing. That draft was manually reverted before switching targets.
+
+Latest implementation slice:
+
+- `dart/math/lcp/other/admm_solver.hpp` now defaults
+  `AdmmSolver::Parameters::rhoInit` to `4.0`.
+- The change keeps the same projection, proximal linear solve, and adaptive
+  residual-balancing algorithm; only the initial penalty for the existing
+  adaptive path changes.
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp` now checks the new
+  ADMM default parameter.
+- `docs/background/lcp/06_other-methods.md` documents the default-rho decision
+  and points to the DART-owned adaptive-rho sweep evidence.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated.
+- The Python demo profile summary and panel test were updated for the refreshed
+  Standard and Boxed leader/laggard text.
+- `CHANGELOG.md` records the ADMM tuning.
+
+Focused ADMM before/after `BM_LcpCompare` evidence:
+
+- Standard profile rows: runtime ratios `0.806`, `0.653`, `0.566`, and `0.543`
+  for sizes 12, 24, 48, and 96 relative to the previous default-rho profile
+  cache.
+- Boxed profile rows: runtime ratios `0.360`, `0.373`, and `0.364` for sizes
+  12, 24, and 48.
+- FrictionIndex profile rows: runtime ratios `0.903`, `0.548`, and `0.446` for
+  contact counts 4, 16, and 64.
+- Mean focused ratio was `0.556`; best `0.360`; worst `0.903`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `Admm` average ratio is now `4.05`; current leaders are `Tgs`,
+  tiny-row `Direct`, `Sap`, and `Pgs`; current high-ratio targets include
+  `Lemke`, `InteriorPoint`, `Baraff`, and Newton-family rows.
+- Boxed: `Admm` average ratio improved from about `31.06` to `14.51`; current
+  leaders are `Pgs`, `Jacobi`, `Tgs`, and `SymmetricPsor`; current high-ratio
+  targets are `Sap`, `Admm`, `BoxedSemiSmoothNewton`, and `ShockPropagation`.
+- FrictionIndex: `Admm` average ratio is now `2.32`; current leaders are `Tgs`,
+  `Pgs`, `Sap`, `SymmetricPsor`, and `Jacobi`; current high-ratio targets are
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, `ShockPropagation`, and
+  `Staggering`.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Admm/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/admm_profile_rho4_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Affected C++ targets rebuilt successfully.
+- Comparison, generated coverage, and validation solver tests passed through
+  CTest: `100% tests passed, 0 tests failed out of 3`.
+- Focused ADMM after-run showed all Standard, Boxed, and FrictionIndex profile
+  rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.41s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization or interface audit from the refreshed
+  profile. The clearest remaining profile targets are Standard `Lemke`,
+  `InteriorPoint`, `Baraff`, and Newton-family rows; Boxed `Sap`,
+  `BoxedSemiSmoothNewton`, and `ShockPropagation`; and FrictionIndex
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, `ShockPropagation`, and
+  `Staggering`.
+
 ## Current Reality - 2026-06-12 ShockPropagation Feasible-Block Fast Path
 
 The goal was resumed after the stop-only hand-off below. Work continued on the

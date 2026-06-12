@@ -392,6 +392,9 @@ $$y = y + \rho(x-z)$$
 
 For friction-index rows, the projection uses effective bounds coupled to the
 current normal impulse.
+The default initial penalty is $\rho=4$, chosen from current DART-owned
+adaptive-rho sweep evidence to reduce active-box iteration counts while keeping
+the same adaptive residual-balancing path.
 Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
 on identical standard, boxed, and friction-index benchmark fixtures; these rows
 are CPU solver rows even when emitted by a CUDA-enabled build. Additional

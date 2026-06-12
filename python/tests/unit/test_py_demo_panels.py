@@ -1033,7 +1033,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert profile_by_surface["Standard"]["problem_sizes"] == (
         "2, 3, 12, 24, 48, 96"
     )
-    assert "Pgs/Tgs/SymmetricPsor" in profile_by_surface["Standard"][
+    assert "Tgs/Sap/Pgs" in profile_by_surface["Standard"][
         "current_leaders"
     ]
     assert "Direct only on tiny" in profile_by_surface["Standard"][
@@ -1041,9 +1041,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     ]
     assert "Lemke" in profile_by_surface["Standard"]["current_laggards"]
     assert "InteriorPoint" in profile_by_surface["Standard"]["current_laggards"]
-    assert "ShockPropagation" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Jacobi/Tgs" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "Pgs remains close" in profile_by_surface["Boxed"][
+    assert "FischerBurmeisterNewton" in profile_by_surface["Standard"][
+        "current_laggards"
+    ]
+    assert "Pgs" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "Jacobi/Tgs remain close" in profile_by_surface["Boxed"][
         "current_leaders"
     ]
     assert "Sap" in profile_by_surface["Boxed"]["current_laggards"]

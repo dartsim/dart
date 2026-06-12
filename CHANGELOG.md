@@ -1487,6 +1487,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     direct local linear solve when the unconstrained candidate is already
     feasible, while preserving the existing Direct/Dantzig fallback for
     active-bound, singular, larger, non-finite, and local friction-index blocks.
+  - Tuned `AdmmSolver`'s default initial penalty to `rhoInit = 4.0`, reducing
+    active-box iteration counts in current adaptive-rho profile rows while
+    preserving the same projection and adaptive residual-balancing algorithm.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

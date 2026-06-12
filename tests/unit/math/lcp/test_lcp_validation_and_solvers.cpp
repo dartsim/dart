@@ -4041,6 +4041,7 @@ TEST(AdmmSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(defaults.maxIterations, 200);
   EXPECT_TRUE(defaults.validateSolution);
   EXPECT_TRUE(defaults.warmStart);
+  EXPECT_DOUBLE_EQ(defaultSolver.getParameters().rhoInit, 4.0);
 
   auto standard = makeStandardProblem(3);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
