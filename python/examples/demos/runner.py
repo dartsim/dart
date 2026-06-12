@@ -701,6 +701,7 @@ _RIGID_VISUAL_WORKFLOW_BADGES = {
         RIGID_VISUAL_WORKFLOW_LABELS, start=1
     )
 }
+
 _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
     str, tuple[RigidWorkflowRelatedEvidence, ...]
 ] = {
@@ -827,6 +828,12 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
         ),
     ),
 }
+
+
+def rigid_workflow_related_evidence_by_scene() -> Mapping[
+    str, tuple[RigidWorkflowRelatedEvidence, ...]
+]:
+    return _RIGID_WORKFLOW_RELATED_EVIDENCE
 
 
 @dataclass

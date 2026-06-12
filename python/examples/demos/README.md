@@ -161,6 +161,10 @@ frame directories, commands, and metric summaries can be reviewed from one
 page. The panel also includes a current-row motion packet command; workflow
 packets pass `--video --fps` through to the selected row captures and the
 review index links MP4 artifacts when `ffmpeg` is available.
+Extended workflow packets also keep optional related-evidence, direct Rigid IPC
+shelf, and capture-first packet rows self-describing in `manifest.json` and
+`review_index.html`: each optional row records its role, user question,
+try-first action, inspect signals, healthy signal, and scope note.
 
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -665,6 +669,9 @@ writes a top-level manifest that points at every per-scene manifest and a
 questions, try-first guidance, scope notes, and metric summaries from one page:
 the in-viewer `Rigid Workflow` panel also shows the full numbered packet,
 current-row rerun, and extended related/IPC-shelf/packet commands.
+Optional related, direct IPC shelf, and capture-first packet rows carry the
+same row-guidance fields in the manifest and review index, so extended packets
+remain readable without opening the live GUI.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run

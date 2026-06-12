@@ -70,6 +70,10 @@ try-first guidance, healthy signal, scope note, and comparison/metrics summary
 so a reviewer can scan all 36 captures without opening each scene folder. When
 workflow captures request `--video`, the same review index links each row's MP4
 motion artifact if `ffmpeg` is available.
+Optional related-evidence, direct Rigid IPC shelf, and capture-first packet
+rows use the same manifest/review-index metadata fields, so extended packets
+also explain the row's role, user question, first action, inspect signals,
+healthy signal, and scope instead of only exposing a workflow group label.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,

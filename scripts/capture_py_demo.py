@@ -321,6 +321,141 @@ RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...]
     ("rigid_ipc_stack_packet", 24, 960, 540, True),
 )
 
+_RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
+    "rigid_ipc": {
+        "workflow_label": "Rigid IPC shelf",
+        "user_question": (
+            "Can a free box settle above static ground on the rigid IPC barrier?"
+        ),
+        "try_first": (
+            "Use the direct shelf packet when the numbered workflow needs "
+            "basic IPC barrier evidence."
+        ),
+        "inspect": [
+            "box height",
+            "barrier gap",
+            "contact count",
+            "step timing",
+            "barrier-held status",
+        ],
+        "healthy_signal": (
+            "Barrier gap stays nonnegative while speed settles and timing "
+            "remains finite."
+        ),
+        "scope": (
+            "Direct Rigid IPC shelf row; not a numbered World Rigid Body "
+            "workflow row."
+        ),
+    },
+    "rigid_ipc_slide": {
+        "workflow_label": "Rigid IPC shelf",
+        "user_question": "How does rigid IPC friction brake tangential slide?",
+        "try_first": (
+            "Use this direct shelf row when the question is IPC friction "
+            "rather than broad solver-family comparison."
+        ),
+        "inspect": [
+            "tangential travel",
+            "box speed",
+            "barrier gap",
+            "contact count",
+            "friction-braked status",
+        ],
+        "healthy_signal": (
+            "Tangential speed decays while the contact gap stays finite."
+        ),
+        "scope": (
+            "Direct Rigid IPC shelf row; not a numbered World Rigid Body "
+            "workflow row."
+        ),
+    },
+    "rigid_ipc_incline": {
+        "workflow_label": "Rigid IPC shelf",
+        "user_question": (
+            "Can rigid IPC keep contact while a box slides down an inclined ramp?"
+        ),
+        "try_first": (
+            "Use this direct shelf row for tilted-ramp IPC contact behavior "
+            "before changing solver families."
+        ),
+        "inspect": [
+            "down-slope speed",
+            "down-slope travel",
+            "ramp gap",
+            "contact count",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "Ramp gap stays finite while downslope motion and timing remain "
+            "observable."
+        ),
+        "scope": (
+            "Direct Rigid IPC shelf row; not a numbered World Rigid Body "
+            "workflow row."
+        ),
+    },
+    "rigid_ipc_pile": {
+        "workflow_label": "Rigid IPC shelf",
+        "user_question": (
+            "Can direct Rigid IPC captures show multi-box pile "
+            "gap/contact/timing evidence?"
+        ),
+        "try_first": (
+            "Use this direct shelf row for a live-budget IPC pile before "
+            "moving to capture-first stack packets."
+        ),
+        "inspect": [
+            "box count",
+            "minimum clearance",
+            "maximum speed",
+            "contact count",
+            "step timing",
+        ],
+        "healthy_signal": (
+            "Pile clearances remain finite and the live-budget timing is "
+            "visible in the manifest."
+        ),
+        "scope": (
+            "Direct Rigid IPC shelf row; not a numbered World Rigid Body "
+            "workflow row or benchmark packet."
+        ),
+    },
+}
+
+_RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE: dict[str, dict[str, object]] = {
+    "rigid_ipc_stack_packet": {
+        "workflow_label": "Capture-first packet",
+        "user_question": (
+            "Can a four-box IPC stack stay separated, ordered, and finite "
+            "beyond the live demo budget?"
+        ),
+        "try_first": (
+            "Use this packet when the live workflow should cite heavier IPC "
+            "stack evidence without making a performance parity claim."
+        ),
+        "inspect": [
+            "friction",
+            "box count",
+            "frame-budget threshold",
+            "min clearance",
+            "contact count",
+            "top drift",
+            "height error",
+            "max speed",
+            "wall time",
+            "benchmark pointer",
+        ],
+        "healthy_signal": (
+            "The stack remains separated, ordered, and finite, with benchmark "
+            "ownership recorded for throughput context."
+        ),
+        "scope": (
+            "Capture-first stress packet; not a numbered workflow row and not "
+            "a solver-performance parity claim."
+        ),
+    },
+}
+
 
 def rigid_workflow_capture_specs() -> tuple[tuple[str, int, int, int, bool], ...]:
     return RIGID_WORKFLOW_CAPTURE_SPECS
@@ -348,12 +483,16 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
     python_dir = _repo_root() / "python"
     if str(python_dir) not in sys.path:
         sys.path.append(str(python_dir))
-    try:
-        from examples.demos.runner import RIGID_VISUAL_WORKFLOW_GUIDES
-    except Exception:
-        return {}
-
     guidance: dict[str, dict[str, object]] = {}
+    try:
+        from examples.demos.runner import (
+            RIGID_VISUAL_WORKFLOW_GUIDES,
+            rigid_workflow_related_evidence_by_scene,
+        )
+    except Exception:
+        RIGID_VISUAL_WORKFLOW_GUIDES = {}
+        rigid_workflow_related_evidence_by_scene = None
+
     for scene_id, guide in RIGID_VISUAL_WORKFLOW_GUIDES.items():
         guidance[str(scene_id)] = {
             "workflow_label": guide.label,
@@ -363,6 +502,37 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
             "healthy_signal": guide.healthy_signal,
             "scope": guide.scope,
         }
+    if rigid_workflow_related_evidence_by_scene is not None:
+        for source_scene, entries in rigid_workflow_related_evidence_by_scene().items():
+            source_guide = RIGID_VISUAL_WORKFLOW_GUIDES.get(source_scene)
+            if source_guide is None:
+                source_label = str(source_scene)
+            else:
+                source_label = (
+                    f"{source_guide.index:02d}/{source_guide.count:02d} "
+                    f"{source_guide.label}"
+                )
+            for entry in entries:
+                guidance[str(entry.scene_id)] = {
+                    "workflow_label": "Related evidence",
+                    "user_question": entry.label,
+                    "try_first": (
+                        "Open this row from "
+                        f"{source_label} when the numbered workflow points to "
+                        "the related shelf."
+                    ),
+                    "inspect": [entry.shelf, entry.reason],
+                    "healthy_signal": (
+                        "Related route remains scoped and metric-backed; use "
+                        "the numbered source row for the main workflow claim."
+                    ),
+                    "scope": entry.reason,
+                    "related_source_row": str(source_scene),
+                    "related_source_label": source_label,
+                    "related_shelf": entry.shelf,
+                }
+    guidance.update(_RIGID_WORKFLOW_IPC_SHELF_GUIDANCE_BY_SCENE)
+    guidance.update(_RIGID_WORKFLOW_PACKET_GUIDANCE_BY_SCENE)
     return guidance
 
 
@@ -861,8 +1031,7 @@ def _workflow_plan_entries(
                 "status": "planned",
             }
         )
-        if workflow_group == "numbered":
-            entries[-1].update(guidance_by_scene.get(scene, {}))
+        entries[-1].update(guidance_by_scene.get(scene, {}))
     return entries
 
 

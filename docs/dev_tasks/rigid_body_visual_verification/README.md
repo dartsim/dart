@@ -3,14 +3,13 @@
 ## Current Handoff (2026-06-12)
 
 This checkpoint adds the next workflow evidence usability follow-up after the
-manifest/review-index metadata slices. `py-demo-capture -- --rigid-workflow`
-now passes `--video --fps` through to selected row captures, records per-scene
-video artifacts in manifests, and links MP4s from `review_index.html` when
-`ffmpeg` is available. The in-viewer `Rigid Workflow` panel lists a current-row
-motion packet command alongside full numbered, current-row rerun, and extended
-related/IPC-shelf/packet commands so users can get from live inspection to
-`manifest.json`, `review_index.html`, and motion evidence without leaving the
-GUI context.
+workflow-video packet slice. Extended rigid workflow packets now make optional
+related-evidence, direct Rigid IPC shelf, and capture-first packet rows
+self-describing in the generated `manifest.json` and `review_index.html`. These
+non-numbered rows now carry the same role, user question, try-first action,
+inspect signals, healthy signal, and scope fields that the numbered workflow
+rows already carried, so packet reviewers can understand every selected row
+without opening the live GUI.
 
 Expected repository state after this hand-off:
 
@@ -20,13 +19,12 @@ Expected repository state after this hand-off:
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
   by `3c5b9e517d3 Enable rigid workflow video packets`.
-- The final hand-off update is docs-only. If it was committed and pushed,
-  origin should contain that docs commit after `3c5b9e517d3`; otherwise the
-  local branch may still be ahead of origin.
+- `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
+  checkpoint after the workflow-video packet slice.
 - There is no PR associated with this branch at checkpoint time.
-- The active user instruction for this checkpoint is to stop all implementation
-  work, keep the update to hand-off docs, do no further verification, and then
-  stop. A future session should resume only after a new user request.
+- The current continuation resumed implementation from the active persistent
+  goal after the stop checkpoint. Do not push any new implementation commit
+  without explicit approval in that future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -90,6 +88,9 @@ Expected repository state after this hand-off:
 - [x] Workflow packets now accept `--video --fps` and link per-row MP4 motion
       artifacts from `review_index.html`; the in-viewer panel shows a
       current-row motion packet command.
+- [x] Optional related-evidence, direct Rigid IPC shelf, and capture-first
+      packet rows now carry self-describing row guidance into generated
+      workflow manifests and review indexes.
 
 ## Goal
 
@@ -115,11 +116,10 @@ are easy to inspect, cycle, capture, and regression-test.
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
   by `3c5b9e517d3 Enable rigid workflow video packets`.
-- The hand-off docs update is intentionally docs-only and did not add new
-  implementation work.
-- Current validation for the workflow-video packet slice is recorded below.
-- No verification was rerun after the hand-off-only docs edit because the user
-  explicitly requested no further verification.
+- `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
+  checkpoint.
+- Current validation for the optional-row metadata and workflow-video packet
+  slices is recorded below.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -614,19 +614,13 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Stop this session after the hand-off docs update; do not continue
-   implementation or verification under the stop instruction.
-2. In a future session, resume from `git status -sb` and
-   `git log -5 --oneline`. Expect the latest implementation commits to include
-   the requested/selected manifest metadata slice, the review-index
-   group-summary slice, the workflow-panel review-packet command slice, and
-   `3c5b9e517d3 Enable rigid workflow video packets`.
-3. If the user explicitly asks to resume implementation, choose the next
+1. Resume from `git status -sb` and `git log -5 --oneline`.
+2. If the latest optional-row metadata commit is present, choose the next
    bounded rigid visual-verification gap from the durable sidecar.
-4. Rerun the repository-mandated `pixi run lint` before any future commit.
-5. Retire this dev-task folder only if the maintainer explicitly accepts the
+3. Rerun the repository-mandated `pixi run lint` before any future commit.
+4. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-6. Do not push again unless the user explicitly approves pushing in that
+5. Do not push again unless the user explicitly approves pushing in that
    session.
 
 ## Commit And Push Notes

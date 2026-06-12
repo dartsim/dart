@@ -85,7 +85,11 @@
     packets now pass `--video --fps` through to the selected row captures,
     record video artifacts in per-scene manifests, and link those MP4s from the
     review index when `ffmpeg` is available; the in-viewer rigid workflow panel
-    lists a current-row motion packet command.
+    lists a current-row motion packet command. Extended workflow packets now
+    make optional related-evidence, direct Rigid IPC shelf, and capture-first
+    packet rows self-describing in `manifest.json` and `review_index.html`,
+    with role, user question, try-first action, inspect signals, healthy
+    signal, and scope notes.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

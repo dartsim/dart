@@ -458,10 +458,21 @@ def test_rigid_workflow_dry_run_can_include_related_evidence(
         "related_evidence",
         "related_evidence",
     ]
+    assert manifest["captures"][1]["workflow_label"] == "Related evidence"
+    assert manifest["captures"][1]["related_source_row"] == "rigid_free_flight"
+    assert manifest["captures"][1]["related_shelf"] == "World Rigid Body"
+    assert "broader floating-joint row" in manifest["captures"][1]["user_question"]
+    assert "floating-joint SE(3)" in manifest["captures"][1]["scope"]
+    assert manifest["captures"][2]["related_source_row"] == "rigid_solver_compare"
+    assert manifest["captures"][2]["related_shelf"] == "Rigid IPC"
+    assert "focused no-tunneling view" in manifest["captures"][2]["user_question"]
     assert manifest["captures"][2]["manifest"].endswith(
         "scenes/03_rigid_ipc_tunnel/manifest.json"
     )
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "Related evidence" in review_html
+    assert "broader floating-joint row" in review_html
+    assert "focused no-tunneling view" in review_html
     assert "rigid_ipc_tunnel" in review_html
     assert "related_evidence" in review_html
 
@@ -510,10 +521,20 @@ def test_rigid_workflow_dry_run_can_include_direct_ipc_shelf(
         "rigid_ipc_shelf",
         "rigid_ipc_shelf",
     ]
+    assert manifest["captures"][1]["workflow_label"] == "Rigid IPC shelf"
+    assert "free box settle" in manifest["captures"][1]["user_question"]
+    assert "barrier gap" in manifest["captures"][1]["inspect"]
+    assert "Direct Rigid IPC shelf row" in manifest["captures"][1]["scope"]
+    assert manifest["captures"][2]["workflow_label"] == "Rigid IPC shelf"
+    assert "multi-box pile" in manifest["captures"][2]["user_question"]
+    assert "minimum clearance" in manifest["captures"][2]["inspect"]
     assert manifest["captures"][2]["manifest"].endswith(
         "scenes/03_rigid_ipc_pile/manifest.json"
     )
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "Rigid IPC shelf" in review_html
+    assert "Can direct Rigid IPC captures show multi-box pile" in review_html
+    assert "Direct Rigid IPC shelf row" in review_html
     assert "rigid_ipc_pile" in review_html
     assert "rigid_ipc_shelf" in review_html
 
@@ -577,10 +598,22 @@ def test_rigid_workflow_dry_run_can_include_capture_first_packets(
         "rigid_ipc_shelf",
         "capture_first_packet",
     ]
+    assert manifest["captures"][1]["workflow_label"] == "Related evidence"
+    assert manifest["captures"][2]["workflow_label"] == "Rigid IPC shelf"
+    assert manifest["captures"][3]["workflow_label"] == "Capture-first packet"
+    assert (
+        "four-box IPC stack"
+        in manifest["captures"][3]["user_question"]
+    )
+    assert "benchmark pointer" in manifest["captures"][3]["inspect"]
+    assert "solver-performance parity claim" in manifest["captures"][3]["scope"]
     assert manifest["captures"][3]["manifest"].endswith(
         "scenes/04_rigid_ipc_stack_packet/manifest.json"
     )
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "Capture-first packet" in review_html
+    assert "four-box IPC stack" in review_html
+    assert "solver-performance parity claim" in review_html
     assert "rigid_ipc_stack_packet" in review_html
     assert "capture_first_packet" in review_html
 
@@ -727,10 +760,14 @@ def test_rigid_workflow_row_range_preserves_requested_extra_groups(
         "rigid_ipc",
         "rigid_ipc_stack_packet",
     ]
+    assert manifest["captures"][0]["workflow_label"] == "Rigid IPC shelf"
+    assert manifest["captures"][1]["workflow_label"] == "Capture-first packet"
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "3-4 / 4" in review_html
     assert "numbered, related, ipc shelf, packets" in review_html
     assert "ipc shelf, packets" in review_html
+    assert "Rigid IPC shelf" in review_html
+    assert "Capture-first packet" in review_html
 
 
 def test_rigid_workflow_run_aggregates_scene_manifests(
