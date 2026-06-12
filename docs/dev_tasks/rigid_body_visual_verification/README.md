@@ -1,5 +1,29 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Critical Stop Handoff - 2026-06-12 Full Stop
+
+The user explicitly stopped all further work and requested handoff docs only,
+with no further verification. Fresh sessions should start from this boundary
+and not continue implementation, validation, pushing, PR creation, comments, CI
+retries, or other GitHub mutation unless the user explicitly asks for that exact
+action.
+
+- Branch at handoff edit: `feature/rigid-body-gui-visual-verification`.
+- Worktree was clean before the docs handoff edit.
+- Local checkpoint before this docs-only handoff: `5127bf7e6c73`
+  (`Refresh rigid visual verification PR readiness`).
+- Upstream checkpoint before this docs-only handoff: `4a2fb7a0714e`
+  (`Refresh rigid visual verification stop handoff`).
+- The branch was ahead of origin by three commits:
+  - `5127bf7e6c7` `Refresh rigid visual verification PR readiness`
+  - `22d1a02de55` `Attach shared replay to related rigid scenes`
+  - `7c853bee1af` `Expose fundamental rigid workflow capture metrics`
+- Latest checked GitHub state: no PR associated with this branch.
+- No tests, lint, build, captures, `git diff --check`, or other verification
+  were run after this docs-only handoff edit. Do not infer fresh verification
+  for the handoff docs commit itself.
+- If explicitly asked to publish next, push the branch and use `PR_DRAFT.md`.
+
 ## Current Active Snapshot - 2026-06-11 Local PR-Readiness Refresh
 
 After the shared Replay follow-up checkpoint, the branch was refreshed against

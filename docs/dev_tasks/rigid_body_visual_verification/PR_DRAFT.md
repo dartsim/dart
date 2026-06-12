@@ -1,5 +1,22 @@
 # PR Draft: Rigid-Body Visual Verification Workflow
 
+## Current Stop Handoff - 2026-06-12
+
+The latest local state is a handoff-only docs stop. The user explicitly
+requested no further work and no additional verification. Before this docs edit,
+the branch `feature/rigid-body-gui-visual-verification` was clean, at local
+checkpoint `5127bf7e6c73` (`Refresh rigid visual verification PR readiness`),
+and ahead of `origin/feature/rigid-body-gui-visual-verification`
+(`4a2fb7a0714e`) by three commits:
+
+- `5127bf7e6c7` `Refresh rigid visual verification PR readiness`
+- `22d1a02de55` `Attach shared replay to related rigid scenes`
+- `7c853bee1af` `Expose fundamental rigid workflow capture metrics`
+
+Latest checked GitHub state still reported no PR associated with this branch.
+No tests, lint, build, captures, `git diff --check`, push, PR creation, or other
+GitHub mutation were performed after this stop-handoff docs edit.
+
 ## Summary
 
 - Curates the Python `py-demos` front door around a 36-row World rigid-body
