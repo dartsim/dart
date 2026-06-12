@@ -85,6 +85,12 @@
       variants.
 - [x] Removed residual manifest-family prechecks from `lcp_compare`
       registration paths that already use concrete generated problem filters.
+- [x] Updated the Python LCP demo solver profile so native coverage is derived
+      from concrete representative problem cases instead of only static
+      manifest surfaces.
+- [x] Captured the latest critical no-verification hand-off after the Python
+      demo concrete native-case profile slice, with the branch refreshed
+      against `main` and ready for publication as one consolidated branch.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -124,9 +130,81 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the benchmark concrete-gate cleanup
-slice, following the grouped batch support-routing, generated coverage
-support-routing, and heavyweight contact benchmark support-gating slices.
+The latest implementation checkpoint is the Python demo concrete native-case
+profile slice, following the benchmark concrete-gate cleanup, grouped batch
+support-routing, generated coverage support-routing, and heavyweight contact
+benchmark support-gating slices.
+
+## Python Demo Concrete Native-Case Profile Checkpoint
+
+The latest implementation checkpoint improves the LCP py-demo's apples-to-apples
+solver profile:
+
+- The representative solver profile now derives its native coverage label from
+  the actual concrete representative problem rows instead of the static
+  standard/boxed/findex manifest flags.
+- The panel column now reports concrete case coverage such as `standard 2/4`
+  for Direct and `standard 4/4, boxed 3/3, findex 2/2` for full-surface
+  solvers, making partial native support visible without opening the
+  per-problem detail table.
+
+Verification already completed before the latest critical hand-off instruction:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+```
+
+Observed results:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+
+No lint, build, test, benchmark-list, or solver-execution verification was run
+after the final stop-and-handoff instruction. The hand-off checkpoint is
+intentionally committed without further validation per that instruction.
+
+## 2026-06-11 Critical Consolidated Hand-Off Snapshot
+
+The user explicitly stopped implementation work and requested hand-off only,
+with no further verification. This is the latest snapshot a fresh Claude/Codex
+session should trust before resuming.
+
+Branch state before the final hand-off checkpoint commit:
+
+- Current branch: `feature/lcp-solver-interface-demos`.
+- Local implementation HEAD:
+  `2cd337aa0cf Use concrete gates for LCP benchmark registration`.
+- Working tree contained the Python demo concrete native-case profile slice in
+  `CHANGELOG.md`, `python/examples/demos/scenes/lcp_physics.py`,
+  `python/tests/unit/test_py_demo_panels.py`, and these dev-task docs.
+- Remote-tracking branch in this checkout still showed
+  `origin/feature/lcp-solver-interface-demos` at
+  `737b9c95c11 Document final LCP handoff checkpoint`; treat that as stale
+  because previous pushes used HTTPS while `origin` is configured for SSH.
+- Local first-parent stack ahead of that stale tracking ref:
+  - `2cd337aa0cf Use concrete gates for LCP benchmark registration`
+  - `6c0763927a5 Filter grouped LCP batch rows concretely`
+  - `20aaa23d0fe Document final LCP no-verification handoff`
+  - `fe5b70b32cc Route generated LCP coverage by concrete support`
+  - `f86e353df2f Gate heavyweight LCP contact benchmarks concretely`
+- `main` was fetched over HTTPS from `https://github.com/dartsim/dart.git` to
+  `7d05d7b9ea72`; `git merge --no-edit FETCH_HEAD` reported
+  `Already up to date.`
+
+This final checkpoint should be pushed to the same consolidated branch,
+`feature/lcp-solver-interface-demos`. The broad LCP objective is still open;
+do not retire this dev-task folder or mark the work complete from this
+checkpoint alone.
+
+Recommended resume entrypoint:
+
+1. Fetch `feature/lcp-solver-interface-demos` directly from GitHub and inspect
+   the branch tip; do not rely on the stale SSH tracking ref recorded above.
+2. Read this file and
+   `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+3. Continue one bounded LCP interface/demo audit gap at a time, starting with
+   remaining demos/tests that summarize native rows without a concrete
+   `supportsProblem(problem)` check.
 
 ## Benchmark Concrete-Gate Cleanup Checkpoint
 

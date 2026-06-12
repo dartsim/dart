@@ -1468,6 +1468,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.
+  - Updated the Python LCP demo solver profile to report native case coverage
+    from the concrete representative problem suite, so partial native support
+    such as Direct's small standard-LCP window is visible in the apples-to-apples
+    comparison panel.
   - Updated LCP background documentation to use DART 7 snake_case
     `dart/math/lcp` header paths and extended the LCP solver roster lint check
     to reject stale documented LCP header/source paths.

@@ -894,9 +894,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert profile_row["total_elapsed_us"] >= 0.0
         assert profile_row["slowest_case"] in expected_problem_counts
     assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (
-        "standard, boxed, findex"
+        "standard 4/4, boxed 3/3, findex 2/2"
     )
-    assert solver_profile_by_name["MPRGP"]["native_surfaces"] == "standard"
+    assert solver_profile_by_name["MPRGP"]["native_surfaces"] == "standard 4/4"
+    assert solver_profile_by_name["Direct"]["native_surfaces"] == "standard 2/4"
     assert {
         row["solver"]
         for row in problem_rows
@@ -996,7 +997,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     assert (
-        "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error,"
+        "table:lcp_solver_profile:Solver,Native cases,OK,Total us,Worst error,"
         "Worst residual,Slowest case"
         in builder.events
     )

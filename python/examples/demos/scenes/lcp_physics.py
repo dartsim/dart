@@ -1260,6 +1260,16 @@ def _summarize_standalone_problem_suite(
     return summaries
 
 
+def _native_case_surface_summary(rows: list[dict[str, Any]]) -> str:
+    entries: list[str] = []
+    for surface in ("standard", "boxed", "findex"):
+        surface_rows = [row for row in rows if row["surface"] == surface]
+        native_count = sum(1 for row in surface_rows if row["native_supported"])
+        if native_count > 0:
+            entries.append(f"{surface} {native_count}/{len(surface_rows)}")
+    return ", ".join(entries) if entries else "none"
+
+
 def _summarize_standalone_solver_profiles(
     rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1273,15 +1283,7 @@ def _summarize_standalone_solver_profiles(
             {
                 "solver": support_row["name"],
                 "family": support_row["family"],
-                "native_surfaces": ", ".join(
-                    surface
-                    for surface, supported in (
-                        ("standard", support_row["standard"]),
-                        ("boxed", support_row["boxed"]),
-                        ("findex", support_row["findex"]),
-                    )
-                    if supported
-                ),
+                "native_surfaces": _native_case_surface_summary(solver_rows),
                 "problem_count": len(solver_rows),
                 "native_case_count": len(native_rows),
                 "delegated_case_count": len(delegated_rows),
@@ -1588,7 +1590,7 @@ def build() -> SceneSetup:
                 "lcp_solver_profile",
                 [
                     "Solver",
-                    "Native surfaces",
+                    "Native cases",
                     "OK",
                     "Total us",
                     "Worst error",

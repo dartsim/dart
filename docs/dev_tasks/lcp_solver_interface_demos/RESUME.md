@@ -3,44 +3,61 @@
 ## Current Reality — 2026-06-11 Critical Hand-Off
 
 The latest user instruction was to stop implementation and focus on hand-off
-only, with no further verification. The latest implementation commit before
-this docs-only checkpoint is
-`fe5b70b32cc Route generated LCP coverage by concrete support` on
-`feature/lcp-solver-interface-demos`.
+only, with no further verification. No lint, build, tests, benchmark listing,
+solver execution, or additional implementation work was run after that
+instruction. Historical verification notes below belong only to their named
+implementation checkpoints.
 
-Before this docs-only hand-off edit, the working tree was clean and local
-status showed:
+This hand-off consolidates the current work on
+`feature/lcp-solver-interface-demos`. Before the final hand-off checkpoint
+commit, local implementation HEAD was:
 
 ```text
-## feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 2]
+2cd337aa0cf Use concrete gates for LCP benchmark registration
 ```
 
-Do not treat that local tracking ref as definitive remote state: this checkout
-previously pushed over HTTPS, which did not refresh the SSH remote-tracking ref.
-A fresh session should fetch and inspect the remote branch directly.
+The working tree at the stop point contained the Python demo concrete
+native-case profile slice:
+
+- `CHANGELOG.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+That slice makes the LCP py-demo solver profile report native coverage from
+the concrete representative problem rows instead of only static manifest
+surfaces. The panel now exposes partial native coverage such as Direct's
+`standard 2/4` case count, while full-surface solvers report labels such as
+`standard 4/4, boxed 3/3, findex 2/2`.
+
+Before this hand-off checkpoint, local status showed this branch ahead of the
+stale SSH tracking ref by five commits plus the uncommitted Python slice:
+
+```text
+## feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 5]
+ M CHANGELOG.md
+ M docs/dev_tasks/lcp_solver_interface_demos/README.md
+ M docs/dev_tasks/lcp_solver_interface_demos/RESUME.md
+ M python/examples/demos/scenes/lcp_physics.py
+ M python/tests/unit/test_py_demo_panels.py
+```
+
+Do not treat `origin/feature/lcp-solver-interface-demos` in this checkout as
+authoritative: `origin` is configured for SSH, while previous successful
+publishes used HTTPS and did not refresh the local SSH remote-tracking ref. A
+fresh session should fetch the remote branch directly from GitHub.
 
 For this final hand-off, `main` was fetched over HTTPS from
 `https://github.com/dartsim/dart.git` to `7d05d7b9ea72`, and
-`git merge --no-edit FETCH_HEAD` reported `Already up to date.` An SSH fetch
-from `origin` failed in this environment because GitHub port 22 was
-unreachable, so HTTPS was used for the required latest-main refresh.
+`git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 
-No lint, build, tests, benchmark listing, solver execution, or additional
-implementation work was run after the critical stop instruction. Historical
-verification notes below belong to their named implementation checkpoints only.
-
-Current continuation note: `bm_lcp_compare.cpp` no longer has manifest-family
-prechecks in the registration paths that already use concrete generated packet
-filters, and grouped serial/parallel rows now use exact generated grouped-batch
-support checks for their published two- and three-variant rows. Resume from the
-next bounded gap in the broader LCP interface/demo audit rather than repeating
-those slices.
-
-Base first-parent stack before the current benchmark concrete-gate cleanup
-checkpoint commit:
+Base first-parent stack before this final hand-off checkpoint commit:
 
 ```text
+2cd337aa0cf Use concrete gates for LCP benchmark registration
 6c0763927a5 Filter grouped LCP batch rows concretely
+20aaa23d0fe Document final LCP no-verification handoff
 fe5b70b32cc Route generated LCP coverage by concrete support
 f86e353df2f Gate heavyweight LCP contact benchmarks concretely
 737b9c95c11 Document final LCP handoff checkpoint
@@ -48,6 +65,10 @@ f86e353df2f Gate heavyweight LCP contact benchmarks concretely
 4c63db30bd7 Filter LCP benchmark args concretely
 be4643d1743 Document consolidated LCP handoff state
 ```
+
+Resume from the next bounded gap in the broader LCP interface/demo audit
+rather than repeating the completed benchmark-routing, generated-coverage, or
+Python solver-profile slices. The broad LCP objective is not complete.
 
 ## Last Session Summary
 
@@ -181,11 +202,14 @@ plus a Direct-only size special case.
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the benchmark concrete-gate cleanup, grouped batch
-benchmark, heavyweight contact benchmark, and generated coverage support-routing
-slices:
+Current reality after the Python demo concrete native-case profile, benchmark
+concrete-gate cleanup, grouped batch benchmark, heavyweight contact benchmark,
+and generated coverage support-routing slices:
 
 - The latest implementation slice changed `CHANGELOG.md`,
+  `python/examples/demos/scenes/lcp_physics.py`,
+  `python/tests/unit/test_py_demo_panels.py`, and these dev-task docs.
+- The benchmark concrete-gate cleanup slice changed `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
 - The grouped batch implementation slice changed `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
@@ -194,32 +218,34 @@ slices:
   docs.
 - The heavyweight contact benchmark implementation slice changed `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
-- Local implementation HEAD before this docs-only hand-off checkpoint was
-  `fe5b70b32cc Route generated LCP coverage by concrete support`.
+- Local implementation HEAD before this hand-off checkpoint was
+  `2cd337aa0cf Use concrete gates for LCP benchmark registration`; the Python
+  demo native-case profile slice was still uncommitted when the final
+  stop-and-handoff instruction arrived and is included in this checkpoint.
 - The configured SSH remote-tracking ref still showed
   `origin/feature/lcp-solver-interface-demos` at
   `737b9c95c11 Document final LCP handoff checkpoint` before this hand-off
-  commit.
+  commit; treat it as stale and fetch the branch directly from GitHub.
 - `main` was fetched over HTTPS to `7d05d7b9ea72`; merging it with
   `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 - No PR was associated with the branch when checked earlier in the session.
 
-After the current benchmark concrete-gate cleanup checkpoint is committed, the
-single consolidated branch should remain the source of truth for a fresh
-session. Merge latest `main` before any later push.
+After this checkpoint is pushed, the single consolidated branch should remain
+the source of truth for a fresh session. Merge latest `main` before any later
+push.
 
 ## Immediate Next Step
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
-starting points after the benchmark concrete-gate cleanup are tests or demos
-that still execute or summarize native rows without checking the concrete
-generated problem. Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
+starting points after the Python demo concrete native-case profile slice are
+remaining tests or demos that still summarize native rows without checking the
+concrete generated problem. Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
 carefully before changing it because some manifest-level checks may
 intentionally verify the manifest categories rather than concrete native
 routing. Also audit any solver whose documented native mathematical domain is
-still broader than its concrete `supportsProblem(problem)` predicate, and
-GUI/demo packets that still lack clear apples-to-apples benchmark coverage.
-Do not treat the broad LCP objective as complete.
+still broader than its concrete `supportsProblem(problem)` predicate, and GUI
+demo packets that still lack clear apples-to-apples benchmark coverage. Do not
+treat the broad LCP objective as complete.
 
 ## Context That Would Be Lost
 
@@ -436,7 +462,15 @@ git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main
 git log --oneline --decorate --max-count=12
 ```
 
-Expected files in the Direct support checkpoint:
+Expected files in the latest final hand-off checkpoint:
+
+- `CHANGELOG.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+Expected files in the older Direct support checkpoint:
 
 - `CHANGELOG.md`
 - `dart/math/lcp/lcp_solver.hpp`
@@ -450,7 +484,7 @@ Expected files in the Direct support checkpoint:
 - `python/tests/unit/test_py_demo_panels.py`
 - `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
 
-Expected files in the latest source-layout docs checkpoint:
+Expected files in the older source-layout docs checkpoint:
 
 - `CHANGELOG.md`
 - `docs/background/lcp/02_overview.md`
@@ -477,8 +511,9 @@ before pushing or continuing:
 git merge origin/main
 ```
 
-If the Direct support checkpoint is still uncommitted, confirm the working tree
-matches the expected files above and commit it with:
+Historical note: if a fresh checkout somehow lands before the Direct support
+checkpoint, confirm the working tree matches the older Direct files above and
+commit it with:
 
 ```text
 Report Direct LCP native support precisely
