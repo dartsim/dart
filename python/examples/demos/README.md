@@ -214,6 +214,15 @@ For the focused IPC degenerate edge-contact capability view, use
 barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
 status as a cube tips near a single edge while IPC keeps positive separation.
 
+The rest of the **Rigid IPC** shelf is also capture-metric backed for direct
+inspection. `rigid_ipc` records basic box/ground barrier-settle height, speed,
+gap, contact, and timing evidence; `rigid_ipc_slide` records friction-braked
+tangential travel and barrier gap; `rigid_ipc_incline` records tilted-ramp
+down-slope speed, travel, and ramp gap; and `rigid_ipc_pile` records multi-box
+pile speed, height, clearance, span, contact count, and timing evidence. These
+direct shelf scenes keep shared replay controls enabled while recording those
+metrics.
+
 The older **`floating_base`** and **`articulated`** rows stay in the broader
 **World Rigid Body** catalog outside the numbered verifier block. In the
 viewer, `Rigid Free Flight` routes to `floating_base` for the floating-joint

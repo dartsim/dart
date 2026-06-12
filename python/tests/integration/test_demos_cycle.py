@@ -1416,6 +1416,98 @@ def test_world_related_evidence_routes_report_capture_metrics() -> None:
     ).all()
 
 
+def test_rigid_ipc_shelf_scenes_report_capture_metrics() -> None:
+    import numpy as np
+
+    sx = _require_simulation_symbols("RigidBodySolver")
+
+    from examples.demos.scenes import (
+        rigid_ipc,
+        rigid_ipc_incline,
+        rigid_ipc_pile,
+        rigid_ipc_slide,
+    )
+
+    scenes = [
+        (
+            rigid_ipc,
+            "rigid_ipc",
+            "basic_box_ground_barrier_settle",
+            ("box_height", "box_speed", "clearance", "max_speed", "min_clearance"),
+        ),
+        (
+            rigid_ipc_slide,
+            "rigid_ipc_slide",
+            "friction_braked_tangential_slide",
+            ("box_x", "box_speed", "clearance", "max_travel", "min_speed"),
+        ),
+        (
+            rigid_ipc_incline,
+            "rigid_ipc_incline",
+            "tilted_face_friction_slide",
+            (
+                "down_slope_speed",
+                "down_slope_travel",
+                "max_down_slope_speed",
+                "max_down_slope_travel",
+                "ramp_gap",
+            ),
+        ),
+        (
+            rigid_ipc_pile,
+            "rigid_ipc_pile",
+            "multi_box_barrier_pile",
+            ("box_count", "max_history_speed", "max_span_x", "mean_height", "span_x"),
+        ),
+    ]
+
+    for module, scene_id, scope, numeric_keys in scenes:
+        assert module.SCENE.category == "Rigid IPC"
+        assert module.SCENE.id == scene_id
+
+        setup = module.build()
+        world = setup.info["sx_world"]
+        assert setup.info["rigid_body_solver"] == "ipc"
+        assert world.rigid_body_solver == sx.RigidBodySolver.IPC
+        assert setup.panels
+        assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+        assert callable(setup.info["replay_sync"])
+        assert setup.info["replay_live_step_is_stateless"] is True
+
+        for _ in range(36):
+            setup.pre_step()
+
+        capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+        assert capture_metrics["row"] == scene_id
+        assert capture_metrics["solver"] == "rigid_ipc"
+        assert capture_metrics["scope"] == scope
+        assert capture_metrics["status"] in {
+            "barrier-held",
+            "barrier-pile",
+            "barrier-slide",
+            "braked",
+            "coasting",
+            "falling",
+            "held",
+            "near-barrier",
+            "released",
+            "settled",
+            "sliding",
+        }
+        assert float(capture_metrics["time_step_ms"]) == pytest.approx(5.0)
+        assert float(capture_metrics["world_time"]) > 0.0
+        assert float(capture_metrics["history_samples"]) >= 37.0
+        assert float(capture_metrics["max_step_ms"]) >= 0.0
+        assert np.isfinite(
+            [
+                float(capture_metrics["contact_count"]),
+                float(capture_metrics["friction"]),
+                float(capture_metrics["max_contact_count"]),
+                float(capture_metrics["world_time"]),
+                *(float(capture_metrics[key]) for key in numeric_keys),
+            ]
+        ).all()
+
 def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
     import numpy as np
 

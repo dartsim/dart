@@ -2,18 +2,20 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the rigid IPC edge-drop related-evidence slice that
-was left uncommitted in the previous stop-state hand-off.
+This checkpoint completes the Rigid IPC shelf capture-metrics follow-up after
+the `rigid_ipc_edge_drop` related-evidence slice. The direct Rigid IPC shelf
+scenes now keep shared replay controls enabled while recording their own
+capture metrics.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- After commit, the branch is expected to be one local commit ahead of origin
-  unless a future session has pushed it:
-  - `Promote rigid IPC edge drop evidence`.
+- The branch is expected to be two local commits ahead of origin unless a
+  future session has pushed them:
+  `50e671590c8 Promote rigid IPC edge drop evidence`.
+  `Promote rigid IPC shelf metrics`.
 - There is no PR associated with this branch at checkpoint time.
-- The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval in the next active session.
+- Nothing was pushed during this continuation.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -50,8 +52,8 @@ Expected repository state after this hand-off:
 - [x] `py-demo-capture -- --rigid-workflow --include-packets` now appends the
       capture-first rigid IPC stack packet to the same workflow manifest and
       review index without changing the default 36-row workflow.
-- [x] `py-demo-capture -- --rigid-workflow --workflow-start-row N
-    --workflow-end-row M` now supports targeted workflow reruns while
+- [x] `py-demo-capture -- --rigid-workflow --workflow-start-row N --workflow-end-row M`
+      now supports targeted workflow reruns while
       preserving absolute row numbers and output directories.
 - [x] Numbered rigid workflow captures now carry the in-viewer row guidance
       into `manifest.json` and `review_index.html`: role label, user question,
@@ -60,6 +62,10 @@ Expected repository state after this hand-off:
       from `rigid_solver_compare`, with a panel and capture metrics for
       degenerate edge-barrier gap, tilt, angular speed, contact count, step
       timing, and status.
+- [x] The remaining Rigid IPC shelf scenes (`rigid_ipc`, `rigid_ipc_slide`,
+      `rigid_ipc_incline`, and `rigid_ipc_pile`) now publish scene-owned
+      capture metrics for direct docked captures while preserving shared replay
+      controls.
 
 ## Goal
 
@@ -89,10 +95,11 @@ are easy to inspect, cycle, capture, and regression-test.
 - At the start of this continuation, the branch was aligned with
   `origin/feature/rigid-body-gui-visual-verification` at
   `226a5b99de9 Refresh rigid visual verification handoff`.
-- Current branch is expected to be one local commit ahead of origin after this
-  checkpoint: `Promote rigid IPC edge drop evidence`.
-- The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval in the next active session.
+- Current branch is expected to be two local commits ahead of origin after this
+  checkpoint:
+  `50e671590c8 Promote rigid IPC edge drop evidence`.
+  `Promote rigid IPC shelf metrics`.
+- Nothing was pushed during this continuation.
 
 ## What The Local Commit Changed
 
@@ -436,6 +443,34 @@ Observed results:
   about `0.000384` m, maximum tilt about `55.33` degrees, and maximum angular
   speed about `0.555` rad/s.
 
+## Verified In The Rigid IPC Shelf Metrics Continuation
+
+```bash
+pixi run lint
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_shelf_scenes_report_capture_metrics python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q
+pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_pile_metrics_current
+git diff --check
+```
+
+Observed results:
+
+- `pixi run lint` passed.
+- Focused pytest reported `2 passed`.
+- The direct Rigid IPC shelf scenes `rigid_ipc`, `rigid_ipc_slide`,
+  `rigid_ipc_incline`, and `rigid_ipc_pile` now report scene-owned capture
+  metrics for row identity, IPC solver label, scope, time-step/world-time,
+  friction, status, contact counts, step timing, and scene-specific gap, speed,
+  travel, height, span, or pile summaries. The focused test also checks that
+  each scene preserves `replay_sync` and declares
+  `replay_live_step_is_stateless`.
+- A real docked
+  `pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_pile_metrics_current`
+  capture wrote a 960x540 screenshot with docked UI detected, 23 converted PNG
+  frames, 24 scene-metric events, latest row `rigid_ipc_pile`, scope
+  `multi_box_barrier_pile`, 25 history samples, `box_count=3`, maximum history
+  speed about `1.177` m/s, and minimum history clearance about `0.276` m.
+- `git diff --check` was clean.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -451,11 +486,9 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Resume from `git status -sb` and confirm whether the local checkpoint has
-   been pushed or is still ahead of origin.
-2. If editing or committing after any further changes, rerun the
-   repository-mandated
-   `pixi run lint`; `git diff --check` is also a useful whitespace guard.
+1. Resume from `git status -sb`. Expect two local commits ahead of origin
+   unless a future session has pushed them.
+2. Rerun the repository-mandated `pixi run lint` before any further commit.
 3. Choose the next bounded rigid visual-verification gap from the durable
    sidecar, or retire this dev-task folder only if the maintainer explicitly
    accepts the current scope as complete.

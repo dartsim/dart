@@ -2,18 +2,20 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the rigid IPC edge-drop related-evidence slice that
-was left uncommitted in the previous stop-state hand-off.
+This checkpoint completes the Rigid IPC shelf capture-metrics follow-up after
+the `rigid_ipc_edge_drop` related-evidence slice. The direct Rigid IPC shelf
+scenes now keep shared replay controls enabled while recording their own
+capture metrics.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- After commit, the branch is expected to be one local commit ahead of origin
-  unless a future session has pushed it:
-  - `Promote rigid IPC edge drop evidence`.
+- The branch is expected to be two local commits ahead of origin unless a
+  future session has pushed them:
+  `50e671590c8 Promote rigid IPC edge drop evidence`.
+  `Promote rigid IPC shelf metrics`.
 - There is no PR associated with this branch at checkpoint time.
-- The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval in the next active session.
+- Nothing was pushed during this continuation.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -96,6 +98,14 @@ metrics for degenerate edge-barrier gap, tilt, angular speed, contact count,
 step timing, and status. The scene intentionally remains outside the numbered
 36-row World Rigid Body workflow because it is an IPC-specific capability view.
 
+The newest continuation adds scene-owned capture metrics to the remaining
+direct Rigid IPC shelf scenes: `rigid_ipc`, `rigid_ipc_slide`,
+`rigid_ipc_incline`, and `rigid_ipc_pile`. These scenes still stay outside the
+numbered 36-row workflow and outside the related-evidence route table, but
+their direct docked captures now carry barrier-settle, tangential-slide,
+inclined-slide, and pile speed/gap/contact/timing evidence while preserving
+shared replay controls.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -110,16 +120,17 @@ Current snapshot:
 - At the start of this continuation, the branch was aligned with
   `origin/feature/rigid-body-gui-visual-verification` at
   `226a5b99de9 Refresh rigid visual verification handoff`.
-- Current branch is expected to be one local commit ahead of origin after this
-  checkpoint: `Promote rigid IPC edge drop evidence`.
-- The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval in the next active session.
+- Current branch is expected to be two local commits ahead of origin after this
+  checkpoint:
+  `50e671590c8 Promote rigid IPC edge drop evidence`.
+  `Promote rigid IPC shelf metrics`.
+- Nothing was pushed during this continuation.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` first. Expect one local commit ahead of origin unless a
-future session has already pushed it. Do not push without explicit approval in
-that session, and rerun `pixi run lint` before committing further changes.
+Inspect `git status -sb` first. Expect two local commits ahead of origin unless
+a future session has pushed them. Do not push without explicit approval in that
+session, and rerun `pixi run lint` before committing further changes.
 
 ## Context That Would Be Lost
 
@@ -342,3 +353,27 @@ public row-range packet dry-run reported `workflow_total_count=47` and
 960x540 screenshot with docked UI, 71 converted PNG frames, latest status
 `edge-barrier`, minimum barrier gap about `0.000384` m, maximum tilt about
 `55.33` degrees, and maximum angular speed about `0.555` rad/s.
+
+Current Rigid IPC shelf metrics validation already run:
+
+```bash
+pixi run lint
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_shelf_scenes_report_capture_metrics python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q
+pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_pile_metrics_current
+git diff --check
+```
+
+`pixi run lint` passed. The focused pytest reported `2 passed`. The direct
+Rigid IPC shelf scenes
+`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and `rigid_ipc_pile` now
+report scene-owned capture metrics for row identity, IPC solver label, scope,
+time-step/world-time, friction, status, contact counts, step timing, and
+scene-specific gap, speed, travel, height, span, or pile summaries while
+preserving shared replay controls.
+A real docked
+`pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_pile_metrics_current`
+capture wrote a 960x540 screenshot with docked UI detected, 23 converted PNG
+frames, 24 scene-metric events, latest row `rigid_ipc_pile`, scope
+`multi_box_barrier_pile`, 25 history samples, `box_count=3`, maximum history
+speed about `1.177` m/s, and minimum history clearance about `0.276` m.
+`git diff --check` was clean.

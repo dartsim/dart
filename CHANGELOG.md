@@ -69,7 +69,11 @@
     targeted reruns after a long workflow capture fails or needs inspection.
     Promote `rigid_ipc_edge_drop` into the related-evidence packet with a
     self-describing panel and capture metrics for degenerate edge-barrier
-    contact.
+    contact. Add scene-owned capture metrics to the remaining Rigid IPC shelf
+    examples (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
+    `rigid_ipc_pile`) so direct docked captures preserve barrier gap, slide,
+    incline, pile, contact, and timing evidence while preserving shared replay
+    controls.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

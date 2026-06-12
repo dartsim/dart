@@ -225,12 +225,14 @@ budget metrics into `manifest.json` as first/latest events, per-key presence
 counts, and top-level numeric ranges. The `contact` row uses the same hook for
 multibody-link drop/slide/pusher lane summaries, the related World rows
 `floating_base` and `articulated` mirror floating-joint drift/spin and two-link
-arm speed/height/damping diagnostics, `rigid_ipc_tunnel` mirrors no-tunneling
-clearance, through-wall margin, velocity, contact, step-timing, and
-barrier-held status, `rigid_ipc_edge_drop` mirrors degenerate edge-contact
+arm speed/height/damping diagnostics, the direct Rigid IPC shelf rows
+`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and `rigid_ipc_pile`
+mirror basic barrier-settle, tangential slide, inclined slide, and multi-box
+pile gap/speed/contact/timing evidence, `rigid_ipc_tunnel` mirrors
+no-tunneling clearance, through-wall margin, velocity, contact, step-timing,
+and barrier-held status, `rigid_ipc_edge_drop` mirrors degenerate edge-contact
 barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
-status,
-and `rigid_ipc_stack_packet` mirrors clearance, contact, drift, height,
+status, and `rigid_ipc_stack_packet` mirrors clearance, contact, drift, height,
 wall-time, frame-budget, and benchmark values through the same schema. The
 related `diff_drone_liftoff` route uses the schema for
 contact-gradient mode outcome, target/rest height, analytic versus aware
@@ -335,6 +337,21 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest Rigid IPC shelf capture-metrics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_shelf_scenes_report_capture_metrics python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `2 passed`. The direct Rigid IPC shelf scenes `rigid_ipc`,
+  `rigid_ipc_slide`, `rigid_ipc_incline`, and `rigid_ipc_pile` now export
+  scene-owned capture metrics for row identity, IPC solver label, scope,
+  time-step/world-time, friction, status, contact counts, step timing, and
+  scene-specific barrier gap, speed, travel, height, span, or pile summaries.
+  The focused test also checks that each scene preserves shared replay controls
+  through `replay_sync` and `replay_live_step_is_stateless`.
+  The real docked capture
+  `pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_pile_metrics_current`
+  wrote a 960x540 screenshot with docked UI detected, 23 converted PNG frames,
+  24 scene-metric events, latest row `rigid_ipc_pile`, scope
+  `multi_box_barrier_pile`, 25 history samples, `box_count=3`, maximum history
+  speed about `1.177` m/s, and minimum history clearance about `0.276` m.
 - Latest rigid IPC edge-drop related-evidence follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_edge_drop_reports_degenerate_contact_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches -q`
   reported `9 passed`. The new `rigid_ipc_edge_drop` related route reports
