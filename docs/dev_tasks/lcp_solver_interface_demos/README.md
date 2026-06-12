@@ -111,6 +111,8 @@
 - [x] Removed redundant manifest-family prechecks from concrete
       benchmark-routing helpers for active-set transition, mildly
       ill-conditioned, near-singular, and singular-degenerate packets.
+- [x] Removed redundant manifest-family prechecks from contact benchmark
+      registration paths that already use concrete contact support probes.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -150,14 +152,52 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint removes the remaining manifest-family
-prechecks from concrete benchmark-routing helpers that already receive exact
-generated problems, following all-solvers smoke-test concrete support-routing,
-pivoting scale sweep concrete support-routing, singular-degenerate batch,
-conditioning, active set scale, Python demo concrete native-case profile,
-benchmark concrete-gate cleanup, grouped batch support-routing, generated
-coverage support-routing, and heavyweight contact benchmark support-gating
-slices.
+The latest implementation checkpoint removes redundant manifest-family
+prechecks from contact benchmark registration paths that already gate rows
+through concrete support probes, following the concrete benchmark helper
+cleanup, all-solvers smoke-test concrete support-routing, pivoting scale sweep
+concrete support-routing, singular-degenerate batch, conditioning, active set
+scale, Python demo concrete native-case profile, benchmark concrete-gate
+cleanup, grouped batch support-routing, generated coverage support-routing, and
+heavyweight contact benchmark support-gating slices.
+
+## Contact Benchmark Registration Cleanup Checkpoint
+
+The latest implementation checkpoint removes redundant manifest-family
+prechecks from contact benchmark registration paths:
+
+- `RegisterActiveFrictionIndexContactBenchmarks()`,
+  `RegisterWorldContactBenchmarks()`, `RegisterWorldBoxContactBenchmarks()`,
+  `RegisterWorldStackContactBenchmarks()`,
+  `RegisterArticulatedUnifiedContactBenchmarks()`,
+  `RegisterContactSolverComparisonSweepBenchmarks()`,
+  `RegisterContactNormalStandardSweepBenchmarks()`,
+  `RegisterWorldContactBatchBenchmarks()`, and
+  `RegisterWorldBoxContactBatchBenchmarks()` now rely on their concrete
+  generated contact packets or support probes.
+- Dense world-box contact registrations still keep their explicit
+  `SupportsDenseWorldBoxContactPatch(...)` solver scope before the concrete
+  probe, avoiding unrelated solver/performance expansion.
+- The representative LCP benchmark/test/demo surface now has no remaining
+  `dart::test::supportsProblem(solverEntry, LcpProblemSupport::...)` prechecks
+  in these audited paths.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(ActiveFrictionIndexContact|WorldContact|WorldBoxContact|WorldStackContact|ArticulatedUnifiedContact|ContactSolverComparisonSweep|ContactNormalStandardSweep|WorldContactBatchSerial|WorldContactStressBatchSerial|WorldContactPipeline32BatchSerial|WorldBoxContactBatchSerial).*(Dantzig|Pgs|MPRGP|Baraff|BoxedSemiSmoothNewton)'
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check rebuilt and linked `BM_LCP_COMPARE`.
+- It listed representative concrete rows for active friction-index contact,
+  world contact, dense world-box contact, world stack contact, articulated
+  unified contact, contact solver comparison, normal-standard contact, mixed
+  world-contact batches, and dense world-box contact batches.
+- `pixi run lint` passed, including the LCP solver roster check.
 
 ## Concrete Benchmark Helper Cleanup Checkpoint
 

@@ -3,11 +3,61 @@
 ## Current Reality — 2026-06-11 Active Continuation
 
 The current continuation builds on
-`38266f484e2 Route LCP smoke tests through concrete support` on
+`6fc7fea2ea9 Drop redundant LCP benchmark family prechecks` on
 `feature/lcp-solver-interface-demos`.
 
 The latest implementation slice removes redundant manifest-family prechecks
-from concrete benchmark-routing helpers:
+from contact benchmark registration paths:
+
+- `RegisterActiveFrictionIndexContactBenchmarks()`,
+  `RegisterWorldContactBenchmarks()`, `RegisterWorldBoxContactBenchmarks()`,
+  `RegisterWorldStackContactBenchmarks()`,
+  `RegisterArticulatedUnifiedContactBenchmarks()`,
+  `RegisterContactSolverComparisonSweepBenchmarks()`,
+  `RegisterContactNormalStandardSweepBenchmarks()`,
+  `RegisterWorldContactBatchBenchmarks()`, and
+  `RegisterWorldBoxContactBatchBenchmarks()` now rely on concrete generated
+  contact packets or support probes instead of static
+  `LcpProblemSupport` prechecks.
+- Dense world-box contact registrations still keep the explicit
+  `SupportsDenseWorldBoxContactPatch(...)` solver scope before the concrete
+  probe.
+- The audited LCP benchmark/test/demo surface no longer has
+  `dart::test::supportsProblem(solverEntry, LcpProblemSupport::...)` prechecks.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(ActiveFrictionIndexContact|WorldContact|WorldBoxContact|WorldStackContact|ArticulatedUnifiedContact|ContactSolverComparisonSweep|ContactNormalStandardSweep|WorldContactBatchSerial|WorldContactStressBatchSerial|WorldContactPipeline32BatchSerial|WorldBoxContactBatchSerial).*(Dantzig|Pgs|MPRGP|Baraff|BoxedSemiSmoothNewton)'
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check rebuilt and linked `BM_LCP_COMPARE`.
+- It listed representative concrete rows for active friction-index contact,
+  world contact, dense world-box contact, world stack contact, articulated
+  unified contact, contact solver comparison, normal-standard contact, mixed
+  world-contact batches, and dense world-box contact batches.
+- `pixi run lint` passed, including the LCP solver roster check.
+
+Resume status:
+
+- The broader LCP solver/interface/demo objective is not complete. Resume from
+  the next concrete support-routing, solver-domain, demo, benchmark, or
+  performance gap after this slice lands.
+
+## Previous Reality — 2026-06-11 Concrete Benchmark Helper Cleanup
+
+That continuation built on
+`38266f484e2 Route LCP smoke tests through concrete support` on
+`feature/lcp-solver-interface-demos`.
+
+The implementation slice removed redundant manifest-family prechecks from
+concrete benchmark-routing helpers:
 
 - `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` no longer keeps
   `getMildIllConditionedProblemSupport(...)`,
@@ -19,10 +69,8 @@ from concrete benchmark-routing helpers:
   generated problems.
 - The production active-set transition batch helper now uses the same simplified
   concrete-problem helper signature.
-- `CHANGELOG.md` and
-  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
 
-Verification completed for this slice:
+Verification completed for that slice:
 
 ```bash
 pixi run bm lcp_compare -- --benchmark_list_tests=true \
@@ -38,12 +86,6 @@ Observed results:
   set, production batch, mild/near-singular, and singular-degenerate rows for
   the scoped solver/problem combinations.
 - `pixi run lint` passed, including the LCP solver roster check.
-
-Resume status:
-
-- The broader LCP solver/interface/demo objective is not complete. Resume from
-  the next concrete support-routing, solver-domain, demo, benchmark, or
-  performance gap after this slice lands.
 
 ## Previous Reality — 2026-06-11 All-Solvers Smoke Checkpoint
 

@@ -1462,6 +1462,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     helpers for active-set transition, mildly ill-conditioned, near-singular,
     and singular-degenerate LCP packets now that those helpers receive exact
     generated problems and use concrete solver support directly.
+  - Removed redundant manifest-family prechecks from contact benchmark
+    registration paths that already gate rows through concrete active
+    friction-index, world-contact, stack-contact, articulated-contact,
+    contact-comparison, normal-standard, and batch contact support probes.
   - Filtered the manifest-generated `BM_LcpCompare` and
     serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
     generated problem support, so solver rows and problem sizes stay tied to

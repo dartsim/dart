@@ -11958,9 +11958,7 @@ void RegisterActiveFrictionIndexContactBenchmarks()
 {
   const auto problem = MakeActiveFrictionIndexContactProblem();
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)
-        || !SolverSupportsConcreteProblem(solver, problem)) {
+    if (!SolverSupportsConcreteProblem(solver, problem)) {
       continue;
     }
 
@@ -13059,11 +13057,6 @@ void RegisterWorldContactBenchmarks()
   const auto argProblems = MakeWorldContactBenchmarkArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
-
     const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
     if (args.empty()) {
       continue;
@@ -13088,10 +13081,6 @@ void RegisterWorldBoxContactBenchmarks()
   }
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
@@ -13115,11 +13104,6 @@ void RegisterWorldStackContactBenchmarks()
   const auto argProblems = MakeWorldStackContactBenchmarkArgProblems();
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
-
     const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
     if (args.empty()) {
       continue;
@@ -13144,11 +13128,6 @@ void RegisterArticulatedUnifiedContactBenchmarks()
   }
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
-
     for (const auto& supportProbe : supportProbes) {
       if (!SolverSupportsConcreteProblem(solver, supportProbe.problem)) {
         continue;
@@ -13193,8 +13172,6 @@ void RegisterContactSolverComparisonSweepBenchmarks()
     for (const auto solverName : kContactComparisonSolverNames) {
       const auto* solverEntry = FindSolverManifestEntry(solverName);
       if (solverEntry == nullptr
-          || !dart::test::supportsProblem(
-              *solverEntry, dart::test::LcpProblemSupport::FrictionIndex)
           || !SolverSupportsConcreteProblem(*solverEntry, fixture->problem)) {
         continue;
       }
@@ -13229,8 +13206,6 @@ void RegisterContactNormalStandardSweepBenchmarks()
     for (const auto solverName : kContactNormalStandardSolverNames) {
       const auto* solverEntry = FindSolverManifestEntry(solverName);
       if (solverEntry == nullptr
-          || !dart::test::supportsProblem(
-              *solverEntry, dart::test::LcpProblemSupport::Standard)
           || !SolverSupportsConcreteProblem(*solverEntry, *problem)) {
         continue;
       }
@@ -13256,11 +13231,6 @@ void RegisterWorldContactBatchBenchmarks()
       WorldContactBatchKind::ContactPipeline32);
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
-
     if (baselineProbe.has_value()
         && SolverSupportsConcreteProblemBatch(
             solver, baselineProbe->problems)) {
@@ -13356,10 +13326,6 @@ void RegisterWorldBoxContactBatchBenchmarks()
         };
 
   for (const auto& solver : dart::test::kLcpSolverManifest) {
-    if (!dart::test::supportsProblem(
-            solver, dart::test::LcpProblemSupport::FrictionIndex)) {
-      continue;
-    }
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
