@@ -12,7 +12,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _NUM_LINKS = 3
 _LINK_LENGTH = 0.55
@@ -374,6 +374,99 @@ class _RigidMultibodySolverFamily:
         solved = max(float(self._last_metrics["variational_solved"]["residual"]), 1e-12)
         self._solve_ratio_history.append(residual_only / solved)
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(case_key: str) -> dict[str, float | str | bool]:
+            serialized: dict[str, float | str | bool] = {}
+            for key, value in self._last_metrics[case_key].items():
+                if isinstance(value, (bool, np.bool_)):
+                    serialized[key] = bool(value)
+                elif isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def case_value(case_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[case_key][metric_key])
+
+        def max_history(history: deque[float]) -> float:
+            return max(history, default=0.0)
+
+        cases = {
+            case.key: {
+                "label": case.label,
+                "integration_family": case.integration_family,
+                "dynamics": "solve"
+                if case.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+                else "residual only",
+                "dynamic_solve": case.dynamics == sx.ClosureDynamicsPolicy.SOLVE,
+                "closure": case.closure.name,
+                "target_tip": [float(value) for value in case.target_tip],
+                "metrics": serialized_metrics(case.key),
+            }
+            for case in self.cases
+        }
+        residual_only = max(
+            case_value("semi_residual", "residual"),
+            case_value("variational_residual", "residual"),
+        )
+        solved_residual = max(case_value("variational_solved", "residual"), 1.0e-12)
+        payload: dict[str, Any] = {
+            "row": "rigid_multibody_solver_family",
+            "solver": "world_multibody_integration_family",
+            "scope": "multibody_closure_solve_routing",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "gravity_scale": float(self.gravity_scale),
+            "controls": {
+                "executor_index": float(executor_index),
+                "gravity_scale": float(self.gravity_scale),
+            },
+            "case_order": [case.key for case in self.cases],
+            "case_count": float(len(self.cases)),
+            "cases": cases,
+            "residual_only_residual": residual_only,
+            "solved_residual": solved_residual,
+            "residual_solve_ratio": residual_only / solved_residual,
+            "history": {
+                "samples": float(len(self._solve_ratio_history)),
+                "max_residual_solve_ratio": max_history(self._solve_ratio_history),
+                "max_step_ms": max(
+                    (max_history(history) for history in self._step_ms_history.values()),
+                    default=0.0,
+                ),
+                "cases": {
+                    case.key: {
+                        "samples": float(len(self._residual_history[case.key])),
+                        "max_residual": max_history(
+                            self._residual_history[case.key]
+                        ),
+                        "max_tip_error": max_history(
+                            self._tip_error_history[case.key]
+                        ),
+                        "max_joint_speed": max_history(
+                            self._joint_speed_history[case.key]
+                        ),
+                        "max_step_ms": max_history(self._step_ms_history[case.key]),
+                    }
+                    for case in self.cases
+                },
+            },
+        }
+        for case in self.cases:
+            for key, value in self._last_metrics[case.key].items():
+                if isinstance(value, (bool, np.bool_)):
+                    continue
+                if isinstance(value, (int, float, np.floating)):
+                    payload[f"{case.key}_{key}"] = float(value)
+        return payload
+
     def _sync(self) -> None:
         for case in self.cases:
             case.bridge.sync()
@@ -565,6 +658,7 @@ def build() -> SceneSetup:
             "rigid_multibody_solver_family_worlds": [
                 case.world for case in verifier.cases
             ],
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,

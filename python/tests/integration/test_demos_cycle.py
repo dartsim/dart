@@ -5175,7 +5175,86 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     assert controller._solve_ratio_history[-1] > 1.0e8
     assert bool(variational_solved["dynamic_solve"]) is True
     assert bool(semi["dynamic_solve"]) is False
-    assert np.isfinite([float(value) for value in controller._step_ms_history["semi_residual"]]).all()
+    assert np.isfinite(
+        [float(value) for value in controller._step_ms_history["semi_residual"]]
+    ).all()
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_multibody_solver_family"
+    assert capture_metrics["solver"] == "world_multibody_integration_family"
+    assert capture_metrics["scope"] == "multibody_closure_solve_routing"
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
+    assert capture_metrics["world_time"] == pytest.approx(
+        controller.primary_world.time
+    )
+    assert capture_metrics["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["case_order"] == [case.key for case in controller.cases]
+    assert capture_metrics["case_count"] == pytest.approx(len(controller.cases))
+    assert set(capture_metrics["cases"]) == set(metrics)
+    for case in controller.cases:
+        case_payload = capture_metrics["cases"][case.key]
+        assert case_payload["label"] == case.label
+        assert case_payload["integration_family"] == case.integration_family
+        assert case_payload["dynamic_solve"] is (
+            case.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+        )
+        assert case_payload["closure"] == case.closure.name
+        assert case_payload["target_tip"] == pytest.approx(case.target_tip)
+        for metric_key, metric_value in metrics[case.key].items():
+            serialized = case_payload["metrics"][metric_key]
+            if isinstance(metric_value, bool):
+                assert serialized is bool(metric_value)
+            elif isinstance(metric_value, str):
+                assert serialized == metric_value
+            else:
+                assert serialized == pytest.approx(float(metric_value))
+                assert capture_metrics[f"{case.key}_{metric_key}"] == pytest.approx(
+                    float(metric_value)
+                )
+
+    assert capture_metrics["residual_only_residual"] == pytest.approx(
+        max(float(semi["residual"]), float(variational_residual["residual"]))
+    )
+    assert capture_metrics["solved_residual"] == pytest.approx(
+        max(float(variational_solved["residual"]), 1.0e-12)
+    )
+    assert capture_metrics["residual_solve_ratio"] == pytest.approx(
+        controller._solve_ratio_history[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._solve_ratio_history)
+    )
+    assert capture_metrics["history"]["max_residual_solve_ratio"] == pytest.approx(
+        max(controller._solve_ratio_history)
+    )
+    for case in controller.cases:
+        history = capture_metrics["history"]["cases"][case.key]
+        assert history["samples"] == pytest.approx(
+            len(controller._residual_history[case.key])
+        )
+        assert history["max_residual"] == pytest.approx(
+            max(controller._residual_history[case.key])
+        )
+        assert history["max_tip_error"] == pytest.approx(
+            max(controller._tip_error_history[case.key])
+        )
+        assert history["max_joint_speed"] == pytest.approx(
+            max(controller._joint_speed_history[case.key])
+        )
+        assert history["max_step_ms"] == pytest.approx(
+            max(controller._step_ms_history[case.key])
+        )
+
 
 def test_avbd_empty_baseline_demo_steps_empty_world() -> None:
     sx = _require_simulation_experimental_symbols("World", "MultibodyOptions")

@@ -196,8 +196,9 @@
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. The baseline, contact-inspection, solver-comparison,
     contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
-    step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
-    it to make capture artifacts carry scene-owned physics/runtime evidence.
+    multibody solver-family, step-diagnostics, contact-scale budget, and rigid
+    IPC stack packet rows use it to make capture artifacts carry scene-owned
+    physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`
@@ -249,7 +250,7 @@
   - Added `rigid_multibody_solver_family` to Python `py-demos`, showing
     semi-implicit residual-only, variational residual-only, and variational
     solved loop-closure lanes with residual, tip-error, solve-ratio, and
-    step-timing diagnostics.
+    step-timing diagnostics plus scene-owned capture metrics.
   - Updated `rigid_loop_closure` in Python `py-demos` to compare POINT,
     DISTANCE, and RIGID loop-closure families with residual-only versus solved
     lanes, gravity-scale controls, closure residuals, tip/distance/orientation

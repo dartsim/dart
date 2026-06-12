@@ -265,6 +265,17 @@
       semi-implicit residual-only, variational residual-only, and variational
       solved loop-closure lanes so users can see why dynamic closure solving is
       routed to the variational path.
+- [x] Multibody solver-family capture-metrics follow-up:
+      `rigid_multibody_solver_family` now publishes row identity, solver-family
+      routing scope, executor/gravity controls, case order, integration family
+      and closure policy labels, residuals, tip errors/heights, joint speeds,
+      step timing, residual solve ratio, and compact histories through the
+      capture hook. The focused row guard reported `1 passed`, and the real
+      docked 72-frame capture wrote 71 PNG frames and 72 scene-metrics events
+      under `/tmp/dart_capture_multibody_solver_family_metrics_1781239036`.
+      The broader workflow/doc drift guard reported `15 passed`;
+      `pixi run lint`, bounded default `pixi run build`, and
+      `git diff --check` passed.
 - [x] Loop-closure family slice: `rigid_loop_closure` compares POINT,
       DISTANCE, and RIGID public closure families on a variational rigid
       multibody chain, with residual-only versus solved policies plus
@@ -537,6 +548,14 @@
       row-34/broad guard refresh as intentionally not completed for this
       checkpoint, then continue with the next likely capture-metrics row,
       `rigid_multibody_solver_family` only after those gates are refreshed.
+- [x] Current continuation checkpoint: after the pushed row-34 handoff,
+      `pixi run lint`, bounded default `pixi run build`, and
+      `git diff --check` passed from the clean pushed state. The branch now
+      records row-35 multibody solver-family capture metrics with focused test
+      and fresh docked capture evidence. The broader workflow/doc drift guard
+      reported `15 passed`; `pixi run lint`, bounded default
+      `pixi run build`, and `git diff --check` passed. The next likely missing
+      capture-metrics row is `rigid_loop_closure`.
 
 ## Goal
 
@@ -717,14 +736,11 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
-   `feature/rigid-body-gui-visual-verification`; this branch may be at a
-   stop/handoff checkpoint that intentionally skipped final row-34 gates.
-2. Before PR work or new feature work, rerun the row-34 skipped gates:
-   `pixi run lint`, bounded default `pixi run build`, and `git diff --check`.
-   If lint changes docs or code, rerun the row-34 focused test and the broad
-   workflow/doc drift guard before treating the checkpoint as fully gated.
-3. The next likely missing capture-metrics row after row 34 is
-   `rigid_multibody_solver_family`.
+   `feature/rigid-body-gui-visual-verification`.
+2. Finish any missing row-35 gates listed in the current continuation
+   checkpoint before moving on.
+3. The next likely missing capture-metrics row after row 35 is
+   `rigid_loop_closure`.
 4. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.

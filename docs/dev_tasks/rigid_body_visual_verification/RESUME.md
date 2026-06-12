@@ -2,24 +2,20 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed handoff commit `7452a0f22d4`, completed
-the row-33 `rigid_link_center_of_mass` capture-metrics docs checkpoint, and is
-now carrying the row-34 `rigid_link_jacobian` capture-metrics slice with
-focused test plus fresh docked capture evidence. Work stopped on explicit
-maintainer/user instruction to focus only on handoff without further
-verification. The branch had no associated GitHub PR at resume time.
+Latest continuation resumed from pushed handoff commit `3864dbf331a`, refreshed
+the previously skipped row-34 `rigid_link_jacobian` final gates, and is now
+carrying the row-35 `rigid_multibody_solver_family` capture-metrics slice with
+focused test plus fresh docked capture evidence. The branch had no associated
+GitHub PR at resume time.
 
 Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch head remains `7452a0f22d4` unless a maintainer/user explicitly
+- Pushed branch head remains `3864dbf331a` unless a maintainer/user explicitly
   approves another push.
-- The local checkpoint should include row-34 link-Jacobian capture metrics,
-  focused assertions, docs, docked capture evidence, and refreshed handoff
-  state.
-- Do not treat this checkpoint as fully gated: no additional lint, build,
-  diff-check, capture, or test command was run after the stop/handoff
-  instruction.
+- The local checkpoint should include row-35 multibody solver-family capture
+  metrics, focused assertions, docs, docked capture evidence, and refreshed
+  handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -41,12 +37,13 @@ Recent checkpoints:
 - `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
 - `7452a0f22d4` (`Hand off rigid link center of mass metrics`)
 - `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
+- `3864dbf331a` (`Hand off rigid link Jacobian metrics`)
 - the local checkpoint containing this file
 
-Current local slice: `rigid_link_jacobian` row capture metrics. The checkpoint
-touches:
+Current local slice: `rigid_multibody_solver_family` row capture metrics. The
+checkpoint touches:
 
-- `python/examples/demos/scenes/rigid_link_jacobian.py`
+- `python/examples/demos/scenes/rigid_multibody_solver_family.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -57,52 +54,69 @@ touches:
 
 What changed in code/test:
 
-- `python/examples/demos/scenes/rigid_link_jacobian.py` now imports
+- `python/examples/demos/scenes/rigid_multibody_solver_family.py` now imports
   `CAPTURE_METRICS_INFO_KEY` and registers
   `SceneSetup.info["capture_metrics"]`.
-- `_RigidLinkJacobian.capture_metrics()` serializes the current controller
-  state without stepping or resetting. If no latest metrics exist, it records
-  the current metrics snapshot once.
-- The payload exports row identity, solver `world_multibody_link_jacobian`,
-  scope `contact_free_link_origin_jacobian_wrench_map`, time step, world time,
-  motion/wrench controls, joint names, link-origin position, linear velocity
-  vector, wrench force vector, flattened live metrics, nested metrics,
-  transpose-mapped torques, joint-versus-wrench power, world/body Jacobian gap,
-  and compact history ranges.
-- `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`
-  now asserts the capture hook mirrors the live controller metrics, vectors,
-  controls, joint metadata, and history maxima.
+- `_RigidMultibodySolverFamily.capture_metrics()` serializes the current
+  controller state without stepping or resetting. If no latest metrics exist,
+  it records the current metrics snapshot once.
+- The payload exports row identity, solver
+  `world_multibody_integration_family`, scope
+  `multibody_closure_solve_routing`, executor, time step, world time,
+  gravity-scale controls, case order/count, per-case integration family,
+  closure policy, closure name, target tip, serialized live metrics, flattened
+  residual/tip/joint-speed/step fields, residual-only versus solved residuals,
+  solve ratio, and compact per-case histories.
+- `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures`
+  now asserts the capture hook mirrors the live controller metrics, controls,
+  case metadata, residual solve ratio, and history maxima.
 
-Validation status for the link-Jacobian checkpoint:
+Validation status for the multibody solver-family checkpoint:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_jacobian_metrics_1781238268`
-  wrote a nonblank docked capture with 95 PNG frames, 96 scene-metrics events,
+- `pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_multibody_solver_family_metrics_1781239036`
+  wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
   screenshot
-  `/tmp/dart_capture_link_jacobian_metrics_1781238268/rigid_link_jacobian.png`,
+  `/tmp/dart_capture_multibody_solver_family_metrics_1781239036/rigid_multibody_solver_family.png`,
   and final contacts `0`.
-- Latest captured payload details: row `rigid_link_jacobian`, solver
-  `world_multibody_link_jacobian`, scope
-  `contact_free_link_origin_jacobian_wrench_map`, motion speed `0.85`, elbow
-  phase `0.72`, wrench force `1.35`, wrench angle `28.0`, wrench moment
-  `0.12`, two DoFs, six Jacobian rows, latest linear/angular speed about
-  `0.5652/0.6190`, finite-difference error about `1.52e-7`, power error `0`,
-  world/body Jacobian gap about `0.1272`, torques about `-0.8650/-0.2949`,
-  matching joint/wrench power about `-0.4212`, history samples `97`, and
-  finite ranges for speed, torque, Jacobian gap, and power fields.
+- Latest captured payload details: row `rigid_multibody_solver_family`, solver
+  `world_multibody_integration_family`, scope
+  `multibody_closure_solve_routing`, executor `Sequential`, gravity scale
+  `1.0`, three cases, latest semi-implicit residual about `0.7631`,
+  variational residual about `0.7642`, variational solved residual about
+  `6.66e-16`, solved residual clamp `1e-12`, residual solve ratio about
+  `7.642e11`, latest solved tip height about `0.7460`, latest residual tip
+  heights about `0.0187`, history samples `73`, and finite manifest ranges for
+  residuals, tip errors/heights, joint speeds, step timing, solve ratio, and
+  world time.
 - The broader workflow/doc drift guard with row ordering, viewer-title
   numbering, sidecar/README/capture-command drift checks, passive-parameter
   coverage, screw-pitch coverage, dynamics-terms coverage, link center-of-mass
-  coverage, replay snapshot coverage, and high-value panel coverage reported
-  `14 passed`.
-- Not run after the stop/handoff instruction: final `pixi run lint`, bounded
-  `pixi run build`, `git diff --check`, or any additional captures/tests. A
-  lint command had been started before the stop instruction, but its terminal
-  session was no longer active during handoff and no final pass/fail line was
-  captured, so do not cite it as evidence.
+  coverage, link-Jacobian coverage, replay snapshot coverage, and high-value
+  panel coverage reported `15 passed`.
+- `pixi run lint` passed.
+- Bounded
+  `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
 
 Completed local checkpoint immediately before this slice:
+
+- Commit `3864dbf331a` (`Hand off rigid link Jacobian metrics`) completes row
+  34, `rigid_link_jacobian`.
+- That row publishes link-origin Jacobian capture metrics for motion/wrench
+  controls, joint names, link-origin position, twist components,
+  finite-difference error, wrench force, transpose-mapped torques,
+  joint-versus-wrench power, world/body Jacobian gap, and compact histories.
+- Validation collected for row 34: focused test reported `1 passed`; real
+  docked capture under `/tmp/dart_capture_link_jacobian_metrics_1781238268`
+  wrote 95 PNG frames and 96 scene-metrics events; broader workflow/doc drift
+  guard reported `14 passed`. The skipped stop-state gates were refreshed from
+  the clean pushed checkpoint: `pixi run lint`, bounded default
+  `pixi run build`, and `git diff --check` passed.
+
+Previous completed checkpoint:
 
 - Commit `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
   completes row 33, `rigid_link_center_of_mass`.
@@ -353,15 +367,11 @@ Validation collected for the dynamics-terms slice so far:
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Confirm whether the stop/handoff checkpoint containing row 34 is already
-   committed and pushed. If it is not, preserve the current changes before doing
-   any new feature work.
-3. Before opening a PR or continuing feature work, rerun the skipped final gates
-   for the row-34 checkpoint: `pixi run lint`, bounded default
-   `pixi run build`, and `git diff --check`. If lint changes docs or code,
-   rerun the focused row-34 test and the broad workflow/doc drift guard.
-4. After row 34 is gated, the next likely capture-metrics pass is
-   `rigid_multibody_solver_family`, unless the user redirects.
+2. If the current local checkpoint has not been committed yet, commit the row-35
+   checkpoint after confirming the working tree contains only the files listed
+   above and the validation section has final gates recorded.
+3. After row 35 is gated, the next likely capture-metrics pass is
+   `rigid_loop_closure`, unless the user redirects.
 
 ## Last Session Summary
 

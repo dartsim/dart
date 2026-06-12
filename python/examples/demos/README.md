@@ -172,7 +172,7 @@ infer.
 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response, metrics       |
 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker, metrics |
 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` power, metrics      |
-| `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals                      |
+| `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals, metrics             |
 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals and solved ratios             |
 
 For the focused IPC no-tunneling capability view, use
@@ -579,6 +579,10 @@ three-link chain. The panel exposes executor and gravity controls, residual
 norms, tip error, tip height, joint speed, step timing, and the residual solve
 ratio so users can see why solved loop closures are routed to the variational
 path.
+`py-demo-capture` records executor/gravity controls, case order, integration
+family and closure policy labels, residuals, tip errors/heights, joint speeds,
+step timing, residual solve ratio, and compact history metrics into the
+manifest sidecar.
 
 The **`rigid_loop_closure`** scene compares public POINT, DISTANCE, and RIGID
 loop-closure families under the variational rigid multibody path. Each family
