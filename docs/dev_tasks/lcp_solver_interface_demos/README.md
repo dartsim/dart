@@ -60,6 +60,10 @@
       two local benchmark-routing commits. No lint, build, tests, benchmark
       listing, solver execution, or further implementation work was run after
       the user's critical stop instruction.
+- [x] Filtered the manifest-generated `BM_LcpCompare` and serial/parallel
+      `BM_LcpBatch` argument rows through concrete generated-problem support,
+      keeping benchmark problem sizes aligned with solver native-route
+      predicates.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -99,10 +103,46 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the active-set transition benchmark
-routing slice. The latest overall checkpoint is a docs-only hand-off snapshot
-recording the consolidated branch state after the user explicitly stopped all
-implementation and verification work.
+The latest implementation checkpoint is the manifest/batch benchmark argument
+routing slice.
+
+## Manifest And Batch Benchmark Argument Routing Checkpoint
+
+The latest implementation checkpoint aligns manifest-generated benchmark
+argument rows with concrete native solver support:
+
+- `BM_LcpCompare` registration now precomputes candidate problem sizes and
+  keeps only sizes whose generated `MakeBenchmarkProblem(...)` packet is
+  accepted by the solver's concrete `supportsProblem(problem)` predicate.
+- `BM_LcpBatchSerial` and `BM_LcpBatchParallel` now apply the same filter to
+  every generated problem in each `MakeBenchmarkProblemBatch(...)` row.
+- The existing benchmark suite shape is preserved: Direct remains limited to
+  its tiny standard-LCP rows, Dantzig/Baraff/MPRGP keep their standard SPD
+  rows, and boxed/friction-index rows stay available for the solvers that
+  accept the generated concrete packets.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpCompare/Standard/(Direct|Dantzig|MPRGP|Baraff)|BM_LcpBatchSerial/Standard/(Direct|Dantzig|MPRGP|Baraff)|BM_LcpBatchParallel/Standard/(Direct|Dantzig|MPRGP|Baraff)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpCompare/(Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpBatchSerial/(Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpBatchParallel/(Boxed|FrictionIndex)/(Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpCompare/Standard/Direct|BM_LcpBatchSerial/Standard/Direct|BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton|BM_LcpBatchParallel/Boxed/Pgs/24/4' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The standard row-list check built `BM_LCP_COMPARE` and listed Direct only for
+  `2`/`3` single packets and `3/4` batch packets, while Dantzig, Baraff, and
+  MPRGP kept their existing standard SPD rows.
+- The boxed/friction-index row-list check kept representative Dantzig, PGS, and
+  BoxedSemiSmoothNewton rows for single, serial batch, and parallel batch
+  benchmark families.
+- The short benchmark execution reported `contract_ok=1` for all representative
+  affected rows that were run.
 
 ## Active-Set Transition Benchmark Routing Checkpoint
 

@@ -1447,6 +1447,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     generated packet's concrete solver support predicate, replacing the
     standard-packet Direct special case with the same native-route gate used by
     other representative rows.
+  - Filtered the manifest-generated `BM_LcpCompare` and
+    serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
+    generated problem support, so solver rows and problem sizes stay tied to
+    each solver's native `supportsProblem(problem)` route instead of only the
+    manifest-level problem family.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

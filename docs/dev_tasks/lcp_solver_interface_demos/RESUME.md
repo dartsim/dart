@@ -95,48 +95,51 @@ implementation and do not run further verification. The only intended final
 work is this hand-off documentation checkpoint, followed by publishing the
 single consolidated branch so a fresh session can resume there.
 
+The current continuation resumed implementation from that pushed hand-off and
+completed the next benchmark-routing slice: manifest-generated `BM_LcpCompare`
+and serial/parallel `BM_LcpBatch` registrations now filter their candidate
+argument rows through concrete generated-problem support instead of only the
+manifest-level problem family. The existing row shape is preserved while Direct,
+MPRGP, Baraff, and other solvers stay aligned with their
+`supportsProblem(problem)` native-route predicates.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality for the final hand-off checkpoint:
+Current reality after the manifest/batch benchmark argument-routing slice:
 
 - The latest implementation checkpoints changed `CHANGELOG.md`,
   `python/examples/demos/scenes/lcp_physics.py`,
-  `python/tests/unit/test_py_demo_panels.py`,
   `python/tests/unit/test_py_demo_panels.py`, and
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`.
-- This final hand-off checkpoint is docs-only and changes
-  `docs/dev_tasks/lcp_solver_interface_demos/README.md` and
-  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
-- Local HEAD before this docs-only hand-off update was
-  `02c6d0acb4b4 Filter active-set LCP benchmark rows concretely`.
-- `origin/feature/lcp-solver-interface-demos` was
-  `d143d0dc355c Document latest LCP handoff state`.
-- The local branch was clean and two commits ahead of the tracking branch:
-  `b2e212db5c4 Add active friction-index LCP benchmark rows` and
-  `02c6d0acb4b Filter active-set LCP benchmark rows concretely`.
+- This slice changes `CHANGELOG.md`,
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
+- Local HEAD before this slice was
+  `be4643d1743 Document consolidated LCP handoff state`.
+- The configured SSH remote-tracking ref still showed
+  `origin/feature/lcp-solver-interface-demos` at
+  `d143d0dc355c Document latest LCP handoff state` immediately after the prior
+  HTTPS push because local remote-tracking metadata was not refreshed.
 - `main` was fetched over HTTPS to `7d05d7b9ea72`; merging it with
   `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 - No PR was associated with the branch when checked earlier in the session.
 
-After this docs-only hand-off checkpoint is committed and pushed, the remote
-state should be one consolidated branch,
-`origin/feature/lcp-solver-interface-demos`, containing the active
-friction-index benchmark routing commit, the active-set transition benchmark
-routing commit, and this final hand-off docs commit. The user explicitly asked
-for that push and consolidation, but also explicitly prohibited further
-verification after the stop instruction.
+After this slice is committed, the local branch should contain one additional
+additive checkpoint on top of the pushed consolidated branch. Do not push
+without explicit maintainer/user approval; merge latest `main` first if a later
+push is approved.
 
 ## Immediate Next Step
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
 starting points are remaining manifest-level benchmark gates in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, any solver whose documented
-native mathematical domain is still broader than its concrete
-`supportsProblem(problem)` predicate, and GUI/demo packets that still lack
-clear apples-to-apples benchmark coverage. Do not treat the broad LCP objective
-as complete.
+`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially world/contact
+benchmark registrations and contact-pipeline comparison rows, any solver whose
+documented native mathematical domain is still broader than its concrete
+`supportsProblem(problem)` predicate, and GUI/demo packets that still lack clear
+apples-to-apples benchmark coverage. Do not treat the broad LCP objective as
+complete.
 
 ## Context That Would Be Lost
 
@@ -201,6 +204,13 @@ as complete.
   concrete generated packets before registering native rows. The list check for
   `BM_LcpActiveSetTransition/Standard/(Direct|Baraff|MPRGP)` keeps Baraff and
   MPRGP and excludes Direct through its concrete support predicate.
+- Completed benchmark follow-up: `BM_LcpCompare` and serial/parallel
+  `BM_LcpBatch` registrations now compute candidate argument rows and keep only
+  rows whose generated concrete problem or full generated batch is accepted by
+  `supportsProblem(problem)`. Focused row-list checks covered Standard,
+  Boxed, and FrictionIndex families, and a short execution check reported
+  `contract_ok=1` on representative affected single, serial-batch, and
+  parallel-batch rows.
 - Final hand-off note: after the 2026-06-11 stop instruction, no additional
   verification was run, including `pixi run lint`. This intentionally follows
   the user's "without any further verification" instruction.

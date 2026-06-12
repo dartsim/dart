@@ -4955,6 +4955,20 @@ bool SolverSupportsConcreteProblem(
   return solver != nullptr && solver->supportsProblem(problem);
 }
 
+bool SolverSupportsConcreteProblemBatch(
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const std::vector<LcpProblem>& problems)
+{
+  const auto solver = solverEntry.create();
+  if (solver == nullptr || problems.empty()) {
+    return false;
+  }
+
+  return std::ranges::all_of(problems, [&](const LcpProblem& problem) {
+    return solver->supportsProblem(problem);
+  });
+}
+
 bool isMildIllConditionedFrictionIndexCase(
     const MildIllConditionedBenchmarkCase testCase)
 {
@@ -11109,32 +11123,57 @@ void RunCudaMixedContactGroupedBatchBenchmark(
 }
 #endif
 
-void AddBenchmarkArgs(
-    benchmark::Benchmark* registeredBenchmark,
+std::vector<int> GetBenchmarkProblemArgCandidates(
     const dart::test::LcpSolverManifestEntry& solver,
     BenchmarkProblemFamily family)
 {
   if (family == BenchmarkProblemFamily::Standard && solver.name == "Direct") {
-    // DirectSolver enumerates n <= 3 before falling back to Dantzig.
-    registeredBenchmark->Arg(2)->Arg(3);
-    return;
+    return {2, 3};
   }
 
   switch (family) {
     case BenchmarkProblemFamily::Standard:
-      registeredBenchmark->Arg(12)->Arg(24)->Arg(48)->Arg(96);
-      break;
+      return {12, 24, 48, 96};
     case BenchmarkProblemFamily::Boxed:
-      registeredBenchmark->Arg(12)->Arg(24)->Arg(48);
-      break;
+      return {12, 24, 48};
     case BenchmarkProblemFamily::FrictionIndex:
-      registeredBenchmark->Arg(4)->Arg(16)->Arg(64);
-      break;
+      return {4, 16, 64};
+  }
+
+  return {};
+}
+
+std::vector<int> GetConcreteBenchmarkArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    BenchmarkProblemFamily family)
+{
+  std::vector<int> args;
+  for (const int problemArg :
+       GetBenchmarkProblemArgCandidates(solver, family)) {
+    if (SolverSupportsConcreteProblem(
+            solver, MakeBenchmarkProblem(family, problemArg))) {
+      args.push_back(problemArg);
+    }
+  }
+
+  return args;
+}
+
+void AddBenchmarkArgs(
+    benchmark::Benchmark* registeredBenchmark, const std::vector<int>& args)
+{
+  for (const int problemArg : args) {
+    registeredBenchmark->Arg(problemArg);
   }
 }
 
-void AddBatchBenchmarkArgs(
-    benchmark::Benchmark* registeredBenchmark,
+struct BatchBenchmarkArg
+{
+  int problemArg{0};
+  int batchSize{0};
+};
+
+std::vector<BatchBenchmarkArg> GetBatchBenchmarkArgCandidates(
     const dart::test::LcpSolverManifestEntry& solver,
     BenchmarkProblemFamily family)
 {
@@ -11142,42 +11181,71 @@ void AddBatchBenchmarkArgs(
   const bool addCudaComparableSizes
       = solver.name == "Jacobi" || solver.name == "Pgs";
   if (family == BenchmarkProblemFamily::Standard && solver.name == "Direct") {
-    // DirectSolver enumerates n <= 3 before falling back to Dantzig.
-    registeredBenchmark->Args({3, batchSize});
-    return;
+    return {{3, batchSize}};
   }
 
   switch (family) {
-    case BenchmarkProblemFamily::Standard:
-      registeredBenchmark->Args({24, batchSize});
+    case BenchmarkProblemFamily::Standard: {
+      std::vector<BatchBenchmarkArg> args{{24, batchSize}};
       if (addCudaComparableSizes) {
-        registeredBenchmark->Args({48, batchSize})
-            ->Args({96, batchSize})
-            ->Args({128, batchSize})
-            ->Args({192, batchSize})
-            ->Args({256, batchSize});
+        args.push_back({48, batchSize});
+        args.push_back({96, batchSize});
+        args.push_back({128, batchSize});
+        args.push_back({192, batchSize});
+        args.push_back({256, batchSize});
       }
-      break;
-    case BenchmarkProblemFamily::Boxed:
-      registeredBenchmark->Args({24, batchSize});
+      return args;
+    }
+    case BenchmarkProblemFamily::Boxed: {
+      std::vector<BatchBenchmarkArg> args{{24, batchSize}};
       if (addCudaComparableSizes) {
-        registeredBenchmark->Args({48, batchSize})
-            ->Args({96, batchSize})
-            ->Args({128, batchSize})
-            ->Args({192, batchSize})
-            ->Args({256, batchSize});
+        args.push_back({48, batchSize});
+        args.push_back({96, batchSize});
+        args.push_back({128, batchSize});
+        args.push_back({192, batchSize});
+        args.push_back({256, batchSize});
       }
-      break;
-    case BenchmarkProblemFamily::FrictionIndex:
-      registeredBenchmark->Args({8, batchSize});
+      return args;
+    }
+    case BenchmarkProblemFamily::FrictionIndex: {
+      std::vector<BatchBenchmarkArg> args{{8, batchSize}};
       if (addCudaComparableSizes) {
-        registeredBenchmark->Args({16, batchSize})
-            ->Args({32, batchSize})
-            ->Args({48, batchSize})
-            ->Args({64, batchSize})
-            ->Args({96, batchSize});
+        args.push_back({16, batchSize});
+        args.push_back({32, batchSize});
+        args.push_back({48, batchSize});
+        args.push_back({64, batchSize});
+        args.push_back({96, batchSize});
       }
-      break;
+      return args;
+    }
+  }
+
+  return {};
+}
+
+std::vector<BatchBenchmarkArg> GetConcreteBatchBenchmarkArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    BenchmarkProblemFamily family)
+{
+  std::vector<BatchBenchmarkArg> args;
+  for (const auto candidate : GetBatchBenchmarkArgCandidates(solver, family)) {
+    if (SolverSupportsConcreteProblemBatch(
+            solver,
+            MakeBenchmarkProblemBatch(
+                family, candidate.problemArg, candidate.batchSize))) {
+      args.push_back(candidate);
+    }
+  }
+
+  return args;
+}
+
+void AddBatchBenchmarkArgs(
+    benchmark::Benchmark* registeredBenchmark,
+    const std::vector<BatchBenchmarkArg>& args)
+{
+  for (const auto arg : args) {
+    registeredBenchmark->Args({arg.problemArg, arg.batchSize});
   }
 }
 
@@ -11955,12 +12023,17 @@ void RegisterManifestBenchmarks()
         continue;
       }
 
+      const auto args = GetConcreteBenchmarkArgs(solver, family);
+      if (args.empty()) {
+        continue;
+      }
+
       const auto name = MakeBenchmarkName(family, solver);
       auto* registeredBenchmark = benchmark::RegisterBenchmark(
           name.c_str(), [solver, family](benchmark::State& state) {
             RunManifestBenchmark(state, solver, family);
           });
-      AddBenchmarkArgs(registeredBenchmark, solver, family);
+      AddBenchmarkArgs(registeredBenchmark, args);
     }
   }
 }
@@ -12837,12 +12910,17 @@ void RegisterBatchBenchmarks()
         continue;
       }
 
+      const auto args = GetConcreteBatchBenchmarkArgs(solver, family);
+      if (args.empty()) {
+        continue;
+      }
+
       const auto name = MakeBatchBenchmarkName(family, solver);
       auto* registeredBenchmark = benchmark::RegisterBenchmark(
           name.c_str(), [solver, family](benchmark::State& state) {
             RunManifestBatchBenchmark(state, solver, family);
           });
-      AddBatchBenchmarkArgs(registeredBenchmark, solver, family);
+      AddBatchBenchmarkArgs(registeredBenchmark, args);
     }
   }
 }
@@ -12887,12 +12965,17 @@ void RegisterParallelBatchBenchmarks()
         continue;
       }
 
+      const auto args = GetConcreteBatchBenchmarkArgs(solver, family);
+      if (args.empty()) {
+        continue;
+      }
+
       const auto name = MakeParallelBatchBenchmarkName(family, solver);
       auto* registeredBenchmark = benchmark::RegisterBenchmark(
           name.c_str(), [solver, family](benchmark::State& state) {
             RunManifestParallelBatchBenchmark(state, solver, family);
           });
-      AddBatchBenchmarkArgs(registeredBenchmark, solver, family);
+      AddBatchBenchmarkArgs(registeredBenchmark, args);
     }
   }
 }
