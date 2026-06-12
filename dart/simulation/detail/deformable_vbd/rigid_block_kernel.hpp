@@ -1991,7 +1991,7 @@ struct AvbdRigidPointJointRowScratch
 
 struct AvbdRigidAngularMotorRowScratch
 {
-  std::vector<AvbdRigidAngularMotor> activeRows;
+  std::vector<const AvbdRigidAngularMotor*> activeRows;
   std::vector<AvbdScalarRowDescriptor> descriptors;
 };
 
@@ -2488,6 +2488,66 @@ inline void buildAvbdRigidAngularMotorRows(
     AvbdRigidAngularMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
+  const auto appendMotorRows
+      = [&](const auto& activeRows, std::size_t activeRowCount) {
+          motorRows.clear();
+          motorRows.reserve(motorInventory.size());
+          for (std::size_t recordIndex = 0; recordIndex < activeRowCount;
+               ++recordIndex) {
+            if (recordIndex >= motorInventory.size()) {
+              return;
+            }
+
+            const AvbdRigidAngularMotor& motor = *activeRows[recordIndex];
+            const AvbdScalarRowRecord& record = motorInventory[recordIndex];
+            AvbdRigidBodyAngularPairRow indexedRow;
+            indexedRow.bodyA = motor.bodyA;
+            indexedRow.bodyB = motor.bodyB;
+            indexedRow.row = makeAvbdRigidAngularMotorRow(
+                motor.targetRelativeOrientation,
+                motor.axis,
+                motor.targetSpeed,
+                timeStep,
+                record.state);
+            indexedRow.row.bounds = record.descriptor.bounds;
+            motorRows.push_back(indexedRow);
+          }
+        };
+
+  if (motors.size() <= detail::kAvbdRigidSmallRowStackCapacity) {
+    std::array<
+        const AvbdRigidAngularMotor*,
+        detail::kAvbdRigidSmallRowStackCapacity>
+        activeRows;
+    std::array<AvbdScalarRowDescriptor, detail::kAvbdRigidSmallRowStackCapacity>
+        descriptors;
+    std::size_t activeRowCount = 0u;
+    for (const AvbdRigidAngularMotor& motor : motors) {
+      if (!detail::isValidAvbdRigidAngularMotor(
+              motor, states.size(), timeStep)) {
+        continue;
+      }
+
+      activeRows[activeRowCount] = &motor;
+      descriptors[activeRowCount]
+          = detail::makeAvbdRigidAngularMotorRowDescriptor(
+              motor.endpointA,
+              motor.endpointB,
+              motor.maxTorque,
+              motor.startStiffness,
+              motor.maxStiffness,
+              motor.row);
+      ++activeRowCount;
+    }
+
+    motorInventory.syncActiveRows(
+        std::span<const AvbdScalarRowDescriptor>{
+            descriptors.data(), activeRowCount},
+        warmStartOptions);
+    appendMotorRows(activeRows, activeRowCount);
+    return;
+  }
+
   auto& activeRows = scratch.activeRows;
   activeRows.clear();
   activeRows.reserve(motors.size());
@@ -2499,7 +2559,7 @@ inline void buildAvbdRigidAngularMotorRows(
       continue;
     }
 
-    activeRows.push_back(motor);
+    activeRows.push_back(&motor);
     descriptors.push_back(
         detail::makeAvbdRigidAngularMotorRowDescriptor(
             motor.endpointA,
@@ -2512,29 +2572,7 @@ inline void buildAvbdRigidAngularMotorRows(
 
   motorInventory.reserve(descriptors.size());
   motorInventory.syncActiveRows(descriptors, warmStartOptions);
-
-  motorRows.clear();
-  motorRows.reserve(motorInventory.size());
-  for (std::size_t recordIndex = 0; recordIndex < activeRows.size();
-       ++recordIndex) {
-    if (recordIndex >= motorInventory.size()) {
-      return;
-    }
-
-    const AvbdRigidAngularMotor& motor = activeRows[recordIndex];
-    const AvbdScalarRowRecord& record = motorInventory[recordIndex];
-    AvbdRigidBodyAngularPairRow indexedRow;
-    indexedRow.bodyA = motor.bodyA;
-    indexedRow.bodyB = motor.bodyB;
-    indexedRow.row = makeAvbdRigidAngularMotorRow(
-        motor.targetRelativeOrientation,
-        motor.axis,
-        motor.targetSpeed,
-        timeStep,
-        record.state);
-    indexedRow.row.bounds = record.descriptor.bounds;
-    motorRows.push_back(indexedRow);
-  }
+  appendMotorRows(activeRows, activeRows.size());
 }
 
 //==============================================================================

@@ -9,6 +9,26 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest critical handoff stop (2026-06-11): the user explicitly redirected
+  this session to stop implementation and focus only on hand-off for all
+  current work, with no further verification. The active checkout remains the
+  consolidated continuation branch `avbd/source-row-extraction-precheck`. The
+  branch has the local point-joint source-row cleanup commit
+  `5a56acb0c4c` on top of pushed `f380bf9bc04`, plus the current
+  angular-motor source-row cleanup and this handoff-doc update. No
+  lint/build/test/CI or `git diff --check` was run after the stop instruction.
+  Before the stop instruction, the angular-motor slice had already passed the
+  focused rigid-block target, the focused angular-motor filter (2 tests), the
+  full `test_avbd_rigid_block` binary (95 tests), and `pixi run lint`. Full
+  `pixi run build` and `git diff --check` were not rerun for the angular-motor
+  slice before this stop.
+- Latest resumed follow-up (2026-06-12): standalone rigid angular-motor
+  source-row construction now uses stack-backed active row/descriptor storage
+  for small inputs and keeps pointers to source `AvbdRigidAngularMotor`
+  configs instead of copying full motor configs into scratch. This is a narrow
+  motor source-row extraction cleanup on top of the point-joint cleanup below,
+  not a source CPU-win, GPU, or paper-number claim. Validation is partial as
+  recorded above; do not claim full build/diff-check evidence for this slice.
 - Latest resumed follow-up (2026-06-12): rigid point-joint linear and angular
   source-row builders now use stack-backed active row/descriptor storage for
   small inputs and keep only pointers to source joint configs instead of
