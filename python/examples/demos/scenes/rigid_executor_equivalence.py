@@ -327,6 +327,8 @@ class _RigidExecutorEquivalence:
         parallel_step_values = list(self._step_ms_history[parallel_label])
         return {
             "row": "rigid_executor_equivalence",
+            "comparison_axis": "executor",
+            "same_solver": True,
             "solver": "same_solver_executor_equivalence",
             "solver_label": self._solver_label(),
             "solver_enum": self._solver().name,
@@ -337,6 +339,7 @@ class _RigidExecutorEquivalence:
                 "friction": float(self.friction),
                 "launch_speed": float(self.launch_speed),
                 "restitution": float(self.restitution),
+                "solver_index": int(self.solver_index),
             },
             "sequential_contact_count": float(seq_metrics["contact_count"]),
             "parallel_contact_count": float(parallel_metrics["contact_count"]),
@@ -483,7 +486,8 @@ class _RigidExecutorEquivalence:
             self._reset()
 
         builder.separator()
-        builder.text(f"same solver: {self._solver_label()}")
+        builder.text("comparison axis: executor only")
+        builder.text(f"same physics solver: {self._solver_label()}")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")
         for case in self.cases:

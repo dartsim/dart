@@ -62,6 +62,13 @@ pixi run py-demo-capture -- --scene rigid_solver_compare --show-ui --frames 2 \
     --width 1280 --height 720
 ```
 
+Capture motion evidence for a solver comparison:
+
+```bash
+pixi run py-demo-capture -- --scene rigid_solver_compare --frames 72 \
+    --width 960 --height 540 --show-ui --video --fps 24
+```
+
 The docked workspace has a top `Simulation` toolbar, a searchable `Demos`
 navigator, scene-specific panels on the right, bottom scene panels when a demo
 owns timeline controls, and a docked DART diagnostics panel. Use `Rebuild` to
@@ -134,8 +141,8 @@ filter over row ids, scene ids, labels, questions, signals, and explicit
 aliases such as `SI`, `boxed LCP`, and `accelerated backend` that request
 in-viewer scene switches. Scope caveats remain visible in the row, but the
 filter ranks positive intent matches first so searches such as `contact`,
-`solver`, `step profile`, and `sequential impulse` do not get dominated by
-early rows that only mention what not to infer.
+`solver`, `step profile`, `backend comparison`, and `sequential impulse` do not
+get dominated by early rows that only mention what not to infer.
 
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -373,9 +380,12 @@ that runs two matched DART 7 Worlds side by side: sequential impulse on the left
 and rigid IPC on the right. It keeps the scene intentionally small, a sliding
 box approaching a thin wall, so users can inspect solver-family differences,
 clearance, speed, position divergence, and per-step profile timing without
-waiting on heavier stack scenes. The panel also exposes the executor choice
-(`Sequential` or `Parallel (2 workers)`) so execution changes are
-framed as performance/equivalence checks rather than as different physics.
+waiting on heavier stack scenes. The panel names the comparison axis as the
+rigid-body solver family and also exposes the shared executor choice
+(`Sequential` or `Parallel (2 workers)`) so execution changes are framed as
+performance/equivalence checks rather than as different physics. Its capture
+metrics record the same comparison axis, solver pair, case order, executor
+selection, controls, per-solver response metrics, and divergence ranges.
 
 ## Rigid executor equivalence
 
@@ -385,10 +395,11 @@ physics solver, while the left world steps with the sequential executor and the
 right world steps with a parallel executor. The panel keeps the physics solver,
 friction, restitution, and launch speed explicit, then plots pose divergence,
 velocity divergence, contact-count delta, and per-executor step time so users
-can tell executor performance changes apart from physics changes. Its capture
-metrics record the same-solver identity, controls, per-executor contact/timing
-metrics, divergence ranges, and fallback executor label when parallel execution
-is unavailable.
+can tell executor performance changes apart from physics changes. The panel
+names the comparison axis as executor-only. Its capture metrics record the same
+comparison axis, same-solver identity, selected solver index, controls,
+per-executor contact/timing metrics, divergence ranges, and fallback executor
+label when parallel execution is unavailable.
 
 ## Rigid contact solver comparison
 
@@ -397,9 +408,12 @@ axis from the broader rigid-body solver family. Both lanes use the same
 sequential-impulse rigid-body pipeline and the same tilted plank falling into
 four-corner ground contact; the left lane keeps the default sequential-impulse
 contact policy, while the right lane opts into boxed LCP contacts. The panel
-keeps executor, launch speed, friction, restitution, and initial tilt explicit,
-then plots contact count, penetration depth, analytic corner clearance, speed,
-kinetic energy, pose divergence, and per-step timing.
+names the comparison axis as contact solver method, keeps executor, launch
+speed, friction, restitution, and initial tilt explicit, then plots contact
+count, penetration depth, analytic corner clearance, speed, kinetic energy,
+pose divergence, and per-step timing. Its capture metrics record the same
+comparison axis, contact-policy pair, case order, executor selection, controls,
+per-policy response metrics, and divergence ranges.
 
 ## Rigid link contact
 

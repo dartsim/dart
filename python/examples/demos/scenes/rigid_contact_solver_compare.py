@@ -356,12 +356,16 @@ class _RigidContactSolverCompare:
         divergence_values = list(self._divergence_history)
         return {
             "row": "rigid_contact_solver_compare",
+            "comparison_axis": "contact_solver_method",
             "solver": "sequential_impulse_rigid_body",
             "contact_policy": "sequential_impulse_vs_boxed_lcp",
             "executor": self._executors[int(self.executor_index)][0],
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
+            "case_pair": [case.label for case in self.cases],
+            "contact_policy_pair": [case.method.name for case in self.cases],
             "controls": {
+                "executor_index": int(self.executor_index),
                 "friction": float(self.friction),
                 "initial_tilt_deg": float(self.initial_tilt_deg),
                 "launch_speed": float(self.launch_speed),
@@ -566,8 +570,9 @@ class _RigidContactSolverCompare:
             self._reset()
 
         builder.separator()
-        builder.text("rigid-body solver: sequential impulse")
-        builder.text("contact solver: sequential impulses vs boxed LCP")
+        builder.text("comparison axis: contact solver method")
+        builder.text("shared rigid-body solver: sequential impulse")
+        builder.text("contact-policy pair: sequential impulses vs boxed LCP")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")
         for case in self.cases:

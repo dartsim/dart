@@ -1054,6 +1054,45 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "checkbox:Enable external force" in builder.events
 
 
+def test_rigid_comparison_panels_label_the_compared_axis() -> None:
+    _require_simulation_symbols("RigidBodySolver", "ContactSolverMethod")
+
+    cases = [
+        (
+            rigid_solver_compare,
+            (
+                "text:comparison axis: rigid-body solver family",
+                "text:solver pair: Sequential impulse vs IPC barrier",
+                "text:shared executor: Sequential",
+            ),
+        ),
+        (
+            rigid_executor_equivalence,
+            (
+                "text:comparison axis: executor only",
+                "text:same physics solver: Sequential impulse",
+            ),
+        ),
+        (
+            rigid_contact_solver_compare,
+            (
+                "text:comparison axis: contact solver method",
+                "text:shared rigid-body solver: sequential impulse",
+                "text:contact-policy pair: sequential impulses vs boxed LCP",
+            ),
+        ),
+    ]
+
+    for scene_module, expected_events in cases:
+        setup = scene_module.build()
+        builder = _FakePanelBuilder()
+
+        setup.panels[0].build(builder, object())
+
+        for event in expected_events:
+            assert event in builder.events
+
+
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 
@@ -1414,8 +1453,20 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
         guide.scene_id for guide in _workflow_matching_guides("accelerated backend")
     ][:1] == ["rigid_step_diagnostics"]
     assert [
+        guide.scene_id for guide in _workflow_matching_guides("backend status")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
         guide.scene_id for guide in _workflow_matching_guides("memory diagnostics")
     ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("backend comparison")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("parallel backend")
+    ][:1] == ["rigid_executor_equivalence"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("compute executor")
+    ][:1] == ["rigid_executor_equivalence"]
 
 
 def test_rigid_workflow_search_finds_related_evidence_targets() -> None:

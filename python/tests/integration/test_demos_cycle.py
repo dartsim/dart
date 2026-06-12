@@ -1712,6 +1712,34 @@ def test_rigid_visual_verification_capture_commands_match_workflow() -> None:
     )
 
 
+def test_rigid_visual_motion_capture_video_flags_are_documented() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    helper = root / "scripts" / "capture_py_demo.py"
+    helper_text = helper.read_text(encoding="utf-8")
+    if "--video" not in helper_text or "--fps" not in helper_text:
+        pytest.skip("py-demo-capture does not expose video flags in this checkout")
+
+    expected_tokens = (
+        "pixi run py-demo-capture -- --scene rigid_solver_compare"
+        " --frames 72 --width 960 --height 540 --show-ui --video --fps 24"
+    )
+    for path in (
+        root / "python" / "examples" / "demos" / "README.md",
+        root
+        / "docs"
+        / "plans"
+        / "103-examples-strategy"
+        / "rigid-body-visual-verification.md",
+    ):
+        text = " ".join(
+            line.strip().removesuffix("\\").strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+        )
+        assert "--video" in text
+        assert "--fps 24" in text
+        assert expected_tokens in text
+
+
 def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None:
     root = pathlib.Path(__file__).resolve().parents[3]
     sidecar = (
@@ -2718,8 +2746,14 @@ def test_rigid_solver_compare_records_wall_response() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_solver_compare"
+    assert capture_metrics["comparison_axis"] == "rigid_body_solver_family"
     assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [case.solver.name for case in controller.cases]
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
     assert set(capture_metrics["cases"]) == {case.label for case in controller.cases}
     assert (
         capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]
@@ -3120,8 +3154,16 @@ def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_contact_solver_compare"
+    assert capture_metrics["comparison_axis"] == "contact_solver_method"
     assert capture_metrics["solver"] == "sequential_impulse_rigid_body"
     assert capture_metrics["contact_policy"] == "sequential_impulse_vs_boxed_lcp"
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["contact_policy_pair"] == [
+        case.method.name for case in controller.cases
+    ]
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
     assert set(capture_metrics["cases"]) == {case.label for case in controller.cases}
     assert (
         capture_metrics["cases"]["Sequential impulse contacts"][
@@ -4158,8 +4200,13 @@ def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_executor_equivalence"
+    assert capture_metrics["comparison_axis"] == "executor"
+    assert capture_metrics["same_solver"] is True
     assert capture_metrics["solver"] == "same_solver_executor_equivalence"
     assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["controls"]["solver_index"] == pytest.approx(
+        controller.solver_index
+    )
     assert capture_metrics["executor_pair"] == [case.label for case in controller.cases]
     assert capture_metrics["sequential_contact_count"] == pytest.approx(
         controller._last_metrics[controller.cases[0].label]["contact_count"]

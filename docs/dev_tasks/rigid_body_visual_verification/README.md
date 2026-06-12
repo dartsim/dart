@@ -1,5 +1,112 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 Resumed Comparison Axis Slice
+
+The previous stop-only handoff was superseded by a goal-continuation turn. The
+current active local slice is the comparison-axis/backend-search/video-evidence
+work that was already present in the worktree. Continue it locally unless the
+user explicitly redirects.
+
+State at resume:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Last local commit before the uncommitted slice:
+  `35ec0a8610c` (`Number rigid workflow README quick path`).
+- Local branch was ahead of origin by 2 commits before this slice is
+  checkpointed.
+- No push has been performed in this resumed local pass.
+
+Current uncommitted implementation/test/doc slice, plus this handoff-doc update,
+touches:
+
+- `CHANGELOG.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `python/examples/demos/README.md`
+- `python/examples/demos/runner.py`
+- `python/examples/demos/scenes/rigid_contact_solver_compare.py`
+- `python/examples/demos/scenes/rigid_executor_equivalence.py`
+- `python/examples/demos/scenes/rigid_solver_compare.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+What that uncommitted slice was doing before the stop:
+
+- Labels the comparison axis in the solver-family, executor-equivalence, and
+  contact-policy comparison panels.
+- Adds matching capture metadata for comparison axis, solver/executor/policy
+  pairs, case order, and controls.
+- Splits backend search intent so status/diagnostics phrases route to
+  `rigid_step_diagnostics` while comparison/executor phrases route to
+  `rigid_executor_equivalence`.
+- Documents docked motion evidence capture with
+  `py-demo-capture --video --fps 24` in the Python demo README and PLAN-103
+  sidecar, guarded by a focused docs test when the helper exposes those flags.
+
+Validation collected before this resume:
+
+- Focused comparison/search/capture-doc pytest command reported `7 passed`
+  before lint and `7 passed` again after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate local resume steps:
+
+1. Start by inspecting `git status -sb`; preserve user changes.
+2. Rerun focused checks plus mandatory `pixi run lint` before committing.
+3. Commit the slice locally if checks pass and the worktree still only contains
+   the files above.
+4. Do not push, open a PR, comment, re-trigger CI, or otherwise mutate GitHub
+   state without explicit user approval.
+
+## Current Active Snapshot - 2026-06-12 Comparison Axis Labels
+
+After local checkpoint `35ec0a8610c`, the next bounded slice makes the three
+core comparison rows more self-describing for users and capture artifacts. The
+`rigid_solver_compare`, `rigid_executor_equivalence`, and
+`rigid_contact_solver_compare` panels now label whether the active comparison is
+solver family, executor-only equivalence, or contact solver method. Their
+capture metrics now record the same comparison axis plus the relevant solver,
+executor, case-order, and policy selectors.
+
+The same slice splits backend search intent in the `Rigid Workflow` filter:
+`accelerated backend` and `backend status` still route to
+`rigid_step_diagnostics`, while `backend comparison`, `parallel backend`, and
+`compute executor` route to `rigid_executor_equivalence`. It also documents
+motion evidence capture with `py-demo-capture --video --fps 24` in the Python
+demo README and PLAN-103 sidecar.
+
+Current local slice: comparison-axis labels and capture metadata. The checkpoint
+touches:
+
+- `python/examples/demos/scenes/rigid_solver_compare.py`
+- `python/examples/demos/scenes/rigid_executor_equivalence.py`
+- `python/examples/demos/scenes/rigid_contact_solver_compare.py`
+- `python/examples/demos/runner.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `CHANGELOG.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+Validation collected so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_visual_motion_capture_video_flags_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+- reported `7 passed` before lint and `7 passed` again after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Locally commit if the worktree still only shows the files listed above. Do
+   not push, open a PR, comment, re-trigger CI, or
+   otherwise mutate GitHub state without explicit user approval.
+
 ## Current Active Snapshot - 2026-06-12 README Workflow Order
 
 After local checkpoint `325280d4483`, a read-only audit found no major
@@ -308,6 +415,12 @@ jobs: 1`). No push or GitHub mutation was performed.
       table now shows `01/36` through `36/36`, matching the viewer navigator
       and PLAN-103 sidecar order, and the README/sidecar drift guard now checks
       those visible labels. Focused README drift tests reported `3 passed`.
+- [x] Comparison-axis and evidence discoverability: the solver-family,
+      executor-equivalence, and contact-policy rows now label their comparison
+      axes in the panel and capture metrics; backend-comparison search routes
+      to the executor row while backend-status search stays on diagnostics; and
+      README/PLAN-103 document MP4 capture with `--video --fps 24`. Focused
+      panel/search/capture docs tests reported `7 passed`.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

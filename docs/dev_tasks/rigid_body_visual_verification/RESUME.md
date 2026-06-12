@@ -1,5 +1,84 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Fresh-Session Entry - 2026-06-12 Resumed Comparison Axis Slice
+
+The previous stop-only handoff has been superseded by a goal-continuation turn.
+Continue the current comparison-axis/backend-search/video-evidence slice
+locally unless the user explicitly redirects. Do not push, open a PR, comment,
+re-trigger CI, or otherwise mutate GitHub state without explicit user approval.
+
+Resume state:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Local branch was ahead of origin by 2 commits.
+- Last local commit before the uncommitted slice:
+  `35ec0a8610c` (`Number rigid workflow README quick path`).
+- Worktree had an uncommitted comparison-axis/backend-search/video-evidence
+  slice touching code, tests, docs, and these dev-task handoff files.
+- No push has been performed in this resumed local pass.
+
+Current slice summary:
+
+- `rigid_solver_compare`, `rigid_executor_equivalence`, and
+  `rigid_contact_solver_compare` panels label the active comparison axis.
+- Their capture metrics record comparison axis, solver/executor/policy pairs,
+  case order, and active controls.
+- `Rigid Workflow` search separates backend status/diagnostic intent from
+  backend/executor comparison intent.
+- The Python demo README and PLAN-103 sidecar document
+  `py-demo-capture --video --fps 24` motion evidence.
+- Tests were added or updated for the comparison labels, search aliases,
+  capture metadata, and motion-capture docs.
+
+Validation collected before this resume:
+
+- Focused comparison/search/capture-doc pytest command reported `7 passed`
+  before lint and `7 passed` again after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Resume protocol:
+
+1. First inspect `git status -sb` and preserve user changes.
+2. Rerun the focused comparison/search/capture-doc tests and mandatory
+   `pixi run lint` before committing.
+3. Commit the slice locally if checks pass and the worktree still matches this
+   scope.
+4. Get explicit user approval before any push, PR creation, GitHub comment, CI
+   retrigger, or other GitHub mutation.
+
+## Current Checkpoint Snapshot - 2026-06-12 Comparison Axis Labels
+
+The latest continuation starts after local checkpoint `35ec0a8610c`
+(`Number rigid workflow README quick path`). It does not push or mutate GitHub
+state.
+
+Current local slice: comparison-axis labels and capture metadata. The
+`rigid_solver_compare`, `rigid_executor_equivalence`, and
+`rigid_contact_solver_compare` panels now label whether the active comparison is
+solver family, executor-only equivalence, or contact solver method. Their
+capture metrics now record the same comparison axis plus the relevant solver,
+executor, case-order, and policy selectors.
+
+The slice also splits backend search intent in the `Rigid Workflow` filter:
+`accelerated backend` and `backend status` route to `rigid_step_diagnostics`,
+while `backend comparison`, `parallel backend`, and `compute executor` route to
+`rigid_executor_equivalence`. The Python demo README and PLAN-103 sidecar now
+show a docked MP4 capture command using `--video --fps 24`.
+
+Validation collected so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_visual_motion_capture_video_flags_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+- reported `7 passed` before lint and `7 passed` again after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Locally commit if the worktree still only shows the current comparison-axis
+   slice. Do not push, open a PR, comment, re-trigger CI, or
+   otherwise mutate GitHub state without explicit user approval.
+
 ## Current Checkpoint Snapshot - 2026-06-12 README Workflow Order
 
 The latest continuation starts after local checkpoint `325280d4483`

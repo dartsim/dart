@@ -480,6 +480,14 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
         "sequential impulse vs ipc",
         "ipc",
     ),
+    "rigid_executor_equivalence": (
+        "backend comparison",
+        "backend equivalence",
+        "compute executor",
+        "executor comparison",
+        "parallel backend",
+        "parallel executor",
+    ),
     "rigid_contact_solver_compare": (
         "boxed lcp",
         "boxed-lcp",

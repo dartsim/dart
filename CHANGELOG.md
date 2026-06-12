@@ -64,6 +64,10 @@
     policy on a tilted multi-contact rigid plank with contact-count, depth,
     clearance, speed, energy, divergence, step-profile diagnostics, and
     scene-owned capture metrics.
+  - Clarified the `rigid_solver_compare`, `rigid_executor_equivalence`, and
+    `rigid_contact_solver_compare` panels and capture metrics with explicit
+    comparison-axis labels so users can distinguish solver-family, executor,
+    and contact-policy rows while reviewing GUI captures.
   - Upgraded the Python `py-demos` `contact` scene into the numbered rigid
     visual-verification workflow as `Rigid Link Contact`, showing multibody
     links dropping, friction-sliding, and pushing a rigid target with link

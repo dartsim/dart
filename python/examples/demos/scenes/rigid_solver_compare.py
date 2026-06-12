@@ -285,11 +285,15 @@ class _RigidSolverComparison:
         divergence_values = list(self._delta_history)
         return {
             "row": "rigid_solver_compare",
+            "comparison_axis": "rigid_body_solver_family",
             "solver": "sequential_impulse_vs_ipc",
             "executor": self._executors[int(self.executor_index)][0],
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
+            "case_pair": [case.label for case in self.cases],
+            "solver_pair": [case.solver.name for case in self.cases],
             "controls": {
+                "executor_index": int(self.executor_index),
                 "friction": float(self.friction),
                 "launch_speed": float(self.launch_speed),
                 "restitution": float(self.restitution),
@@ -449,6 +453,9 @@ class _RigidSolverComparison:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: rigid-body solver family")
+        builder.text("solver pair: Sequential impulse vs IPC barrier")
+        builder.text(f"shared executor: {choices[int(self.executor_index)]}")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")
         for case in self.cases:

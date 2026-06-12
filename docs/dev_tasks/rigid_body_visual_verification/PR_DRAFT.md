@@ -1,5 +1,27 @@
 # PR Draft: Rigid-Body Visual Verification Workflow
 
+## Local Resume Note - 2026-06-12
+
+The previous stop-only handoff has been superseded by a goal-continuation turn.
+This PR draft is still not a publication instruction. Do not push, open the PR,
+comment, re-trigger CI, or otherwise mutate GitHub state unless the user
+explicitly approves that action.
+
+Current state to preserve for a fresh session:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Last checked state: local branch ahead of origin by 2 commits.
+- Last local commit before the current uncommitted slice:
+  `35ec0a8610c` (`Number rigid workflow README quick path`).
+- Current uncommitted slice: comparison-axis labels, backend/executor search
+  aliases, motion-evidence docs, focused tests, and this resumed handoff-doc
+  update.
+- Focused tests, `pixi run lint`, and `git diff --check` had passed before the
+  stop-only handoff; rerun required checks before committing.
+
+Inspect the worktree before committing. Pushes, PR creation, comments, CI
+retriggers, and other GitHub mutations require explicit approval.
+
 ## Current Local Continuation - 2026-06-12
 
 After the pushed capture-ownership checkpoint `f22db3b7751`, the active goal
@@ -20,6 +42,16 @@ hardening rather than new GUI rows:
 - The Python demo README quick workflow table now includes visible `01/36`
   through `36/36` order labels, matching the interactive navigator and PLAN-103
   sidecar.
+- The core comparison panels and capture metrics now explicitly label their
+  comparison axes so users can tell solver-family, executor-only, and
+  contact-policy rows apart in the live GUI and in capture artifacts.
+- Backend search now splits status/diagnostics intent from comparison intent:
+  `accelerated backend` stays on `rigid_step_diagnostics`, while
+  `backend comparison` and related executor phrases route to
+  `rigid_executor_equivalence`.
+- The Python demo README and PLAN-103 sidecar now show the docked motion
+  evidence path with `py-demo-capture --video --fps 24`, guarded by a focused
+  docs test when the helper exposes those flags.
 - A PR-readiness audit found no obvious next implementation row in the curated
   36-row workflow; remaining publication work is final validation, dev-task
   cleanup decision, and explicit maintainer/user approval before any GitHub
@@ -210,6 +242,24 @@ hardening rather than new GUI rows:
     - passed before the previous stop-only handoff docs edit
   - Next local resume gate: rerun focused README-order tests, `pixi run lint`,
     and `git diff --check`, then checkpoint the slice if clean.
+- Latest comparison-axis/backend-search/video-evidence follow-up:
+  - `rigid_solver_compare`, `rigid_executor_equivalence`, and
+    `rigid_contact_solver_compare` now label the comparison axis in the GUI
+    panel and capture metrics.
+  - `Rigid Workflow` search now routes `backend comparison`,
+    `parallel backend`, and `compute executor` to
+    `rigid_executor_equivalence`, while `accelerated backend` and
+    `backend status` remain on `rigid_step_diagnostics`.
+  - The Python demo README and PLAN-103 sidecar now document the docked MP4
+    evidence path with `py-demo-capture --video --fps 24`.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy python/tests/integration/test_demos_cycle.py::test_rigid_visual_motion_capture_video_flags_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+    - `7 passed` before lint and `7 passed` again after lint
+  - `pixi run lint`
+    - passed
+  - `git diff --check`
+    - passed
+  - Next local resume gate: commit if the worktree still only shows this
+    comparison-axis slice.
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,
