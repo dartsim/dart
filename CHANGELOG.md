@@ -1439,6 +1439,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     generated normal-only contact packet's concrete solver support predicate,
     preserving Baraff and MPRGP native rows while keeping Direct limited to its
     native small-enumeration cases without a separate size special case.
+  - Added manifest-driven active friction-index contact benchmark rows to the
+    main LCP comparison benchmark and retargeted the Python LCP demo's
+    representative benchmark metadata from the older two-solver microbenchmark
+    rows to that runnable `lcp_compare` filter.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

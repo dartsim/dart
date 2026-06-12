@@ -77,10 +77,7 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
         "packet": "active_friction_index_contact",
         "surface": "findex contact",
-        "benchmark_filter": (
-            "BM_DantzigSolver_ActiveFrictionIndexContact|"
-            "BM_PgsSolver_ActiveFrictionIndexContact"
-        ),
+        "benchmark_filter": "BM_LcpActiveFrictionIndexContact",
         "coverage": "coupled two-contact active tangent bounds",
     },
     {

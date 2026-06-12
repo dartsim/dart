@@ -75,9 +75,30 @@ test, benchmark-list, or solver-execution work was performed after that
 instruction. This resume document and the dev-task README are the only intended
 changes in the final hand-off checkpoint.
 
+The current continuation resumes implementation from that hand-off and closes
+the active-friction-index benchmark routing gap: `lcp_compare` now registers
+manifest-driven `BM_LcpActiveFrictionIndexContact/FrictionIndex/<solver>` rows
+for every friction-index-capable solver that accepts the concrete
+`LcpProblemFactory::activeFrictionIndexContact()` packet, and the Python LCP
+demo metadata now points its representative active-friction filter at that
+main comparison row family instead of the older two-solver microbenchmark
+surface.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
+
+Current reality after the active-friction-index slice:
+
+- This checkpoint changes `CHANGELOG.md`,
+  `python/examples/demos/scenes/lcp_physics.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
+- After committing this slice, the local branch is expected to be one additive
+  commit ahead of `origin/feature/lcp-solver-interface-demos` at
+  `d143d0dc355 Document latest LCP handoff state`.
+- Do not push without explicit maintainer/user approval. If pushing later,
+  fetch and merge latest `origin/main` first.
 
 State before this docs-only hand-off checkpoint:
 
@@ -98,29 +119,13 @@ routing commits plus the final hand-off docs commit.
 
 ## Immediate Next Step
 
-Resume from the interrupted active-friction-index benchmark audit, or pick the
-next concrete LCP interface/demo gap if that audit has been superseded. Do not
-treat the broad LCP objective as complete.
-
-Known active-friction-index audit context:
-
-- `python/examples/demos/scenes/lcp_physics.py` still points
-  `active_friction_index_contact` at
-  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
-- `python/tests/unit/test_py_demo_panels.py` still expects that two-solver
-  filter.
-- Those two rows are registered in
-  `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp`, using
-  `LcpProblemFactory::activeFrictionIndexContact().problem`.
-- The representative py-demo command runs `pixi run bm lcp_compare`, and
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` does not yet expose a matching
-  manifest-driven active-friction-index row.
-- A likely next bounded patch is to register
-  `BM_LcpActiveFrictionIndexContact/<solver>` rows in `bm_lcp_compare.cpp`,
-  gate each concrete row with `supportsProblem(problem)`, then update the
-  py-demo metadata and panel test to use that row. Re-inspect solver options
-  and generated packet behavior before implementing; this was not verified
-  after the stop instruction.
+Continue the broader LCP interface/demo audit from the next concrete gap. Good
+starting points are remaining manifest-level benchmark gates in
+`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, any solver whose documented
+native mathematical domain is still broader than its concrete
+`supportsProblem(problem)` predicate, and GUI/demo packets that still lack
+clear apples-to-apples benchmark coverage. Do not treat the broad LCP objective
+as complete.
 
 ## Context That Would Be Lost
 
@@ -175,6 +180,12 @@ Known active-friction-index audit context:
   for `BM_LcpContactNormalStandardSweep/(MPRGP|Baraff|Direct)` keeps all
   Baraff/MPRGP rows and Direct only on concrete 1-, 2-, and 3-row normal
   packets.
+- Completed benchmark follow-up: active friction-index contact registration now
+  uses the shared active-contact factory packet in `bm_lcp_compare.cpp` and
+  filters participating manifest solvers through concrete
+  `supportsProblem(problem)` checks. The benchmark-list check for
+  `BM_LcpActiveFrictionIndexContact` lists 16 friction-index-capable rows, and
+  the short execution check reports `contract_ok=1` for all 16.
 - Final hand-off note: after the 2026-06-11 stop instruction, no additional
   verification was run, including `pixi run lint`. This intentionally follows
   the user's "without any further verification" instruction.
@@ -189,6 +200,10 @@ Known active-friction-index audit context:
   `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
   Inspect the broader manifest-driven registrations in
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` before changing this metadata.
+- That active-friction-index metadata gap is now closed: the demo filter is
+  `BM_LcpActiveFrictionIndexContact`, which matches the main `lcp_compare`
+  benchmark row family added in this slice. The old two-solver rows remain in
+  `bm_lcpsolver_solvers.cpp` as a narrower microbenchmark surface.
 - Good source locations for that next audit are `kContactComparisonSolverNames`,
   `kContactNormalStandardSolverNames`, the world/contact benchmark functions,
   and the registration block near the end of `bm_lcp_compare.cpp`.

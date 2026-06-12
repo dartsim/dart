@@ -969,10 +969,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     assert benchmark_by_packet["active_friction_index_contact"][
         "benchmark_filter"
-    ] == (
-        "BM_DantzigSolver_ActiveFrictionIndexContact|"
-        "BM_PgsSolver_ActiveFrictionIndexContact"
-    )
+    ] == "BM_LcpActiveFrictionIndexContact"
     assert benchmark_by_packet["contact_solver_comparison_sweep"][
         "benchmark_filter"
     ] == (

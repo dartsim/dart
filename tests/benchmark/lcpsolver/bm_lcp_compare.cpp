@@ -8,6 +8,7 @@
  * Solver-agnostic benchmark harness for LCP comparisons.
  */
 
+#include "tests/common/lcpsolver/lcp_problem_factory.hpp"
 #include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 #include "tests/common/lcpsolver/lcp_test_harness.hpp"
 
@@ -492,6 +493,13 @@ LcpProblem MakeFrictionIndexActiveSetTransitionProblem(
       std::move(lo),
       std::move(hi),
       std::move(findex));
+}
+
+LcpProblem MakeActiveFrictionIndexContactProblem()
+{
+  auto factoryProblem
+      = dart::test::LcpProblemFactory::activeFrictionIndexContact();
+  return std::move(factoryProblem.problem);
 }
 
 Eigen::MatrixXd MakeMildIllConditionedSpd(const int n, const unsigned seed)
@@ -7282,6 +7290,39 @@ void RunActiveSetTransitionBenchmark(
   }
 }
 
+void RunActiveFrictionIndexContactBenchmark(
+    benchmark::State& state,
+    const dart::test::LcpSolverManifestEntry& solverEntry)
+{
+  const auto problem = MakeActiveFrictionIndexContactProblem();
+  SolverBenchmarkOptions storage;
+  ConfigureSolverBenchmarkOptions(storage, solverEntry, problem);
+
+  const auto solver = solverEntry.create();
+  if (solver == nullptr) {
+    state.SkipWithError("LCP solver factory returned null");
+    return;
+  }
+
+  RunBenchmarkWithSolver(
+      state,
+      *solver,
+      problem,
+      storage.options,
+      MakeLabel(
+          std::string(solverEntry.name),
+          "ActiveFrictionIndexContact/FrictionIndex"));
+
+  state.counters["active_friction_index_contact"] = 1.0;
+  state.counters["contact_count"] = 2.0;
+  state.counters["normal_row_count"] = 2.0;
+  state.counters["tangent_row_count"] = 4.0;
+  state.counters["active_tangent_bound_count"] = 2.0;
+  if (storage.hasShockPropagationParams) {
+    AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+}
+
 void RunPgsRelaxationSweepBenchmark(
     benchmark::State& state, const RelaxationSweepCase testCase)
 {
@@ -11159,6 +11200,14 @@ std::string MakeActiveSetTransitionBenchmarkName(
   return out.str();
 }
 
+std::string MakeActiveFrictionIndexContactBenchmarkName(
+    const dart::test::LcpSolverManifestEntry& solver)
+{
+  std::ostringstream out;
+  out << "BM_LcpActiveFrictionIndexContact/FrictionIndex/" << solver.name;
+  return out.str();
+}
+
 std::string MakeNewtonWarmStartBenchmarkName(
     const dart::test::LcpSolverManifestEntry& solver,
     const NewtonWarmStartMode mode)
@@ -11941,6 +11990,24 @@ void RegisterActiveSetTransitionBenchmarks()
             RunActiveSetTransitionBenchmark(state, solver, family);
           });
     }
+  }
+}
+
+void RegisterActiveFrictionIndexContactBenchmarks()
+{
+  const auto problem = MakeActiveFrictionIndexContactProblem();
+  for (const auto& solver : dart::test::kLcpSolverManifest) {
+    if (!dart::test::supportsProblem(
+            solver, dart::test::LcpProblemSupport::FrictionIndex)
+        || !SolverSupportsConcreteProblem(solver, problem)) {
+      continue;
+    }
+
+    const auto name = MakeActiveFrictionIndexContactBenchmarkName(solver);
+    benchmark::RegisterBenchmark(
+        name.c_str(), [solver](benchmark::State& state) {
+          RunActiveFrictionIndexContactBenchmark(state, solver);
+        });
   }
 }
 
@@ -13368,6 +13435,7 @@ static void BM_LcpCudaPgsMixedContactGroupedBatch_FrictionIndex(
 const bool kManifestBenchmarksRegistered = [] {
   RegisterManifestBenchmarks();
   RegisterActiveSetTransitionBenchmarks();
+  RegisterActiveFrictionIndexContactBenchmarks();
   RegisterPgsRelaxationSweepBenchmarks();
   RegisterSymmetricPsorRelaxationSweepBenchmarks();
   RegisterRedBlackGaussSeidelRelaxationSweepBenchmarks();

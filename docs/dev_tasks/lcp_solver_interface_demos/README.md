@@ -50,6 +50,9 @@
 - [x] Captured the 2026-06-11 critical hand-off after the contact-normal
       checkpoint with no further lint, tests, benchmark listing, solver
       execution, or implementation work.
+- [x] Added manifest-driven active friction-index contact benchmark rows to
+      `lcp_compare` and retargeted the py-demo representative metadata from the
+      older two-solver benchmark surface to that main comparison filter.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -89,8 +92,51 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the contact-normal benchmark routing
-slice, commit `7ef5b79e602 Filter contact normal benchmark native rows`.
+The latest implementation checkpoint is the active friction-index contact
+benchmark routing slice.
+
+## Active Friction-Index Benchmark Routing Checkpoint
+
+The latest implementation checkpoint moves the demo's active friction-index
+contact benchmark metadata onto the main manifest-driven `lcp_compare` surface:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now registers
+  `BM_LcpActiveFrictionIndexContact/FrictionIndex/<solver>` rows for every
+  friction-index-capable manifest solver whose concrete
+  `supportsProblem(problem)` accepts
+  `LcpProblemFactory::activeFrictionIndexContact().problem`.
+- The original narrower
+  `BM_DantzigSolver_ActiveFrictionIndexContact` and
+  `BM_PgsSolver_ActiveFrictionIndexContact` microbenchmark rows remain in
+  `bm_lcpsolver_solvers.cpp`.
+- `python/examples/demos/scenes/lcp_physics.py` now points the
+  `active_friction_index_contact` representative filter at
+  `BM_LcpActiveFrictionIndexContact`, so
+  `representative_benchmark_command` runs rows that exist in `lcp_compare`.
+- `python/tests/unit/test_py_demo_panels.py` now asserts that metadata.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpActiveFrictionIndexContact'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpActiveFrictionIndexContact' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check built `BM_LCP_COMPARE` and listed 16
+  friction-index-capable rows: Dantzig, Pgs, SymmetricPsor, Jacobi,
+  RedBlackGaussSeidel, BlockedJacobi, BGS, NNCG, SubspaceMinimization, Apgd,
+  Tgs, ShockPropagation, Staggering, Admm, Sap, and BoxedSemiSmoothNewton.
+- The short benchmark execution reported `contract_ok=1` for all 16 rows.
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- `pixi run lint`: passed.
 
 ## 2026-06-11 Critical Hand-Off Snapshot
 
