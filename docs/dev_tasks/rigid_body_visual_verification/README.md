@@ -2,10 +2,10 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the Rigid IPC shelf capture-metrics follow-up after
-the `rigid_ipc_edge_drop` related-evidence slice. The direct Rigid IPC shelf
-scenes now keep shared replay controls enabled while recording their own
-capture metrics.
+This checkpoint adds the next Rigid IPC shelf usability follow-up after the
+capture-metrics slice. The direct metric-backed Rigid IPC shelf scenes can now
+be appended to the workflow capture/review packet with an explicit
+`--include-ipc-shelf` flag.
 
 Expected repository state after this hand-off:
 
@@ -16,8 +16,8 @@ Expected repository state after this hand-off:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
   `a95687dc628 Promote rigid IPC shelf metrics`.
 - There is no PR associated with this branch at checkpoint time.
-- This hand-off-only docs update was made after the user's explicit stop
-  request. No further implementation or verification was run for it.
+- The current continuation has local uncommitted implementation, test, and docs
+  changes unless a future session commits them.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -68,6 +68,9 @@ Expected repository state after this hand-off:
       `rigid_ipc_incline`, and `rigid_ipc_pile`) now publish scene-owned
       capture metrics for direct docked captures while preserving shared replay
       controls.
+- [x] `py-demo-capture -- --rigid-workflow --include-ipc-shelf` now appends the
+      four direct metric-backed Rigid IPC shelf scenes to the workflow manifest
+      and `review_index.html` without changing the default 36-row workflow.
 
 ## Goal
 
@@ -102,6 +105,9 @@ are easy to inspect, cycle, capture, and regression-test.
   `a95687dc628 Promote rigid IPC shelf metrics`.
 - A final hand-off-only docs update was added after the explicit stop request.
   It intentionally did not run verification.
+- The current continuation began from pushed commit
+  `9b8c89bd27c Refresh rigid visual verification handoff` and adds the local
+  `--include-ipc-shelf` capture-bundle slice.
 
 ## What The Local Commit Changed
 
@@ -473,6 +479,34 @@ Observed results:
   speed about `1.177` m/s, and minimum history clearance about `0.276` m.
 - `git diff --check` was clean.
 
+## Verified In The Direct Rigid IPC Shelf Capture Bundle Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_direct_ipc_shelf python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_direct_ipc_shelf_captures_are_documented -q
+pixi run py-demo-capture -- --rigid-workflow --include-ipc-shelf --dry-run --output-dir /tmp/dart_capture_rigid_workflow_ipc_shelf_only_dry_run_current
+jq -r '.include_related, .include_ipc_shelf, .include_packets, .capture_count, .workflow_total_count, .captures[36].workflow_group, .captures[36].scene, .captures[39].scene' /tmp/dart_capture_rigid_workflow_ipc_shelf_only_dry_run_current/manifest.json
+rg -n "37/40 rigid_ipc|40/40 rigid_ipc_pile|rigid_ipc_shelf" /tmp/dart_capture_rigid_workflow_ipc_shelf_only_dry_run_current/review_index.html
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 47 --workflow-end-row 51 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_ipc_shelf_dry_run_current
+jq -r '.include_related, .include_ipc_shelf, .include_packets, .capture_count, .workflow_total_count, .captures[0].order, .captures[0].workflow_group, .captures[0].scene, .captures[3].scene, .captures[4].workflow_group, .captures[4].scene' /tmp/dart_capture_rigid_workflow_ipc_shelf_dry_run_current/manifest.json
+rg -n "47/51 rigid_ipc|50/51 rigid_ipc_pile|51/51 rigid_ipc_stack_packet|rigid_ipc_shelf" /tmp/dart_capture_rigid_workflow_ipc_shelf_dry_run_current/review_index.html
+```
+
+Observed results:
+
+- Focused pytest reported `11 passed`.
+- The public `--include-ipc-shelf` dry-run completed with 40 planned captures:
+  36 numbered rows plus direct Rigid IPC shelf rows 37-40.
+- The dry-run manifest reported `include_ipc_shelf=true`,
+  `capture_count=40`, `workflow_total_count=40`, first IPC shelf scene
+  `rigid_ipc`, final IPC shelf scene `rigid_ipc_pile`, and
+  `workflow_group=rigid_ipc_shelf`.
+- The generated review index contained `37/40 rigid_ipc`,
+  `40/40 rigid_ipc_pile`, and the `rigid_ipc_shelf` group.
+- The combined row-range dry-run with related evidence, IPC shelf rows, and
+  packets selected rows 47-51. It reported the direct IPC shelf rows as
+  absolute 47-50 and `rigid_ipc_stack_packet` as the explicit combined-mode
+  row 51.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -488,10 +522,9 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Resume from `git status -sb`. After the final hand-off push, the branch
-   should be aligned with
-   `origin/feature/rigid-body-gui-visual-verification`; if it is still ahead,
-   the push was interrupted or not performed.
+1. Resume from `git status -sb`. Expect local uncommitted changes for the
+   `--include-ipc-shelf` capture-bundle slice unless a future session has
+   committed them.
 2. Rerun the repository-mandated `pixi run lint` before any further commit.
 3. Choose the next bounded rigid visual-verification gap from the durable
    sidecar, or retire this dev-task folder only if the maintainer explicitly

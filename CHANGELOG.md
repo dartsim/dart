@@ -73,7 +73,9 @@
     examples (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
     `rigid_ipc_pile`) so direct docked captures preserve barrier gap, slide,
     incline, pile, contact, and timing evidence while preserving shared replay
-    controls.
+    controls. Add `--include-ipc-shelf` so the metric-backed direct Rigid IPC
+    shelf scenes can be appended to the same workflow manifest and review
+    index without changing the default 36-row workflow.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

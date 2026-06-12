@@ -2032,6 +2032,32 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
     assert list(capture_py_demo.rigid_workflow_packet_capture_specs()) == expected_specs
 
 
+def test_rigid_visual_direct_ipc_shelf_captures_are_documented() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    sidecar = (
+        root
+        / "docs"
+        / "plans"
+        / "103-examples-strategy"
+        / "rigid-body-visual-verification.md"
+    )
+    readme = root / "python" / "examples" / "demos" / "README.md"
+    expected_specs = [
+        ("rigid_ipc", 72, 960, 540, True),
+        ("rigid_ipc_slide", 72, 960, 540, True),
+        ("rigid_ipc_incline", 72, 960, 540, True),
+        ("rigid_ipc_pile", 72, 960, 540, True),
+    ]
+    marker = "Capture the direct Rigid IPC shelf routes with the docked UI visible:"
+    sidecar_specs = _read_capture_command_specs(sidecar, marker)
+    readme_specs = _read_capture_command_specs(readme, marker)
+
+    assert sidecar_specs == expected_specs
+    assert readme_specs == expected_specs
+    capture_py_demo = _capture_py_demo_module()
+    assert list(capture_py_demo.rigid_workflow_ipc_shelf_capture_specs()) == expected_specs
+
+
 def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
     import numpy as np
 

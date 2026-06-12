@@ -267,12 +267,36 @@ pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --output-dir /tmp/dart_capture_rigid_workflow_with_related
 ```
 
+Add `--include-ipc-shelf` when the packet should also capture the direct
+metric-backed Rigid IPC shelf scenes after the numbered rows and any related
+evidence routes:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-ipc-shelf --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --output-dir /tmp/dart_capture_rigid_workflow_with_ipc_shelf
+```
+
 Add `--include-packets` when the packet should also include capture-first
-rigid IPC evidence that is intentionally outside the live 36-row workflow:
+rigid IPC evidence that is intentionally outside the live 36-row workflow.
+Capture-first packets are appended after related evidence and direct Rigid IPC
+shelf rows when those groups are requested:
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
+```
+
+Capture the direct Rigid IPC shelf routes with the docked UI visible:
+
+These commands are also included after the numbered rows, and after related
+evidence when present, by
+`py-demo-capture -- --rigid-workflow --include-ipc-shelf`.
+
+```bash
+pixi run py-demo-capture -- --scene rigid_ipc --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_slide --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_incline --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 --width 960 --height 540 --show-ui
 ```
 
 For targeted reruns after a failed or manually inspected row, keep the same

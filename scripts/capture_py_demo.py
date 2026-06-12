@@ -309,6 +309,14 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...
 )
 
 
+RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+    ("rigid_ipc", 72, 960, 540, True),
+    ("rigid_ipc_slide", 72, 960, 540, True),
+    ("rigid_ipc_incline", 72, 960, 540, True),
+    ("rigid_ipc_pile", 72, 960, 540, True),
+)
+
+
 RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
     ("rigid_ipc_stack_packet", 24, 960, 540, True),
 )
@@ -322,6 +330,12 @@ def rigid_workflow_related_capture_specs() -> (
     tuple[tuple[str, int, int, int, bool], ...]
 ):
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
+
+
+def rigid_workflow_ipc_shelf_capture_specs() -> (
+    tuple[tuple[str, int, int, int, bool], ...]
+):
+    return RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS
 
 
 def rigid_workflow_packet_capture_specs() -> (
@@ -616,6 +630,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--include-ipc-shelf",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, also capture direct metric-backed Rigid IPC "
+            "shelf scenes."
+        ),
+    )
+    parser.add_argument(
         "--include-packets",
         action="store_true",
         help=(
@@ -718,6 +740,8 @@ def _workflow_capture_specs(
     specs = list(rigid_workflow_capture_specs())
     if getattr(args, "include_related", False):
         specs.extend(rigid_workflow_related_capture_specs())
+    if getattr(args, "include_ipc_shelf", False):
+        specs.extend(rigid_workflow_ipc_shelf_capture_specs())
     if getattr(args, "include_packets", False):
         specs.extend(rigid_workflow_packet_capture_specs())
     return tuple(specs)
@@ -787,6 +811,11 @@ def _workflow_plan_entries(
         if getattr(args, "include_related", False)
         else 0
     )
+    ipc_shelf_count = (
+        len(rigid_workflow_ipc_shelf_capture_specs())
+        if getattr(args, "include_ipc_shelf", False)
+        else 0
+    )
     count = len(specs)
     start_row, end_row = _workflow_row_bounds(args, count)
     guidance_by_scene = _rigid_workflow_guidance_by_scene()
@@ -800,6 +829,8 @@ def _workflow_plan_entries(
             workflow_group = "numbered"
         elif order <= numbered_count + related_count:
             workflow_group = "related_evidence"
+        elif order <= numbered_count + related_count + ipc_shelf_count:
+            workflow_group = "rigid_ipc_shelf"
         else:
             workflow_group = "capture_first_packet"
         entries.append(
@@ -1226,6 +1257,9 @@ def _write_workflow_manifest(
     include_related = any(
         capture.get("workflow_group") == "related_evidence" for capture in captures
     )
+    include_ipc_shelf = any(
+        capture.get("workflow_group") == "rigid_ipc_shelf" for capture in captures
+    )
     include_packets = any(
         capture.get("workflow_group") == "capture_first_packet" for capture in captures
     )
@@ -1249,6 +1283,7 @@ def _write_workflow_manifest(
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
             "include_related": include_related,
+            "include_ipc_shelf": include_ipc_shelf,
             "include_packets": include_packets,
             "workflow_total_count": workflow_total_count,
             "workflow_row_start": min(capture_orders) if capture_orders else None,
@@ -1358,6 +1393,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.include_related and not args.rigid_workflow:
         raise SystemExit("--include-related requires --rigid-workflow")
+    if args.include_ipc_shelf and not args.rigid_workflow:
+        raise SystemExit("--include-ipc-shelf requires --rigid-workflow")
     if args.include_packets and not args.rigid_workflow:
         raise SystemExit("--include-packets requires --rigid-workflow")
     if (
