@@ -2,7 +2,13 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: refreshed the core solver/contact-policy visual evidence
+Latest local slice: workflow `review_index.html` row cards now surface actual
+decision values from scene-owned metrics, not only metric keys. Captured rows
+show held-fixed values when present, control settings, and compact latest
+signals such as solver pair, executor pair, contact-policy pair, divergence,
+and step/contact counters.
+
+Previous checkpoint: refreshed the core solver/contact-policy visual evidence
 packet for rows 15-17. The real workflow capture completed
 `rigid_solver_compare`, `rigid_executor_equivalence`, and
 `rigid_contact_solver_compare` together, keeping solver-family,
@@ -85,19 +91,19 @@ Observed repository state at this hand-off:
   active goal.
 - Current continuation started with the branch clean at
   `867c5f5d8a5 Add rigid workflow guidance to capture manifests`, eleven
-  commits ahead of `origin/feature/rigid-body-gui-visual-verification`, then
-  captured the rows 15-17 solver/contact-policy mini packet and updated
-  `python/examples/demos/README.md`, PLAN-103's rigid sidecar, this file, and
-  `RESUME.md`.
+  commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
+  committed `bedc418df0e Record solver contact workflow packet evidence`, then
+  improved workflow review-index row cards to expose actual latest metric
+  values for solver/contact decision review.
 - At the stop-state hand-off, those docs updates were uncommitted local
   modifications and no push was performed. The resumed continuation verified
   this evidence-docs slice locally before choosing the next bounded
   GUI-verification improvement; push still requires explicit approval.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
   resumed work. Expect the latest completed implementation commit to be
-  `Record solver contact workflow packet evidence` if this slice has been
-  committed; otherwise inspect the uncommitted diff for the same rows 15-17
-  solver/contact-policy evidence refresh.
+  `Surface workflow review latest signals` if this slice has been committed;
+  otherwise inspect the uncommitted diff for the latest-signals review-index
+  follow-up.
 - Do not push without explicit approval in the session that performs the push.
 - Latest local slice updates `examples/demos/registry.cpp`,
   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
@@ -152,6 +158,19 @@ Observed repository state at this hand-off:
   `pixi run check-lint-md`, `pixi run check-docs-policy`,
   `pixi run check-lint-spell`, and `git diff --check` passed for this
   evidence-docs slice.
+- Latest local review-index latest-signals follow-up updates
+  `scripts/capture_py_demo.py`, `python/tests/unit/test_capture_py_demo.py`,
+  `python/examples/demos/README.md`, PLAN-103's rigid sidecar, and this handoff
+  so row cards render held-fixed/control values and latest comparison signals
+  directly from `scene_metrics.latest.metrics`.
+- Verification for the latest review-index latest-signals follow-up: the
+  focused rigid-workflow aggregate/dry-run/video unit subset in
+  `python/tests/unit/test_capture_py_demo.py` reported `3 passed, 36
+deselected`. A real rows 15-17 workflow capture completed under
+  `/tmp/dart_capture_rigid_workflow_latest_signals_rows_15_17_1781295362` with
+  `capture_count=3`, `completed_count=3`, and `failed_count=0`; the review
+  index showed control values plus latest signals for the solver pair, executor
+  pair, contact-policy pair, and divergence summaries.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -2056,13 +2075,13 @@ passed and `git diff --check` was clean.
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the latest completed local implementation commit to be
-   `Record solver contact workflow packet evidence` if this slice has been
-   committed; otherwise inspect the uncommitted diff for the same rows 15-17
-   solver/contact-policy evidence refresh.
-3. If the tree is clean with that slice present, return to the
-   completion/retirement readiness audit: maintainer acceptance is the next
-   decision before deleting this dev-task folder, or choose another bounded
-   PLAN-103 follow-up if the maintainer wants more GUI evidence first.
+   `Surface workflow review latest signals` if this slice has been committed;
+   otherwise inspect the uncommitted diff for the latest-signals review-index
+   follow-up.
+3. If the tree is clean with that slice present, the next concrete unblocked
+   GUI-verification follow-up is the rows 19-21 contact-failure comparison
+   mini-packet: `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
+   `rigid_stack_stability`.
 4. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
 5. Do not push again unless the user explicitly approves pushing in that

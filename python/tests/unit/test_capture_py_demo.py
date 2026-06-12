@@ -987,12 +987,35 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
                         "latest": {
                             "metrics": {
                                 "comparison_axis": "test_axis",
-                                "held_fixed": {"solver": "si"},
+                                "held_fixed": {
+                                    "executor": "Sequential",
+                                    "solver": "si",
+                                },
+                                "controls": {
+                                    "friction": 0.72,
+                                    "solver_index": 1,
+                                },
+                                "solver_pair": ["SEQUENTIAL_IMPULSE", "IPC"],
+                                "executor_pair": [
+                                    "Sequential",
+                                    "Parallel (2 workers)",
+                                ],
+                                "position_divergence": 1.0e-9,
+                                "divergence": {
+                                    "current_x": 0.125,
+                                    "max_x": 0.25,
+                                    "samples": 2.0,
+                                },
                             },
                         },
                         "metric_key_counts": {
                             "comparison_axis": 1,
+                            "controls": 1,
+                            "divergence": 1,
+                            "executor_pair": 1,
                             "held_fixed": 1,
+                            "position_divergence": 1,
+                            "solver_pair": 1,
                         },
                     },
                     "scene_metadata": {
@@ -1034,7 +1057,14 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
     assert "test_axis" in review_html
     assert "Diagnostic gap (signal, markers)" in review_html
-    assert "comparison_axis, held_fixed" in review_html
+    assert "comparison_axis, controls, divergence, executor_pair" in review_html
+    assert "executor=Sequential, solver=si" in review_html
+    assert "friction=0.72, solver index=1" in review_html
+    assert "latest signals" in review_html
+    assert "solver pair: SEQUENTIAL_IMPULSE / IPC" in review_html
+    assert "executor pair: Sequential / Parallel (2 workers)" in review_html
+    assert "position divergence: 1e-09" in review_html
+    assert "divergence: current x=0.125, max x=0.25, samples=2" in review_html
 
 
 def test_rigid_workflow_run_links_scene_videos(

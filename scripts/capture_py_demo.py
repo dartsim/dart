@@ -1230,9 +1230,17 @@ def _workflow_scene_manifest_summary(
                     summary["comparison_axis"] = comparison_axis
                 held_fixed = metrics.get("held_fixed")
                 if isinstance(held_fixed, dict):
-                    summary["held_fixed_keys"] = sorted(
-                        key for key in held_fixed if isinstance(key, str)
-                    )
+                    held_fixed_values = _workflow_metric_key_values(held_fixed)
+                    if held_fixed_values:
+                        summary["held_fixed_values"] = held_fixed_values
+                controls = metrics.get("controls")
+                if isinstance(controls, dict):
+                    control_values = _workflow_metric_key_values(controls)
+                    if control_values:
+                        summary["control_values"] = control_values
+                metric_highlights = _workflow_metric_highlights(metrics)
+                if metric_highlights:
+                    summary["metric_highlights"] = metric_highlights
 
     scene_metadata = payload.get("scene_metadata")
     if isinstance(scene_metadata, dict):
@@ -1267,6 +1275,96 @@ def _workflow_link(label: str, href: object) -> str:
     return (
         f'<a href="{html.escape(str(href), quote=True)}">' f"{html.escape(label)}</a>"
     )
+
+
+_WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
+    "solver_pair",
+    "executor_pair",
+    "contact_policy_pair",
+    "case_pair",
+    "solver_label",
+    "solver",
+    "executor",
+    "contact_policy",
+    "same_solver",
+    "position_divergence",
+    "velocity_divergence",
+    "contact_delta",
+    "sequential_contact_count",
+    "parallel_contact_count",
+    "sequential_step_ms",
+    "parallel_step_ms",
+)
+
+_WORKFLOW_NESTED_METRIC_HIGHLIGHT_KEYS = {
+    "divergence": (
+        "current_x",
+        "max_x",
+        "current_pose",
+        "max_pose",
+        "samples",
+    ),
+    "history": (
+        "max_position_divergence",
+        "max_velocity_divergence",
+        "max_contact_delta",
+        "max_sequential_step_ms",
+        "max_parallel_step_ms",
+        "samples",
+    ),
+}
+
+
+def _workflow_metric_label(key: str) -> str:
+    return key.replace("_", " ")
+
+
+def _workflow_metric_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float):
+        return f"{float(value):.6g}"
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list | tuple):
+        return " / ".join(_workflow_metric_value(item) for item in value[:4])
+    return str(value)
+
+
+def _workflow_metric_key_values(values: dict[object, object]) -> list[str]:
+    pairs: list[str] = []
+    for key, value in sorted(values.items(), key=lambda item: str(item[0])):
+        if not isinstance(key, str):
+            continue
+        pairs.append(f"{_workflow_metric_label(key)}={_workflow_metric_value(value)}")
+    return pairs[:8]
+
+
+def _workflow_nested_metric_highlight(label: str, value: object) -> str | None:
+    if not isinstance(value, dict):
+        return None
+    keys = _WORKFLOW_NESTED_METRIC_HIGHLIGHT_KEYS.get(label, ())
+    parts = [
+        f"{_workflow_metric_label(key)}={_workflow_metric_value(value[key])}"
+        for key in keys
+        if key in value
+    ]
+    if not parts:
+        return None
+    return f"{_workflow_metric_label(label)}: {', '.join(parts[:5])}"
+
+
+def _workflow_metric_highlights(metrics: dict[str, object]) -> list[str]:
+    highlights = [
+        f"{_workflow_metric_label(key)}: {_workflow_metric_value(metrics[key])}"
+        for key in _WORKFLOW_METRIC_HIGHLIGHT_KEYS
+        if key in metrics
+    ]
+    for key in _WORKFLOW_NESTED_METRIC_HIGHLIGHT_KEYS:
+        highlight = _workflow_nested_metric_highlight(key, metrics.get(key))
+        if highlight is not None:
+            highlights.append(highlight)
+    return highlights[:8]
 
 
 _WORKFLOW_GROUP_LABELS = {
@@ -1519,9 +1617,15 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     comparison_axis = summary.get("comparison_axis")
     if isinstance(comparison_axis, str):
         details.append(_workflow_detail("axis", comparison_axis))
-    held_fixed_keys = summary.get("held_fixed_keys")
-    if isinstance(held_fixed_keys, list) and held_fixed_keys:
-        details.append(_workflow_detail("held fixed", ", ".join(held_fixed_keys)))
+    held_fixed_values = summary.get("held_fixed_values")
+    if isinstance(held_fixed_values, list) and held_fixed_values:
+        details.append(_workflow_detail("held fixed", ", ".join(held_fixed_values)))
+    control_values = summary.get("control_values")
+    if isinstance(control_values, list) and control_values:
+        shown = ", ".join(str(item) for item in control_values[:6])
+        if len(control_values) > 6:
+            shown = f"{shown}, +{len(control_values) - 6} more"
+        details.append(_workflow_detail("controls", shown))
     replay_timeline_label = summary.get("replay_timeline_label")
     if isinstance(replay_timeline_label, str):
         replay_tracks: list[str] = []
@@ -1539,6 +1643,12 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
         if len(metric_keys) > 8:
             shown = f"{shown}, +{len(metric_keys) - 8} more"
         details.append(_workflow_detail("metrics", shown))
+    metric_highlights = summary.get("metric_highlights")
+    if isinstance(metric_highlights, list) and metric_highlights:
+        shown = " / ".join(str(item) for item in metric_highlights[:6])
+        if len(metric_highlights) > 6:
+            shown = f"{shown} / +{len(metric_highlights) - 6} more"
+        details.append(_workflow_detail("latest signals", shown))
     read_error = summary.get("read_error")
     if isinstance(read_error, str):
         details.append(_workflow_detail("manifest error", read_error))

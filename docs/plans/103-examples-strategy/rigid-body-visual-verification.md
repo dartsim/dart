@@ -427,9 +427,10 @@ Evidence recorded for this slice:
   `guidance_complete=true`, and `guidance_missing_count=0`. The review index
   links the three adjacent comparison rows and exposes their maintained
   questions, live open commands, workflow row rerun commands, direct capture
-  commands, Replay tracks, and metric summaries. Per-scene manifests recorded
-  docked nonblank screenshots, 23 PNG frames each for `rigid_solver_compare`
-  and `rigid_executor_equivalence`, 71 PNG frames for
+  commands, Replay tracks, metric-key summaries, held-fixed/control values, and
+  latest decision-signal values for solver/executor/contact-policy comparisons.
+  Per-scene manifests recorded docked nonblank screenshots, 23 PNG frames each
+  for `rigid_solver_compare` and `rigid_executor_equivalence`, 71 PNG frames for
   `rigid_contact_solver_compare`, and scene-metric streams showing the
   `rigid_body_solver_family`, `executor`, and `contact_solver_method`
   comparison axes. The latest metrics reported sequential-impulse-vs-IPC

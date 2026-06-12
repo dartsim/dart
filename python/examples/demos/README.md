@@ -475,7 +475,9 @@ pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 \
 That packet keeps the solver-family, executor-only, and contact-policy axes
 adjacent in `review_index.html`, while each row card preserves its live open
 command, workflow rerun command, direct capture command, guidance, Replay track,
-and scene-owned metrics.
+scene-owned metric keys, held-fixed/control values, and the latest decision
+signals such as solver pair, executor pair, contact-policy pair, divergence,
+and step/contact counters.
 
 ## Rigid link contact
 
