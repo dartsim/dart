@@ -9,12 +9,26 @@ Stop state for fresh handoff: use exactly one branch,
 should not be used by fresh sessions unless a maintainer explicitly redirects
 the work.
 
-The branch head should contain the latest handoff checkpoint for the dynamic
-rigid IPC dynamics-only slice, after `fb89fd3ef3c` refreshed the earlier
-docs-only handoff. Treat `git log` on
-`pr/hmm-phase45-follow-up-clean` as the source of truth for the exact branch
-head. Do not continue optimization work in the stopped session that produced
-this handoff; resume only from a fresh session after reading this task state.
+The last code checkpoint before the critical handoff request was
+`57cb751eef9` (`Avoid heap allocation in dynamic rigid IPC no-contact steps`).
+This docs-only handoff updates the branch state without running any further
+verification, per the maintainer's explicit 2026-06-11 stop request. Treat
+`git log` on `pr/hmm-phase45-follow-up-clean` as the source of truth for the
+exact pushed branch head, and resume only from a fresh session after reading
+this task state.
+
+Important non-closure: an older local branch contains candidate root-routing
+work in `46155b77c56` (`Route WorldStorage through world allocator`). A
+cherry-pick of that commit was attempted during the stopped session, produced
+conflicts, and was aborted so the active branch could be handed off cleanly.
+That candidate is not part of the active branch unless a future fresh session
+ports it deliberately, commits it on this branch, and records its own
+verification.
+
+Another measured non-closure: a temporary active rigid IPC contact-heavy
+no-heap probe failed before removal with 157 global heap allocations / 7968
+bytes. That failing probe was not committed. Treat contact-heavy rigid IPC
+projected-Newton Eigen/storage paths as open Phase 4/5 follow-up work.
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -105,13 +119,13 @@ Additional checks completed for the dynamic rigid IPC dynamics-only slice:
 - `git diff --check` and `pixi run lint` passed before the final handoff-only
   doc edits.
 
-The docs-only handoff commit `fb89fd3ef3c` intentionally skipped
-`pixi run lint`, build, and tests per the maintainer's 2026-06-11 stop request.
-The final 2026-06-11 stop request also required no further verification: a
-subsequent `pixi run build` was in progress and was interrupted, and no full
+The docs-only handoff commits intentionally skipped `pixi run lint`, build, and
+tests per the maintainer's 2026-06-11 stop requests. A subsequent
+`pixi run build` was in progress and was interrupted, and no full
 `pixi run build` or `pixi run test-unit` result should be inferred for the
-dynamic rigid IPC slice. Later continuation slices should list their own
-verification here, as the dynamic rigid IPC slice does above.
+dynamic rigid IPC slice after the listed focused checks. Later continuation
+slices should list their own verification here, as the dynamic rigid IPC slice
+does above.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
@@ -947,17 +961,14 @@ Follow-up progress after PR #2956:
   `MemoryManager`, allocator lifetime roles, registry bake/rebuild boundaries,
   and the direct evidence expected before making broader zero-allocation
   claims.
-- The opaque `WorldStorage` object, private built-in step-pipeline cache,
-  built-in stage-owned scratch/cache objects, lazy collision query cache, and
-  optional replay controller object now use the same World free-list allocator
-  as the EnTT registry and differentiable-parameter storage. A focused
-  allocator-root test verifies initial construction, built-in stage scratch
-  construction, lazy collision-cache construction, lazy replay-controller
-  construction, and `World::clear()` rebuilds keep persistent World state under
-  the World memory hierarchy while dropping cached collision query state at the
-  rebuild boundary. Replay frame payload vectors and nested stage scratch
-  payload vectors remain governed by the existing same-shape no-growth/no-heap
-  gates, not by this allocator-root ownership check.
+- Historical/unapplied root-routing candidate: an older local branch contains
+  a `WorldStorage` allocator-root slice that would move the opaque
+  `WorldStorage` object through the World free-list allocator and add focused
+  construction/`World::clear()` rebuild coverage. That candidate lives in
+  `46155b77c56` (`Route WorldStorage through world allocator`) and was not
+  applied to the current clean handoff branch after the critical stop request.
+  Do not count this as closed until a fresh session ports it deliberately,
+  resolves the current code/docs/test shape, and records verification.
 - The first nested stage-scratch payload route covers
   `RigidBodyVelocityStage` force-batch vectors. When that stage borrows the
   World `MemoryManager`, its entity, force, and torque reserve/growth traffic
@@ -1127,6 +1138,11 @@ Remaining Phase 4/5 follow-up items for the next PR:
   (`Eigen::SparseMatrix`/`VectorXd` internals), and differently shaped
   frictional self-contact, static-obstacle, or inter-body CCD mixes not
   represented by the current gates.
+- Continue contact-heavy rigid IPC projected-Newton scratch reuse only from a
+  measured failing shape. The last temporary probe for an active rigid IPC
+  barrier scene failed with 157 global heap allocations / 7968 bytes and was
+  removed before handoff; port or redesign that probe only when the
+  corresponding solver-private allocation path is being fixed.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production

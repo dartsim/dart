@@ -9,10 +9,11 @@ continuation,
 branches are historical/no-resume targets unless a maintainer explicitly
 redirects the work.
 
-The latest completed code checkpoint before the 2026-06-11 stop request was
-`3a646829301` (`Route compute graph traversal scratch through allocator`), and
-`fb89fd3ef3c` was a docs-only handoff commit that intentionally skipped
-verification. Work has since resumed on the same branch: the current
+The latest completed code checkpoint before the critical 2026-06-11 handoff
+request was `57cb751eef9` (`Avoid heap allocation in dynamic rigid IPC
+no-contact steps`). Earlier docs-only handoff commit `fb89fd3ef3c`
+intentionally skipped verification, and this final handoff-only docs update
+also skips verification by explicit maintainer instruction. The current
 continuation closes a dynamic rigid IPC dynamics-only heap gap by keeping
 `RigidIpcContactStage`'s one-node solve graph in prewarmed stage scratch and
 using the exact diagonal inertial quadratic minimizer for a single supported
@@ -25,6 +26,18 @@ further verification. A `pixi run build` was in progress and was interrupted;
 do not treat full build or full `pixi run test-unit` validation as complete for
 the dynamic rigid IPC slice. Resume from the pushed branch head, not from this
 session.
+
+Important stop-state cleanup: a cherry-pick of older local commit
+`46155b77c56` (`Route WorldStorage through world allocator`) was attempted
+during this session, conflicted, and was aborted to keep the active handoff
+branch clean. That `WorldStorage` allocator-root candidate is not part of
+`pr/hmm-phase45-follow-up-clean` unless a future fresh session ports and
+verifies it deliberately.
+
+Measured open gap: a temporary active rigid IPC contact-heavy no-heap probe was
+added locally, failed with 157 global heap allocations / 7968 bytes, and was
+removed before handoff. Do not commit that failing probe without fixing the
+corresponding contact-heavy projected-Newton allocation path.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
@@ -53,11 +66,12 @@ git log --oneline --decorate -5
 Expected status after the handoff push: clean worktree, branch even with
 `origin/pr/hmm-phase45-follow-up-clean`.
 
-Immediate next step: after this dynamic rigid IPC slice is committed and
-pushed, choose the next remaining Phase 4/5 item from `README.md` and prove a
-real allocation source before editing. Do not continue adding scenes or
-scratch-reuse work to PR #2956; it is merged. Earlier closed gaps include the
-pure semi-implicit external-force multibody path:
+Immediate next step: start from the pushed
+`pr/hmm-phase45-follow-up-clean` branch, choose the next remaining Phase 4/5
+item from `README.md`, and prove a real allocation source before editing. Do
+not continue adding scenes or scratch-reuse work to PR #2956; it is merged.
+Earlier closed gaps include the pure semi-implicit external-force multibody
+path:
 
 - `computeUnconstrainedMultibodyVelocityInto()` now reuses
   `MultibodyDynamicsScratch::bodyJacobian` for link body Jacobians.
@@ -506,20 +520,13 @@ experimental DART 7 `World` memory hierarchy. It now records the public
 lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
 world-base/global-heap evidence expected before broader zero-allocation claims.
 
-The current root-routing slice moves the opaque `WorldStorage` object itself,
-the private built-in step-pipeline cache, built-in stage-owned scratch/cache
-objects, the lazy collision query cache, and the optional replay controller
-object onto the World free-list allocator, matching the allocator already used
-by the EnTT registry and differentiable-parameter list. The focused world test
-checks initial construction, built-in stage scratch construction, lazy
-collision-cache construction, lazy replay-controller construction, and
-`World::clear()` rebuilds through free-list live-allocation counters, and still
-directly probes the `WorldStorage` pointer through
-`MemoryManager::hasAllocated()` in debug builds. `World::clear()` now drops the
-collision query cache so rebuild boundaries release cached collision query
-capacity; replay frame payload vectors and nested stage scratch payload vectors
-remain governed by the existing same-shape no-growth/no-heap gates, not by this
-allocator-root ownership check.
+Historical/unapplied root-routing candidate: older local commit
+`46155b77c56` moves the opaque `WorldStorage` object itself onto the World
+free-list allocator and adds focused construction/`World::clear()` rebuild
+coverage. A stopped-session cherry-pick of that commit conflicted and was
+aborted. Do not treat this as current branch behavior unless a future fresh
+session ports the code/docs/test changes, resolves conflicts against the active
+branch, and records verification.
 
 The current nested-payload slices start with the `RigidBodyVelocityStage`
 force batch: allocator-aware stage construction now gives the entity, force,
