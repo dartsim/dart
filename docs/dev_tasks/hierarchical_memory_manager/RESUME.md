@@ -1,5 +1,30 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Continuation (2026-06-12, EnTT Comparative Evidence)
+
+The active branch is still `pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. A temporary local experiment branch was
+created and deleted with no commits; continue from this single branch.
+
+Current measured gap:
+
+- `.benchmark_results/allocator_entt_resume_cpu5_reps5_20260612.json` is the
+  useful source-policy EnTT run. DART no-growth registry rows made zero
+  allocator calls after prewarm, `BM_EnttRegistry/512` passed foonathan/std,
+  but `BM_EnttRegistry/256`, `BM_EnttRegistry/2048`, and
+  `BM_EnttRegistryBuild/2048` still missed at least one baseline.
+- `.benchmark_results/allocator_entt_natural_stl_cpu5_reps5_20260612.json`
+  shows that making generic `StlAllocator` large scalar pages use natural
+  alignment fixes 256 no-growth and 2048 build, but regresses or fails other
+  EnTT rows. That code probe was reverted.
+- `.benchmark_results/allocator_entt_l1_threshold_cpu5_reps5_20260612.json`
+  ran while the host was heavily saturated and should not guide policy.
+
+Immediate next step: inspect EnTT storage layout and DART free-list placement
+for fixed 1024-element component payload pages plus sparse/packed entity pages.
+Only keep an allocator/storage change if a fresh focused EnTT checker proves
+the whole 12-row matrix against foonathan and std without noisy or missing rows.
+
 ## Authoritative Stop Handoff (2026-06-11, Final)
 
 Stop here. The maintainer instruction for this checkpoint is handoff only:

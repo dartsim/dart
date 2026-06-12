@@ -1,5 +1,36 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Current Continuation (2026-06-12, EnTT Comparative Evidence)
+
+Work resumed from the final stop handoff because the active thread goal is to
+complete this dev task. The authoritative branch remains
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`; no follow-up PR is open for this branch.
+
+Current evidence narrows the remaining allocator-comparative surface to EnTT
+steady-state registry layout rather than allocator calls:
+
+- A focused EnTT checker on the pushed source policy,
+  `.benchmark_results/allocator_entt_resume_cpu5_reps5_20260612.json`, had clean
+  CVs for most rows and showed DART no-growth rows making zero allocator calls
+  after prewarm. `BM_EnttRegistry/512` passed both foonathan and std, but
+  `BM_EnttRegistry/256` missed foonathan/std, `BM_EnttRegistry/2048` missed
+  foonathan/std, and `BM_EnttRegistryBuild/2048` missed std.
+- A natural-alignment `StlAllocator` probe,
+  `.benchmark_results/allocator_entt_natural_stl_cpu5_reps5_20260612.json`,
+  fixed the 256-entity no-growth row and the 2048 build row, but still missed
+  2048 no-growth, made the 512 no-growth rows noisy, and missed the 512
+  build-vs-foonathan row. That broad policy is not retained.
+- A later L1-sized alignment-threshold probe ran during severe host load
+  (`/proc/loadavg` over 40) and is not decision-quality evidence.
+
+No allocator code change is retained from these probes. Continue from a clean
+source state. The next useful allocator step is storage-layout analysis for
+the EnTT no-growth rows, especially the fixed 1024-element EnTT component
+payload pages and sparse/packed entity pages. Do not lower checker thresholds
+or keep free-list color-cycle tuning unless it improves the full EnTT matrix
+for a workload reason that applies beyond one entity count.
+
 ## Authoritative Stop Handoff (2026-06-11, Final)
 
 Maintainer instruction for this checkpoint: stop all implementation,
