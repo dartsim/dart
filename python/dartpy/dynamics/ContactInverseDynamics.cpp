@@ -32,6 +32,7 @@
 
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
+#include "pointers.hpp"
 
 #include <dart/dart.hpp>
 
