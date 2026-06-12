@@ -60,7 +60,7 @@ moves entirely into durable plan sidecars.
   measured separately. The contact-stencil filter packet is in-progress because
   parity exists for preassembled point-triangle and edge-edge stencils plus
   brute-force all-pairs point-triangle and edge-edge candidate masks with
-  device-side compacted-pair metadata and motion-aware swept-AABB
+  device-side compacted candidate ids and distance metadata and motion-aware swept-AABB
   point-triangle/edge-edge candidate-list packets, but sweep-and-prune
   broad-phase sorting, compacted runtime scene filtering, and speedup remain
   unproven.

@@ -300,7 +300,8 @@ its own line so status updates remain git-history friendly.
   remaining private packet work: it adds point-triangle and edge-edge contact
   stencil parity plus brute-force all-pairs point-triangle and edge-edge
   candidate masks and motion-aware swept-AABB point-triangle/edge-edge
-  candidate-list packets with device-side compacted-pair metadata,
+  candidate-list packets with device-side compacted candidate ids and distance
+  metadata,
   endpoint-linear
   point-triangle and
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity

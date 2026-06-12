@@ -214,6 +214,7 @@ struct CandidateMaskExpectation
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedPointIndices;
   std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedSquaredDistances;
   std::size_t acceptedCount = 0;
 };
 
@@ -223,6 +224,7 @@ struct EdgeEdgeCandidateMaskExpectation
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedEdgeAIndices;
   std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedSquaredDistances;
   std::size_t acceptedCount = 0;
 };
 
@@ -232,6 +234,7 @@ struct SweptCandidateMaskExpectation
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedPointIndices;
   std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
   std::size_t acceptedCount = 0;
 };
 
@@ -241,6 +244,7 @@ struct SweptEdgeEdgeCandidateMaskExpectation
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedEdgeAIndices;
   std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
   std::size_t acceptedCount = 0;
 };
 
@@ -276,6 +280,7 @@ CandidateMaskExpectation cpuCandidateMask(
         expected.acceptedPointIndices.push_back(point);
         expected.acceptedTriangleIndices.push_back(
             static_cast<std::uint32_t>(triangle));
+        expected.acceptedSquaredDistances.push_back(squaredDistance);
       }
     }
   }
@@ -328,6 +333,7 @@ EdgeEdgeCandidateMaskExpectation cpuEdgeEdgeCandidateMask(
             static_cast<std::uint32_t>(edgeA));
         expected.acceptedEdgeBIndices.push_back(
             static_cast<std::uint32_t>(edgeB));
+        expected.acceptedSquaredDistances.push_back(squaredDistance);
       }
     }
   }
@@ -388,6 +394,8 @@ SweptCandidateMaskExpectation cpuSweptPointTriangleCandidateMask(
         expected.acceptedPointIndices.push_back(point);
         expected.acceptedTriangleIndices.push_back(
             static_cast<std::uint32_t>(triangle));
+        expected.acceptedEndpointSquaredDistances.push_back(
+            endpointSquaredDistance);
       }
     }
   }
@@ -451,11 +459,24 @@ SweptEdgeEdgeCandidateMaskExpectation cpuSweptEdgeEdgeCandidateMask(
             static_cast<std::uint32_t>(edgeA));
         expected.acceptedEdgeBIndices.push_back(
             static_cast<std::uint32_t>(edgeB));
+        expected.acceptedEndpointSquaredDistances.push_back(
+            endpointSquaredDistance);
       }
     }
   }
 
   return expected;
+}
+
+void expectNearVector(
+    const std::vector<double>& actual,
+    const std::vector<double>& expected,
+    const double tolerance)
+{
+  ASSERT_EQ(actual.size(), expected.size());
+  for (std::size_t i = 0; i < expected.size(); ++i) {
+    EXPECT_NEAR(actual[i], expected[i], tolerance) << i;
+  }
 }
 
 } // namespace
@@ -508,6 +529,10 @@ TEST(ContactCandidateFilterCuda, MatchesCpuPointTriangleCandidateMask)
   EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
   EXPECT_EQ(result.acceptedPointIndices, expected.acceptedPointIndices);
   EXPECT_EQ(result.acceptedTriangleIndices, expected.acceptedTriangleIndices);
+  expectNearVector(
+      result.acceptedSquaredDistances,
+      expected.acceptedSquaredDistances,
+      1e-14);
 
   for (std::size_t pair = 0; pair < expected.squaredDistances.size(); ++pair) {
     EXPECT_NEAR(
@@ -539,6 +564,7 @@ TEST(ContactCandidateFilterCuda, MasksIncidentPointTriangleCandidatePairs)
   EXPECT_EQ(result.accepted[0], 0u);
   EXPECT_TRUE(result.acceptedPointIndices.empty());
   EXPECT_TRUE(result.acceptedTriangleIndices.empty());
+  EXPECT_TRUE(result.acceptedSquaredDistances.empty());
 }
 
 //==============================================================================
@@ -565,6 +591,10 @@ TEST(ContactCandidateFilterCuda, MatchesCpuEdgeEdgeCandidateMask)
   EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
   EXPECT_EQ(result.acceptedEdgeAIndices, expected.acceptedEdgeAIndices);
   EXPECT_EQ(result.acceptedEdgeBIndices, expected.acceptedEdgeBIndices);
+  expectNearVector(
+      result.acceptedSquaredDistances,
+      expected.acceptedSquaredDistances,
+      1e-14);
 
   for (std::size_t pair = 0; pair < expected.squaredDistances.size(); ++pair) {
     EXPECT_NEAR(
@@ -599,6 +629,7 @@ TEST(ContactCandidateFilterCuda, MasksIncidentEdgeEdgeCandidatePairs)
   EXPECT_EQ(result.accepted[1], 0u);
   EXPECT_TRUE(result.acceptedEdgeAIndices.empty());
   EXPECT_TRUE(result.acceptedEdgeBIndices.empty());
+  EXPECT_TRUE(result.acceptedSquaredDistances.empty());
 }
 
 //==============================================================================
@@ -632,6 +663,10 @@ TEST(ContactCandidateFilterCuda, MatchesCpuSweptPointTriangleCandidateMask)
   EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
   EXPECT_EQ(result.acceptedPointIndices, expected.acceptedPointIndices);
   EXPECT_EQ(result.acceptedTriangleIndices, expected.acceptedTriangleIndices);
+  expectNearVector(
+      result.acceptedEndpointSquaredDistances,
+      expected.acceptedEndpointSquaredDistances,
+      1e-14);
 
   for (std::size_t pair = 0; pair < expected.endpointSquaredDistances.size();
        ++pair) {
@@ -671,6 +706,7 @@ TEST(ContactCandidateFilterCuda, MasksIncidentSweptPointTriangleCandidatePairs)
   EXPECT_EQ(result.accepted[0], 0u);
   EXPECT_TRUE(result.acceptedPointIndices.empty());
   EXPECT_TRUE(result.acceptedTriangleIndices.empty());
+  EXPECT_TRUE(result.acceptedEndpointSquaredDistances.empty());
 }
 
 //==============================================================================
@@ -701,6 +737,10 @@ TEST(ContactCandidateFilterCuda, MatchesCpuSweptEdgeEdgeCandidateMask)
   EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
   EXPECT_EQ(result.acceptedEdgeAIndices, expected.acceptedEdgeAIndices);
   EXPECT_EQ(result.acceptedEdgeBIndices, expected.acceptedEdgeBIndices);
+  expectNearVector(
+      result.acceptedEndpointSquaredDistances,
+      expected.acceptedEndpointSquaredDistances,
+      1e-14);
 
   for (std::size_t pair = 0; pair < expected.endpointSquaredDistances.size();
        ++pair) {

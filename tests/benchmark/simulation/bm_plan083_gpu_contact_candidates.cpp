@@ -796,6 +796,8 @@ static void BM_Plan083PointTriangleCandidateMaskCuda(benchmark::State& state)
       = static_cast<double>(result.acceptedPointIndices.size());
   state.counters["gpu_compacted_triangle_count"]
       = static_cast<double>(result.acceptedTriangleIndices.size());
+  state.counters["gpu_compacted_distance_count"]
+      = static_cast<double>(result.acceptedSquaredDistances.size());
   state.counters["host_setup_ns"] = result.timing.setupNs;
   state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
   state.counters["kernel_ns"] = result.timing.kernelNs;
@@ -882,6 +884,8 @@ static void BM_Plan083EdgeEdgeCandidateMaskCuda(benchmark::State& state)
       = static_cast<double>(result.acceptedEdgeAIndices.size());
   state.counters["gpu_compacted_edge_b_count"]
       = static_cast<double>(result.acceptedEdgeBIndices.size());
+  state.counters["gpu_compacted_distance_count"]
+      = static_cast<double>(result.acceptedSquaredDistances.size());
   state.counters["host_setup_ns"] = result.timing.setupNs;
   state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
   state.counters["kernel_ns"] = result.timing.kernelNs;
@@ -994,6 +998,8 @@ static void BM_Plan083SweptPointTriangleCandidateMaskCuda(
       = static_cast<double>(result.acceptedPointIndices.size());
   state.counters["gpu_compacted_triangle_count"]
       = static_cast<double>(result.acceptedTriangleIndices.size());
+  state.counters["gpu_compacted_distance_count"]
+      = static_cast<double>(result.acceptedEndpointSquaredDistances.size());
   state.counters["host_setup_ns"] = result.timing.setupNs;
   state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
   state.counters["kernel_ns"] = result.timing.kernelNs;
@@ -1104,6 +1110,8 @@ static void BM_Plan083SweptEdgeEdgeCandidateMaskCuda(benchmark::State& state)
       = static_cast<double>(result.acceptedEdgeAIndices.size());
   state.counters["gpu_compacted_edge_b_count"]
       = static_cast<double>(result.acceptedEdgeBIndices.size());
+  state.counters["gpu_compacted_distance_count"]
+      = static_cast<double>(result.acceptedEndpointSquaredDistances.size());
   state.counters["host_setup_ns"] = result.timing.setupNs;
   state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
   state.counters["kernel_ns"] = result.timing.kernelNs;

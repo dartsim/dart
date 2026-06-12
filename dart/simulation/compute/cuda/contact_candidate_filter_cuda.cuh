@@ -75,6 +75,7 @@ struct PointTriangleCandidateBuildResult
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedPointIndices;
   std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedSquaredDistances;
   std::size_t pointCount = 0;
   std::size_t triangleCount = 0;
   std::size_t pairCount = 0;
@@ -98,6 +99,7 @@ struct EdgeEdgeCandidateBuildResult
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedEdgeAIndices;
   std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedSquaredDistances;
   std::size_t edgeCount = 0;
   std::size_t pairCount = 0;
   std::size_t acceptedCount = 0;
@@ -111,6 +113,7 @@ struct SweptPointTriangleCandidateBuildResult
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedPointIndices;
   std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
   std::size_t pointCount = 0;
   std::size_t triangleCount = 0;
   std::size_t pairCount = 0;
@@ -125,6 +128,7 @@ struct SweptEdgeEdgeCandidateBuildResult
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedEdgeAIndices;
   std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
   std::size_t edgeCount = 0;
   std::size_t pairCount = 0;
   std::size_t acceptedCount = 0;

@@ -432,10 +432,12 @@ __global__ void prefixPointTriangleAcceptedBlockCountsKernel(
 
 __global__ void compactPointTriangleContactCandidateMaskKernel(
     const std::uint32_t* pointIndices,
+    const double* squaredDistances,
     const std::uint8_t* accepted,
     const std::uint32_t* acceptedBlockOffsets,
     std::uint32_t* acceptedPointIndices,
     std::uint32_t* acceptedTriangleIndices,
+    double* acceptedSquaredDistances,
     const std::size_t pointCount,
     const std::size_t triangleCount)
 {
@@ -470,6 +472,7 @@ __global__ void compactPointTriangleContactCandidateMaskKernel(
   acceptedPointIndices[compactedIndex] = pointIndices[pointSlot];
   acceptedTriangleIndices[compactedIndex]
       = static_cast<std::uint32_t>(triangle);
+  acceptedSquaredDistances[compactedIndex] = squaredDistances[index];
 }
 
 __global__ void buildSweptPointTriangleContactCandidateMaskKernel(
@@ -620,10 +623,12 @@ __global__ void buildEdgeEdgeContactCandidateMaskKernel(
 }
 
 __global__ void compactEdgeEdgeContactCandidateMaskKernel(
+    const double* squaredDistances,
     const std::uint8_t* accepted,
     const std::uint32_t* acceptedBlockOffsets,
     std::uint32_t* acceptedEdgeAIndices,
     std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedSquaredDistances,
     const std::size_t edgeCount)
 {
   extern __shared__ std::uint32_t localRanks[];
@@ -656,6 +661,7 @@ __global__ void compactEdgeEdgeContactCandidateMaskKernel(
       = acceptedBlockOffsets[blockIdx.x] + localRanks[local] - 1u;
   acceptedEdgeAIndices[compactedIndex] = static_cast<std::uint32_t>(edgeA);
   acceptedEdgeBIndices[compactedIndex] = static_cast<std::uint32_t>(edgeB);
+  acceptedSquaredDistances[compactedIndex] = squaredDistances[index];
 }
 
 __global__ void buildSweptEdgeEdgeContactCandidateMaskKernel(
@@ -767,6 +773,7 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     std::uint8_t* accepted,
     std::uint32_t* acceptedPointIndices,
     std::uint32_t* acceptedTriangleIndices,
+    double* acceptedSquaredDistances,
     std::uint32_t* compactedCount,
     std::uint32_t* acceptedBlockCounts,
     std::uint32_t* acceptedBlockOffsets,
@@ -816,10 +823,12 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
       blockSize,
       blockSize * sizeof(std::uint32_t)>>>(
       pointIndices,
+      squaredDistances,
       accepted,
       acceptedBlockOffsets,
       acceptedPointIndices,
       acceptedTriangleIndices,
+      acceptedSquaredDistances,
       pointCount,
       triangleCount);
 
@@ -861,6 +870,7 @@ cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
     std::uint8_t* accepted,
     std::uint32_t* acceptedEdgeAIndices,
     std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedSquaredDistances,
     std::uint32_t* compactedCount,
     std::uint32_t* acceptedBlockCounts,
     std::uint32_t* acceptedBlockOffsets,
@@ -906,10 +916,12 @@ cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
       gridSize,
       blockSize,
       blockSize * sizeof(std::uint32_t)>>>(
+      squaredDistances,
       accepted,
       acceptedBlockOffsets,
       acceptedEdgeAIndices,
       acceptedEdgeBIndices,
+      acceptedSquaredDistances,
       edgeCount);
 
   return cudaGetLastError();
@@ -926,6 +938,7 @@ cudaError_t launchSweptPointTriangleContactCandidateMaskKernel(
     std::uint8_t* accepted,
     std::uint32_t* acceptedPointIndices,
     std::uint32_t* acceptedTriangleIndices,
+    double* acceptedEndpointSquaredDistances,
     std::uint32_t* compactedCount,
     std::uint32_t* acceptedBlockCounts,
     std::uint32_t* acceptedBlockOffsets,
@@ -976,10 +989,12 @@ cudaError_t launchSweptPointTriangleContactCandidateMaskKernel(
       blockSize,
       blockSize * sizeof(std::uint32_t)>>>(
       pointIndices,
+      endpointSquaredDistances,
       accepted,
       acceptedBlockOffsets,
       acceptedPointIndices,
       acceptedTriangleIndices,
+      acceptedEndpointSquaredDistances,
       pointCount,
       triangleCount);
 
@@ -996,6 +1011,7 @@ cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
     std::uint8_t* accepted,
     std::uint32_t* acceptedEdgeAIndices,
     std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedEndpointSquaredDistances,
     std::uint32_t* compactedCount,
     std::uint32_t* acceptedBlockCounts,
     std::uint32_t* acceptedBlockOffsets,
@@ -1042,10 +1058,12 @@ cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
       gridSize,
       blockSize,
       blockSize * sizeof(std::uint32_t)>>>(
+      endpointSquaredDistances,
       accepted,
       acceptedBlockOffsets,
       acceptedEdgeAIndices,
       acceptedEdgeBIndices,
+      acceptedEndpointSquaredDistances,
       edgeCount);
 
   return cudaGetLastError();

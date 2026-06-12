@@ -366,6 +366,12 @@ def _validate_candidate_mask(
             f"{label} GPU compacted triangle count "
             f"{gpu_compacted_triangles:g} != accepted count {cpu_accepted:g}"
         )
+    gpu_compacted_distances = _counter(gpu_row, "gpu_compacted_distance_count")
+    if int(gpu_compacted_distances) != int(cpu_accepted):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU compacted distance count "
+            f"{gpu_compacted_distances:g} != accepted count {cpu_accepted:g}"
+        )
 
     cpu_pairs = int(_counter(cpu_row, "pairs"))
     gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
@@ -408,6 +414,7 @@ def _validate_candidate_mask(
         "accepted_count": int(cpu_accepted),
         "compacted_count": int(gpu_compacted),
         "compacted_triangle_count": int(gpu_compacted_triangles),
+        "compacted_distance_count": int(gpu_compacted_distances),
         "max_result_abs_error": max_error,
         "speedup": speedup,
         "meets_speedup_gate": speedup >= speedup_gate,
@@ -462,6 +469,12 @@ def _validate_edge_edge_candidate_mask(
             f"{label} GPU compacted edge-b count "
             f"{gpu_compacted_b:g} != accepted count {cpu_accepted:g}"
         )
+    gpu_compacted_distances = _counter(gpu_row, "gpu_compacted_distance_count")
+    if int(gpu_compacted_distances) != int(cpu_accepted):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU compacted distance count "
+            f"{gpu_compacted_distances:g} != accepted count {cpu_accepted:g}"
+        )
 
     cpu_pairs = int(_counter(cpu_row, "pairs"))
     gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
@@ -499,6 +512,7 @@ def _validate_edge_edge_candidate_mask(
         "accepted_count": int(cpu_accepted),
         "compacted_edge_a_count": int(gpu_compacted_a),
         "compacted_edge_b_count": int(gpu_compacted_b),
+        "compacted_distance_count": int(gpu_compacted_distances),
         "max_result_abs_error": max_error,
         "speedup": speedup,
         "meets_speedup_gate": speedup >= speedup_gate,

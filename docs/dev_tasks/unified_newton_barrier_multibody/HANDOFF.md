@@ -1,5 +1,42 @@
 # Unified Newton-Barrier Handoff
 
+## Resumed Compacted-Distance Candidate-Buffer Checkpoint (2026-06-12)
+
+Work resumed after the stop-only handoff. Continue from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this single branch/PR. Do not push, PR-comment,
+resolve review threads, trigger CI, or open another PLAN-083 PR without
+explicit maintainer approval. Before any future push, merge latest
+`origin/main` into this published branch, rerun the required gates, and push
+only with explicit approval.
+
+This checkpoint builds on
+`f7ee131c457 Add swept contact candidate packet parity` and adds compacted
+per-candidate distance metadata to the private GPU contact-candidate buffers.
+Static point-triangle and edge-edge candidate-mask packets now compact squared
+distance metadata next to accepted primitive ids; swept point-triangle and
+edge-edge candidate-list packets now compact endpoint squared-distance metadata
+next to accepted primitive ids. This is runtime-buffer prerequisite evidence,
+not a sweep-and-prune broad-phase, runtime scene filtering, or speedup-gate
+completion claim.
+
+Validation for this checkpoint passed focused contact-candidate packet pytest,
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest,
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`, the PLAN-083 GPU
+parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio, `pixi run lint`,
+`pixi run build`, and `pixi run test-unit` (161/161).
+
+The regenerated contact-candidate packet records `compacted_distance_count`
+for all four candidate-construction rows: 192 static point-triangle candidates,
+96 static edge-edge candidates, 256 swept point-triangle candidates, and 128
+swept edge-edge candidates. The top-level packet still has
+`candidate_pair_count=262144`, `max_result_abs_error=0`, and
+`speedup=0.32965959230892933x` (`meets_speedup_gate=false`), so the row stays
+`in-progress`.
+
 ## Resumed Swept-AABB Validation Checkpoint (2026-06-12)
 
 After the stop-only handoff, this session resumed under the active PLAN-083

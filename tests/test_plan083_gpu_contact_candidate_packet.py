@@ -93,6 +93,7 @@ def _benchmark_data(**overrides):
         gpu_accepted_count=24,
         gpu_compacted_count=24,
         gpu_compacted_triangle_count=24,
+        gpu_compacted_distance_count=24,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -118,6 +119,7 @@ def _benchmark_data(**overrides):
         gpu_accepted_count=12,
         gpu_compacted_edge_a_count=12,
         gpu_compacted_edge_b_count=12,
+        gpu_compacted_distance_count=12,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -146,6 +148,7 @@ def _benchmark_data(**overrides):
         gpu_accepted_count=32,
         gpu_compacted_count=32,
         gpu_compacted_triangle_count=32,
+        gpu_compacted_distance_count=32,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -171,6 +174,7 @@ def _benchmark_data(**overrides):
         gpu_accepted_count=16,
         gpu_compacted_edge_a_count=16,
         gpu_compacted_edge_b_count=16,
+        gpu_compacted_distance_count=16,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -253,6 +257,12 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         == 24
     )
     assert (
+        row["candidate_construction"]["point_triangle_all_pairs_mask"][
+            "compacted_distance_count"
+        ]
+        == 24
+    )
+    assert (
         row["candidate_construction"]["point_triangle_swept_aabb_candidates"][
             "accepted_count"
         ]
@@ -261,6 +271,12 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert (
         row["candidate_construction"]["edge_edge_swept_aabb_candidates"][
             "accepted_count"
+        ]
+        == 16
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_swept_aabb_candidates"][
+            "compacted_distance_count"
         ]
         == 16
     )
@@ -354,6 +370,26 @@ def test_plan083_gpu_contact_candidate_packet_rejects_edge_compaction_mismatch()
         assert "compacted edge-b count" in str(exc)
     else:
         raise AssertionError("expected edge compaction failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_distance_compaction_mismatch() -> (
+    None
+):
+    module = _load_module()
+    data = _benchmark_data()
+    data["benchmarks"][9]["gpu_compacted_distance_count"] = 31
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "compacted distance count" in str(exc)
+    else:
+        raise AssertionError("expected distance compaction failure")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:
