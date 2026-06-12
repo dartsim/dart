@@ -1,17 +1,85 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Handoff Snapshot - 2026-06-11 AVBD Related Metrics
+
+The continuation resumed from pushed handoff commit `5f794e65d3f` and finished
+the AVBD related-route metrics slice that had been partially edited in the
+dirty worktree. These remain non-numbered related shelf routes, not new World
+Rigid Body workflow rows.
+
+Current local slice: AVBD related-route capture metrics. The checkpoint touches:
+
+- `python/examples/demos/scenes/avbd_rigid_fixed_joint_contact.py`
+- `python/examples/demos/scenes/avbd_rigid_spherical_breakable_joint.py`
+- `python/examples/demos/scenes/avbd_rigid_revolute_motor.py`
+- `python/examples/demos/scenes/avbd_rigid_prismatic_motor.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `avbd_rigid_fixed_joint_contact.py` now samples fixed-joint contact metrics
+  into shared histories during `pre_step` and exposes them through
+  `SceneSetup.info["capture_metrics"]`: captured-offset error,
+  payload-ground clearance, payload speed, contact count, base x, payload x,
+  and related source row `contact`.
+- `avbd_rigid_spherical_breakable_joint.py` now samples spherical breakage
+  lifecycle metrics: anchor-offset error, orientation drift, payload speed,
+  payload height, broken state, break force, status, and related source row
+  `rigid_joint_breakage`.
+- `avbd_rigid_revolute_motor.py` now samples revolute velocity motor metrics:
+  measured speed, target-speed error, absolute speed error, world time, and
+  related source row `rigid_joint_motor_limits`.
+- `avbd_rigid_prismatic_motor.py` now samples prismatic velocity motor metrics:
+  measured speed, speed error, axis position, orthogonal drift, world time, and
+  related source row `rigid_joint_motor_limits`.
+- The four existing AVBD integration tests now assert the new capture hooks,
+  related-source identities, compact histories, and finite manifest-friendly
+  top-level fields.
+
+Validation collected so far for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_avbd_fixed_joint_contact_demo_exercises_contact_path python/tests/integration/test_demos_cycle.py::test_avbd_revolute_motor_demo_drives_hinge python/tests/integration/test_demos_cycle.py::test_avbd_prismatic_motor_demo_drives_slider python/tests/integration/test_demos_cycle.py::test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only -q`
+  reported `4 passed`.
+- Real docked captures:
+  - `pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_fixed_joint_contact_metrics_1781242847`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with
+    contact count `3`, max contact count `4`, captured-offset error about
+    `0.05649`, and payload speed about `0.1239`.
+  - `pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_spherical_breakable_metrics_1781242878`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with
+    status `broken`, `saw_broken=1`, anchor-offset error about `0.4608`,
+    orientation drift about `2.3637`, and payload speed about `2.923`.
+  - `pixi run py-demo-capture -- --scene avbd_rigid_revolute_motor --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_revolute_motor_metrics_1781242920`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with
+    measured speed about `1.2` rad/s and near-zero speed error.
+  - `pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_prismatic_motor_metrics_1781242958`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with
+    measured speed about `0.8` m/s, axis position about `0.708`, and zero
+    orthogonal drift.
+- The focused AVBD plus related-route/docs guard with panel related-route
+  coverage reported `15 passed`.
+- `pixi run lint` passed.
+- Bounded default `pixi run build` passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
+
 ## Critical Stop Handoff - 2026-06-11
 
 The user explicitly stopped the continuation and requested handoff only for all
-current work with no further verification. This section is the current
-fresh-session entry point.
+current work with no further verification. This is historical context; the
+current fresh-session entry point is the top AVBD related-metrics section.
 
 State at the start of this handoff edit:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Worktree: clean.
 - Local `HEAD`: `949d08083a8` (`Expose contact-gradient route capture
-  metrics`).
+metrics`).
 - Origin: `origin/feature/rigid-body-gui-visual-verification` still pointed at
   `377e55ce5cb` (`Document rigid visual verification stop handoff`).
 - Local branch was ahead of origin by one code/docs checkpoint before this

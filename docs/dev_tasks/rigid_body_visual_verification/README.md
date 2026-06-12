@@ -450,13 +450,23 @@
       no tests, lint, build, captures, or `git diff --check` were run after the
       docs-only edit. The next slice had only been inspected/planned; no code
       changes were successfully applied.
-- [ ] Remaining AVBD related-route metrics follow-up: keep these as
+- [x] AVBD related-route metrics follow-up: keep these as
       non-numbered related evidence, and add scene-owned capture metrics to
       `avbd_rigid_fixed_joint_contact`,
       `avbd_rigid_spherical_breakable_joint`,
       `avbd_rigid_revolute_motor`, and
       `avbd_rigid_prismatic_motor`. `avbd_rigid_breakable_joint` already has a
-      capture hook and is the intended implementation pattern.
+      capture hook and was the implementation pattern. The four route hooks now
+      report related-source identity, fixed-contact offset/clearance/contact
+      counts, spherical anchor/orientation drift, revolute speed tracking,
+      prismatic axis/drift tracking, and compact history extrema. The focused
+      AVBD guard reported `4 passed`; real docked captures for all four routes
+      wrote 71 PNG frames and 72 scene-metrics events apiece. Latest payloads
+      reported fixed contact count `3`, spherical status `broken`, revolute
+      speed about `1.2` rad/s, and prismatic speed about `0.8` m/s with zero
+      orthogonal drift. The focused AVBD plus related-route/docs guard later
+      reported `15 passed`; `pixi run lint`, bounded default `pixi run build`,
+      and `git diff --check` passed.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -816,27 +826,26 @@ and the no-tunneling scope decision.
    `diff_drone_liftoff` contact-gradient route now have capture metrics. Keep
    both as related shelf routes, not new numbered rigid rows, unless a distinct
    user question appears.
-4. The next inspected but unimplemented follow-up is the AVBD related-route
-   metrics slice: fixed-joint contact, spherical breakable joint, revolute
-   motor, and prismatic motor. Start from
-   `python/examples/demos/scenes/avbd_rigid_breakable_joint.py` as the existing
-   capture-metrics pattern.
+4. The AVBD related-route metrics slice is implemented locally for fixed-joint
+   contact, spherical breakable joint, revolute motor, and prismatic motor.
+   Keep these as non-numbered related shelf routes unless a distinct numbered
+   workflow question appears.
 5. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
 6. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-7. Refresh validation only after implementation resumes, then use the local
+7. Refresh validation for any later code/docs changes, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
 8. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+9. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-9. Keep fuller articulated arm/gripper manipulation deferred until the public
-   API/runtime can support it as an interactive verifier. The current audit
-   found rigid-body joints are not IPC-supported, multibody link contacts lack
-   material/friction controls, and scripted IPC two-jaw pinch settings that
-   actually carry an object run at hundreds of milliseconds per step.
+10. Keep fuller articulated arm/gripper manipulation deferred until the public
+    API/runtime can support it as an interactive verifier. The current audit
+    found rigid-body joints are not IPC-supported, multibody link contacts lack
+    material/friction controls, and scripted IPC two-jaw pinch settings that
+    actually carry an object run at hundreds of milliseconds per step.

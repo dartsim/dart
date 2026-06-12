@@ -205,7 +205,10 @@ contact, drift, height, wall-time, frame-budget, and benchmark values through
 the same schema. The related `diff_drone_liftoff` route uses the schema for
 contact-gradient mode outcome, target/rest height, analytic versus aware
 thrust/final-height/loss values, height/target-error gaps, fallback status, and
-history summaries.
+history summaries. The related AVBD routes use the schema for fixed-joint
+contact offset/clearance/contact counts, spherical breakage anchor/orientation
+drift, free-rigid revolute motor speed tracking, and free-rigid prismatic motor
+axis/drift tracking.
 
 ## Regenerating Visual Evidence
 
@@ -868,6 +871,29 @@ Evidence recorded for this slice:
   `DART_BUILD_DIFF=OFF`. The related route/docs drift guard reported
   `17 passed`; `pixi run lint`, bounded default `pixi run build`, and
   `git diff --check` passed.
+- Latest AVBD related-route metrics follow-up:
+  `avbd_rigid_fixed_joint_contact`,
+  `avbd_rigid_spherical_breakable_joint`, `avbd_rigid_revolute_motor`, and
+  `avbd_rigid_prismatic_motor` now export scene-owned capture metrics for the
+  non-numbered AVBD shelf routes linked from `contact`,
+  `rigid_joint_breakage`, and `rigid_joint_motor_limits`. The payloads report
+  row identity, related source row, solver/scope or actuator label,
+  fixed-contact offset/clearance/contact counts, spherical breakage anchor and
+  orientation drift, revolute speed tracking, prismatic axis/drift tracking,
+  and compact history extrema. The focused AVBD guard
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_avbd_fixed_joint_contact_demo_exercises_contact_path python/tests/integration/test_demos_cycle.py::test_avbd_revolute_motor_demo_drives_hinge python/tests/integration/test_demos_cycle.py::test_avbd_prismatic_motor_demo_drives_slider python/tests/integration/test_demos_cycle.py::test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only -q`
+  reported `4 passed` before the docs update. Real docked captures wrote
+  71 PNG frames and 72 scene-metrics events for each route under
+  `/tmp/dart_capture_avbd_fixed_joint_contact_metrics_1781242847`,
+  `/tmp/dart_capture_avbd_spherical_breakable_metrics_1781242878`,
+  `/tmp/dart_capture_avbd_revolute_motor_metrics_1781242920`, and
+  `/tmp/dart_capture_avbd_prismatic_motor_metrics_1781242958`. Latest payloads
+  included fixed contact count `3`, max fixed contact count `4`, spherical
+  status `broken`, spherical `saw_broken=1`, revolute measured speed
+  `1.2000000000000077` rad/s, and prismatic measured speed
+  `0.8000000000000007` m/s with zero orthogonal drift. The focused AVBD plus
+  related-route/docs guard reported `15 passed`; `pixi run lint`, bounded
+  default `pixi run build`, and `git diff --check` passed.
 - Focused behavior tests across the packet cover the ordered rigid workflow:
   default front door, body modes, free flight, external and point loads,
   time-step sensitivity, step diagnostics, contact-scale frame-budget

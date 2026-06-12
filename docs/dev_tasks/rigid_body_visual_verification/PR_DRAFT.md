@@ -73,10 +73,11 @@
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
   link center-of-mass offsets, link-origin Jacobian mapping, multibody
   solver-family routing, loop-closure family selection, no-tunneling IPC,
-  contact-gradient route outcome, and stack-packet physics/runtime fields in
-  `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
-  event stream with first/latest events, per-key presence counts, and top-level
-  numeric ranges so mid-capture metric dropouts are visible.
+  contact-gradient route outcome, AVBD related-route contact/breakage/motor
+  metrics, and stack-packet physics/runtime fields in `scene_metrics.jsonl`
+  and `manifest.json`. The manifest summarizes the full event stream with
+  first/latest events, per-key presence counts, and top-level numeric ranges so
+  mid-capture metric dropouts are visible.
 - Adds drift tests that keep the registry, PLAN-103 sidecar, README quick table,
   and capture commands synchronized.
 - Keeps heavy IPC stacks, arm/gripper manipulation, arbitrary-point/contact
@@ -86,7 +87,48 @@
 
 ## Testing
 
-- Current handoff-only stop:
+- Latest AVBD related-route capture-metrics follow-up:
+  - `python/examples/demos/scenes/avbd_rigid_fixed_joint_contact.py`,
+    `avbd_rigid_spherical_breakable_joint.py`,
+    `avbd_rigid_revolute_motor.py`, and
+    `avbd_rigid_prismatic_motor.py` now publish scene-owned capture metrics for
+    the non-numbered AVBD shelf routes linked from `contact`,
+    `rigid_joint_breakage`, and `rigid_joint_motor_limits`.
+  - The payloads report related source row, AVBD solver/scope or actuator,
+    fixed-contact offset/clearance/contact counts, spherical breakage
+    anchor/orientation drift, revolute speed tracking, prismatic axis/drift
+    tracking, and compact history extrema.
+  - `python/tests/integration/test_demos_cycle.py` extends the four existing
+    AVBD route tests to assert the capture hooks and finite manifest-friendly
+    fields.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_avbd_fixed_joint_contact_demo_exercises_contact_path python/tests/integration/test_demos_cycle.py::test_avbd_revolute_motor_demo_drives_hinge python/tests/integration/test_demos_cycle.py::test_avbd_prismatic_motor_demo_drives_slider python/tests/integration/test_demos_cycle.py::test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only -q`
+    - `4 passed`
+  - `pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_fixed_joint_contact_metrics_1781242847`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, latest
+      contact count `3`, max contact count `4`, captured-offset error about
+      `0.05649`, and payload speed about `0.1239`
+  - `pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_spherical_breakable_metrics_1781242878`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, status
+      `broken`, `saw_broken=1`, anchor-offset error about `0.4608`, orientation
+      drift about `2.3637`, and payload speed about `2.923`
+  - `pixi run py-demo-capture -- --scene avbd_rigid_revolute_motor --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_revolute_motor_metrics_1781242920`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events,
+      measured speed about `1.2` rad/s, and near-zero speed error
+  - `pixi run py-demo-capture -- --scene avbd_rigid_prismatic_motor --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_avbd_prismatic_motor_metrics_1781242958`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events,
+      measured speed about `0.8` m/s, axis position about `0.708`, and zero
+      orthogonal drift
+  - Focused AVBD plus related-route/docs drift guard with panel related-route
+    coverage
+    - `15 passed`
+  - `pixi run lint`
+    - passed
+  - bounded default `pixi run build`
+    - passed, `ninja: no work to do`
+  - `git diff --check`
+    - passed
+- Previous handoff-only stop:
+- Previous handoff-only stop:
   - The user explicitly stopped implementation after the
     `diff_drone_liftoff` contact-gradient checkpoint and requested handoff only
     with no further verification.

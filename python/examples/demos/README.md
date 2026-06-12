@@ -705,7 +705,10 @@ clearance and through-wall margin evidence; and the stack packet uses it for
 clearance, drift, wall time, and benchmark metadata. The differentiable
 contact-gradient route uses it for target/rest height, analytic versus
 complementarity-aware thrust/final-height/loss values, height and target-error
-gaps, fallback status, and compact history summaries.
+gaps, fallback status, and compact history summaries. The AVBD related routes
+use it for fixed-joint contact offset/clearance/contact counts, spherical
+breakage anchor/orientation drift, and free-rigid revolute/prismatic motor
+tracking.
 
 When forward rigid contact looks correct but a differentiable optimization is
 stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses
@@ -752,6 +755,11 @@ visual change done.
 
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first
 user-visible Augmented VBD rigid-constraint scenes from PLAN-104:
+
+The fixed-contact, spherical breakable, revolute-motor, and prismatic-motor
+free-rigid rows are also related evidence from the numbered rigid workflow.
+They expose scene-owned capture metrics so docked captures preserve the
+constraint/contact/motor signal instead of relying on screenshots alone.
 
 | Scene id                                                | Shows                                                                                       | AVBD capability exercised                                                        |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |

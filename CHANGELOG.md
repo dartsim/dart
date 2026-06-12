@@ -197,7 +197,8 @@
     manifest. The baseline, contact-inspection, solver-comparison,
     contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
     multibody solver-family, loop-closure family, no-tunneling IPC,
-    differentiable contact-gradient route,
+    differentiable contact-gradient route, AVBD fixed contact, AVBD spherical
+    breakage, and AVBD revolute/prismatic motor related routes,
     step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
     it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
@@ -264,6 +265,12 @@
     gaps, fallback status, and compact history summaries while the rigid
     workflow routes gradient-stall debugging to the Differentiable shelf instead
     of duplicating the scene.
+  - Added scene-owned capture metrics to the AVBD related-route Python
+    `py-demos` scenes for fixed-joint contact, spherical break/reset,
+    revolute motor, and prismatic motor behavior, so the non-numbered
+    AVBD shelf routes linked from the rigid workflow carry contact, breakage,
+    motor tracking, and compact history evidence in `py-demo-capture`
+    manifests.
   - Added replay-control snapshots and focused wall-response coverage for the
     Python `py-demos` rigid solver-comparison workflow.
   - Added runtime rendering-backend (graphics API) selection through

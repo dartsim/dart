@@ -8628,6 +8628,31 @@ def test_avbd_fixed_joint_contact_demo_exercises_contact_path() -> None:
     assert np.linalg.norm(base_translation - initial_base) > 1.0e-3
     assert np.linalg.norm(payload_translation - initial_payload) > 1.0e-3
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "avbd_rigid_fixed_joint_contact"
+    assert capture_metrics["solver"] == "avbd_rigid_joints"
+    assert capture_metrics["constraint"] == "fixed_joint_contact_path"
+    assert capture_metrics["related_source_row"] == "contact"
+    assert capture_metrics["fixed_joint_count"] == pytest.approx(1.0)
+    assert capture_metrics["contact_count"] >= 1.0
+    assert capture_metrics["captured_offset_error"] < 2.0e-2
+    assert capture_metrics["metrics"]["payload_speed"] == pytest.approx(
+        capture_metrics["payload_speed"]
+    )
+    assert capture_metrics["history"]["samples"] >= 1.0
+    assert capture_metrics["history"]["max_contact_count"] >= 1.0
+    assert np.isfinite(
+        [
+            float(capture_metrics["captured_offset_error"]),
+            float(capture_metrics["payload_ground_clearance"]),
+            float(capture_metrics["payload_speed"]),
+            float(capture_metrics["base_x"]),
+            float(capture_metrics["payload_x"]),
+            float(capture_metrics["world_time"]),
+        ]
+    ).all()
+
 
 def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     import numpy as np
@@ -8666,6 +8691,29 @@ def test_avbd_revolute_motor_demo_drives_hinge() -> None:
     )
     assert measured_speed > initial_speed + 0.05
     assert measured_speed == pytest.approx(target_speed, abs=0.7)
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "avbd_rigid_revolute_motor"
+    assert capture_metrics["solver"] == "avbd_rigid_joints"
+    assert capture_metrics["actuator"] == "revolute_velocity_motor"
+    assert capture_metrics["related_source_row"] == "rigid_joint_motor_limits"
+    assert capture_metrics["target_speed"] == pytest.approx(target_speed)
+    assert capture_metrics["max_torque"] == pytest.approx(max_torque)
+    assert capture_metrics["measured_speed"] == pytest.approx(measured_speed)
+    assert capture_metrics["abs_speed_error"] == pytest.approx(
+        abs(target_speed - measured_speed)
+    )
+    assert capture_metrics["history"]["samples"] >= 1.0
+    assert capture_metrics["history"]["max_measured_speed"] >= measured_speed
+    assert np.isfinite(
+        [
+            float(capture_metrics["measured_speed"]),
+            float(capture_metrics["speed_error"]),
+            float(capture_metrics["abs_speed_error"]),
+            float(capture_metrics["world_time"]),
+        ]
+    ).all()
 
 
 def test_avbd_prismatic_motor_demo_drives_slider() -> None:
@@ -8709,6 +8757,37 @@ def test_avbd_prismatic_motor_demo_drives_slider() -> None:
     assert np.linalg.norm(final_position[1:] - base_position[1:]) < 1.0e-6
     assert np.linalg.norm(np.asarray(slider.rotation) - np.eye(3)) < 1.0e-6
     assert np.linalg.norm(np.asarray(base.translation) - base_position) < 1.0e-12
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "avbd_rigid_prismatic_motor"
+    assert capture_metrics["solver"] == "avbd_rigid_joints"
+    assert capture_metrics["actuator"] == "prismatic_velocity_motor"
+    assert capture_metrics["related_source_row"] == "rigid_joint_motor_limits"
+    assert capture_metrics["target_speed"] == pytest.approx(target_speed)
+    assert capture_metrics["max_force"] == pytest.approx(max_force)
+    assert capture_metrics["measured_speed"] == pytest.approx(measured_speed)
+    assert capture_metrics["abs_speed_error"] == pytest.approx(
+        abs(target_speed - measured_speed)
+    )
+    assert capture_metrics["axis_position"] == pytest.approx(
+        float(final_position[0] - base_position[0]), abs=0.01
+    )
+    assert capture_metrics["orthogonal_drift"] < 1.0e-6
+    assert capture_metrics["history"]["samples"] >= 1.0
+    assert capture_metrics["history"]["max_axis_position"] >= float(
+        final_position[0] - base_position[0]
+    )
+    assert np.isfinite(
+        [
+            float(capture_metrics["measured_speed"]),
+            float(capture_metrics["speed_error"]),
+            float(capture_metrics["abs_speed_error"]),
+            float(capture_metrics["axis_position"]),
+            float(capture_metrics["orthogonal_drift"]),
+            float(capture_metrics["world_time"]),
+        ]
+    ).all()
 
 
 def test_avbd_articulated_revolute_motor_demo_reverses_command() -> None:
@@ -9284,6 +9363,33 @@ def test_avbd_rigid_spherical_breakable_joint_demo_resets_anchor_only() -> None:
         1.0e-3
     )
     assert np.linalg.norm(broken_rotation - captured_rotation) > 1.0e-3
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "avbd_rigid_spherical_breakable_joint"
+    assert capture_metrics["solver"] == "avbd_rigid_joints"
+    assert (
+        capture_metrics["constraint"]
+        == "spherical_break_force_anchor_lifecycle"
+    )
+    assert capture_metrics["related_source_row"] == "rigid_joint_breakage"
+    assert capture_metrics["status"] == "broken"
+    assert capture_metrics["broken"] == pytest.approx(1.0)
+    assert capture_metrics["anchor_offset_error"] > 1.0e-3
+    assert capture_metrics["orientation_drift"] > 1.0e-3
+    assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
+    assert capture_metrics["history"]["max_anchor_offset_error"] >= float(
+        capture_metrics["anchor_offset_error"]
+    )
+    assert np.isfinite(
+        [
+            float(capture_metrics["anchor_offset_error"]),
+            float(capture_metrics["orientation_drift"]),
+            float(capture_metrics["payload_speed"]),
+            float(capture_metrics["payload_height"]),
+            float(capture_metrics["world_time"]),
+        ]
+    ).all()
 
     reset_joint = setup.info["reset_joint"]
     reset_joint(float(setup.info["reset_break_force"]))
