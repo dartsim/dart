@@ -1898,6 +1898,22 @@ TEST(BoxedProjectedActiveSetFastPath, AdmmUsesLinearSolve)
   EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
+TEST(BoxedProjectedActiveSetFastPath, ShockPropagationUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  ShockPropagationSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
 {
   LemkeSolver solver;
@@ -2908,6 +2924,22 @@ TEST(ShockPropagationSolverCoverage, RejectsInvalidBlockSizes)
 
   auto problem = makeStandardProblem(4);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+}
+
+TEST(
+    ShockPropagationSolverCoverage, RejectsInvalidBoxedBlockSizesBeforeFastPath)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {2, 1};
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
   const auto result = solver.solve(problem, x, options);
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }

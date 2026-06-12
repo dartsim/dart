@@ -296,7 +296,10 @@ solver.solve(problem, x, options);
 > block/layer construction; custom block/layer options first run a lightweight
 > structure validation so invalid custom layers still fail before the fast path
 > is accepted. SPD rows prefer an LLT exact solve before falling back to the
-> shared linear-solve helper.
+> shared linear-solve helper. Boxed LCPs without friction-index coupling use the
+> same structure-validation gate, then try the shared projected-active-set exact
+> solve before block data construction; the shortcut is accepted only when the
+> final boxed solution passes validation.
 > Small uncoupled fixed-bound blocks first try a local direct linear solve when
 > the unconstrained candidate is already feasible; active-bound, singular,
 > non-finite, larger, and local `findex` blocks still use the existing

@@ -242,14 +242,17 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Tgs/Pgs/Jacobi/Admm; SymmetricPsor next",
+        "current_leaders": (
+            "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
+            "Admm/ShockPropagation close"
+        ),
         "current_laggards": (
-            "ShockPropagation, Dantzig, Nncg, BlockedJacobi/BGS"
+            "Dantzig, Nncg, BlockedJacobi/BGS, BoxedSemiSmoothNewton/Sap"
         ),
         "takeaway": (
-            "Projection methods and projected-active-set ADMM lead active-bound "
-            "rows; layered, pivot, Newton, and block routes remain tuning "
-            "targets."
+            "Projection methods and validated exact paths now lead or closely "
+            "trail active-bound rows; pivot, block, Newton, and SAP routes "
+            "remain tuning targets."
         ),
     },
     {

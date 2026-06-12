@@ -489,35 +489,7 @@ LcpResult ShockPropagationSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
-  auto tryStrictInteriorFastPath = [&]() -> bool {
-    Eigen::VectorXd fastW;
-    if (options.warmStart || !problem.isStandardLcp(absTol)) {
-      return false;
-    }
-
-    const double validationTolerance = std::max(absTol, compTolOpt);
-    const double strictInteriorTolerance = std::max(0.0, absTol);
-    bool strictInteriorFastPath = false;
-    Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
-    if (exactFactorization.info() == Eigen::Success) {
-      Eigen::VectorXd candidate = exactFactorization.solve(b);
-      if (candidate.allFinite()
-          && candidate.minCoeff() > strictInteriorTolerance) {
-        fastW = A * candidate - b;
-        if (detail::validateSolution(
-                candidate, fastW, lo, hi, validationTolerance)) {
-          x = std::move(candidate);
-          strictInteriorFastPath = true;
-        }
-      }
-    }
-
-    if (!strictInteriorFastPath
-        && !detail::trySolveStrictInteriorStandardLcp(
-            problem, absTol, validationTolerance, x, &fastW)) {
-      return false;
-    }
-
+  auto completeExactFastPath = [&](const Eigen::VectorXd& fastW) -> bool {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;
     std::string boundsMessage;
@@ -538,7 +510,49 @@ LcpResult ShockPropagationSolver::solve(
     return true;
   };
 
-  if (!options.warmStart && problem.isStandardLcp(absTol)
+  auto tryExactFastPath = [&]() -> bool {
+    Eigen::VectorXd fastW;
+    if (options.warmStart) {
+      return false;
+    }
+
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      const double strictInteriorTolerance = std::max(0.0, absTol);
+      bool strictInteriorFastPath = false;
+      Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+      if (exactFactorization.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = exactFactorization.solve(b);
+        if (candidate.allFinite()
+            && candidate.minCoeff() > strictInteriorTolerance) {
+          fastW = A * candidate - b;
+          if (detail::validateSolution(
+                  candidate, fastW, lo, hi, validationTolerance)) {
+            x = std::move(candidate);
+            strictInteriorFastPath = true;
+          }
+        }
+      }
+
+      if (!strictInteriorFastPath
+          && !detail::trySolveStrictInteriorStandardLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
+    } else if (problem.isBoxedLcp()) {
+      if (!detail::trySolveProjectedActiveSetBoxedLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    return completeExactFastPath(fastW);
+  };
+
+  if (!options.warmStart
+      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp())
       && !validateBlockLayerStructure(
           static_cast<int>(n), *params, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
@@ -546,7 +560,7 @@ LcpResult ShockPropagationSolver::solve(
     return result;
   }
 
-  if (tryStrictInteriorFastPath()) {
+  if (tryExactFastPath()) {
     return result;
   }
 

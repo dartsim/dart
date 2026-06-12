@@ -1518,6 +1518,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     ahead of block/layer matrix construction after lightweight custom
     block/layer validation, preferring an LLT exact solve before falling back to
     the shared linear-solve helper.
+  - Extended `ShockPropagationSolver`'s validated exact fast path to boxed LCPs
+    without friction-index coupling using the shared projected-active-set solve,
+    while preserving warm-started iteration, friction-index blocks, and invalid
+    custom block/layer rejection.
   - Added a validated projected-active-set boxed-LCP exact solve and wired it
     into default non-warm-started `AdmmSolver` calls without friction-index
     coupling, preserving ADMM's iterative path for warm starts, custom options,
