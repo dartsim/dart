@@ -171,7 +171,7 @@ infer.
 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error, metrics  |
 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response, metrics       |
 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker, metrics |
-| `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` torque power        |
+| `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` power, metrics      |
 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals                      |
 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals and solved ratios             |
 
@@ -566,6 +566,10 @@ end-link origin twist, compares it against a finite-difference velocity, and
 uses `get_world_jacobian(link).T @ wrench` to show joint torque power
 consistency. It is intentionally scoped to the link origin: it does not claim
 arbitrary point, COM, contact, IK, or operational-space controller behavior.
+`py-demo-capture` records controls, joint names, link-origin position, twist,
+finite-difference error, wrench force, transpose-mapped torques,
+joint-versus-wrench power, world/body Jacobian gap, and compact histories into
+the manifest sidecar.
 
 The **`rigid_multibody_solver_family`** scene makes the World multibody
 integration-family choice visible before users enter the loop-closure family

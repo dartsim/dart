@@ -2,19 +2,24 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed handoff commit `7452a0f22d4`, validated
-the row-33 `rigid_link_center_of_mass` capture-metrics checkpoint with a
-focused test and fresh docked capture, and refreshed the durable docs/dev-task
-handoff. The branch had no associated GitHub PR at resume time.
+Latest continuation resumed from pushed handoff commit `7452a0f22d4`, completed
+the row-33 `rigid_link_center_of_mass` capture-metrics docs checkpoint, and is
+now carrying the row-34 `rigid_link_jacobian` capture-metrics slice with
+focused test plus fresh docked capture evidence. Work stopped on explicit
+maintainer/user instruction to focus only on handoff without further
+verification. The branch had no associated GitHub PR at resume time.
 
 Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Pushed branch head remains `7452a0f22d4` unless a maintainer/user explicitly
   approves another push.
-- The local checkpoint should include row-33 link center-of-mass capture
-  metrics, focused assertions, docs, docked capture evidence, and refreshed
-  handoff state.
+- The local checkpoint should include row-34 link-Jacobian capture metrics,
+  focused assertions, docs, docked capture evidence, and refreshed handoff
+  state.
+- Do not treat this checkpoint as fully gated: no additional lint, build,
+  diff-check, capture, or test command was run after the stop/handoff
+  instruction.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -35,12 +40,13 @@ Recent checkpoints:
 - `9ea310b2c8b` (`Document rigid visual verification stop handoff`)
 - `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
 - `7452a0f22d4` (`Hand off rigid link center of mass metrics`)
+- `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
 - the local checkpoint containing this file
 
-Current local slice: `rigid_link_center_of_mass` row capture metrics. The
-checkpoint touches:
+Current local slice: `rigid_link_jacobian` row capture metrics. The checkpoint
+touches:
 
-- `python/examples/demos/scenes/rigid_link_center_of_mass.py`
+- `python/examples/demos/scenes/rigid_link_jacobian.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -51,55 +57,66 @@ checkpoint touches:
 
 What changed in code/test:
 
-- `python/examples/demos/scenes/rigid_link_center_of_mass.py` now imports
+- `python/examples/demos/scenes/rigid_link_jacobian.py` now imports
   `CAPTURE_METRICS_INFO_KEY` and registers
   `SceneSetup.info["capture_metrics"]`.
-- `_RigidLinkCenterOfMass.capture_metrics()` serializes the current controller
+- `_RigidLinkJacobian.capture_metrics()` serializes the current controller
   state without stepping or resetting. If no latest metrics exist, it records
   the current metrics snapshot once.
-- The payload exports row identity, solver
-  `world_multibody_inertial_offsets`, scope
-  `contact_free_link_center_of_mass_offsets`, executor, time step, world time,
-  top-level and nested controls, lane order/count, per-lane label, offset,
-  high-inertia flag, link/joint names, local center-of-mass, serialized lane
-  metrics, mirrored torque/angle/acceleration sums, reflected mass-matrix
-  ratios, COM marker coordinates, energy, current acceleration-error max, step
-  timing, and compact history ranges.
-- `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`
-  now asserts the capture hook mirrors the live controller metrics, lane
-  metadata, top-level range-friendly fields, and history maxima.
+- The payload exports row identity, solver `world_multibody_link_jacobian`,
+  scope `contact_free_link_origin_jacobian_wrench_map`, time step, world time,
+  motion/wrench controls, joint names, link-origin position, linear velocity
+  vector, wrench force vector, flattened live metrics, nested metrics,
+  transpose-mapped torques, joint-versus-wrench power, world/body Jacobian gap,
+  and compact history ranges.
+- `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`
+  now asserts the capture hook mirrors the live controller metrics, vectors,
+  controls, joint metadata, and history maxima.
 
-Validation status for the link center-of-mass checkpoint:
+Validation status for the link-Jacobian checkpoint:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_center_of_mass_metrics_1781237623`
-  wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
+- `pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_jacobian_metrics_1781238268`
+  wrote a nonblank docked capture with 95 PNG frames, 96 scene-metrics events,
   screenshot
-  `/tmp/dart_capture_link_center_of_mass_metrics_1781237623/rigid_link_center_of_mass.png`,
+  `/tmp/dart_capture_link_jacobian_metrics_1781238268/rigid_link_jacobian.png`,
   and final contacts `0`.
-- Latest captured payload details: row `rigid_link_center_of_mass`, solver
-  `world_multibody_inertial_offsets`, scope
-  `contact_free_link_center_of_mass_offsets`, executor `Sequential`, lane count
-  `4`, COM offset `0.18`, gravity scale `1.0`, link mass `2.0`, inertia scale
-  `4.0`, latest positive/negative angle about `+/-0.44895`, latest
-  positive/negative gravity torque about `+/-3.18162`, zero mirrored torque,
-  angle, and acceleration sums, positive/high mass matrix about `0.1848/0.5448`,
-  high-to-positive mass-matrix ratio about `2.948`, latest positive/high
-  acceleration about `17.316/6.411`, high-to-positive acceleration ratio about
-  `0.3702`, max current acceleration error about `0.0994`, history samples
-  `73`, and max observed step time about `0.1534 ms`.
+- Latest captured payload details: row `rigid_link_jacobian`, solver
+  `world_multibody_link_jacobian`, scope
+  `contact_free_link_origin_jacobian_wrench_map`, motion speed `0.85`, elbow
+  phase `0.72`, wrench force `1.35`, wrench angle `28.0`, wrench moment
+  `0.12`, two DoFs, six Jacobian rows, latest linear/angular speed about
+  `0.5652/0.6190`, finite-difference error about `1.52e-7`, power error `0`,
+  world/body Jacobian gap about `0.1272`, torques about `-0.8650/-0.2949`,
+  matching joint/wrench power about `-0.4212`, history samples `97`, and
+  finite ranges for speed, torque, Jacobian gap, and power fields.
 - The broader workflow/doc drift guard with row ordering, viewer-title
-  numbering, sidecar/README/capture-command drift checks, motor-limit coverage,
-  passive-parameter coverage, screw-pitch coverage, dynamics-terms coverage,
-  replay snapshot coverage, and high-value panel coverage reported `14 passed`.
-- `pixi run lint` passed.
-- Bounded
-  `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 CMAKE_BUILD_PARALLEL_LEVEL=2 pixi run build`
-  passed and reported `ninja: no work to do`.
-- `git diff --check` passed.
+  numbering, sidecar/README/capture-command drift checks, passive-parameter
+  coverage, screw-pitch coverage, dynamics-terms coverage, link center-of-mass
+  coverage, replay snapshot coverage, and high-value panel coverage reported
+  `14 passed`.
+- Not run after the stop/handoff instruction: final `pixi run lint`, bounded
+  `pixi run build`, `git diff --check`, or any additional captures/tests. A
+  lint command had been started before the stop instruction, but its terminal
+  session was no longer active during handoff and no final pass/fail line was
+  captured, so do not cite it as evidence.
 
-Completed local checkpoint immediately before this handoff:
+Completed local checkpoint immediately before this slice:
+
+- Commit `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
+  completes row 33, `rigid_link_center_of_mass`.
+- That row publishes inertial-offset capture metrics for COM/gravity/mass/
+  inertia controls, lane order/count, link/joint/local-COM metadata, serialized
+  lane metrics, mirrored torque/angle/acceleration sums, reflected mass-matrix
+  and acceleration ratios, COM marker coordinates, energy, step timing, and
+  compact history fields.
+- Validation already collected for row 33: focused test reported `1 passed`;
+  real docked capture under
+  `/tmp/dart_capture_link_center_of_mass_metrics_1781237623` wrote 71 PNG
+  frames and 72 scene-metrics events; broader workflow/doc drift guard reported
+  `14 passed`; `pixi run lint`, bounded default `pixi run build`, and
+  `git diff --check` passed.
 
 - Commit `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
   completes row 32, `rigid_multibody_dynamics_terms`.
@@ -336,11 +353,15 @@ Validation collected for the dynamics-terms slice so far:
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. If the current local checkpoint has not been committed yet, commit the row-33
-   checkpoint after confirming the working tree contains only the files listed
-   above.
-3. After row 33 is committed, the next likely capture-metrics pass is
-   `rigid_link_jacobian`, unless the user redirects.
+2. Confirm whether the stop/handoff checkpoint containing row 34 is already
+   committed and pushed. If it is not, preserve the current changes before doing
+   any new feature work.
+3. Before opening a PR or continuing feature work, rerun the skipped final gates
+   for the row-34 checkpoint: `pixi run lint`, bounded default
+   `pixi run build`, and `git diff --check`. If lint changes docs or code,
+   rerun the focused row-34 test and the broad workflow/doc drift guard.
+4. After row 34 is gated, the next likely capture-metrics pass is
+   `rigid_multibody_solver_family`, unless the user redirects.
 
 ## Last Session Summary
 

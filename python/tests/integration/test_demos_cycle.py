@@ -4852,7 +4852,7 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
 
     _require_simulation_symbols("World", "JointSpec", "JointType")
 
-    from examples.demos.scenes.rigid_link_jacobian import build
+    from examples.demos.scenes.rigid_link_jacobian import _BASE_ANCHOR, build
 
     setup = build()
     controller = setup.info["rigid_link_jacobian_controller"]
@@ -4888,6 +4888,94 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert controller._tau1_history
     assert controller._world_body_gap_history
     assert np.isfinite([float(value) for value in controller._speed_history]).all()
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_link_jacobian"
+    assert capture_metrics["solver"] == "world_multibody_link_jacobian"
+    assert capture_metrics["scope"] == "contact_free_link_origin_jacobian_wrench_map"
+    assert capture_metrics["time_step_ms"] == pytest.approx(4.0)
+    assert capture_metrics["world_time"] == pytest.approx(controller.world.time)
+    assert capture_metrics["motion_speed"] == pytest.approx(controller.motion_speed)
+    assert capture_metrics["elbow_phase"] == pytest.approx(controller.elbow_phase)
+    assert capture_metrics["wrench_force"] == pytest.approx(controller.wrench_force)
+    assert capture_metrics["wrench_angle_deg"] == pytest.approx(
+        controller.wrench_angle_deg
+    )
+    assert capture_metrics["wrench_moment"] == pytest.approx(
+        controller.wrench_moment
+    )
+    assert capture_metrics["controls"]["motion_speed"] == pytest.approx(
+        controller.motion_speed
+    )
+    assert capture_metrics["controls"]["elbow_phase"] == pytest.approx(
+        controller.elbow_phase
+    )
+    assert capture_metrics["controls"]["wrench_force"] == pytest.approx(
+        controller.wrench_force
+    )
+    assert capture_metrics["controls"]["wrench_angle_deg"] == pytest.approx(
+        controller.wrench_angle_deg
+    )
+    assert capture_metrics["controls"]["wrench_moment"] == pytest.approx(
+        controller.wrench_moment
+    )
+    assert capture_metrics["joint_names"] == [
+        joint.name for joint in controller.joints
+    ]
+    assert capture_metrics["link"] == controller.links[-1].name
+    assert capture_metrics["metrics"]["status"] == str(metrics["status"])
+    for metric_key, metric_value in metrics.items():
+        if isinstance(metric_value, str):
+            continue
+        assert capture_metrics["metrics"][metric_key] == pytest.approx(
+            float(metric_value)
+        )
+        assert capture_metrics[metric_key] == pytest.approx(float(metric_value))
+
+    link_origin = _BASE_ANCHOR + controller._link_origin()
+    assert capture_metrics["link_origin_world_x"] == pytest.approx(link_origin[0])
+    assert capture_metrics["link_origin_world_y"] == pytest.approx(link_origin[1])
+    assert capture_metrics["link_origin_world_z"] == pytest.approx(link_origin[2])
+    assert capture_metrics["linear_velocity_x"] == pytest.approx(
+        controller._last_velocity_vector[0]
+    )
+    assert capture_metrics["linear_velocity_y"] == pytest.approx(
+        controller._last_velocity_vector[1]
+    )
+    assert capture_metrics["linear_velocity_z"] == pytest.approx(
+        controller._last_velocity_vector[2]
+    )
+    assert capture_metrics["wrench_force_x"] == pytest.approx(
+        controller._last_force_vector[0]
+    )
+    assert capture_metrics["wrench_force_y"] == pytest.approx(
+        controller._last_force_vector[1]
+    )
+    assert capture_metrics["wrench_force_z"] == pytest.approx(
+        controller._last_force_vector[2]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._speed_history)
+    )
+    assert capture_metrics["history"]["max_linear_speed"] == pytest.approx(
+        max(controller._speed_history)
+    )
+    assert capture_metrics["history"][
+        "max_finite_difference_error"
+    ] == pytest.approx(max(controller._fd_error_history))
+    assert capture_metrics["history"]["max_power_error"] == pytest.approx(
+        max(controller._power_error_history)
+    )
+    assert capture_metrics["history"]["max_abs_tau0"] == pytest.approx(
+        max(abs(value) for value in controller._tau0_history)
+    )
+    assert capture_metrics["history"]["max_abs_tau1"] == pytest.approx(
+        max(abs(value) for value in controller._tau1_history)
+    )
+    assert capture_metrics["history"]["max_world_body_gap"] == pytest.approx(
+        max(controller._world_body_gap_history)
+    )
 
 
 def test_rigid_link_point_loads_show_lever_arm_and_frame_semantics() -> None:

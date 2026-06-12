@@ -195,7 +195,7 @@
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. The baseline, contact-inspection, solver-comparison,
-    contact-policy, multibody link-contact, link center-of-mass,
+    contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
     step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
     it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
@@ -244,7 +244,8 @@
   - Added `rigid_link_jacobian` to Python `py-demos`, showing a contact-free
     two-link multibody's link-origin `get_world_jacobian(link) @ qdot`
     velocity mapping, finite-difference velocity check, and
-    `get_world_jacobian(link).T @ wrench` power consistency.
+    `get_world_jacobian(link).T @ wrench` power consistency, with scene-owned
+    capture metrics for the manifest path.
   - Added `rigid_multibody_solver_family` to Python `py-demos`, showing
     semi-implicit residual-only, variational residual-only, and variational
     solved loop-closure lanes with residual, tip-error, solve-ratio, and

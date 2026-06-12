@@ -11,7 +11,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -326,6 +326,90 @@ class _RigidLinkJacobian:
         self._sync()
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+
+        def metric_value(key: str) -> float:
+            return float(self._last_metrics[key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        link_origin = _BASE_ANCHOR + self._link_origin()
+        metrics: dict[str, float | str] = {}
+        for key, value in self._last_metrics.items():
+            if isinstance(value, (int, float, np.floating)):
+                metrics[key] = float(value)
+            else:
+                metrics[key] = str(value)
+
+        payload: dict[str, Any] = {
+            "row": "rigid_link_jacobian",
+            "solver": "world_multibody_link_jacobian",
+            "scope": "contact_free_link_origin_jacobian_wrench_map",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "motion_speed": float(self.motion_speed),
+            "elbow_phase": float(self.elbow_phase),
+            "wrench_force": float(self.wrench_force),
+            "wrench_angle_deg": float(self.wrench_angle_deg),
+            "wrench_moment": float(self.wrench_moment),
+            "controls": {
+                "motion_speed": float(self.motion_speed),
+                "elbow_phase": float(self.elbow_phase),
+                "wrench_force": float(self.wrench_force),
+                "wrench_angle_deg": float(self.wrench_angle_deg),
+                "wrench_moment": float(self.wrench_moment),
+            },
+            "joint_names": [joint.name for joint in self.joints],
+            "link": self.links[-1].name,
+            "metrics": metrics,
+            "link_origin_world_x": float(link_origin[0]),
+            "link_origin_world_y": float(link_origin[1]),
+            "link_origin_world_z": float(link_origin[2]),
+            "linear_velocity_x": float(self._last_velocity_vector[0]),
+            "linear_velocity_y": float(self._last_velocity_vector[1]),
+            "linear_velocity_z": float(self._last_velocity_vector[2]),
+            "wrench_force_x": float(self._last_force_vector[0]),
+            "wrench_force_y": float(self._last_force_vector[1]),
+            "wrench_force_z": float(self._last_force_vector[2]),
+            "rows": metric_value("rows"),
+            "dofs": metric_value("dofs"),
+            "q0": metric_value("q0"),
+            "q1": metric_value("q1"),
+            "qdot0": metric_value("qdot0"),
+            "qdot1": metric_value("qdot1"),
+            "linear_speed": metric_value("linear_speed"),
+            "angular_speed": metric_value("angular_speed"),
+            "finite_difference_error": metric_value("finite_difference_error"),
+            "world_body_gap": metric_value("world_body_gap"),
+            "tau0": metric_value("tau0"),
+            "tau1": metric_value("tau1"),
+            "joint_power": metric_value("joint_power"),
+            "wrench_power": metric_value("wrench_power"),
+            "power_error": metric_value("power_error"),
+            "force_norm": metric_value("force_norm"),
+            "moment_y": metric_value("moment_y"),
+            "history": {
+                "samples": float(len(self._speed_history)),
+                "max_linear_speed": max(self._speed_history, default=0.0),
+                "max_finite_difference_error": max(
+                    self._fd_error_history, default=0.0
+                ),
+                "max_power_error": max(self._power_error_history, default=0.0),
+                "max_abs_tau0": max_abs(self._tau0_history),
+                "max_abs_tau1": max_abs(self._tau1_history),
+                "max_world_body_gap": max(
+                    self._world_body_gap_history, default=0.0
+                ),
+            },
+        }
+        for key, value in self._last_metrics.items():
+            if isinstance(value, (int, float, np.floating)):
+                payload[key] = float(value)
+        return payload
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -450,6 +534,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": controller.world,
             "rigid_link_jacobian_controller": controller,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller._sync,

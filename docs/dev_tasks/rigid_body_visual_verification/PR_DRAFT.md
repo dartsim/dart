@@ -71,10 +71,11 @@
   stack stability, contact manipulation, kinematic driver,
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
-  link center-of-mass offsets, and stack-packet physics/runtime fields in
-  `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
-  event stream with first/latest events, per-key presence counts, and top-level
-  numeric ranges so mid-capture metric dropouts are visible.
+  link center-of-mass offsets, link-origin Jacobian mapping, and stack-packet
+  physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
+  manifest summarizes the full event stream with first/latest events, per-key
+  presence counts, and top-level numeric ranges so mid-capture metric dropouts
+  are visible.
 - Adds drift tests that keep the registry, PLAN-103 sidecar, README quick table,
   and capture commands synchronized.
 - Keeps heavy IPC stacks, arm/gripper manipulation, arbitrary-point/contact
@@ -84,6 +85,40 @@
 
 ## Testing
 
+- Current stop/handoff caveat:
+  - After the row-34 focused test, fresh docked capture, and broad workflow/doc
+    drift guard below, the maintainer/user explicitly instructed the session to
+    stop verification and focus only on handoff. No final `pixi run lint`,
+    bounded `pixi run build`, `git diff --check`, or post-lint test refresh was
+    run for this handoff checkpoint. Refresh those gates before opening or
+    updating the PR from this draft.
+- Latest link-Jacobian capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_link_jacobian.py` now publishes
+    scene-owned capture metrics for the row 34 link-origin Jacobian verifier:
+    row identity, kinematic/wrench-map scope, controls, joint names,
+    link-origin position, twist components, finite-difference error, wrench
+    force, transpose-mapped torques, joint-versus-wrench power, world/body
+    Jacobian gap, and compact histories.
+  - `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`
+    now asserts the capture hook mirrors live controller metrics, vectors, and
+    history maxima.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_jacobian_metrics_1781238268`
+    - nonblank docked capture, 95 PNG frames, 96 scene-metrics events, row
+      `rigid_link_jacobian`, solver `world_multibody_link_jacobian`, scope
+      `contact_free_link_origin_jacobian_wrench_map`, motion speed `0.85`,
+      wrench force `1.35`, wrench moment `0.12`, two DoFs, six Jacobian rows,
+      latest linear/angular speed about `0.5652/0.6190`, finite-difference
+      error about `1.52e-7`, power error `0`, world/body Jacobian gap about
+      `0.1272`, torques about `-0.8650/-0.2949`, matching joint/wrench power
+      about `-0.4212`, and manifest ranges for speed, finite-difference error,
+      power error, torque, world/body Jacobian gap, power, and world time
+  - Broad workflow/doc drift guard with row ordering, viewer-title numbering,
+    sidecar/README/capture-command drift checks, passive-parameter coverage,
+    screw-pitch coverage, dynamics-terms coverage, link center-of-mass
+    coverage, replay snapshot coverage, and high-value panel coverage
+    - `14 passed`
 - Latest link center-of-mass capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_link_center_of_mass.py` now publishes
     scene-owned capture metrics for the row 33 inertial-offset verifier: row
