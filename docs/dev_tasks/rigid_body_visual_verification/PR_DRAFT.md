@@ -67,8 +67,8 @@
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
   contact-scale budget, baseline first-run diagnostics, contact inspection,
   collision casts, solver comparison, executor equivalence, contact-policy
-  comparison, multibody-link contact, fixed/breakage/one-DOF joint constraint
-  errors, and stack-packet
+  comparison, multibody-link contact, friction threshold,
+  fixed/breakage/one-DOF joint constraint errors, and stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
   presence counts, and top-level numeric ranges so mid-capture metric dropouts
@@ -82,6 +82,17 @@
 
 ## Testing
 
+- Latest interrupted friction-threshold capture-metrics handoff:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_friction_threshold_separates_stick_and_slip_lanes -q`
+    - `1 passed` before the critical stop instruction
+  - `pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_friction_threshold_metrics_1781229316`
+    - nonblank docked capture, 23 PNG frames, 24 scene-metrics events, latest
+      row `rigid_friction_threshold`, solver `ipc`, solver enum `IPC`,
+      per-lane drift/speed/clearance/friction ranges, and
+      `controlled_threshold_delta=0`
+  - Not run after the critical handoff stop: workflow/doc drift guard,
+    `pixi run lint`, bounded `pixi run build`, `git diff --check`, and
+    non-dev documentation sync.
 - Latest contact-inspector capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_inspector_reports_contact_manifolds -q`
     - `1 passed`

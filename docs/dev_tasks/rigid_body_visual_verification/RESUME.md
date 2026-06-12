@@ -2,66 +2,65 @@
 
 ## Current Handoff Snapshot
 
-Expected branch after this local checkpoint:
-`feature/rigid-body-gui-visual-verification` is clean and ahead of
-`origin/feature/rigid-body-gui-visual-verification` by two unpushed local
-commits on top of `a38ad5c1e3d` (`Refresh rigid visual verification handoff`).
-The first local commit is `7ef7a96dda0` (`Expose rigid collision cast capture
-metrics`). The latest runtime-code slice is the `rigid_executor_equivalence`
-capture-metrics follow-up. A fresh Claude/Codex session should start by running
-`git status -sb` and `git log --oneline --decorate -5` to confirm that state
-before continuing.
+Expected branch after this handoff push:
+`feature/rigid-body-gui-visual-verification` should be clean and aligned with
+`origin/feature/rigid-body-gui-visual-verification`. It carries the two prior
+unpushed runtime commits on top of `a38ad5c1e3d` (`Refresh rigid visual
+verification handoff`) plus the interrupted `rigid_friction_threshold`
+capture-metrics handoff. The two known prior local commits are:
 
-The previous handoff-only stop/no-verification instruction is historical; the
-current continuation resumed implementation and ran the focused gates listed
-below. Pushes and future PR/comment mutations still require explicit
-maintainer/user approval.
+- `7ef7a96dda0` (`Expose rigid collision cast capture metrics`)
+- `b54c4f5dba3` (`Expose rigid executor equivalence capture metrics`)
 
-As of the handoff refresh on 2026-06-11, `gh pr list --repo dartsim/dart
---head feature/rigid-body-gui-visual-verification --json
-number,title,state,baseRefName,isDraft,url` returned `[]`, so this branch did
-not have a published PR. Pushes and future PR/comment mutations still require
-explicit maintainer/user approval.
+Critical latest operator instruction: stop and focus on handoff for all current
+work without any further verification. Do not continue implementation, run
+tests, run captures, run lint/build, or mutate GitHub state from a fresh
+session unless the user explicitly resumes that work. The push of this handoff
+state was explicitly requested by the user.
 
-Current slice: `rigid_executor_equivalence` row capture metrics. The code changes
-are limited to:
+Current interrupted slice: `rigid_friction_threshold` row capture metrics. The
+current handoff touches:
 
-- `python/examples/demos/scenes/rigid_executor_equivalence.py`
+- `python/examples/demos/scenes/rigid_friction_threshold.py`
 - `python/tests/integration/test_demos_cycle.py`
-- `python/examples/demos/README.md`
-- the PLAN-103 sidecar, this task's handoff docs, `PR_DRAFT.md`, and
-  `CHANGELOG.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
 
-What changed: the numbered row 16 `rigid_executor_equivalence` front door now
-exposes `SceneSetup.info["capture_metrics"]`. The payload exports row,
-same-solver identity, executor pair, controls, per-executor contact counts and
-step timing, pose/velocity/contact divergence, per-case metrics, fallback
-executor status, and compact history ranges. The hook uses the current
-`_last_metrics` and divergence histories; it does not dump replay state.
+What changed in code/test: row 19 now exposes
+`SceneSetup.info["capture_metrics"]` for the IPC friction-threshold scene. The
+payload exports row identity, solver and solver enum, selected executor,
+angle/friction controls, threshold friction, world time, per-lane
+drift/speed/clearance/friction/status, controlled threshold delta, step timing,
+and compact history ranges. The focused test now asserts the capture hook is
+present and that the exported controls, lane values, and histories match the
+live controller state.
 
-Validation already run for this code slice:
+Evidence already collected before the critical stop instruction:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_friction_threshold_separates_stick_and_slip_lanes -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_executor_equivalence_metrics_1781228299`
-  wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
-  scene-metrics events. The manifest recorded numeric ranges for
-  `position_divergence`, `velocity_divergence`, `contact_delta`,
-  `sequential_contact_count`, `parallel_contact_count`, `sequential_step_ms`,
-  `parallel_step_ms`, `time_step_ms`, and `world_time`.
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
-  reported `7 passed` before and after `pixi run lint`.
-- `pixi run lint` passed.
-- Bounded `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
-  passed and reported `ninja: no work to do`.
-- `git diff --check` was clean.
+- `pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_friction_threshold_metrics_1781229316`
+  wrote a nonblank docked capture with 23 PNG frames and 24 scene-metrics
+  events. The manifest recorded top-level ranges for per-lane distance, speed,
+  clearance, friction, `controlled_threshold_delta`, `step_ms`, `time_step_ms`,
+  and `world_time`.
 
-Immediate next step for a fresh session: verify the local branch state, then
-continue the capture-metrics hardening pass on the next high-value rigid row.
-The likely next row is `rigid_friction_threshold`, because it is the next
-numbered contact-behavior row and already owns lane drift/speed/clearance
-histories that would be useful in docked capture manifests. Keep the payload
-summary-oriented and update the PLAN-103 row evidence plus focused tests.
+Skipped because of the critical stop instruction:
+
+- workflow/doc drift guard for the friction row
+- `pixi run lint`
+- bounded `pixi run build`
+- `git diff --check`
+- non-dev documentation sync in `CHANGELOG.md`,
+  `python/examples/demos/README.md`, and the PLAN-103 sidecar
+
+Immediate next step for a fresh session: verify the branch state only
+(`git status -sb` and `git log --oneline --decorate -5`) and then stop unless
+the user explicitly resumes implementation. If resumed, finish the skipped
+friction-threshold docs and gates above. The likely next capture-metrics row
+after friction-threshold is `rigid_spin_roll_coupling`, because it already owns
+slip/roll/spin/travel histories that should appear in docked capture manifests.
 
 ## Last Session Summary
 

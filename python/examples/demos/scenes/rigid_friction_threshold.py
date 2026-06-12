@@ -12,7 +12,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _RAMP_HALF = np.array([1.35, 0.26, 0.07])
 _BOX_HALF = np.array([0.13, 0.13, 0.13])
@@ -257,6 +257,90 @@ class _RigidFrictionThreshold:
         self._record_metrics()
         self.bridge.sync()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "expected": lane.expected,
+                "metrics": dict(self._last_metrics[lane.key]),
+            }
+            for lane in self.lanes
+        }
+        distance_history = {
+            lane.key: list(self._distance_history[lane.key]) for lane in self.lanes
+        }
+        speed_history = {
+            lane.key: list(self._speed_history[lane.key]) for lane in self.lanes
+        }
+        clearance_history = {
+            lane.key: list(self._clearance_history[lane.key]) for lane in self.lanes
+        }
+        return {
+            "row": "rigid_friction_threshold",
+            "solver": "ipc",
+            "solver_enum": sx.RigidBodySolver.IPC.name,
+            "executor": self._executors[int(self.executor_index)][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "angle_deg": float(self.angle_deg),
+                "controlled_mu": float(self.controlled_mu),
+                "threshold_mu": float(self._threshold()),
+            },
+            "below_distance": float(self._last_metrics["below"]["distance"]),
+            "below_speed": float(self._last_metrics["below"]["speed"]),
+            "below_clearance": float(self._last_metrics["below"]["clearance"]),
+            "below_friction": float(self._last_metrics["below"]["friction"]),
+            "controlled_distance": float(
+                self._last_metrics["controlled"]["distance"]
+            ),
+            "controlled_speed": float(self._last_metrics["controlled"]["speed"]),
+            "controlled_clearance": float(
+                self._last_metrics["controlled"]["clearance"]
+            ),
+            "controlled_friction": float(
+                self._last_metrics["controlled"]["friction"]
+            ),
+            "above_distance": float(self._last_metrics["above"]["distance"]),
+            "above_speed": float(self._last_metrics["above"]["speed"]),
+            "above_clearance": float(self._last_metrics["above"]["clearance"]),
+            "above_friction": float(self._last_metrics["above"]["friction"]),
+            "controlled_threshold_delta": float(
+                self._last_metrics["controlled"]["friction"] - self._threshold()
+            ),
+            "step_ms": self._step_profile_ms(),
+            "lanes": lanes,
+            "history": {
+                "samples": float(len(distance_history["below"])),
+                "below_max_distance": max(distance_history["below"], default=0.0),
+                "below_max_speed": max(speed_history["below"], default=0.0),
+                "controlled_max_distance": max(
+                    distance_history["controlled"], default=0.0
+                ),
+                "controlled_max_speed": max(
+                    speed_history["controlled"], default=0.0
+                ),
+                "above_max_abs_distance": max(
+                    (abs(value) for value in distance_history["above"]),
+                    default=0.0,
+                ),
+                "above_max_abs_speed": max(
+                    (abs(value) for value in speed_history["above"]),
+                    default=0.0,
+                ),
+                "min_clearance": min(
+                    (
+                        value
+                        for values in clearance_history.values()
+                        for value in values
+                    ),
+                    default=0.0,
+                ),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -400,6 +484,7 @@ def build() -> SceneSetup:
             "replay_capture_state": threshold.capture_replay_state,
             "replay_restore_state": threshold.restore_replay_state,
             "replay_sync": threshold.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: threshold.capture_metrics,
         },
     )
 

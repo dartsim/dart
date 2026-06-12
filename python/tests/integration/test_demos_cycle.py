@@ -3516,6 +3516,35 @@ def test_rigid_friction_threshold_separates_stick_and_slip_lanes() -> None:
     assert metrics["below"]["speed"] > 0.5
     assert abs(metrics["above"]["speed"]) < 0.05
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_friction_threshold"
+    assert capture_metrics["solver"] == "ipc"
+    assert capture_metrics["solver_enum"] == "IPC"
+    assert capture_metrics["controls"]["angle_deg"] == pytest.approx(
+        controller.angle_deg
+    )
+    assert capture_metrics["controls"]["threshold_mu"] == pytest.approx(
+        controller._threshold()
+    )
+    assert capture_metrics["below_distance"] == pytest.approx(
+        metrics["below"]["distance"]
+    )
+    assert capture_metrics["below_speed"] == pytest.approx(metrics["below"]["speed"])
+    assert capture_metrics["above_distance"] == pytest.approx(
+        metrics["above"]["distance"]
+    )
+    assert capture_metrics["above_speed"] == pytest.approx(metrics["above"]["speed"])
+    assert set(capture_metrics["lanes"]) == {"below", "controlled", "above"}
+    assert capture_metrics["lanes"]["controlled"]["metrics"]["friction"] == pytest.approx(
+        controller.controlled_mu
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._distance_history["below"])
+    )
+    assert capture_metrics["history"]["below_max_distance"] > 0.5
+    assert capture_metrics["history"]["above_max_abs_distance"] < 0.05
+
 
 def test_rigid_spin_roll_coupling_converts_slip_to_roll() -> None:
     import numpy as np
