@@ -401,13 +401,14 @@ starts from displacing a better caller-provided initial guess.
 Strictly interior standard LCPs without a warm start first try the shared
 validated linear-solve fast path after parameter validation. Boxed LCPs without
 friction-index coupling use the shared projected-active-set exact solve, and
-small strictly interior friction-index rows use the shared validated
-friction-index exact solve. Warm-started boxed/findex rows, larger findex rows,
-active friction bounds, and validator-rejected rows stay on the semi-smooth
-Newton path so the residual-reducing PGS warm start and moving-bound Jacobian
-remain active. When the accepted line-search step already reaches the natural
-residual tolerance, the solver now returns immediately instead of spending one
-extra Newton loop only to observe convergence.
+small and medium strictly interior friction-index rows use the shared validated
+friction-index exact solve up to the 48-variable comparison packet.
+Warm-started boxed/findex rows, larger findex rows, active friction bounds, and
+validator-rejected rows stay on the semi-smooth Newton path so the
+residual-reducing PGS warm start and moving-bound Jacobian remain active. When
+the accepted line-search step already reaches the natural residual tolerance,
+the solver now returns immediately instead of spending one extra Newton loop
+only to observe convergence.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>

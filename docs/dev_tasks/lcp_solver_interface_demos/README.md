@@ -1,5 +1,103 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Medium Boxed SSN Friction Exact Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint target:
+  `Extend boxed SSN friction exact path to medium rows`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 60 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BoxedSemiSmoothNewtonSolver` now lets the shared validated
+  strict-interior friction-index exact shortcut handle non-warm-started packets
+  up to 48 variables.
+- The 16-contact FrictionIndex comparison packet takes the exact path; larger
+  64-contact packets stay on the semi-smooth Newton path because the dense
+  shortcut was not a focused benchmark win there.
+- Unit coverage now checks that the 48-variable medium friction-index packet
+  solves through the zero-iteration exact path.
+- The checked performance profile CSVs, Python demo profile summary,
+  Newton-methods background note, changelog, Python metadata assertions, and
+  this hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused A/B command:
+  `BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/`.
+- Baseline `build/friction_index_bssn_gate12_baseline.json` used the old
+  12-variable exact gate.
+- After-run `build/friction_index_bssn_gate48_after.json` used the new
+  48-variable exact gate.
+- `BoxedSemiSmoothNewton` focused timings:
+  - contacts 4: `1309.9ns -> 1268.7ns`
+  - contacts 16: `26648.0ns -> 15050.6ns`
+  - contacts 64: `696561.3ns -> 682964.4ns`
+
+Final regenerated profile snapshot for this slice:
+
+- FrictionIndex average ratios: `BoxedSemiSmoothNewton 2.55`, `Dantzig 1.98`,
+  `ShockPropagation 1.95`, `BlockedJacobi 1.91`, `Apgd 1.89`, `NNCG 1.89`,
+  `SymmetricPsor 1.83`, `SubspaceMinimization 1.83`, `Jacobi 1.78`,
+  `RedBlackGaussSeidel 1.71`, `Staggering 1.71`, `BGS 1.67`, `Admm 1.62`,
+  `Sap 1.47`, `Pgs 1.10`, and `Tgs 1.00`.
+- Boxed average ratios: `Sap 1.63`, `Apgd 1.62`, `ShockPropagation 1.60`,
+  `BGS 1.57`, `BlockedJacobi 1.56`, `Admm 1.54`,
+  `BoxedSemiSmoothNewton 1.53`, `NNCG 1.43`,
+  `SubspaceMinimization 1.43`, `SymmetricPsor 1.43`, `Dantzig 1.33`,
+  `RedBlackGaussSeidel 1.30`, `Jacobi 1.03`, `Tgs 1.02`, and `Pgs 1.01`.
+- Standard average ratios: `Lemke 2.00`, `Baraff 1.99`,
+  `InteriorPoint 1.87`, `FischerBurmeisterNewton 1.78`,
+  `SubspaceMinimization 1.75`, `NNCG 1.60`, `BGS 1.56`, and
+  `Dantzig 1.55` are the largest current rows.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_bssn_gate48_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue optimizing the large FrictionIndex `BoxedSemiSmoothNewton` row, or
+   inspect near-boundary FrictionIndex `Dantzig`/`ShockPropagation`/
+   `BlockedJacobi`.
+2. Run `pixi run lint` before committing any further slice.
+3. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - ShockPropagation Exact Prevalidation
 
 Current branch state:

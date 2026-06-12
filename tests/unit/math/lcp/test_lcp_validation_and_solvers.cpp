@@ -269,9 +269,9 @@ LcpProblem makeTwoBlockStandardProblem()
       std::move(findex));
 }
 
-LcpProblem makeFrictionBlockProblem()
+LcpProblem makeFrictionBlockProblem(
+    int contacts = 3, Eigen::VectorXd* expected = nullptr)
 {
-  const int contacts = 3;
   const int blockSize = 3;
   const int n = contacts * blockSize;
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(n, n) * 2.0;
@@ -286,10 +286,14 @@ LcpProblem makeFrictionBlockProblem()
     A(base + 2, base + 1) = 0.08;
   }
 
-  A(0, 3) = 0.02;
-  A(3, 0) = 0.02;
-  A(3, 6) = 0.02;
-  A(6, 3) = 0.02;
+  if (contacts > 1) {
+    A(0, 3) = 0.02;
+    A(3, 0) = 0.02;
+  }
+  if (contacts > 2) {
+    A(3, 6) = 0.02;
+    A(6, 3) = 0.02;
+  }
 
   Eigen::VectorXd target(n);
   for (int c = 0; c < contacts; ++c) {
@@ -299,6 +303,9 @@ LcpProblem makeFrictionBlockProblem()
     target[base + 2] = -0.05;
   }
   Eigen::VectorXd b = A * target;
+  if (expected) {
+    *expected = target;
+  }
 
   Eigen::VectorXd lo(n);
   Eigen::VectorXd hi(n);
@@ -2092,6 +2099,22 @@ TEST(FrictionIndexInteriorFastPath, HighOverheadSolversUseLinearSolve)
     BoxedSemiSmoothNewtonSolver solver;
     expectFastPath(solver);
   }
+}
+
+TEST(FrictionIndexInteriorFastPath, BoxedSemiSmoothNewtonUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  BoxedSemiSmoothNewtonSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
 TEST(

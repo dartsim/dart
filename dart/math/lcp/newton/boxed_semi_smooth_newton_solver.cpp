@@ -317,7 +317,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     } else if (problem.isBoxedLcp()) {
       exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
           problem, absTol, validationTolerance, x, &fastW);
-    } else if (problem.hasFrictionIndex() && problem.size() <= 12) {
+    } else if (problem.hasFrictionIndex() && problem.size() <= 48) {
       exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
           problem, absTol, validationTolerance, x, &fastW);
     }

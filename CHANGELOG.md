@@ -1537,6 +1537,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     already reaches the natural residual tolerance, avoiding an extra Newton
     loop on warm-started or larger friction-index rows that converge directly
     after the accepted step.
+  - Extended `BoxedSemiSmoothNewtonSolver`'s validated strict-interior
+    friction-index exact shortcut to medium 48-variable packets, while keeping
+    larger rows on the semi-smooth Newton path where the dense shortcut is not a
+    focused benchmark win.
   - Extended `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
     `SubspaceMinimizationSolver` validated exact fast paths to boxed LCPs
     without friction-index coupling through the shared projected-active-set

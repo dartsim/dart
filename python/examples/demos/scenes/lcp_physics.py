@@ -228,9 +228,8 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "strict-interior pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "MinimumMapNewton/PenalizedFischerBurmeisterNewton/"
-            "FischerBurmeisterNewton, with Apgd/BGS/"
-            "SubspaceMinimization/MPRGP still moderate"
+            "Lemke/Baraff/InteriorPoint/FischerBurmeisterNewton, with "
+            "SubspaceMinimization/BGS/NNCG still moderate"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -251,8 +250,8 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "ShockPropagation close"
         ),
         "current_laggards": (
-            "No boxed solver is above 2x; ShockPropagation remains the "
-            "largest moderate row"
+            "No boxed solver is above 2x; Sap, Apgd, and ShockPropagation "
+            "remain the largest moderate rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -268,17 +267,19 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
             "Tgs/Pgs; Sap/SymmetricPsor/RedBlackGaussSeidel/"
-            "BGS/Dantzig/Jacobi/Staggering/Admm/SubspaceMinimization close"
+            "BGS/Jacobi/Staggering/Admm/SubspaceMinimization close"
         ),
         "current_laggards": (
-            "BoxedSemiSmoothNewton and NNCG remain above 2x; "
-            "Apgd and ShockPropagation are moderate"
+            "BoxedSemiSmoothNewton remains above 2x; Dantzig, "
+            "ShockPropagation, BlockedJacobi, Apgd, and NNCG are "
+            "near-boundary or high-max rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
-            "staggering, Dantzig, and subspace hot rows, and the boxed "
-            "semi-smooth line-search shortcut trims Newton iterations; remaining "
-            "targets are larger BoxedSemiSmoothNewton rows and NNCG rows."
+            "staggering, and subspace hot rows, and the boxed semi-smooth "
+            "line-search shortcut plus medium exact shortcut trim Newton "
+            "iterations; the remaining dominant target is the large "
+            "BoxedSemiSmoothNewton row."
         ),
     },
 )

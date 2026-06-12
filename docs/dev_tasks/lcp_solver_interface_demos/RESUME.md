@@ -1,5 +1,91 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Medium Boxed SSN Friction Exact Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint target:
+  `Extend boxed SSN friction exact path to medium rows`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 60 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BoxedSemiSmoothNewtonSolver` now lets the shared validated
+  strict-interior friction-index exact shortcut handle non-warm-started packets
+  up to 48 variables.
+- The 16-contact FrictionIndex comparison packet takes the exact path; larger
+  64-contact packets stay on the semi-smooth Newton path because the dense
+  shortcut was not a focused benchmark win there.
+- Unit coverage now checks that the 48-variable medium friction-index packet
+  solves through the zero-iteration exact path.
+- The checked performance profile CSVs, Python demo profile summary,
+  Newton-methods background note, changelog, Python metadata assertions, and
+  this hand-off were refreshed.
+
+Evidence:
+
+- Focused A/B
+  `BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/` compared
+  `build/friction_index_bssn_gate12_baseline.json` with
+  `build/friction_index_bssn_gate48_after.json`.
+- Focused `BoxedSemiSmoothNewton` timings were:
+  - contacts 4: `1309.9ns -> 1268.7ns`
+  - contacts 16: `26648.0ns -> 15050.6ns`
+  - contacts 64: `696561.3ns -> 682964.4ns`
+- Regenerated full profile reports FrictionIndex averages:
+  `BoxedSemiSmoothNewton 2.55`, `Dantzig 1.98`, `ShockPropagation 1.95`,
+  `BlockedJacobi 1.91`, `Apgd 1.89`, `NNCG 1.89`,
+  `SymmetricPsor 1.83`, `SubspaceMinimization 1.83`, `Jacobi 1.78`,
+  `RedBlackGaussSeidel 1.71`, `Staggering 1.71`, `BGS 1.67`,
+  `Admm 1.62`, `Sap 1.47`, `Pgs 1.10`, and `Tgs 1.00`.
+- The same regenerated profile reports all Boxed solvers below `2x`; largest
+  Boxed averages are `Sap 1.63`, `Apgd 1.62`, and `ShockPropagation 1.60`.
+- Standard's largest current averages are `Lemke 2.00`, `Baraff 1.99`,
+  `InteriorPoint 1.87`, and `FischerBurmeisterNewton 1.78`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused A/B benchmark JSONs written to
+  `build/friction_index_bssn_gate12_baseline.json` and
+  `build/friction_index_bssn_gate48_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- FrictionIndex: large `BoxedSemiSmoothNewton` remains the main above-`2x`
+  target; `Dantzig`, `ShockPropagation`, and `BlockedJacobi` are near-boundary.
+- Boxed: no solver is above `2x`.
+- Standard: `Lemke` and `Baraff` are near the `2x` boundary.
+
 ## Current Reality - 2026-06-12 ShockPropagation Exact Prevalidation
 
 This section is the latest state; older sections below are historical
