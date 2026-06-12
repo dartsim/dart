@@ -47,37 +47,38 @@ packets, and non-standard, non-symmetric, or indefinite packets delegate to
 Dantzig before the active-set loop. Focused C++ and dartpy tests cover SPD,
 PSD, boxed, non-symmetric, indefinite, and fallback solve behavior.
 
+The final update in this session is hand-off only. The user explicitly asked
+to stop implementation and run no further verification. The branch was
+refreshed against `origin/main`, was already up to date, and this document now
+captures the next interrupted audit: benchmark/demo routing should be checked
+against the new concrete `supportsProblem(problem)` predicates for MPRGP and
+Baraff before any more solver-comparison rows are exposed as native.
+
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — consolidated branch for this work. At
-the start of this docs-only hand-off update, the latest code checkpoint was
-`7f4b0227eaf Align LCP docs with snake case headers`; the branch was two
-commits ahead of `origin/feature/lcp-solver-interface-demos`, which was at
-`eb2147d9e6b Document current LCP handoff state`.
+`feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-At the start of the MPRGP predicate slice, the branch was clean at
-`f3436654bbd Document critical LCP handoff state` and matched
-`origin/feature/lcp-solver-interface-demos`. After committing this slice, the
-local branch may be one commit ahead unless the maintainer explicitly requests a
-push.
+At the start of this final docs-only hand-off update:
 
-After the MPRGP checkpoint commit, the local branch was clean at
-`ee08bbe8ce0 Report MPRGP native support precisely` and one commit ahead of
-`origin/feature/lcp-solver-interface-demos`. After committing the Baraff slice,
-the local branch may be two commits ahead unless the maintainer explicitly
-requests a push.
+- Local HEAD was `b553a8ca444 Report Baraff native support precisely`.
+- `origin/feature/lcp-solver-interface-demos` was
+  `f3436654bbd Document critical LCP handoff state`.
+- The local branch was clean and two commits ahead of the tracking branch.
+- `origin/main` was refreshed over HTTPS and `git merge --no-edit origin/main`
+  reported `Already up to date.`
 
-The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
-succeeded. `origin/main` was refreshed over HTTPS and confirmed to be an
-ancestor of `HEAD` before this representative benchmark-command slice.
+The user has already approved pushing this consolidated branch. After the
+docs-only hand-off commit is created, the expected state is one pushed branch on
+`origin/feature/lcp-solver-interface-demos` containing the MPRGP, Baraff, and
+handoff checkpoints.
 
 ## Immediate Next Step
 
-Continue the next smallest LCP solver/interface/demo audit gap. Good next
-targets are standard-only solvers whose native mathematical domain may be
-narrower than form-level support, or representative demo/benchmark rows that
-still do not expose a solver-specific strength or failure mode. Do not push
-unless the maintainer/user gives explicit approval in the current turn.
+Audit benchmark and py-demo routing against the new concrete support
+predicates. Start in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` and check
+whether rows gated only by manifest-level standard support should instead use
+`solver.create()->supportsProblem(problem)` for MPRGP and Baraff on concrete
+singular, degenerate, or contact-normal standard packets.
 
 ## Context That Would Be Lost
 
@@ -111,8 +112,32 @@ unless the maintainer/user gives explicit approval in the current turn.
   coverage binary removed the segfault.
 - The branch should remain one additive published branch. Merge latest `main`
   before future pushes; avoid rebasing unless explicitly requested.
-- No verification was run after the user's stop-and-handoff instruction. The
-  last verification remains the Direct checkpoint verification listed below.
+- No lint, build, test, benchmark listing, or solver execution was run after
+  the final user instruction to stop and focus on hand-off.
+- Current interrupted audit: `bm_lcp_compare.cpp` still contains registrations
+  that gate rows with manifest-level form support, for example
+  `dart::test::supportsProblem(solverEntry, LcpProblemSupport::Standard)`.
+  That is now too coarse for at least some MPRGP/Baraff rows because their
+  concrete `supportsProblem(problem)` predicates report narrower native
+  mathematical domains.
+- Likely first benchmark follow-up: inspect
+  `MakeSingularDegenerateStandardProblem`,
+  `MakeSingularDegenerateBenchmarkProblem`, and the singular-degenerate
+  registration helpers. The static standard solver list includes `Baraff` and
+  `MPRGP`; MPRGP should probably not be registered as native if the concrete
+  singular packet fails its positive-definite check. Baraff may still be native
+  if the packet is symmetric positive semidefinite.
+- Second benchmark follow-up: inspect
+  `RegisterContactNormalStandardSweepBenchmarks` and
+  `RunContactNormalStandardSweepBenchmark`. The solver list includes `Baraff`
+  and `MPRGP`, and the registration path currently appears to use form-level
+  support plus a `Direct` size special case rather than concrete
+  `supportsProblem(problem)` checks.
+- Generic standard rows that come from `MakeBenchmarkProblem(Standard, size)`,
+  `MakeStandardSpdProblem`, MPRGP SPD-check sweeps, interior-point path sweeps,
+  and mild/near-singular SPD builders may already be fine. Do not refactor all
+  benchmark registration gates mechanically without inspecting the generated
+  concrete packet.
 - The interrupted next-slice audit found that
   `python/examples/demos/scenes/lcp_physics.py` still points
   `active_friction_index_contact` at the older two-solver benchmark filter
@@ -161,7 +186,7 @@ unless the maintainer/user gives explicit approval in the current turn.
   `python/tests/unit/test_py_demo_panels.py` passed 43 tests and
   `pixi run lint` passed.
 - The source-layout docs slice committed as
-  `f09ea880ea8 Align LCP docs with snake case headers` updates
+  `7f4b0227eaf Align LCP docs with snake case headers` updates
   `docs/background/lcp/02_overview.md`,
   `docs/background/lcp/03_pivoting-methods.md`,
   `docs/background/lcp/05_newton-methods.md`, and
@@ -174,28 +199,6 @@ unless the maintainer/user gives explicit approval in the current turn.
   `pixi run python scripts/check_lcp_solver_roster.py`.
 - Final verification for the current source-layout docs slice passed:
   `pixi run lint`.
-- No verification was run after the user's critical stop-and-handoff
-  instruction.
-- Interrupted audit evidence for MPRGP:
-  - `dart/math/lcp/lcp_solver.hpp` currently provides the base virtual
-    `supportsProblem(problem, standardTolerance)` as a form-level predicate:
-    standard, friction-index, or boxed.
-  - `dart/math/lcp/other/mprgp_solver.hpp` documents MPRGP as a standard-LCP
-    solver for symmetric positive definite matrices, but it does not override
-    `supportsProblem(...)`.
-  - `dart/math/lcp/other/mprgp_solver.cpp` has `isSymmetric(...)`, delegates
-    non-standard problems to Dantzig, delegates non-symmetric standard problems
-    to Dantzig, and delegates matrices that fail `Eigen::LLT` when
-    `checkPositiveDefinite` is true.
-  - A likely patch is to add `using LcpSolver::supportsProblem;` and override
-    `bool supportsProblem(const LcpProblem&, double standardTolerance) const`
-    in `MprgpSolver`, returning true only for standard problems that satisfy the
-    configured native symmetry and positive-definite checks.
-  - Focused C++ coverage should include an SPD standard packet, a boxed packet,
-    a non-symmetric standard packet, a symmetric indefinite packet, and the
-    `checkPositiveDefinite = false` parameter case.
-  - Python/demo counts are expected to remain unchanged because the current
-    representative standard demo packets appear symmetric positive definite.
 - Completed MPRGP predicate checkpoint:
   - `dart/math/lcp/other/mprgp_solver.hpp` now preserves the base overloads with
     `using LcpSolver::supportsProblem` and overrides the tolerance-aware

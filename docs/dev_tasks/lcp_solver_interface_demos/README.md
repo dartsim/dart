@@ -39,6 +39,8 @@
 - [x] Tightened Baraff per-problem native support reporting so non-symmetric and
       indefinite standard packets delegate to Dantzig instead of entering the
       native active-set loop.
+- [x] Refreshed the branch against `origin/main`, captured the final hand-off
+      state, and stopped without running any further verification.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -186,41 +188,53 @@ Observed results:
 
 The user explicitly stopped implementation work and requested hand-off only
 with no further verification. No lint, build, tests, benchmark listing, or
-solver execution was run after that instruction.
+solver execution was run after that final instruction.
 
 Branch state at the start of this hand-off update:
 
 - Current branch: `feature/lcp-solver-interface-demos`.
 - Local HEAD before this docs-only hand-off update:
-  `7f4b0227eaf Align LCP docs with snake case headers`.
+  `b553a8ca444 Report Baraff native support precisely`.
 - Remote tracking branch before this docs-only hand-off update:
   `origin/feature/lcp-solver-interface-demos` at
-  `eb2147d9e6b Document current LCP handoff state`.
+  `f3436654bbd Document critical LCP handoff state`.
 - Local branch was two commits ahead of the tracking branch before this
   docs-only hand-off update.
+- `origin/main` was refreshed over HTTPS and `git merge --no-edit origin/main`
+  reported `Already up to date.`
+- This docs-only hand-off update is intended to be committed and pushed to the
+  same consolidated branch after capture.
 
 Interrupted next-slice audit, with no code changes made:
 
-- The next bounded interface gap appears to be
-  `dart/math/lcp/other/mprgp_solver.hpp` and
-  `dart/math/lcp/other/mprgp_solver.cpp`.
-- `LcpSolver::supportsProblem(problem, standardTolerance)` currently reports
-  form-level support by checking whether a problem is standard, friction-index,
-  or boxed and whether the solver supports that form.
-- `MprgpSolver` advertises support for standard LCPs and inherits that base
-  predicate, but its native solve path is narrower: non-standard problems,
-  non-symmetric matrices, and matrices that fail `Eigen::LLT` when
-  `checkPositiveDefinite` is true are delegated to Dantzig.
-- A likely focused patch is to add an MPRGP override for
-  `supportsProblem(problem, standardTolerance)` that returns native support
-  only for standard packets satisfying the solver's configured symmetry and
-  positive-definite checks.
-- Focused C++ tests should cover: SPD standard true, boxed false,
-  non-symmetric standard false, symmetric indefinite false by default, and
-  symmetric indefinite true after setting `checkPositiveDefinite = false`.
-- Current py-demo representative standard packets appear symmetric positive
-  definite, so the Python panel native/delegated counts are not expected to
-  change for this patch.
+- The next bounded interface/demo gap has moved from solver predicates to
+  benchmark/demo routing.
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` still has registrations that
+  gate rows with manifest-level family support such as
+  `dart::test::supportsProblem(solverEntry, LcpProblemSupport::Standard)`.
+- That is now potentially too coarse for MPRGP and Baraff because both solvers
+  report narrower native support through `supportsProblem(problem)` for
+  concrete standard packets.
+- Start with singular-degenerate standard registrations. Inspect
+  `MakeSingularDegenerateStandardProblem`,
+  `MakeSingularDegenerateBenchmarkProblem`, and the related registration
+  helpers before changing solver lists. MPRGP should probably not be registered
+  as native for a concrete singular packet that fails its positive-definite
+  check; Baraff may still be native if the packet is symmetric positive
+  semidefinite.
+- Then inspect `RegisterContactNormalStandardSweepBenchmarks` and
+  `RunContactNormalStandardSweepBenchmark`. The current registration path
+  appears to include `Baraff` and `MPRGP` through form-level standard support
+  plus a `Direct` size exception, rather than checking each concrete generated
+  contact-normal standard packet.
+- A likely focused patch is a benchmark-local helper that instantiates a solver
+  from the manifest entry and asks `solver->supportsProblem(problem)` before
+  registering or running rows whose concrete packet is known at registration
+  time.
+- Do not refactor every manifest support gate mechanically. Generic standard
+  rows produced by `MakeBenchmarkProblem(Standard, size)`,
+  `MakeStandardSpdProblem`, MPRGP SPD-check sweeps, interior-point path sweeps,
+  and mild/near-singular SPD builders may already be correct.
 
 ## Representative Benchmark Command Checkpoint
 
@@ -510,14 +524,14 @@ metadata, packet generation, or benchmark rows.
 ## Immediate Next Steps
 
 1. Resume on `feature/lcp-solver-interface-demos`.
-2. Check whether the local hand-off commits are already on
-   `origin/feature/lcp-solver-interface-demos`; if not, push them after network
-   access is available and maintainer/user approval is still in force.
+2. Check that `origin/feature/lcp-solver-interface-demos` contains the final
+   hand-off commit from this session. If it does not, push only after explicit
+   maintainer/user approval is still in force.
 3. Fetch `origin/main`; if it moved, merge it into this branch before the next
    push.
-4. Audit the next smallest LCP interface/demo gap. Good starting points are
-   `dart/math/lcp`, `python/examples/demos`, `python/tests/unit/math/test_lcp.py`,
-   `python/tests/unit/test_py_demo_panels.py`,
-   `tests/common/lcpsolver`, and `tests/benchmark/lcpsolver`.
-5. Prefer a bounded checkpoint: one solver/interface/demo gap, focused tests,
+4. Audit benchmark routing in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`
+   against concrete `supportsProblem(problem)` results, starting with
+   singular-degenerate standard rows and contact-normal standard sweeps for
+   MPRGP and Baraff.
+5. Prefer a bounded checkpoint: one benchmark/demo routing gap, focused tests,
    `pixi run lint`, then an additive commit.
