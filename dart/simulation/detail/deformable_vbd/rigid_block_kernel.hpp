@@ -2131,11 +2131,8 @@ inline void buildAvbdRigidContactManifoldRows(
         = avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point);
     const Eigen::Vector3d localPointB
         = avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point);
-    AvbdRigidPointPairRow seed;
-    seed.localPointA = localPointA;
-    seed.localPointB = localPointB;
-    const Eigen::Vector3d relativePosition = avbdRigidPointPairRelativePosition(
-        states[contact.bodyA], states[contact.bodyB], seed);
+    // Both friction anchors are initialized from the same world contact point.
+    const Eigen::Vector3d stepStartRelativePosition = Eigen::Vector3d::Zero();
     const Eigen::Matrix<double, 3, 2> basis
         = avbdRigidContactTangentBasis(contact.normalFromAtoB);
     if (const Eigen::Vector3d* previousFirst
@@ -2170,7 +2167,7 @@ inline void buildAvbdRigidContactManifoldRows(
         localPointA,
         localPointB,
         basis.col(0),
-        relativePosition,
+        stepStartRelativePosition,
         forceLimitFromBounds(firstRecord.descriptor.bounds),
         firstRecord.state,
         0.0);
@@ -2179,7 +2176,7 @@ inline void buildAvbdRigidContactManifoldRows(
         localPointA,
         localPointB,
         basis.col(1),
-        relativePosition,
+        stepStartRelativePosition,
         forceLimitFromBounds(secondRecord.descriptor.bounds),
         secondRecord.state,
         0.0);

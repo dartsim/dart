@@ -9,6 +9,17 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed follow-up (2026-06-11): rigid contact manifold friction row
+  construction now passes a zero step-start relative position when both tangent
+  anchors are initialized from the same world contact point, avoiding a
+  redundant local-anchor-to-world transform pair during contact source-row
+  extraction. `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows`
+  now covers nonzero body-local anchors while verifying the generated tangent
+  rows start with zero offset and zero tangent constraint value. The focused
+  rigid-block target, the focused test, the full `test_avbd_rigid_block`
+  binary, `pixi run lint`, `pixi run build`, and `git diff --check` passed
+  locally. This is only a narrow rigid contact source-row overhead cleanup and
+  does not close any source CPU-win, GPU, or paper-number gate.
 - Latest critical handoff stop (2026-06-11): the user explicitly directed this
   session to stop implementation and focus only on hand-off for all current
   work, without any further verification. The current checkout is the

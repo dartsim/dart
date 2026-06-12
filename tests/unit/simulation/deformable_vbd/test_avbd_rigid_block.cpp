@@ -1044,6 +1044,8 @@ TEST(AvbdRigidBlock, RigidRowDriverHonorsConvergenceDisplacement)
 TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(-0.5, 0.3, -0.2);
 
   std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
   contacts[0].bodyA = 0;
@@ -1053,7 +1055,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
          vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 4)};
   contacts[0].endpointB = {
       7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
-  contacts[0].point = Vec3::Zero();
+  contacts[0].point = Vec3(0.1, 0.2, -0.15);
   contacts[0].normalFromAtoB = 2.0 * Vec3::UnitX();
   contacts[0].depth = 0.2;
   contacts[0].frictionCoefficient = 0.5;
@@ -1116,6 +1118,20 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
   EXPECT_NEAR(frictionRows[0].second.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
   EXPECT_NEAR(
       frictionRows[0].first.axis.dot(frictionRows[0].second.axis), 0.0, 1e-12);
+  EXPECT_GT(frictionRows[0].first.localPointA.norm(), 0.0);
+  EXPECT_GT(frictionRows[0].first.localPointB.norm(), 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.offset, 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.offset, 0.0);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          states[0], states[1], frictionRows[0].first),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          states[0], states[1], frictionRows[0].second),
+      0.0,
+      1e-12);
 }
 
 //==============================================================================

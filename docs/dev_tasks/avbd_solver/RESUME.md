@@ -66,9 +66,10 @@ Current continuation state:
   Hessian fast path, the origin-anchor distance-spring direction fast path, the
   generic point-pair/friction origin-anchor direction fast path, and the newest
   point-attachment/distance-spring direction helper slice, plus the newest
-  point-attachment world-point reuse cleanup. The latest pushed parent before
-  the final handoff update was `8fc57deb9d6`
-  (`Checkpoint AVBD handoff state`). Do not require a
+  point-attachment world-point reuse cleanup, and the latest contact-manifold
+  friction zero-relative-position cleanup. The latest pushed parent before that
+  contact-manifold cleanup was `bf4a2cc8582`
+  (`Record AVBD critical handoff state`). Do not require a
   fresh session to inspect or apply local stashes before continuing. Keep this
   as the one consolidated local continuation branch for source-row cleanup until
   the user explicitly redirects or approves PR updates.
@@ -104,6 +105,27 @@ Current continuation state:
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
+
+Latest resumed local follow-up:
+
+- `buildAvbdRigidContactManifoldRows()` now treats tangent friction anchors
+  generated from the same manifold world contact point as having zero
+  step-start relative displacement. This removes the redundant
+  `avbdRigidPointPairRelativePosition()` call that transformed both freshly
+  computed local anchors back to world space only to recover the same contact
+  point pair.
+- `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` now sets
+  nonzero body positions so the generated contact local anchors are nonzero,
+  then verifies the manifold tangent rows still start with zero offsets and zero
+  tangent constraint values.
+- Local validation for this slice passed:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`,
+  the focused
+  `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` filter,
+  full `test_avbd_rigid_block` (95 tests), `pixi run lint`,
+  `pixi run build`, and `git diff --check`.
+- This is a narrow rigid contact source-row overhead cleanup. It does not close
+  any source CPU-win, GPU, or paper-number gate.
 
 Latest resumed local follow-up:
 
@@ -430,14 +452,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff                     | State and handling                                                                                                                                 |
-| -------------------------------------- | --------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `8fc57deb9d6` plus current handoff commit  | Current checkout and single resume branch. Final handoff intentionally has no post-stop verification.                                                |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                             | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                                          |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                             | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                                 |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                             | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                                 |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                             | Unrelated local branch; do not touch during AVBD handoff.                                                                                          |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                             | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.                                |
+| Branch                                 | Upstream                                      | Local head at handoff                     | State and handling                                                                                                  |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `bf4a2cc8582` plus current cleanup commit | Current checkout and single resume branch. Latest local slice has focused source-row validation recorded above.     |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                             | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                           |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                             | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                             | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                             | Unrelated local branch; do not touch during AVBD handoff.                                                           |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                             | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session. |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest critical handoff-only stop. The branches above are intentionally left in
