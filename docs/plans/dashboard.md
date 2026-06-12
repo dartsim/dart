@@ -923,8 +923,9 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-anchored public one-DOF motor break/reset
   re-engagement, movable-movable same-multibody revolute/prismatic motor
   break/reset with explicit off-origin anchors covered in C++/dartpy,
-  direct/private and current-pose movable-pair revolute plus non-cardinal
-  current-pose revolute/prismatic motor-axis coverage, public
+  direct/private movable-pair revolute/prismatic reset plus current-pose
+  movable-pair revolute/prismatic reset and non-cardinal motor-axis coverage,
+  public
   same-multibody/world-anchored articulated revolute/prismatic
   floating-endpoint plus selected off-origin-anchor facade non-cardinal
   motor-axis coverage,

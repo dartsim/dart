@@ -11651,6 +11651,134 @@ TEST(
       2e-3);
 }
 
+// PLAN-104 AVBD articulated bridge: direct private prismatic velocity
+// point-joint configs also cover two movable same-multibody endpoints. After a
+// break/reset round trip, the next extraction samples the updated command and
+// rebuilds both the masked hard rows and free-axis motor for a non-cardinal
+// slider basis.
+TEST(
+    VariationalIntegration,
+    AvbdBreakablePrismaticVelocityPointJointConfigResetReengagesMovablePair)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  const double dt = 0.005;
+  world.setTimeStep(dt);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
+  childPose.head<3>() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  pair.child.getParentJoint().setPosition(childPose);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Prismatic;
+  joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
+  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  const double targetSpeed = 0.3;
+  joint.commandVelocity = Eigen::VectorXd::Constant(1, targetSpeed);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1000.0);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
+  joint.breakForce = 1e-18;
+
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(0.5, -1.0, 2.0).normalized();
+  const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
+  const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = parentAnchor;
+  config.localAnchorB = childAnchor;
+  config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
+  config.linearAxes = dvbd::avbdRigidJointAxesFromFreeAxis(sliderAxis);
+  config.angularAxes = config.linearAxes;
+  config.linearAxisMask = dvbd::avbdRigidJointAllButAxisMask(2u);
+  config.angularAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
+  config.startStiffness = std::numeric_limits<double>::infinity();
+  config.maxStiffness = std::numeric_limits<double>::infinity();
+
+  const auto anchorDelta = [&]() -> Eigen::Vector3d {
+    const Eigen::Vector3d parentAnchorWorld
+        = pair.parent.getWorldTransform() * parentAnchor;
+    const Eigen::Vector3d childAnchorWorld
+        = pair.child.getWorldTransform() * childAnchor;
+    return childAnchorWorld - parentAnchorWorld;
+  };
+  const auto sliderAxisWorld = [&]() {
+    return pair.parent.getWorldTransform().linear() * sliderAxis;
+  };
+  const auto orthogonalAnchorResidual = [&]() {
+    const Eigen::Vector3d delta = anchorDelta();
+    const Eigen::Vector3d axis = sliderAxisWorld();
+    return (delta - delta.dot(axis) * axis).norm();
+  };
+  const auto sliderPosition = [&]() {
+    return anchorDelta().dot(sliderAxisWorld());
+  };
+  const auto relativeRotationError = [&]() {
+    return (pair.parent.getWorldTransform().linear().transpose()
+                * pair.child.getWorldTransform().linear()
+            - Eigen::Matrix3d::Identity())
+        .norm();
+  };
+
+  world.enterSimulationMode();
+  world.step();
+
+  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
+  ASSERT_TRUE(liveJoint.broken);
+  EXPECT_NEAR(sliderPosition(), targetSpeed * dt, 1e-6);
+  EXPECT_LT(orthogonalAnchorResidual(), 2e-6);
+  EXPECT_LT(relativeRotationError(), 1e-6);
+
+  double maxBrokenOrthogonalResidual = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    pair.parent.applyForce(
+        -4.0 * Eigen::Vector3d::UnitY(),
+        parentAnchor + 0.3 * Eigen::Vector3d::UnitX());
+    pair.child.applyForce(
+        4.0 * Eigen::Vector3d::UnitY(),
+        childAnchor - 0.3 * Eigen::Vector3d::UnitX());
+    world.step();
+
+    maxBrokenOrthogonalResidual
+        = std::max(maxBrokenOrthogonalResidual, orthogonalAnchorResidual());
+  }
+  ASSERT_GT(maxBrokenOrthogonalResidual, 1e-4);
+
+  const double sliderBeforeReset = sliderPosition();
+  pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+  pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+  liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
+  liveJoint.breakForce = 1e6;
+  liveJoint.broken = false;
+
+  constexpr int resetSteps = 10;
+  for (int k = 0; k < resetSteps; ++k) {
+    world.step();
+  }
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& resetConfig
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_EQ(resetConfig.linearAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_EQ(resetConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_NEAR(resetConfig.linearAxes.col(2).dot(sliderAxis), 1.0, 1e-12);
+  EXPECT_FALSE(liveJoint.broken);
+  const double resetOrthogonalResidual = orthogonalAnchorResidual();
+  EXPECT_LT(resetOrthogonalResidual, maxBrokenOrthogonalResidual * 0.05);
+  EXPECT_LT(resetOrthogonalResidual, 2e-3);
+  EXPECT_LT(relativeRotationError(), 1e-6);
+  EXPECT_NEAR(
+      sliderPosition() - sliderBeforeReset,
+      -targetSpeed * dt * static_cast<double>(resetSteps),
+      2e-3);
+}
+
 // PLAN-104 AVBD articulated bridge: current-pose extracted private revolute
 // velocity motors between two movable links must honor finite effort bounds,
 // not become unbounded hard velocity targets after config generation.

@@ -9,6 +9,17 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): direct private same-multibody
+  prismatic velocity point-joint reset coverage now matches the neighboring
+  direct private revolute movable-pair reset path. The new C++ regression uses
+  explicit off-origin anchors, a non-cardinal slider axis, a break/skip drift
+  phase, and a reversed-command reset phase to prove the existing private
+  `AvbdRigidWorldPointJointConfig` keeps its masked hard rows plus free-axis
+  motor row alive across two movable endpoints. Local validation passed the
+  focused `test_variational_integration` target build, a focused three-test
+  movable-pair reset filter, `pixi run build`, `pixi run lint`, and
+  `git diff --check`. This is narrow articulated lifecycle evidence only, not
+  a CPU-win, GPU, or paper-number claim.
 - Critical stop handoff (2026-06-12): the user explicitly directed the session
   to stop all further work and only ensure the hand-off docs. Do not continue
   implementation, verification, branch cleanup, PR mutation, hosted CI work,

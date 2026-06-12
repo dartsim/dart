@@ -1,5 +1,45 @@
 # Resume: AVBD Solver
 
+## Latest Direct Private Prismatic Reset Checkpoint (2026-06-12)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
+count source-row overhead cleanup or focused articulated lifecycle tests as
+CPU-win, GPU, or paper-number gates; those gates require dedicated corpus and
+benchmark evidence.
+
+Current resumed slice: direct private same-multibody prismatic velocity
+point-joint configs now have the same break/skip/reset coverage shape as the
+neighboring direct private movable-pair revolute reset path. The new C++
+regression uses explicit off-origin anchors and a non-cardinal slider basis,
+breaks the joint, applies opposing endpoint forces while broken rows are
+skipped, then clears `broken`, raises `breakForce`, reverses the command, and
+verifies the existing private `AvbdRigidWorldPointJointConfig` still re-engages
+its masked hard rows plus free-axis motor row across two movable same-multibody
+endpoints.
+
+Validation so far for this slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_variational_integration`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdBreakablePrismaticVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdPrismaticPointJointCurrentPoseExtractorResetReengagesMovablePair' --gtest_brief=1"`
+  passed, 3 tests.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. The previous local checkpoint is
+`42088402003 Record AVBD critical handoff state`; after this slice is
+committed, use the latest local HEAD as the resume point. Do not push, rerun
+hosted CI, mutate PRs, or clean/delete branches without explicit user approval.
+
+Next preferred local gap after this slice remains broader PLAN-104 articulated
+lifecycle/corpus coverage, then rigid contact persistence completeness, then
+source-demo CPU/GPU evidence. More source-row overhead cleanup should not be
+treated as a CPU-win, GPU, or paper-number gate.
+
 ## Critical Stop Handoff (2026-06-12)
 
 User directive: stop all further work and only ensure the hand-off docs. Do
@@ -73,13 +113,11 @@ git stash list
 
 If a future user explicitly asks to resume implementation, the next preferred
 local gap is broader articulated lifecycle coverage rather than more
-source-row overhead cleanup. The most concrete unstarted slice from the last
-analysis was direct private same-multibody prismatic velocity point-joint reset
-coverage with a non-cardinal slider axis, complementing the existing direct
-private movable revolute reset coverage and generated current-pose prismatic
-reset coverage. After that, prefer rigid contact persistence completeness and
-then source-demo CPU/GPU corpus evidence. Keep all claims narrow unless corpus
-or benchmark evidence supports them.
+source-row overhead cleanup. The concrete unstarted direct private
+same-multibody prismatic velocity point-joint reset slice identified at this
+stop was completed by the latest checkpoint above. After that, prefer rigid
+contact persistence completeness and then source-demo CPU/GPU corpus evidence.
+Keep all claims narrow unless corpus or benchmark evidence supports them.
 
 ## Latest Same-Multibody Reset Checkpoint (2026-06-11)
 
