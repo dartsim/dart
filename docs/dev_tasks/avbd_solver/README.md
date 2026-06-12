@@ -9,6 +9,17 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed follow-up (2026-06-11): distance-spring source rows now share
+  a single exact-origin-anchor helper for both force direction and Hessian
+  assembly. Center-anchor Spring rows skip angular-arm cross products and the
+  generic world-point Jacobian multiply when the rigid anchor is exactly at the
+  body origin, while off-origin Spring Ratio rows still take the general path.
+  `AvbdRigidBlock.DistanceSpringOriginAnchorDirectionStaysTranslational` and
+  `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` cover
+  the helper behavior. Focused and full `test_avbd_rigid_block`, `pixi run
+lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
+  still only a narrow helper overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
 - Latest critical stop (2026-06-11): the user explicitly directed the session
   to stop implementation and focus only on hand-off for all current work,
   without any further verification. This handoff update must not be treated as

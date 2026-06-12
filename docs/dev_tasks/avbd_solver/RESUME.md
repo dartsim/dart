@@ -7,6 +7,16 @@ deformable row coverage with evidence against the native source corpus. Do not
 count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
+Current resumed note: after the final handoff checkpoint at `38a12502399`,
+implementation resumed on `avbd/source-row-extraction-precheck` for one small
+source-row overhead slice. The latest local follow-up should be committed on
+top of `38a12502399`: distance-spring source rows now share an exact
+origin-anchor helper for translational force directions and Hessian assembly.
+This keeps center-anchor Spring rows from computing angular cross products or a
+generic world-point Jacobian when the rigid anchor is exactly at the body
+origin. It remains a narrow helper cleanup, not a CPU-win, GPU, or paper-number
+claim.
+
 Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
 without any further verification. No lint, build, test, CI refresh, PR refresh,
@@ -32,11 +42,12 @@ Current continuation state:
   continuation branch for current AVBD source-row work; it contains the pushed
   #2977 parent changes, the stacked extraction-precheck changes, the current
   handoff docs, the formerly stash-only quaternion normalization fast path, the
-  origin-anchor rigid world-point fast path, and the latest origin-anchor
-  distance-spring Hessian fast path. The latest pushed parent before this final
-  handoff was `76fb8073421` (`Update AVBD solver handoff state`). The final
-  handoff commit should sit on top of it after this stop and is expected to
-  preserve both the docs update and the already-written Hessian/test WIP. Do not
+  origin-anchor rigid world-point fast path, the origin-anchor distance-spring
+  Hessian fast path, and the latest origin-anchor distance-spring direction
+  fast path. The latest pushed parent before the final handoff was
+  `76fb8073421` (`Update AVBD solver handoff state`), the pushed handoff
+  checkpoint is `38a12502399` (`Checkpoint AVBD source-row handoff state`), and
+  the current resumed follow-up should sit on top of `38a12502399`. Do not
   require a fresh session to inspect or apply local stashes before continuing.
   Keep this as the one consolidated local continuation branch for source-row
   cleanup until the user explicitly redirects or approves PR updates.
@@ -45,25 +56,22 @@ Current continuation state:
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   It has been pushed and includes the merge from `origin/main` at
   `7d05d7b9ea7`.
-- #2977 was not refreshed after the latest no-verification stop. Its latest
-  known read-only state was open, non-draft, milestone `DART 7.0`, base `main`,
-  and `BLOCKED` only because required hosted checks were still running. As of
-  that latest check on 2026-06-11 local time / 2026-06-12 UTC, CUDA Build,
-  ReadTheDocs, CI Lint, Alt Linux repro, macOS arm64 tests, Python and C++
-  CodeQL, Windows Release Tests, Windows/macOS/Ubuntu wheels, and multiple
-  Linux jobs had passed; Linux Debug, Linux Release, and Coverage Debug were
-  still running. No new compiler, test, or CodeQL failure was visible on the
-  current head at that time. Refresh this in a future session before making any
-  PR decision.
+- #2977 was refreshed read-only after this resumed slice. Its latest known
+  state is open, non-draft, `MERGEABLE`, and `BLOCKED` only because required
+  hosted checks were still running. CUDA Build, CI Lint, Alt Linux repro,
+  CodeQL C++/Python, ReadTheDocs, Codecov project/patch, macOS arm64, Windows
+  Release, wheels, and most Linux jobs were green; Linux Debug Tests and Linux
+  Release Tests were still in progress. No new compiler, test, CodeQL, or
+  Codecov failure was visible on head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
+  Refresh this in a future session before making any PR decision.
 - The active local checkout is `avbd/source-row-extraction-precheck`. The
-  latest pushed head before this final handoff was
-  `76fb8073421 Update AVBD solver handoff state`. At the final stop, the
-  working tree held four modified files:
+  latest pushed head at the start of this resumed slice was
+  `38a12502399 Checkpoint AVBD source-row handoff state`. The resumed local
+  follow-up currently touches:
   `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp`,
   `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`,
   `docs/dev_tasks/avbd_solver/README.md`, and
-  `docs/dev_tasks/avbd_solver/RESUME.md`. The final handoff commit is expected
-  to capture all four so a fresh session has one branch to resume from.
+  `docs/dev_tasks/avbd_solver/RESUME.md`.
 - The earlier no-verification stop applied only to the previous docs-only
   handoff commit. Work resumed afterward; the origin-anchor follow-up has fresh
   focused local validation recorded below. The latest stop again returned the
@@ -74,7 +82,26 @@ Current continuation state:
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
 
-Latest handoff-captured local follow-up:
+Latest resumed local follow-up:
+
+- `avbdRigidWorldPointIsBodyOrigin()` centralizes the exact body-origin world
+  anchor check used by distance-spring helpers.
+- `avbdRigidDistanceSpringDirectionAtWorldPoint()` now returns a purely
+  translational 6D direction for exact body-origin anchors and computes the
+  angular arm cross product only for off-origin anchors.
+- Both `addAvbdRigidPointPairDistanceSpring()` and the serial
+  `blockDescentRigidBodiesAvbdRows()` distance-spring assembly path use that
+  helper, so center-anchor Spring rows avoid repeated angular cross products in
+  the same origin-anchor cases where the Hessian path already skips the generic
+  world-point Jacobian multiply.
+- `AvbdRigidBlock.DistanceSpringOriginAnchorDirectionStaysTranslational`
+  verifies the new direction helper. The earlier
+  `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` still
+  covers the matching Hessian helper. This is a narrow source-row helper
+  overhead cleanup; it does not close any source CPU-win, GPU, or paper-number
+  gate.
+
+Previous handoff-captured local follow-up:
 
 - `addAvbdRigidDistanceSpringHessianAtWorldPoint()` now detects the exact
   body-origin anchor case (`worldPoint == state.position`) and directly stamps
@@ -177,6 +204,26 @@ cleanup:
   below are historical validation from the preceding code slices and should be
   treated as the current known evidence, not as fresh evidence for the final
   handoff commit itself.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper:
+  `build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.DistanceSpringOriginAnchorDirectionStaysTranslational:AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational:AvbdRigidBlock.PointPairDistanceSpringStampsRadialFiniteStiffness:AvbdRigidBlock.PointPairDistanceSpringStepReducesStretch:AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch:AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows:AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition' --gtest_brief=1`
+  passed, 7 tests.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper:
+  `build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1`
+  passed, 93 tests.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper: `git diff --check` passed.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper: `pixi run lint` passed.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper: `pixi run build` passed.
+- Current resumed validation after the distance-spring origin-anchor direction
+  helper: `pixi run test-unit` passed, 161/161 tests.
 - Current resumed validation after the distance-spring Hessian origin-anchor
   fast path, before the final no-verification stop:
   `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
@@ -253,14 +300,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff               | State and handling                                                                                                     |
-| -------------------------------------- | --------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `76fb8073421` plus final handoff commit | Current checkout and single resume branch. Fresh sessions should resume here after fetching the pushed handoff commit. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                       | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                              |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                       | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                     |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                       | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                     |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                       | Unrelated local branch; do not touch during AVBD handoff.                                                              |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                       | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.    |
+| Branch                                 | Upstream                                      | Local head at handoff                       | State and handling                                                                                                                       |
+| -------------------------------------- | --------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `38a12502399` plus current follow-up commit | Current checkout and single resume branch. Fresh sessions should resume here after fetching the pushed handoff/current follow-up commit. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                               | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                                |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                               | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                       |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                               | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                       |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                               | Unrelated local branch; do not touch during AVBD handoff.                                                                                |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                               | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.                      |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest handoff-only stop. Cleanup candidates remain documented here, but a

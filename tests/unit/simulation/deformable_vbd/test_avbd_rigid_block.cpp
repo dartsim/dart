@@ -426,6 +426,23 @@ TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(-0.5, 1.0, 2.0);
+  state.orientation = rotationY(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 axis = Vec3(0.25, -1.0, 2.0).normalized();
+  const vbd::Vector6d direction
+      = vbd::avbdRigidDistanceSpringDirectionAtWorldPoint(
+          state, state.position, axis);
+
+  vbd::Vector6d expected = vbd::Vector6d::Zero();
+  expected.head<3>() = axis;
+  EXPECT_EQ(direction, expected);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointPairDistanceSpringUpdateRampsWithoutDual)
 {
   vbd::AvbdRigidBodyState stateA;

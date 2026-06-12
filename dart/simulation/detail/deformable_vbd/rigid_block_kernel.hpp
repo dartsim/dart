@@ -1472,6 +1472,29 @@ inline Matrix3x6d avbdRigidWorldPointJacobian(
 }
 
 //==============================================================================
+inline bool avbdRigidWorldPointIsBodyOrigin(
+    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
+{
+  return worldPoint.x() == state.position.x()
+         && worldPoint.y() == state.position.y()
+         && worldPoint.z() == state.position.z();
+}
+
+//==============================================================================
+inline Vector6d avbdRigidDistanceSpringDirectionAtWorldPoint(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& axis)
+{
+  Vector6d direction = Vector6d::Zero();
+  direction.head<3>() = axis;
+  if (!avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    direction.tail<3>() = (worldPoint - state.position).cross(axis);
+  }
+  return direction;
+}
+
+//==============================================================================
 inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
     AvbdRigidBodyBlock& block,
     const AvbdRigidBodyState& state,
@@ -1495,9 +1518,7 @@ inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
   const Eigen::Matrix3d nnT = axis * axis.transpose();
   const Eigen::Matrix3d pointHessian
       = stiffness * (nnT + transverse * (Eigen::Matrix3d::Identity() - nnT));
-  if (worldPoint.x() == state.position.x()
-      && worldPoint.y() == state.position.y()
-      && worldPoint.z() == state.position.z()) {
+  if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
     block.hessian.topLeftCorner<3, 3>().noalias() += pointHessian;
     return;
   }
@@ -1648,12 +1669,10 @@ inline double addAvbdRigidPointPairDistanceSpring(
   const Eigen::Vector3d axis = relative / length;
   const double constraintValue = length - row.restLength;
   const double forceMagnitude = row.state.stiffness * constraintValue;
-  Vector6d firstDirection = Vector6d::Zero();
-  firstDirection.head<3>() = axis;
-  firstDirection.tail<3>() = (worldPointA - stateA.position).cross(axis);
-  Vector6d secondDirection = Vector6d::Zero();
-  secondDirection.head<3>() = -axis;
-  secondDirection.tail<3>() = (worldPointB - stateB.position).cross(-axis);
+  const Vector6d firstDirection
+      = avbdRigidDistanceSpringDirectionAtWorldPoint(stateA, worldPointA, axis);
+  const Vector6d secondDirection = avbdRigidDistanceSpringDirectionAtWorldPoint(
+      stateB, worldPointB, -axis);
 
   blockA.force.noalias() += forceMagnitude * firstDirection;
   blockB.force.noalias() += forceMagnitude * secondDirection;
@@ -3277,9 +3296,9 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           const double forceMagnitude
               = row.state.stiffness * (length - row.restLength);
           if (indexedRow.bodyA == body) {
-            Vector6d direction = Vector6d::Zero();
-            direction.head<3>() = axis;
-            direction.tail<3>() = (worldPointA - stateA.position).cross(axis);
+            const Vector6d direction
+                = avbdRigidDistanceSpringDirectionAtWorldPoint(
+                    stateA, worldPointA, axis);
             block.force.noalias() += forceMagnitude * direction;
             addAvbdRigidDistanceSpringHessianAtWorldPoint(
                 block,
@@ -3292,9 +3311,9 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 /*clampToPsd=*/true);
           }
           if (indexedRow.bodyB == body) {
-            Vector6d direction = Vector6d::Zero();
-            direction.head<3>() = -axis;
-            direction.tail<3>() = (worldPointB - stateB.position).cross(-axis);
+            const Vector6d direction
+                = avbdRigidDistanceSpringDirectionAtWorldPoint(
+                    stateB, worldPointB, -axis);
             block.force.noalias() += forceMagnitude * direction;
             addAvbdRigidDistanceSpringHessianAtWorldPoint(
                 block,
