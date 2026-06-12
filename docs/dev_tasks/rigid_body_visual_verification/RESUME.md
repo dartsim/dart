@@ -2,14 +2,12 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds the next workflow evidence usability follow-up after the
-optional-row metadata slice. Extended rigid workflow packets now self-audit
-guidance coverage in the generated `manifest.json` and `review_index.html`.
-The manifest records whether every selected row has role, user question,
-try-first action, inspect signals, healthy signal, and scope fields, and the
-review index mirrors that with a guidance badge plus a warning block for any
-unlabeled row. This keeps future related-evidence, direct Rigid IPC shelf, and
-capture-first packet additions from silently becoming screenshot-only evidence.
+This checkpoint completes the live open-command follow-up for the rigid
+workflow evidence surface. The `Rigid Workflow` panel, workflow manifests, and
+generated `review_index.html` cards now separate a live
+`py-demos --scene ...` open command from the reproducible
+`py-demo-capture ...` evidence command, so users can jump from a packet row
+back into interactive debugging without reconstructing the viewer invocation.
 
 Expected repository state after this hand-off:
 
@@ -18,20 +16,26 @@ Expected repository state after this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `3c5b9e517d3 Enable rigid workflow video packets` and
-  `d5c6de2bee1 Describe optional rigid workflow rows` and
-  `5a4529f0083 Audit rigid workflow guidance coverage`.
+  by `3c5b9e517d3 Enable rigid workflow video packets`,
+  `d5c6de2bee1 Describe optional rigid workflow rows`,
+  `5a4529f0083 Audit rigid workflow guidance coverage`, and
+  `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
+  live open-command checkpoint.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
   checkpoint after the workflow-video packet slice.
-- `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed at
-  this checkpoint; the branch contains local commits not yet pushed to
-  `origin/feature/rigid-body-gui-visual-verification`.
+- `d5c6de2bee1 Describe optional rigid workflow rows`,
+  `5a4529f0083 Audit rigid workflow guidance coverage`, and
+  `ad013e62069 Refresh rigid guidance audit handoff` are local and unpushed at
+  this checkpoint.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
   hand-off-only stop checkpoint.
-- Do not push any new implementation commit without explicit approval in that
-  future session.
+- The live open-command continuation finished the previously documented WIP,
+  added capture-helper tests and public docs, and reran focused tests, a public
+  dry-run artifact inspection, and `pixi run lint`.
+- Do not push any new implementation or handoff commit without explicit
+  approval in a future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -168,6 +172,13 @@ warning block when a selected row is missing required self-description fields.
 Focused pytest and the public rows 37-51 extended-packet dry-run both passed
 after the stop checkpoint was superseded by the active-goal continuation.
 
+The latest continuation finishes the live open-command slice. The
+`Rigid Workflow` panel and generated workflow review cards now put a live
+`pixi run py-demos -- --scene ...` command next to the existing reproducible
+capture command, and the manifest records the same command as
+`viewer_command`. Focused pytest, public row-15 dry-run artifact inspection,
+and `pixi run lint` passed.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -178,13 +189,18 @@ Current snapshot:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `3c5b9e517d3 Enable rigid workflow video packets` and
-  `d5c6de2bee1 Describe optional rigid workflow rows` and
-  `5a4529f0083 Audit rigid workflow guidance coverage`.
+  by `3c5b9e517d3 Enable rigid workflow video packets`,
+  `d5c6de2bee1 Describe optional rigid workflow rows`,
+  `5a4529f0083 Audit rigid workflow guidance coverage`, and
+  `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
+  live open-command checkpoint.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
   checkpoint.
 - `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed.
 - `5a4529f0083 Audit rigid workflow guidance coverage` is local and unpushed.
+- `ad013e62069 Refresh rigid guidance audit handoff` is local and unpushed.
+- The current live open-command checkpoint is local and unpushed until an
+  explicit future push approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
@@ -193,9 +209,8 @@ Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 implementation commits to include the requested/selected manifest metadata
 slice, the review-index group-summary slice, the workflow-panel review-packet
 command slice, `3c5b9e517d3 Enable rigid workflow video packets`, and the
-optional-row metadata plus guidance-coverage audit slices. Do not push without
-explicit approval in that session. Continue choosing bounded rigid
-visual-verification gaps from the durable sidecar.
+optional-row metadata plus guidance-coverage audit slices, followed by the
+live open-command slice. Do not push without explicit approval in that session.
 
 ## Context That Would Be Lost
 
@@ -264,6 +279,20 @@ visual-verification gaps from the durable sidecar.
   for role label, user question, try-first action, inspect signals, healthy
   signal, and scope, plus manifest fields and review-index warning surfacing
   missing guidance.
+- The completed live open-command slice adds
+  `_rigid_workflow_viewer_command(scene_id, width, height)` in
+  `python/examples/demos/runner.py`, writes `viewer_command` entries from
+  `scripts/capture_py_demo.py`, renders `open live` and `capture evidence`
+  command blocks in generated review cards, and updates
+  `python/tests/unit/test_py_demo_panels.py` and
+  `python/tests/unit/test_capture_py_demo.py` for panel, manifest,
+  review-index, and backend-propagation coverage.
+- The latest read-only explorer returned after the stop instruction and was
+  not acted on. It recommended a future bounded slice for
+  `rigid_stack_stability`: add replay-guided timeline metadata for a
+  `Top x divergence` value track and diagnostic markers for overlap/collapse,
+  low clearance, or visible top-block drift. Treat this only as a candidate
+  next slice.
 
 ## How To Resume
 
@@ -556,3 +585,23 @@ row labels for `Related evidence`, `Rigid IPC shelf`, and
 `Capture-first packet`. The generated review index contained
 `<strong>guidance</strong> complete`, the absolute `37/51 floating_base` and
 `51/51 rigid_ipc_stack_packet` rows, and no `Rows Missing Guidance` warning.
+
+Current live open-command validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_request_video_commands python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_manifest_reports_missing_guidance -q
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_live_command_dry_run_current_1781271290
+jq -r '.capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].scene, .captures[0].viewer_command, .captures[0].command' /tmp/dart_capture_rigid_workflow_live_command_dry_run_current_1781271290/manifest.json
+rg -n "open live|capture evidence|pixi run py-demos -- --scene rigid_solver_compare --width 960 --height 540|pixi run py-demo-capture -- --scene rigid_solver_compare" /tmp/dart_capture_rigid_workflow_live_command_dry_run_current_1781271290/review_index.html
+pixi run lint
+```
+
+The focused pytest reported `5 passed` before and after `pixi run lint`
+reformatted `scripts/capture_py_demo.py`. The public row-15 dry-run wrote
+`capture_count=1`, `workflow_total_count=36`, `workflow_row_start=15`,
+`workflow_row_end=15`, scene `rigid_solver_compare`, viewer command
+`pixi run py-demos -- --scene rigid_solver_compare --width 960 --height 540`,
+and the paired `pixi run py-demo-capture -- --scene rigid_solver_compare`
+capture command. The generated `review_index.html` contained `open live`,
+`capture evidence`, the live viewer command, and the capture command.
+`pixi run lint` passed.

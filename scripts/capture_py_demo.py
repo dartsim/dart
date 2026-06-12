@@ -982,6 +982,13 @@ def _public_command(argv: list[str]) -> str:
     return "pixi run py-demo-capture -- " + " ".join(shlex.quote(arg) for arg in argv)
 
 
+def _viewer_command(scene: str, width: int, height: int, backend: str = "") -> str:
+    argv = ["--scene", scene, "--width", str(width), "--height", str(height)]
+    if backend:
+        argv.extend(["--backend", backend])
+    return "pixi run py-demos -- " + " ".join(shlex.quote(arg) for arg in argv)
+
+
 def _workflow_plan_entries(
     args: argparse.Namespace, output_dir: pathlib.Path
 ) -> list[dict[str, object]]:
@@ -1028,6 +1035,7 @@ def _workflow_plan_entries(
                 "output_dir": str(scene_output),
                 "manifest": str(scene_output / "manifest.json"),
                 "command": _public_command(argv),
+                "viewer_command": _viewer_command(scene, width, height, args.backend),
                 "status": "planned",
             }
         )
@@ -1325,6 +1333,18 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     if isinstance(read_error, str):
         details.append(_workflow_detail("manifest error", read_error))
 
+    viewer_command = capture.get("viewer_command")
+    command_blocks: list[str] = []
+    if isinstance(viewer_command, str) and viewer_command:
+        command_blocks.append(
+            '<p class="command-label">open live</p>'
+            f"<pre>{html.escape(viewer_command)}</pre>"
+        )
+    command_blocks.append(
+        '<p class="command-label">capture evidence</p>'
+        f"<pre>{html.escape(command)}</pre>"
+    )
+
     status_class = "".join(ch if ch.isalnum() else "-" for ch in status.lower())
     return f"""
 <article class="card {html.escape(status_class, quote=True)}">
@@ -1336,7 +1356,7 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
   <div class="card-body">
     <p class="links">{link_html}</p>
     <dl>{''.join(details)}</dl>
-    <pre>{html.escape(command)}</pre>
+    {''.join(command_blocks)}
   </div>
 </article>
 """
@@ -1551,6 +1571,14 @@ def _write_workflow_review_index(
       white-space: pre-wrap;
       font-size: 12px;
       line-height: 1.35;
+    }}
+    .command-label {{
+      margin: 8px 0 4px;
+      color: #57606a;
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0;
     }}
     a {{
       color: #0969da;

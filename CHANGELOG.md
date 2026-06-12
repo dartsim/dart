@@ -91,7 +91,11 @@
     with role, user question, try-first action, inspect signals, healthy
     signal, and scope notes. The workflow manifest and review index now also
     report guidance completeness for the selected packet so unlabeled rows are
-    visible before relying on the packet as reviewer-facing evidence.
+    visible before relying on the packet as reviewer-facing evidence. The
+    in-viewer panel and generated review cards now also separate live
+    `py-demos --scene` open commands from reproducible `py-demo-capture`
+    commands, so users can jump from a packet row back into interactive
+    debugging without reconstructing the scene command by hand.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

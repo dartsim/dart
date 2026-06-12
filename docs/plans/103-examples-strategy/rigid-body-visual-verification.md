@@ -53,23 +53,25 @@ stable scene titles and ids for scripts. These rows also receive a runner-owned
 first, the main signals to inspect, the known scope/limitation, and the
 previous/next numbered route, restart command, direct row selector, and
 ranked row filter as scene-switch rows. The panel also shows the exact
-per-row `pixi run py-demo-capture` command, frame count, resolution, and
-docked-UI mode so visual evidence can be regenerated from the viewer context.
-It also lists the full numbered workflow packet command, the current row-range
-rerun command, a current-row motion packet command with `--video --fps 24`, and
-the extended related/IPC-shelf/packet command that generate `manifest.json`
-plus `review_index.html`.
+per-row live `pixi run py-demos -- --scene ...` open command and paired
+`pixi run py-demo-capture` command, with frame count, resolution, and
+docked-UI mode so users can jump from the workflow row into the live viewer or
+regenerate visual evidence from the same context. It also lists the full
+numbered workflow packet command, the current row-range rerun command, a
+current-row motion packet command with `--video --fps 24`, and the extended
+related/IPC-shelf/packet command that generate `manifest.json` plus
+`review_index.html`.
 Rows that compare solvers, executors, contact policies, time-step
 multipliers, workload sizes, or passive joint parameter families label the
 comparison axis and held-fixed controls directly in both the panel and capture
 metrics.
 The workflow capture helper also writes `review_index.html` beside the
 top-level manifest. That static contact sheet links every numbered row's
-manifest, screenshot, frame directory, command, maintained user question,
-try-first guidance, healthy signal, scope note, and comparison/metrics summary
-so a reviewer can scan all 36 captures without opening each scene folder. When
-workflow captures request `--video`, the same review index links each row's MP4
-motion artifact if `ffmpeg` is available.
+manifest, screenshot, frame directory, live open command, capture command,
+maintained user question, try-first guidance, healthy signal, scope note, and
+comparison/metrics summary so a reviewer can scan all 36 captures without
+opening each scene folder. When workflow captures request `--video`, the same
+review index links each row's MP4 motion artifact if `ffmpeg` is available.
 Optional related-evidence, direct Rigid IPC shelf, and capture-first packet
 rows use the same manifest/review-index metadata fields, so extended packets
 also explain the row's role, user question, first action, inspect signals,

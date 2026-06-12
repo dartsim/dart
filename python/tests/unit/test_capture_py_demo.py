@@ -394,6 +394,10 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["captures"][0]["command"].startswith(
         "pixi run py-demo-capture -- --scene rigid_body"
     )
+    assert (
+        manifest["captures"][0]["viewer_command"]
+        == "pixi run py-demos -- --scene rigid_body --width 960 --height 540"
+    )
     assert manifest["captures"][0]["workflow_label"] == "Baseline"
     assert (
         manifest["captures"][0]["user_question"]
@@ -417,6 +421,12 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "Healthy: contacts settle" in review_html
     assert "rigid_solver_compare" in review_html
     assert "scenes/01_rigid_body/manifest.json" in review_html
+    assert "open live" in review_html
+    assert "capture evidence" in review_html
+    assert "pixi run py-demos -- --scene rigid_body --width 960 --height 540" in (
+        review_html
+    )
+    assert "pixi run py-demo-capture -- --scene rigid_body" in review_html
 
 
 def test_rigid_workflow_dry_run_can_include_related_evidence(
@@ -685,6 +695,8 @@ def test_rigid_workflow_dry_run_can_request_video_commands(
     rc = capture_py_demo.main(
         [
             "--rigid-workflow",
+            "--backend",
+            "opengl",
             "--video",
             "--fps",
             "12",
@@ -701,7 +713,13 @@ def test_rigid_workflow_dry_run_can_request_video_commands(
         manifest["captures"][0]["command"]
         == "pixi run py-demo-capture -- --scene rigid_solver_compare "
         "--frames 24 --width 960 --height 540 --output-dir "
-        f"{output}/scenes/01_rigid_solver_compare --show-ui --video --fps 12"
+        f"{output}/scenes/01_rigid_solver_compare --show-ui "
+        "--backend opengl --video --fps 12"
+    )
+    assert (
+        manifest["captures"][0]["viewer_command"]
+        == "pixi run py-demos -- --scene rigid_solver_compare --width 960 "
+        "--height 540 --backend opengl"
     )
 
 
@@ -817,10 +835,13 @@ def test_rigid_workflow_full_extended_plan_has_complete_guidance(
         assert capture["inspect"]
         assert capture["healthy_signal"]
         assert capture["scope"]
+        assert capture["viewer_command"].startswith("pixi run py-demos -- --scene ")
 
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "<strong>guidance</strong> complete" in review_html
     assert "Rows Missing Guidance" not in review_html
+    assert "open live" in review_html
+    assert "capture evidence" in review_html
     assert "Related evidence" in review_html
     assert "Rigid IPC shelf" in review_html
     assert "Capture-first packet" in review_html

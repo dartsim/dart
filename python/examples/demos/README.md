@@ -141,11 +141,12 @@ compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
 the current row as a small checklist: what to try first, what to look for, and
 what not to infer from that row. The panel also has selectable previous/next
 numbered rows, a restart command, a direct row selector, a per-row
-`py-demo-capture` command with frame/resolution/UI settings, and a ranked text
-filter over row ids, scene ids, labels, questions, signals, and explicit
-aliases such as `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
-`Taskflow executor`, `backend/executor`, `worker count`, and
-`accelerated backend` that request in-viewer scene switches. Scope caveats
+live `py-demos --scene` open command, a paired `py-demo-capture` command with
+frame/resolution/UI settings, and a ranked text filter over row ids, scene ids,
+labels, questions, signals, and explicit aliases such as `RigidBodySolver`,
+`SI`, `boxed LCP`, `ContactSolverMethod`, `Taskflow executor`,
+`backend/executor`, `worker count`, and `accelerated backend` that request
+in-viewer scene switches. Scope caveats
 remain visible in the row, but the filter ranks positive intent matches first
 so searches such as `contact`, `solver`, `step profile`, `backend comparison`,
 and `sequential impulse` do not get dominated by early rows that only mention
@@ -157,10 +158,11 @@ metrics so solver, executor, contact-policy, workload-size, and
 parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
-frame directories, commands, and metric summaries can be reviewed from one
-page. The panel also includes a current-row motion packet command; workflow
-packets pass `--video --fps` through to the selected row captures and the
-review index links MP4 artifacts when `ffmpeg` is available.
+frame directories, live open commands, capture commands, and metric summaries
+can be reviewed from one page. The panel also includes a current-row motion
+packet command; workflow packets pass `--video --fps` through to the selected
+row captures and the review index links MP4 artifacts when `ffmpeg` is
+available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
@@ -668,9 +670,10 @@ manifest sidecar.
 Use the workflow mode to plan or run the full numbered rigid capture set. It
 writes a top-level manifest that points at every per-scene manifest and a
 `review_index.html` contact sheet for scanning the 36 screenshots, row
-questions, try-first guidance, scope notes, and metric summaries from one page:
-the in-viewer `Rigid Workflow` panel also shows the full numbered packet,
-current-row rerun, and extended related/IPC-shelf/packet commands.
+questions, try-first guidance, scope notes, live open commands, capture
+commands, and metric summaries from one page: the in-viewer `Rigid Workflow`
+panel also shows the full numbered packet, current-row rerun, and extended
+related/IPC-shelf/packet commands.
 Optional related, direct IPC shelf, and capture-first packet rows carry the
 same row-guidance fields in the manifest and review index, so extended packets
 remain readable without opening the live GUI. The same outputs also include a

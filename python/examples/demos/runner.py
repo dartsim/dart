@@ -606,6 +606,10 @@ def _rigid_workflow_capture_command(
     return command
 
 
+def _rigid_workflow_viewer_command(scene_id: str, width: int, height: int) -> str:
+    return f"pixi run py-demos -- --scene {scene_id} --width {width} --height {height}"
+
+
 def _rigid_workflow_packet_command(
     *,
     include_related: bool = False,
@@ -1937,6 +1941,12 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
             f"{guide.capture_frames} frames | "
             f"{guide.capture_width}x{guide.capture_height} | {ui_mode}"
         )
+        builder.text(
+            _rigid_workflow_viewer_command(
+                guide.scene_id, guide.capture_width, guide.capture_height
+            )
+        )
+        builder.item_tooltip("Open this row live in py-demos for interactive debugging.")
         builder.text(guide.capture_command)
         builder.item_tooltip("Run from the repository root to regenerate this row.")
         builder.separator()

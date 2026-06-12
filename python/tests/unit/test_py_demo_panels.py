@@ -20,6 +20,7 @@ from examples.demos.runner import (
     _rigid_workflow_packet_command,
     _rigid_workflow_row_packet_command,
     _rigid_workflow_row_video_packet_command,
+    _rigid_workflow_viewer_command,
     _scene_build_timeout_ms,
     _workflow_matching_guides,
     _validate_scene,
@@ -1202,6 +1203,16 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             f"{guide.capture_frames} frames | "
             f"{guide.capture_width}x{guide.capture_height} | docked UI"
         ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_viewer_command(
+                guide.scene_id, guide.capture_width, guide.capture_height
+            )
+        ) in events
+        assert (
+            "tooltip:Open this row live in py-demos for interactive debugging."
+            in events
+        )
         assert f"text:{guide.capture_command}" in events
         assert "tooltip:Run from the repository root to regenerate this row." in events
         assert "text:Review packet" in events
