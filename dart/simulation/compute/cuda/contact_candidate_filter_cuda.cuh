@@ -105,6 +105,33 @@ struct EdgeEdgeCandidateBuildResult
   ContactCandidateFilterTiming timing;
 };
 
+struct SweptPointTriangleCandidateBuildResult
+{
+  std::vector<double> endpointSquaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedPointIndices;
+  std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
+struct SweptEdgeEdgeCandidateBuildResult
+{
+  std::vector<double> endpointSquaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::size_t edgeCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
 /// Filter preassembled point-triangle contact stencils on CUDA.
 ///
 /// This is private evidence for the PLAN-083 GPU packet: it compares the same
@@ -156,5 +183,35 @@ void buildEdgeEdgeContactCandidateMaskCuda(
     const std::vector<std::uint32_t>& edgeIndices,
     double activationDistance,
     EdgeEdgeCandidateBuildResult& result);
+
+/// Build a private motion-aware point-triangle candidate list on CUDA.
+///
+/// This packet evaluates swept AABB overlap for every supplied point slot
+/// against every supplied triangle, masks incident pairs, and compacts accepted
+/// point/triangle pairs on the device. The endpoint distance metadata matches
+/// the CPU motion-aware candidate builders. This is closer to runtime candidate
+/// construction than a static all-pairs distance mask, but it still does not
+/// cover sweep-and-prune sorting, scene-owned buffers, or a public GPU solver
+/// backend.
+void buildSweptPointTriangleContactCandidateMaskCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& pointIndices,
+    const std::vector<std::uint32_t>& triangleIndices,
+    double activationDistance,
+    SweptPointTriangleCandidateBuildResult& result);
+
+/// Build a private motion-aware edge-edge candidate list on CUDA.
+///
+/// This packet evaluates swept AABB overlap for every supplied edge-slot pair,
+/// masks self/duplicate/incident pairs, and compacts accepted edge-slot pairs
+/// on the device. It intentionally stays private packet evidence rather than a
+/// runtime broad-phase or public GPU backend.
+void buildSweptEdgeEdgeContactCandidateMaskCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    double activationDistance,
+    SweptEdgeEdgeCandidateBuildResult& result);
 
 } // namespace dart::simulation::compute::cuda

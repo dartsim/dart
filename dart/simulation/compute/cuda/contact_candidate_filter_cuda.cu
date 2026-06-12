@@ -104,6 +104,88 @@ __device__ Vec3 loadPoint(const double* positions, const std::uint32_t point)
   return Vec3{positions[base], positions[base + 1u], positions[base + 2u]};
 }
 
+__device__ Vec3 componentwiseMin(const Vec3 a, const Vec3 b)
+{
+  return Vec3{fmin(a.x, b.x), fmin(a.y, b.y), fmin(a.z, b.z)};
+}
+
+__device__ Vec3 componentwiseMax(const Vec3 a, const Vec3 b)
+{
+  return Vec3{fmax(a.x, b.x), fmax(a.y, b.y), fmax(a.z, b.z)};
+}
+
+struct CandidateAabb
+{
+  Vec3 min;
+  Vec3 max;
+};
+
+__device__ CandidateAabb expandAabb(CandidateAabb aabb, const double margin)
+{
+  const double nonnegativeMargin = fmax(0.0, margin);
+  aabb.min.x -= nonnegativeMargin;
+  aabb.min.y -= nonnegativeMargin;
+  aabb.min.z -= nonnegativeMargin;
+  aabb.max.x += nonnegativeMargin;
+  aabb.max.y += nonnegativeMargin;
+  aabb.max.z += nonnegativeMargin;
+  return aabb;
+}
+
+__device__ bool overlaps(const CandidateAabb a, const CandidateAabb b)
+{
+  return a.min.x <= b.max.x && a.max.x >= b.min.x && a.min.y <= b.max.y
+         && a.max.y >= b.min.y && a.min.z <= b.max.z && a.max.z >= b.min.z;
+}
+
+__device__ CandidateAabb
+makeSweptPointAabb(const Vec3 start, const Vec3 end, const double margin)
+{
+  return expandAabb(
+      CandidateAabb{componentwiseMin(start, end), componentwiseMax(start, end)},
+      margin);
+}
+
+__device__ CandidateAabb makeSweptSegmentAabb(
+    const Vec3 aStart,
+    const Vec3 aEnd,
+    const Vec3 bStart,
+    const Vec3 bEnd,
+    const double margin)
+{
+  return expandAabb(
+      CandidateAabb{
+          componentwiseMin(
+              componentwiseMin(aStart, aEnd), componentwiseMin(bStart, bEnd)),
+          componentwiseMax(
+              componentwiseMax(aStart, aEnd), componentwiseMax(bStart, bEnd))},
+      margin);
+}
+
+__device__ CandidateAabb makeSweptTriangleAabb(
+    const Vec3 aStart,
+    const Vec3 aEnd,
+    const Vec3 bStart,
+    const Vec3 bEnd,
+    const Vec3 cStart,
+    const Vec3 cEnd,
+    const double margin)
+{
+  return expandAabb(
+      CandidateAabb{
+          componentwiseMin(
+              componentwiseMin(
+                  componentwiseMin(aStart, aEnd),
+                  componentwiseMin(bStart, bEnd)),
+              componentwiseMin(cStart, cEnd)),
+          componentwiseMax(
+              componentwiseMax(
+                  componentwiseMax(aStart, aEnd),
+                  componentwiseMax(bStart, bEnd)),
+              componentwiseMax(cStart, cEnd))},
+      margin);
+}
+
 __device__ double pointSegmentSquaredDistance(
     const Vec3 p, const Vec3 a, const Vec3 b)
 {
@@ -390,6 +472,70 @@ __global__ void compactPointTriangleContactCandidateMaskKernel(
       = static_cast<std::uint32_t>(triangle);
 }
 
+__global__ void buildSweptPointTriangleContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    const double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t pairCount = pointCount * triangleCount;
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::size_t pointSlot = index / triangleCount;
+  const std::size_t triangle = index - pointSlot * triangleCount;
+  const std::uint32_t point = pointIndices[pointSlot];
+  const std::size_t triangleBase = 3u * triangle;
+  const std::uint32_t aIndex = triangleIndices[triangleBase];
+  const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+  const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+  if (point == aIndex || point == bIndex || point == cIndex) {
+    endpointSquaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const double margin = 0.5 * activationDistance;
+  const CandidateAabb pointAabb = makeSweptPointAabb(
+      loadPoint(startPositions, point), loadPoint(endPositions, point), margin);
+  const CandidateAabb triangleAabb = makeSweptTriangleAabb(
+      loadPoint(startPositions, aIndex),
+      loadPoint(endPositions, aIndex),
+      loadPoint(startPositions, bIndex),
+      loadPoint(endPositions, bIndex),
+      loadPoint(startPositions, cIndex),
+      loadPoint(endPositions, cIndex),
+      margin);
+
+  if (!overlaps(pointAabb, triangleAabb)) {
+    endpointSquaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const double startSquaredDistance = pointTriangleSquaredDistance(
+      loadPoint(startPositions, point),
+      loadPoint(startPositions, aIndex),
+      loadPoint(startPositions, bIndex),
+      loadPoint(startPositions, cIndex));
+  const double endSquaredDistance = pointTriangleSquaredDistance(
+      loadPoint(endPositions, point),
+      loadPoint(endPositions, aIndex),
+      loadPoint(endPositions, bIndex),
+      loadPoint(endPositions, cIndex));
+  endpointSquaredDistances[index]
+      = fmin(startSquaredDistance, endSquaredDistance);
+  accepted[index] = 1u;
+}
+
 __device__ bool edgesShareVertex(
     const std::uint32_t a0,
     const std::uint32_t a1,
@@ -510,6 +656,75 @@ __global__ void compactEdgeEdgeContactCandidateMaskKernel(
       = acceptedBlockOffsets[blockIdx.x] + localRanks[local] - 1u;
   acceptedEdgeAIndices[compactedIndex] = static_cast<std::uint32_t>(edgeA);
   acceptedEdgeBIndices[compactedIndex] = static_cast<std::uint32_t>(edgeB);
+}
+
+__global__ void buildSweptEdgeEdgeContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    const double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    const std::size_t edgeCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t pairCount = edgeCount * edgeCount;
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::size_t edgeA = index / edgeCount;
+  const std::size_t edgeB = index - edgeA * edgeCount;
+  if (edgeA >= edgeB) {
+    endpointSquaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const std::uint32_t a0 = edgeIndices[2u * edgeA];
+  const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+  const std::uint32_t b0 = edgeIndices[2u * edgeB];
+  const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+  if (edgesShareVertex(a0, a1, b0, b1)) {
+    endpointSquaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const double margin = 0.5 * activationDistance;
+  const CandidateAabb edgeAAabb = makeSweptSegmentAabb(
+      loadPoint(startPositions, a0),
+      loadPoint(endPositions, a0),
+      loadPoint(startPositions, a1),
+      loadPoint(endPositions, a1),
+      margin);
+  const CandidateAabb edgeBAabb = makeSweptSegmentAabb(
+      loadPoint(startPositions, b0),
+      loadPoint(endPositions, b0),
+      loadPoint(startPositions, b1),
+      loadPoint(endPositions, b1),
+      margin);
+
+  if (!overlaps(edgeAAabb, edgeBAabb)) {
+    endpointSquaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const double startSquaredDistance = edgeEdgeSquaredDistance(
+      loadPoint(startPositions, a0),
+      loadPoint(startPositions, a1),
+      loadPoint(startPositions, b0),
+      loadPoint(startPositions, b1));
+  const double endSquaredDistance = edgeEdgeSquaredDistance(
+      loadPoint(endPositions, a0),
+      loadPoint(endPositions, a1),
+      loadPoint(endPositions, b0),
+      loadPoint(endPositions, b1));
+  endpointSquaredDistances[index]
+      = fmin(startSquaredDistance, endSquaredDistance);
+  accepted[index] = 1u;
 }
 
 } // namespace
@@ -663,6 +878,142 @@ cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
       edgeIndices,
       activationDistance,
       squaredDistances,
+      accepted,
+      edgeCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  countPointTriangleAcceptedBlocksKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted, acceptedBlockCounts, pairCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixPointTriangleAcceptedBlockCountsKernel<<<1u, 1u>>>(
+      acceptedBlockCounts, acceptedBlockOffsets, compactedCount, gridSize);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  compactEdgeEdgeContactCandidateMaskKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted,
+      acceptedBlockOffsets,
+      acceptedEdgeAIndices,
+      acceptedEdgeBIndices,
+      edgeCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchSweptPointTriangleContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t pointCount,
+    std::size_t triangleCount)
+{
+  const std::size_t pairCount = pointCount * triangleCount;
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  buildSweptPointTriangleContactCandidateMaskKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      pointIndices,
+      triangleIndices,
+      activationDistance,
+      endpointSquaredDistances,
+      accepted,
+      pointCount,
+      triangleCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  countPointTriangleAcceptedBlocksKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted, acceptedBlockCounts, pairCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixPointTriangleAcceptedBlockCountsKernel<<<1u, 1u>>>(
+      acceptedBlockCounts, acceptedBlockOffsets, compactedCount, gridSize);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  compactPointTriangleContactCandidateMaskKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      pointIndices,
+      accepted,
+      acceptedBlockOffsets,
+      acceptedPointIndices,
+      acceptedTriangleIndices,
+      pointCount,
+      triangleCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t edgeCount)
+{
+  const std::size_t pairCount = edgeCount * edgeCount;
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  buildSweptEdgeEdgeContactCandidateMaskKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      edgeIndices,
+      activationDistance,
+      endpointSquaredDistances,
       accepted,
       edgeCount);
   cudaError_t error = cudaGetLastError();

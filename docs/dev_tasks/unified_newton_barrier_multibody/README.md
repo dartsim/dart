@@ -2,6 +2,47 @@
 
 ## Current Status
 
+Resumed swept-AABB validation checkpoint (2026-06-12): after the stop-only
+handoff, this session resumed under the active PLAN-083 goal and validated the
+swept-AABB contact-candidate packet slice locally. Keep all remaining PLAN-083
+work consolidated on `simx/plan083-gpu-contact-candidate-packet` / PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+comment on PRs, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+Validation for the resumed checkpoint passed focused packet pytest (7 tests),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. Before
+any future push, merge latest `origin/main` into this published branch, rerun
+required gates, and get explicit maintainer approval.
+
+Latest swept-AABB candidate-list checkpoint (2026-06-12): implementation
+continued on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added
+private motion-aware point-triangle and edge-edge swept-AABB candidate-list
+packets. The checkpoint adds
+`buildSweptPointTriangleContactCandidateMaskCuda()` and
+`buildSweptEdgeEdgeContactCandidateMaskCuda()`, rejects incident/duplicate
+pairs, records minimum endpoint squared-distance metadata, and compacts
+accepted pair ids on the device before readback. This moves the
+contact-candidate packet beyond static all-pairs distance masks while keeping
+sweep-and-prune sorting and runtime scene candidate buffers as future work.
+
+The regenerated packet records exact parity for the existing stencil and
+all-pairs rows plus 65,536 swept-AABB point-triangle pairs and 65,536
+swept-AABB edge-edge pairs. The swept point-triangle row records
+`accepted_count=256`, `compacted_count=256`,
+`compacted_triangle_count=256`, `max_result_abs_error=0`, and
+`speedup=0.5141495691008232x`. The swept edge-edge row records
+`accepted_count=128`, `compacted_edge_a_count=128`,
+`compacted_edge_b_count=128`, `max_result_abs_error=0`, and
+`speedup=0.2686885092103126x`. The top-level contact-candidate packet records
+`candidate_pair_count=262144` and `speedup=0.2686885092103126x`
+(`meets_speedup_gate=false`). This remains reduced private packet evidence
+only; sweep-and-prune broad-phase sorting, runtime candidate buffers, and the
+speedup gate remain future work.
+
 Latest edge-edge candidate-mask checkpoint (2026-06-12): implementation
 resumed on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and
 validated the private edge-edge all-pairs contact-candidate mask packet. The
@@ -383,9 +424,10 @@ the same PR. Do not open another PLAN-083 PR.
         parity.
   - [x] Add private point-triangle and edge-edge contact-stencil filter packets
         plus brute-force all-pairs point-triangle and edge-edge candidate-mask
-        packets with exact CPU/GPU parity for reduced primitive fixtures; keep
-        the row in-progress because broad-phase construction, runtime scene
-        filtering, and speedup remain unproven.
+        packets plus motion-aware swept-AABB point-triangle and edge-edge
+        candidate-list packets with exact CPU/GPU parity for reduced primitive
+        fixtures; keep the row in-progress because sweep-and-prune broad-phase
+        sorting, runtime scene filtering, and speedup remain unproven.
   - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and
@@ -545,7 +587,7 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue sweep broad-phase/runtime candidate-list construction,
+   continue sweep-and-prune broad-phase/runtime candidate-list construction,
    downstream Hessian/PSD/runtime contact evidence, or assembly/solve evidence
    on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch

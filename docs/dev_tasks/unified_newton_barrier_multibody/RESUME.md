@@ -2,6 +2,45 @@
 
 ## Current Reality (2026-06-09)
 
+Resumed swept-AABB validation checkpoint (2026-06-12): after the stop-only
+handoff, this session resumed under the active PLAN-083 goal and validated the
+swept-AABB contact-candidate packet slice locally. Resume only from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+comment on PRs, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+Validation for the resumed checkpoint passed focused packet pytest (7 tests),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. Before
+any future push, merge latest `origin/main` into this published branch, rerun
+required gates, and get explicit maintainer approval.
+
+Latest swept-AABB candidate-list checkpoint (2026-06-12): implementation
+continued on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added
+private motion-aware point-triangle and edge-edge swept-AABB candidate-list
+packets. The checkpoint adds
+`buildSweptPointTriangleContactCandidateMaskCuda()` and
+`buildSweptEdgeEdgeContactCandidateMaskCuda()`, rejects incident/duplicate
+pairs, records minimum endpoint squared-distance metadata, and compacts
+accepted pair ids on the device before readback.
+
+The regenerated contact-candidate packet records exact parity for 65,536
+swept-AABB point-triangle pairs and 65,536 swept-AABB edge-edge pairs in
+addition to the previous stencil and all-pairs rows. The swept point-triangle
+row records `accepted_count=256`, `compacted_count=256`,
+`compacted_triangle_count=256`, `max_result_abs_error=0`, and
+`speedup=0.5141495691008232x`; the swept edge-edge row records
+`accepted_count=128`, `compacted_edge_a_count=128`,
+`compacted_edge_b_count=128`, `max_result_abs_error=0`, and
+`speedup=0.2686885092103126x`. The top-level packet records
+`candidate_pair_count=262144` and `speedup=0.2686885092103126x`
+(`meets_speedup_gate=false`). This remains reduced private packet evidence
+only; sweep-and-prune broad-phase sorting, runtime candidate buffers, and the
+speedup gate remain future work.
+
 Latest edge-edge candidate-mask checkpoint (2026-06-12): implementation
 resumed on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and
 validated the private edge-edge all-pairs contact-candidate mask packet. The
@@ -723,7 +762,8 @@ build/CTest entries.
 `simx/plan083-gpu-contact-candidate-packet` - the single consolidated PLAN-083
 follow-up PR for the remaining private packet work (#2978). This branch now
 carries point-triangle and edge-edge contact-stencil filtering plus
-brute-force all-pairs point-triangle and edge-edge candidate-mask packets,
+brute-force all-pairs point-triangle and edge-edge candidate-mask packets plus
+motion-aware swept-AABB point-triangle and edge-edge candidate-list packets,
 winding-independent endpoint-linear point-triangle CCD, edge-edge
 CCD/line-search packets, scalar barrier/friction local kernels plus
 point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
@@ -732,8 +772,8 @@ point-point, and point-edge primitive barrier-Hessian parity,
 point-triangle/point-point/point-edge primitive barrier-Hessian PSD-projection
 parity, reduced assembly/solve parity, reduced scene state-batch parity, and
 reduced ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress`
-unless their full row policy is satisfied: broad-phase/runtime GPU candidate
-construction, rigid curved trajectories, runtime scene line search,
+unless their full row policy is satisfied: sweep-and-prune broad-phase/runtime
+GPU candidate construction, rigid curved trajectories, runtime scene line search,
 equality-reduced/global sparse assembly and solving, GPU `World::step`,
 paper-scale assets, and accepted reference timings remain future evidence.
 
@@ -742,7 +782,7 @@ paper-scale assets, and accepted reference timings remain future evidence.
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
-sweep broad-phase/runtime candidate-list construction and speedup-gate work; the
+sweep-and-prune broad-phase/runtime candidate buffers and speedup-gate work; the
 next barrier/friction packet gaps are runtime contact rows and speedup-gate
 work; the next assembly/solve gaps are equality reduction, global sparse
 factorization, runtime scene rows, and speedup-gate work. Do not mark these

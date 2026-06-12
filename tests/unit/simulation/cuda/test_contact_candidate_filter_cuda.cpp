@@ -37,6 +37,7 @@
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -60,12 +61,27 @@ struct EdgeEdgeFixture
   std::vector<cuda::EdgeEdgeContactStencil> stencils;
 };
 
+struct SweptFixture
+{
+  std::vector<double> startPositions;
+  std::vector<double> endPositions;
+  std::vector<std::uint32_t> triangles;
+  std::vector<std::uint32_t> edges;
+};
+
 template <typename FixtureT>
 void appendPoint(FixtureT& fixture, const Eigen::Vector3d& point)
 {
   fixture.positions.push_back(point.x());
   fixture.positions.push_back(point.y());
   fixture.positions.push_back(point.z());
+}
+
+void appendPoint(std::vector<double>& positions, const Eigen::Vector3d& point)
+{
+  positions.push_back(point.x());
+  positions.push_back(point.y());
+  positions.push_back(point.z());
 }
 
 Fixture makeFixture()
@@ -109,6 +125,37 @@ EdgeEdgeFixture makeEdgeEdgeFixture()
   appendPoint(fixture, {2.25, 0.08, -0.5});
   appendPoint(fixture, {2.25, 0.08, 0.5});
   fixture.stencils.push_back({4u, 5u, 6u, 7u});
+
+  return fixture;
+}
+
+SweptFixture makeSweptFixture()
+{
+  SweptFixture fixture;
+  fixture.startPositions.reserve(18);
+  fixture.endPositions.reserve(18);
+  fixture.triangles.reserve(3);
+  fixture.edges.reserve(4);
+
+  appendPoint(fixture.startPositions, {0.0, 0.0, 0.0});
+  appendPoint(fixture.endPositions, {0.0, 0.0, 0.0});
+  appendPoint(fixture.startPositions, {1.0, 0.0, 0.0});
+  appendPoint(fixture.endPositions, {1.0, 0.0, 0.0});
+  appendPoint(fixture.startPositions, {0.0, 1.0, 0.0});
+  appendPoint(fixture.endPositions, {0.0, 1.0, 0.0});
+  appendPoint(fixture.startPositions, {0.25, 0.25, 0.20});
+  appendPoint(fixture.endPositions, {0.25, 0.25, -0.20});
+  fixture.triangles.insert(fixture.triangles.end(), {0u, 1u, 2u});
+
+  appendPoint(fixture.startPositions, {2.0, 0.0, 0.0});
+  appendPoint(fixture.endPositions, {2.0, 0.0, 0.0});
+  appendPoint(fixture.startPositions, {3.0, 0.0, 0.0});
+  appendPoint(fixture.endPositions, {3.0, 0.0, 0.0});
+  appendPoint(fixture.startPositions, {2.25, 0.20, -0.5});
+  appendPoint(fixture.endPositions, {2.25, -0.20, -0.5});
+  appendPoint(fixture.startPositions, {2.25, 0.20, 0.5});
+  appendPoint(fixture.endPositions, {2.25, -0.20, 0.5});
+  fixture.edges.insert(fixture.edges.end(), {4u, 5u, 6u, 7u});
 
   return fixture;
 }
@@ -173,6 +220,24 @@ struct CandidateMaskExpectation
 struct EdgeEdgeCandidateMaskExpectation
 {
   std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::size_t acceptedCount = 0;
+};
+
+struct SweptCandidateMaskExpectation
+{
+  std::vector<double> endpointSquaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedPointIndices;
+  std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::size_t acceptedCount = 0;
+};
+
+struct SweptEdgeEdgeCandidateMaskExpectation
+{
+  std::vector<double> endpointSquaredDistances;
   std::vector<std::uint8_t> accepted;
   std::vector<std::uint32_t> acceptedEdgeAIndices;
   std::vector<std::uint32_t> acceptedEdgeBIndices;
@@ -256,6 +321,129 @@ EdgeEdgeCandidateMaskExpectation cpuEdgeEdgeCandidateMask(
             squaredDistance, activationDistance);
       }
       expected.squaredDistances.push_back(squaredDistance);
+      expected.accepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++expected.acceptedCount;
+        expected.acceptedEdgeAIndices.push_back(
+            static_cast<std::uint32_t>(edgeA));
+        expected.acceptedEdgeBIndices.push_back(
+            static_cast<std::uint32_t>(edgeB));
+      }
+    }
+  }
+
+  return expected;
+}
+
+SweptCandidateMaskExpectation cpuSweptPointTriangleCandidateMask(
+    const SweptFixture& fixture,
+    const std::vector<std::uint32_t>& pointIndices,
+    const double activationDistance)
+{
+  SweptCandidateMaskExpectation expected;
+  const std::size_t triangleCount = fixture.triangles.size() / 3u;
+  expected.endpointSquaredDistances.reserve(
+      pointIndices.size() * triangleCount);
+  expected.accepted.reserve(pointIndices.size() * triangleCount);
+  const double margin = 0.5 * std::max(0.0, activationDistance);
+
+  for (const std::uint32_t point : pointIndices) {
+    for (std::size_t triangle = 0; triangle < triangleCount; ++triangle) {
+      const std::size_t tri = 3u * triangle;
+      double endpointSquaredDistance = 0.0;
+      bool accepted = false;
+      if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+        const auto pointAabb = dc::detail::makeSweptPointAabb(
+            pointAt(fixture.startPositions, point),
+            pointAt(fixture.endPositions, point),
+            margin);
+        const auto triangleAabb = dc::detail::makeSweptTriangleAabb(
+            pointAt(fixture.startPositions, fixture.triangles[tri]),
+            pointAt(fixture.endPositions, fixture.triangles[tri]),
+            pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.startPositions, fixture.triangles[tri + 2u]),
+            pointAt(fixture.endPositions, fixture.triangles[tri + 2u]),
+            margin);
+        accepted = pointAabb.overlaps(triangleAabb);
+        if (accepted) {
+          const auto startDistance = dc::pointTriangleSquaredDistance(
+              pointAt(fixture.startPositions, point),
+              pointAt(fixture.startPositions, fixture.triangles[tri]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 2u]));
+          const auto endDistance = dc::pointTriangleSquaredDistance(
+              pointAt(fixture.endPositions, point),
+              pointAt(fixture.endPositions, fixture.triangles[tri]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 2u]));
+          endpointSquaredDistance = std::min(
+              startDistance.squaredDistance, endDistance.squaredDistance);
+        }
+      }
+      expected.endpointSquaredDistances.push_back(endpointSquaredDistance);
+      expected.accepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++expected.acceptedCount;
+        expected.acceptedPointIndices.push_back(point);
+        expected.acceptedTriangleIndices.push_back(
+            static_cast<std::uint32_t>(triangle));
+      }
+    }
+  }
+
+  return expected;
+}
+
+SweptEdgeEdgeCandidateMaskExpectation cpuSweptEdgeEdgeCandidateMask(
+    const SweptFixture& fixture,
+    const std::vector<std::uint32_t>& edgeIndices,
+    const double activationDistance)
+{
+  SweptEdgeEdgeCandidateMaskExpectation expected;
+  const std::size_t edgeCount = edgeIndices.size() / 2u;
+  expected.endpointSquaredDistances.reserve(edgeCount * edgeCount);
+  expected.accepted.reserve(edgeCount * edgeCount);
+  const double margin = 0.5 * std::max(0.0, activationDistance);
+
+  for (std::size_t edgeA = 0; edgeA < edgeCount; ++edgeA) {
+    for (std::size_t edgeB = 0; edgeB < edgeCount; ++edgeB) {
+      double endpointSquaredDistance = 0.0;
+      bool accepted = false;
+      const std::uint32_t a0 = edgeIndices[2u * edgeA];
+      const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+      const std::uint32_t b0 = edgeIndices[2u * edgeB];
+      const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+      if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+        const auto edgeAAabb = dc::detail::makeSweptSegmentAabb(
+            pointAt(fixture.startPositions, a0),
+            pointAt(fixture.endPositions, a0),
+            pointAt(fixture.startPositions, a1),
+            pointAt(fixture.endPositions, a1),
+            margin);
+        const auto edgeBAabb = dc::detail::makeSweptSegmentAabb(
+            pointAt(fixture.startPositions, b0),
+            pointAt(fixture.endPositions, b0),
+            pointAt(fixture.startPositions, b1),
+            pointAt(fixture.endPositions, b1),
+            margin);
+        accepted = edgeAAabb.overlaps(edgeBAabb);
+        if (accepted) {
+          const auto startDistance = dc::edgeEdgeSquaredDistance(
+              pointAt(fixture.startPositions, a0),
+              pointAt(fixture.startPositions, a1),
+              pointAt(fixture.startPositions, b0),
+              pointAt(fixture.startPositions, b1));
+          const auto endDistance = dc::edgeEdgeSquaredDistance(
+              pointAt(fixture.endPositions, a0),
+              pointAt(fixture.endPositions, a1),
+              pointAt(fixture.endPositions, b0),
+              pointAt(fixture.endPositions, b1));
+          endpointSquaredDistance = std::min(
+              startDistance.squaredDistance, endDistance.squaredDistance);
+        }
+      }
+      expected.endpointSquaredDistances.push_back(endpointSquaredDistance);
       expected.accepted.push_back(accepted ? 1u : 0u);
       if (accepted) {
         ++expected.acceptedCount;
@@ -414,6 +602,119 @@ TEST(ContactCandidateFilterCuda, MasksIncidentEdgeEdgeCandidatePairs)
 }
 
 //==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuSweptPointTriangleCandidateMask)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const SweptFixture fixture = makeSweptFixture();
+  const std::vector<std::uint32_t> pointIndices = {3u};
+  const SweptCandidateMaskExpectation expected
+      = cpuSweptPointTriangleCandidateMask(fixture, pointIndices, 0.05);
+
+  cuda::SweptPointTriangleCandidateBuildResult result;
+  cuda::buildSweptPointTriangleContactCandidateMaskCuda(
+      fixture.startPositions,
+      fixture.endPositions,
+      pointIndices,
+      fixture.triangles,
+      0.05,
+      result);
+
+  ASSERT_EQ(
+      result.endpointSquaredDistances.size(),
+      expected.endpointSquaredDistances.size());
+  ASSERT_EQ(result.accepted.size(), expected.accepted.size());
+  EXPECT_EQ(result.pointCount, pointIndices.size());
+  EXPECT_EQ(result.triangleCount, fixture.triangles.size() / 3u);
+  EXPECT_EQ(result.pairCount, expected.endpointSquaredDistances.size());
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedPointIndices, expected.acceptedPointIndices);
+  EXPECT_EQ(result.acceptedTriangleIndices, expected.acceptedTriangleIndices);
+
+  for (std::size_t pair = 0; pair < expected.endpointSquaredDistances.size();
+       ++pair) {
+    EXPECT_NEAR(
+        result.endpointSquaredDistances[pair],
+        expected.endpointSquaredDistances[pair],
+        1e-14)
+        << pair;
+    EXPECT_EQ(result.accepted[pair], expected.accepted[pair]) << pair;
+  }
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MasksIncidentSweptPointTriangleCandidatePairs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const SweptFixture fixture = makeSweptFixture();
+  const std::vector<std::uint32_t> pointIndices = {0u};
+
+  cuda::SweptPointTriangleCandidateBuildResult result;
+  cuda::buildSweptPointTriangleContactCandidateMaskCuda(
+      fixture.startPositions,
+      fixture.endPositions,
+      pointIndices,
+      fixture.triangles,
+      0.05,
+      result);
+
+  ASSERT_EQ(result.pairCount, 1u);
+  ASSERT_EQ(result.endpointSquaredDistances.size(), 1u);
+  ASSERT_EQ(result.accepted.size(), 1u);
+  EXPECT_EQ(result.endpointSquaredDistances[0], 0.0);
+  EXPECT_EQ(result.accepted[0], 0u);
+  EXPECT_TRUE(result.acceptedPointIndices.empty());
+  EXPECT_TRUE(result.acceptedTriangleIndices.empty());
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuSweptEdgeEdgeCandidateMask)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const SweptFixture fixture = makeSweptFixture();
+  const SweptEdgeEdgeCandidateMaskExpectation expected
+      = cpuSweptEdgeEdgeCandidateMask(fixture, fixture.edges, 0.05);
+
+  cuda::SweptEdgeEdgeCandidateBuildResult result;
+  cuda::buildSweptEdgeEdgeContactCandidateMaskCuda(
+      fixture.startPositions,
+      fixture.endPositions,
+      fixture.edges,
+      0.05,
+      result);
+
+  ASSERT_EQ(
+      result.endpointSquaredDistances.size(),
+      expected.endpointSquaredDistances.size());
+  ASSERT_EQ(result.accepted.size(), expected.accepted.size());
+  EXPECT_EQ(result.edgeCount, fixture.edges.size() / 2u);
+  EXPECT_EQ(result.pairCount, expected.endpointSquaredDistances.size());
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedEdgeAIndices, expected.acceptedEdgeAIndices);
+  EXPECT_EQ(result.acceptedEdgeBIndices, expected.acceptedEdgeBIndices);
+
+  for (std::size_t pair = 0; pair < expected.endpointSquaredDistances.size();
+       ++pair) {
+    EXPECT_NEAR(
+        result.endpointSquaredDistances[pair],
+        expected.endpointSquaredDistances[pair],
+        1e-14)
+        << pair;
+    EXPECT_EQ(result.accepted[pair], expected.accepted[pair]) << pair;
+  }
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
 TEST(ContactCandidateFilterCuda, KeepsSmallValidTriangleNondegenerate)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -530,5 +831,37 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidEdgeEdgeCandidateMaskInputs)
   EXPECT_THROW(
       cuda::buildEdgeEdgeContactCandidateMaskCuda(
           fixture.positions, edgeIndices, 0.05, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, RejectsInvalidSweptCandidateMaskInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  SweptFixture fixture = makeSweptFixture();
+  fixture.endPositions.pop_back();
+
+  cuda::SweptPointTriangleCandidateBuildResult pointTriangleResult;
+  EXPECT_THROW(
+      cuda::buildSweptPointTriangleContactCandidateMaskCuda(
+          fixture.startPositions,
+          fixture.endPositions,
+          std::vector<std::uint32_t>{3u},
+          fixture.triangles,
+          0.05,
+          pointTriangleResult),
+      dart::simulation::InvalidArgumentException);
+
+  cuda::SweptEdgeEdgeCandidateBuildResult edgeEdgeResult;
+  EXPECT_THROW(
+      cuda::buildSweptEdgeEdgeContactCandidateMaskCuda(
+          fixture.startPositions,
+          fixture.endPositions,
+          fixture.edges,
+          0.05,
+          edgeEdgeResult),
       dart::simulation::InvalidArgumentException);
 }

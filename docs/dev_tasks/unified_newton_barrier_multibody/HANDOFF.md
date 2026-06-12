@@ -1,5 +1,60 @@
 # Unified Newton-Barrier Handoff
 
+## Resumed Swept-AABB Validation Checkpoint (2026-06-12)
+
+After the stop-only handoff, this session resumed under the active PLAN-083
+goal and validated the swept-AABB contact-candidate packet slice locally. Keep
+all remaining PLAN-083 work on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
+PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+Validation for the resumed checkpoint passed focused packet pytest (7 tests),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+Before any future push, merge latest `origin/main` into this published branch,
+rerun the required gates, and push only with explicit approval.
+
+## Latest Swept-AABB Candidate-List Checkpoint (2026-06-12)
+
+Implementation continued on `simx/plan083-gpu-contact-candidate-packet`, the
+consolidated PLAN-083 branch for PR #2978 (`Advance unified Newton-barrier
+runtime and parity evidence`). Keep all remaining PLAN-083 work on this single
+branch/PR. Do not push, PR-comment, resolve review threads, trigger CI, or open
+another PLAN-083 PR without explicit maintainer approval. Before any future
+push, merge latest `origin/main` into this published branch, rerun the required
+gates, and push only with explicit approval.
+
+This checkpoint adds private motion-aware swept-AABB point-triangle and
+edge-edge candidate-list packets on top of the previous static all-pairs
+candidate masks. It adds
+`buildSweptPointTriangleContactCandidateMaskCuda()` and
+`buildSweptEdgeEdgeContactCandidateMaskCuda()`, masks incident/duplicate pairs,
+records minimum endpoint squared-distance metadata, and compacts accepted pair
+ids on the device before readback. Focused CUDA unit coverage checks CPU/GPU
+parity and invalid start/end input rejection; packet coverage now requires
+`candidate_construction.point_triangle_swept_aabb_candidates` and
+`candidate_construction.edge_edge_swept_aabb_candidates`.
+
+The regenerated contact-candidate packet reports exact parity for the previous
+stencil/all-pairs rows plus a 65,536-pair swept-AABB point-triangle candidate
+list and a 65,536-pair swept-AABB edge-edge candidate list. The swept
+point-triangle row has `accepted_count=256`, `compacted_count=256`,
+`compacted_triangle_count=256`, `max_result_abs_error=0`, and
+`speedup=0.5141495691008232x`. The swept edge-edge row has
+`accepted_count=128`, `compacted_edge_a_count=128`,
+`compacted_edge_b_count=128`, `max_result_abs_error=0`, and
+`speedup=0.2686885092103126x`. The top-level contact-candidate packet records
+`candidate_pair_count=262144` and `speedup=0.2686885092103126x`
+(`meets_speedup_gate=false`).
+
+This remains reduced private packet evidence only. It does not claim
+sweep-and-prune broad-phase sorting, runtime scene candidate buffers, or
+contact-candidate speedup-gate completion.
+
 ## Latest Edge-Edge Candidate-Mask Checkpoint (2026-06-12)
 
 Implementation resumed on `simx/plan083-gpu-contact-candidate-packet`, the
@@ -264,9 +319,9 @@ all-pairs row with `pair_count=65536`, `point_count=256`,
 Likely next steps:
 
 1. Inspect `git status -sb`, `git log --oneline`, and PR #2978 before editing.
-2. Continue with sweep broad-phase/runtime compacted candidate lists, equality
-   reduction, global sparse factorization, runtime scene rows, or speedup-gate
-   work only as honest `in-progress` evidence.
+2. Continue with sweep-and-prune broad-phase/runtime candidate buffers,
+   equality reduction, global sparse factorization, runtime scene rows, or
+   speedup-gate work only as honest `in-progress` evidence.
 3. Before any push, merge latest
    `origin/main` into this published branch, rerun required gates, then push
    only with explicit maintainer approval.

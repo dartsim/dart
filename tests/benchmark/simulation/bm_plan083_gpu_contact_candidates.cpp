@@ -92,6 +92,32 @@ struct CandidateMaskFixture
   std::size_t acceptedCount = 0;
 };
 
+struct SweptCandidateMaskFixture
+{
+  std::vector<double> startPositions;
+  std::vector<double> endPositions;
+  std::vector<std::uint32_t> pointIndices;
+  std::vector<std::uint32_t> triangles;
+  std::vector<double> cpuEndpointSquaredDistances;
+  std::vector<std::uint8_t> cpuAccepted;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+};
+
+struct SweptEdgeEdgeCandidateMaskFixture
+{
+  std::vector<double> startPositions;
+  std::vector<double> endPositions;
+  std::vector<std::uint32_t> edgeIndices;
+  std::vector<double> cpuEndpointSquaredDistances;
+  std::vector<std::uint8_t> cpuAccepted;
+  std::size_t edgeCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+};
+
 void appendPoint(
     CandidateFixture& fixture, const double x, const double y, const double z)
 {
@@ -131,6 +157,32 @@ void appendPoint(
   fixture.positions.push_back(x);
   fixture.positions.push_back(y);
   fixture.positions.push_back(z);
+}
+
+void appendPoint(
+    SweptCandidateMaskFixture& fixture,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  fixture.startPositions.push_back(start.x());
+  fixture.startPositions.push_back(start.y());
+  fixture.startPositions.push_back(start.z());
+  fixture.endPositions.push_back(end.x());
+  fixture.endPositions.push_back(end.y());
+  fixture.endPositions.push_back(end.z());
+}
+
+void appendPoint(
+    SweptEdgeEdgeCandidateMaskFixture& fixture,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  fixture.startPositions.push_back(start.x());
+  fixture.startPositions.push_back(start.y());
+  fixture.startPositions.push_back(start.z());
+  fixture.endPositions.push_back(end.x());
+  fixture.endPositions.push_back(end.y());
+  fixture.endPositions.push_back(end.z());
 }
 
 Eigen::Vector3d pointAt(
@@ -361,6 +413,162 @@ CandidateMaskFixture makeCandidateMaskFixture(const int pairCount)
   return fixture;
 }
 
+SweptCandidateMaskFixture makeSweptCandidateMaskFixture(const int pairCount)
+{
+  const int side = std::max(1, static_cast<int>(std::sqrt(pairCount)));
+  SweptCandidateMaskFixture fixture;
+  fixture.pointCount = static_cast<std::size_t>(side);
+  fixture.triangleCount = static_cast<std::size_t>(side);
+  fixture.pairCount = fixture.pointCount * fixture.triangleCount;
+  fixture.startPositions.reserve(4u * fixture.triangleCount * 3u);
+  fixture.endPositions.reserve(4u * fixture.triangleCount * 3u);
+  fixture.pointIndices.reserve(fixture.pointCount);
+  fixture.triangles.reserve(3u * fixture.triangleCount);
+  fixture.cpuEndpointSquaredDistances.reserve(fixture.pairCount);
+  fixture.cpuAccepted.reserve(fixture.pairCount);
+
+  for (int i = 0; i < side; ++i) {
+    const double x = static_cast<double>(i % 64) * 2.0;
+    const double y = static_cast<double>(i / 64) * 2.0;
+    const std::uint32_t base
+        = static_cast<std::uint32_t>(fixture.startPositions.size() / 3u);
+    appendPoint(fixture, {x, y, 0.0}, {x, y, 0.0});
+    appendPoint(fixture, {x + 1.0, y, 0.0}, {x + 1.0, y, 0.0});
+    appendPoint(fixture, {x, y + 1.0, 0.0}, {x, y + 1.0, 0.0});
+    appendPoint(
+        fixture, {x + 0.25, y + 0.25, 0.20}, {x + 0.25, y + 0.25, -0.20});
+    fixture.triangles.insert(
+        fixture.triangles.end(), {base, base + 1u, base + 2u});
+    fixture.pointIndices.push_back(base + 3u);
+  }
+
+  const double margin = 0.5 * kActivationDistance;
+  for (const std::uint32_t point : fixture.pointIndices) {
+    for (std::size_t triangle = 0; triangle < fixture.triangleCount;
+         ++triangle) {
+      const std::size_t tri = 3u * triangle;
+      double endpointSquaredDistance = 0.0;
+      bool accepted = false;
+      if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+        const auto pointAabb = dc::detail::makeSweptPointAabb(
+            pointAt(fixture.startPositions, point),
+            pointAt(fixture.endPositions, point),
+            margin);
+        const auto triangleAabb = dc::detail::makeSweptTriangleAabb(
+            pointAt(fixture.startPositions, fixture.triangles[tri]),
+            pointAt(fixture.endPositions, fixture.triangles[tri]),
+            pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+            pointAt(fixture.startPositions, fixture.triangles[tri + 2u]),
+            pointAt(fixture.endPositions, fixture.triangles[tri + 2u]),
+            margin);
+        accepted = pointAabb.overlaps(triangleAabb);
+        if (accepted) {
+          const auto startDistance = dc::pointTriangleSquaredDistance(
+              pointAt(fixture.startPositions, point),
+              pointAt(fixture.startPositions, fixture.triangles[tri]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 2u]));
+          const auto endDistance = dc::pointTriangleSquaredDistance(
+              pointAt(fixture.endPositions, point),
+              pointAt(fixture.endPositions, fixture.triangles[tri]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 2u]));
+          endpointSquaredDistance = std::min(
+              startDistance.squaredDistance, endDistance.squaredDistance);
+        }
+      }
+      fixture.cpuEndpointSquaredDistances.push_back(endpointSquaredDistance);
+      fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++fixture.acceptedCount;
+      }
+    }
+  }
+
+  return fixture;
+}
+
+SweptEdgeEdgeCandidateMaskFixture makeSweptEdgeEdgeCandidateMaskFixture(
+    const int pairCount)
+{
+  const int side = std::max(2, static_cast<int>(std::sqrt(pairCount)));
+  SweptEdgeEdgeCandidateMaskFixture fixture;
+  fixture.edgeCount = static_cast<std::size_t>(side);
+  fixture.pairCount = fixture.edgeCount * fixture.edgeCount;
+  fixture.startPositions.reserve(2u * fixture.edgeCount * 3u);
+  fixture.endPositions.reserve(2u * fixture.edgeCount * 3u);
+  fixture.edgeIndices.reserve(2u * fixture.edgeCount);
+  fixture.cpuEndpointSquaredDistances.reserve(fixture.pairCount);
+  fixture.cpuAccepted.reserve(fixture.pairCount);
+
+  for (int i = 0; i < side; ++i) {
+    const int group = i / 2;
+    const double x = static_cast<double>(group % 64) * 2.0;
+    const double y = static_cast<double>(group / 64) * 2.0;
+    const std::uint32_t base
+        = static_cast<std::uint32_t>(fixture.startPositions.size() / 3u);
+    if ((i % 2) == 0) {
+      appendPoint(fixture, {x, y, 0.0}, {x, y, 0.0});
+      appendPoint(fixture, {x + 1.0, y, 0.0}, {x + 1.0, y, 0.0});
+    } else {
+      appendPoint(
+          fixture, {x + 0.25, y + 0.20, -0.5}, {x + 0.25, y - 0.20, -0.5});
+      appendPoint(
+          fixture, {x + 0.25, y + 0.20, 0.5}, {x + 0.25, y - 0.20, 0.5});
+    }
+    fixture.edgeIndices.insert(fixture.edgeIndices.end(), {base, base + 1u});
+  }
+
+  const double margin = 0.5 * kActivationDistance;
+  for (std::size_t edgeA = 0; edgeA < fixture.edgeCount; ++edgeA) {
+    for (std::size_t edgeB = 0; edgeB < fixture.edgeCount; ++edgeB) {
+      double endpointSquaredDistance = 0.0;
+      bool accepted = false;
+      const std::uint32_t a0 = fixture.edgeIndices[2u * edgeA];
+      const std::uint32_t a1 = fixture.edgeIndices[2u * edgeA + 1u];
+      const std::uint32_t b0 = fixture.edgeIndices[2u * edgeB];
+      const std::uint32_t b1 = fixture.edgeIndices[2u * edgeB + 1u];
+      if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+        const auto edgeAAabb = dc::detail::makeSweptSegmentAabb(
+            pointAt(fixture.startPositions, a0),
+            pointAt(fixture.endPositions, a0),
+            pointAt(fixture.startPositions, a1),
+            pointAt(fixture.endPositions, a1),
+            margin);
+        const auto edgeBAabb = dc::detail::makeSweptSegmentAabb(
+            pointAt(fixture.startPositions, b0),
+            pointAt(fixture.endPositions, b0),
+            pointAt(fixture.startPositions, b1),
+            pointAt(fixture.endPositions, b1),
+            margin);
+        accepted = edgeAAabb.overlaps(edgeBAabb);
+        if (accepted) {
+          const auto startDistance = dc::edgeEdgeSquaredDistance(
+              pointAt(fixture.startPositions, a0),
+              pointAt(fixture.startPositions, a1),
+              pointAt(fixture.startPositions, b0),
+              pointAt(fixture.startPositions, b1));
+          const auto endDistance = dc::edgeEdgeSquaredDistance(
+              pointAt(fixture.endPositions, a0),
+              pointAt(fixture.endPositions, a1),
+              pointAt(fixture.endPositions, b0),
+              pointAt(fixture.endPositions, b1));
+          endpointSquaredDistance = std::min(
+              startDistance.squaredDistance, endDistance.squaredDistance);
+        }
+      }
+      fixture.cpuEndpointSquaredDistances.push_back(endpointSquaredDistance);
+      fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++fixture.acceptedCount;
+      }
+    }
+  }
+
+  return fixture;
+}
+
 void recordSharedCounters(
     benchmark::State& state,
     const CandidateFixture& fixture,
@@ -402,6 +610,33 @@ void recordCandidateMaskCounters(
 void recordEdgeEdgeCandidateMaskCounters(
     benchmark::State& state,
     const EdgeEdgeCandidateMaskFixture& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.pairCount));
+}
+
+void recordSweptCandidateMaskCounters(
+    benchmark::State& state,
+    const SweptCandidateMaskFixture& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["points"] = static_cast<double>(fixture.pointCount);
+  state.counters["triangles"] = static_cast<double>(fixture.triangleCount);
+  state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.pairCount));
+}
+
+void recordSweptEdgeEdgeCandidateMaskCounters(
+    benchmark::State& state,
+    const SweptEdgeEdgeCandidateMaskFixture& fixture,
     const double maxError)
 {
   state.counters["pairs"] = static_cast<double>(fixture.pairCount);
@@ -653,6 +888,228 @@ static void BM_Plan083EdgeEdgeCandidateMaskCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083EdgeEdgeCandidateMaskCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SweptPointTriangleCandidateMaskCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeSweptCandidateMaskFixture(static_cast<int>(state.range(0)));
+  const double margin = 0.5 * kActivationDistance;
+
+  std::size_t acceptedCount = 0;
+  for (auto _ : state) {
+    acceptedCount = 0;
+    for (const std::uint32_t point : fixture.pointIndices) {
+      for (std::size_t triangle = 0; triangle < fixture.triangleCount;
+           ++triangle) {
+        const std::size_t tri = 3u * triangle;
+        double endpointSquaredDistance = 0.0;
+        if (!isIncidentPointTriangle(point, fixture.triangles, triangle)) {
+          const auto pointAabb = dc::detail::makeSweptPointAabb(
+              pointAt(fixture.startPositions, point),
+              pointAt(fixture.endPositions, point),
+              margin);
+          const auto triangleAabb = dc::detail::makeSweptTriangleAabb(
+              pointAt(fixture.startPositions, fixture.triangles[tri]),
+              pointAt(fixture.endPositions, fixture.triangles[tri]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+              pointAt(fixture.startPositions, fixture.triangles[tri + 2u]),
+              pointAt(fixture.endPositions, fixture.triangles[tri + 2u]),
+              margin);
+          if (pointAabb.overlaps(triangleAabb)) {
+            const auto startDistance = dc::pointTriangleSquaredDistance(
+                pointAt(fixture.startPositions, point),
+                pointAt(fixture.startPositions, fixture.triangles[tri]),
+                pointAt(fixture.startPositions, fixture.triangles[tri + 1u]),
+                pointAt(fixture.startPositions, fixture.triangles[tri + 2u]));
+            const auto endDistance = dc::pointTriangleSquaredDistance(
+                pointAt(fixture.endPositions, point),
+                pointAt(fixture.endPositions, fixture.triangles[tri]),
+                pointAt(fixture.endPositions, fixture.triangles[tri + 1u]),
+                pointAt(fixture.endPositions, fixture.triangles[tri + 2u]));
+            endpointSquaredDistance = std::min(
+                startDistance.squaredDistance, endDistance.squaredDistance);
+            ++acceptedCount;
+          }
+        }
+        benchmark::DoNotOptimize(endpointSquaredDistance);
+      }
+    }
+  }
+
+  benchmark::DoNotOptimize(acceptedCount);
+  recordSweptCandidateMaskCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SweptPointTriangleCandidateMaskCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SweptPointTriangleCandidateMaskCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSweptCandidateMaskFixture(static_cast<int>(state.range(0)));
+  cuda::SweptPointTriangleCandidateBuildResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::buildSweptPointTriangleContactCandidateMaskCuda(
+        fixture.startPositions,
+        fixture.endPositions,
+        fixture.pointIndices,
+        fixture.triangles,
+        kActivationDistance,
+        result);
+    benchmark::DoNotOptimize(result.endpointSquaredDistances.data());
+    benchmark::DoNotOptimize(result.accepted.data());
+  }
+
+  for (std::size_t i = 0; i < fixture.cpuEndpointSquaredDistances.size(); ++i) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            result.endpointSquaredDistances[i]
+            - fixture.cpuEndpointSquaredDistances[i]));
+  }
+
+  recordSweptCandidateMaskCounters(state, fixture, maxError);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_points"] = static_cast<double>(result.pointCount);
+  state.counters["gpu_triangles"] = static_cast<double>(result.triangleCount);
+  state.counters["gpu_accepted_count"]
+      = static_cast<double>(result.acceptedCount);
+  state.counters["gpu_compacted_count"]
+      = static_cast<double>(result.acceptedPointIndices.size());
+  state.counters["gpu_compacted_triangle_count"]
+      = static_cast<double>(result.acceptedTriangleIndices.size());
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SweptPointTriangleCandidateMaskCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SweptEdgeEdgeCandidateMaskCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeSweptEdgeEdgeCandidateMaskFixture(static_cast<int>(state.range(0)));
+  const double margin = 0.5 * kActivationDistance;
+
+  std::size_t acceptedCount = 0;
+  for (auto _ : state) {
+    acceptedCount = 0;
+    for (std::size_t edgeA = 0; edgeA < fixture.edgeCount; ++edgeA) {
+      for (std::size_t edgeB = 0; edgeB < fixture.edgeCount; ++edgeB) {
+        double endpointSquaredDistance = 0.0;
+        const std::uint32_t a0 = fixture.edgeIndices[2u * edgeA];
+        const std::uint32_t a1 = fixture.edgeIndices[2u * edgeA + 1u];
+        const std::uint32_t b0 = fixture.edgeIndices[2u * edgeB];
+        const std::uint32_t b1 = fixture.edgeIndices[2u * edgeB + 1u];
+        if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+          const auto edgeAAabb = dc::detail::makeSweptSegmentAabb(
+              pointAt(fixture.startPositions, a0),
+              pointAt(fixture.endPositions, a0),
+              pointAt(fixture.startPositions, a1),
+              pointAt(fixture.endPositions, a1),
+              margin);
+          const auto edgeBAabb = dc::detail::makeSweptSegmentAabb(
+              pointAt(fixture.startPositions, b0),
+              pointAt(fixture.endPositions, b0),
+              pointAt(fixture.startPositions, b1),
+              pointAt(fixture.endPositions, b1),
+              margin);
+          if (edgeAAabb.overlaps(edgeBAabb)) {
+            const auto startDistance = dc::edgeEdgeSquaredDistance(
+                pointAt(fixture.startPositions, a0),
+                pointAt(fixture.startPositions, a1),
+                pointAt(fixture.startPositions, b0),
+                pointAt(fixture.startPositions, b1));
+            const auto endDistance = dc::edgeEdgeSquaredDistance(
+                pointAt(fixture.endPositions, a0),
+                pointAt(fixture.endPositions, a1),
+                pointAt(fixture.endPositions, b0),
+                pointAt(fixture.endPositions, b1));
+            endpointSquaredDistance = std::min(
+                startDistance.squaredDistance, endDistance.squaredDistance);
+            ++acceptedCount;
+          }
+        }
+        benchmark::DoNotOptimize(endpointSquaredDistance);
+      }
+    }
+  }
+
+  benchmark::DoNotOptimize(acceptedCount);
+  recordSweptEdgeEdgeCandidateMaskCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SweptEdgeEdgeCandidateMaskCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SweptEdgeEdgeCandidateMaskCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSweptEdgeEdgeCandidateMaskFixture(static_cast<int>(state.range(0)));
+  cuda::SweptEdgeEdgeCandidateBuildResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::buildSweptEdgeEdgeContactCandidateMaskCuda(
+        fixture.startPositions,
+        fixture.endPositions,
+        fixture.edgeIndices,
+        kActivationDistance,
+        result);
+    benchmark::DoNotOptimize(result.endpointSquaredDistances.data());
+    benchmark::DoNotOptimize(result.accepted.data());
+  }
+
+  for (std::size_t i = 0; i < fixture.cpuEndpointSquaredDistances.size(); ++i) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            result.endpointSquaredDistances[i]
+            - fixture.cpuEndpointSquaredDistances[i]));
+  }
+
+  recordSweptEdgeEdgeCandidateMaskCounters(state, fixture, maxError);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_edges"] = static_cast<double>(result.edgeCount);
+  state.counters["gpu_accepted_count"]
+      = static_cast<double>(result.acceptedCount);
+  state.counters["gpu_compacted_edge_a_count"]
+      = static_cast<double>(result.acceptedEdgeAIndices.size());
+  state.counters["gpu_compacted_edge_b_count"]
+      = static_cast<double>(result.acceptedEdgeBIndices.size());
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SweptEdgeEdgeCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

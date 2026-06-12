@@ -109,7 +109,9 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "^BM_Plan083("
         "(EdgeEdge)?ContactCandidate|"
         "PointTriangleCandidateMask|"
-        "EdgeEdgeCandidateMask"
+        "EdgeEdgeCandidateMask|"
+        "SweptPointTriangleCandidateMask|"
+        "SweptEdgeEdgeCandidateMask"
         ")(Cpu|Cuda)"
         f"/{args.stencil_count}(/real_time)?$"
     )
@@ -196,6 +198,22 @@ def _expected_edge_edge_candidate_mask_row_names(pair_count: int) -> tuple[str, 
     )
 
 
+def _expected_swept_candidate_mask_row_names(pair_count: int) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SweptPointTriangleCandidateMaskCpu/{pair_count}",
+        f"BM_Plan083SweptPointTriangleCandidateMaskCuda/{pair_count}",
+    )
+
+
+def _expected_swept_edge_edge_candidate_mask_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SweptEdgeEdgeCandidateMaskCpu/{pair_count}",
+        f"BM_Plan083SweptEdgeEdgeCandidateMaskCuda/{pair_count}",
+    )
+
+
 def _representative_rows(
     rows: list[Mapping[str, Any]], stencil_count: int
 ) -> dict[str, Mapping[str, Any]]:
@@ -203,6 +221,10 @@ def _representative_rows(
     expected_names = {name for names in expected_rows.values() for name in names}
     expected_names.update(_expected_candidate_mask_row_names(stencil_count))
     expected_names.update(_expected_edge_edge_candidate_mask_row_names(stencil_count))
+    expected_names.update(_expected_swept_candidate_mask_row_names(stencil_count))
+    expected_names.update(
+        _expected_swept_edge_edge_candidate_mask_row_names(stencil_count)
+    )
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
 
@@ -306,42 +328,42 @@ def _validate_candidate_mask(
     pair_count: int,
     tolerance: float,
     speedup_gate: float,
+    label: str = "point-triangle candidate mask",
 ) -> dict[str, Any]:
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask CPU benchmark timing is not positive"
+            f"{label} CPU benchmark timing is not positive"
         )
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask GPU benchmark timing is not positive"
+            f"{label} GPU benchmark timing is not positive"
         )
 
     max_error = _counter(gpu_row, "max_result_abs_error")
     if max_error > tolerance:
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask max error "
-            f"{max_error:.3g} exceeds tolerance {tolerance:.3g}"
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
         )
 
     cpu_accepted = _counter(cpu_row, "accepted_count")
     gpu_accepted = _counter(gpu_row, "gpu_accepted_count")
     if int(cpu_accepted) != int(gpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask CPU accepted count "
+            f"{label} CPU accepted count "
             f"{cpu_accepted:g} != GPU accepted count {gpu_accepted:g}"
         )
     gpu_compacted = _counter(gpu_row, "gpu_compacted_count")
     if int(gpu_compacted) != int(cpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask GPU compacted count "
+            f"{label} GPU compacted count "
             f"{gpu_compacted:g} != accepted count {cpu_accepted:g}"
         )
     gpu_compacted_triangles = _counter(gpu_row, "gpu_compacted_triangle_count")
     if int(gpu_compacted_triangles) != int(cpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask GPU compacted triangle count "
+            f"{label} GPU compacted triangle count "
             f"{gpu_compacted_triangles:g} != accepted count {cpu_accepted:g}"
         )
 
@@ -349,7 +371,7 @@ def _validate_candidate_mask(
     gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
     if cpu_pairs != pair_count or gpu_pairs != pair_count:
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask expected "
+            f"{label} expected "
             f"{pair_count} pairs, got CPU={cpu_pairs}, GPU={gpu_pairs}"
         )
 
@@ -359,7 +381,7 @@ def _validate_candidate_mask(
     gpu_triangles = int(_counter(gpu_row, "gpu_triangles"))
     if cpu_points != gpu_points or cpu_triangles != gpu_triangles:
         raise Plan083GpuContactCandidatePacketError(
-            "point-triangle candidate mask CPU/GPU shape mismatch: "
+            f"{label} CPU/GPU shape mismatch: "
             f"points {cpu_points}/{gpu_points}, "
             f"triangles {cpu_triangles}/{gpu_triangles}"
         )
@@ -376,7 +398,7 @@ def _validate_candidate_mask(
     missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
     if missing:
         raise Plan083GpuContactCandidatePacketError(
-            f"point-triangle candidate mask timing is missing {sorted(missing)}"
+            f"{label} timing is missing {sorted(missing)}"
         )
 
     return {
@@ -402,42 +424,42 @@ def _validate_edge_edge_candidate_mask(
     pair_count: int,
     tolerance: float,
     speedup_gate: float,
+    label: str = "edge-edge candidate mask",
 ) -> dict[str, Any]:
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask CPU benchmark timing is not positive"
+            f"{label} CPU benchmark timing is not positive"
         )
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask GPU benchmark timing is not positive"
+            f"{label} GPU benchmark timing is not positive"
         )
 
     max_error = _counter(gpu_row, "max_result_abs_error")
     if max_error > tolerance:
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask max error "
-            f"{max_error:.3g} exceeds tolerance {tolerance:.3g}"
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
         )
 
     cpu_accepted = _counter(cpu_row, "accepted_count")
     gpu_accepted = _counter(gpu_row, "gpu_accepted_count")
     if int(cpu_accepted) != int(gpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask CPU accepted count "
+            f"{label} CPU accepted count "
             f"{cpu_accepted:g} != GPU accepted count {gpu_accepted:g}"
         )
     gpu_compacted_a = _counter(gpu_row, "gpu_compacted_edge_a_count")
     if int(gpu_compacted_a) != int(cpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask GPU compacted edge-a count "
+            f"{label} GPU compacted edge-a count "
             f"{gpu_compacted_a:g} != accepted count {cpu_accepted:g}"
         )
     gpu_compacted_b = _counter(gpu_row, "gpu_compacted_edge_b_count")
     if int(gpu_compacted_b) != int(cpu_accepted):
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask GPU compacted edge-b count "
+            f"{label} GPU compacted edge-b count "
             f"{gpu_compacted_b:g} != accepted count {cpu_accepted:g}"
         )
 
@@ -445,7 +467,7 @@ def _validate_edge_edge_candidate_mask(
     gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
     if cpu_pairs != pair_count or gpu_pairs != pair_count:
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask expected "
+            f"{label} expected "
             f"{pair_count} pairs, got CPU={cpu_pairs}, GPU={gpu_pairs}"
         )
 
@@ -453,8 +475,7 @@ def _validate_edge_edge_candidate_mask(
     gpu_edges = int(_counter(gpu_row, "gpu_edges"))
     if cpu_edges != gpu_edges:
         raise Plan083GpuContactCandidatePacketError(
-            "edge-edge candidate mask CPU/GPU shape mismatch: "
-            f"edges {cpu_edges}/{gpu_edges}"
+            f"{label} CPU/GPU shape mismatch: " f"edges {cpu_edges}/{gpu_edges}"
         )
 
     speedup = cpu_ns / gpu_ns
@@ -469,7 +490,7 @@ def _validate_edge_edge_candidate_mask(
     missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
     if missing:
         raise Plan083GpuContactCandidatePacketError(
-            f"edge-edge candidate mask timing is missing {sorted(missing)}"
+            f"{label} timing is missing {sorted(missing)}"
         )
 
     return {
@@ -537,9 +558,35 @@ def make_packet(
         tolerance=tolerance,
         speedup_gate=speedup_gate,
     )
+    swept_point_cpu, swept_point_gpu = _expected_swept_candidate_mask_row_names(
+        stencil_count
+    )
+    swept_point_triangle_candidate_construction = _validate_candidate_mask(
+        cpu_row=representative_rows[swept_point_cpu],
+        gpu_row=representative_rows[swept_point_gpu],
+        pair_count=stencil_count,
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+        label="swept point-triangle candidate mask",
+    )
+    swept_edge_cpu, swept_edge_gpu = _expected_swept_edge_edge_candidate_mask_row_names(
+        stencil_count
+    )
+    swept_edge_edge_candidate_construction = _validate_edge_edge_candidate_mask(
+        cpu_row=representative_rows[swept_edge_cpu],
+        gpu_row=representative_rows[swept_edge_gpu],
+        pair_count=stencil_count,
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+        label="swept edge-edge candidate mask",
+    )
     candidate_construction = {
         "point_triangle_all_pairs_mask": point_triangle_candidate_construction,
         "edge_edge_all_pairs_mask": edge_edge_candidate_construction,
+        "point_triangle_swept_aabb_candidates": (
+            swept_point_triangle_candidate_construction
+        ),
+        "edge_edge_swept_aabb_candidates": swept_edge_edge_candidate_construction,
     }
 
     point_triangle = primitive_families["point_triangle"]

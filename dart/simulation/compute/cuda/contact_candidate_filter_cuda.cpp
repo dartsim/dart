@@ -90,6 +90,36 @@ cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
     std::uint32_t* acceptedBlockOffsets,
     std::size_t edgeCount);
 
+cudaError_t launchSweptPointTriangleContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t pointCount,
+    std::size_t triangleCount);
+
+cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    double activationDistance,
+    double* endpointSquaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t edgeCount);
+
 } // namespace detail
 namespace {
 
@@ -261,6 +291,21 @@ std::size_t validateEdgeEdgeCandidateMaskInputs(
   }
 
   return pointCount;
+}
+
+void validateMatchingEndPositions(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    std::string_view operation)
+{
+  DART_SIMULATION_THROW_T_IF(
+      startPositions.size() != endPositions.size(),
+      sx::InvalidArgumentException,
+      "{} expects matching start/end xyz-packed positions but received {} and "
+      "{} doubles",
+      operation,
+      startPositions.size(),
+      endPositions.size());
 }
 
 } // namespace
@@ -601,6 +646,220 @@ void buildEdgeEdgeContactCandidateMaskCuda(
     if (result.accepted[i] != 0) {
       result.maxAcceptedSquaredDistance = std::max(
           result.maxAcceptedSquaredDistance, result.squaredDistances[i]);
+    }
+  }
+}
+
+//==============================================================================
+void buildSweptPointTriangleContactCandidateMaskCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& pointIndices,
+    const std::vector<std::uint32_t>& triangleIndices,
+    double activationDistance,
+    SweptPointTriangleCandidateBuildResult& result)
+{
+  const auto setupStart = Clock::now();
+  static constexpr std::string_view kOperation
+      = "buildSweptPointTriangleContactCandidateMaskCuda";
+  validateCandidateMaskInputs(
+      startPositions, pointIndices, triangleIndices, kOperation);
+  validateMatchingEndPositions(startPositions, endPositions, kOperation);
+
+  result = SweptPointTriangleCandidateBuildResult{};
+  result.pointCount = pointIndices.size();
+  result.triangleCount = triangleIndices.size() / 3u;
+  result.pairCount = result.pointCount * result.triangleCount;
+  result.endpointSquaredDistances.resize(result.pairCount);
+  result.accepted.resize(result.pairCount);
+
+  if (result.pairCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<double> deviceStartPositions(startPositions.size());
+  DeviceBuffer<double> deviceEndPositions(endPositions.size());
+  DeviceBuffer<std::uint32_t> devicePoints(pointIndices.size());
+  DeviceBuffer<std::uint32_t> deviceTriangles(triangleIndices.size());
+  DeviceBuffer<double> deviceEndpointSquaredDistances(result.pairCount);
+  DeviceBuffer<std::uint8_t> deviceAccepted(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedPointIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedTriangleIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceCompactedCount(1u);
+  const std::size_t compactBlockCount
+      = (result.pairCount + kContactCandidateMaskBlockSize - 1u)
+        / kContactCandidateMaskBlockSize;
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockCounts(compactBlockCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockOffsets(compactBlockCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceStartPositions.copyToDevice(
+      startPositions, "swept point-triangle start positions copy");
+  deviceEndPositions.copyToDevice(
+      endPositions, "swept point-triangle end positions copy");
+  devicePoints.copyToDevice(
+      pointIndices, "swept point-triangle point indices copy");
+  deviceTriangles.copyToDevice(
+      triangleIndices, "swept point-triangle triangles copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchSweptPointTriangleContactCandidateMaskKernel(
+          deviceStartPositions.data(),
+          deviceEndPositions.data(),
+          devicePoints.data(),
+          deviceTriangles.data(),
+          std::max(0.0, activationDistance),
+          deviceEndpointSquaredDistances.data(),
+          deviceAccepted.data(),
+          deviceAcceptedPointIndices.data(),
+          deviceAcceptedTriangleIndices.data(),
+          deviceCompactedCount.data(),
+          deviceAcceptedBlockCounts.data(),
+          deviceAcceptedBlockOffsets.data(),
+          result.pointCount,
+          result.triangleCount),
+      "swept point-triangle contact candidate mask kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "swept point-triangle contact candidate mask synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceEndpointSquaredDistances.copyFromDevice(
+      result.endpointSquaredDistances,
+      "swept point-triangle endpoint distances copy");
+  deviceAccepted.copyFromDevice(
+      result.accepted, "swept point-triangle accepted copy");
+  std::vector<std::uint32_t> compactedCount(1u);
+  deviceCompactedCount.copyFromDevice(
+      compactedCount, "swept point-triangle compacted count copy");
+  result.acceptedCount = compactedCount[0];
+  result.acceptedPointIndices.resize(result.acceptedCount);
+  result.acceptedTriangleIndices.resize(result.acceptedCount);
+  deviceAcceptedPointIndices.copyFromDevice(
+      result.acceptedPointIndices,
+      "swept point-triangle compacted points copy");
+  deviceAcceptedTriangleIndices.copyFromDevice(
+      result.acceptedTriangleIndices,
+      "swept point-triangle compacted triangles copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t i = 0; i < result.accepted.size(); ++i) {
+    if (result.accepted[i] != 0) {
+      result.maxAcceptedEndpointSquaredDistance = std::max(
+          result.maxAcceptedEndpointSquaredDistance,
+          result.endpointSquaredDistances[i]);
+    }
+  }
+}
+
+//==============================================================================
+void buildSweptEdgeEdgeContactCandidateMaskCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    double activationDistance,
+    SweptEdgeEdgeCandidateBuildResult& result)
+{
+  const auto setupStart = Clock::now();
+  static constexpr std::string_view kOperation
+      = "buildSweptEdgeEdgeContactCandidateMaskCuda";
+  validateEdgeEdgeCandidateMaskInputs(startPositions, edgeIndices, kOperation);
+  validateMatchingEndPositions(startPositions, endPositions, kOperation);
+
+  result = SweptEdgeEdgeCandidateBuildResult{};
+  result.edgeCount = edgeIndices.size() / 2u;
+  result.pairCount = result.edgeCount * result.edgeCount;
+  result.endpointSquaredDistances.resize(result.pairCount);
+  result.accepted.resize(result.pairCount);
+
+  if (result.pairCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<double> deviceStartPositions(startPositions.size());
+  DeviceBuffer<double> deviceEndPositions(endPositions.size());
+  DeviceBuffer<std::uint32_t> deviceEdges(edgeIndices.size());
+  DeviceBuffer<double> deviceEndpointSquaredDistances(result.pairCount);
+  DeviceBuffer<std::uint8_t> deviceAccepted(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedEdgeAIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedEdgeBIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceCompactedCount(1u);
+  const std::size_t compactBlockCount
+      = (result.pairCount + kContactCandidateMaskBlockSize - 1u)
+        / kContactCandidateMaskBlockSize;
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockCounts(compactBlockCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockOffsets(compactBlockCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceStartPositions.copyToDevice(
+      startPositions, "swept edge-edge start positions copy");
+  deviceEndPositions.copyToDevice(
+      endPositions, "swept edge-edge end positions copy");
+  deviceEdges.copyToDevice(edgeIndices, "swept edge-edge edges copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchSweptEdgeEdgeContactCandidateMaskKernel(
+          deviceStartPositions.data(),
+          deviceEndPositions.data(),
+          deviceEdges.data(),
+          std::max(0.0, activationDistance),
+          deviceEndpointSquaredDistances.data(),
+          deviceAccepted.data(),
+          deviceAcceptedEdgeAIndices.data(),
+          deviceAcceptedEdgeBIndices.data(),
+          deviceCompactedCount.data(),
+          deviceAcceptedBlockCounts.data(),
+          deviceAcceptedBlockOffsets.data(),
+          result.edgeCount),
+      "swept edge-edge contact candidate mask kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "swept edge-edge contact candidate synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceEndpointSquaredDistances.copyFromDevice(
+      result.endpointSquaredDistances,
+      "swept edge-edge endpoint distances copy");
+  deviceAccepted.copyFromDevice(
+      result.accepted, "swept edge-edge accepted copy");
+  std::vector<std::uint32_t> compactedCount(1u);
+  deviceCompactedCount.copyFromDevice(
+      compactedCount, "swept edge-edge compacted count copy");
+  result.acceptedCount = compactedCount[0];
+  result.acceptedEdgeAIndices.resize(result.acceptedCount);
+  result.acceptedEdgeBIndices.resize(result.acceptedCount);
+  deviceAcceptedEdgeAIndices.copyFromDevice(
+      result.acceptedEdgeAIndices, "swept edge-edge compacted edge-a copy");
+  deviceAcceptedEdgeBIndices.copyFromDevice(
+      result.acceptedEdgeBIndices, "swept edge-edge compacted edge-b copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t i = 0; i < result.accepted.size(); ++i) {
+    if (result.accepted[i] != 0) {
+      result.maxAcceptedEndpointSquaredDistance = std::max(
+          result.maxAcceptedEndpointSquaredDistance,
+          result.endpointSquaredDistances[i]);
     }
   }
 }

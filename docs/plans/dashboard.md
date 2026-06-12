@@ -299,7 +299,9 @@ its own line so status updates remain git-history friendly.
   or paper-scale parity. PR #2978 is the single consolidated follow-up for the
   remaining private packet work: it adds point-triangle and edge-edge contact
   stencil parity plus brute-force all-pairs point-triangle and edge-edge
-  candidate masks with device-side compacted-pair metadata, endpoint-linear
+  candidate masks and motion-aware swept-AABB point-triangle/edge-edge
+  candidate-list packets with device-side compacted-pair metadata,
+  endpoint-linear
   point-triangle and
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
   plus point-triangle
@@ -310,7 +312,7 @@ its own line so status updates remain git-history friendly.
   pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge
   scene state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry
   packets, and an ABD/FEM coupled micro-solve packet. It still
-  keeps sweep broad-phase/runtime GPU candidate construction, rigid
+  keeps sweep-and-prune broad-phase/runtime GPU candidate construction, rigid
   curved trajectories, equality-reduced/global sparse assembly and
   factorization, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
