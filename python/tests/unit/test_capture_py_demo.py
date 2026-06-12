@@ -1207,6 +1207,31 @@ def test_rigid_workflow_latest_signals_prioritize_breakage_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_distance_spring_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "comparison_axis": "distance_spring_response_family",
+            "distance_spring_free_abs_stretch": 0.33,
+            "distance_spring_max_sprung_abs_stretch": 0.35,
+            "distance_spring_offset_abs_stretch": 0.002,
+            "distance_spring_offset_angular_speed": 1.96,
+            "distance_spring_soft_abs_stretch": 0.113,
+            "distance_spring_stiff_abs_stretch": 0.125,
+            "solver": "sequential_impulse_avbd_distance_spring",
+        }
+    )
+
+    assert highlights[:7] == [
+        "distance spring free abs stretch: 0.33",
+        "distance spring soft abs stretch: 0.113",
+        "distance spring stiff abs stretch: 0.125",
+        "distance spring offset abs stretch: 0.002",
+        "distance spring offset angular speed: 1.96",
+        "distance spring max sprung abs stretch: 0.35",
+        "solver: sequential_impulse_avbd_distance_spring",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

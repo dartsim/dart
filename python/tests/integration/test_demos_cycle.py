@@ -5290,8 +5290,42 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_distance_spring"
+    assert capture_metrics["comparison_axis"] == "distance_spring_response_family"
     assert capture_metrics["solver"] == "sequential_impulse_avbd_distance_spring"
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"] == {
+        "executor": controller._executor_label(),
+        "payload_mass": pytest.approx(1.0),
+        "rest_length_m": pytest.approx(0.45),
+        "solver": "Sequential impulse + AVBD distance springs",
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
+    assert capture_metrics["controls"]["initial_stretch"] == pytest.approx(
+        controller.initial_stretch
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    assert capture_metrics["spring_lanes"] == [
+        lane.label for lane in controller.lanes
+    ]
     assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["distance_spring_free_abs_stretch"] == pytest.approx(
+        abs(float(metrics["free"]["stretch"]))
+    )
+    assert capture_metrics["distance_spring_soft_abs_stretch"] == pytest.approx(
+        abs(float(metrics["soft"]["stretch"]))
+    )
+    assert capture_metrics["distance_spring_stiff_abs_stretch"] == pytest.approx(
+        abs(float(metrics["stiff"]["stretch"]))
+    )
+    assert capture_metrics["distance_spring_offset_abs_stretch"] == pytest.approx(
+        abs(float(metrics["offset"]["stretch"]))
+    )
+    assert capture_metrics["distance_spring_offset_angular_speed"] == pytest.approx(
+        float(metrics["offset"]["angular_speed"])
+    )
     assert capture_metrics["lanes"]["free"]["has_spring"] == pytest.approx(0.0)
     assert capture_metrics["lanes"]["soft"]["has_spring"] == pytest.approx(1.0)
     assert capture_metrics["history"]["samples"] == pytest.approx(
@@ -5299,6 +5333,9 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
     )
     assert capture_metrics["history"]["max_sprung_abs_stretch"] >= abs(
         float(metrics["soft"]["stretch"])
+    )
+    assert capture_metrics["distance_spring_max_sprung_abs_stretch"] == pytest.approx(
+        capture_metrics["history"]["max_sprung_abs_stretch"]
     )
     assert capture_metrics["history"]["max_offset_angular_speed"] > 1.0
 

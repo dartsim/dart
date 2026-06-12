@@ -204,7 +204,7 @@ plus a warning block if any selected row is missing those fields.
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts       |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Sequential joints, static base, perturbation, reset   | Fixed-transform axis, pose error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | AVBD joints, weak break force, static base            | Break-force axis, broken state, release distance, reset       |
-| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks             |
+| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, rest length, initial stretch, gravity       | Distance-spring axis, lane stretch, offset spin               |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks          |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks             |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks       |
@@ -650,9 +650,12 @@ move to one-DOF joints. It keeps the solver scope explicit: distance springs
 are AVBD-backed rows in the sequential rigid-body World path, while IPC and
 multibody Worlds reject this API. The panel compares an unsprung baseline,
 soft and stiff center springs, and an off-center anchor lane with stretch,
-payload speed, angular speed, and step timing.
-The shared Replay panel uses maximum spring stretch as its value track and
-marks high-stretch or off-center spin frames.
+payload speed, angular speed, and step timing. The panel and capture metrics
+label the distance-spring response-family comparison axis, the held-fixed
+executor/rest-length/payload/time-step context, lane order, and top-level
+review signals for free, soft, stiff, and offset absolute stretch plus
+off-center angular speed. The shared Replay panel uses maximum spring stretch
+as its value track and marks high-stretch or off-center spin frames.
 
 The **`rigid_limited_joints`** scene verifies the public revolute and prismatic
 rigid-body joint rows without making motor or limit claims. The hinge lane

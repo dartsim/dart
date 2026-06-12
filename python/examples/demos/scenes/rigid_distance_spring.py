@@ -221,6 +221,11 @@ class _RigidDistanceSpring:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _make_lane(
         self,
         key: str,
@@ -408,15 +413,40 @@ class _RigidDistanceSpring:
             ),
             default=0.0,
         )
+        lane_metrics = _serialized_metrics(self._last_metrics)
+        lane_abs_stretch = {
+            key: abs(float(lane_metrics[key]["stretch"])) for key in _LANE_X
+        }
+        offset_angular_speed = float(lane_metrics["offset"]["angular_speed"])
         return {
             "row": "rigid_distance_spring",
+            "comparison_axis": "distance_spring_response_family",
             "solver": "sequential_impulse_avbd_distance_spring",
-            "executor": self._executors[int(self.executor_index)][0],
+            "executor": self._executor_label(),
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "gravity_z": float(self.world.gravity[2]),
             "initial_stretch": float(self.initial_stretch),
-            "lanes": _serialized_metrics(self._last_metrics),
+            "held_fixed": {
+                "executor": self._executor_label(),
+                "payload_mass": 1.0,
+                "rest_length_m": _REST_LENGTH,
+                "solver": "Sequential impulse + AVBD distance springs",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
+            "controls": {
+                "gravity_scale": float(self.gravity_scale),
+                "initial_stretch": float(self.initial_stretch),
+            },
+            "lane_order": [lane.key for lane in self.lanes],
+            "spring_lanes": [lane.label for lane in self.lanes],
+            "distance_spring_free_abs_stretch": lane_abs_stretch["free"],
+            "distance_spring_soft_abs_stretch": lane_abs_stretch["soft"],
+            "distance_spring_stiff_abs_stretch": lane_abs_stretch["stiff"],
+            "distance_spring_offset_abs_stretch": lane_abs_stretch["offset"],
+            "distance_spring_offset_angular_speed": offset_angular_speed,
+            "distance_spring_max_sprung_abs_stretch": max_sprung_abs_stretch,
+            "lanes": lane_metrics,
             "history": {
                 "samples": float(len(self._step_ms_history)),
                 "max_sprung_abs_stretch": max_sprung_abs_stretch,
@@ -582,6 +612,12 @@ class _RigidDistanceSpring:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: distance-spring response family")
+        builder.text(
+            f"held fixed: executor {self._executor_label()} | sequential impulse + "
+            f"AVBD springs | rest length {_REST_LENGTH:.2f} m | payload mass 1.0 | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: sequential impulse with AVBD distance-spring rows")
         builder.text("IPC and multibody worlds reject rigid-body distance springs")
         builder.text(

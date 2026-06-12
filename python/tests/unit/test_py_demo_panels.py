@@ -1243,6 +1243,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_distance_spring,
+            (
+                "text:comparison axis: distance-spring response family",
+                "text:held fixed: executor Sequential | sequential impulse + AVBD springs | rest length 0.45 m | payload mass 1.0 | time step 4.0 ms",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

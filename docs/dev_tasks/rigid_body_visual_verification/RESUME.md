@@ -2,26 +2,96 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 26 now gives the AVBD-pinned fixed-joint breakage row
-the same reviewable comparison shape as the surrounding rigid workflow rows.
-`rigid_joint_breakage` names `fixed_break_force_lifecycle` as its comparison
-axis in the panel and capture metrics, records the held-fixed AVBD/static-base
-context, exports top-level breakage metrics, and feeds decisive latest signals
-into the workflow review index.
+Latest local slice: row 27 now gives the rigid-body distance-spring row the
+same reviewable comparison shape as the surrounding rigid workflow rows.
+`rigid_distance_spring` names `distance_spring_response_family` as its
+comparison axis in the panel and capture metrics, records held-fixed
+executor/rest-length/payload/time-step context, exports top-level
+distance-spring stretch and offset-spin metrics, and feeds decisive latest
+signals into the workflow review index.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-  Latest completed commit before this slice was
-  `4f89ad99bcd Surface fixed joint workflow signals`; if this slice has been
-  committed, expect one additional local commit for joint-breakage workflow
-  signals.
+  Latest completed implementation commit before this slice was
+  `7c7e865f60a Surface joint breakage workflow signals`; if this slice has
+  been committed, expect one additional local commit for distance-spring
+  workflow signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-26 diff first. If it is
-  committed, the immediate next step is a fresh audit for the next concrete
-  rigid GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-26 evidence direction before broadening further.
+- If this slice is still uncommitted, inspect the row-27 diff first. If it is
+  committed, continue from a fresh audit for the next concrete rigid
+  GUI-verification gap, or maintainer acceptance of the current
+  row-15-through-row-27 evidence direction before broadening further.
+
+Files touched by this row-27 slice:
+
+- `python/examples/demos/scenes/rigid_distance_spring.py`
+- `scripts/capture_py_demo.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `python/tests/unit/test_capture_py_demo.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+
+Row-27 distance-spring slice:
+
+- `rigid_distance_spring` now exports
+  `comparison_axis=distance_spring_response_family`, held-fixed
+  executor/rest-length/payload/time-step context, controls, lane labels/order,
+  and top-level capture metrics for free/soft/stiff/offset absolute stretch,
+  offset angular speed, and maximum sprung absolute stretch.
+- The distance-spring panel labels the comparison axis and held-fixed context
+  before the existing solver-scope diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-27 latest-signal keys so the
+  visible review card shows each lane's absolute stretch, offset angular speed,
+  max sprung absolute stretch, and solver.
+- `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
+  document the distance-spring response-family axis and held-fixed context.
+
+Evidence for this slice:
+
+- Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
+  It included
+  `python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor`,
+  the comparison-axis panel coverage, docs/sidecar order checks, capture-command
+  sync check, and the unit guard that row-27 latest signals prioritize
+  free/soft/stiff/offset absolute stretch, offset angular speed, max sprung
+  absolute stretch, and solver.
+- Real row-27 workflow capture completed under
+  `/tmp/dart_capture_rigid_distance_spring_row_27_1781300614` with
+  `status=complete`, `capture_count=1`, `completed_count=1`,
+  `failed_count=0`, `workflow_total_count=36`, and
+  `guidance_complete=true`.
+- Row 27 reported `comparison_axis=distance_spring_response_family`,
+  held-fixed `executor=Sequential`, `payload_mass=1.0`,
+  `rest_length_m=0.45`,
+  `solver=Sequential impulse + AVBD distance springs`,
+  `time_step_ms=4.0`, controls `gravity_scale=0.0`,
+  `initial_stretch=0.33`, `distance_spring_free_abs_stretch=0.33`,
+  `distance_spring_soft_abs_stretch=0.11348857428734854`,
+  `distance_spring_stiff_abs_stretch=0.12534534044775142`,
+  `distance_spring_offset_abs_stretch=0.0009906215487145986`,
+  `distance_spring_offset_angular_speed=1.9564860922194471`,
+  `distance_spring_max_sprung_abs_stretch=0.34624116949577527`,
+  and history maxima `max_offset_angular_speed=21.039723405238743`,
+  `max_sprung_abs_stretch=0.34624116949577527`.
+- `review_index.html` showed the row-27 card with `axis`, `held fixed`,
+  `controls`, Replay signal/markers, metric-key summary, and visible latest
+  signals for free, soft, stiff, and offset absolute stretch, offset angular
+  speed, max sprung absolute stretch, and solver. The per-scene capture wrote a
+  nonblank docked screenshot and 71 PNG frames from the 72-frame workflow row
+  capture.
+
+Previous completed and verified slice: row 26 gives the AVBD-pinned
+fixed-joint breakage row the same reviewable comparison shape as the
+surrounding rigid workflow rows.
+`rigid_joint_breakage` names `fixed_break_force_lifecycle` as its comparison
+axis in the panel and capture metrics, records the held-fixed AVBD/static-base
+context, exports top-level breakage metrics, and feeds decisive latest signals
+into the workflow review index.
 
 Files touched by this row-26 slice:
 
