@@ -1,16 +1,22 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Critical Handoff (2026-06-11, No Further Verification)
+## Final Stop Handoff (2026-06-11, No Further Verification)
 
-Maintainer stop request: stop implementation and verification, make the handoff
-state explicit, push it, and stop. When older sections below conflict with this
-section, this section is the current source of truth.
+Maintainer stop request: stop implementation and verification immediately,
+focus only on handoff, push that handoff, and stop. No lint, build, test,
+benchmark, allocator probe, or CI verification is intentionally run for this
+final docs-only handoff.
 
 Use exactly one continuation branch:
 `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
 Other HMM follow-up branches are historical/no-resume targets unless a
 maintainer explicitly redirects the work.
+
+The pushed head of `pr/hmm-phase45-follow-up-clean` after this handoff is the
+single branch a fresh Claude/Codex session should start from. Treat older
+sections below as evidence history only. When they conflict with this section,
+this section and `RESUME.md` are authoritative.
 
 The current branch preserves the post-PR #2956 continuation work:
 
@@ -24,7 +30,7 @@ The current branch preserves the post-PR #2956 continuation work:
 
 Verification boundary for this continuation:
 
-- The critical stop handoff commit intentionally skipped validation after the
+- This final handoff commit intentionally skips all validation after the latest
   stop request.
 - Work later resumed on this same branch. `pixi run lint`, `pixi run build`,
   the existing `World.RigidIpcKinematicTurntableCarriesRestingBox` behavior
