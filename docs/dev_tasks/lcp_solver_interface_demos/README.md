@@ -1,5 +1,53 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Stop-Work Hand-Off
+
+The user explicitly requested stopping implementation work and preserving
+handoff context without further verification.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `19686f271a2 Extend boxed SSN friction exact path to medium rows`.
+- Before this hand-off-doc edit, the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 60 commits with a clean
+  worktree.
+- No PR is associated with this branch yet.
+
+Latest post-checkpoint context:
+
+- No solver code changes were accepted after the last committed checkpoint.
+- The next target under inspection was large FrictionIndex
+  `BoxedSemiSmoothNewton`.
+- Focused probe artifact:
+  `build/friction_index_bssn64_probe_baseline.json`.
+- Probe filter:
+  `BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/64`.
+- Probe result:
+  - `Pgs/64`: about `184735.9ns`, `iterations=8`,
+    `complementarity=0.0001289616`, `contract_ok=1.0`.
+  - `Tgs/64`: about `175096.2ns`, `iterations=8`,
+    `complementarity=0.0001289616`, `contract_ok=1.0`.
+  - `BoxedSemiSmoothNewton/64`: about `653075.1ns`, `iterations=1`,
+    `complementarity=1.7e-13`, `contract_ok=1.0`,
+    `boxed_ssn_pgs_warm_start_iterations=5`.
+
+Resume guidance:
+
+1. First reconcile `git status -sb`, recent commits, and this section.
+2. Do not treat the large FrictionIndex `BoxedSemiSmoothNewton` probe as an
+   accepted optimization; it is diagnostic evidence only.
+3. Avoid changing solver semantics to accept loose PGS/TGS warm starts inside
+   `BoxedSemiSmoothNewtonSolver` unless solver tolerances are explicitly
+   configured that way.
+4. If no clean solver-level win emerges, move to near-boundary FrictionIndex
+   `Dantzig`, `ShockPropagation`, or `BlockedJacobi`.
+
+Verification for this hand-off:
+
+- None run. The user explicitly requested no further verification.
+
 ## 2026-06-12 Current Continuation - Medium Boxed SSN Friction Exact Path
 
 Current branch state:

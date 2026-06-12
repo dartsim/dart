@@ -1,5 +1,66 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Stop-Work Hand-Off
+
+This section is the latest state; older sections below are historical
+checkpoints. The user explicitly requested stopping implementation work and
+preserving hand-off context without further verification.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `19686f271a2 Extend boxed SSN friction exact path to medium rows`.
+- Before this hand-off-doc edit, the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 60 commits with a clean
+  worktree.
+- There is no associated PR yet.
+
+What happened after the last committed checkpoint:
+
+- No solver code changes were accepted after commit `19686f271a2`.
+- A read/probe pass inspected the next likely target: large FrictionIndex
+  `BoxedSemiSmoothNewton`.
+- A focused benchmark probe was written to
+  `build/friction_index_bssn64_probe_baseline.json` for:
+  `BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/64`.
+- The probe showed `BoxedSemiSmoothNewton/64` is slower because it performs one
+  dense Newton step to tight solver tolerances, while `Pgs/64` and `Tgs/64`
+  satisfy the benchmark contract with looser residuals:
+  - `Pgs/64`: about `184735.9ns`, `iterations=8`,
+    `complementarity=0.0001289616`, `contract_ok=1.0`.
+  - `Tgs/64`: about `175096.2ns`, `iterations=8`,
+    `complementarity=0.0001289616`, `contract_ok=1.0`.
+  - `BoxedSemiSmoothNewton/64`: about `653075.1ns`, `iterations=1`,
+    `complementarity=1.7e-13`, `contract_ok=1.0`,
+    `boxed_ssn_pgs_warm_start_iterations=5`.
+
+Important resume guidance:
+
+- Do not weaken `BoxedSemiSmoothNewtonSolver` semantics by accepting a PGS/TGS
+  warm start at benchmark-contract tolerance inside the solver unless the
+  solver options are explicitly relaxed and that choice is documented.
+- A safe solver-level optimization would need to accept a warm start only when
+  it satisfies the solver's configured residual/complementarity tolerances.
+- If large FrictionIndex `BoxedSemiSmoothNewton` does not yield a clean win,
+  inspect near-boundary FrictionIndex `Dantzig`, `ShockPropagation`, or
+  `BlockedJacobi` instead.
+- No additional verification was run for this stop-work hand-off, by user
+  request.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Then first reconcile the branch state with the top section of this file and
+`docs/dev_tasks/lcp_solver_interface_demos/README.md`. Do not push or mutate
+GitHub state without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Medium Boxed SSN Friction Exact Path
 
 This section is the latest state; older sections below are historical
