@@ -19,14 +19,13 @@ Expected repository state after this hand-off:
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
   by `3c5b9e517d3 Enable rigid workflow video packets` and
-  `d5c6de2bee1 Describe optional rigid workflow rows`, plus the local
-  guidance-audit commit from this checkpoint.
+  `d5c6de2bee1 Describe optional rigid workflow rows` and
+  `5a4529f0083 Audit rigid workflow guidance coverage`.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
   checkpoint after the workflow-video packet slice.
 - `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed at
-  this checkpoint; after committing this guidance-audit slice, the branch is
-  ahead of `origin/feature/rigid-body-gui-visual-verification` by two local
-  commits.
+  this checkpoint; the branch contains local commits not yet pushed to
+  `origin/feature/rigid-body-gui-visual-verification`.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -180,12 +179,12 @@ Current snapshot:
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
   by `3c5b9e517d3 Enable rigid workflow video packets` and
-  `d5c6de2bee1 Describe optional rigid workflow rows`, plus the local
-  guidance-audit commit from this checkpoint.
+  `d5c6de2bee1 Describe optional rigid workflow rows` and
+  `5a4529f0083 Audit rigid workflow guidance coverage`.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
   checkpoint.
 - `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed.
-- The guidance-coverage audit is local and unpushed at this checkpoint.
+- `5a4529f0083 Audit rigid workflow guidance coverage` is local and unpushed.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
