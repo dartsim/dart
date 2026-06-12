@@ -9,6 +9,20 @@ Corpus matrix:
 
 ## Current Status
 
+- Literal stop handoff (2026-06-11): the user explicitly redirected this
+  session to stop all further work and only ensure the hand-off docs. Do not
+  continue implementation, branch cleanup, PR mutation, CI reruns, push, or
+  verification from this checkpoint unless a future user request explicitly
+  asks for it. The active checkout is the consolidated continuation branch
+  `avbd/source-row-extraction-precheck` at local HEAD `533dc490d87` (commit
+  subject: `Reuse AVBD rigid motor row scratch`), clean before this docs-only
+  handoff edit and ahead of `origin/avbd/source-row-extraction-precheck` by
+  five commits:
+  `51eb9b48e08`, `13604d8b8b5`, `04a369222a7`, `77404f63496`, and
+  `533dc490d87`. Treat `RESUME.md` as the detailed source of truth for the
+  branch inventory, stash inventory, PR #2977 status, validation history, and
+  future resume rules. No lint/build/test/CI or `git diff --check` verification
+  was run for this stop-only docs update by explicit user direction.
 - Latest resumed checkpoint (2026-06-11): combined rigid linear/angular motor
   source-row construction now has reusable private active-row scratch for the
   large-input path, and the World contact solve scratch reserves/reuses that

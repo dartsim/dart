@@ -1,5 +1,92 @@
 # Resume: AVBD Solver
 
+## Literal Stop Handoff (2026-06-11)
+
+User directive: stop all further work. This handoff exists only so a fresh
+Claude/Codex session can recover the current state; do not continue
+implementation, branch cleanup, PR mutation, CI reruns, push, or verification
+from this checkpoint unless a future user request explicitly asks for it.
+
+North star when work is explicitly resumed: continue PLAN-104 AVBD toward
+source-shaped articulated rigid and deformable row coverage with evidence
+against the native source corpus. Do not count the source-row overhead cleanup
+commits below as a CPU-win, GPU, or paper-number gate; those gates require
+dedicated corpus evidence.
+
+Current checkout snapshot before this docs-only handoff edit:
+
+- Branch: `avbd/source-row-extraction-precheck`.
+- Upstream: `origin/avbd/source-row-extraction-precheck`.
+- Local HEAD: `533dc490d87 Reuse AVBD rigid motor row scratch`.
+- Status before this docs edit: clean, ahead of upstream by five commits.
+- Local-only commits above upstream:
+  `51eb9b48e08 Record AVBD angular motor validation evidence`,
+  `13604d8b8b5 Reuse AVBD distance spring row scratch`,
+  `04a369222a7 Record AVBD literal stop handoff`,
+  `77404f63496 Avoid contact-manifold row builder heap scratch for small AVBD inputs`,
+  `533dc490d87 Reuse AVBD rigid motor row scratch`.
+- This docs-only handoff intentionally has no new lint/build/test/CI or
+  `git diff --check` verification. The user explicitly asked to stop without
+  further verification.
+
+Current local branch inventory:
+
+- `avbd/source-row-extraction-precheck` - active consolidated continuation
+  branch, tracking origin and ahead by five commits.
+- `avbd/source-row-perf-slice` - tracks origin; PR #2977 head branch at
+  `5297462d34b Restore AVBD prepare contact query warmup`.
+- `avbd/articulated-stiffness-roundtrip` - tracks origin at
+  `43787619654 Merge branch 'main' into avbd/articulated-stiffness-roundtrip`.
+- `feature/avbd-articulated-masked-rows` - tracks origin at
+  `d25e5177d9c WIP: AVBD articulated masked-row solver -- 33h checkpoint`.
+- `feature/free-joint-energy-benchmarks` - tracks origin at
+  `d13c97b5f0c Broaden FreeJoint general semantics coverage`.
+- `main` - tracks origin at `7d05d7b9ea7 Add reduced ABD comparison packets (#2976)`.
+
+Current local stash inventory. Do not apply or drop these by default:
+
+- `stash@{0}` on `avbd/source-row-extraction-precheck`:
+  `codex-pr2977-switch-preserve-extraction-precheck-wip`.
+- `stash@{1}` on `avbd/source-row-extraction-precheck`:
+  `codex-avbd-normalize-fastpath-wip`.
+- `stash@{2}` through `stash@{7}` are older
+  `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
+
+Current PR #2977 snapshot from read-only `gh pr view`:
+
+- PR: <https://github.com/dartsim/dart/pull/2977>
+  (`Trim AVBD source-row contact prep overhead`).
+- Head branch/SHA: `avbd/source-row-perf-slice` at
+  `5297462d34b6118e600647cf18cdd7f13e0182b3`.
+- Base: `main`; state: open; draft: false; merge state: `BLOCKED`.
+- Latest visible completed checks were green/skipped/neutral, including CUDA
+  Build, CodeQL C++/Python, Codecov project/patch, Linux Release Tests,
+  Windows Release Tests, macOS arm64 tests, wheels, ReadTheDocs, and lint.
+- One Linux `Debug Tests` check was still `IN_PROGRESS` at handoff
+  (`https://github.com/dartsim/dart/actions/runs/27386716800/job/80936707478`).
+  Refresh before making any PR decision.
+- No PR comment, review-thread mutation, rerun, merge, or push was performed
+  for this handoff.
+
+Fresh-session recovery command:
+
+```bash
+git checkout avbd/source-row-extraction-precheck
+git status -sb
+git log --oneline --decorate -8
+git stash list
+gh pr view 2977 --repo dartsim/dart --json number,title,state,headRefName,headRefOid,baseRefName,mergeStateStatus,isDraft,statusCheckRollup
+```
+
+If a future user asks to resume implementation, prefer the plan's current
+higher-priority PLAN-104 gaps over more source-row overhead cleanup:
+
+1. Articulated multibody AVBD extraction/lifecycle coverage.
+2. Rigid contact persistence completeness.
+3. Source-demo corpus implementation/optimization with real source packet
+   evidence.
+4. GPU row parity planning/evidence.
+
 ## Fresh-Session Handoff (2026-06-11)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
