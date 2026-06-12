@@ -307,6 +307,30 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
                              ? options.complementarityTolerance
                              : mDefaultOptions.complementarityTolerance;
 
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   Eigen::VectorXd loEff = lo;
   Eigen::VectorXd hiEff = hi;
   for (const auto i : std::views::iota(Eigen::Index{0}, n)) {

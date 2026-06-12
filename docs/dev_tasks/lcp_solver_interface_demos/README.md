@@ -1,5 +1,96 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Boxed Semi-Smooth Newton Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint: `Fast path strict-interior boxed Newton LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 44 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BoxedSemiSmoothNewtonSolver` now tries the shared validated
+  strict-interior standard-LCP fast path after parameter validation when the
+  caller is not warm-starting.
+- Warm-started boxed and friction-index rows stay on the existing
+  residual-reducing PGS warm-start and semi-smooth Newton line-search path.
+- The strict-interior Newton unit coverage now includes
+  `BoxedSemiSmoothNewtonSolver` with `warmStart=false`.
+- The checked LCP performance profile CSVs, Python demo metadata, background
+  docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/BoxedSemiSmoothNewton/`.
+- Compared to the previous full profile cache:
+  - 12 rows: `0.365`
+  - 24 rows: `0.384`
+  - 48 rows: `0.731`
+  - 96 rows: `0.416`
+  - Mean focused ratio `0.474`; best `0.365`; worst `0.731`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `BoxedSemiSmoothNewton` average ratio `1.28`; it is no longer a
+  Standard profile laggard.
+- Current Standard high-ratio targets are `Admm`, `Dantzig`, `MPRGP`, plus
+  moderate `RedBlackGaussSeidel`, `Jacobi`, `Apgd`, and `SymmetricPsor` rows.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `Staggering`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel 1
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/BoxedSemiSmoothNewton/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/boxed_ssn_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run build
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target the remaining boxed and
+   friction-index high-ratio rows. Do not push without explicit maintainer/user
+   approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior BGS Fast Path
 
 Current branch state:

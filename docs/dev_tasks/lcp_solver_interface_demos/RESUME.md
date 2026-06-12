@@ -1,5 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Boxed Semi-Smooth Newton Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint: `Fast path strict-interior boxed Newton LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 44 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BoxedSemiSmoothNewtonSolver` now tries the shared validated
+  strict-interior standard-LCP fast path after parameter validation when the
+  caller is not warm-starting.
+- Warm-started boxed and friction-index rows stay on the existing
+  residual-reducing PGS warm-start and semi-smooth Newton line-search path.
+- Unit coverage was extended so
+  `StandardStrictInteriorFastPath.NewtonSolversUseLinearSolve` includes
+  `BoxedSemiSmoothNewtonSolver` with `warmStart=false`.
+- The Python LCP demo profile summary now removes `BoxedSemiSmoothNewton` from
+  Standard laggards and points remaining Standard tuning at ADMM, Dantzig,
+  MPRGP, and moderate iterative rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/BoxedSemiSmoothNewton/` after-run compared to
+  the previous full profile cache:
+  - 12 rows: `0.365`
+  - 24 rows: `0.384`
+  - 48 rows: `0.731`
+  - 96 rows: `0.416`
+  - Mean focused ratio `0.474`; best `0.365`; worst `0.731`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full regenerated Standard profile now reports `BoxedSemiSmoothNewton` average
+  ratio `1.28`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/boxed_ssn_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.42s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `Admm`, `Dantzig`, `MPRGP`, plus moderate `RedBlackGaussSeidel`,
+  `Jacobi`, `Apgd`, and `SymmetricPsor` rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `Staggering`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior BGS Fast Path
 
 This section is the latest state; older sections below are historical

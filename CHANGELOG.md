@@ -1514,6 +1514,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     small and medium standard comparison rows, while preserving explicit custom
     block validation and leaving larger rows on the existing Gauss-Seidel block
     sweep when that path is faster than a dense linear solve.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `BoxedSemiSmoothNewtonSolver` standard rows after parameter validation,
+    leaving warm-started boxed and friction-index Newton solves on the existing
+    residual-reducing PGS warm-start and semi-smooth line-search path.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard
