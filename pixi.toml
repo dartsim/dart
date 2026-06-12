@@ -1479,6 +1479,18 @@ bm-plan083-cpu-abd-chain-16-packet = { cmd = "python scripts/write_plan083_cpu_s
 bm-plan083-cpu-abd-chain-96-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_chain_96", depends-on = [
   "config",
 ] }
+bm-plan083-cpu-abd-gears-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_gears", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-small-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_small", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-medium-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_medium", depends-on = [
+  "config",
+] }
+bm-plan083-cpu-abd-bullet-large-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_bullet_large", depends-on = [
+  "config",
+] }
 bm-plan083-cpu-abd-cards-packet = { cmd = "python scripts/write_plan083_cpu_scene_packet.py --scene abd_house_of_cards", depends-on = [
   "config",
 ] }
