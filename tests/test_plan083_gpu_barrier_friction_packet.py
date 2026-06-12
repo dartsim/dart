@@ -355,6 +355,28 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    edge_edge_hessian_psd_cpu = _row(
+        "BM_Plan083EdgeEdgeBarrierHessianPsdCpu/1024",
+        samples=1024,
+        active_barriers=870,
+        max_barrier_value=1.3,
+        max_result_abs_error=0.0,
+    )
+    edge_edge_hessian_psd_gpu = _row(
+        "BM_Plan083EdgeEdgeBarrierHessianPsdCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        active_barriers=870,
+        gpu_active_barriers=870,
+        max_barrier_value=1.3,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        psd_projection_ns=8.0,
+        device_to_host_ns=4.0,
+    )
     point_triangle_tangent_cpu = _row(
         "BM_Plan083PointTriangleTangentStencilCpu/1024",
         samples=1024,
@@ -460,6 +482,8 @@ def _benchmark_data(**overrides):
             point_edge_hessian_psd_gpu,
             edge_edge_hessian_cpu,
             edge_edge_hessian_gpu,
+            edge_edge_hessian_psd_cpu,
+            edge_edge_hessian_psd_gpu,
             point_triangle_tangent_cpu,
             point_triangle_tangent_gpu,
             edge_edge_tangent_cpu,
@@ -596,6 +620,13 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     assert row["point_edge_barrier_hessian_psd_projection"]["psd_projection_ns"] == 7.0
     assert row["edge_edge_barrier_hessian"]["active_barrier_count"] == 870
     assert row["edge_edge_barrier_hessian"]["max_result_abs_error"] == 1e-12
+    assert (
+        row["edge_edge_barrier_hessian_psd_projection"]["active_barrier_count"] == 870
+    )
+    assert (
+        row["edge_edge_barrier_hessian_psd_projection"]["max_result_abs_error"] == 1e-12
+    )
+    assert row["edge_edge_barrier_hessian_psd_projection"]["psd_projection_ns"] == 8.0
     assert row["point_triangle_tangent_stencil"]["fallback_basis_count"] == 0
     assert row["point_triangle_tangent_stencil"]["max_result_abs_error"] == 1e-12
     assert row["edge_edge_tangent_stencil"]["fallback_basis_count"] == 0

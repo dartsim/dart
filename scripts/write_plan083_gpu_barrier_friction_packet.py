@@ -120,6 +120,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "|PointEdgeBarrierHessian(Cpu|Cuda)"
         "|PointEdgeBarrierHessianPsd(Cpu|Cuda)"
         "|EdgeEdgeBarrierHessian(Cpu|Cuda)"
+        "|EdgeEdgeBarrierHessianPsd(Cpu|Cuda)"
         "|PointTriangleTangentStencil(Cpu|Cuda)"
         "|EdgeEdgeTangentStencil(Cpu|Cuda)"
         "|PointEdgeTangentStencil(Cpu|Cuda)"
@@ -260,6 +261,12 @@ def _representative_rows(
         "edge_edge_hessian_gpu": (
             f"BM_Plan083EdgeEdgeBarrierHessianCuda/{sample_count}"
         ),
+        "edge_edge_hessian_psd_cpu": (
+            f"BM_Plan083EdgeEdgeBarrierHessianPsdCpu/{sample_count}"
+        ),
+        "edge_edge_hessian_psd_gpu": (
+            f"BM_Plan083EdgeEdgeBarrierHessianPsdCuda/{sample_count}"
+        ),
         "point_triangle_tangent_cpu": (
             f"BM_Plan083PointTriangleTangentStencilCpu/{sample_count}"
         ),
@@ -392,6 +399,8 @@ def make_packet(
     point_edge_hessian_psd_gpu_row = representative_rows["point_edge_hessian_psd_gpu"]
     edge_edge_hessian_cpu_row = representative_rows["edge_edge_hessian_cpu"]
     edge_edge_hessian_gpu_row = representative_rows["edge_edge_hessian_gpu"]
+    edge_edge_hessian_psd_cpu_row = representative_rows["edge_edge_hessian_psd_cpu"]
+    edge_edge_hessian_psd_gpu_row = representative_rows["edge_edge_hessian_psd_gpu"]
     point_triangle_tangent_cpu_row = representative_rows["point_triangle_tangent_cpu"]
     point_triangle_tangent_gpu_row = representative_rows["point_triangle_tangent_gpu"]
     edge_edge_tangent_cpu_row = representative_rows["edge_edge_tangent_cpu"]
@@ -451,6 +460,8 @@ def make_packet(
     point_edge_hessian_psd_gpu_ns = benchmark_timing_ns(point_edge_hessian_psd_gpu_row)
     edge_edge_hessian_cpu_ns = benchmark_timing_ns(edge_edge_hessian_cpu_row)
     edge_edge_hessian_gpu_ns = benchmark_timing_ns(edge_edge_hessian_gpu_row)
+    edge_edge_hessian_psd_cpu_ns = benchmark_timing_ns(edge_edge_hessian_psd_cpu_row)
+    edge_edge_hessian_psd_gpu_ns = benchmark_timing_ns(edge_edge_hessian_psd_gpu_row)
     point_triangle_tangent_cpu_ns = benchmark_timing_ns(point_triangle_tangent_cpu_row)
     point_triangle_tangent_gpu_ns = benchmark_timing_ns(point_triangle_tangent_gpu_row)
     edge_edge_tangent_cpu_ns = benchmark_timing_ns(edge_edge_tangent_cpu_row)
@@ -494,6 +505,8 @@ def make_packet(
         "point-edge Hessian PSD GPU": point_edge_hessian_psd_gpu_ns,
         "edge-edge Hessian CPU": edge_edge_hessian_cpu_ns,
         "edge-edge Hessian GPU": edge_edge_hessian_gpu_ns,
+        "edge-edge Hessian PSD CPU": edge_edge_hessian_psd_cpu_ns,
+        "edge-edge Hessian PSD GPU": edge_edge_hessian_psd_gpu_ns,
         "point-triangle tangent CPU": point_triangle_tangent_cpu_ns,
         "point-triangle tangent GPU": point_triangle_tangent_gpu_ns,
         "edge-edge tangent CPU": edge_edge_tangent_cpu_ns,
@@ -543,6 +556,9 @@ def make_packet(
     edge_edge_hessian_max_error = _counter(
         edge_edge_hessian_gpu_row, "max_result_abs_error"
     )
+    edge_edge_hessian_psd_max_error = _counter(
+        edge_edge_hessian_psd_gpu_row, "max_result_abs_error"
+    )
     point_triangle_tangent_max_error = _counter(
         point_triangle_tangent_gpu_row, "max_result_abs_error"
     )
@@ -569,6 +585,7 @@ def make_packet(
         point_edge_hessian_max_error,
         point_edge_hessian_psd_max_error,
         edge_edge_hessian_max_error,
+        edge_edge_hessian_psd_max_error,
         point_triangle_tangent_max_error,
         edge_edge_tangent_max_error,
         point_edge_tangent_max_error,
@@ -1141,6 +1158,19 @@ def make_packet(
             f"{edge_edge_hessian_gpu_active}"
         )
 
+    edge_edge_hessian_psd_cpu_active = int(
+        _counter(edge_edge_hessian_psd_cpu_row, "active_barriers")
+    )
+    edge_edge_hessian_psd_gpu_active = int(
+        _counter(edge_edge_hessian_psd_gpu_row, "gpu_active_barriers")
+    )
+    if edge_edge_hessian_psd_cpu_active != edge_edge_hessian_psd_gpu_active:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "edge-edge Hessian PSD active_barriers count "
+            f"{edge_edge_hessian_psd_cpu_active} != gpu_active_barriers count "
+            f"{edge_edge_hessian_psd_gpu_active}"
+        )
+
     point_triangle_tangent_cpu_fallbacks = int(
         _counter(point_triangle_tangent_cpu_row, "fallback_bases")
     )
@@ -1212,6 +1242,8 @@ def make_packet(
         "point-edge Hessian PSD GPU": point_edge_hessian_psd_gpu_row,
         "edge-edge Hessian CPU": edge_edge_hessian_cpu_row,
         "edge-edge Hessian GPU": edge_edge_hessian_gpu_row,
+        "edge-edge Hessian PSD CPU": edge_edge_hessian_psd_cpu_row,
+        "edge-edge Hessian PSD GPU": edge_edge_hessian_psd_gpu_row,
         "point-triangle tangent CPU": point_triangle_tangent_cpu_row,
         "point-triangle tangent GPU": point_triangle_tangent_gpu_row,
         "edge-edge tangent CPU": edge_edge_tangent_cpu_row,
@@ -1262,6 +1294,9 @@ def make_packet(
         point_edge_hessian_psd_cpu_ns / point_edge_hessian_psd_gpu_ns
     )
     edge_edge_hessian_speedup = edge_edge_hessian_cpu_ns / edge_edge_hessian_gpu_ns
+    edge_edge_hessian_psd_speedup = (
+        edge_edge_hessian_psd_cpu_ns / edge_edge_hessian_psd_gpu_ns
+    )
     point_triangle_tangent_speedup = (
         point_triangle_tangent_cpu_ns / point_triangle_tangent_gpu_ns
     )
@@ -1284,6 +1319,7 @@ def make_packet(
         point_edge_hessian_speedup,
         point_edge_hessian_psd_speedup,
         edge_edge_hessian_speedup,
+        edge_edge_hessian_psd_speedup,
         point_triangle_tangent_speedup,
         edge_edge_tangent_speedup,
         point_edge_tangent_speedup,
@@ -1312,6 +1348,7 @@ def make_packet(
     point_edge_hessian_timing_ns = _timing_ns(point_edge_hessian_gpu_row)
     point_edge_hessian_psd_timing_ns = _timing_ns(point_edge_hessian_psd_gpu_row)
     edge_edge_hessian_timing_ns = _timing_ns(edge_edge_hessian_gpu_row)
+    edge_edge_hessian_psd_timing_ns = _timing_ns(edge_edge_hessian_psd_gpu_row)
     point_triangle_tangent_timing_ns = _timing_ns(point_triangle_tangent_gpu_row)
     edge_edge_tangent_timing_ns = _timing_ns(edge_edge_tangent_gpu_row)
     point_edge_tangent_timing_ns = _timing_ns(point_edge_tangent_gpu_row)
@@ -1579,6 +1616,22 @@ def make_packet(
                 "timing_ns": edge_edge_hessian_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(edge_edge_hessian_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(edge_edge_hessian_gpu_row),
+            },
+            "edge_edge_barrier_hessian_psd_projection": {
+                "sample_count": sample_count,
+                "active_barrier_count": edge_edge_hessian_psd_cpu_active,
+                "max_barrier_value": _counter(
+                    edge_edge_hessian_psd_cpu_row, "max_barrier_value"
+                ),
+                "max_result_abs_error": edge_edge_hessian_psd_max_error,
+                "speedup": edge_edge_hessian_psd_speedup,
+                "meets_speedup_gate": edge_edge_hessian_psd_speedup >= speedup_gate,
+                "timing_ns": edge_edge_hessian_psd_timing_ns,
+                "psd_projection_ns": _counter(
+                    edge_edge_hessian_psd_gpu_row, "psd_projection_ns"
+                ),
+                "cpu_benchmark_row": _packet_row_name(edge_edge_hessian_psd_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(edge_edge_hessian_psd_gpu_row),
             },
             "point_triangle_tangent_stencil": {
                 "sample_count": sample_count,
