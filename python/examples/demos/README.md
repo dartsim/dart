@@ -200,7 +200,7 @@ plus a warning block if any selected row is missing those fields.
 | 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | SI fixed, executor, friction, speed, backspin         | Spin/roll axis, slip speed, roll ratio, spin change, metrics   |
 | 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics  |
 | 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | SI vs IPC, pusher speed, friction, pusher mass        | Pusher-contact axis, travel divergence, contact/proximity      |
-| 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
+| 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | IPC grip/slip vs SI caveat, speed, friction, executor | Tangential axis, box travel, slip, caveat, contacts            |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts        |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
@@ -576,14 +576,19 @@ rigid-body path. Three lanes make the expected behavior and caveat visible: IPC
 with grip friction carries a box on a moving kinematic support, IPC with zero
 friction lets the support slip under the box, and the sequential-impulse lane
 shows the current static-like caveat for kinematic bodies. The panel exposes
-driver speed, grip friction, executor choice, driver travel, box travel, slip,
-speed ratio, support gap, and step timing.
-Capture metrics record the IPC grip/slip lanes, the sequential-impulse caveat
-lane, solver enums, friction modes, controls, per-lane driver travel, box
-travel, slip, speed ratio, support gap, contact count, status, step timing, and
-compact history ranges. The shared Replay panel uses the IPC grip lane's box
-travel as its value track and marks contact, carried-progress, slip, and
-static-like caveat frames.
+the prescribed tangential contact-response comparison axis, held-fixed
+executor, tangential support, box mass, and time step, then shows driver speed,
+grip friction, executor choice, driver travel, box travel, slip, speed ratio,
+support gap, and step timing.
+Capture metrics record the comparison axis, solver/case pair, held-fixed
+values, IPC grip/slip lanes, the sequential-impulse caveat lane, solver enums,
+friction modes, controls, per-lane driver travel, box travel, slip, speed
+ratio, support gap, contact count, status, step timing, and compact history
+ranges. The workflow review card surfaces IPC grip box travel, grip speed
+ratio, low-friction slip, sequential-impulse caveat driver travel, IPC grip
+proximity gap, and solver pair as latest signals. The shared Replay panel
+uses the IPC grip lane's box travel as its value track and marks contact,
+carried-progress, slip, and static-like caveat frames.
 
 The **`rigid_kinematic_normal_push`** scene keeps the next prescribed-motion
 question separate: what happens when a kinematic paddle moves normally into a

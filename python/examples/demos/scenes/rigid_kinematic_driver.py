@@ -280,6 +280,11 @@ class _RigidKinematicDriver:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _step_profile_ms(self, world: Any) -> float:
         try:
             profile = world.last_step_profile
@@ -377,8 +382,7 @@ class _RigidKinematicDriver:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
-        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
-        self.executor_index = executor_index
+        executor_label = self._executor_label()
         lanes = {
             case.key: {
                 "label": case.label,
@@ -422,14 +426,24 @@ class _RigidKinematicDriver:
 
         return {
             "row": "rigid_kinematic_driver",
+            "comparison_axis": "prescribed_tangential_contact_response",
             "solver": "ipc_kinematic_driver_with_si_caveat",
-            "executor": self._executors[executor_index][0],
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
+            "held_fixed": {
+                "box_mass": 1.0,
+                "executor": executor_label,
+                "gravity_z": -9.81,
+                "kinematic_driver": "tangential support",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "drive_speed": float(self.drive_speed),
                 "grip_friction": float(self.grip_friction),
             },
+            "case_pair": [case.label for case in self.cases],
+            "solver_pair": [case.solver.name for case in self.cases],
             "lane_order": [case.key for case in self.cases],
             "ipc_grip_solver_enum": self.cases[0].solver.name,
             "ipc_grip_driver_travel": lane_metric("ipc_grip", "driver_travel"),
@@ -438,6 +452,7 @@ class _RigidKinematicDriver:
             "ipc_grip_speed_ratio": lane_metric("ipc_grip", "speed_ratio"),
             "ipc_grip_support_gap": lane_metric("ipc_grip", "support_gap"),
             "ipc_grip_contact_count": lane_metric("ipc_grip", "contact_count"),
+            "ipc_grip_min_abs_support_gap": min_abs(gap_history["ipc_grip"]),
             "ipc_grip_step_ms": lane_metric("ipc_grip", "step_ms"),
             "ipc_slip_solver_enum": self.cases[1].solver.name,
             "ipc_slip_driver_travel": lane_metric("ipc_slip", "driver_travel"),
@@ -446,6 +461,7 @@ class _RigidKinematicDriver:
             "ipc_slip_speed_ratio": lane_metric("ipc_slip", "speed_ratio"),
             "ipc_slip_support_gap": lane_metric("ipc_slip", "support_gap"),
             "ipc_slip_contact_count": lane_metric("ipc_slip", "contact_count"),
+            "ipc_slip_min_abs_support_gap": min_abs(gap_history["ipc_slip"]),
             "ipc_slip_step_ms": lane_metric("ipc_slip", "step_ms"),
             "si_caveat_solver_enum": self.cases[2].solver.name,
             "si_caveat_driver_travel": lane_metric("si_caveat", "driver_travel"),
@@ -705,6 +721,14 @@ class _RigidKinematicDriver:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: prescribed tangential contact response")
+        builder.text(
+            f"held fixed: executor {self._executor_label()} | tangential kinematic "
+            f"support | box mass 1.0 | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
+        builder.text(
+            "solver lanes: IPC grip, IPC low-friction slip, Sequential impulse caveat"
+        )
         builder.text("mode: prescribed kinematic support")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")

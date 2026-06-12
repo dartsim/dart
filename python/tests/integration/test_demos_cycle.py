@@ -3483,14 +3483,27 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_kinematic_driver"
+    assert (
+        capture_metrics["comparison_axis"]
+        == "prescribed_tangential_contact_response"
+    )
     assert capture_metrics["solver"] == "ipc_kinematic_driver_with_si_caveat"
-    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["kinematic_driver"] == "tangential support"
+    assert capture_metrics["held_fixed"]["time_step_ms"] == pytest.approx(
+        capture_metrics["time_step_ms"]
+    )
     assert capture_metrics["controls"]["drive_speed"] == pytest.approx(
         controller.drive_speed
     )
     assert capture_metrics["controls"]["grip_friction"] == pytest.approx(
         controller.grip_friction
     )
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [
+        case.solver.name for case in controller.cases
+    ]
     assert capture_metrics["lane_order"] == [case.key for case in controller.cases]
     assert set(capture_metrics["lanes"]) == {"ipc_grip", "ipc_slip", "si_caveat"}
     assert capture_metrics["lanes"]["ipc_grip"]["rigid_body_solver"] == "IPC"
@@ -3501,6 +3514,9 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
     )
     assert capture_metrics["ipc_grip_box_travel"] == pytest.approx(
         grip["box_travel"]
+    )
+    assert capture_metrics["ipc_grip_min_abs_support_gap"] == pytest.approx(
+        min(abs(value) for value in controller._gap_history["ipc_grip"])
     )
     assert capture_metrics["ipc_slip_slip"] == pytest.approx(slip["slip"])
     assert capture_metrics["si_caveat_driver_travel"] == pytest.approx(

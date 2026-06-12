@@ -1132,6 +1132,36 @@ def test_rigid_workflow_latest_signals_prioritize_contact_push_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_kinematic_driver_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "case_pair": [
+                "IPC kinematic grip",
+                "IPC low-friction slip",
+                "Sequential impulse caveat",
+            ],
+            "executor": "Sequential",
+            "ipc_grip_box_travel": 0.087,
+            "ipc_grip_contact_count": 3.0,
+            "ipc_grip_min_abs_support_gap": 0.0007,
+            "ipc_grip_speed_ratio": 0.82,
+            "ipc_slip_slip": 0.106,
+            "si_caveat_driver_travel": 0.0,
+            "solver": "ipc_kinematic_driver_with_si_caveat",
+            "solver_pair": ["IPC", "IPC", "SEQUENTIAL_IMPULSE"],
+        }
+    )
+
+    assert highlights[:6] == [
+        "ipc grip box travel: 0.087",
+        "ipc grip speed ratio: 0.82",
+        "ipc slip slip: 0.106",
+        "si caveat driver travel: 0",
+        "ipc grip min abs support gap: 0.0007",
+        "solver pair: IPC / IPC / SEQUENTIAL_IMPULSE",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

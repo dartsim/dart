@@ -1213,6 +1213,14 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_kinematic_driver,
+            (
+                "text:comparison axis: prescribed tangential contact response",
+                "text:held fixed: executor Sequential | tangential kinematic support | box mass 1.0 | time step 4.0 ms",
+                "text:solver lanes: IPC grip, IPC low-friction slip, Sequential impulse caveat",
+            ),
+        ),
+        (
             rigid_kinematic_normal_push,
             (
                 "text:comparison axis: prescribed normal contact response",
