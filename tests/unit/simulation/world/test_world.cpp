@@ -2286,6 +2286,87 @@ void configureActiveRigidIpcMeshBarrierScene(dart::simulation::World& world)
       sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
 }
 
+void configureRigidIpcFixedJointConstraintScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setTimeStep(0.01);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  auto parent = world.addRigidBody("ipc_fixed_parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+  auto child = world.addRigidBody("ipc_fixed_child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
+  child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
+
+  (void)world.addRigidBodyFixedJoint("ipc_fixed_joint", parent, child);
+}
+
+void configureRigidIpcRevoluteJointConstraintScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+  namespace dvbd = sx::detail::deformable_vbd;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setTimeStep(0.001);
+  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  auto parent = world.addRigidBody("ipc_hinge_parent", parentOptions);
+  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  childOptions.mass = 1.0;
+  auto child = world.addRigidBody("ipc_hinge_child", childOptions);
+  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "ipc_hinge_joint", parent, child, Eigen::Vector3d::UnitZ());
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+      sx::detail::toRegistryEntity(joint.getEntity()));
+  config.localAnchorA = Eigen::Vector3d::Zero();
+  config.localAnchorB = -Eigen::Vector3d::UnitX();
+}
+
+void configureRigidIpcTwoBoxStackScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ipc_stack_ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+  sx::RigidBodyOptions lowerOptions;
+  lowerOptions.mass = 1.0;
+  lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.252);
+  auto lower = world.addRigidBody("ipc_stack_lower", lowerOptions);
+  lower.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+  sx::RigidBodyOptions upperOptions;
+  upperOptions.mass = 1.0;
+  upperOptions.position = Eigen::Vector3d(0.0, 0.0, 0.754);
+  auto upper = world.addRigidBody("ipc_stack_upper", upperOptions);
+  upper.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -6407,6 +6488,14 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC active barrier",
       configureActiveRigidIpcMeshBarrierScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC fixed joint",
+      configureRigidIpcFixedJointConstraintScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC revolute joint",
+      configureRigidIpcRevoluteJointConstraintScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

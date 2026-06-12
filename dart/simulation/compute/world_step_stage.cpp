@@ -10733,6 +10733,18 @@ void RigidIpcContactStage::prepare(World& world)
       m_scratch->surfaces,
       m_scratch->dynamicsTerms,
       m_scratch->payloadAllocator);
+  collectRigidIpcArticulationConstraints(
+      world, m_scratch->solverBodies, m_scratch->articulationConstraints);
+  const auto prewarmSolveSurfaces = [&](auto& solveSurfaces) {
+    solveSurfaces.assign(
+        m_scratch->surfaces.begin(), m_scratch->surfaces.end());
+  };
+  prewarmSolveSurfaces(m_scratch->solveResult.surfaces);
+  prewarmSolveSurfaces(m_scratch->solveScratch.laggedSurfaces);
+  prewarmSolveSurfaces(m_scratch->solveScratch.lineSearchStartSurfaces);
+  prewarmSolveSurfaces(m_scratch->solveScratch.candidateSurfaces);
+  prewarmSolveSurfaces(m_scratch->solveScratch.acceptedSurfaces);
+  prewarmSolveSurfaces(m_scratch->solveScratch.bestDecreasingSurfaces);
   std::size_t dynamicDofCount = 0u;
   for (const auto& surface : m_scratch->surfaces) {
     if (surface.dynamic) {
@@ -10764,6 +10776,24 @@ void RigidIpcContactStage::prepare(World& world)
   }
   assembly.activeConstraints.reserve(primitiveCapacity);
   assembly.activeFrictionConstraints.reserve(primitiveCapacity);
+
+  sxdetail::RigidIpcBarrierOptions barrierOptions;
+  barrierOptions.squaredActivationDistance
+      = m_options.activationDistance * m_options.activationDistance;
+  barrierOptions.stiffness
+      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
+  sxdetail::RigidIpcFrictionOptions frictionOptions;
+  frictionOptions.coefficient = 1.0;
+  frictionOptions.staticFrictionDisplacement
+      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
+  sxdetail::prewarmRigidIpcProjectedNewtonAssemblyScratch(
+      m_scratch->surfaces,
+      m_scratch->surfaces,
+      m_scratch->dynamicsTerms,
+      m_scratch->articulationConstraints,
+      barrierOptions,
+      frictionOptions,
+      m_scratch->solveScratch);
 }
 
 //==============================================================================

@@ -26,42 +26,22 @@ active barrier subcase failed before its fix with 157 global allocations / 7968
 bytes over four steps. The focused baked dynamic rigid IPC gate now covers both
 with zero global heap allocation.
 
-Critical live-WIP handoff after the final stop request: the shared checkout had
-uncommitted investigative rigid IPC changes when work stopped. They are
-preserved, without committing them as source, in
-`docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch`.
-The patch touches:
-
-- `dart/simulation/compute/world_step_stage.cpp`
-- `dart/simulation/detail/rigid_ipc_barrier.cpp`
-- `dart/simulation/detail/rigid_ipc_barrier.hpp`
-- `tests/unit/simulation/world/test_world.cpp`
-
-The WIP adds baked dynamic rigid IPC fixed-joint, revolute-joint, and two-box
-stack subcases. The fixed/revolute cases passed in the focused gate before the
-stack case was added. The stack case is the measured open gap:
-`World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` fails for
+Current continuation after the final stop request: the rigid IPC two-box stack
+WIP was completed and the temporary diagnostic patch was removed. The measured
+gap was `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failing for
 `dynamic rigid IPC two-box stack` with 1 global allocation / 96 bytes over the
-counted baked steps. The temporary backtrace points through
-`solveRigidIpcProjectedNewtonBarrierSystem()` into
-`assembleRigidIpcObjectiveSystemWithScratch()`.
+counted baked steps. The allocation came from free-list growth during
+projected-Newton objective assembly after a large aligned triplet-scratch
+request. `RigidIpcProjectedNewtonSolveScratch` now owns persistent
+assembly/line-search scratch constructed from the World allocator, and
+`RigidIpcContactStage::prepare()` prewarms same-shape solve/result surface
+buffers, articulation rows, and assembly scratch before counted steps.
 
-Do not commit the patch as-is. It includes temporary heap backtrace
-instrumentation in `tests/unit/simulation/world/test_world.cpp` and
-experimental rigid IPC prewarm/small-scratch edits that did not close the
-96-byte allocation. A fresh agent should continue from the local dirty checkout
-if present, or apply the patch to a clean branch with:
-
-```bash
-git apply docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch
-```
-
-Before producing a real commit, remove the debug-only heap logging, reassess or
-remove the experimental `prewarmRigidIpcProjectedNewtonAssemblyScratch()` API,
-and identify the actual allocator-backed object growing inside the
-two-box-stack assembly path. No lint, build, test, or CI verification was run
-after the critical stop request; the failing stack result came from the focused
-test job that was already in progress.
+The focused baked dynamic rigid IPC no-heap gate now also covers fixed-joint
+and revolute-joint articulated IPC constraints plus the two-box stack. The
+focused gate passed locally after the debug-only heap backtrace and free-list
+growth probes were removed. `pixi run lint`, `pixi run build`, focused rigid
+IPC world/barrier tests, and `pixi run test-unit` also pass for this slice.
 
 The maintainer then issued a critical stop request for handoff only, with no
 further verification. A `pixi run test-unit` job was in progress and was
@@ -107,11 +87,10 @@ git status -sb
 git log --oneline --decorate -5
 ```
 
-Expected status from a fresh clone after the handoff push: clean worktree,
-branch even with `origin/pr/hmm-phase45-follow-up-clean`, with the WIP patch
-available under this dev-task folder. Expected status in the shared local
-checkout may still show the four uncommitted WIP source/test files listed
-above.
+Expected status from a fresh clone after this slice is pushed: clean worktree,
+branch even with `origin/pr/hmm-phase45-follow-up-clean`. The obsolete live-WIP
+patch has been removed because the rigid IPC stack/articulation slice is now
+source work rather than a handoff artifact.
 
 Immediate next step: start from the pushed
 `pr/hmm-phase45-follow-up-clean` branch, choose the next remaining Phase 4/5
@@ -209,6 +188,34 @@ Verification run for the active dynamic rigid IPC barrier continuation:
 - `git diff --check`, `pixi run lint`, and `pixi run build` passed before the
   critical final handoff request.
 - Not completed because of the stop request: full `pixi run test-unit`.
+
+Verification run for the dynamic rigid IPC stack/articulation scratch
+continuation:
+
+- Before the fix:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failed for the
+  `dynamic rigid IPC two-box stack` subcase with 1 global allocation / 96 bytes
+  over four baked steps.
+- The temporary allocation trace identified free-list growth during
+  `assembleRigidIpcObjectiveSystemWithScratch()` through
+  `solveRigidIpcProjectedNewtonBarrierSystem()` after a large aligned
+  triplet-scratch request.
+- After the fix:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+&& build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+  passed with the debug-only heap/free-list logging removed.
+- A broader focused rigid IPC `test_world` filter passed:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`,
+  `World.RigidIpcContactStageSeparatesActivatedMeshBarrier`,
+  `World.RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics`,
+  `World.RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics`,
+  `World.RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration`,
+  `World.RigidIpcContactStageProjectsFixedJointPose`, and
+  `World.RigidIpcContactStageProjectsRevoluteJointHingeAxis`.
+- Full `build/default/cpp/Release/bin/test_rigid_ipc_barrier --gtest_color=no`
+  passed.
+- `git diff --check`, `pixi run lint`, `pixi run build`, and
+  `pixi run test-unit` passed. `pixi run test-unit` passed all 161 tests.
 
 Fresh-session reading order:
 

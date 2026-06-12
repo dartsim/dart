@@ -555,6 +555,8 @@ struct RigidIpcProjectedNewtonSolveResult
   }
 };
 
+struct RigidIpcProjectedNewtonSolveScratchWorkspace;
+
 struct RigidIpcProjectedNewtonSolveScratch
 {
   using SurfaceAllocator = dart::common::StlAllocator<RigidIpcBarrierSurface>;
@@ -562,6 +564,16 @@ struct RigidIpcProjectedNewtonSolveScratch
   RigidIpcProjectedNewtonSolveScratch() = default;
   explicit RigidIpcProjectedNewtonSolveScratch(
       dart::common::MemoryAllocator& allocator);
+  ~RigidIpcProjectedNewtonSolveScratch();
+
+  RigidIpcProjectedNewtonSolveScratch(
+      const RigidIpcProjectedNewtonSolveScratch&) = delete;
+  RigidIpcProjectedNewtonSolveScratch& operator=(
+      const RigidIpcProjectedNewtonSolveScratch&) = delete;
+  RigidIpcProjectedNewtonSolveScratch(
+      RigidIpcProjectedNewtonSolveScratch&& other) noexcept;
+  RigidIpcProjectedNewtonSolveScratch& operator=(
+      RigidIpcProjectedNewtonSolveScratch&& other) noexcept;
 
   dart::common::MemoryAllocator* memoryAllocator = nullptr;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> laggedSurfaces;
@@ -570,6 +582,7 @@ struct RigidIpcProjectedNewtonSolveScratch
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> acceptedSurfaces;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> bestDecreasingSurfaces;
   RigidIpcProjectedNewtonStep step;
+  RigidIpcProjectedNewtonSolveScratchWorkspace* workspace = nullptr;
 };
 
 /// Evaluates the IPC point-triangle barrier after rigid pose interpolation.
@@ -935,6 +948,20 @@ DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
     std::span<const RigidIpcBarrierSurface> surfaces,
     const RigidIpcProjectedNewtonSolveOptions& options,
     RigidIpcProjectedNewtonSolveResult& result,
+    RigidIpcProjectedNewtonSolveScratch& scratch);
+
+/// Prewarm solve-local projected-Newton assembly scratch for a same-shape
+/// solve. This performs assembly work but does not mutate input surfaces or
+/// solver results; allocator-backed storage owned by @p scratch remains
+/// reserved for later solves.
+DART_SIMULATION_API void prewarmRigidIpcProjectedNewtonAssemblyScratch(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    std::span<const RigidIpcArticulationConstraintInput>
+        articulationConstraints,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions,
     RigidIpcProjectedNewtonSolveScratch& scratch);
 
 /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
