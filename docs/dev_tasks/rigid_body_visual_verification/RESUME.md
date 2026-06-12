@@ -1,5 +1,48 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Checkpoint Snapshot - 2026-06-12 README Workflow Order
+
+The latest continuation starts after local checkpoint `325280d4483`
+(`Harden rigid workflow search and evidence docs`). It does not push or mutate
+GitHub state.
+
+Current local slice: README quick-workflow order labels. A read-only audit found
+no major remaining numbered-row implementation gap, but did find that the
+Python demo README quick table was ordered without visibly showing the same
+`01/36` through `36/36` labels used by the interactive navigator and PLAN-103
+sidecar. The README table now includes an `Order` column, and
+`test_rigid_visual_verification_readme_matches_sidecar_order` now verifies the
+README labels against the sidecar row numbers.
+
+Resume-state handoff:
+
+- The previous stop-only handoff has been superseded by a goal-continuation
+  turn. Continue the local README-order slice unless the user explicitly
+  redirects.
+- Pushes, PR creation, comments, CI re-triggers, and other GitHub mutations
+  still require explicit approval.
+- A parallel read-only audit found no concrete remaining implementation gap in
+  the non-numbered related/capture-first route surface. Its recommendation was
+  PR readiness and dev-task cleanup, not more route implementation.
+
+Validation collected before this resume-state docs edit:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+- reported `3 passed`.
+- `pixi run lint` passed before the previous stop-only handoff docs edit.
+- `git diff --check` passed before the previous stop-only handoff docs edit.
+
+Fresh-session resume instructions:
+
+1. Inspect the worktree and preserve the current five-file README-order slice
+   unless the user explicitly redirects.
+2. Re-run focused README-order tests, `pixi run lint`, and `git diff --check`;
+   then locally commit the slice if clean.
+3. After that checkpoint, either select the next bounded rigid GUI verification
+   improvement or, if the user asks to publish/finish, get explicit approval
+   before any push or GitHub mutation and settle the dev-task cleanup decision
+   in the completing PR.
+
 ## Current Checkpoint Snapshot - 2026-06-12 PR-Readiness And Workflow Search
 
 The latest continuation resumed from pushed checkpoint `f22db3b7751`

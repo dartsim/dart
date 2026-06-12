@@ -1,5 +1,54 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 README Workflow Order
+
+After local checkpoint `325280d4483`, a read-only audit found no major
+numbered-row implementation gap, but did find a small user-facing scanability
+gap: the interactive viewer and PLAN-103 sidecar show the curated workflow as
+`01/36` through `36/36`, while the Python demo README quick table only listed
+scene ids. The latest local slice adds an `Order` column to the README quick
+table and extends the README/sidecar drift guard so those visible order labels
+must match the durable PLAN-103 row numbers.
+
+Current local slice: README quick-workflow order labels. The checkpoint
+touches:
+
+- `python/examples/demos/README.md`
+- `python/tests/integration/test_demos_cycle.py`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+Resume-state handoff:
+
+- The previous stop-only handoff has been superseded by a goal-continuation
+  turn. Continue the local README-order slice unless the user explicitly
+  redirects.
+- Pushes, PR creation, comments, CI re-triggers, and other GitHub mutations
+  still require explicit approval.
+- A read-only route/capture-first audit found no concrete remaining
+  implementation gap in the non-numbered related/capture-first route surface;
+  the main remaining process item is PR readiness and dev-task cleanup once the
+  scope is accepted complete.
+
+Validation collected before this resume-state docs edit:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+  reported `3 passed`.
+- `pixi run lint` passed before the previous stop-only handoff docs edit.
+- `git diff --check` passed before the previous stop-only handoff docs edit.
+
+Fresh-session resume instructions:
+
+1. Inspect the worktree and preserve the current five-file README-order slice
+   unless the user explicitly redirects.
+2. Re-run focused README-order tests, `pixi run lint`, and `git diff --check`;
+   then locally commit the slice if clean.
+3. After that checkpoint, either select the next bounded rigid GUI verification
+   improvement or, if the user asks to publish/finish, get explicit approval
+   before any push or GitHub mutation and settle the dev-task cleanup decision
+   in the completing PR.
+
 ## Current Active Snapshot - 2026-06-12 PR-Readiness And Workflow Search
 
 The latest continuation resumed from pushed checkpoint `f22db3b7751` and
@@ -255,6 +304,10 @@ jobs: 1`). No push or GitHub mutation was performed.
       `Rigid Workflow` search now handles `SI`, backend/profile aliases, and
       related-route caveats without ranking negative caveats above intended
       solver rows. Focused drift and search guards reported `4 passed` each.
+- [x] README quick-order scanability: the Python demo README quick workflow
+      table now shows `01/36` through `36/36`, matching the viewer navigator
+      and PLAN-103 sidecar order, and the README/sidecar drift guard now checks
+      those visible labels. Focused README drift tests reported `3 passed`.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

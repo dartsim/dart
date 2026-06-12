@@ -3,8 +3,8 @@
 ## Current Local Continuation - 2026-06-12
 
 After the pushed capture-ownership checkpoint `f22db3b7751`, the active goal
-was explicitly continued. The latest local slice is PR-readiness/doc-drift
-hardening rather than a new GUI row:
+was explicitly continued. The latest local slices are PR-readiness/doc-drift
+hardening rather than new GUI rows:
 
 - The PLAN-103 evidence matrix and Python demo README now explicitly name
   capture-metrics coverage for `rigid_step_diagnostics`,
@@ -17,10 +17,17 @@ hardening rather than a new GUI row:
   as `SI`, `boxed LCP`, `step profile`, and `accelerated backend`, treats short
   tokens as exact words, and keeps related-route caveat text out of
   high-priority ranking.
+- The Python demo README quick workflow table now includes visible `01/36`
+  through `36/36` order labels, matching the interactive navigator and PLAN-103
+  sidecar.
 - A PR-readiness audit found no obvious next implementation row in the curated
   36-row workflow; remaining publication work is final validation, dev-task
   cleanup decision, and explicit maintainer/user approval before any GitHub
   mutation.
+- Resume-state handoff: the previous stop-only handoff has been superseded by
+  a goal-continuation turn. Continue local verification and checkpointing, but
+  do not push, open a PR, comment, re-trigger CI, or otherwise mutate GitHub
+  state without explicit approval.
 
 ## Current Publication State
 
@@ -190,6 +197,19 @@ hardening rather than a new GUI row:
     - passed with `953 passed, 10 skipped` using `DART safe jobs: 3`
   - `git diff --check`
     - passed after the final evidence update
+- Latest README workflow-order follow-up:
+  - The Python demo README quick workflow table now shows `01/36` through
+    `36/36`, matching the viewer navigator and PLAN-103 sidecar order.
+  - `test_rigid_visual_verification_readme_matches_sidecar_order` now verifies
+    the README order labels against the sidecar row numbers.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+    - `3 passed`
+  - `pixi run lint`
+    - passed before the previous stop-only handoff docs edit
+  - `git diff --check`
+    - passed before the previous stop-only handoff docs edit
+  - Next local resume gate: rerun focused README-order tests, `pixi run lint`,
+    and `git diff --check`, then checkpoint the slice if clean.
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,

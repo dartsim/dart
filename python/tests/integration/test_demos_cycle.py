@@ -217,10 +217,10 @@ def _read_rigid_visual_table_capture_specs() -> list[CaptureCommandSpec]:
     return rows
 
 
-def _read_rigid_visual_readme_workflow_ids() -> list[str]:
+def _read_rigid_visual_readme_workflow_rows() -> list[tuple[str, str]]:
     root = pathlib.Path(__file__).resolve().parents[3]
     readme = root / "python" / "examples" / "demos" / "README.md"
-    rows: list[str] = []
+    rows: list[tuple[str, str]] = []
     in_workflow_section = False
     for line in readme.read_text(encoding="utf-8").splitlines():
         if line.startswith("## "):
@@ -230,13 +230,20 @@ def _read_rigid_visual_readme_workflow_ids() -> list[str]:
                 line == "## Rigid body visual verification workflow"
             )
             continue
-        if not in_workflow_section or not line.startswith("| `"):
+        if not in_workflow_section or not line.startswith("| "):
             continue
         cells = [cell.strip() for cell in line.split("|")]
-        if len(cells) < 3:
+        if len(cells) < 4 or not re.fullmatch(r"\d{2}/\d{2}", cells[1]):
             continue
-        rows.append(cells[1].removeprefix("`").removesuffix("`"))
+        rows.append((cells[1], cells[2].removeprefix("`").removesuffix("`")))
     return rows
+
+
+def _read_rigid_visual_readme_workflow_ids() -> list[str]:
+    return [
+        scene_id
+        for _order_label, scene_id in _read_rigid_visual_readme_workflow_rows()
+    ]
 
 
 def _read_capture_command_specs(
@@ -1661,12 +1668,15 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
 
 
 def test_rigid_visual_verification_readme_matches_sidecar_order() -> None:
-    sidecar_ids = [
-        scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()
-    ]
-    readme_ids = _read_rigid_visual_readme_workflow_ids()
+    sidecar_rows = _read_rigid_visual_workflow_rows()
+    sidecar_ids = [scene_id for _order, scene_id in sidecar_rows]
+    readme_rows = _read_rigid_visual_readme_workflow_rows()
+    readme_ids = [scene_id for _order_label, scene_id in readme_rows]
 
     assert readme_ids == sidecar_ids
+    assert [order_label for order_label, _scene_id in readme_rows] == [
+        f"{order:02d}/{len(sidecar_rows):02d}" for order, _scene_id in sidecar_rows
+    ]
 
 
 def test_rigid_visual_verification_capture_commands_match_workflow() -> None:
