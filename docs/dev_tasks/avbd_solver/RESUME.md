@@ -63,13 +63,17 @@ Current checkout snapshot before this docs-only handoff edit:
 - Branch: `avbd/source-row-extraction-precheck`.
 - Upstream: `origin/avbd/source-row-extraction-precheck`.
 - Local HEAD:
-  `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`.
-- Status before this docs edit: clean, ahead of upstream by 14 commits.
+  `ba56bd46517 Add AVBD high-ratio sweep stability plot`.
+- Status before this docs edit: clean, ahead of upstream by 17 commits.
 - The `BM_AvbdPaperScaleHighRatioChainIterationSweep` benchmark row exists and
-  is wired into the display-name/dashboard-runner surfaces. Do not assume any
-  tracked sweep packet, plot data, same-hardware paper-number comparison, or
-  GPU parity claim exists unless a future session implements and verifies that
-  evidence.
+  is wired into the display-name/dashboard-runner surfaces. The branch now has
+  a tracked benchmark/stability packet,
+  `docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json`,
+  and a rendered SVG plot,
+  `docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`,
+  generated from a real four-budget sweep over the 50-link/50,000:1 fixture.
+  Do not treat that as a same-hardware paper-number comparison, broad
+  articulated stability proof, or GPU parity claim.
 - This stop-only handoff intentionally ran no lint/build/test/CI,
   `git diff --check`, PR refresh, or hosted rerun. The user explicitly asked
   for no further verification and to stop after the hand-off docs.
@@ -79,6 +83,9 @@ Current checkout snapshot before this docs-only handoff edit:
 Local-only commits above `origin/avbd/source-row-extraction-precheck`, newest
 first:
 
+- `ba56bd46517 Add AVBD high-ratio sweep stability plot`
+- `87a7825b1dc Add AVBD high-ratio iteration sweep packet`
+- `702e6021676 Record AVBD final handoff state`
 - `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`
 - `3732c21233d Record AVBD current-state gap audit`
 - `30c7e8f6239 Add AVBD direct fixed movable reset coverage`
@@ -98,7 +105,7 @@ Current local branch inventory:
 
 | Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                    |
 | -------------------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `8e12c559938`         | Current consolidated continuation branch; ahead of origin by 14 commits before this docs edit.        |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `ba56bd46517`         | Current consolidated continuation branch; ahead of origin by 17 commits before this docs edit.        |
 | `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch; do not mutate or rerun CI without explicit approval and a fresh PR status refresh.   |
 | `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
 | `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
@@ -114,12 +121,19 @@ Current local stash inventory. Do not apply or drop these by default:
 - `stash@{2}` through `stash@{7}` are older
   `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
 
-PR #2977 state was not refreshed during this stop-only handoff. Last known
-state from earlier in the session was that it remained open with one visible
-failing check, but that may be stale. A future session should refresh PR status
-read-only before deciding whether to address CI. Do not reply to bot comments
-or mutate review threads unless the user explicitly approves the required
-GitHub action.
+GitHub/PR state was not refreshed during this stop-only handoff. User-reported
+merged PRs during the broader AVBD split included #2967, #2968, #2969, #2973,
+and #2975. Last known PR #2977 state from earlier in the session was that it
+remained open with one visible failing check, but that may be stale. A future
+session should refresh PR status read-only before deciding whether to address
+CI. Do not reply to bot comments or mutate review threads unless the user
+explicitly approves the required GitHub action.
+
+Stopped next-work plan: after the sweep packet/plot commit, the next planned
+step was a read-only audit for a concrete broader articulated/fracture corpus
+coverage gap. That audit was not started after the user's stop directive. If a
+future user explicitly asks to resume implementation, start with that audit
+instead of assuming a missing case.
 
 Fresh-session recovery commands:
 

@@ -9,6 +9,24 @@ Corpus matrix:
 
 ## Current Status
 
+- Final stop handoff (2026-06-12): the user explicitly directed the session to
+  stop working further, only ensure the hand-off docs, and then literally
+  stop. Do not continue implementation, verification, hosted CI work, branch
+  cleanup, PR mutation, push, merge, or review-comment handling unless a future
+  user request explicitly asks for that specific action. The active checkout
+  before this docs-only handoff edit was
+  `avbd/source-row-extraction-precheck` at local HEAD `ba56bd46517`
+  (`Add AVBD high-ratio sweep stability plot`), tracking
+  `origin/avbd/source-row-extraction-precheck` and ahead by 17 local commits.
+  The branch now includes the high-ratio iteration sweep benchmark, tracked
+  packet JSON, and rendered SVG stability plot. This is still only benchmark
+  and packet evidence for a focused 50-link/50,000:1 fixture; it is not a
+  same-hardware paper-number comparison, broad articulated stability proof, or
+  GPU parity claim. No fresh lint/build/test/CI, `git diff --check`, PR
+  refresh, push, branch cleanup, merge, or stash operation was performed for
+  this stop-only handoff by explicit user direction. `RESUME.md` is the source
+  of truth for the current branch inventory, stash inventory, local-only
+  commits, PR caveats, stopped plan, and future recovery commands.
 - Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
   iteration sweep now has finite replay stability counters, a tracked
   benchmark/stability-plot packet,
@@ -36,19 +54,6 @@ Corpus matrix:
   passed the focused benchmark target build, benchmark registration list for
   `/25`, `/50`, `/100`, and `/200`, the focused Python dashboard tests,
   `pixi run lint`, `pixi run build`, and `git diff --check`.
-- Final stop handoff (2026-06-12): the user explicitly directed the session to
-  stop working further, only ensure the hand-off docs, and then literally stop.
-  The active checkout before this docs-only handoff edit was
-  `avbd/source-row-extraction-precheck` at local HEAD `8e12c559938`
-  (`Add AVBD high-ratio iteration sweep benchmark`), tracking
-  `origin/avbd/source-row-extraction-precheck` and ahead by 14 local commits.
-  The iteration-sweep benchmark row exists, but no tracked sweep packet, plot,
-  same-hardware paper-number comparison, or GPU parity claim should be assumed.
-  No fresh lint/build/test/CI, `git diff --check`, PR refresh, push, PR
-  mutation, branch cleanup, merge, or stash operation was performed for this
-  stop-only handoff by explicit user direction. `RESUME.md` is the source of
-  truth for the current branch inventory, stash inventory, local-only commits,
-  PR #2977 caveats, and future recovery commands.
 - Latest current-state audit (2026-06-12): the next-gap wording was refreshed
   against the current C++/dartpy tests and benchmark rows. The evidence now
   shows that narrow breakable benchmark rows, public world-fixed reset,
