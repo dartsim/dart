@@ -1,5 +1,33 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-12)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This branch supersedes
+`pr/hmm-phase45-follow-up-clean` and all older HMM follow-up branches as the
+single fresh-session entry point unless a maintainer explicitly redirects the
+work.
+
+Last implementation slice before this stop: `69e242c5258` (`Route live
+deformable storage through World memory`). It routes live deformable
+persistent component payloads through the World free allocator and updates the
+focused persistent-storage gate. The detailed scope, prior validation commands,
+and remaining gaps are recorded in the continuation section below.
+
+No verification was run for this hard-stop documentation update, by explicit
+maintainer instruction. A fresh session must rerun the relevant lint/build/test
+gate before publishing, opening a PR, or using any result as current evidence.
+
+Stop-state rules for the next agent:
+
+- Start from `pr/hmm-phase45-replay-snapshot-allocators`; do not resume from
+  older HMM branches unless a maintainer says so.
+- Treat this document and `RESUME.md` as the hand-off source of truth.
+- Do not continue optimizing from this stopped session. Start a fresh bounded
+  slice, collect evidence first, and avoid adding broad new scenes unless the
+  follow-up PR scope explicitly calls for them.
+
 ## Current Continuation (2026-06-12, Live Deformable Storage Allocators)
 
 Resume from exactly one branch:
