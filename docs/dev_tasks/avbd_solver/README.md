@@ -9,6 +9,29 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest critical handoff stop (2026-06-11): the user explicitly redirected
+  this session to stop implementation and focus only on hand-off, with no
+  further verification. The consolidated continuation branch remains
+  `avbd/source-row-extraction-precheck`; this final handoff captures the
+  current contact-manifold local-anchor reuse source/test/docs changes on top
+  of `ae19e3b0822` (`Avoid redundant AVBD contact tangent anchor transform`).
+  No lint/build/test/CI or `git diff --check` was run after the stop
+  instruction. Treat the validation bullets below as pre-stop evidence only,
+  and use `RESUME.md` as the source of truth for the branch inventory, stashes,
+  PR #2977 state, and next fresh-session plan.
+- Latest resumed follow-up (2026-06-12): rigid contact manifold row
+  construction now computes each active contact's body-local anchors once and
+  reuses them for both the normal row and the paired tangent friction rows.
+  `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` now also
+  verifies the normal/friction rows share those generated local anchors for a
+  non-origin contact. This is only a narrow rigid contact source-row extraction
+  cleanup and does not close any source CPU-win, GPU, or paper-number gate.
+- Latest resumed validation (2026-06-12): the contact-manifold local-anchor
+  reuse slice passed the focused rigid-block target, the focused
+  `AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows` filter,
+  the full `test_avbd_rigid_block` binary (95 tests), `pixi run lint`, and
+  `pixi run build`. This is only validation for the narrow source-row
+  extraction cleanup above.
 - Latest resumed follow-up (2026-06-11): rigid contact manifold friction row
   construction now passes a zero step-start relative position when both tangent
   anchors are initialized from the same world contact point, avoiding a

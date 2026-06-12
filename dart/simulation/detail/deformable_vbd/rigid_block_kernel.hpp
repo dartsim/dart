@@ -1970,6 +1970,7 @@ inline void applyAvbdRigidBodyStep(
 struct AvbdRigidContactManifoldRowScratch
 {
   std::vector<AvbdRigidContactManifoldPoint> activeContacts;
+  std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>> contactLocalPoints;
   std::vector<AvbdScalarRowDescriptor> normalDescriptors;
   std::vector<AvbdScalarRowDescriptor> frictionDescriptors;
   std::vector<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
@@ -2057,6 +2058,15 @@ inline void buildAvbdRigidContactManifoldRows(
   normalInventory.reserve(normalDescriptors.size());
   normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
 
+  auto& contactLocalPoints = scratch.contactLocalPoints;
+  contactLocalPoints.clear();
+  contactLocalPoints.reserve(activeContacts.size());
+  for (const AvbdRigidContactManifoldPoint& contact : activeContacts) {
+    contactLocalPoints.emplace_back(
+        avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point),
+        avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point));
+  }
+
   auto& frictionDescriptors = scratch.frictionDescriptors;
   frictionDescriptors.clear();
   frictionDescriptors.reserve(2 * activeContacts.size());
@@ -2101,12 +2111,13 @@ inline void buildAvbdRigidContactManifoldRows(
        ++i) {
     const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
     const AvbdScalarRowRecord& record = normalInventory[i];
+    const auto& localPoints = contactLocalPoints[i];
     AvbdRigidBodyPointPairRow indexedRow;
     indexedRow.bodyA = contact.bodyA;
     indexedRow.bodyB = contact.bodyB;
     indexedRow.row = makeAvbdRigidContactNormalRow(
-        avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point),
-        avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point),
+        localPoints.first,
+        localPoints.second,
         -contact.normalFromAtoB,
         contact.depth,
         record.state,
@@ -2127,10 +2138,7 @@ inline void buildAvbdRigidContactManifoldRows(
     const AvbdRigidContactManifoldPoint& contact = activeContacts[contactIndex];
     AvbdScalarRowRecord& firstRecord = frictionInventory[firstRecordIndex];
     AvbdScalarRowRecord& secondRecord = frictionInventory[secondRecordIndex];
-    const Eigen::Vector3d localPointA
-        = avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point);
-    const Eigen::Vector3d localPointB
-        = avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point);
+    const auto& localPoints = contactLocalPoints[contactIndex];
     // Both friction anchors are initialized from the same world contact point.
     const Eigen::Vector3d stepStartRelativePosition = Eigen::Vector3d::Zero();
     const Eigen::Matrix<double, 3, 2> basis
@@ -2164,8 +2172,8 @@ inline void buildAvbdRigidContactManifoldRows(
     indexedRows.bodyA = contact.bodyA;
     indexedRows.bodyB = contact.bodyB;
     indexedRows.first = makeAvbdRigidContactFrictionTangentRow(
-        localPointA,
-        localPointB,
+        localPoints.first,
+        localPoints.second,
         basis.col(0),
         stepStartRelativePosition,
         forceLimitFromBounds(firstRecord.descriptor.bounds),
@@ -2173,8 +2181,8 @@ inline void buildAvbdRigidContactManifoldRows(
         0.0);
     indexedRows.first.bounds = firstRecord.descriptor.bounds;
     indexedRows.second = makeAvbdRigidContactFrictionTangentRow(
-        localPointA,
-        localPointB,
+        localPoints.first,
+        localPoints.second,
         basis.col(1),
         stepStartRelativePosition,
         forceLimitFromBounds(secondRecord.descriptor.bounds),

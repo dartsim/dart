@@ -1114,6 +1114,26 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
   EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.upper, 4.0);
   EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.lower, -4.0);
   EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.upper, 4.0);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointA - normalRows[0].row.localPointA)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointB - normalRows[0].row.localPointB)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.localPointA - normalRows[0].row.localPointA)
+          .norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.localPointB - normalRows[0].row.localPointB)
+          .norm(),
+      0.0,
+      1e-12);
   EXPECT_NEAR(frictionRows[0].first.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
   EXPECT_NEAR(frictionRows[0].second.axis.dot(Vec3::UnitX()), 0.0, 1e-12);
   EXPECT_NEAR(
