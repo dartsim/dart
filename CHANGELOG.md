@@ -1446,6 +1446,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     interior point, replacing silent clamps and invalid numerical branches with
     explicit `InvalidProblem` diagnostics for invalid Python or C++ tuning
     values.
+  - Updated `StaggeringSolver::supportsProblem()` to report native support only
+    for friction-index packets with both normal and friction rows; standard and
+    boxed no-friction packets remain solvable through fallback delegation but
+    are no longer advertised as native Staggering comparisons.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

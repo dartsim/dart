@@ -1,5 +1,54 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation — Staggering Native Support Reporting
+
+After the stop-only hand-off, work resumed on the broad LCP solver/interface
+goal. This slice tightens Staggering capability reporting so benchmark and demo
+metadata distinguish native Staggering solves from Dantzig fallback solves.
+
+Current slice:
+
+- `StaggeringSolver::supportsProblem()` now reports native support only for
+  friction-index packets containing both normal and friction rows.
+- Standard, boxed no-friction, near-standard, and large standard packets now
+  report false for Staggering native support because those paths are delegated,
+  even though `solve()` can still succeed through the existing fallback path.
+- C++ smoke coverage checks the standard, boxed, near-standard, large standard,
+  and friction-index support predicates, including explicit fallback solve
+  behavior on a standard packet.
+- dartpy LCP tests mirror the C++ support-predicate expectations and keep a
+  fallback solve success check for a standard packet.
+- `CHANGELOG.md` records the native-support-reporting behavior.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_all_solvers_smoke \
+  --gtest_filter='AllSolversSmokeTest.SolverCapabilityPredicatesClassifyProblemForms:AllSolversSmokeTest.SolverCapabilityPredicatesUseDefaultToleranceForNearStandardForm:AllSolversSmokeTest.StaggeringReportsOnlyFrictionBlockProblemsAsNative:AllSolversSmokeTest.NearSingularStandardProblemProducesExpectedIterates'
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+pixi run lint
+```
+
+Observed results:
+
+- The C++ smoke target and dartpy rebuilt successfully.
+- Focused C++ smoke coverage passed 4/4 tests.
+- `python/tests/unit/math/test_lcp.py`: 78 passed.
+- `pixi run test-lcpsolver`: 17/17 C++ LCP tests passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+
+Immediate next step after this checkpoint:
+
+- Continue the broad DART 7 LCP objective with the next concrete solver,
+  interface, demo, or performance gap. Do not mark the overall goal complete
+  from this focused support-reporting slice.
+
 ## 2026-06-12 Current Continuation — Remaining Parameter Validation
 
 The user resumed the broad LCP solver/interface/demo goal after the stop-only

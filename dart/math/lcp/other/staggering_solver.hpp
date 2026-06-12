@@ -53,6 +53,11 @@ public:
   std::string getName() const override;
   std::string getCategory() const override;
 
+  using LcpSolver::supportsProblem;
+
+  bool supportsProblem(
+      const LcpProblem& problem, double standardTolerance) const override;
+
   bool supportsBoxedLcp() const override
   {
     return true;

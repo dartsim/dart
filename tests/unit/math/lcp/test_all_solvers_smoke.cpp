@@ -33,6 +33,8 @@
 #include "tests/common/lcpsolver/lcp_problem_factory.hpp"
 #include "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 
+#include <dart/math/lcp/other/staggering_solver.hpp>
+
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -175,9 +177,14 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
     ASSERT_NE(solver, nullptr) << solverCase.name;
-    EXPECT_EQ(solver->supportsProblem(standard.problem), true)
+    const bool isDirect = std::string_view(solverCase.name) == "Direct";
+    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
+
+    EXPECT_EQ(solver->supportsProblem(standard.problem), !isStaggering)
         << solverCase.name;
-    EXPECT_EQ(solver->supportsProblem(boxed.problem), solverCase.supportsBoxed)
+    EXPECT_EQ(
+        solver->supportsProblem(boxed.problem),
+        solverCase.supportsBoxed && !isStaggering)
         << solverCase.name;
     EXPECT_EQ(
         solver->supportsProblem(friction.problem),
@@ -185,7 +192,7 @@ TEST_F(AllSolversSmokeTest, SolverCapabilityPredicatesClassifyProblemForms)
         << solverCase.name;
     EXPECT_EQ(
         solver->supportsProblem(largeStandard.problem),
-        std::string_view(solverCase.name) != "Direct")
+        !isDirect && !isStaggering)
         << solverCase.name
         << " should report only actual native per-problem support";
   }
@@ -208,14 +215,36 @@ TEST_F(
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
     ASSERT_NE(solver, nullptr) << solverCase.name;
-    EXPECT_TRUE(solver->supportsProblem(problem))
+    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
+    EXPECT_EQ(solver->supportsProblem(problem), !isStaggering)
         << solverCase.name
-        << " should use its default tolerance for near-standard bounds";
-    EXPECT_EQ(solver->supportsProblem(problem, 0.0), solverCase.supportsBoxed)
+        << " should use its native route with the default tolerance";
+    EXPECT_EQ(
+        solver->supportsProblem(problem, 0.0),
+        solverCase.supportsBoxed && !isStaggering)
         << solverCase.name
         << " should still allow exact classification when requested";
-    EXPECT_TRUE(solver->supportsProblem(problem, 1e-8)) << solverCase.name;
+    EXPECT_EQ(solver->supportsProblem(problem, 1e-8), !isStaggering)
+        << solverCase.name;
   }
+}
+
+TEST_F(AllSolversSmokeTest, StaggeringReportsOnlyFrictionBlockProblemsAsNative)
+{
+  StaggeringSolver solver;
+  const auto standard = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+  const auto friction = LcpProblemFactory::singleContactFriction();
+
+  EXPECT_FALSE(solver.supportsProblem(standard.problem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_TRUE(solver.supportsProblem(friction.problem));
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result
+      = solver.solve(standard.problem, x, solver.getDefaultOptions());
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_TRUE(x.array().isFinite().all());
 }
 
 TEST_F(AllSolversSmokeTest, MprgpReportsOnlyNativeSpdStandardProblems)
@@ -362,9 +391,10 @@ TEST_F(AllSolversSmokeTest, NearSingularStandardProblemProducesExpectedIterates)
   for (const auto& solverCase : kLcpSolverManifest) {
     const auto solver = solverCase.create();
     ASSERT_NE(solver, nullptr) << solverCase.name;
+    const bool isDirect = std::string_view(solverCase.name) == "Direct";
+    const bool isStaggering = std::string_view(solverCase.name) == "Staggering";
     EXPECT_EQ(
-        solver->supportsProblem(problem.problem),
-        std::string_view(solverCase.name) != "Direct")
+        solver->supportsProblem(problem.problem), !isDirect && !isStaggering)
         << solverCase.name
         << " should report native support only for actual direct solves";
 

@@ -76,6 +76,35 @@ StaggeringSolver::StaggeringSolver()
 }
 
 //==============================================================================
+bool StaggeringSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  if (problem.empty()) {
+    return true;
+  }
+
+  if (!LcpSolver::supportsProblem(problem, standardTolerance)) {
+    return false;
+  }
+
+  if (problem.getType(standardTolerance) != LcpProblemType::FrictionIndex) {
+    return false;
+  }
+
+  bool hasNormalBlock = false;
+  bool hasFrictionBlock = false;
+  for (Eigen::Index i = 0; i < problem.findex.size(); ++i) {
+    if (problem.findex[i] >= 0) {
+      hasFrictionBlock = true;
+    } else {
+      hasNormalBlock = true;
+    }
+  }
+
+  return hasNormalBlock && hasFrictionBlock;
+}
+
+//==============================================================================
 LcpResult StaggeringSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {

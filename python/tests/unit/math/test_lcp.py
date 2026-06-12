@@ -222,7 +222,9 @@ def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> No
     assert solver.supports_standard_lcp()
     assert solver.supports_boxed_lcp() is supports_boxed
     assert solver.supports_friction_index() is supports_findex
-    assert solver.supports_problem(problem)
+    assert solver.supports_problem(problem) is (
+        solver_type is not dart.StaggeringSolver
+    )
     assert result.status in (
         dart.LcpSolverStatus.SUCCESS,
         dart.LcpSolverStatus.MAX_ITERATIONS,
@@ -248,9 +250,34 @@ def test_lcp_solver_capabilities_classify_problem_forms(solver_type: type) -> No
     supports_boxed = solver_type in BOXED_SOLVERS
     supports_findex = solver_type in FINDEX_SOLVERS
 
-    assert solver.supports_problem(standard)
-    assert solver.supports_problem(boxed) is supports_boxed
+    is_staggering = solver_type is dart.StaggeringSolver
+
+    assert solver.supports_problem(standard) is (not is_staggering)
+    assert solver.supports_problem(boxed) is (supports_boxed and not is_staggering)
     assert solver.supports_problem(findex) is supports_findex
+
+
+def test_staggering_solver_reports_only_friction_blocks_as_native() -> None:
+    solver = dart.StaggeringSolver()
+    standard = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]))
+    boxed = dart.LcpProblem(
+        np.eye(2), np.array([1.0, 2.0]), np.array([-1.0, 0.0]), np.ones(2)
+    )
+    findex = dart.LcpProblem(
+        np.eye(2),
+        np.array([1.0, 2.0]),
+        np.array([0.0, -1.0]),
+        np.array([np.inf, 1.0]),
+        np.array([-1, 0], dtype=np.int32),
+    )
+
+    assert not solver.supports_problem(standard)
+    assert not solver.supports_problem(boxed)
+    assert solver.supports_problem(findex)
+
+    result, solution = solver.solve(standard)
+    assert result.status == dart.LcpSolverStatus.SUCCESS
+    np.testing.assert_allclose(solution, [1.0, 2.0], atol=1e-6)
 
 
 def _assert_parameter_value(actual: object, expected: object) -> None:
