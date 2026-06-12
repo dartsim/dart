@@ -9,6 +9,18 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-11): combined rigid linear/angular motor
+  source-row construction now has reusable private active-row scratch for the
+  large-input path, and the World contact solve scratch reserves/reuses that
+  storage across frames. The existing small-input stack path and public
+  scratch-free overload remain intact. Local validation passed the focused
+  rigid-block target build, the focused motor/world-solve filter (4 tests), the
+  full `test_avbd_rigid_block` binary (96 tests), the focused
+  `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` no-heap
+  smoke, `pixi run lint`, `pixi run build`, and `git diff --check`. This is
+  only source-row extraction overhead cleanup, not a source CPU-win, GPU, or
+  paper-number claim. No push, PR mutation, hosted CI rerun, merge, or branch
+  cleanup was performed.
 - Latest resumed checkpoint (2026-06-11): work resumed after the prior
   stop-only handoff to finish the contact-manifold small-row scratch cleanup on
   the consolidated local branch `avbd/source-row-extraction-precheck`.

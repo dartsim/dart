@@ -273,7 +273,7 @@ struct AvbdRigidWorldContactSolveScratch
   AvbdRigidContactManifoldRowScratch contactRows;
   AvbdRigidPointJointRowScratch jointLinearRowsScratch;
   AvbdRigidPointJointRowScratch jointAngularRowsScratch;
-  AvbdRigidAngularMotorRowScratch motorRowsScratch;
+  AvbdRigidMotorRowScratch motorRowsScratch;
   AvbdRigidDistanceSpringRowScratch distanceSpringRowsScratch;
   std::vector<AvbdRigidBodyPointPairRow> normalRows;
   std::vector<AvbdRigidBodyPointPairFrictionRows> frictionRows;
@@ -332,8 +332,8 @@ inline void reserveAvbdRigidWorldContactSolveScratch(
   scratch.jointLinearRowsScratch.descriptors.reserve(3u * jointCapacity);
   scratch.jointAngularRowsScratch.activeRows.reserve(3u * jointCapacity);
   scratch.jointAngularRowsScratch.descriptors.reserve(3u * jointCapacity);
-  scratch.motorRowsScratch.activeRows.reserve(motorCapacity);
-  scratch.motorRowsScratch.descriptors.reserve(motorCapacity);
+  scratch.motorRowsScratch.activeLinearRows.reserve(motorCapacity);
+  scratch.motorRowsScratch.activeAngularRows.reserve(motorCapacity);
   scratch.distanceSpringRowsScratch.activeRows.reserve(distanceSpringCapacity);
   scratch.normalRows.reserve(contactCapacity);
   scratch.frictionRows.reserve(contactCapacity);
@@ -2085,6 +2085,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       linearMotorRows,
       motorRows,
       timeStep,
+      scratch.motorRowsScratch,
       options.warmStart);
   result.motorRows = linearMotorRows.size() + motorRows.size();
 

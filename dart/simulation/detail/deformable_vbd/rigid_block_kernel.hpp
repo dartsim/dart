@@ -1995,6 +1995,12 @@ struct AvbdRigidAngularMotorRowScratch
   std::vector<AvbdScalarRowDescriptor> descriptors;
 };
 
+struct AvbdRigidMotorRowScratch
+{
+  std::vector<const AvbdRigidLinearMotor*> activeLinearRows;
+  std::vector<const AvbdRigidAngularMotor*> activeAngularRows;
+};
+
 struct AvbdRigidDistanceSpringRowScratch
 {
   std::vector<const AvbdRigidBodyPointPairDistanceSpringRow*> activeRows;
@@ -2721,6 +2727,7 @@ inline void buildAvbdRigidMotorRows(
     std::vector<AvbdRigidBodyPointPairRow>& linearMotorRows,
     std::vector<AvbdRigidBodyAngularPairRow>& angularMotorRows,
     double timeStep,
+    AvbdRigidMotorRowScratch& scratch,
     const AvbdRowWarmStartOptions& warmStartOptions = {})
 {
   const auto appendMotorRows = [&](const auto& activeLinearRows,
@@ -2840,9 +2847,11 @@ inline void buildAvbdRigidMotorRows(
     return;
   }
 
-  std::vector<const AvbdRigidLinearMotor*> activeLinearRows;
+  auto& activeLinearRows = scratch.activeLinearRows;
+  activeLinearRows.clear();
   activeLinearRows.reserve(linearMotors.size());
-  std::vector<const AvbdRigidAngularMotor*> activeAngularRows;
+  auto& activeAngularRows = scratch.activeAngularRows;
+  activeAngularRows.clear();
   activeAngularRows.reserve(angularMotors.size());
   for (const AvbdRigidLinearMotor& motor : linearMotors) {
     if (!detail::isValidAvbdRigidLinearMotor(motor, states.size(), timeStep)) {
@@ -2909,6 +2918,30 @@ inline void buildAvbdRigidMotorRows(
       activeLinearRows.size(),
       activeAngularRows,
       activeAngularRows.size());
+}
+
+//==============================================================================
+inline void buildAvbdRigidMotorRows(
+    const std::vector<AvbdRigidBodyState>& states,
+    std::span<const AvbdRigidLinearMotor> linearMotors,
+    std::span<const AvbdRigidAngularMotor> angularMotors,
+    AvbdScalarRowInventory& motorInventory,
+    std::vector<AvbdRigidBodyPointPairRow>& linearMotorRows,
+    std::vector<AvbdRigidBodyAngularPairRow>& angularMotorRows,
+    double timeStep,
+    const AvbdRowWarmStartOptions& warmStartOptions = {})
+{
+  AvbdRigidMotorRowScratch scratch;
+  buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      timeStep,
+      scratch,
+      warmStartOptions);
 }
 
 //==============================================================================

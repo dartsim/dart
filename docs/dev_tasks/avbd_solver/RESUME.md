@@ -7,6 +7,24 @@ deformable row coverage with evidence against the native source corpus. Do not
 count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
+Current resumed checkpoint: combined rigid linear/angular motor source-row
+construction now has a scratch-taking overload for reusable large-input active
+row pointer storage. The public overload keeps the local scratch fallback for
+direct callers, while `AvbdRigidWorldContactSolveScratch` now owns and reserves
+that motor-row scratch so `solveAvbdRigidWorldContactSnapshot()` does not build
+temporary active linear/angular motor vectors on larger configured worlds. Local
+validation for this slice passed
+`pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`,
+the focused
+`AvbdRigidBlock.RigidMotorBuilderReusesLargeInputScratch:AvbdRigidBlock.RigidAngularMotorBuilderCreatesBoundedRows:AvbdRigidBlock.RigidLinearMotorBuilderCreatesBoundedRows:AvbdRigidBlock.RigidWorldSolveClearsAbsentRowFamilyInventories`
+filter, the full `test_avbd_rigid_block` binary (96 tests),
+`pixi run -- cmake --build build/default/cpp/Release --target test_world`, the
+focused `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` no-heap
+smoke, `pixi run lint`, `pixi run build`, and `git diff --check`. This remains
+only source-row extraction overhead cleanup, not a source CPU-win, GPU, or
+paper-number claim. No push, PR mutation, hosted CI rerun, merge, or branch
+cleanup was performed.
+
 Current resumed checkpoint: after the prior stop-only handoff, work resumed on
 `avbd/source-row-extraction-precheck` to finish the contact-manifold small-row
 scratch cleanup. `buildAvbdRigidContactManifoldRows()` now moves shared row

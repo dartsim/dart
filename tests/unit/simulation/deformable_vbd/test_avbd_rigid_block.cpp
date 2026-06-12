@@ -1667,6 +1667,102 @@ TEST(AvbdRigidBlock, RigidLinearMotorBuilderCreatesBoundedRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidMotorBuilderReusesLargeInputScratch)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[1].position = 2.0 * Vec3::UnitX();
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  std::vector<vbd::AvbdRigidLinearMotor> linearMotors;
+  linearMotors.reserve(9);
+  for (std::uint32_t row = 0; row < 9u; ++row) {
+    linearMotors.push_back(
+        vbd::makeAvbdRigidLinearMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Vec3::Zero(),
+            Vec3::Zero(),
+            Vec3::UnitX(),
+            /*targetSpeed=*/0.75,
+            /*maxForce=*/6.0,
+            /*startStiffness=*/50.0,
+            /*maxStiffness=*/400.0,
+            row));
+  }
+
+  std::vector<vbd::AvbdRigidAngularMotor> angularMotors;
+  angularMotors.reserve(8);
+  for (std::uint32_t row = 0; row < 8u; ++row) {
+    angularMotors.push_back(
+        vbd::makeAvbdRigidAngularMotor(
+            /*bodyA=*/0,
+            /*bodyB=*/1,
+            endpointA,
+            endpointB,
+            Eigen::Quaterniond::Identity(),
+            Vec3::UnitZ(),
+            /*targetSpeed=*/1.0,
+            /*maxTorque=*/4.0,
+            /*startStiffness=*/70.0,
+            /*maxStiffness=*/500.0,
+            100u + row));
+  }
+
+  vbd::AvbdScalarRowInventory motorInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearMotorRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularMotorRows;
+  vbd::AvbdRigidMotorRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(motorInventory.size(), 17u);
+  EXPECT_EQ(linearMotorRows.size(), linearMotors.size());
+  EXPECT_EQ(angularMotorRows.size(), angularMotors.size());
+  EXPECT_EQ(scratch.activeLinearRows.size(), linearMotors.size());
+  EXPECT_EQ(scratch.activeAngularRows.size(), angularMotors.size());
+  EXPECT_EQ(motorInventory[0].descriptor.key.row, 0u);
+  EXPECT_EQ(motorInventory[8].descriptor.key.row, 8u);
+  EXPECT_EQ(motorInventory[9].descriptor.key.row, 100u);
+  EXPECT_EQ(motorInventory[16].descriptor.key.row, 107u);
+
+  const std::size_t linearCapacity = scratch.activeLinearRows.capacity();
+  const std::size_t angularCapacity = scratch.activeAngularRows.capacity();
+  motorInventory[0].state.lambda = 3.0;
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      motorInventory,
+      linearMotorRows,
+      angularMotorRows,
+      /*timeStep=*/0.2,
+      scratch,
+      warmStart);
+
+  EXPECT_EQ(scratch.activeLinearRows.capacity(), linearCapacity);
+  EXPECT_EQ(scratch.activeAngularRows.capacity(), angularCapacity);
+  EXPECT_EQ(linearMotorRows.size(), linearMotors.size());
+  EXPECT_EQ(angularMotorRows.size(), angularMotors.size());
+  EXPECT_DOUBLE_EQ(motorInventory[0].state.lambda, 3.0);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidAngularMotorRowsDriveTargetAngularStep)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
