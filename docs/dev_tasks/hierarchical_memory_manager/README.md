@@ -1,29 +1,74 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Critical Handoff (2026-06-11, No Further Verification)
+
+Maintainer stop request: stop implementation and verification, make the handoff
+state explicit, push it, and stop. When older sections below conflict with this
+section, this section is the current source of truth.
+
+Use exactly one continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM follow-up branches are historical/no-resume targets unless a
+maintainer explicitly redirects the work.
+
+The handoff commit preserves the current local work:
+
+- `tests/unit/simulation/world/test_world.cpp` adds a dynamic rigid IPC
+  kinematic-conveyor scene and wires it into the baked World-base no-growth and
+  global-heap no-allocation gates.
+- `docs/dev_tasks/hierarchical_memory_manager/README.md` and `RESUME.md`
+  record the branch, status, and remaining Phase 4/5 gaps for a fresh session.
+
+Verification boundary for this handoff:
+
+- No lint, build, test, benchmark, or additional validation command was run
+  after the critical stop request.
+- Before the stop request, the focused `test_world` gate pair was run once with
+  the new conveyor subcase and passed:
+  `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`.
+- Treat the pushed branch head as a handoff snapshot, not as a fully
+  revalidated checkpoint. A fresh agent should verify before adding more code.
+
+Fresh-session entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `RESUME.md` and the remaining Phase 4/5 follow-up items in this
+file. Continue evidence-first: reproduce a real allocator/no-heap gap before
+editing. Do not add more work to PR #2956; it is already merged.
+
 ## Current Continuation Handoff
 
 Work resumed after the prior critical stop handoff on the same authoritative
 branch, `pr/hmm-phase45-follow-up-clean`. The current slice adds baked
 World-base no-growth and global-heap no-allocation coverage for a dynamic rigid
-IPC mixed rigid/deformable surface-obstacle solve. The scene mirrors the
-existing `RigidIpcContactStageUsesDeformableSurfaceObstacle` behavior coverage
-but runs through the built-in `World` IPC solver after bake.
+IPC mixed rigid/deformable surface-obstacle solve and a dynamic rigid IPC
+kinematic-conveyor contact solve. The first scene mirrors the existing
+`RigidIpcContactStageUsesDeformableSurfaceObstacle` behavior coverage but runs
+through the built-in `World` IPC solver after bake; the second mirrors the
+existing kinematic conveyor behavior shape and covers kinematic-trace storage,
+active dynamic contact, and lagged friction surface motion in the same baked
+loop.
 
-No implementation scratch change was needed for this shape: both
+No implementation scratch change was needed for these shapes: both
 `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
 `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` pass with the new
-mixed rigid/deformable IPC subcase. This closes that specific documented
-coverage gap; remaining rigid IPC follow-up should start from newly measured
-larger mesh/contact-set, articulated-contact-stack, or other shapes that expose
-real allocator traffic.
+mixed rigid/deformable and conveyor IPC subcases. This closes those specific
+documented coverage gaps; remaining rigid IPC follow-up should start from newly
+measured larger mesh/contact-set, articulated-contact-stack, or other shapes
+that expose real allocator traffic.
 
-Verification completed for this slice:
-
-- `git diff --check`
-- `pixi run lint`
-- `pixi run build`
-- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
-- `pixi run test-unit` passed all 161 tests.
+Verification note for this slice: before the critical stop request, the focused
+`test_world` gate pair passed with the new subcases. No broader lint/build/test
+verification was completed for the final handoff commit after the stop request.
 
 ## Prior Critical Stop Handoff
 
@@ -53,7 +98,7 @@ Current completed Phase 4/5 slice:
 - The dynamic rigid IPC no-heap gate now covers contact-free dynamics, active
   static/dynamic mesh barrier, fixed-joint and revolute-joint IPC constraints,
   the two-box stack, and a mixed rigid/deformable surface-obstacle barrier
-  solve.
+  solve, plus a kinematic-conveyor active contact with lagged friction.
 - The measured two-box stack gap was 1 global allocation / 96 bytes over four
   baked steps from free-list growth during objective assembly; that gap is now
   closed at the latest validated source checkpoint.
@@ -1283,8 +1328,11 @@ Follow-up progress after PR #2956:
   static/dynamic mesh barrier, fixed/revolute articulated constraints, and a
   two-box stack with zero global heap allocation after bake. The follow-up gate
   also covers a mixed rigid/deformable surface-obstacle barrier solve through
-  both baked World-base no-growth and global-heap no-allocation guards. Broader
-  rigid IPC contact shapes remain evidence-first follow-up work.
+  both baked World-base no-growth and global-heap no-allocation guards. The
+  current continuation adds the same baked no-growth/no-heap coverage for a
+  kinematic-conveyor active contact, covering kinematic trace storage and
+  lagged friction surface motion in the same IPC solve. Broader rigid IPC
+  contact shapes remain evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
@@ -1300,10 +1348,10 @@ Remaining Phase 4/5 follow-up items for the next PR:
   failing shapes beyond the current contact-free and active two-mesh-barrier
   gates, such as larger mesh contact sets or articulated contact-stack shapes
   that expose new per-step allocator growth. The dynamic rigid IPC two-box
-  stack and mixed rigid/deformable surface-obstacle shapes are now covered by
-  baked no-growth/no-heap gates, so the next rigid IPC expansion should start
-  from a newly measured failing shape rather than reusing those cases as open
-  work.
+  stack, mixed rigid/deformable surface-obstacle, and kinematic-conveyor
+  contact shapes are now covered by baked no-growth/no-heap gates, so the next
+  rigid IPC expansion should start from a newly measured failing shape rather
+  than reusing those cases as open work.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production

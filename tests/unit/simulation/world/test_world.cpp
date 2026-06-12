@@ -2398,6 +2398,30 @@ void configureRigidIpcDeformableSurfaceObstacleScene(
   box.setCollisionShape(sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
 }
 
+void configureRigidIpcKinematicConveyorScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions floorOptions;
+  floorOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  floorOptions.linearVelocity = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto floor = world.addRigidBody("ipc_conveyor_floor", floorOptions);
+  floor.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.1}));
+  floor.setKinematic(true);
+  floor.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("ipc_conveyor_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -5246,6 +5270,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "dynamic rigid IPC deformable surface obstacle",
       configureRigidIpcDeformableSurfaceObstacleScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC kinematic conveyor contact",
+      configureRigidIpcKinematicConveyorScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid body resting contact",
@@ -6533,6 +6560,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC deformable surface obstacle",
       configureRigidIpcDeformableSurfaceObstacleScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC kinematic conveyor contact",
+      configureRigidIpcKinematicConveyorScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
