@@ -3748,6 +3748,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Added emitted problem-size counters to checked LCP performance-profile
     evidence and made profile ingestion plus roster lint reject benchmark-name
     and machine-recorded size mismatches.
+  - Surfaced each representative standalone LCP demo problem's challenge in
+    the Python `lcp_physics` panel, so all-solver comparisons identify the
+    conditioning, active-set, degeneracy, friction-coupling, and scalability
+    cases they exercise.
   - Modernized the Dantzig solver and improved stability (C++20 optimizations, NaN fallback, warning suppression). ([#2081](https://github.com/dartsim/dart/pull/2081), [#2253](https://github.com/dartsim/dart/pull/2253), [#2111](https://github.com/dartsim/dart/pull/2111))
   - Fixed Lemke solver segfaults on macOS arm64 by avoiding Eigen stack allocations. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Test coverage audit with Codecov infrastructure improvements and 200+ new unit/integration tests across common, collision, constraint, dynamics, io, sensor, and simulation modules. ([#2462](https://github.com/dartsim/dart/pull/2462))

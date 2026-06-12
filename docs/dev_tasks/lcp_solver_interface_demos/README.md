@@ -1,5 +1,68 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Representative Challenge Labels
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS earlier in this continuation because
+  SSH to `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 84]`.
+- Last committed checkpoint:
+  `59595b8d2f1 Record LCP problem dimension evidence`.
+- Checkpoint target:
+  `Expose LCP representative challenge labels`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 85 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+Py-demo representative-example alignment:
+
+- The Python `lcp_physics` panel's Representative solver suite now displays
+  each standalone problem's `Challenge` text instead of hiding it only in the
+  setup metadata.
+- The visible suite now calls out the all-solver case intent directly:
+  large-mass-ratio conditioning, active bounds, rank-deficient degeneracy,
+  coupled friction-index active tangential bounds, and scalability smoke.
+- This complements the existing live world packets for billiards
+  symmetry/momentum/energy, high-mass-ratio stack drift, and thin card-pile
+  spread/height loss.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with `43 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with `Expose LCP representative challenge labels`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Problem Dimension Evidence Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

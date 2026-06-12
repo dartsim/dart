@@ -1,5 +1,69 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Representative Challenge Labels
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS earlier in this continuation because
+  SSH to `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 84]`
+- Last committed checkpoint:
+  `59595b8d2f1 Record LCP problem dimension evidence`
+- Checkpoint target:
+  `Expose LCP representative challenge labels`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 85 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` adds a visible `Challenge`
+  column to the Representative solver suite table.
+- The table now exposes why each all-solver standalone case exists:
+  mass-ratio conditioning, active bounds, rank-deficient degeneracy,
+  friction-index active tangent coupling, and scalability smoke.
+- `python/tests/unit/test_py_demo_panels.py` checks the table header and key
+  challenge strings so future edits cannot hide that representative-example
+  context again.
+
+Verification completed:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+```
+
+Results:
+
+- Focused py-demo panel tests: `43 passed`.
+- `pixi run lint`: passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Expose LCP representative challenge labels`. Continue from a fresh bounded DART
+7 LCP interface/demo gap; avoid retrying the rejected SAP
+FrictionIndex exact shortcut or ShockPropagation exact-path probe without a
+materially different hypothesis. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 Problem Dimension Evidence Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

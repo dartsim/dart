@@ -1890,6 +1890,7 @@ def build() -> SceneSetup:
                 [
                     "Problem",
                     "Type",
+                    "Challenge",
                     "Native",
                     "Delegated",
                     "Max residual",
@@ -1900,6 +1901,7 @@ def build() -> SceneSetup:
                     builder.table_next_row()
                     _write_table_cell(builder, row["label"])
                     _write_table_cell(builder, row["problem_type"])
+                    _write_table_cell(builder, row["challenge"])
                     _write_table_cell(
                         builder,
                         f"{row['native_contract_ok_count']}/{row['native_solver_count']}",

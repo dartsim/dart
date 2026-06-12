@@ -1273,10 +1273,17 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     assert (
-        "table:lcp_representative_solver_suite:Problem,Type,Native,Delegated,"
-        "Max residual,Fastest native"
+        "table:lcp_representative_solver_suite:Problem,Type,Challenge,Native,"
+        "Delegated,Max residual,Fastest native"
         in builder.events
     )
+    for challenge in (
+        "large mass-ratio conditioning with active bounds",
+        "rank-deficient complementarity with opposing active bounds",
+        "two-contact active tangential bounds with coupled normals",
+        "scalability smoke with banded coupling",
+    ):
+        assert any(challenge in event for event in builder.events)
     assert (
         "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
         "Iterations,Error,Residual,Complementarity,us"
