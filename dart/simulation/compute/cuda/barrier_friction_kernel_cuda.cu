@@ -77,6 +77,12 @@ struct PointTriangleDistanceDevice
   Vec3 closestPoint;
 };
 
+struct EdgeEdgeDistanceDevice
+{
+  double edgeACoordinate = 0.0;
+  double edgeBCoordinate = 0.0;
+};
+
 __device__ Vec3 makeVec3(const double values[3])
 {
   return {values[0], values[1], values[2]};
@@ -201,6 +207,17 @@ __device__ bool isDegenerateTriangleDevice(
   return normalSquaredNorm <= kRelativeEpsilon * scale;
 }
 
+__device__ bool isParallelEdgesDevice(
+    const double denominator,
+    const double edgeASquaredNorm,
+    const double edgeBSquaredNorm)
+{
+  constexpr double kDoubleMin = 2.2250738585072014e-308;
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double scale = fmax(edgeASquaredNorm * edgeBSquaredNorm, kDoubleMin);
+  return denominator <= kRelativeEpsilon * scale;
+}
+
 __device__ PointEdgeDistanceDevice
 pointEdgeSquaredDistanceDevice(const Vec3 p, const Vec3 a, const Vec3 b)
 {
@@ -218,6 +235,64 @@ pointEdgeSquaredDistanceDevice(const Vec3 p, const Vec3 a, const Vec3 b)
   result.edgeCoordinate = fmin(fmax(unclampedT, 0.0), 1.0);
   result.closestPoint = add(a, scale(result.edgeCoordinate, edge));
   result.squaredDistance = squaredNorm(subtract(p, result.closestPoint));
+  return result;
+}
+
+__device__ EdgeEdgeDistanceDevice edgeEdgeSquaredDistanceDevice(
+    const Vec3 a, const Vec3 b, const Vec3 c, const Vec3 d)
+{
+  EdgeEdgeDistanceDevice result;
+  const Vec3 edgeA = subtract(b, a);
+  const Vec3 edgeB = subtract(d, c);
+  const Vec3 r = subtract(a, c);
+  const double edgeASquaredNorm = squaredNorm(edgeA);
+  const double edgeBSquaredNorm = squaredNorm(edgeB);
+  const double edgeBDotR = dot(edgeB, r);
+
+  double s = 0.0;
+  double t = 0.0;
+
+  if (isDegenerateSegmentDevice(edgeASquaredNorm)
+      && isDegenerateSegmentDevice(edgeBSquaredNorm)) {
+    s = 0.0;
+    t = 0.0;
+  } else if (isDegenerateSegmentDevice(edgeASquaredNorm)) {
+    s = 0.0;
+    t = fmin(fmax(edgeBDotR / edgeBSquaredNorm, 0.0), 1.0);
+  } else {
+    const double edgeADotR = dot(edgeA, r);
+    if (isDegenerateSegmentDevice(edgeBSquaredNorm)) {
+      t = 0.0;
+      s = fmin(fmax(-edgeADotR / edgeASquaredNorm, 0.0), 1.0);
+    } else {
+      const double edgeADotB = dot(edgeA, edgeB);
+      const double denominator
+          = edgeASquaredNorm * edgeBSquaredNorm - edgeADotB * edgeADotB;
+      if (!isParallelEdgesDevice(
+              denominator, edgeASquaredNorm, edgeBSquaredNorm)) {
+        s = fmin(
+            fmax(
+                (edgeADotB * edgeBDotR - edgeADotR * edgeBSquaredNorm)
+                    / denominator,
+                0.0),
+            1.0);
+      } else {
+        s = 0.0;
+      }
+
+      t = (edgeADotB * s + edgeBDotR) / edgeBSquaredNorm;
+      if (t < 0.0) {
+        t = 0.0;
+        s = fmin(fmax(-edgeADotR / edgeASquaredNorm, 0.0), 1.0);
+      } else if (t > 1.0) {
+        t = 1.0;
+        s = fmin(fmax((edgeADotB - edgeADotR) / edgeASquaredNorm, 0.0), 1.0);
+      }
+    }
+  }
+
+  result.edgeACoordinate = s;
+  result.edgeBCoordinate = t;
   return result;
 }
 
@@ -355,6 +430,35 @@ __device__ void pointTriangleCoordinatesDevice(
   beta2 = distance.barycentric[2];
 }
 
+__device__ void edgeEdgeCoordinatesDevice(
+    const Vec3 a,
+    const Vec3 b,
+    const Vec3 c,
+    const Vec3 d,
+    double& gamma1,
+    double& gamma2)
+{
+  constexpr double kTangentBasisEpsilon = 64.0 * 2.2204460492503131e-16;
+  const Vec3 e20 = subtract(a, c);
+  const Vec3 e01 = subtract(b, a);
+  const Vec3 e23 = subtract(d, c);
+  const double aa = dot(e01, e01);
+  const double edgeDot = dot(e23, e01);
+  const double bb = dot(e23, e23);
+  const double determinant = aa * bb - edgeDot * edgeDot;
+  if (isfinite(determinant) && fabs(determinant) > kTangentBasisEpsilon) {
+    const double rhs0 = -dot(e20, e01);
+    const double rhs1 = dot(e20, e23);
+    gamma1 = (bb * rhs0 + edgeDot * rhs1) / determinant;
+    gamma2 = (edgeDot * rhs0 + aa * rhs1) / determinant;
+    return;
+  }
+
+  const auto distance = edgeEdgeSquaredDistanceDevice(a, b, c, d);
+  gamma1 = distance.edgeACoordinate;
+  gamma2 = distance.edgeBCoordinate;
+}
+
 __device__ void writePointTriangleDistanceGradient(
     const PointTriangleDistanceDevice& distance, const Vec3 p, double* gradient)
 {
@@ -405,6 +509,58 @@ __device__ void writePointTriangleTangentStencil(
   coordinates[1] = beta2;
 
   const double coefficients[4] = {1.0, -1.0 + beta1 + beta2, -beta1, -beta2};
+  for (int block = 0; block < 4; ++block) {
+    const double coefficient = coefficients[block];
+    const int offset = 6 * block;
+    projectionValues[offset] = coefficient * basis0.x;
+    projectionValues[offset + 1] = coefficient * basis0.y;
+    projectionValues[offset + 2] = coefficient * basis0.z;
+    projectionValues[offset + 3] = coefficient * basis1.x;
+    projectionValues[offset + 4] = coefficient * basis1.y;
+    projectionValues[offset + 5] = coefficient * basis1.z;
+  }
+}
+
+__device__ void writeEdgeEdgeTangentStencil(
+    const EdgeEdgeTangentInput& input,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t& fallbackBasis)
+{
+  const Vec3 a = makeVec3(input.edgeA0);
+  const Vec3 b = makeVec3(input.edgeA1);
+  const Vec3 c = makeVec3(input.edgeB0);
+  const Vec3 d = makeVec3(input.edgeB1);
+  const Vec3 ab = subtract(b, a);
+  const Vec3 cd = subtract(d, c);
+  const Vec3 ac = subtract(c, a);
+  const Vec3 normal = cross(ab, cd);
+
+  Vec3 abUnit;
+  Vec3 fallbackHint = ac;
+  if (normalize(ab, abUnit)) {
+    fallbackHint = subtract(ac, scale(dot(ac, abUnit), abUnit));
+  }
+
+  Vec3 basis0;
+  Vec3 basis1;
+  fallbackBasis = basisFromFirstTangentAndSecondHint(
+      ab, cross(normal, ab), fallbackHint, basis0, basis1);
+  basisValues[0] = basis0.x;
+  basisValues[1] = basis0.y;
+  basisValues[2] = basis0.z;
+  basisValues[3] = basis1.x;
+  basisValues[4] = basis1.y;
+  basisValues[5] = basis1.z;
+
+  double gamma1 = 0.0;
+  double gamma2 = 0.0;
+  edgeEdgeCoordinatesDevice(a, b, c, d, gamma1, gamma2);
+  coordinates[0] = gamma1;
+  coordinates[1] = gamma2;
+
+  const double coefficients[4] = {1.0 - gamma1, gamma1, gamma2 - 1.0, -gamma2};
   for (int block = 0; block < 4; ++block) {
     const double coefficient = coefficients[block];
     const int offset = 6 * block;
@@ -623,6 +779,41 @@ __global__ void pointTriangleTangentStencilKernel(
       fallbackBases[index]);
 }
 
+__global__ void edgeEdgeTangentStencilKernel(
+    const EdgeEdgeTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  const std::size_t basisOffset = 6 * index;
+  const std::size_t coordinateOffset = 2 * index;
+  const std::size_t projectionOffset = 24 * index;
+  for (int entry = 0; entry < 6; ++entry) {
+    basisValues[basisOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  coordinates[coordinateOffset] = 0.0;
+  coordinates[coordinateOffset + 1] = 0.0;
+  for (int entry = 0; entry < 24; ++entry) {
+    projectionValues[projectionOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  fallbackBases[index] = 0u;
+
+  writeEdgeEdgeTangentStencil(
+      inputs[index],
+      basisValues + basisOffset,
+      coordinates + coordinateOffset,
+      projectionValues + projectionOffset,
+      fallbackBases[index]);
+}
+
 } // namespace
 
 //==============================================================================
@@ -705,6 +896,32 @@ cudaError_t launchPointTriangleTangentStencilKernel(
   constexpr unsigned int blockSize = 256;
   const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
   pointTriangleTangentStencilKernel<<<gridSize, blockSize>>>(
+      inputs,
+      basisValues,
+      coordinates,
+      projectionValues,
+      fallbackBases,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchEdgeEdgeTangentStencilKernel(
+    const EdgeEdgeTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  edgeEdgeTangentStencilKernel<<<gridSize, blockSize>>>(
       inputs,
       basisValues,
       coordinates,

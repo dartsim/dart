@@ -22,14 +22,14 @@ maintainer explicitly asks to inspect them; the active work and PR state live on
 PR #2978.
 
 Latest PR #2978 checkpoint: the current branch adds private CUDA
-point-triangle primitive barrier-gradient and tangent-stencil parity to the
-existing barrier/friction local-kernel packet. This closes the first
-point-triangle primitive-gradient and tangent-stencil portions of that row
-while keeping remaining primitive-family tangent bases, Hessian assembly, PSD
-coupling, runtime contact rows, and the overall speedup gate as future
-evidence. Earlier Codex review threads for the degenerate-triangle contact
-predicate and winding-independent point-triangle CCD were resolved without bot
-replies.
+point-triangle primitive barrier-gradient parity plus point-triangle and
+edge-edge tangent-stencil parity to the existing barrier/friction local-kernel
+packet. This closes the first primitive-gradient and two tangent-stencil
+portions of that row while keeping point-edge/point-point tangent bases,
+Hessian assembly, PSD coupling, runtime contact rows, and the overall speedup
+gate as future evidence. Earlier Codex review threads for the
+degenerate-triangle contact predicate and winding-independent point-triangle
+CCD were resolved without bot replies.
 
 Continuation checkpoint (2026-06-11): the stop-handoff dirty worktree was
 inspected and continued on `simx/plan083-gpu-contact-candidate-packet`. The
@@ -72,6 +72,20 @@ because the scalar local-kernel subrow missed the speedup gate in that run
 bases, Hessian assembly, PSD coupling, and runtime contact rows remain future
 evidence. No lint, build, test, benchmark, PR-check polling, or fresh review
 request was run after the maintainer's critical stop request.
+
+Continuation checkpoint (2026-06-11, edge-edge tangent-stencil slice): after
+implementation resumed, the same #2978 branch added private CUDA edge-edge
+tangent-stencil parity to the barrier/friction packet. Focused evidence passed
+`pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+(4 passed), `pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest, and `pixi run -e cuda
+bm-plan083-gpu-barrier-friction-packet`. The updated packet measured edge-edge
+tangent-stencil `max_result_abs_error=8.881784197001252e-16` and
+`speedup=1.339038677334765x`, but the overall packet remains `in-progress`
+because the scalar local-kernel subrow missed the speedup gate in that run
+(`speedup=0.11388679300181546x`) and because point-edge/point-point tangent
+bases, Hessian assembly, PSD coupling, and runtime contact rows remain future
+evidence.
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
@@ -399,31 +413,29 @@ follow-up PR for the remaining private packet work (#2978). This branch now
 carries point-triangle and edge-edge contact-stencil filtering,
 winding-independent endpoint-linear point-triangle CCD, edge-edge
 CCD/line-search packets, scalar barrier/friction local kernels plus
-point-triangle primitive barrier gradients and tangent stencils, reduced
-assembly/solve parity, reduced scene state-batch parity, and reduced ABD
+point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
+stencils, reduced assembly/solve parity, reduced scene state-batch parity, and
+reduced ABD
 complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless their
 full row policy is satisfied: broad-phase/runtime GPU candidate construction,
-rigid curved trajectories, runtime scene line search, remaining
-primitive-family tangent/Hessian assembly, sparse global solving, GPU
-`World::step`, paper-scale assets, and accepted reference timings remain future
-evidence.
+rigid curved trajectories, runtime scene line search, point-edge/point-point
+tangent bases, Hessian assembly, sparse global solving, GPU `World::step`,
+paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Keep all remaining PLAN-083 follow-up work on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
-small PRs. This session stopped at the hand-off point without additional
-verification by maintainer request. A fresh session should first resume the
-current branch/PR context and confirm whether the hand-off commit is already on
-`origin/simx/plan083-gpu-contact-candidate-packet`. Do not run validation or
-request fresh review unless the maintainer resumes implementation or explicitly
-asks for verification. When implementation resumes, address only actionable
-failures on #2978, then continue with the next blocker from the completion
-audit on this same branch. Keep the dev-task folder active because PLAN-083
-acceptance criteria are still unmet. If the task later moves out of this
-folder, get maintainer direction before deleting it and keep the remaining
-planned manifest plus in-progress CPU/GPU/scene limitations in durable
-sidecars.
+small PRs. A fresh session should first resume the current branch/PR context,
+check hosted #2978 CI/review for actionable failures, and then continue with
+the next blocker from the completion audit on this same branch. The next
+barrier/friction packet gap is point-edge and point-point tangent-stencil parity
+or the downstream Hessian/PSD/runtime contact rows; do not mark the row
+measured until the top-level speed gate and runtime evidence are proven. Keep
+the dev-task folder active because PLAN-083 acceptance criteria are still
+unmet. If the task later moves out of this folder, get maintainer direction
+before deleting it and keep the remaining planned manifest plus in-progress
+CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost
 

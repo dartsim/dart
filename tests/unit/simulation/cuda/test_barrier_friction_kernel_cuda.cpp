@@ -116,6 +116,20 @@ cuda::PointTriangleTangentInput makePointTriangleTangentInput(
   return input;
 }
 
+cuda::EdgeEdgeTangentInput makeEdgeEdgeTangentInput(
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector3d& d)
+{
+  cuda::EdgeEdgeTangentInput input;
+  writeVec3(input.edgeA0, a);
+  writeVec3(input.edgeA1, b);
+  writeVec3(input.edgeB0, c);
+  writeVec3(input.edgeB1, d);
+  return input;
+}
+
 std::vector<cuda::PointTriangleBarrierInput> makePointTriangleFixture()
 {
   return {
@@ -168,6 +182,27 @@ std::vector<cuda::PointTriangleTangentInput> makePointTriangleTangentFixture()
           Eigen::Vector3d(0.1, -0.2, 0.3),
           Eigen::Vector3d(1.1, 0.2, 0.5),
           Eigen::Vector3d(0.25, 1.0, 0.9)),
+  };
+}
+
+std::vector<cuda::EdgeEdgeTangentInput> makeEdgeEdgeTangentFixture()
+{
+  return {
+      makeEdgeEdgeTangentInput(
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.25, 0.2, 0.4),
+          Eigen::Vector3d(0.25, 1.2, 0.6)),
+      makeEdgeEdgeTangentInput(
+          Eigen::Vector3d(-0.2, 0.1, 0.3),
+          Eigen::Vector3d(1.2, 0.4, 0.5),
+          Eigen::Vector3d(0.4, -0.5, 0.2),
+          Eigen::Vector3d(0.8, 0.9, 1.1)),
+      makeEdgeEdgeTangentInput(
+          Eigen::Vector3d(0.1, -0.2, 0.4),
+          Eigen::Vector3d(0.9, 0.3, 0.8),
+          Eigen::Vector3d(-0.3, 0.7, 0.1),
+          Eigen::Vector3d(0.6, 1.1, 0.9)),
   };
 }
 
@@ -358,6 +393,82 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleTangentStencils)
 }
 
 //==============================================================================
+TEST(BarrierFrictionKernelCuda, MatchesCpuEdgeEdgeTangentStencils)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const auto inputs = makeEdgeEdgeTangentFixture();
+
+  cuda::EdgeEdgeTangentStencilResult result;
+  cuda::evaluateEdgeEdgeTangentStencilsCuda(inputs, result);
+
+  ASSERT_EQ(result.basisValues.size(), 6 * inputs.size());
+  ASSERT_EQ(result.coordinates.size(), 2 * inputs.size());
+  ASSERT_EQ(result.projectionValues.size(), 24 * inputs.size());
+  ASSERT_EQ(result.fallbackBases.size(), inputs.size());
+  EXPECT_EQ(result.fallbackBasisCount, 0u);
+
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto expected = nb::edgeEdgeTangentStencil(
+        readVec3(input.edgeA0),
+        readVec3(input.edgeA1),
+        readVec3(input.edgeB0),
+        readVec3(input.edgeB1));
+    EXPECT_EQ(result.fallbackBases[i] != 0u, expected.usedFallbackBasis) << i;
+
+    const std::size_t basisOffset = 6 * i;
+    for (int component = 0; component < 3; ++component) {
+      EXPECT_NEAR(
+          result.basisValues[basisOffset + static_cast<std::size_t>(component)],
+          expected.basis(component, 0),
+          1e-12)
+          << "fixture=" << i << " basis0 component=" << component;
+      EXPECT_NEAR(
+          result.basisValues
+              [basisOffset + 3u + static_cast<std::size_t>(component)],
+          expected.basis(component, 1),
+          1e-12)
+          << "fixture=" << i << " basis1 component=" << component;
+    }
+
+    const std::size_t coordinateOffset = 2 * i;
+    EXPECT_NEAR(
+        result.coordinates[coordinateOffset], expected.coordinates.x(), 1e-12)
+        << i;
+    EXPECT_NEAR(
+        result.coordinates[coordinateOffset + 1],
+        expected.coordinates.y(),
+        1e-12)
+        << i;
+
+    const std::size_t projectionOffset = 24 * i;
+    for (int block = 0; block < 4; ++block) {
+      for (int component = 0; component < 3; ++component) {
+        const std::size_t blockOffset
+            = projectionOffset + static_cast<std::size_t>(6 * block);
+        EXPECT_NEAR(
+            result.projectionValues
+                [blockOffset + static_cast<std::size_t>(component)],
+            expected.projection(0, 3 * block + component),
+            1e-12)
+            << "fixture=" << i << " row=0 block=" << block
+            << " component=" << component;
+        EXPECT_NEAR(
+            result.projectionValues
+                [blockOffset + 3u + static_cast<std::size_t>(component)],
+            expected.projection(1, 3 * block + component),
+            1e-12)
+            << "fixture=" << i << " row=1 block=" << block
+            << " component=" << component;
+      }
+    }
+  }
+}
+
+//==============================================================================
 TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -389,5 +500,15 @@ TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
   EXPECT_THROW(
       cuda::evaluatePointTriangleTangentStencilsCuda(
           tangentInputs, tangentResult),
+      dart::simulation::InvalidArgumentException);
+
+  auto edgeEdgeTangentInputs = makeEdgeEdgeTangentFixture();
+  edgeEdgeTangentInputs.front().edgeB1[2]
+      = std::numeric_limits<double>::quiet_NaN();
+
+  cuda::EdgeEdgeTangentStencilResult edgeEdgeTangentResult;
+  EXPECT_THROW(
+      cuda::evaluateEdgeEdgeTangentStencilsCuda(
+          edgeEdgeTangentInputs, edgeEdgeTangentResult),
       dart::simulation::InvalidArgumentException);
 }

@@ -11,17 +11,14 @@ merged into `main`. A fresh Claude/Codex session should resume from #2978,
 check hosted CI/review state, and keep any remaining PLAN-083 commits on the
 same branch.
 
-Critical hand-off checkpoint (2026-06-11): the maintainer instructed the agent
-to stop implementation and focus only on hand-off without further verification.
-The active #2978 branch now carries private CUDA point-triangle tangent-stencil
-parity in the barrier/friction packet, plus the required packet writer/tests and
-honest plan/dev-task updates. The tangent subpacket measured
-`max_result_abs_error=6.661338147750939e-16` and
-`speedup=1.7041788688311987x` before the stop request, but the row remains
-`in-progress` because remaining primitive-family tangent bases, Hessian
-assembly, PSD coupling, runtime contact rows, and the top-level speedup gate
-remain future evidence. No lint, build, test, benchmark, PR-check polling, or
-fresh review request was run after the critical stop request.
+Current #2978 checkpoint (2026-06-11): the active branch now carries private
+CUDA point-triangle primitive barrier-gradient parity plus point-triangle and
+edge-edge tangent-stencil parity in the barrier/friction packet. The latest
+packet measured edge-edge tangent-stencil
+`max_result_abs_error=8.881784197001252e-16` and
+`speedup=1.339038677334765x`, but the row remains `in-progress` because
+point-edge/point-point tangent bases, Hessian assembly, PSD coupling, runtime
+contact rows, and the top-level speedup gate remain future evidence.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
@@ -190,10 +187,11 @@ fresh review request was run after the critical stop request.
         because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
-        primitive barrier-gradient, and point-triangle tangent-stencil packets
-        with exact CPU/GPU local-output parity; keep the row in-progress because
-        remaining primitive-family tangent bases, Hessian assembly, PSD
-        coupling, runtime contact rows, and runtime speedup remain unproven.
+        primitive barrier-gradient, and point-triangle/edge-edge tangent-stencil
+        packets with exact CPU/GPU local-output parity; keep the row
+        in-progress because point-edge/point-point tangent bases, Hessian
+        assembly, PSD coupling, runtime contact rows, and runtime speedup
+        remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene
@@ -301,10 +299,10 @@ storage, or backend resources as public API.
 - For the remaining PLAN-083 follow-up work, PR #2978 is the consolidated
   review unit; keep additional packet/runtime slices on that branch instead of
   opening per-packet PRs.
-- Current PR #2978 head includes the CUDA CCD review fix that makes the
-  point-triangle line-search packet winding-independent; its local evidence is
-  recorded in the validation section below. Continue monitoring CI/review on
-  the same branch before starting another implementation slice.
+- Current PR #2978 head includes the CUDA CCD review fix plus the private
+  barrier/friction point-triangle gradient and point-triangle/edge-edge
+  tangent-stencil packet evidence. Continue monitoring CI/review on the same
+  branch and keep further PLAN-083 slices consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -337,10 +335,10 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
    and keep remaining work in consolidated PR #2978 instead of reopening the
-   old phase-scoped stack. This session stopped without further verification by
-   maintainer request; a fresh session should resume the branch/PR context
-   first and only verify #2978 CI/review state if the maintainer explicitly
-   resumes verification or implementation.
+   old phase-scoped stack. A fresh session should resume the branch/PR context
+   first, check hosted #2978 CI/review state for actionable failures, then
+   continue with the next barrier/friction packet gap: point-edge/point-point
+   tangent-stencil parity or downstream Hessian/PSD/runtime contact evidence.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

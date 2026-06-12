@@ -66,6 +66,14 @@ struct PointTriangleTangentInput
   double triangleC[3] = {0.0, 0.0, 0.0};
 };
 
+struct EdgeEdgeTangentInput
+{
+  double edgeA0[3] = {0.0, 0.0, 0.0};
+  double edgeA1[3] = {0.0, 0.0, 0.0};
+  double edgeB0[3] = {0.0, 0.0, 0.0};
+  double edgeB1[3] = {0.0, 0.0, 0.0};
+};
+
 struct BarrierFrictionLocalTiming
 {
   double setupNs = 0.0;
@@ -115,6 +123,16 @@ struct PointTriangleTangentStencilResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct EdgeEdgeTangentStencilResult
+{
+  std::vector<double> basisValues;
+  std::vector<double> coordinates;
+  std::vector<double> projectionValues;
+  std::vector<std::uint8_t> fallbackBases;
+  std::size_t fallbackBasisCount = 0;
+  BarrierFrictionLocalTiming timing;
+};
+
 /// Evaluate private local barrier and friction scalar kernels on CUDA.
 ///
 /// This packet covers the clamped-log scalar barrier and smoothed Coulomb
@@ -137,11 +155,19 @@ void evaluatePointTriangleBarrierGradientsCuda(
 /// Evaluate private point-triangle tangent stencils on CUDA.
 ///
 /// This packet extends local-kernel evidence to tangent basis construction and
-/// projection assembly for the point-triangle primitive family. It
-/// intentionally does not cover Hessian assembly, PSD coupling, runtime contact
-/// rows, or a public GPU backend.
+/// projection assembly for the point-triangle primitive family.
 void evaluatePointTriangleTangentStencilsCuda(
     const std::vector<PointTriangleTangentInput>& inputs,
     PointTriangleTangentStencilResult& result);
+
+/// Evaluate private edge-edge tangent stencils on CUDA.
+///
+/// This packet extends local-kernel evidence to tangent basis construction and
+/// projection assembly for the edge-edge primitive family. The barrier/friction
+/// packet still intentionally does not cover Hessian assembly, PSD coupling,
+/// runtime contact rows, or a public GPU backend.
+void evaluateEdgeEdgeTangentStencilsCuda(
+    const std::vector<EdgeEdgeTangentInput>& inputs,
+    EdgeEdgeTangentStencilResult& result);
 
 } // namespace dart::simulation::compute::cuda

@@ -76,6 +76,14 @@ cudaError_t launchPointTriangleTangentStencilKernel(
     std::uint8_t* fallbackBases,
     std::size_t inputCount);
 
+cudaError_t launchEdgeEdgeTangentStencilKernel(
+    const EdgeEdgeTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    std::size_t inputCount);
+
 } // namespace detail
 namespace {
 
@@ -146,6 +154,19 @@ void validateInputs(const std::vector<PointTriangleTangentInput>& inputs)
         sx::InvalidArgumentException,
         "evaluatePointTriangleTangentStencilsCuda input {} has a non-finite "
         "field",
+        i);
+  }
+}
+
+void validateInputs(const std::vector<EdgeEdgeTangentInput>& inputs)
+{
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    DART_SIMULATION_THROW_T_IF(
+        !isFiniteVec3(input.edgeA0) || !isFiniteVec3(input.edgeA1)
+            || !isFiniteVec3(input.edgeB0) || !isFiniteVec3(input.edgeB1),
+        sx::InvalidArgumentException,
+        "evaluateEdgeEdgeTangentStencilsCuda input {} has a non-finite field",
         i);
   }
 }
@@ -384,6 +405,74 @@ void evaluatePointTriangleTangentStencilsCuda(
       result.projectionValues, "point-triangle tangent projections copy");
   deviceFallbackBases.copyFromDevice(
       result.fallbackBases, "point-triangle tangent fallbacks copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const std::uint8_t fallback : result.fallbackBases) {
+    if (fallback != 0u) {
+      ++result.fallbackBasisCount;
+    }
+  }
+}
+
+//==============================================================================
+void evaluateEdgeEdgeTangentStencilsCuda(
+    const std::vector<EdgeEdgeTangentInput>& inputs,
+    EdgeEdgeTangentStencilResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateInputs(inputs);
+
+  result = EdgeEdgeTangentStencilResult{};
+  result.basisValues.resize(6 * inputs.size(), 0.0);
+  result.coordinates.resize(2 * inputs.size(), 0.0);
+  result.projectionValues.resize(24 * inputs.size(), 0.0);
+  result.fallbackBases.resize(inputs.size(), 0u);
+
+  if (inputs.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<EdgeEdgeTangentInput> deviceInputs(inputs.size());
+  DeviceBuffer<double> deviceBasisValues(6 * inputs.size());
+  DeviceBuffer<double> deviceCoordinates(2 * inputs.size());
+  DeviceBuffer<double> deviceProjectionValues(24 * inputs.size());
+  DeviceBuffer<std::uint8_t> deviceFallbackBases(inputs.size());
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceInputs.copyToDevice(inputs, "edge-edge tangent inputs copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchEdgeEdgeTangentStencilKernel(
+          deviceInputs.data(),
+          deviceBasisValues.data(),
+          deviceCoordinates.data(),
+          deviceProjectionValues.data(),
+          deviceFallbackBases.data(),
+          inputs.size()),
+      "edge-edge tangent stencil kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "edge-edge tangent stencil synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceBasisValues.copyFromDevice(
+      result.basisValues, "edge-edge tangent basis copy");
+  deviceCoordinates.copyFromDevice(
+      result.coordinates, "edge-edge tangent coordinates copy");
+  deviceProjectionValues.copyFromDevice(
+      result.projectionValues, "edge-edge tangent projections copy");
+  deviceFallbackBases.copyFromDevice(
+      result.fallbackBases, "edge-edge tangent fallbacks copy");
   const auto d2hEnd = Clock::now();
 
   result.timing.setupNs = elapsedNs(setupStart, setupEnd);

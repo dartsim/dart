@@ -110,6 +110,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "BarrierFrictionLocal(Cpu|Cuda)"
         "|PointTriangleBarrierGradient(Cpu|Cuda)"
         "|PointTriangleTangentStencil(Cpu|Cuda)"
+        "|EdgeEdgeTangentStencil(Cpu|Cuda)"
         f")/{args.sample_count}(/real_time)?$"
     )
     command = [
@@ -186,6 +187,12 @@ def _representative_rows(
         "point_triangle_tangent_gpu": (
             f"BM_Plan083PointTriangleTangentStencilCuda/{sample_count}"
         ),
+        "edge_edge_tangent_cpu": (
+            f"BM_Plan083EdgeEdgeTangentStencilCpu/{sample_count}"
+        ),
+        "edge_edge_tangent_gpu": (
+            f"BM_Plan083EdgeEdgeTangentStencilCuda/{sample_count}"
+        ),
     }
     expected_by_name = {name: key for key, name in expected_names.items()}
     found: dict[str, Mapping[str, Any]] = {}
@@ -254,6 +261,8 @@ def make_packet(
     point_triangle_gpu_row = representative_rows["point_triangle_gpu"]
     point_triangle_tangent_cpu_row = representative_rows["point_triangle_tangent_cpu"]
     point_triangle_tangent_gpu_row = representative_rows["point_triangle_tangent_gpu"]
+    edge_edge_tangent_cpu_row = representative_rows["edge_edge_tangent_cpu"]
+    edge_edge_tangent_gpu_row = representative_rows["edge_edge_tangent_gpu"]
 
     scalar_cpu_ns = benchmark_timing_ns(scalar_cpu_row)
     scalar_gpu_ns = benchmark_timing_ns(scalar_gpu_row)
@@ -261,6 +270,8 @@ def make_packet(
     point_triangle_gpu_ns = benchmark_timing_ns(point_triangle_gpu_row)
     point_triangle_tangent_cpu_ns = benchmark_timing_ns(point_triangle_tangent_cpu_row)
     point_triangle_tangent_gpu_ns = benchmark_timing_ns(point_triangle_tangent_gpu_row)
+    edge_edge_tangent_cpu_ns = benchmark_timing_ns(edge_edge_tangent_cpu_row)
+    edge_edge_tangent_gpu_ns = benchmark_timing_ns(edge_edge_tangent_gpu_row)
     for label, timing in {
         "scalar CPU": scalar_cpu_ns,
         "scalar GPU": scalar_gpu_ns,
@@ -268,6 +279,8 @@ def make_packet(
         "point-triangle GPU": point_triangle_gpu_ns,
         "point-triangle tangent CPU": point_triangle_tangent_cpu_ns,
         "point-triangle tangent GPU": point_triangle_tangent_gpu_ns,
+        "edge-edge tangent CPU": edge_edge_tangent_cpu_ns,
+        "edge-edge tangent GPU": edge_edge_tangent_gpu_ns,
     }.items():
         if not math.isfinite(timing) or timing <= 0.0:
             raise Plan083GpuBarrierFrictionPacketError(
@@ -279,8 +292,14 @@ def make_packet(
     point_triangle_tangent_max_error = _counter(
         point_triangle_tangent_gpu_row, "max_result_abs_error"
     )
+    edge_edge_tangent_max_error = _counter(
+        edge_edge_tangent_gpu_row, "max_result_abs_error"
+    )
     max_error = max(
-        scalar_max_error, point_triangle_max_error, point_triangle_tangent_max_error
+        scalar_max_error,
+        point_triangle_max_error,
+        point_triangle_tangent_max_error,
+        edge_edge_tangent_max_error,
     )
     if max_error > tolerance:
         raise Plan083GpuBarrierFrictionPacketError(
@@ -326,6 +345,19 @@ def make_packet(
             f"{point_triangle_tangent_gpu_fallbacks}"
         )
 
+    edge_edge_tangent_cpu_fallbacks = int(
+        _counter(edge_edge_tangent_cpu_row, "fallback_bases")
+    )
+    edge_edge_tangent_gpu_fallbacks = int(
+        _counter(edge_edge_tangent_gpu_row, "gpu_fallback_bases")
+    )
+    if edge_edge_tangent_cpu_fallbacks != edge_edge_tangent_gpu_fallbacks:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "edge-edge fallback_bases count "
+            f"{edge_edge_tangent_cpu_fallbacks} != gpu_fallback_bases count "
+            f"{edge_edge_tangent_gpu_fallbacks}"
+        )
+
     sample_rows = {
         "scalar CPU": scalar_cpu_row,
         "scalar GPU": scalar_gpu_row,
@@ -333,6 +365,8 @@ def make_packet(
         "point-triangle GPU": point_triangle_gpu_row,
         "point-triangle tangent CPU": point_triangle_tangent_cpu_row,
         "point-triangle tangent GPU": point_triangle_tangent_gpu_row,
+        "edge-edge tangent CPU": edge_edge_tangent_cpu_row,
+        "edge-edge tangent GPU": edge_edge_tangent_gpu_row,
     }
     for label, row in sample_rows.items():
         row_samples = int(_counter(row, "samples"))
@@ -346,12 +380,17 @@ def make_packet(
     point_triangle_tangent_speedup = (
         point_triangle_tangent_cpu_ns / point_triangle_tangent_gpu_ns
     )
+    edge_edge_tangent_speedup = edge_edge_tangent_cpu_ns / edge_edge_tangent_gpu_ns
     speedup = min(
-        scalar_speedup, point_triangle_speedup, point_triangle_tangent_speedup
+        scalar_speedup,
+        point_triangle_speedup,
+        point_triangle_tangent_speedup,
+        edge_edge_tangent_speedup,
     )
     scalar_timing_ns = _timing_ns(scalar_gpu_row)
     point_triangle_timing_ns = _timing_ns(point_triangle_gpu_row)
     point_triangle_tangent_timing_ns = _timing_ns(point_triangle_tangent_gpu_row)
+    edge_edge_tangent_timing_ns = _timing_ns(edge_edge_tangent_gpu_row)
 
     cpu_samples = int(_counter(scalar_cpu_row, "samples"))
     gpu_samples = int(_counter(scalar_gpu_row, "samples"))
@@ -414,6 +453,16 @@ def make_packet(
                 "timing_ns": point_triangle_tangent_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(point_triangle_tangent_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(point_triangle_tangent_gpu_row),
+            },
+            "edge_edge_tangent_stencil": {
+                "sample_count": sample_count,
+                "fallback_basis_count": edge_edge_tangent_cpu_fallbacks,
+                "max_result_abs_error": edge_edge_tangent_max_error,
+                "speedup": edge_edge_tangent_speedup,
+                "meets_speedup_gate": edge_edge_tangent_speedup >= speedup_gate,
+                "timing_ns": edge_edge_tangent_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(edge_edge_tangent_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(edge_edge_tangent_gpu_row),
             },
         },
         "benchmarks": rows,
