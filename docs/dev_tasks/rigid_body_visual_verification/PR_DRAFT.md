@@ -66,7 +66,7 @@
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
   contact-scale budget, baseline first-run diagnostics, solver comparison,
-  contact-policy comparison,
+  contact-policy comparison, multibody-link contact,
   fixed/breakage/one-DOF joint constraint errors, and stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
@@ -81,6 +81,22 @@
 
 ## Testing
 
+- Latest link-contact capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene contact --frames 144 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_metrics_1781225144`
+    - nonblank 960x540 screenshot, docked-workspace detection, 143 PNG
+      frames, 144 scene-metrics events, latest solver
+      `sequential_impulse_rigid_body`, scope `multibody_link_contact`,
+      history contacts drop/slide/push `1.0/1.0/1.0`, push target travel
+      `0.07463822342673943`, and drop max upward velocity
+      `1.1546369999999997`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+    - `4 passed`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build`
+    - passed with safe parallelism; `ninja: no work to do`
 - Latest baseline capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
     - `1 passed`

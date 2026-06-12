@@ -3,44 +3,53 @@
 ## Current Handoff Snapshot
 
 Current branch: `feature/rigid-body-gui-visual-verification`. This handoff
-captures the baseline capture-metrics slice prepared for the explicit
-maintainer-approved push at the end of this session. If this file is read from
-`origin/feature/rigid-body-gui-visual-verification`, no additional push is
-needed for this slice.
+captures the validated link-contact capture-metrics slice after the pushed
+baseline capture-metrics commit. If `git status -sb` shows a clean branch ahead
+of origin, the local commit contains this slice and is intentionally unpushed.
+If it shows these files modified, commit them only after rechecking the recorded
+validation. Do not push unless the maintainer explicitly approves a push.
 
-Current slice: baseline capture metrics. The code changes are limited to:
+Current slice: `contact` row capture metrics. The code changes are limited to:
 
-- `python/examples/demos/scenes/rigid_body.py`
+- `python/examples/demos/scenes/contact.py`
 - `python/tests/integration/test_demos_cycle.py`
-- this task's handoff docs, the PLAN-103 sidecar, and `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- this task's handoff docs, the PLAN-103 sidecar, `PR_DRAFT.md`, and
+  `CHANGELOG.md`
 
-What changed: the default `rigid_body` front door now exposes
-`SceneSetup.info["capture_metrics"]`. The payload exports row, solver label and
-enum, material controls, dynamic-body count, world time, current max
-speed/min-height/energy/contact/step diagnostics, and compact history ranges.
-The focused baseline test now asserts the payload before and after reset.
+What changed: the numbered row 18 `contact` front door now exposes
+`SceneSetup.info["capture_metrics"]`. The payload exports row, actual
+sequential-impulse rigid-body solver identity, multibody-link contact scope,
+executor/material/drop/slide/push controls, world time, current drop/slide/push
+lane metrics, contact body kinds, and compact history ranges for drop, slide,
+pusher-target, and step timing. The public docked capture command for this row
+is now 144 frames so the drop, slide, and pusher lanes all reach their contact
+events in the manifest.
 
 Validation already run for this slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response -q`
   reported `1 passed`.
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
-  reported `4 passed`.
-- `pixi run py-demo-capture -- --scene rigid_body --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_body_metrics_1781224228`
-  wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
-  scene-metrics events. Latest metrics had solver `Sequential impulse`, solver
-  enum `SEQUENTIAL_IMPULSE`, dynamic-body count `5.0`, max speed
-  `2.0129441124879746`, and min height `0.9956250000000001`.
+- `pixi run py-demo-capture -- --scene contact --frames 144 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_metrics_1781225144`
+  wrote a nonblank docked 960x540 screenshot, 143 PNG frames, and 144
+  scene-metrics events. Latest metrics had solver
+  `sequential_impulse_rigid_body`, contact scope `multibody_link_contact`, drop
+  max contacts `1.0`, slide max contacts `1.0`, push max contacts `1.0`, push
+  target travel `0.07463822342673943`, and drop max upward velocity
+  `1.1546369999999997`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+  reported `4 passed` after lint formatting.
 - `pixi run lint` passed.
-- Bounded `pixi run build` passed with `DART_PARALLEL_JOBS=4`.
+- Bounded `pixi run build` passed with safe parallelism and reported
+  `ninja: no work to do`.
 - `git diff --check` was clean.
 
-Immediate next step for a fresh session: verify `git status -sb` and inspect the
-branch tip on `origin/feature/rigid-body-gui-visual-verification`. If the
-baseline-metrics commit is present there, continue with the next implementation
-slice. The explorer-backed recommendation is to add capture metrics to row 18,
-`contact`, because its multibody-link drop/slide/pusher metrics are already
-JSON-friendly and high-value for users.
+Immediate next step for a fresh session: verify `git status -sb`. If this slice
+is already committed locally, do not push without approval; continue the
+capture-metrics hardening pass on the next high-value rigid row, likely
+`rigid_contact_inspector` unless newer evidence points elsewhere. If the slice
+is still uncommitted, review the diff, rerun any stale gate, and commit it
+locally before continuing.
 
 ## Last Session Summary
 

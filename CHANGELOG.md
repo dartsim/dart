@@ -67,7 +67,8 @@
   - Upgraded the Python `py-demos` `contact` scene into the numbered rigid
     visual-verification workflow as `Rigid Link Contact`, showing multibody
     links dropping, friction-sliding, and pushing a rigid target with link
-    contact counts, rebound, slide travel, target travel, and replayed controls.
+    contact counts, rebound, slide travel, target travel, replayed controls,
+    and scene-owned capture metrics.
   - Added `rigid_restitution_ladder` to Python `py-demos`, showing matched
     low/medium/high restitution bounce lanes with solver/executor controls,
     rebound height, vertical velocity, contact, energy-trend, and step-profile
@@ -190,9 +191,10 @@
   - Added scene-owned capture metrics to `py-demo-capture` manifests for
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
-    manifest. The baseline, solver-comparison, contact-policy,
-    step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
-    it to make capture artifacts carry scene-owned physics/runtime evidence.
+    manifest. The baseline, solver-comparison, contact-policy, multibody
+    link-contact, step-diagnostics, contact-scale budget, and rigid IPC stack
+    packet rows use it to make capture artifacts carry scene-owned
+    physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`

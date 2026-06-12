@@ -41,6 +41,13 @@
       current diagnostics, and history ranges through the same capture hook. The
       focused baseline guard reported `1 passed`; the real docked capture wrote
       24 scene-metrics events.
+- [x] Link-contact capture-metrics follow-up: the numbered `contact` row now
+      publishes sequential-impulse solver identity, multibody-link contact
+      scope, executor/material/drop/slide/push controls, current lane metrics,
+      contact body kinds, and compact history ranges through the same capture
+      hook. The focused link-contact guard reported `1 passed`; the real docked
+      144-frame capture wrote 144 scene-metrics events and covered all three
+      lane histories.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
       same capture hook so manifests preserve method-family/contact-policy case
@@ -235,7 +242,7 @@
 - [x] Visual smoke: `rigid_contact_solver_compare` capture writes nonblank PNGs
       with the docked ImGui workspace and 72 scene-metrics events.
 - [x] Visual smoke: `contact` capture writes nonblank PNGs with the docked
-      ImGui workspace.
+      ImGui workspace and 144 scene-metrics events.
 - [x] Visual smoke: `rigid_restitution_ladder` capture writes nonblank PNGs
       with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_material_mixing` capture writes nonblank PNGs with

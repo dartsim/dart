@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.002
 _HISTORY = 180
@@ -385,6 +385,74 @@ class _RigidLinkContact:
     def force_drag(self, event: dict[str, Any]) -> None:
         self.bridge.force_drag(event)
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        drop_contacts = list(self._drop_contact_history)
+        drop_speeds = list(self._drop_speed_history)
+        drop_heights = list(self._drop_height_history)
+        slide_contacts = list(self._slide_contact_history)
+        slide_speeds = list(self._slide_speed_history)
+        slide_travel = list(self._slide_travel_history)
+        push_contacts = list(self._push_contact_history)
+        push_travel = list(self._push_target_travel_history)
+        push_speeds = list(self._push_target_speed_history)
+        step_values = list(self._step_ms_history)
+        metrics = dict(self._last_metrics)
+        return {
+            "row": "contact",
+            "solver": "sequential_impulse_rigid_body",
+            "contact_scope": "multibody_link_contact",
+            "rigid_body_solver": self.world.rigid_body_solver.name,
+            "executor": self._executor_label(),
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "ground_friction": float(self.ground_friction),
+                "ground_restitution": float(self.ground_restitution),
+                "drop_height": float(self.drop_height),
+                "slide_speed": float(self.slide_speed),
+                "push_speed": float(self.push_speed),
+            },
+            "lanes": {
+                "drop": {
+                    "height": float(metrics.get("drop_height", 0.0)),
+                    "velocity": float(metrics.get("drop_velocity", 0.0)),
+                    "contact_count": float(metrics.get("drop_contact_count", 0.0)),
+                    "max_upward_velocity": float(
+                        metrics.get("drop_max_upward_velocity", 0.0)
+                    ),
+                },
+                "slide": {
+                    "speed": float(metrics.get("slide_speed", 0.0)),
+                    "travel": float(metrics.get("slide_travel", 0.0)),
+                    "height_error": float(metrics.get("slide_height_error", 0.0)),
+                    "contact_count": float(metrics.get("slide_contact_count", 0.0)),
+                },
+                "push": {
+                    "striker_speed": float(metrics.get("push_striker_speed", 0.0)),
+                    "target_speed": float(metrics.get("push_target_speed", 0.0)),
+                    "target_travel": float(metrics.get("push_target_travel", 0.0)),
+                    "contact_count": float(metrics.get("push_contact_count", 0.0)),
+                },
+            },
+            "metrics": metrics,
+            "history": {
+                "samples": float(len(step_values)),
+                "drop_min_height": min(drop_heights, default=0.0),
+                "drop_max_speed": max(drop_speeds, default=0.0),
+                "drop_max_contacts": max(drop_contacts, default=0.0),
+                "slide_min_speed": min(slide_speeds, default=0.0),
+                "slide_max_travel": max(slide_travel, default=0.0),
+                "slide_max_contacts": max(slide_contacts, default=0.0),
+                "push_max_target_travel": max(push_travel, default=0.0),
+                "push_max_target_speed": max(push_speeds, default=0.0),
+                "push_max_contacts": max(push_contacts, default=0.0),
+                "max_step_ms": max(step_values, default=0.0),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -650,6 +718,7 @@ def build() -> SceneSetup:
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
         },
     )
 

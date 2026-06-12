@@ -584,7 +584,7 @@ pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 \
     --width 960 --height 540 --show-ui
-pixi run py-demo-capture -- --scene contact --frames 72 \
+pixi run py-demo-capture -- --scene contact --frames 144 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 \
     --width 960 --height 540 --show-ui

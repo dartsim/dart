@@ -76,7 +76,7 @@ instead of early rows that only say what not to infer.
 | 15    | `rigid_solver_compare`           | How do the rigid method families differ visually?                        | Sequential impulse and IPC       | Executor, launch speed, friction, restitution, speed, wall clearance, position divergence, step profile timing, and capture metrics.                                                                                                                    | `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui`            | `test_rigid_solver_compare_records_wall_response`, replay-control snapshot coverage, registry/category ordering, panel coverage, capture metrics, and visual smoke capture.                                                  | Generic thin-wall comparison; not the sole no-tunneling proof.                                             |
 | 16    | `rigid_executor_equivalence`     | Does a parallel executor preserve the same physics?                      | Same solver in both worlds       | Physics solver, launch speed, friction, restitution, pose divergence, velocity divergence, contact-count delta, and step timing.                                                                                                                        | `pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui`      | `test_rigid_executor_equivalence_keeps_parallel_rollout_matched`, panel/category coverage, and visual smoke capture inspected.                                                                                               | Same-solver executor-equivalence row; not a solver-family comparison.                                      |
 | 17    | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?                         | Contact solver policies          | Executor, launch speed, friction, restitution, initial tilt, contact count, penetration depth, analytic corner clearance, speed, energy, divergence, step profile timing, and capture metrics.                                                          | `pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui`    | `test_rigid_contact_solver_compare_records_coupled_contact_policy`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                 | Contact-policy row only; it does not compare IPC against sequential impulse.                               |
-| 18    | `contact`                        | Do articulated links contact like rigid bodies?                          | World multibody link contact     | Executor, ground friction, ground restitution, drop height, slide speed, push speed, link drop/slide/pusher lanes, link/rigid contact counts, rebound, slide travel, target travel, and step timing.                                                    | `pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui`                         | `test_rigid_link_contact_exercises_multibody_contact_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                      | Multibody-link contact row only; not a contact-impulse or compliance inspector.                            |
+| 18    | `contact`                        | Do articulated links contact like rigid bodies?                          | World multibody link contact     | Executor, ground friction, ground restitution, drop height, slide speed, push speed, link drop/slide/pusher lanes, link/rigid contact counts, rebound, slide travel, target travel, step timing, and capture metrics.                                   | `pixi run py-demo-capture -- --scene contact --frames 144 --width 960 --height 540 --show-ui`                        | `test_rigid_link_contact_exercises_multibody_contact_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                     | Multibody-link contact row only; not a contact-impulse or compliance inspector.                            |
 | 19    | `rigid_friction_threshold`       | Where is the inclined-ramp stick/slip boundary?                          | IPC                              | Executor, ramp angle, controlled friction, threshold, lane drift, lane speed, clearance, step profile timing, and diagnostic plots.                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui`        | `test_rigid_friction_threshold_separates_stick_and_slip_lanes`, panel/category coverage, and visual smoke capture inspected.                                                                                                 | Near-threshold behavior is tunable visual evidence, not an exact proof point.                              |
 | 20    | `rigid_spin_roll_coupling`       | How does contact friction couple sliding and spin?                       | Sequential impulse               | Executor, contact friction, launch speed, backspin ratio, matched rolling/sliding/backspin/low-friction lanes, contact slip, roll ratio, spin change, travel, energy, contact count, and step timing.                                                   | `pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui`        | `test_rigid_spin_roll_coupling_converts_slip_to_roll`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                               | Spin/rolling visual diagnostic only; no public rolling-resistance or torsional-friction parameter claim.   |
 | 21    | `rigid_stack_stability`          | Does a top-heavy mass-ratio stack stay ordered?                          | Sequential impulse and IPC       | Executor, top mass ratio, friction, max speed, top drift, analytic clearance/overlap, height error, divergence, and step profile.                                                                                                                       | `pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui`           | `test_rigid_stack_stability_keeps_ipc_stack_ordered`, workflow ordering, panel/category coverage, and visual smoke capture inspected.                                                                                        | Compact two-box stack only; taller IPC stacks remain benchmark/capture-first.                              |
@@ -190,9 +190,10 @@ The capture helper also stores scene-owned metrics for rows and packets that
 expose `SceneSetup.info["capture_metrics"]`; `rigid_step_diagnostics` and
 `rigid_contact_scale_budget` summarize their profiling, memory, contact, and
 budget metrics into `manifest.json` as first/latest events, per-key presence
-counts, and top-level numeric ranges, while `rigid_ipc_stack_packet` mirrors
-clearance, contact, drift, height, wall-time, frame-budget, and benchmark
-values through the same schema.
+counts, and top-level numeric ranges. The `contact` row uses the same hook for
+multibody-link drop/slide/pusher lane summaries, while `rigid_ipc_stack_packet`
+mirrors clearance, contact, drift, height, wall-time, frame-budget, and
+benchmark values through the same schema.
 
 ## Regenerating Visual Evidence
 
@@ -221,7 +222,7 @@ pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 96
 pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui
-pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene contact --frames 144 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_friction_threshold --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui
@@ -310,6 +311,19 @@ Evidence recorded for this slice:
   controls, and panel coverage synchronized. The docked visual capture
   `pixi run py-demo-capture -- --scene contact --frames 72 --width 960 --height 540 --show-ui`
   wrote a nonblank 960x540 screenshot plus 71 PNG frames.
+- Latest link-contact capture-metrics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response -q`
+  reported `1 passed`. The `contact` row now exports scene-owned capture
+  metrics for the sequential-impulse rigid-body solver, multibody-link contact
+  scope, executor/material/drop/slide/push controls, current drop/slide/pusher
+  lane metrics, contact body kinds, and compact history ranges. The real
+  docked capture
+  `pixi run py-demo-capture -- --scene contact --frames 144 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_metrics_1781225144`
+  wrote a nonblank 960x540 docked screenshot, 143 PNG frames, and 144
+  scene-metrics events. The latest manifest metrics recorded
+  `drop_max_contacts=1.0`, `slide_max_contacts=1.0`,
+  `push_max_contacts=1.0`, `push_max_target_travel=0.07463822342673943`, and
+  `drop_max_upward_velocity=1.1546369999999997`.
 - Previous full Python sweep evidence: `pixi run test-py` reported
   `617 passed, 9 skipped` after the joint-breakage lifecycle follow-up.
 - Current curation guard:

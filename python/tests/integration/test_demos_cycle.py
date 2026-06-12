@@ -2564,6 +2564,17 @@ def test_rigid_link_contact_exercises_multibody_contact_response() -> None:
 
     mid_metrics = dict(controller._last_metrics)
     assert max(controller._push_contact_history) >= 1.0
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    mid_capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert mid_capture_metrics["row"] == "contact"
+    assert mid_capture_metrics["solver"] == "sequential_impulse_rigid_body"
+    assert mid_capture_metrics["contact_scope"] == "multibody_link_contact"
+    assert mid_capture_metrics["rigid_body_solver"] == "SEQUENTIAL_IMPULSE"
+    assert set(mid_capture_metrics["lanes"]) == {"drop", "slide", "push"}
+    assert mid_capture_metrics["lanes"]["push"][
+        "target_travel"
+    ] == pytest.approx(mid_metrics["push_target_travel"])
+    assert mid_capture_metrics["history"]["push_max_contacts"] >= 1.0
 
     for _ in range(530):
         setup.pre_step()
@@ -2590,6 +2601,35 @@ def test_rigid_link_contact_exercises_multibody_contact_response() -> None:
     assert controller.ground.restitution == pytest.approx(
         controller.ground_restitution
     )
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        float(controller.executor_index)
+    )
+    assert capture_metrics["controls"]["ground_friction"] == pytest.approx(
+        controller.ground_friction
+    )
+    assert capture_metrics["controls"]["ground_restitution"] == pytest.approx(
+        controller.ground_restitution
+    )
+    assert capture_metrics["lanes"]["drop"]["contact_count"] == pytest.approx(
+        metrics["drop_contact_count"]
+    )
+    assert capture_metrics["lanes"]["slide"]["travel"] == pytest.approx(
+        metrics["slide_travel"]
+    )
+    assert capture_metrics["lanes"]["push"]["target_travel"] == pytest.approx(
+        metrics["push_target_travel"]
+    )
+    assert capture_metrics["metrics"]["contact_body_kinds"] == metrics[
+        "contact_body_kinds"
+    ]
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["drop_max_contacts"] >= 1.0
+    assert capture_metrics["history"]["slide_max_contacts"] >= 1.0
+    assert capture_metrics["history"]["push_max_target_travel"] > 0.05
 
 
 def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
