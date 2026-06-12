@@ -434,10 +434,10 @@ is strictly positive and passes solution validation. Non-warm-started boxed
 LCPs without friction-index coupling then try a projected active-set exact solve:
 the unconstrained solution proposes lower/upper/free rows, the free block is
 solved exactly, and the shortcut is accepted only if the final boxed solution
-passes the shared validator. Small strictly interior friction-index rows use the
-shared validated friction-index exact solve; larger friction-index,
-warm-started, and explicit custom-option calls stay on the operator-splitting
-loop.
+passes the shared validator. Small and medium strictly interior friction-index
+rows use the shared validated friction-index exact solve; larger
+friction-index, warm-started, and explicit custom-option calls stay on the
+operator-splitting loop.
 The ADMM loop reuses its linear-solve right-hand side and projected-step
 workspace across iterations, avoiding repeated per-iteration vector allocation
 without changing the operator-splitting updates or convergence tests.

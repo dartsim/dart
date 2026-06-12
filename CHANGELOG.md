@@ -1549,6 +1549,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Raised `BgsSolver`'s strict-interior exact gate through the current
     64-contact FrictionIndex comparison packet, moving the refreshed
     FrictionIndex BGS average to `1.24x`.
+  - Raised `AdmmSolver`'s strict-interior friction-index exact gate through the
+    current medium comparison packet, moving the refreshed FrictionIndex ADMM
+    average from `1.70x` to `1.41x` while leaving the large row on the
+    operator-splitting path.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

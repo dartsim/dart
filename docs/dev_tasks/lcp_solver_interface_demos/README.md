@@ -1,5 +1,90 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ADMM FrictionIndex Exact Gate
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `7dad05ea3aa Raise BGS friction exact gate`.
+- Current checkpoint target:
+  `Raise ADMM friction exact gate`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 72 commits, with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 73
+  commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes, PR creation, and
+  other GitHub mutations require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `AdmmSolver` raises its strict-interior friction-index exact gate from 12 to
+  48 variables. This covers the current 16-contact FrictionIndex comparison
+  packet while leaving the large 64-contact row on the operator-splitting path.
+- A 192-variable probe was rejected because it helped the medium row but did
+  not materially improve the large row and had worse regression risk.
+- Unit coverage adds a 16-contact FrictionIndex ADMM exact-path regression with
+  `maxIterations = 1` and expects zero iterations.
+- The regenerated full profile moved FrictionIndex `Admm` from `1.70x` to
+  `1.41x`. The largest remaining rows are now Standard `Dantzig 1.73`,
+  Standard `SymmetricPsor 1.71`, Standard `Baraff 1.61`, FrictionIndex
+  `Apgd 1.57`, and FrictionIndex `ShockPropagation 1.55`.
+
+Focused and profile evidence:
+
+- Baseline:
+  `build/friction_index_admm_baseline.json`.
+- Rejected large gate probe:
+  `build/friction_index_admm_gate192_probe.json`.
+- Accepted medium gate probe:
+  `build/friction_index_admm_gate48_probe.json`.
+- Focused FrictionIndex timings moved approximately:
+  - `Admm/4`: `1103.20ns -> 1151.38ns`.
+  - `Admm/16`: `19081.82ns -> 12127.16ns`.
+  - `Admm/64`: `281190.62ns -> 283267.40ns`.
+- Latest regenerated profile highlights:
+  - Standard: `Dantzig 1.73`, `SymmetricPsor 1.71`, `Baraff 1.61`,
+    `Apgd 1.56`, with `Admm 1.09`.
+  - Boxed: no solver above `1.5x`; highest rows are
+    `SymmetricPsor 1.46`, `ShockPropagation 1.43`, and
+    `RedBlackGaussSeidel 1.42`.
+  - FrictionIndex: no solver above `1.6x`; `Admm 1.41`; highest rows are
+    `Apgd 1.57`, `ShockPropagation 1.55`, and `Sap 1.46`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS \
+  pixi run lint
+git diff --check
+```
+
+Immediate resume guidance:
+
+1. Inspect `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, review the expected dirty files and
+   commit with `Raise ADMM friction exact gate`.
+3. If this checkpoint is already committed, continue with Standard
+   `Dantzig 1.73`, Standard `SymmetricPsor 1.71`, Standard `Baraff 1.61`,
+   FrictionIndex `Apgd 1.57`, or FrictionIndex `ShockPropagation 1.55`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - BGS FrictionIndex Exact Gate
 
 This is the latest hand-off state. Sections below are historical checkpoints

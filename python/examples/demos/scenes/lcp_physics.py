@@ -228,9 +228,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "MinimumMapNewton/InteriorPoint/FischerBurmeisterNewton rows"
         ),
         "current_laggards": (
-            "No Standard solver average is above 1.6x; Lemke, Jacobi, "
-            "Baraff, Apgd, RedBlackGaussSeidel, BlockedJacobi, "
-            "SymmetricPsor, Dantzig, and Sap are the largest remaining rows"
+            "Dantzig and SymmetricPsor are above 1.7x; Baraff, Apgd, "
+            "Jacobi, RedBlackGaussSeidel, SubspaceMinimization, Lemke, "
+            "and BlockedJacobi are the next largest rows"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -247,13 +247,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs lead; Jacobi, Dantzig, NNCG, Sap, "
-            "SubspaceMinimization, Admm, BoxedSemiSmoothNewton, "
-            "BlockedJacobi, Apgd, and BGS cluster below 1.45x"
+            "Pgs/Tgs lead; Dantzig, BlockedJacobi, Jacobi, "
+            "SubspaceMinimization, Admm, and Sap cluster below 1.3x"
         ),
         "current_laggards": (
-            "SymmetricPsor is slightly above 1.6x; RedBlackGaussSeidel and "
-            "ShockPropagation are the next largest rows"
+            "No Boxed solver average is above 1.5x; SymmetricPsor, "
+            "ShockPropagation, RedBlackGaussSeidel, BGS, "
+            "BoxedSemiSmoothNewton, NNCG, and Apgd are the largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -269,14 +269,14 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs/Dantzig/BGS/Staggering/NNCG/Jacobi/"
-            "RedBlackGaussSeidel/SymmetricPsor are the current leading group"
+            "Tgs/Pgs/Jacobi/Staggering/RedBlackGaussSeidel/Dantzig/"
+            "NNCG/BoxedSemiSmoothNewton/BGS/SymmetricPsor are the current "
+            "leading group"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 1.8x; Admm, "
-            "ShockPropagation, Sap, Apgd, SubspaceMinimization, "
-            "BoxedSemiSmoothNewton, and BlockedJacobi are the largest "
-            "remaining rows"
+            "No FrictionIndex solver average is above 1.6x; Apgd, "
+            "ShockPropagation, Sap, Admm, SubspaceMinimization, "
+            "and BlockedJacobi are the largest remaining rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
