@@ -284,6 +284,22 @@ struct DART_API LcpProblem
     return size() == 0;
   }
 
+  /// Returns true when dimensions, finite data, bounds, and friction indices
+  /// form a valid LCP problem.
+  bool isValid() const
+  {
+    return validate(nullptr);
+  }
+
+  /// Returns an empty string for valid problems, otherwise a diagnostic for the
+  /// first invalid invariant encountered.
+  std::string getValidationMessage() const
+  {
+    std::string message;
+    validate(&message);
+    return message;
+  }
+
   /// Returns true when bounds and friction indices match the standard LCP form.
   ///
   /// Standard LCP solvers expect lo = 0, hi = +inf, and findex < 0. The
@@ -378,6 +394,83 @@ struct DART_API LcpProblem
   }
 
 private:
+  bool validate(std::string* message) const
+  {
+    const bool dimensionMismatch
+        = (A.rows() != A.cols()) || (A.rows() != b.size())
+          || (lo.size() != b.size()) || (hi.size() != b.size())
+          || (findex.size() != b.size());
+    if (dimensionMismatch) {
+      if (message) {
+        *message = "Matrix/vector dimensions inconsistent";
+      }
+      return false;
+    }
+
+    if (!A.allFinite()) {
+      if (message) {
+        *message = "Matrix contains non-finite values";
+      }
+      return false;
+    }
+
+    if (!b.allFinite()) {
+      if (message) {
+        *message = "Vector b contains non-finite values";
+      }
+      return false;
+    }
+
+    const Eigen::Index n = size();
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const int ref = findex[i];
+      if (ref >= n) {
+        if (message) {
+          *message = "Friction index entry out of range";
+        }
+        return false;
+      }
+
+      if (ref == i) {
+        if (message) {
+          *message = "Friction index entry cannot reference itself";
+        }
+        return false;
+      }
+
+      if (std::isnan(lo[i]) || std::isnan(hi[i])) {
+        if (message) {
+          *message = "Bounds contain NaN";
+        }
+        return false;
+      }
+
+      if (lo[i] == std::numeric_limits<double>::infinity()
+          || hi[i] == -std::numeric_limits<double>::infinity()) {
+        if (message) {
+          *message = "Bounds have invalid infinity direction";
+        }
+        return false;
+      }
+
+      if (ref >= 0 && !std::isfinite(hi[i])) {
+        if (message) {
+          *message = "Friction coefficient (hi) must be finite";
+        }
+        return false;
+      }
+
+      if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
+        if (message) {
+          *message = "Lower bound exceeds upper bound";
+        }
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// Returns true when the matrix, bound, and findex storage match b.size().
   bool hasConsistentDimensions() const
   {

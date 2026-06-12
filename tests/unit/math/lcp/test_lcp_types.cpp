@@ -100,6 +100,8 @@ TEST(LcpTypesTest, StandardProblemConstructorSetsCanonicalBounds)
 
   EXPECT_EQ(problem.size(), 2);
   EXPECT_FALSE(problem.empty());
+  EXPECT_TRUE(problem.isValid());
+  EXPECT_TRUE(problem.getValidationMessage().empty());
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
@@ -117,6 +119,8 @@ TEST(LcpTypesTest, EmptyStandardProblemIsCanonical)
 
   EXPECT_EQ(problem.size(), 0);
   EXPECT_TRUE(problem.empty());
+  EXPECT_TRUE(problem.isValid());
+  EXPECT_TRUE(problem.getValidationMessage().empty());
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
@@ -137,6 +141,8 @@ TEST(LcpTypesTest, BoxedProblemConstructorSetsNoFrictionIndex)
   const LcpProblem problem(A, b, lo, hi);
 
   EXPECT_EQ(problem.size(), 2);
+  EXPECT_TRUE(problem.isValid());
+  EXPECT_TRUE(problem.getValidationMessage().empty());
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
@@ -159,6 +165,8 @@ TEST(LcpTypesTest, FrictionIndexProblemConstructorPreservesFindex)
   const LcpProblem problem(A, b, lo, hi, findex);
 
   EXPECT_EQ(problem.size(), 3);
+  EXPECT_TRUE(problem.isValid());
+  EXPECT_TRUE(problem.getValidationMessage().empty());
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_TRUE(problem.hasFrictionIndex());
@@ -199,6 +207,9 @@ TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_FALSE(problem.isValid());
+  EXPECT_EQ(
+      problem.getValidationMessage(), "Matrix/vector dimensions inconsistent");
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
 
@@ -210,6 +221,9 @@ TEST(LcpTypesTest, ClassificationRejectsInvalidMatrixDimensions)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_FALSE(problem.isValid());
+  EXPECT_EQ(
+      problem.getValidationMessage(), "Matrix/vector dimensions inconsistent");
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
 
@@ -223,6 +237,10 @@ TEST(LcpTypesTest, ClassificationRejectsNonFiniteMatrixAndVectorData)
   EXPECT_FALSE(nanMatrixProblem.isStandardLcp());
   EXPECT_FALSE(nanMatrixProblem.isBoxedLcp());
   EXPECT_FALSE(nanMatrixProblem.hasFrictionIndex());
+  EXPECT_FALSE(nanMatrixProblem.isValid());
+  EXPECT_EQ(
+      nanMatrixProblem.getValidationMessage(),
+      "Matrix contains non-finite values");
   EXPECT_EQ(nanMatrixProblem.getType(), LcpProblemType::Invalid);
 
   Eigen::Vector2d b(0.5, std::numeric_limits<double>::infinity());
@@ -231,6 +249,10 @@ TEST(LcpTypesTest, ClassificationRejectsNonFiniteMatrixAndVectorData)
   EXPECT_FALSE(infVectorProblem.isStandardLcp());
   EXPECT_FALSE(infVectorProblem.isBoxedLcp());
   EXPECT_FALSE(infVectorProblem.hasFrictionIndex());
+  EXPECT_FALSE(infVectorProblem.isValid());
+  EXPECT_EQ(
+      infVectorProblem.getValidationMessage(),
+      "Vector b contains non-finite values");
   EXPECT_EQ(infVectorProblem.getType(), LcpProblemType::Invalid);
 }
 
@@ -243,6 +265,10 @@ TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
       Eigen::Vector2d(0.0, 1.0));
 
   EXPECT_FALSE(reversedBoundsProblem.isBoxedLcp());
+  EXPECT_FALSE(reversedBoundsProblem.isValid());
+  EXPECT_EQ(
+      reversedBoundsProblem.getValidationMessage(),
+      "Lower bound exceeds upper bound");
   EXPECT_EQ(reversedBoundsProblem.getType(), LcpProblemType::Invalid);
 
   Eigen::Vector2d hi(1.0, std::numeric_limits<double>::quiet_NaN());
@@ -253,6 +279,8 @@ TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
       hi);
 
   EXPECT_FALSE(nanBoundsProblem.isBoxedLcp());
+  EXPECT_FALSE(nanBoundsProblem.isValid());
+  EXPECT_EQ(nanBoundsProblem.getValidationMessage(), "Bounds contain NaN");
   EXPECT_EQ(nanBoundsProblem.getType(), LcpProblemType::Invalid);
 
   Eigen::Vector2d loWithPositiveInfinity;
@@ -264,6 +292,10 @@ TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()));
 
   EXPECT_FALSE(positiveInfiniteLowerProblem.isBoxedLcp());
+  EXPECT_FALSE(positiveInfiniteLowerProblem.isValid());
+  EXPECT_EQ(
+      positiveInfiniteLowerProblem.getValidationMessage(),
+      "Bounds have invalid infinity direction");
   EXPECT_EQ(positiveInfiniteLowerProblem.getType(), LcpProblemType::Invalid);
 
   Eigen::Vector2d hiWithNegativeInfinity;
@@ -275,6 +307,10 @@ TEST(LcpTypesTest, BoxedClassificationRejectsInvalidBounds)
       hiWithNegativeInfinity);
 
   EXPECT_FALSE(negativeInfiniteUpperProblem.isBoxedLcp());
+  EXPECT_FALSE(negativeInfiniteUpperProblem.isValid());
+  EXPECT_EQ(
+      negativeInfiniteUpperProblem.getValidationMessage(),
+      "Bounds have invalid infinity direction");
   EXPECT_EQ(negativeInfiniteUpperProblem.getType(), LcpProblemType::Invalid);
 }
 
@@ -290,6 +326,9 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidBoundsDimensions)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_FALSE(problem.isValid());
+  EXPECT_EQ(
+      problem.getValidationMessage(), "Matrix/vector dimensions inconsistent");
   EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
 }
 
@@ -308,6 +347,10 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
       Eigen::Vector2i(-1, 2));
 
   EXPECT_FALSE(outOfRangeProblem.hasFrictionIndex());
+  EXPECT_FALSE(outOfRangeProblem.isValid());
+  EXPECT_EQ(
+      outOfRangeProblem.getValidationMessage(),
+      "Friction index entry out of range");
   EXPECT_EQ(outOfRangeProblem.getType(), LcpProblemType::Invalid);
 
   const LcpProblem selfReferenceProblem(
@@ -318,5 +361,9 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
       Eigen::Vector2i(-1, 1));
 
   EXPECT_FALSE(selfReferenceProblem.hasFrictionIndex());
+  EXPECT_FALSE(selfReferenceProblem.isValid());
+  EXPECT_EQ(
+      selfReferenceProblem.getValidationMessage(),
+      "Friction index entry cannot reference itself");
   EXPECT_EQ(selfReferenceProblem.getType(), LcpProblemType::Invalid);
 }

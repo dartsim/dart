@@ -1416,6 +1416,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     pivots, preventing stale single-pass contact solutions. The Python LCP demo
     now includes a coupled two-contact active-bound packet in its representative
     solver suite.
+  - Exposed `LcpProblem::isValid()` / `getValidationMessage()` and Python
+    `LcpProblem.is_valid()` / `get_validation_message()` so LCP demos and tests
+    can report shared problem-invariant diagnostics before solver dispatch.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly

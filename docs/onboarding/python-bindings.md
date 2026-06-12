@@ -134,6 +134,9 @@ deprecated `dart.math` module path.
 outputs on the same problem without relying on in-place mutation. This is a
 standalone comparison API; DART 7 `World` contact behavior remains configured by
 public method values such as `ContactSolverMethod.BOXED_LCP`.
+`LcpProblem.is_valid()` and `get_validation_message()` expose the same
+pre-solve invariant checks as C++, which lets demos report malformed LCP packets
+before comparing solver results.
 `LcpSolver.supports_standard_lcp()`, `supports_boxed_lcp()`,
 `supports_friction_index()`, and
 `supports_problem(problem, standard_tolerance=None)` report native solver-family

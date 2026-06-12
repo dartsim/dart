@@ -53,6 +53,9 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   findex coupling, and `LcpProblem::hasFrictionIndex()` exposes contact-style
   bound coupling when every non-negative `findex` entry references another
   in-range row.
+- `LcpProblem::isValid()` and `LcpProblem::getValidationMessage()` expose the
+  shared invariant checks directly, so tests and demos can reject malformed
+  packets before entering a solver-specific path.
 - All solvers implement
   `LcpSolver::solve(const LcpProblem&, Eigen::VectorXd&, const LcpOptions&)`.
 - `LcpSolver::supportsStandardLcp()`, `supportsBoxedLcp()`,

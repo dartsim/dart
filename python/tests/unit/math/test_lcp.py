@@ -77,6 +77,8 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
 
     standard = dart.LcpProblem(A, b)
     assert standard.size() == 2
+    assert standard.is_valid()
+    assert standard.get_validation_message() == ""
     assert standard.get_type() == dart.LcpProblemType.STANDARD
     assert standard.is_standard_lcp()
     assert standard.is_boxed_lcp()
@@ -115,6 +117,8 @@ def test_lcp_problem_rejects_findex_with_invalid_bound_dimensions() -> None:
     )
 
     assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_valid()
+    assert "dimensions inconsistent" in problem.get_validation_message()
     assert not problem.is_standard_lcp()
     assert not problem.is_boxed_lcp()
     assert not problem.has_friction_index()
@@ -125,6 +129,8 @@ def test_lcp_problem_rejects_invalid_matrix_dimensions() -> None:
     problem = dart.LcpProblem(np.eye(1), np.array([1.0, 2.0]))
 
     assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_valid()
+    assert "dimensions inconsistent" in problem.get_validation_message()
     assert not problem.is_standard_lcp()
     assert not problem.is_boxed_lcp()
     assert not problem.has_friction_index()
@@ -144,6 +150,8 @@ def test_lcp_problem_rejects_invalid_infinite_bound_direction(
     problem = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]), lo, hi)
 
     assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_valid()
+    assert "invalid infinity direction" in problem.get_validation_message()
     assert not problem.is_boxed_lcp()
     assert not dart.DantzigSolver().supports_problem(problem)
 
@@ -171,6 +179,8 @@ def test_lcp_problem_rejects_invalid_findex_references(
     )
 
     assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_valid()
+    assert "Friction index" in problem.get_validation_message()
     assert not problem.is_boxed_lcp()
     assert not problem.has_friction_index()
     assert not dart.DantzigSolver().supports_problem(problem)
@@ -257,6 +267,8 @@ def test_lcp_solver_rejects_non_finite_problem_data() -> None:
     problem = dart.LcpProblem(A, np.array([1.0, 2.0]))
 
     assert problem.get_type() == dart.LcpProblemType.INVALID
+    assert not problem.is_valid()
+    assert "non-finite" in problem.get_validation_message()
     assert not problem.is_standard_lcp()
     assert not problem.is_boxed_lcp()
     assert not problem.has_friction_index()

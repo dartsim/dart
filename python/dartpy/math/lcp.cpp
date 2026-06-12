@@ -220,6 +220,8 @@ void defLcp(nb::module_& m)
       .def_ro("findex", &LcpProblem::findex)
       .def("size", &LcpProblem::size)
       .def("empty", &LcpProblem::empty)
+      .def("is_valid", &LcpProblem::isValid)
+      .def("get_validation_message", &LcpProblem::getValidationMessage)
       .def("get_type", &LcpProblem::getType, nb::arg("tolerance") = 0.0)
       .def(
           "is_standard_lcp",

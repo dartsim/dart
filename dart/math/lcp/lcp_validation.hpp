@@ -156,8 +156,15 @@ inline bool validateProblem(
 inline bool validateProblem(
     const LcpProblem& problem, std::string* message = nullptr)
 {
-  return validateProblem(
-      problem.A, problem.b, problem.lo, problem.hi, problem.findex, message);
+  const std::string problemMessage = problem.getValidationMessage();
+  if (problemMessage.empty()) {
+    return true;
+  }
+
+  if (message) {
+    *message = problemMessage;
+  }
+  return false;
 }
 
 inline bool computeEffectiveBounds(
