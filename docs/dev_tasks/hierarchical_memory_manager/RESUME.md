@@ -1,10 +1,22 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, EnTT Comparative Evidence)
+## Authoritative Stop Handoff (2026-06-12, Final)
 
-The active branch is still `pr/hmm-phase45-follow-up-clean`, tracking
-`origin/pr/hmm-phase45-follow-up-clean`. A temporary local experiment branch was
-created and deleted with no commits; continue from this single branch.
+Maintainer instruction: stop all implementation, optimization, benchmark,
+build, lint, test, and CI-followup work. This docs-only handoff intentionally
+has no fresh verification.
+
+Resume from exactly one branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly redirects the work. There is no open PR for this branch at this
+checkpoint.
+
+The interrupted dense-page `StlAllocator` experiment for fixed 1024-element
+EnTT component payload pages is not retained. The source tree is intentionally
+restored to the pushed allocator policy. Do not use any benchmark output
+produced after the stop request as validation for this handoff.
 
 Current measured gap:
 
@@ -24,6 +36,20 @@ Immediate next step: inspect EnTT storage layout and DART free-list placement
 for fixed 1024-element component payload pages plus sparse/packed entity pages.
 Only keep an allocator/storage change if a fresh focused EnTT checker proves
 the whole 12-row matrix against foonathan and std without noisy or missing rows.
+
+Fresh-session start:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then verify from scratch before any new code, benchmark, or PR work. Future
+implementation should start from a fresh follow-up branch/PR, not from merged
+PR #2956.
 
 ## Authoritative Stop Handoff (2026-06-11, Final)
 

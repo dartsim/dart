@@ -1,11 +1,32 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Current Continuation (2026-06-12, EnTT Comparative Evidence)
+## Authoritative Stop Handoff (2026-06-12, Final)
 
-Work resumed from the final stop handoff because the active thread goal is to
-complete this dev task. The authoritative branch remains
+Maintainer instruction: stop all implementation, optimization, benchmark,
+build, lint, test, and CI-followup work. This update is handoff documentation
+only. No fresh verification is intentionally run for this stop checkpoint.
+
+Use exactly one branch as the resume point:
 `pr/hmm-phase45-follow-up-clean`, tracking
-`origin/pr/hmm-phase45-follow-up-clean`; no follow-up PR is open for this branch.
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly redirects the work.
+
+The only post-PR #2956 continuation branch to preserve is
+`pr/hmm-phase45-follow-up-clean`. It contains the dynamic rigid IPC no-growth
+slice plus the latest EnTT comparative handoff evidence. No open PR exists for
+this branch at this checkpoint.
+
+Stop-state notes for the next fresh Claude/Codex session:
+
+- The interrupted dense-page `StlAllocator` experiment for 1024-element EnTT
+  component payload pages is not retained. The source tree is intentionally
+  restored to the pushed allocator policy.
+- Do not use any benchmark output produced after the stop request as
+  validation for this handoff. Restart evidence collection from a clean
+  session before keeping allocator or simulation changes.
+- Continue only after explicitly choosing a fresh follow-up branch/PR. Do not
+  add more implementation work to the merged PR #2956 history.
 
 Current evidence narrows the remaining allocator-comparative surface to EnTT
 steady-state registry layout rather than allocator calls:
@@ -30,6 +51,19 @@ the EnTT no-growth rows, especially the fixed 1024-element EnTT component
 payload pages and sparse/packed entity pages. Do not lower checker thresholds
 or keep free-list color-cycle tuning unless it improves the full EnTT matrix
 for a workload reason that applies beyond one entity count.
+
+Fresh-session entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `RESUME.md` and verify from scratch before any new code, benchmark,
+or PR work.
 
 ## Authoritative Stop Handoff (2026-06-11, Final)
 
