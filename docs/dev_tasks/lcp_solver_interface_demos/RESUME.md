@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 BlockedJacobi Standard LLT Path
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 70]`
+- Last committed checkpoint:
+  `f7a3a94dc09 Record PLAN-091 harness alignment for LCP work`
+- Checkpoint target:
+  `Use LLT for BlockedJacobi standard exact path`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 71 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `BlockedJacobiSolver` routes its Standard strict-interior exact path through
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- A combined `Jacobi` + `BlockedJacobi` LLT-first probe was rejected for
+  `Jacobi`; `JacobiSolver` stays on the existing LU-first helper in this slice.
+- The slice follows the PR #2986 harness stance captured below: evidence uses
+  the current interim LCP solver identity path from `BM_LcpCompare` benchmark
+  names, `contract_ok` counters, timing fields, manifest metadata, and native
+  support checks.
+
+Evidence:
+
+- Baseline:
+  `build/standard_jacobi_blocked_baseline.json`.
+- Rejected combined probe:
+  `build/standard_jacobi_blocked_llt_probe.json`.
+- Accepted focused probe:
+  `build/standard_blocked_jacobi_llt_probe.json`.
+- Focused Standard `BlockedJacobi` timings:
+  - `BlockedJacobi/12`: `827.32ns -> 816.27ns`.
+  - `BlockedJacobi/24`: `2887.44ns -> 2252.69ns`.
+  - `BlockedJacobi/48`: `11828.52ns -> 9120.27ns`.
+  - `BlockedJacobi/96`: `63323.76ns -> 40585.69ns`.
+- Latest regenerated profile highlights:
+  - Standard: `BlockedJacobi 1.18`; highest rows are `Jacobi 1.66`,
+    `RedBlackGaussSeidel 1.63`, `Apgd 1.56`, and `Sap 1.51`.
+  - Boxed: highest rows are `Sap 1.68`, `RedBlackGaussSeidel 1.53`,
+    `SymmetricPsor 1.50`, and `ShockPropagation 1.48`.
+  - FrictionIndex: highest rows are `ShockPropagation 1.65`, `Sap 1.64`,
+    `Apgd 1.59`, `NNCG 1.53`, and `SubspaceMinimization 1.52`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline, rejected combined probe, and accepted focused probe for
+    `BM_LcpCompare/Standard/(Jacobi|BlockedJacobi)/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks and commit
+with `Use LLT for BlockedJacobi standard exact path`. If it is already
+committed, investigate Standard `Jacobi 1.66`, Standard
+`RedBlackGaussSeidel 1.63`, or Boxed `Sap 1.68` under the same packet-like
+evidence rules. Do not push without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Post-PLAN-091 Merge / Harness Alignment
 
 This is the latest hand-off. Older sections below are historical checkpoints

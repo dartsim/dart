@@ -1,5 +1,109 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - BlockedJacobi Standard LLT Path
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 70]`.
+- Last committed checkpoint:
+  `f7a3a94dc09 Record PLAN-091 harness alignment for LCP work`.
+- Checkpoint target:
+  `Use LLT for BlockedJacobi standard exact path`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 71 commits.
+- This current slice has not been pushed. No PR is associated with this branch
+  yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- This is a bounded packet-like slice under the PR #2986 harness constraints:
+  the only accepted code change is the `BlockedJacobiSolver` Standard
+  strict-interior exact path.
+- The current evidence packet uses the interim LCP identity path documented in
+  the previous section: `BM_LcpCompare` benchmark names encode problem family,
+  manifest solver name, and size; the profile script derives rows from those
+  names plus `contract_ok` and timing fields; the Python demo exposes manifest
+  metadata and native support checks.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/projection/blocked_jacobi_solver.cpp`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+Current implementation slice:
+
+- `BlockedJacobiSolver` Standard strict-interior exact paths now use
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)` instead of the
+  LU-only strict-interior helper.
+- A combined `Jacobi` + `BlockedJacobi` LLT-first probe was rejected for
+  `Jacobi`: it improved 24-row timing but regressed the 12-row focused row, so
+  `JacobiSolver` remains on the existing helper for this checkpoint.
+
+Focused and profile evidence:
+
+- Baseline:
+  `build/standard_jacobi_blocked_baseline.json`.
+- Rejected combined probe:
+  `build/standard_jacobi_blocked_llt_probe.json`.
+- Accepted focused probe:
+  `build/standard_blocked_jacobi_llt_probe.json`.
+- Focused Standard `BlockedJacobi` timings moved approximately:
+  - `BlockedJacobi/12`: `827.32ns -> 816.27ns`.
+  - `BlockedJacobi/24`: `2887.44ns -> 2252.69ns`.
+  - `BlockedJacobi/48`: `11828.52ns -> 9120.27ns`.
+  - `BlockedJacobi/96`: `63323.76ns -> 40585.69ns`.
+- Latest regenerated profile highlights:
+  - Standard: `BlockedJacobi 1.18`; highest rows are `Jacobi 1.66`,
+    `RedBlackGaussSeidel 1.63`, `Apgd 1.56`, and `Sap 1.51`.
+  - Boxed: highest rows are `Sap 1.68`, `RedBlackGaussSeidel 1.53`,
+    `SymmetricPsor 1.50`, and `ShockPropagation 1.48`.
+  - FrictionIndex: highest rows are `ShockPropagation 1.65`, `Sap 1.64`,
+    `Apgd 1.59`, `NNCG 1.53`, and `SubspaceMinimization 1.52`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline, rejected combined probe, and accepted focused probe for
+    `BM_LcpCompare/Standard/(Jacobi|BlockedJacobi)/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test:
+    `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+    passed.
+  - Focused CTest:
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' -j 1`
+    passed.
+- Still required before commit:
+  - Run `pixi run lint`.
+  - Run `git diff --check`.
+- No push has been performed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, run final lint/diff checks and
+   commit with `Use LLT for BlockedJacobi standard exact path`.
+3. If this checkpoint is already committed, investigate Standard `Jacobi 1.66`
+   or Standard `RedBlackGaussSeidel 1.63` under the same packet-like evidence
+   rules, or choose Boxed `Sap 1.68`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Post-PLAN-091 Merge / Harness Alignment
 
 This is the latest hand-off state. Sections below are historical checkpoints
