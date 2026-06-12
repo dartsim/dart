@@ -1903,6 +1903,17 @@ TEST(StandardStrictInteriorFastPath, HighOverheadSolversUseLargeLinearSolve)
     EXPECT_EQ(result.iterations, 0);
     EXPECT_TRUE(x.isApprox(expected, 1e-8));
   }
+
+  {
+    SubspaceMinimizationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
 }
 
 TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)

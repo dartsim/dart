@@ -153,7 +153,7 @@ LcpResult SubspaceMinimizationSolver::solve(
   if (!options.warmStart) {
     const double validationTolerance = std::max(absTol, compTolOpt);
     if (problem.isStandardLcp(absTol)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
     } else if (problem.isBoxedLcp()) {
       exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(

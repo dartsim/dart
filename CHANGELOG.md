@@ -1558,6 +1558,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     PSOR's standard exact gate through the current 96-row comparison packet,
     moving the refreshed Standard Dantzig and Symmetric PSOR rows to `1.02x`
     and `1.26x` average respectively.
+  - Routed `SubspaceMinimizationSolver` standard strict-interior exact shortcuts
+    through the validated LLT-first helper, moving its refreshed Standard
+    average from `1.64x` to `1.19x`.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

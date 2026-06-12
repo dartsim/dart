@@ -1,5 +1,92 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 SubspaceMinimization Standard LLT Path
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 74]`
+- Last committed checkpoint:
+  `7d53d6a16d7 Use LLT for Dantzig and Symmetric PSOR exact paths`.
+- Checkpoint target:
+  `Use LLT for SubspaceMinimization standard exact path`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 75 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `SubspaceMinimizationSolver` routes its Standard strict-interior exact path
+  through `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- Unit coverage adds `SubspaceMinimizationSolver` to the 96-size Standard
+  exact-path regression with `maxIterations = 1` and zero expected iterations.
+- The regenerated full profile moves Standard `SubspaceMinimization` from the
+  largest remaining Standard row to `1.19x`; no Standard solver average is now
+  above `1.6x`.
+
+Evidence:
+
+- Baseline:
+  `build/standard_subspace_baseline.json`.
+- Accepted focused probe:
+  `build/standard_subspace_llt_probe.json`.
+- Focused Standard SubspaceMinimization timings:
+  - `SubspaceMinimization/12`: `1999.23ns -> 952.73ns`.
+  - `SubspaceMinimization/24`: `5719.05ns -> 2434.37ns`.
+  - `SubspaceMinimization/48`: `23889.67ns -> 12128.22ns`.
+  - `SubspaceMinimization/96`: `149798.16ns -> 48358.45ns`.
+- Latest regenerated profile highlights:
+  - Standard: no solver above `1.6x`; highest rows are `Baraff 1.59`,
+    `BlockedJacobi 1.59`, `Lemke 1.56`, `RedBlackGaussSeidel 1.54`,
+    `Sap 1.53`, `Apgd 1.49`, and `Jacobi 1.48`.
+  - Boxed: `SymmetricPsor 2.08` is now the largest row; next rows are
+    `RedBlackGaussSeidel 1.68`, `Jacobi 1.54`, `ShockPropagation 1.45`,
+    `Apgd 1.41`, and `BlockedJacobi 1.39`.
+  - FrictionIndex: no solver above `1.6x`; highest rows are
+    `SubspaceMinimization 1.57`, `ShockPropagation 1.51`, `NNCG 1.51`,
+    `Apgd 1.50`, `RedBlackGaussSeidel 1.47`, and `Sap 1.42`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and LLT probe for
+    `BM_LcpCompare/Standard/SubspaceMinimization/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - CSV shape check: `Boxed 15/200`, `FrictionIndex 16/200`,
+    `Standard 23/200`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks after any
+edits and commit with `Use LLT for SubspaceMinimization standard exact path`.
+If this checkpoint is already committed, investigate Boxed `SymmetricPsor 2.08`,
+then Boxed `RedBlackGaussSeidel 1.68` or FrictionIndex
+`SubspaceMinimization 1.57`. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 Dantzig/Symmetric PSOR Standard LLT Paths
 
 This is the latest hand-off after resuming the previously stopped

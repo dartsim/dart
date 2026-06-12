@@ -54,9 +54,9 @@ profile evidence shows they are profitable; larger rows stay on the iterative
 projection path. Dense Newton, interior-point, NNCG, and BGS standard exact
 paths use an LLT-first variant of the shared helper and fall back to the
 original LU solve when the LLT candidate is unavailable or fails validation.
-BGS and Symmetric PSOR use that standard exact path through the current 96-row
-comparison packet; lower-overhead projection helpers keep the LU-based
-standard helper. The
+BGS, Symmetric PSOR, and Subspace Minimization use that standard exact path
+through the current 96-row comparison packet; lower-overhead projection helpers
+keep the LU-based standard helper. The
 shared strict-interior friction-index exact helper tries an LLT solve first for
 SPD rows and falls back to the previous LU solve when the LLT candidate is
 unavailable or fails validation. APGD, BGS, Jacobi, Red-Black Gauss-Seidel,
@@ -575,8 +575,8 @@ Focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows compare 1, 3, and
 friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
 For strictly interior standard LCPs without a warm start,
-`SubspaceMinimizationSolver` first tries the shared validated linear-solve fast
-path. Boxed LCPs without friction-index coupling use the shared
+`SubspaceMinimizationSolver` first tries the shared validated LLT-first
+linear-solve fast path. Boxed LCPs without friction-index coupling use the shared
 projected-active-set exact solve under the same non-warm-started high-level
 interface. The active-set estimation and subspace refinement path remains the
 fallback for warm-started, active-bound friction-index, or validator-rejected
