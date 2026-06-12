@@ -74,6 +74,7 @@ void Chain(py::module& sm);
 void Skeleton(py::module& sm);
 
 void InverseKinematics(py::module& sm);
+void ContactInverseDynamics(py::module& sm);
 void Inertia(py::module& sm);
 
 void dart_dynamics(py::module& m)
@@ -117,6 +118,7 @@ void dart_dynamics(py::module& m)
   Skeleton(sm);
 
   InverseKinematics(sm);
+  ContactInverseDynamics(sm);
 
   Inertia(sm);
 }
