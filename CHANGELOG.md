@@ -1469,6 +1469,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rows and made LCP performance-profile ingestion reject current-schema rows
     whose solver does not natively support the concrete problem, while still
     accepting historical cached benchmark JSON without those counters.
+  - Tightened current LCP performance-profile ingestion to cross-check
+    benchmark problem-family names against emitted `problem_type_*` counters,
+    rejecting current-schema rows whose concrete problem type disagrees with
+    the profile category.
   - Surfaced the checked LCP performance-profile CSVs in the Python
     `lcp_physics` demo metadata and panel, with current leader/laggard summaries
     for Standard, Boxed, and FrictionIndex apples-to-apples solver profiles.

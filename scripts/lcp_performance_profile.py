@@ -44,6 +44,14 @@ except ImportError:
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 
 PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
+PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
+    "Standard": "problem_type_standard",
+    "Boxed": "problem_type_boxed",
+    "FrictionIndex": "problem_type_friction_index",
+}
+PROBLEM_TYPE_COUNTERS = tuple(PROBLEM_TYPE_COUNTER_BY_CATEGORY.values()) + (
+    "problem_type_invalid",
+)
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
 
@@ -151,6 +159,10 @@ def parse_benchmark_results(data: dict) -> dict:
             "residual": bm.get("residual", 0),
             "complementarity": bm.get("complementarity", 0),
             "solver_supports_problem": bm.get("solver_supports_problem"),
+            "problem_type_standard": bm.get("problem_type_standard"),
+            "problem_type_boxed": bm.get("problem_type_boxed"),
+            "problem_type_friction_index": bm.get("problem_type_friction_index"),
+            "problem_type_invalid": bm.get("problem_type_invalid"),
         }
 
     return results
@@ -184,6 +196,16 @@ def check_native_profile_coverage(
             if data.get("solver_supports_problem") is not None
             and data["solver_supports_problem"] <= 0.5
         )
+        problem_type_mismatches = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if any(data.get(key) is not None for key in PROBLEM_TYPE_COUNTERS)
+            and (
+                data.get(PROBLEM_TYPE_COUNTER_BY_CATEGORY[category], 0.0) <= 0.5
+                or sum(1 for key in PROBLEM_TYPE_COUNTERS if data.get(key, 0.0) > 0.5)
+                != 1
+            )
+        )
 
         if unknown:
             errors.append(
@@ -195,6 +217,11 @@ def check_native_profile_coverage(
             errors.append(
                 f"{category}: current-schema rows report "
                 f"solver_supports_problem=0 for {unsupported_rows}"
+            )
+        if problem_type_mismatches:
+            errors.append(
+                f"{category}: current-schema rows disagree with problem_type "
+                f"counters for {problem_type_mismatches}"
             )
 
     if not errors:
