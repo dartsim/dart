@@ -1537,6 +1537,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     non-warm-start initial-guess zeroing until after exact fast-path attempts
     and block validation, avoiding a zero-vector write on accepted exact
     candidates and moving the refreshed boxed profile below an above-2x average.
+  - Raised `ShockPropagationSolver`'s validated strict-interior
+    friction-index exact shortcut to cover the current 64-contact comparison
+    packet, avoiding layered block setup for that accepted exact row and moving
+    the refreshed FrictionIndex ShockPropagation average below `2x`.
   - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
     already reaches the natural residual tolerance, avoiding an extra Newton
     loop on warm-started or larger friction-index rows that converge directly

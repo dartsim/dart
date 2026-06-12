@@ -52,6 +52,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
+constexpr int kMaxFrictionIndexExactFastPathSize = 192;
 
 struct BlockData
 {
@@ -548,7 +549,7 @@ LcpResult ShockPropagationSolver::solve(
         return false;
       }
     } else if (problem.hasFrictionIndex()) {
-      if (problem.size() > 48) {
+      if (problem.size() > kMaxFrictionIndexExactFastPathSize) {
         return false;
       }
       if (!detail::trySolveInteriorFrictionIndexLcp(

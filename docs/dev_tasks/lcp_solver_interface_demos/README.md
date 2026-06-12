@@ -1,5 +1,59 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ShockPropagation Large FrictionIndex Exact Path
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `58bfb658ed7 Extend Symmetric PSOR exact path to friction rows`.
+- Current checkpoint target:
+  `Raise ShockPropagation friction exact gate`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 66 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes and other GitHub
+  mutations require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ShockPropagationSolver::solve()` now allows the shared validated
+  strict-interior friction-index exact helper through 192 variables, covering
+  the current 64-contact FrictionIndex comparison row.
+- The exact path remains limited to non-warm-started, validator-accepted
+  strict-interior friction-index rows; larger or active-bound rows continue
+  through the layered block path.
+- Unit coverage adds a 64-contact exact-path regression for ShockPropagation.
+- The profile CSVs in `docs/background/lcp/figures/`, Python demo summary
+  strings, Python metadata assertions, other-method docs, changelog, and this
+  hand-off were refreshed.
+
+Focused and profile evidence:
+
+- Focused after-run:
+  `build/friction_index_shock_gate192_after.json`.
+- `BM_LcpCompare/FrictionIndex/ShockPropagation/64` accepted the exact path
+  with `iterations=0`, exact residual, and `contract_ok=1.0`.
+- The full regenerated profile reports FrictionIndex `ShockPropagation 1.97`.
+- Remaining above-`2x` FrictionIndex averages are `BlockedJacobi 2.30` and
+  `BoxedSemiSmoothNewton 2.05`.
+- CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+  columns.
+
+Immediate resume guidance:
+
+1. Inspect the current branch with `git status -sb` and
+   `git log --oneline --decorate -5`.
+2. If this checkpoint is already committed, continue with FrictionIndex
+   `BlockedJacobi 2.30`, then `BoxedSemiSmoothNewton 2.05`.
+3. Suggested checkpoint commit title:
+   `Raise ShockPropagation friction exact gate`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Symmetric PSOR FrictionIndex Exact Path
 
 This is the latest hand-off state. Sections below are historical checkpoints

@@ -304,7 +304,7 @@ solver.solve(problem, x, options);
 > friction-index coupling use the same structure-validation gate, then try the
 > shared projected-active-set exact solve before block data construction; the
 > shortcut is accepted only when the final boxed solution passes validation.
-> Strictly interior friction-index rows up to 48 variables use the shared
+> Strictly interior friction-index rows up to 192 variables use the shared
 > validated friction-index exact solve after lightweight block/layer structure
 > validation. Default options and empty custom block/layer options avoid block
 > data construction before that exact attempt; non-empty custom partitions still

@@ -1,5 +1,99 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ShockPropagation Large FrictionIndex Exact Path
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `58bfb658ed7 Extend Symmetric PSOR exact path to friction rows`.
+- Current checkpoint target:
+  `Raise ShockPropagation friction exact gate`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 66 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ShockPropagationSolver` now names its friction-index exact fast-path gate as
+  `kMaxFrictionIndexExactFastPathSize` and raises it to 192 variables, covering
+  the current 64-contact FrictionIndex comparison packet.
+- The gate still only applies to non-warm-started strict-interior
+  friction-index rows accepted by the shared validated exact helper.
+- Active-bound, validator-rejected, warm-started, custom-partition invalid, and
+  larger friction-index rows continue through the layered block path.
+- Unit coverage adds a 64-contact `ShockPropagationUsesLargeLinearSolve`
+  regression expecting the exact path to finish in zero iterations.
+- The checked profile CSVs, Python demo profile summaries, metadata assertions,
+  other-method docs, changelog, and hand-off docs were refreshed.
+
+Evidence:
+
+- Focused after-run:
+  `build/friction_index_shock_gate192_after.json`.
+- Focused FrictionIndex `ShockPropagation/64` accepted the exact path with
+  `iterations=0`, exact residual, and `contract_ok=1.0`.
+- Regenerated `build/lcp_profile_full.json` reports FrictionIndex
+  `ShockPropagation 1.97`, below the previous above-`2x` average.
+- The latest full-profile FrictionIndex above-`2x` rows are now
+  `BlockedJacobi 2.30` and `BoxedSemiSmoothNewton 2.05`.
+- CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+  columns.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(ShockPropagation|Pgs|Tgs|BGS|Sap|Dantzig)/' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_shock_gate192_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is committed, continue with the refreshed profile's highest
+remaining FrictionIndex target: `BlockedJacobi 2.30`, then inspect
+`BoxedSemiSmoothNewton 2.05`, `ShockPropagation 1.97`, `BGS 1.89`, and
+`NNCG 1.86`. Do not push or mutate GitHub state without explicit
+maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Symmetric PSOR FrictionIndex Exact Path
 
 This is the latest state. Older sections below are historical checkpoints and

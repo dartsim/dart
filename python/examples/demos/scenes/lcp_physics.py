@@ -228,9 +228,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "FischerBurmeisterNewton/MinimumMapNewton/"
-            "PenalizedFischerBurmeisterNewton/Apgd/InteriorPoint remain "
-            "the largest averages; SubspaceMinimization and SymmetricPsor "
+            "Baraff/Apgd/Lemke/FischerBurmeisterNewton/"
+            "PenalizedFischerBurmeisterNewton/Sap/SymmetricPsor remain "
+            "the largest averages; InteriorPoint/MinimumMapNewton/BGS/NNCG "
             "are next"
         ),
         "takeaway": (
@@ -246,14 +246,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi; Apgd/SubspaceMinimization/"
-            "RedBlackGaussSeidel/Sap/BoxedSemiSmoothNewton/Dantzig stay "
-            "below about 1.5x"
+            "Tgs/Pgs/Jacobi; RedBlackGaussSeidel/Dantzig/Sap/NNCG/"
+            "BoxedSemiSmoothNewton/SymmetricPsor stay near the leading packet"
         ),
         "current_laggards": (
-            "No Boxed solver average is above 2x; ShockPropagation is the "
-            "largest remaining row, with SymmetricPsor, BGS, Admm, "
-            "BlockedJacobi, and NNCG next"
+            "No Boxed solver average is above 2x; ShockPropagation remains "
+            "the largest row, with Apgd, SubspaceMinimization, Admm, BGS, "
+            "and BlockedJacobi next"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -268,21 +267,22 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs; BGS/Sap/RedBlackGaussSeidel/Apgd/Dantzig/"
-            "SymmetricPsor are the current leading and mid-pack group"
+            "Pgs/Tgs/SymmetricPsor; Sap/Apgd/Admm/Staggering/"
+            "RedBlackGaussSeidel/Jacobi stay below about 1.7x"
         ),
         "current_laggards": (
-            "ShockPropagation is above 2x; SubspaceMinimization, "
-            "BoxedSemiSmoothNewton, NNCG, Admm, Staggering, Jacobi, and "
-            "BlockedJacobi are next"
+            "BlockedJacobi and BoxedSemiSmoothNewton are above 2x; "
+            "ShockPropagation is now below 2x but remains next, followed by "
+            "BGS, NNCG, Dantzig, and SubspaceMinimization"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, and subspace hot rows, and the boxed semi-smooth "
             "line-search shortcut plus configurable exact shortcut trim Newton "
             "iterations; APGD and Symmetric PSOR exact shortcuts trim "
-            "projection rows while the remaining high-ratio target is "
-            "ShockPropagation's larger friction-index packet."
+            "projection rows while ShockPropagation's larger friction-index "
+            "packet now takes the exact shortcut. Remaining above-2x rows are "
+            "BlockedJacobi and BoxedSemiSmoothNewton."
         ),
     },
 )
