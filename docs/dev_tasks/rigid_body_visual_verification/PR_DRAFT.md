@@ -66,8 +66,9 @@
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
   contact-scale budget, baseline first-run diagnostics, contact inspection,
-  solver comparison, contact-policy comparison, multibody-link contact,
-  fixed/breakage/one-DOF joint constraint errors, and stack-packet
+  collision casts, solver comparison, contact-policy comparison,
+  multibody-link contact, fixed/breakage/one-DOF joint constraint errors, and
+  stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
   presence counts, and top-level numeric ranges so mid-capture metric dropouts
@@ -281,6 +282,10 @@
   - `2 passed`
 - `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui`
   - nonblank 960x540 screenshot, 47 PNG frames, final contacts 0
+- `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_collision_casts_metrics_1781227741`
+  - nonblank 960x540 screenshot, 47 PNG frames, 48 scene-metrics events,
+    numeric ranges for ray/sphere/capsule hit counts, TOI/fraction, margins,
+    time step, and world time
 - `pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 24 --width 960 --height 540 --show-ui`
   - nonblank 960x540 screenshot, 23 PNG frames, final contacts 0
 - `pixi run py-demo-capture -- --scene rigid_collision_query_options --frames 8 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_collision_query_metrics`
@@ -291,7 +296,7 @@
 - `pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui`
   - nonblank 960x540 screenshot, 23 PNG frames, final contacts 0
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
-  - `7 passed`
+  - `7 passed` before and after lint
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_capture_py_demo.py::test_visual_capture_default_scene_matches_py_demos_front_door -q`
   - `5 passed`
 - `pixi run lint`

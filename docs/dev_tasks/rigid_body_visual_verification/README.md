@@ -108,7 +108,15 @@
       `CollisionGroup.sphere_cast_result()` /
       `CollisionGroup.capsule_cast_result()` time-of-impact queries with ray
       offset, all-hit, sphere/capsule sweep controls, margins, point/normal,
-      and history diagnostics.
+      history diagnostics, and scene-owned capture metrics.
+- [x] Collision-casts capture-metrics follow-up: the same row now publishes row
+      identity, query scope, ray/sphere/capsule controls, hit counts, first
+      targets, ray fraction, sphere/capsule time of impact, margins,
+      point/normal/center fields, serialized query metrics, and compact history
+      ranges through the capture hook. The focused cast guard reported
+      `1 passed`; the real docked 48-frame capture wrote 48 scene-metrics
+      events and numeric ranges for hit counts, TOI/fraction, margins, and
+      world time. The workflow/doc drift guard reported `7 passed`.
 - [x] Constraint slice: `rigid_fixed_joint` and `rigid_limited_joints` expose
       perturb/reset controls plus bounded fixed, revolute, and prismatic
       constraint-error histories with scene-owned capture metrics.
@@ -279,7 +287,7 @@
 - [x] Visual smoke: `rigid_collision_query_options` capture writes nonblank
       PNGs with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_collision_casts` capture writes nonblank PNGs with
-      the docked ImGui workspace.
+      the docked ImGui workspace and 48 scene-metrics events.
 - [x] Visual smoke: `rigid_body` capture writes nonblank PNGs with the docked
       ImGui workspace and scene-owned baseline metrics.
 - [x] Visual smoke: `rigid_body_modes` capture writes nonblank PNGs with the
@@ -555,8 +563,9 @@ and the no-tunneling scope decision.
    `feature/rigid-body-gui-visual-verification`, then continue with the next
    bounded capture-metrics hardening slice unless newer evidence identifies a
    higher-value rigid workflow gap. A likely next row is
-   `rigid_collision_casts`, because it is the neighboring query row and its
-   panel already owns compact ray/sweep histories but not capture metrics.
+   `rigid_executor_equivalence`, because it is the neighboring solver/executor
+   row whose pose/velocity/contact/timing histories are already user-facing but
+   not yet available in capture manifests.
 2. For that next slice, keep payloads to summary fields that users need in
    docked capture manifests; avoid raw replay dumps and preserve the selected
    row's scope caveat in the PLAN-103 sidecar.

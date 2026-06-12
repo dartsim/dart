@@ -101,7 +101,7 @@
   - Added `rigid_collision_casts` to Python `py-demos`, exposing public
     collision raycast, swept-sphere, and swept-capsule cast queries with
     nearest/all-hit controls, hit fractions, time-of-impact, cast margins,
-    hit point/normal, and history diagnostics.
+    hit point/normal, history diagnostics, and scene-owned capture metrics.
   - Added Python unit coverage for public capsule collision casts through
     `CollisionGroup.capsule_cast()` and `capsule_cast_result()` hit/miss
     behavior.

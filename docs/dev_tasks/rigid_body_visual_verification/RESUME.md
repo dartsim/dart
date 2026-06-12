@@ -2,21 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Expected branch after this handoff push:
-`feature/rigid-body-gui-visual-verification` is clean and aligned with
-`origin/feature/rigid-body-gui-visual-verification`. The runtime-code checkpoint
-immediately below this handoff-only docs commit is `274690aead7` (`Expose rigid
-contact inspector capture metrics`), which followed remote checkpoint
-`d5aceaeedbf` (`Refresh rigid visual verification handoff`). The latest
-runtime-code slice is the `rigid_contact_inspector` capture-metrics follow-up. A
-fresh Claude/Codex session should start by running `git status -sb` and
-`git log --oneline --decorate -5` to confirm that state before continuing.
+Expected branch after this local checkpoint:
+`feature/rigid-body-gui-visual-verification` is clean and ahead of
+`origin/feature/rigid-body-gui-visual-verification` by one unpushed local
+commit on top of `a38ad5c1e3d` (`Refresh rigid visual verification handoff`).
+The latest runtime-code slice is the `rigid_collision_casts` capture-metrics
+follow-up. A fresh Claude/Codex session should start by running
+`git status -sb` and `git log --oneline --decorate -5` to confirm that state
+before continuing.
 
-Latest operator instruction before this handoff: stop implementation work and
-focus only on handoff, with no further verification. This handoff-only docs
-commit was prepared for the requested push without running additional gates. Do
-not infer that any gate ran after this note unless a later session records it
-explicitly.
+The previous handoff-only stop/no-verification instruction is historical; the
+current continuation resumed implementation and ran the focused gates listed
+below. Pushes and future PR/comment mutations still require explicit
+maintainer/user approval.
 
 As of the handoff refresh on 2026-06-11, `gh pr list --repo dartsim/dart
 --head feature/rigid-body-gui-visual-verification --json
@@ -24,48 +22,45 @@ number,title,state,baseRefName,isDraft,url` returned `[]`, so this branch did
 not have a published PR. Pushes and future PR/comment mutations still require
 explicit maintainer/user approval.
 
-Current slice: `rigid_contact_inspector` row capture metrics. The code changes
+Current slice: `rigid_collision_casts` row capture metrics. The code changes
 are limited to:
 
-- `python/examples/demos/scenes/rigid_contact_inspector.py`
+- `python/examples/demos/scenes/rigid_collision_casts.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/examples/demos/README.md`
 - the PLAN-103 sidecar, this task's handoff docs, `PR_DRAFT.md`, and
   `CHANGELOG.md`
 
-What changed: the numbered row 12 `rigid_contact_inspector` front door now
-exposes `SceneSetup.info["capture_metrics"]`. The payload exports row,
-collision-query scope, current shape-pair and penetration controls, lane count,
-world time, total/selected contact counts, depth fields, representative
-point/normal/local points, shape indices, and compact history ranges. The hook
-uses the current selected-pair snapshot from `_last_metrics`; it does not loop
-over pair selections or dump raw replay histories.
+What changed: the numbered row 14 `rigid_collision_casts` front door now
+exposes `SceneSetup.info["capture_metrics"]`. The payload exports row, query
+scope, ray/sphere/capsule controls, hit counts, first targets, ray fraction,
+sphere/capsule time of impact, margins, first point/normal/center fields,
+serialized current query metrics, and compact history ranges. The hook uses the
+current `_last_metrics` snapshot; it does not dump replay state.
 
 Validation already run for this code slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_inspector_reports_contact_manifolds -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_contact_inspector --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_inspector_metrics_1781226572`
-  wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
-  scene-metrics events. Latest metrics had row `rigid_contact_inspector`,
-  solver `collision_query`, contact scope `shape_pair_manifold_fields`, lane
-  count `7`, total contacts `21`, selected contacts `1`, max depth `0.08`,
-  selected max depth `0.04500000000000007`, and manifest numeric ranges for
-  contact counts, depths, world time, and shape indices.
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_inspector_reports_contact_manifolds python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
-  reported `4 passed`.
+- `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_collision_casts_metrics_1781227741`
+  wrote a nonblank docked 960x540 screenshot, 47 PNG frames, and 48
+  scene-metrics events. The manifest recorded numeric ranges for
+  `ray_hit_count`, `ray_first_fraction`, `sphere_hit_count`,
+  `sphere_first_toi`, `sphere_margin`, `capsule_hit_count`,
+  `capsule_first_toi`, `capsule_margin`, `time_step_ms`, and `world_time`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `7 passed` before and after `pixi run lint`.
 - `pixi run lint` passed.
-- Bounded `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build`
-  passed with safe parallelism and reported `ninja: no work to do`.
+- Bounded `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+  passed and reported `ninja: no work to do`.
 - `git diff --check` was clean.
 
 Immediate next step for a fresh session: verify the local branch state, then
 continue the capture-metrics hardening pass on the next high-value rigid row.
-The likely next row is `rigid_collision_casts`, because it is the neighboring
-query row after the inspector/query-options pair and already owns compact
-ray/sweep histories that would be useful in docked capture manifests. Keep the
-payload summary-oriented and update the PLAN-103 row evidence plus focused
-tests.
+The likely next row is `rigid_executor_equivalence`, because it is the
+neighboring solver/executor row and already owns pose/velocity/contact/timing
+histories that would be useful in docked capture manifests. Keep the payload
+summary-oriented and update the PLAN-103 row evidence plus focused tests.
 
 ## Last Session Summary
 

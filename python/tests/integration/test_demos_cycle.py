@@ -2233,6 +2233,35 @@ def test_rigid_collision_casts_report_nearest_all_and_swept_hits() -> None:
     assert 0.0 < float(capsule_cast["first_toi"]) < 1.0
     assert float(capsule_cast["margin"]) > 0.0
     assert np.isfinite(np.asarray(capsule_cast["first_point"], dtype=float)).all()
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_collision_casts"
+    assert capture_metrics["query_scope"] == "raycast_sphere_cast_capsule_cast"
+    assert capture_metrics["controls"]["enable_all_ray_hits"] is True
+    assert capture_metrics["ray_hit_count"] == 2
+    assert capture_metrics["ray_first_target"] == "near_sensor_target"
+    assert capture_metrics["ray_first_fraction"] == pytest.approx(
+        ray["first_fraction"]
+    )
+    assert capture_metrics["sphere_hit_count"] == 2
+    assert capture_metrics["sphere_first_target"] == "near_sensor_target"
+    assert capture_metrics["sphere_first_toi"] == pytest.approx(
+        sphere_cast["first_toi"]
+    )
+    assert capture_metrics["capsule_hit_count"] == 2
+    assert capture_metrics["capsule_first_target"] == "near_sensor_target"
+    assert capture_metrics["capsule_first_toi"] == pytest.approx(
+        capsule_cast["first_toi"]
+    )
+    assert capture_metrics["metrics"]["ray"]["all_targets"] == [
+        "near_sensor_target",
+        "far_sensor_target",
+    ]
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._ray_hit_history)
+    )
+    assert capture_metrics["history"]["max_ray_hit_count"] == pytest.approx(2.0)
     assert np.isfinite(np.asarray(capsule_cast["first_normal"], dtype=float)).all()
     assert np.linalg.norm(np.asarray(capsule_cast["first_normal"], dtype=float)) > 0.0
     assert controller._ray_hit_history

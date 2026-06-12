@@ -10,7 +10,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -526,6 +526,62 @@ class _RigidCollisionCasts:
             deserialized[section] = entry
         return deserialized
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        metrics = self._serialize_metrics(self._last_metrics)
+        ray = metrics["ray"]
+        sphere_cast = metrics["sphere_cast"]
+        capsule_cast = metrics["capsule_cast"]
+        ray_hits = list(self._ray_hit_history)
+        sphere_toi = list(self._sphere_cast_toi_history)
+        sweep_margins = list(self._sweep_margin_history)
+        capsule_toi = list(self._capsule_cast_toi_history)
+        capsule_margins = list(self._capsule_margin_history)
+        return {
+            "row": "rigid_collision_casts",
+            "solver": "collision_query",
+            "query_scope": "raycast_sphere_cast_capsule_cast",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "ray_offset_y": float(self.ray_offset_y),
+                "enable_all_ray_hits": bool(self.enable_all_ray_hits),
+                "sweep_radius": float(self.sweep_radius),
+                "capsule_offset_y": float(self.capsule_offset_y),
+                "capsule_radius": float(self.capsule_radius),
+                "capsule_height": float(self.capsule_height),
+            },
+            "ray_hit_count": int(ray["hit_count"]),
+            "ray_first_target": str(ray["first_target"]),
+            "ray_first_fraction": float(ray["first_fraction"]),
+            "ray_first_point": ray["first_point"],
+            "ray_first_normal": ray["first_normal"],
+            "sphere_hit_count": int(sphere_cast["hit_count"]),
+            "sphere_first_target": str(sphere_cast["first_target"]),
+            "sphere_first_toi": float(sphere_cast["first_toi"]),
+            "sphere_first_point": sphere_cast["first_point"],
+            "sphere_first_normal": sphere_cast["first_normal"],
+            "sphere_first_center": sphere_cast["first_center"],
+            "sphere_margin": float(sphere_cast["margin"]),
+            "capsule_hit_count": int(capsule_cast["hit_count"]),
+            "capsule_first_target": str(capsule_cast["first_target"]),
+            "capsule_first_toi": float(capsule_cast["first_toi"]),
+            "capsule_first_point": capsule_cast["first_point"],
+            "capsule_first_normal": capsule_cast["first_normal"],
+            "capsule_first_center": capsule_cast["first_center"],
+            "capsule_margin": float(capsule_cast["margin"]),
+            "metrics": metrics,
+            "history": {
+                "samples": float(len(ray_hits)),
+                "max_ray_hit_count": max(ray_hits, default=0.0),
+                "max_sphere_first_toi": max(sphere_toi, default=0.0),
+                "min_sphere_margin": min(sweep_margins, default=0.0),
+                "max_capsule_first_toi": max(capsule_toi, default=0.0),
+                "min_capsule_margin": min(capsule_margins, default=0.0),
+            },
+        }
+
     def _reset_controls(self) -> None:
         self.ray_offset_y = 0.0
         self.enable_all_ray_hits = True
@@ -640,6 +696,7 @@ def build() -> SceneSetup:
             "replay_capture_state": casts.capture_replay_state,
             "replay_restore_state": casts.restore_replay_state,
             "replay_sync": casts._sync,
+            CAPTURE_METRICS_INFO_KEY: casts.capture_metrics,
         },
     )
 
