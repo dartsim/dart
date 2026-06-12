@@ -21,13 +21,30 @@ this branch, and earlier runtime/corpus follow-ups #2970, #2971, #2974, and
 maintainer explicitly asks to inspect them; the active work and PR state live on
 PR #2978.
 
-Latest PR #2978 checkpoint: commit `8dc0571a1cd` fixes the Codex review finding
-that point-triangle CUDA CCD used signed plane distance. The CUDA packet now
-uses winding-independent absolute plane-distance band entry, and focused unit
-and benchmark fixtures include negative-side and reversed-winding cases. The
-review threads for the degenerate-triangle contact predicate and
-winding-independent point-triangle CCD are resolved without bot replies. Hosted
-CI restarted after the push and was still pending at handoff.
+Latest PR #2978 checkpoint: the current branch adds private CUDA
+point-triangle primitive barrier-gradient parity to the existing
+barrier/friction local-kernel packet. This closes the primitive-gradient
+portion of that row while keeping tangent basis construction, Hessian assembly,
+PSD coupling, runtime contact rows, and the overall scalar speedup gate as
+future evidence. Earlier Codex review threads for the degenerate-triangle
+contact predicate and winding-independent point-triangle CCD were resolved
+without bot replies.
+
+Continuation checkpoint (2026-06-11): the stop-handoff dirty worktree was
+inspected and continued on `simx/plan083-gpu-contact-candidate-packet`. The
+branch contains the CUDA point-triangle barrier-gradient evaluator, focused
+CUDA unit coverage, benchmark packet writer/test updates, and honest
+plan/dev-task text that keeps the row `in-progress`. Validation evidence for
+this slice:
+`pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+(4 passed), `pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest, `pixi run -e cuda
+bm-plan083-gpu-barrier-friction-packet`, `pixi run python
+scripts/check_plan083_gpu_parity_packet.py`, `pixi run python
+scripts/check_plan083_completion_audit.py`, and the focused Python packet/audit
+pytest trio (13 passed). A fresh session should preserve the single #2978
+branch/PR discipline, confirm hosted CI and fresh review for the current head,
+and push further PLAN-083 work only to #2978.
 
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
@@ -354,19 +371,20 @@ build/CTest entries.
 follow-up PR for the remaining private packet work (#2978). This branch now
 carries point-triangle and edge-edge contact-stencil filtering,
 winding-independent endpoint-linear point-triangle CCD, edge-edge
-CCD/line-search packets, scalar barrier/friction local kernels, reduced
-assembly/solve parity, reduced scene state-batch parity, and reduced ABD
+CCD/line-search packets, scalar barrier/friction local kernels plus
+point-triangle primitive barrier gradients, reduced assembly/solve parity,
+reduced scene state-batch parity, and reduced ABD
 complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless their
 full row policy is satisfied: broad-phase/runtime GPU candidate construction,
-rigid curved trajectories, runtime scene line search, primitive
-gradients/tangent/Hessian assembly, sparse global solving, GPU `World::step`,
+rigid curved trajectories, runtime scene line search, tangent/Hessian assembly,
+sparse global solving, GPU `World::step`,
 paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Keep all remaining PLAN-083 follow-up work on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
-small PRs. First, monitor PR #2978 after the latest handoff-doc push: confirm
+small PRs. First, monitor PR #2978 after the barrier-gradient push: confirm
 hosted CI and the fresh Codex review for the current head, then address only
 actionable failures on the same branch. After the PR is stable, continue with
 the next blocker from the completion audit on this branch. Keep the dev-task

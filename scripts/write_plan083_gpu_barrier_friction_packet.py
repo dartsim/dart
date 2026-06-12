@@ -106,8 +106,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
-        "^BM_Plan083BarrierFrictionLocal(Cpu|Cuda)"
-        f"/{args.sample_count}(/real_time)?$"
+        "^BM_Plan083("
+        "BarrierFrictionLocal(Cpu|Cuda)"
+        "|PointTriangleBarrierGradient(Cpu|Cuda)"
+        f")/{args.sample_count}(/real_time)?$"
     )
     command = [
         sys.executable,
@@ -167,9 +169,18 @@ def _packet_row_name(row: Mapping[str, Any]) -> str:
 
 def _representative_rows(
     rows: list[Mapping[str, Any]], sample_count: int
-) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
-    cpu_name = f"BM_Plan083BarrierFrictionLocalCpu/{sample_count}"
-    gpu_name = f"BM_Plan083BarrierFrictionLocalCuda/{sample_count}"
+) -> dict[str, Mapping[str, Any]]:
+    expected_names = {
+        "scalar_cpu": f"BM_Plan083BarrierFrictionLocalCpu/{sample_count}",
+        "scalar_gpu": f"BM_Plan083BarrierFrictionLocalCuda/{sample_count}",
+        "point_triangle_cpu": (
+            f"BM_Plan083PointTriangleBarrierGradientCpu/{sample_count}"
+        ),
+        "point_triangle_gpu": (
+            f"BM_Plan083PointTriangleBarrierGradientCuda/{sample_count}"
+        ),
+    }
+    expected_by_name = {name: key for key, name in expected_names.items()}
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
 
@@ -179,21 +190,38 @@ def _representative_rows(
             errors.append("benchmark row is missing a name")
             continue
         canonical = _packet_row_name(row)
-        if canonical not in {cpu_name, gpu_name}:
+        if canonical not in expected_by_name:
             errors.append(f"unexpected benchmark row: {name}")
             continue
         if row.get("aggregate_name") == "median":
-            found[canonical] = row
+            found[expected_by_name[canonical]] = row
         errors.extend(benchmark_timing_field_errors(row, name))
 
-    for expected in (cpu_name, gpu_name):
-        if expected not in found:
+    for key, expected in expected_names.items():
+        if key not in found:
             errors.append(f"missing median benchmark row: {expected}")
 
     if errors:
         raise Plan083GpuBarrierFrictionPacketError("\n".join(errors))
 
-    return found[cpu_name], found[gpu_name]
+    return found
+
+
+def _timing_ns(row: Mapping[str, Any]) -> dict[str, float]:
+    timing_ns = {
+        "setup": _counter(row, "host_setup_ns"),
+        "host_to_device": _counter(row, "host_to_device_ns"),
+        "kernel": _counter(row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
+    if missing:
+        raise Plan083GpuBarrierFrictionPacketError(
+            f"packet timing is missing {sorted(missing)}"
+        )
+    return timing_ns
 
 
 def make_packet(
@@ -212,19 +240,30 @@ def make_packet(
     if len(typed_rows) != len(rows):
         raise Plan083GpuBarrierFrictionPacketError("benchmark JSON has non-object rows")
 
-    cpu_row, gpu_row = _representative_rows(typed_rows, sample_count)
-    cpu_ns = benchmark_timing_ns(cpu_row)
-    gpu_ns = benchmark_timing_ns(gpu_row)
-    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
-        raise Plan083GpuBarrierFrictionPacketError(
-            "CPU benchmark timing is not positive"
-        )
-    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
-        raise Plan083GpuBarrierFrictionPacketError(
-            "GPU benchmark timing is not positive"
-        )
+    representative_rows = _representative_rows(typed_rows, sample_count)
+    scalar_cpu_row = representative_rows["scalar_cpu"]
+    scalar_gpu_row = representative_rows["scalar_gpu"]
+    point_triangle_cpu_row = representative_rows["point_triangle_cpu"]
+    point_triangle_gpu_row = representative_rows["point_triangle_gpu"]
 
-    max_error = _counter(gpu_row, "max_result_abs_error")
+    scalar_cpu_ns = benchmark_timing_ns(scalar_cpu_row)
+    scalar_gpu_ns = benchmark_timing_ns(scalar_gpu_row)
+    point_triangle_cpu_ns = benchmark_timing_ns(point_triangle_cpu_row)
+    point_triangle_gpu_ns = benchmark_timing_ns(point_triangle_gpu_row)
+    for label, timing in {
+        "scalar CPU": scalar_cpu_ns,
+        "scalar GPU": scalar_gpu_ns,
+        "point-triangle CPU": point_triangle_cpu_ns,
+        "point-triangle GPU": point_triangle_gpu_ns,
+    }.items():
+        if not math.isfinite(timing) or timing <= 0.0:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"{label} benchmark timing is not positive"
+            )
+
+    scalar_max_error = _counter(scalar_gpu_row, "max_result_abs_error")
+    point_triangle_max_error = _counter(point_triangle_gpu_row, "max_result_abs_error")
+    max_error = max(scalar_max_error, point_triangle_max_error)
     if max_error > tolerance:
         raise Plan083GpuBarrierFrictionPacketError(
             f"local-kernel max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
@@ -237,34 +276,49 @@ def make_packet(
     }
     counts: dict[str, int] = {}
     for cpu_key, gpu_key in count_pairs.items():
-        cpu_count = int(_counter(cpu_row, cpu_key))
-        gpu_count = int(_counter(gpu_row, gpu_key))
+        cpu_count = int(_counter(scalar_cpu_row, cpu_key))
+        gpu_count = int(_counter(scalar_gpu_row, gpu_key))
         if cpu_count != gpu_count:
             raise Plan083GpuBarrierFrictionPacketError(
                 f"{cpu_key} count {cpu_count} != {gpu_key} count {gpu_count}"
             )
         counts[cpu_key] = cpu_count
 
-    cpu_samples = int(_counter(cpu_row, "samples"))
-    gpu_samples = int(_counter(gpu_row, "samples"))
+    point_triangle_cpu_active = int(_counter(point_triangle_cpu_row, "active_barriers"))
+    point_triangle_gpu_active = int(
+        _counter(point_triangle_gpu_row, "gpu_active_barriers")
+    )
+    if point_triangle_cpu_active != point_triangle_gpu_active:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "point-triangle active_barriers count "
+            f"{point_triangle_cpu_active} != gpu_active_barriers count "
+            f"{point_triangle_gpu_active}"
+        )
+
+    sample_rows = {
+        "scalar CPU": scalar_cpu_row,
+        "scalar GPU": scalar_gpu_row,
+        "point-triangle CPU": point_triangle_cpu_row,
+        "point-triangle GPU": point_triangle_gpu_row,
+    }
+    for label, row in sample_rows.items():
+        row_samples = int(_counter(row, "samples"))
+        if row_samples != sample_count:
+            raise Plan083GpuBarrierFrictionPacketError(
+                f"expected {sample_count} samples, got {label}={row_samples}"
+            )
+
+    scalar_speedup = scalar_cpu_ns / scalar_gpu_ns
+    point_triangle_speedup = point_triangle_cpu_ns / point_triangle_gpu_ns
+    speedup = min(scalar_speedup, point_triangle_speedup)
+    scalar_timing_ns = _timing_ns(scalar_gpu_row)
+    point_triangle_timing_ns = _timing_ns(point_triangle_gpu_row)
+
+    cpu_samples = int(_counter(scalar_cpu_row, "samples"))
+    gpu_samples = int(_counter(scalar_gpu_row, "samples"))
     if cpu_samples != sample_count or gpu_samples != sample_count:
         raise Plan083GpuBarrierFrictionPacketError(
             f"expected {sample_count} samples, got CPU={cpu_samples}, GPU={gpu_samples}"
-        )
-
-    speedup = cpu_ns / gpu_ns
-    timing_ns = {
-        "setup": _counter(gpu_row, "host_setup_ns"),
-        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
-        "kernel": _counter(gpu_row, "kernel_ns"),
-        "solve": 0.0,
-        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
-        "readback": 0.0,
-    }
-    missing = REQUIRED_TIMING_KEYS - timing_ns.keys()
-    if missing:
-        raise Plan083GpuBarrierFrictionPacketError(
-            f"packet timing is missing {sorted(missing)}"
         )
 
     return {
@@ -275,16 +329,43 @@ def make_packet(
             "active_barrier_count": counts["active_barriers"],
             "active_friction_count": counts["active_friction"],
             "dynamic_friction_count": counts["dynamic_friction"],
-            "max_barrier_value": _counter(cpu_row, "max_barrier_value"),
-            "max_friction_work": _counter(cpu_row, "max_friction_work"),
+            "max_barrier_value": _counter(scalar_cpu_row, "max_barrier_value"),
+            "max_friction_work": _counter(scalar_cpu_row, "max_friction_work"),
             "max_result_abs_error": max_error,
             "result_abs_error_tolerance": tolerance,
             "speedup": speedup,
             "speedup_gate": speedup_gate,
             "meets_speedup_gate": speedup >= speedup_gate,
-            "timing_ns": timing_ns,
-            "cpu_benchmark_row": _packet_row_name(cpu_row),
-            "gpu_benchmark_row": _packet_row_name(gpu_row),
+            "timing_ns": scalar_timing_ns,
+            "cpu_benchmark_row": _packet_row_name(scalar_cpu_row),
+            "gpu_benchmark_row": _packet_row_name(scalar_gpu_row),
+            "scalar_local": {
+                "sample_count": sample_count,
+                "active_barrier_count": counts["active_barriers"],
+                "active_friction_count": counts["active_friction"],
+                "dynamic_friction_count": counts["dynamic_friction"],
+                "max_barrier_value": _counter(scalar_cpu_row, "max_barrier_value"),
+                "max_friction_work": _counter(scalar_cpu_row, "max_friction_work"),
+                "max_result_abs_error": scalar_max_error,
+                "speedup": scalar_speedup,
+                "meets_speedup_gate": scalar_speedup >= speedup_gate,
+                "timing_ns": scalar_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(scalar_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(scalar_gpu_row),
+            },
+            "point_triangle_barrier_gradient": {
+                "sample_count": sample_count,
+                "active_barrier_count": point_triangle_cpu_active,
+                "max_barrier_value": _counter(
+                    point_triangle_cpu_row, "max_barrier_value"
+                ),
+                "max_result_abs_error": point_triangle_max_error,
+                "speedup": point_triangle_speedup,
+                "meets_speedup_gate": point_triangle_speedup >= speedup_gate,
+                "timing_ns": point_triangle_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(point_triangle_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(point_triangle_gpu_row),
+            },
         },
         "benchmarks": rows,
     }

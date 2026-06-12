@@ -76,6 +76,70 @@ std::vector<cuda::BarrierFrictionLocalInput> makeFixture()
   };
 }
 
+void writeVec3(double destination[3], const Eigen::Vector3d& source)
+{
+  destination[0] = source.x();
+  destination[1] = source.y();
+  destination[2] = source.z();
+}
+
+cuda::PointTriangleBarrierInput makePointTriangleInput(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const double squaredActivationDistance,
+    const double stiffness)
+{
+  cuda::PointTriangleBarrierInput input;
+  writeVec3(input.point, p);
+  writeVec3(input.triangleA, a);
+  writeVec3(input.triangleB, b);
+  writeVec3(input.triangleC, c);
+  input.squaredActivationDistance = squaredActivationDistance;
+  input.stiffness = stiffness;
+  return input;
+}
+
+std::vector<cuda::PointTriangleBarrierInput> makePointTriangleFixture()
+{
+  return {
+      makePointTriangleInput(
+          Eigen::Vector3d(0.25, 0.25, 0.1),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          2.0),
+      makePointTriangleInput(
+          Eigen::Vector3d(0.5, -0.1, 0.05),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          1.5),
+      makePointTriangleInput(
+          Eigen::Vector3d(0.2, 0.2, 2.0),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          3.0),
+      makePointTriangleInput(
+          Eigen::Vector3d(0.25e-8, 0.5e-8, 0.05),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1e-8, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1e-8, 0.0),
+          0.25,
+          2.5),
+  };
+}
+
+Eigen::Vector3d readVec3(const double values[3])
+{
+  return {values[0], values[1], values[2]};
+}
+
 } // namespace
 
 //==============================================================================
@@ -140,6 +204,48 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuScalarContracts)
 }
 
 //==============================================================================
+TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleBarrierGradients)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const auto inputs = makePointTriangleFixture();
+
+  cuda::PointTriangleBarrierGradientResult result;
+  cuda::evaluatePointTriangleBarrierGradientsCuda(inputs, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), inputs.size());
+  ASSERT_EQ(result.barrierValues.size(), inputs.size());
+  ASSERT_EQ(result.barrierGradients.size(), 12 * inputs.size());
+  ASSERT_EQ(result.activeBarriers.size(), inputs.size());
+  EXPECT_EQ(result.activeBarrierCount, 3u);
+
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto expected = nb::pointTriangleBarrier(
+        readVec3(input.point),
+        readVec3(input.triangleA),
+        readVec3(input.triangleB),
+        readVec3(input.triangleC),
+        input.squaredActivationDistance,
+        input.stiffness);
+
+    EXPECT_EQ(result.activeBarriers[i] != 0u, expected.active) << i;
+    EXPECT_NEAR(result.squaredDistances[i], expected.squaredDistance, 1e-12)
+        << i;
+    EXPECT_NEAR(result.barrierValues[i], expected.value, 1e-12) << i;
+    for (int entry = 0; entry < 12; ++entry) {
+      EXPECT_NEAR(
+          result.barrierGradients[12 * i + static_cast<std::size_t>(entry)],
+          expected.gradient[entry],
+          1e-10)
+          << "fixture=" << i << " entry=" << entry;
+    }
+  }
+}
+
+//==============================================================================
 TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -152,5 +258,15 @@ TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
   cuda::BarrierFrictionLocalResult result;
   EXPECT_THROW(
       cuda::evaluateBarrierFrictionLocalKernelsCuda(inputs, result),
+      dart::simulation::InvalidArgumentException);
+
+  auto pointTriangleInputs = makePointTriangleFixture();
+  pointTriangleInputs.front().point[0]
+      = std::numeric_limits<double>::quiet_NaN();
+
+  cuda::PointTriangleBarrierGradientResult pointTriangleResult;
+  EXPECT_THROW(
+      cuda::evaluatePointTriangleBarrierGradientsCuda(
+          pointTriangleInputs, pointTriangleResult),
       dart::simulation::InvalidArgumentException);
 }

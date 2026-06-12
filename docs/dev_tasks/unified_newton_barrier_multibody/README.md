@@ -177,10 +177,11 @@ same branch.
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
-  - [x] Add a private scalar barrier/friction local-kernel packet with exact
-        CPU/GPU local-output parity; keep the row in-progress because primitive
-        distance gradients, tangent-basis construction, Hessian assembly, PSD
-        coupling, runtime contact rows, and speedup remain unproven.
+  - [x] Add private scalar barrier/friction local-kernel and point-triangle
+        primitive barrier-gradient packets with exact CPU/GPU local-output
+        parity; keep the row in-progress because tangent-basis construction,
+        Hessian assembly, PSD coupling, runtime contact rows, and runtime speedup
+        remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene
@@ -325,7 +326,7 @@ storage, or backend resources as public API.
 1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. Before further implementation, verify the current
-   #2978 CI and Codex review state after the latest handoff-doc push.
+   #2978 CI and Codex review state after the barrier-gradient push.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
@@ -406,8 +407,8 @@ Latest PR #2978 CUDA CCD review-fix evidence:
 Phase 7 barrier/friction local-kernel packet evidence:
 
 - `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py`
-- `pixi run -e cuda build-cuda`
-- `pixi run -e cuda test-cuda`
+- `pixi run -e cuda build-cuda Release`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_barrier_friction_kernel_cuda$'`
 - `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
 
 Phase 7 reduced assembly/solve packet evidence:

@@ -56,6 +56,224 @@ struct SmoothFriction
   std::uint8_t dynamic = 0u;
 };
 
+struct Vec3
+{
+  double x = 0.0;
+  double y = 0.0;
+  double z = 0.0;
+};
+
+struct PointEdgeDistanceDevice
+{
+  double squaredDistance = 0.0;
+  double edgeCoordinate = 0.0;
+  Vec3 closestPoint;
+};
+
+struct PointTriangleDistanceDevice
+{
+  double squaredDistance = 0.0;
+  double barycentric[3] = {1.0, 0.0, 0.0};
+  Vec3 closestPoint;
+};
+
+__device__ Vec3 makeVec3(const double values[3])
+{
+  return {values[0], values[1], values[2]};
+}
+
+__device__ Vec3 add(const Vec3 lhs, const Vec3 rhs)
+{
+  return {lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z};
+}
+
+__device__ Vec3 subtract(const Vec3 lhs, const Vec3 rhs)
+{
+  return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
+}
+
+__device__ Vec3 scale(const double factor, const Vec3 value)
+{
+  return {factor * value.x, factor * value.y, factor * value.z};
+}
+
+__device__ double dot(const Vec3 lhs, const Vec3 rhs)
+{
+  return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
+}
+
+__device__ Vec3 cross(const Vec3 lhs, const Vec3 rhs)
+{
+  return {
+      lhs.y * rhs.z - lhs.z * rhs.y,
+      lhs.z * rhs.x - lhs.x * rhs.z,
+      lhs.x * rhs.y - lhs.y * rhs.x};
+}
+
+__device__ double squaredNorm(const Vec3 value)
+{
+  return dot(value, value);
+}
+
+__device__ bool isDegenerateSegmentDevice(const double squaredLength)
+{
+  constexpr double kDoubleMin = 2.2250738585072014e-308;
+  return squaredLength <= kDoubleMin;
+}
+
+__device__ bool isDegenerateTriangleDevice(
+    const double normalSquaredNorm,
+    const double edgeASquaredNorm,
+    const double edgeBSquaredNorm)
+{
+  constexpr double kDoubleMin = 2.2250738585072014e-308;
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double scale = fmax(edgeASquaredNorm * edgeBSquaredNorm, kDoubleMin);
+  return normalSquaredNorm <= kRelativeEpsilon * scale;
+}
+
+__device__ PointEdgeDistanceDevice
+pointEdgeSquaredDistanceDevice(const Vec3 p, const Vec3 a, const Vec3 b)
+{
+  PointEdgeDistanceDevice result;
+  const Vec3 edge = subtract(b, a);
+  const double edgeSquaredNorm = squaredNorm(edge);
+  if (isDegenerateSegmentDevice(edgeSquaredNorm)) {
+    result.edgeCoordinate = 0.0;
+    result.closestPoint = a;
+    result.squaredDistance = squaredNorm(subtract(p, a));
+    return result;
+  }
+
+  const double unclampedT = dot(edge, subtract(p, a)) / edgeSquaredNorm;
+  result.edgeCoordinate = fmin(fmax(unclampedT, 0.0), 1.0);
+  result.closestPoint = add(a, scale(result.edgeCoordinate, edge));
+  result.squaredDistance = squaredNorm(subtract(p, result.closestPoint));
+  return result;
+}
+
+__device__ PointTriangleDistanceDevice pointTriangleSquaredDistanceDevice(
+    const Vec3 p, const Vec3 a, const Vec3 b, const Vec3 c)
+{
+  PointTriangleDistanceDevice result;
+  const Vec3 ab = subtract(b, a);
+  const Vec3 ac = subtract(c, a);
+  const Vec3 normal = cross(ab, ac);
+  if (isDegenerateTriangleDevice(
+          squaredNorm(normal), squaredNorm(ab), squaredNorm(ac))) {
+    const auto abDistance = pointEdgeSquaredDistanceDevice(p, a, b);
+    const auto bcDistance = pointEdgeSquaredDistanceDevice(p, b, c);
+    const auto caDistance = pointEdgeSquaredDistanceDevice(p, c, a);
+
+    result.squaredDistance = abDistance.squaredDistance;
+    result.closestPoint = abDistance.closestPoint;
+    result.barycentric[0] = 1.0 - abDistance.edgeCoordinate;
+    result.barycentric[1] = abDistance.edgeCoordinate;
+    result.barycentric[2] = 0.0;
+
+    if (bcDistance.squaredDistance < result.squaredDistance) {
+      result.squaredDistance = bcDistance.squaredDistance;
+      result.closestPoint = bcDistance.closestPoint;
+      result.barycentric[0] = 0.0;
+      result.barycentric[1] = 1.0 - bcDistance.edgeCoordinate;
+      result.barycentric[2] = bcDistance.edgeCoordinate;
+    }
+    if (caDistance.squaredDistance < result.squaredDistance) {
+      result.squaredDistance = caDistance.squaredDistance;
+      result.closestPoint = caDistance.closestPoint;
+      result.barycentric[0] = caDistance.edgeCoordinate;
+      result.barycentric[1] = 0.0;
+      result.barycentric[2] = 1.0 - caDistance.edgeCoordinate;
+    }
+    return result;
+  }
+
+  const Vec3 ap = subtract(p, a);
+  const double d1 = dot(ab, ap);
+  const double d2 = dot(ac, ap);
+  if (d1 <= 0.0 && d2 <= 0.0) {
+    result.barycentric[0] = 1.0;
+    result.barycentric[1] = 0.0;
+    result.barycentric[2] = 0.0;
+    result.closestPoint = a;
+  } else {
+    const Vec3 bp = subtract(p, b);
+    const double d3 = dot(ab, bp);
+    const double d4 = dot(ac, bp);
+    if (d3 >= 0.0 && d4 <= d3) {
+      result.barycentric[0] = 0.0;
+      result.barycentric[1] = 1.0;
+      result.barycentric[2] = 0.0;
+      result.closestPoint = b;
+    } else {
+      const double vc = d1 * d4 - d3 * d2;
+      if (vc <= 0.0 && d1 >= 0.0 && d3 <= 0.0) {
+        const double v = d1 / (d1 - d3);
+        result.barycentric[0] = 1.0 - v;
+        result.barycentric[1] = v;
+        result.barycentric[2] = 0.0;
+        result.closestPoint = add(a, scale(v, ab));
+      } else {
+        const Vec3 cp = subtract(p, c);
+        const double d5 = dot(ab, cp);
+        const double d6 = dot(ac, cp);
+        if (d6 >= 0.0 && d5 <= d6) {
+          result.barycentric[0] = 0.0;
+          result.barycentric[1] = 0.0;
+          result.barycentric[2] = 1.0;
+          result.closestPoint = c;
+        } else {
+          const double vb = d5 * d2 - d1 * d6;
+          if (vb <= 0.0 && d2 >= 0.0 && d6 <= 0.0) {
+            const double w = d2 / (d2 - d6);
+            result.barycentric[0] = 1.0 - w;
+            result.barycentric[1] = 0.0;
+            result.barycentric[2] = w;
+            result.closestPoint = add(a, scale(w, ac));
+          } else {
+            const double va = d3 * d6 - d5 * d4;
+            if (va <= 0.0 && (d4 - d3) >= 0.0 && (d5 - d6) >= 0.0) {
+              const double w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+              result.barycentric[0] = 0.0;
+              result.barycentric[1] = 1.0 - w;
+              result.barycentric[2] = w;
+              result.closestPoint = add(b, scale(w, subtract(c, b)));
+            } else {
+              const double denominator = 1.0 / (va + vb + vc);
+              const double v = vb * denominator;
+              const double w = vc * denominator;
+              result.barycentric[0] = 1.0 - v - w;
+              result.barycentric[1] = v;
+              result.barycentric[2] = w;
+              result.closestPoint = add(a, add(scale(v, ab), scale(w, ac)));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  result.squaredDistance = squaredNorm(subtract(p, result.closestPoint));
+  return result;
+}
+
+__device__ void writePointTriangleDistanceGradient(
+    const PointTriangleDistanceDevice& distance, const Vec3 p, double* gradient)
+{
+  const Vec3 residual = subtract(p, distance.closestPoint);
+  const Vec3 blocks[4] = {
+      scale(2.0, residual),
+      scale(-2.0 * distance.barycentric[0], residual),
+      scale(-2.0 * distance.barycentric[1], residual),
+      scale(-2.0 * distance.barycentric[2], residual),
+  };
+  for (int block = 0; block < 4; ++block) {
+    gradient[3 * block] = blocks[block].x;
+    gradient[3 * block + 1] = blocks[block].y;
+    gradient[3 * block + 2] = blocks[block].z;
+  }
+}
+
 __device__ BarrierScalar c2ClampedLogBarrierDevice(
     const double squaredDistance, const double squaredActivationDistance)
 {
@@ -178,6 +396,55 @@ __global__ void barrierFrictionLocalKernel(
   }
 }
 
+__global__ void pointTriangleBarrierGradientKernel(
+    const PointTriangleBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    std::uint8_t* activeBarriers,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  squaredDistances[index] = 0.0;
+  barrierValues[index] = 0.0;
+  activeBarriers[index] = 0u;
+  double distanceGradient[12];
+  for (double& entry : distanceGradient) {
+    entry = 0.0;
+  }
+
+  const PointTriangleBarrierInput input = inputs[index];
+  const Vec3 p = makeVec3(input.point);
+  const Vec3 a = makeVec3(input.triangleA);
+  const Vec3 b = makeVec3(input.triangleB);
+  const Vec3 c = makeVec3(input.triangleC);
+  const auto distance = pointTriangleSquaredDistanceDevice(p, a, b, c);
+  squaredDistances[index] = distance.squaredDistance;
+  writePointTriangleDistanceGradient(distance, p, distanceGradient);
+
+  const double stiffness
+      = isfinite(input.stiffness) ? fmax(0.0, input.stiffness) : 0.0;
+  const BarrierScalar barrier = c2ClampedLogBarrierDevice(
+      distance.squaredDistance, input.squaredActivationDistance);
+  const double gradientScale = stiffness * barrier.firstDerivative;
+  if (barrier.active != 0u && stiffness > 0.0) {
+    activeBarriers[index] = 1u;
+    barrierValues[index] = stiffness * barrier.value;
+  }
+
+  const std::size_t gradientOffset = 12 * index;
+  for (int entry = 0; entry < 12; ++entry) {
+    barrierGradients[gradientOffset + static_cast<std::size_t>(entry)]
+        = activeBarriers[index] != 0u ? gradientScale * distanceGradient[entry]
+                                      : 0.0;
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -213,6 +480,32 @@ cudaError_t launchBarrierFrictionLocalKernel(
       activeBarriers,
       activeFrictions,
       dynamicFrictions,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointTriangleBarrierGradientKernel(
+    const PointTriangleBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    std::uint8_t* activeBarriers,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointTriangleBarrierGradientKernel<<<gridSize, blockSize>>>(
+      inputs,
+      squaredDistances,
+      barrierValues,
+      barrierGradients,
+      activeBarriers,
       inputCount);
 
   return cudaGetLastError();

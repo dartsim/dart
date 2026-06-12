@@ -48,6 +48,16 @@ struct BarrierFrictionLocalInput
   double staticFrictionDisplacement = 1.0;
 };
 
+struct PointTriangleBarrierInput
+{
+  double point[3] = {0.0, 0.0, 0.0};
+  double triangleA[3] = {0.0, 0.0, 0.0};
+  double triangleB[3] = {0.0, 0.0, 0.0};
+  double triangleC[3] = {0.0, 0.0, 0.0};
+  double squaredActivationDistance = 1.0;
+  double stiffness = 1.0;
+};
+
 struct BarrierFrictionLocalTiming
 {
   double setupNs = 0.0;
@@ -76,6 +86,17 @@ struct BarrierFrictionLocalResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct PointTriangleBarrierGradientResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<double> barrierValues;
+  std::vector<double> barrierGradients;
+  std::vector<std::uint8_t> activeBarriers;
+  std::size_t activeBarrierCount = 0;
+  double maxBarrierValue = 0.0;
+  BarrierFrictionLocalTiming timing;
+};
+
 /// Evaluate private local barrier and friction scalar kernels on CUDA.
 ///
 /// This packet covers the clamped-log scalar barrier and smoothed Coulomb
@@ -85,5 +106,14 @@ struct BarrierFrictionLocalResult
 void evaluateBarrierFrictionLocalKernelsCuda(
     const std::vector<BarrierFrictionLocalInput>& inputs,
     BarrierFrictionLocalResult& result);
+
+/// Evaluate private point-triangle barrier values and gradients on CUDA.
+///
+/// This packet extends local-kernel evidence to primitive distance gradients.
+/// It intentionally does not cover tangent basis construction, Hessian
+/// assembly, PSD coupling, runtime contact rows, or a public GPU backend.
+void evaluatePointTriangleBarrierGradientsCuda(
+    const std::vector<PointTriangleBarrierInput>& inputs,
+    PointTriangleBarrierGradientResult& result);
 
 } // namespace dart::simulation::compute::cuda

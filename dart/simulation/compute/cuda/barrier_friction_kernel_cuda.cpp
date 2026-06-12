@@ -60,6 +60,14 @@ cudaError_t launchBarrierFrictionLocalKernel(
     std::uint8_t* dynamicFrictions,
     std::size_t inputCount);
 
+cudaError_t launchPointTriangleBarrierGradientKernel(
+    const PointTriangleBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    std::uint8_t* activeBarriers,
+    std::size_t inputCount);
+
 } // namespace detail
 namespace {
 
@@ -93,6 +101,28 @@ void validateInputs(const std::vector<BarrierFrictionLocalInput>& inputs)
             || !std::isfinite(input.staticFrictionDisplacement),
         sx::InvalidArgumentException,
         "evaluateBarrierFrictionLocalKernelsCuda input {} has a non-finite "
+        "field",
+        i);
+  }
+}
+
+bool isFiniteVec3(const double values[3])
+{
+  return std::isfinite(values[0]) && std::isfinite(values[1])
+         && std::isfinite(values[2]);
+}
+
+void validateInputs(const std::vector<PointTriangleBarrierInput>& inputs)
+{
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    DART_SIMULATION_THROW_T_IF(
+        !isFiniteVec3(input.point) || !isFiniteVec3(input.triangleA)
+            || !isFiniteVec3(input.triangleB) || !isFiniteVec3(input.triangleC)
+            || !std::isfinite(input.squaredActivationDistance)
+            || !std::isfinite(input.stiffness),
+        sx::InvalidArgumentException,
+        "evaluatePointTriangleBarrierGradientsCuda input {} has a non-finite "
         "field",
         i);
   }
@@ -204,6 +234,76 @@ void evaluateBarrierFrictionLocalKernelsCuda(
     }
     if (result.dynamicFrictions[i] != 0u) {
       ++result.dynamicFrictionCount;
+    }
+  }
+}
+
+//==============================================================================
+void evaluatePointTriangleBarrierGradientsCuda(
+    const std::vector<PointTriangleBarrierInput>& inputs,
+    PointTriangleBarrierGradientResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateInputs(inputs);
+
+  result = PointTriangleBarrierGradientResult{};
+  result.squaredDistances.resize(inputs.size(), 0.0);
+  result.barrierValues.resize(inputs.size(), 0.0);
+  result.barrierGradients.resize(12 * inputs.size(), 0.0);
+  result.activeBarriers.resize(inputs.size(), 0u);
+
+  if (inputs.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<PointTriangleBarrierInput> deviceInputs(inputs.size());
+  DeviceBuffer<double> deviceSquaredDistances(inputs.size());
+  DeviceBuffer<double> deviceBarrierValues(inputs.size());
+  DeviceBuffer<double> deviceBarrierGradients(12 * inputs.size());
+  DeviceBuffer<std::uint8_t> deviceActiveBarriers(inputs.size());
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceInputs.copyToDevice(inputs, "point-triangle barrier inputs copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchPointTriangleBarrierGradientKernel(
+          deviceInputs.data(),
+          deviceSquaredDistances.data(),
+          deviceBarrierValues.data(),
+          deviceBarrierGradients.data(),
+          deviceActiveBarriers.data(),
+          inputs.size()),
+      "point-triangle barrier gradient kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "point-triangle barrier gradient synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceSquaredDistances.copyFromDevice(
+      result.squaredDistances, "point-triangle squared distances copy");
+  deviceBarrierValues.copyFromDevice(
+      result.barrierValues, "point-triangle barrier values copy");
+  deviceBarrierGradients.copyFromDevice(
+      result.barrierGradients, "point-triangle barrier gradients copy");
+  deviceActiveBarriers.copyFromDevice(
+      result.activeBarriers, "point-triangle active barriers copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    if (result.activeBarriers[i] != 0u) {
+      ++result.activeBarrierCount;
+      result.maxBarrierValue
+          = std::max(result.maxBarrierValue, result.barrierValues[i]);
     }
   }
 }
