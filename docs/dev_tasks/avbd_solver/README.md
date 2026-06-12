@@ -20,6 +20,18 @@ Corpus matrix:
   should only receive CI-fix commits if its hosted checks reveal a concrete
   failure. `RESUME.md` is the detailed source of truth for the current plan,
   branch inventory, validation, and branch-cleanup rules.
+- Critical handoff stop: the user redirected the session to hand-off only with
+  no further verification. Do not treat this final docs update as new
+  lint/build/test evidence; use the previously recorded validation in
+  `RESUME.md`, refresh PR #2977 status in a fresh session, and resume from the
+  consolidated branch above.
+- Latest local follow-up: rigid contact snapshot row assignment now avoids the
+  duplicate per-contact row-counter claim during snapshot collection and fills
+  contact row indices in one linear pass after canonical contact-row ordering,
+  without writing the scratch row-counter vector. The focused row-order tests
+  still pass, preserving warm-start row identity across contact and endpoint
+  ordering. This is only contact snapshot overhead cleanup for rigid source
+  rows; it does not close any source CPU-win, GPU, or paper-number gate.
 - Latest local follow-up: `normalizeAvbdRigidOrientation()` now uses a
   squared-norm fast path, keeps exact unit quaternions exact without division,
   and preserves scaled-input normalization plus invalid-input identity fallback.

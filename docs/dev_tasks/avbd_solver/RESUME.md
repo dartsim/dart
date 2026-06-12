@@ -7,6 +7,12 @@ deformable row coverage with evidence against the native source corpus. Do not
 count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
+Critical stop note: the user explicitly redirected this session to hand-off
+only and requested no further verification. The state below intentionally
+records previously completed validation plus the current branch/PR/stash
+inventory; do not infer that lint, build, or tests were rerun after this final
+handoff update.
+
 Current stop state:
 
 - Consolidated resume branch: use `avbd/source-row-extraction-precheck` for the
@@ -15,7 +21,8 @@ Current stop state:
   #2977 parent changes, the stacked extraction-precheck changes, the current
   handoff docs, and the formerly stash-only quaternion normalization fast path.
   Do not require a fresh session to inspect or apply local stashes before
-  continuing.
+  continuing. The hand-off action for this stop is to keep this as the one
+  consolidated branch and push the final docs/code hand-off commit there.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
@@ -23,22 +30,38 @@ Current stop state:
   `7d05d7b9ea7`.
 - #2977 is open, non-draft, milestone `DART 7.0`, base `main`, and currently
   `BLOCKED` only because required hosted checks are queued or running. As of
-  this handoff, ReadTheDocs, CI Lint documentation, and several lightweight
-  matrix `changes` jobs have passed; CUDA Build, Linux/Windows jobs, CodeQL,
-  lint, Alt Linux repro, and dartpy wheel jobs are still pending/running. No new
-  compiler, test, or CodeQL failure is visible on the current head.
-- The active local checkout is `avbd/source-row-extraction-precheck`, with
-  merge head `6b3b7a21d05` plus this docs handoff commit on top. After this
-  consolidation update it also contains the quaternion normalization fast path
-  and test that previously lived only in `stash@{1}`. This stacked branch has
-  merged `avbd/source-row-perf-slice`, including the #2977 follow-up and latest
-  `origin/main`; a pre-push `git fetch` over HTTPS plus
-  `git merge --no-ff FETCH_HEAD` reported `Already up to date`.
-- The working tree should be clean after committing and pushing this handoff.
-  Do not add unrelated commits to #2977 while it waits on hosted CI.
+  the latest check on 2026-06-11, CUDA Build, ReadTheDocs, CI Lint, Alt Linux
+  repro, macOS arm64 tests, Python and C++ CodeQL, and multiple Linux/wheel jobs
+  have passed; some Linux jobs, Windows Release Tests, and the Windows wheel are
+  still running. No new compiler, test, or CodeQL failure is visible on the
+  current head.
+- The active local checkout is `avbd/source-row-extraction-precheck`. Its top
+  local commit is `Trim AVBD contact row assignment overhead`, containing the
+  #2977 parent changes, the extraction-precheck changes, the quaternion
+  normalization fast path/test that previously lived only in `stash@{1}`, the
+  latest contact row-assignment cleanup, and this hand-off update. This stacked
+  branch has merged `avbd/source-row-perf-slice`, including the #2977 follow-up
+  and latest `origin/main`; a pre-push `git fetch` over HTTPS plus
+  `git merge --no-ff FETCH_HEAD` reported `Already up to date` before the
+  previous handoff push. The branch should be pushed to
+  `origin/avbd/source-row-extraction-precheck` as the single fresh-session
+  resume branch.
+- Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
+  needs fixes, keep them narrowly scoped to the PR branch and merge them back
+  into the consolidated resume branch afterward.
 
 Latest consolidated local follow-up:
 
+- Rigid contact snapshot row assignment now avoids the duplicate
+  `claimNextAvbdRigidWorldRow()` pass during contact collection. Contact rows
+  are still canonicalized by endpoint pair and local point, then assigned in a
+  single linear pass over the sorted row-order vector without writing the
+  scratch row-counter vector.
+- The unused local contact-row hash-map helper was removed from
+  `rigid_world_contact.hpp`.
+- This preserves warm-start row identity across contact/endpoint ordering and
+  is only a narrow contact snapshot overhead cleanup. It does not close any
+  source CPU-win, GPU, or paper-number gate.
 - `normalizeAvbdRigidOrientation()` now uses `squaredNorm()` to reject invalid
   inputs before normalization, returns exact unit quaternions without division,
   and normalizes scaled finite inputs with `std::sqrt(squaredNorm)`.
@@ -91,8 +114,19 @@ Local validation already run for #2977 head `5297462d34b`:
   that aborted run.
 
 Local validation for the consolidated branch after folding in the quaternion
-fast path:
+fast path and contact row-assignment cleanup:
 
+- No further validation was run after the final hand-off docs update because the
+  user explicitly requested hand-off without additional verification. The
+  evidence below is from earlier in the same local state unless otherwise
+  noted.
+- `git diff --check` passed.
+- `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed after the contact row-assignment cleanup.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.RigidWorldContactSnapshotRowsIgnoreContactOrder:AvbdRigidBlock.RigidWorldContactSnapshotRowsIgnoreEndpointOrder' --gtest_brief=1"`
+  passed, 2 tests.
+- The same focused target rebuild and row-order filter passed again after
+  removing contact-assignment scratch row-counter writes.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
@@ -108,14 +142,14 @@ fast path:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head               | State and handling                                                                                |
-| -------------------------------------- | --------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | final consolidation head | Current checkout and single resume branch. Push this branch; fresh sessions should continue here. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`            | Active #2977 branch; pushed, waiting on hosted CI.                                                |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`            | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`            | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`            | Unrelated local branch; do not touch during AVBD handoff.                                         |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`            | Local `main` matches fetched `origin/main` at the latest checked base. Refresh before using it.   |
+| Branch                                 | Upstream                                      | Local head    | State and handling                                                                               |
+| -------------------------------------- | --------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | local HEAD    | Current checkout and single resume branch. Push this hand-off commit here; fresh sessions should resume here. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b` | Active #2977 branch; pushed, waiting on hosted CI.                                               |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654` | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.               |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c` | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.               |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c` | Unrelated local branch; do not touch during AVBD handoff.                                        |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7` | Local `main` matches fetched `origin/main` at the latest checked base. Refresh before using it.  |
 
 Remote-only AVBD split branches still visible:
 
