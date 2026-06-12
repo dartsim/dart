@@ -1,5 +1,49 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality — 2026-06-11 Active Continuation
+
+The current continuation resumes from
+`911e9530c41 Document latest LCP handoff checkpoint` on
+`feature/lcp-solver-interface-demos`.
+
+The latest implementation slice filters singular-degenerate batch benchmark
+registrations through exact generated-batch support:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now precomputes the exact
+  four-problem singular-degenerate friction-index batch for each batch row and
+  requires every concrete problem to pass `supportsProblem(problem)` before
+  publishing serial or parallel rows.
+- Singular-degenerate standard/boxed serial and parallel batch rows now use the
+  same exact generated-batch support check.
+- Single singular-degenerate registrations now precompute the generated problem
+  once per case and pass it to the shared concrete helper.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)/(Standard16|Boxed16|CoupledFrictionIndex6|Standard128|Boxed128|CoupledFrictionIndex16|CoupledFrictionIndex256)/(Direct|MPRGP|Baraff|Admm|Sap|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpSingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/Sap|BM_LcpSingularDegenerateFrictionIndexBatchParallel/CoupledFrictionIndex6/Sap|BM_LcpSingularDegenerateStandardBoxedBatchSerial/Standard16/Baraff|BM_LcpSingularDegenerateStandardBoxedBatchSerial/Boxed16/BoxedSemiSmoothNewton' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The benchmark-list check rebuilt `BM_LCP_COMPARE` and listed exact supported
+  singular-degenerate batch rows for Admm, Sap, BoxedSemiSmoothNewton, and
+  Baraff where their concrete generated batches are supported; Direct and MPRGP
+  were absent from the scoped filter.
+- The short benchmark execution reported `contract_ok=1` for sampled Sap
+  friction-index serial and parallel batch rows, Baraff standard-batch rows,
+  and BoxedSemiSmoothNewton boxed-batch rows.
+
+The broader LCP solver/interface/demo objective is not complete. Resume from
+the next concrete support-routing, solver-domain, demo, benchmark, or
+performance gap after this slice lands.
+
 ## Critical Hand-Off — 2026-06-11 Final Stop Point
 
 The latest user instruction was critical: stop implementation work and focus on

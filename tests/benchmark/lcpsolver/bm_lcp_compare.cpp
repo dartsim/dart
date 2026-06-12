@@ -11994,7 +11994,8 @@ std::string MakeSingularDegenerateStandardBoxedBatchParallelBenchmarkName(
 
 bool SolverShouldRunSingularDegenerateBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const SingularDegenerateBenchmarkCase testCase)
+    const SingularDegenerateBenchmarkCase testCase,
+    const LcpProblem& problem)
 {
   if (!dart::test::supportsProblem(
           solver, getSingularDegenerateProblemSupport(testCase))) {
@@ -12029,8 +12030,7 @@ bool SolverShouldRunSingularDegenerateBenchmark(
         "Sap",
     }};
     return SolverNameIn(solver, kStandardSolvers)
-           && SolverSupportsConcreteProblem(
-               solver, MakeSingularDegenerateBenchmarkProblem(testCase));
+           && SolverSupportsConcreteProblem(solver, problem);
   }
 
   constexpr std::array<std::string_view, 3> kBoxedAndFindexSolvers{{
@@ -12039,8 +12039,21 @@ bool SolverShouldRunSingularDegenerateBenchmark(
       "BoxedSemiSmoothNewton",
   }};
   return SolverNameIn(solver, kBoxedAndFindexSolvers)
-         && SolverSupportsConcreteProblem(
-             solver, MakeSingularDegenerateBenchmarkProblem(testCase));
+         && SolverSupportsConcreteProblem(solver, problem);
+}
+
+bool SolverShouldRunSingularDegenerateBatchBenchmark(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const SingularDegenerateBenchmarkCase testCase,
+    const std::vector<LcpProblem>& problems)
+{
+  if (problems.empty()) {
+    return false;
+  }
+
+  return SolverShouldRunSingularDegenerateBenchmark(
+             solver, testCase, problems.front())
+         && SolverSupportsConcreteProblemBatch(solver, problems);
 }
 
 std::string MakeLargerSingularDegenerateBenchmarkName(
@@ -12786,8 +12799,10 @@ void RegisterSingularDegenerateBenchmarks()
       SingularDegenerateBenchmarkCase::CoupledFrictionIndex6};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeSingularDegenerateBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBenchmark(
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12808,8 +12823,10 @@ void RegisterLargerSingularDegenerateBenchmarks()
       SingularDegenerateBenchmarkCase::CoupledFrictionIndex8};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeSingularDegenerateBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBenchmark(
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12831,8 +12848,10 @@ void RegisterStressSingularDegenerateBenchmarks()
       SingularDegenerateBenchmarkCase::CoupledFrictionIndex12};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeSingularDegenerateBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBenchmark(
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12862,8 +12881,10 @@ void RegisterExtremeSingularDegenerateBenchmarks()
       SingularDegenerateBenchmarkCase::CoupledFrictionIndex256};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeSingularDegenerateBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBenchmark(
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12895,8 +12916,11 @@ void RegisterSingularDegenerateFrictionIndexBatchBenchmarks()
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
+    const auto problems
+        = MakeSingularDegenerateFrictionIndexBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBatchBenchmark(
+              solver, testCase, problems)) {
         continue;
       }
 
@@ -12941,8 +12965,11 @@ void RegisterSingularDegenerateStandardBoxedBatchBenchmarks()
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
+    const auto problems
+        = MakeSingularDegenerateStandardBoxedBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunSingularDegenerateBenchmark(solver, testCase)) {
+      if (!SolverShouldRunSingularDegenerateBatchBenchmark(
+              solver, testCase, problems)) {
         continue;
       }
 

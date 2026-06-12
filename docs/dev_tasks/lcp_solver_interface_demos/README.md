@@ -97,6 +97,8 @@
 - [x] Filtered mildly ill-conditioned and near-singular benchmark
       registrations through concrete generated-problem support, including exact
       serial/parallel batch problem-list checks.
+- [x] Filtered singular-degenerate friction-index and standard/boxed batch
+      benchmark registrations through exact generated batch support.
 - [x] Captured the latest 2026-06-11 critical hand-off after the conditioning
       benchmark-routing checkpoint, refreshed the branch against current
       `main`, and stopped without running further verification.
@@ -139,13 +141,46 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest committed implementation checkpoint is
-`9a17ba85aa5 Filter conditioning LCP benchmarks concretely`. It adds mildly
-ill-conditioned and near-singular benchmark concrete support-routing, following
-`559cda91ace Filter active-set scale LCP benchmarks concretely` and the earlier
-Python demo concrete native-case profile, benchmark concrete-gate cleanup,
-grouped batch support-routing, generated coverage support-routing, and
-heavyweight contact benchmark support-gating slices.
+The latest implementation checkpoint is singular-degenerate batch concrete
+support-routing. It follows `9a17ba85aa5 Filter conditioning LCP benchmarks
+concretely`, `559cda91ace Filter active-set scale LCP benchmarks concretely`,
+and the earlier Python demo concrete native-case profile, benchmark
+concrete-gate cleanup, grouped batch support-routing, generated coverage
+support-routing, and heavyweight contact benchmark support-gating slices.
+
+## Singular-Degenerate Batch Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns singular-degenerate batch
+registration with concrete solver support:
+
+- Singular-degenerate friction-index serial/parallel batch rows now build the
+  exact four-problem generated batch used by each published row and require
+  every problem to pass the solver's concrete `supportsProblem(problem)` route.
+- Singular-degenerate standard/boxed serial/parallel batch rows now use the same
+  exact-batch check instead of relying only on the single-problem helper.
+- Single singular-degenerate registration now precomputes the generated problem
+  once per case and passes it through the shared concrete helper.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)/(Standard16|Boxed16|CoupledFrictionIndex6|Standard128|Boxed128|CoupledFrictionIndex16|CoupledFrictionIndex256)/(Direct|MPRGP|Baraff|Admm|Sap|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpSingularDegenerateFrictionIndexBatchSerial/CoupledFrictionIndex6/Sap|BM_LcpSingularDegenerateFrictionIndexBatchParallel/CoupledFrictionIndex6/Sap|BM_LcpSingularDegenerateStandardBoxedBatchSerial/Standard16/Baraff|BM_LcpSingularDegenerateStandardBoxedBatchSerial/Boxed16/BoxedSemiSmoothNewton' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The benchmark-list check rebuilt `BM_LCP_COMPARE` and listed exact supported
+  serial/parallel singular-degenerate batch rows for Admm, Sap, and
+  BoxedSemiSmoothNewton on coupled friction-index batches; Baraff, Admm, and
+  Sap on standard batches; and Admm, Sap, and BoxedSemiSmoothNewton on boxed
+  batches. Direct and MPRGP rows were absent from the scoped filter.
+- The short benchmark execution reported `contract_ok=1` for sampled Sap
+  friction-index serial and parallel batch rows, Baraff standard-batch rows,
+  and BoxedSemiSmoothNewton boxed-batch rows.
 
 ## 2026-06-11 Latest Critical Hand-Off Snapshot
 

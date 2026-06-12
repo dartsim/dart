@@ -1435,6 +1435,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     each solver's concrete `supportsProblem(problem)` predicate so MPRGP's
     Dantzig fallback is no longer listed as a native MPRGP comparison row while
     Baraff's symmetric positive-semidefinite native rows remain.
+  - Filtered singular-degenerate friction-index and standard/boxed batch
+    benchmark registrations through exact generated batch support, so serial
+    and parallel rows are only published when every generated batch problem is
+    accepted by the solver's concrete native route.
   - Filtered contact-normal standard-LCP sweep registrations through each
     generated normal-only contact packet's concrete solver support predicate,
     preserving Baraff and MPRGP native rows while keeping Direct limited to its
