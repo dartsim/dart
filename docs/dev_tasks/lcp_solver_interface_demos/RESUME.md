@@ -1,5 +1,63 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Post-APGD Probe Triage
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 75]`
+- Last committed checkpoint:
+  `c6eb366c126 Raise APGD exact gate for friction-index comparison`
+- Worktree was clean before this docs hand-off update.
+- There is no associated PR yet.
+- This continuation has not pushed the branch.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What changed most recently:
+
+- The APGD FrictionIndex gate slice is committed and remains the latest code
+  checkpoint.
+- Follow-up SAP and ShockPropagation probes were run under the same PR #2986
+  packet-harness evidence rules. Neither produced an accepted code change.
+
+Rejected and non-actionable follow-up evidence:
+
+- SAP FrictionIndex exact shortcut was rejected:
+  - Baseline: `build/findex_sap_exact_baseline.json`.
+  - Probe: `build/findex_sap_exact_probe.json`.
+  - Temporary edit added
+    `detail::trySolveInteriorFrictionIndexLcp(...)` to `SapSolver` behind a
+    192-row gate, then was reverted.
+  - Timings: `Sap/4` `1376ns -> 1101ns`, `Sap/16` `11312ns -> 11402ns`,
+    `Sap/64` `224838ns -> 234951ns`; all probe rows had `iterations=0`, but
+    the medium/large packet evidence did not support keeping the change.
+- ShockPropagation focus check was non-actionable:
+  - Focus file: `build/shock_current_focus.json`.
+  - Boxed and FrictionIndex rows already report `iterations=0` and
+    `contract_ok=1`.
+  - Current timings: Boxed `12/24/48` are `1170ns`, `3074ns`, `11466ns`;
+    FrictionIndex `4/16/64` are `1142ns`, `11641ns`, `223086ns`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this hand-off docs update is uncommitted, run `pixi run lint`, run
+`git diff --check`, and commit it. For further implementation, avoid retrying
+the rejected Boxed `SymmetricPsor`/`RedBlackGaussSeidel` exact probes, the
+rejected SAP FrictionIndex exact shortcut, or ShockPropagation exact-path
+investigation without a materially different hypothesis. Current regenerated
+profiles have no solver-family average above `1.6x`.
+
 ## Current Reality - 2026-06-12 APGD FrictionIndex Gate
 
 This is the latest hand-off. Older sections below are historical checkpoints

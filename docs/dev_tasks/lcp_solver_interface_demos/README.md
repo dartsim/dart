@@ -1,5 +1,69 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Post-APGD Probe Triage
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 75]`.
+- Last committed checkpoint:
+  `c6eb366c126 Raise APGD exact gate for friction-index comparison`.
+- Current worktree state before this docs checkpoint: clean.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- The accepted APGD gate slice remains the latest code checkpoint. It follows
+  the PR #2986 packet-harness stance: evidence uses `BM_LcpCompare` benchmark
+  names for problem family, manifest solver name, and size, plus `contract_ok`,
+  timing fields, manifest metadata, and native support checks.
+- After that checkpoint, two follow-up probes were evaluated and intentionally
+  not kept because the focused packet evidence did not support source changes.
+
+Rejected or non-actionable probes after `c6eb366c126`:
+
+- Rejected SAP FrictionIndex exact shortcut:
+  - Baseline file: `build/findex_sap_exact_baseline.json`.
+  - Probe file: `build/findex_sap_exact_probe.json`.
+  - Temporary source edit added
+    `detail::trySolveInteriorFrictionIndexLcp(...)` to `SapSolver` behind a
+    192-row gate, then was reverted.
+  - Focused timings were mixed despite moving counters to `iterations=0`:
+    `Sap/4` `1376ns -> 1101ns`, `Sap/16` `11312ns -> 11402ns`,
+    `Sap/64` `224838ns -> 234951ns`.
+  - Do not retry this exact shortcut unless there is a materially different
+    hypothesis.
+- Non-actionable ShockPropagation focus check:
+  - Focus file: `build/shock_current_focus.json`.
+  - Boxed and FrictionIndex `ShockPropagation` comparison rows already report
+    `iterations=0` and `contract_ok=1`.
+  - Representative current timings:
+    Boxed `12/24/48` are `1170ns`, `3074ns`, `11466ns`; FrictionIndex
+    `4/16/64` are `1142ns`, `11641ns`, `223086ns`.
+  - The remaining `ShockPropagation` profile ratio is therefore not an obvious
+    missing exact-path bug.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this docs checkpoint is uncommitted, run `pixi run lint`, run
+   `git diff --check`, and commit the docs with a hand-off message.
+3. For further implementation, prefer a new bounded hypothesis rather than
+   retrying rejected Boxed `SymmetricPsor`/`RedBlackGaussSeidel` exact probes,
+   rejected SAP FrictionIndex exact shortcut, or ShockPropagation exact-path
+   investigation.
+4. Current regenerated profiles have no Standard, Boxed, or FrictionIndex
+   solver average above `1.6x`; any next performance slice should justify why
+   it still needs source churn under the packet harness.
+5. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - APGD FrictionIndex Gate
 
 This is the latest hand-off state. Sections below are historical checkpoints
