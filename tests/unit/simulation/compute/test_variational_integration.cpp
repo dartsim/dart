@@ -10951,9 +10951,9 @@ TEST(
 }
 
 // PLAN-104 AVBD articulated bridge: direct private revolute velocity
-// point-joint configs must persist their masked hard-row basis and free-axis
-// motor state across simulation-mode binary save/load while broken, then
-// re-engage on reset.
+// point-joint configs must persist their non-cardinal masked hard-row basis and
+// free-axis motor state across simulation-mode binary save/load while broken,
+// then re-engage on reset.
 TEST(
     VariationalIntegration,
     AvbdBreakableRevoluteVelocityPointJointConfigSurvivesSaveLoadAndReset)
@@ -10983,7 +10983,7 @@ TEST(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
 
-  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   config.localAnchorA = Eigen::Vector3d::Zero();
@@ -11089,9 +11089,9 @@ TEST(
 }
 
 // PLAN-104 AVBD articulated bridge: direct private revolute velocity
-// point-joint configs also need persistent break/reset coverage when the
-// multibody link is the parent endpoint of a world-link joint. This exercises
-// the opposite endpoint polarity from the child-link case above.
+// point-joint configs also need persistent non-cardinal break/reset coverage
+// when the multibody link is the parent endpoint of a world-link joint. This
+// exercises the opposite endpoint polarity from the child-link case above.
 TEST(
     VariationalIntegration,
     AvbdBreakableRevoluteVelocityParentPointJointConfigSurvivesSaveLoadAndReset)
@@ -11121,7 +11121,8 @@ TEST(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
 
-  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d hingeAxis
+      = Eigen::Vector3d(-2.0, 1.0, 3.0).normalized();
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   config.localAnchorA = Eigen::Vector3d::Zero();
@@ -11227,8 +11228,8 @@ TEST(
 }
 
 // PLAN-104 AVBD articulated bridge: direct private prismatic velocity
-// point-joint configs likewise need binary persistence for their masked hard
-// rows and free-axis linear motor before a broken-state reset.
+// point-joint configs likewise need binary persistence for their non-cardinal
+// masked hard rows and free-axis linear motor before a broken-state reset.
 TEST(
     VariationalIntegration,
     AvbdBreakablePrismaticVelocityPointJointConfigSurvivesSaveLoadAndReset)
@@ -11257,8 +11258,12 @@ TEST(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
 
-  const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
-  const Eigen::Vector3d lateralForce = Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
+  const Eigen::Vector3d lateralForce
+      = (Eigen::Vector3d::UnitY()
+         - Eigen::Vector3d::UnitY().dot(sliderAxis) * sliderAxis)
+            .normalized();
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   config.localAnchorA = Eigen::Vector3d::Zero();
@@ -11379,9 +11384,9 @@ TEST(
 }
 
 // PLAN-104 AVBD articulated bridge: direct private prismatic velocity
-// point-joint configs also need persistent break/reset coverage when the
-// multibody link is the parent endpoint of a world-link joint. This exercises
-// the opposite endpoint polarity from the child-link case above.
+// point-joint configs also need persistent non-cardinal break/reset coverage
+// when the multibody link is the parent endpoint of a world-link joint. This
+// exercises the opposite endpoint polarity from the child-link case above.
 TEST(
     VariationalIntegration,
     AvbdBreakablePrismaticVelocityParentPointJointConfigSurvivesSaveLoadAndReset)
@@ -11410,8 +11415,12 @@ TEST(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
 
-  const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
-  const Eigen::Vector3d lateralForce = Eigen::Vector3d::UnitY();
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(0.5, -1.0, 2.0).normalized();
+  const Eigen::Vector3d lateralForce
+      = (Eigen::Vector3d::UnitY()
+         - Eigen::Vector3d::UnitY().dot(sliderAxis) * sliderAxis)
+            .normalized();
   auto& config
       = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
   config.localAnchorA = Eigen::Vector3d::Zero();

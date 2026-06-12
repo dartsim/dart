@@ -1,6 +1,44 @@
 # Resume: AVBD Solver
 
-## Literal Stop Handoff (2026-06-11)
+## Latest Resumed Checkpoint (2026-06-11)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
+count source-row overhead cleanup or focused articulated lifecycle tests as
+CPU-win, GPU, or paper-number gates; those gates require dedicated corpus and
+benchmark evidence.
+
+Current resumed slice: direct private articulated revolute/prismatic velocity
+point-joint broken-state save/load/reset coverage now uses non-cardinal
+free-axis bases for both child-link and parent-link world-link endpoint
+polarities. The four strengthened C++ tests verify that serialized
+`AvbdRigidWorldPointJointConfig` linear/angular axis bases survive while the
+joint is broken, and that reset re-engages the masked hard rows plus the
+free-axis motor row with the expected endpoint-polarity sign.
+
+Validation so far for this slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_variational_integration`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigSurvivesSaveLoadAndReset:VariationalIntegration.AvbdBreakableRevoluteVelocityParentPointJointConfigSurvivesSaveLoadAndReset:VariationalIntegration.AvbdBreakablePrismaticVelocityPointJointConfigSurvivesSaveLoadAndReset:VariationalIntegration.AvbdBreakablePrismaticVelocityParentPointJointConfigSurvivesSaveLoadAndReset' --gtest_brief=1"`
+  passed, 4 tests.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. The previous local checkpoint was
+`68af00b8817 Record AVBD stop handoff snapshot`; after this slice is committed,
+use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
+mutate PRs, or clean/delete branches without explicit user approval.
+
+Next preferred local gap after this slice remains broader PLAN-104 articulated
+lifecycle/corpus coverage, then rigid contact persistence completeness, then
+source-demo CPU/GPU evidence. More source-row overhead cleanup should not be
+treated as a CPU-win, GPU, or paper-number gate.
+
+## Previous Literal Stop Handoff (2026-06-11)
 
 User directive: stop all further work. This handoff exists only so a fresh
 Claude/Codex session can recover the current state; do not continue

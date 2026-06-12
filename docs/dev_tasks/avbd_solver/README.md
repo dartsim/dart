@@ -9,6 +9,17 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-11): direct private articulated
+  revolute/prismatic velocity point-joint broken-state save/load/reset coverage
+  now exercises non-cardinal free-axis bases for both child-link and parent-link
+  world-link endpoint polarities. The strengthened C++ tests verify serialized
+  `AvbdRigidWorldPointJointConfig` axis bases survive while broken and that
+  reset re-engages the masked hard rows plus free-axis motor row with the
+  correct endpoint polarity. Local validation passed the focused
+  `test_variational_integration` target build, the four-test direct private
+  one-DOF broken-state persistence filter, `pixi run build`, `pixi run lint`,
+  and `git diff --check`. This is narrow articulated lifecycle evidence only,
+  not a CPU-win, GPU, or paper-number claim.
 - Literal stop handoff (2026-06-11): the user explicitly redirected this
   session to stop all further work and only ensure the hand-off docs. Do not
   continue implementation, branch cleanup, PR mutation, CI reruns, push, or
