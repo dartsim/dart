@@ -116,6 +116,22 @@ TEST(AvbdRigidBlock, NormalizeRigidOrientationKeepsUnitAndRejectsInvalid)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, BodyWorldPointKeepsOriginAnchorAtPosition)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 3.0);
+  state.orientation = rotationZ(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 originWorld = vbd::avbdRigidBodyWorldPoint(state, Vec3::Zero());
+
+  EXPECT_EQ(originWorld, state.position);
+
+  const Vec3 offsetWorld = vbd::avbdRigidBodyWorldPoint(state, Vec3::UnitX());
+
+  EXPECT_GT((offsetWorld - state.position).norm(), 0.0);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidStepUpdatesTranslationAndOrientation)
 {
   vbd::AvbdRigidBodyState state;

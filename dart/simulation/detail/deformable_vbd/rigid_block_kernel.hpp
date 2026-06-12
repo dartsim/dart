@@ -538,6 +538,10 @@ inline Eigen::Matrix3d avbdRigidSkewMatrix(const Eigen::Vector3d& value)
 inline Eigen::Vector3d avbdRigidBodyWorldPoint(
     const AvbdRigidBodyState& state, const Eigen::Vector3d& localPoint)
 {
+  if (localPoint.x() == 0.0 && localPoint.y() == 0.0 && localPoint.z() == 0.0) {
+    return state.position;
+  }
+
   return state.position
          + normalizeAvbdRigidOrientation(state.orientation) * localPoint;
 }

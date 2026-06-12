@@ -12,23 +12,28 @@ Corpus matrix:
 - Consolidated branch handoff: resume from
   `avbd/source-row-extraction-precheck`. It is the single branch for the next
   fresh Claude/Codex session and includes the #2977 source-row prep fix, the
-  stacked source-row extraction precheck work, the current handoff docs, and the
-  formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path
-  with focused rigid-block coverage. Local stashes may still exist as
-  historical recovery points, but fresh work should not depend on them. PR
+  stacked source-row extraction precheck work, the current resume docs, the
+  formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
+  and the origin-anchor `avbdRigidBodyWorldPoint()` fast path with focused
+  rigid-block coverage. Local stashes may still exist as historical recovery
+  points, but fresh work should not depend on them. PR
   #2977 (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open and
   should only receive CI-fix commits if a fresh status refresh reveals a
   concrete failure. `RESUME.md` is the detailed source of truth for the current
   plan, branch inventory, validation, and branch-cleanup rules.
-- Critical handoff stop: the user redirected the session to hand-off only with
-  no further verification. Before this final docs edit, the current branch was
-  clean and ahead of `origin/avbd/source-row-extraction-precheck` by
-  `8f6fe0ff632 Avoid AVBD scratch reserve without AVBD rows`; this docs-only
-  handoff is the final requested action and should be pushed to the same
-  consolidated branch. Do not treat this final docs update as new
-  lint/build/test/CI evidence; use the previously recorded validation in
+- Prior handoff stop: the user previously redirected the session to hand-off
+  only with no further verification, and that docs-only handoff was pushed.
+  Work has since resumed on the same consolidated branch. Do not treat that
+  older docs-only handoff as validation evidence; use the current validation in
   `RESUME.md`, refresh PR #2977 status in a fresh session, and resume from the
   consolidated branch above.
+- Latest resumed follow-up: `avbdRigidBodyWorldPoint()` now returns the body
+  position directly for exact origin anchors, avoiding quaternion normalization
+  and rotation in source rows whose rigid-body point constraints or radial
+  springs attach at body origins. `AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition`
+  covers the behavior, and the full `test_avbd_rigid_block` binary passes with
+  91 tests. This is only a narrow helper overhead cleanup; it does not close
+  any source CPU-win, GPU, or paper-number gate.
 - Latest resumed follow-up: `RigidBodyContactStage::prepare()` now reserves
   AVBD scratch only when contacts could use a contact-config storage path or
   when point-joint/distance-spring AVBD pair constraints exist. Contact solver

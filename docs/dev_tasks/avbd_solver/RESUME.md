@@ -9,12 +9,13 @@ gates require dedicated corpus evidence.
 
 Historical stop note: the previous session was explicitly redirected to
 hand-off only and requested no further verification. The branch was then
-resumed for a narrow source-row prepare-overhead cleanup, and the user has now
-redirected the session back to hand-off only again. Use the validation section
-below for the already-recorded evidence, but do not treat this final hand-off
-docs update as new lint/build/test/CI evidence.
+resumed for a narrow source-row prepare-overhead cleanup, redirected back to
+hand-off-only for a docs-only pushed checkpoint, and has now resumed again for a
+narrow origin-anchor helper fast path. Use the validation section below for the
+current evidence, but do not treat the older hand-off-only docs commit as
+lint/build/test/CI evidence.
 
-Current stop state:
+Current continuation state:
 
 - Consolidated resume branch: use `avbd/source-row-extraction-precheck` for the
   next fresh Claude/Codex session. This branch is intended to be the single
@@ -22,42 +23,44 @@ Current stop state:
   #2977 parent changes, the stacked extraction-precheck changes, the current
   handoff docs, and the formerly stash-only quaternion normalization fast path.
   Do not require a fresh session to inspect or apply local stashes before
-  continuing. The hand-off action for this stop is to keep this as the one
-  consolidated branch, commit this docs-only hand-off update there, push it to
-  `origin/avbd/source-row-extraction-precheck`, and stop.
+  continuing. Keep this as the one consolidated local continuation branch for
+  source-row cleanup until the user approves a PR/push update.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   It has been pushed and includes the merge from `origin/main` at
   `7d05d7b9ea7`.
-- #2977 was open, non-draft, milestone `DART 7.0`, base `main`, and `BLOCKED`
-  only because required hosted checks were queued or running at the last
-  read-only check before the final no-verification stop. As of that check on
-  2026-06-11 local time / 2026-06-12 UTC, CUDA Build, ReadTheDocs, CI Lint, Alt
-  Linux repro, macOS arm64 tests, Python and C++ CodeQL, Windows wheels, and
-  multiple Linux jobs had passed; Linux Debug, Linux Release, Coverage Debug,
-  and Windows Release Tests were still running. No new compiler, test, or
-  CodeQL failure was visible on that head. This status was not refreshed after
-  the final stop request.
-- The active local checkout is `avbd/source-row-extraction-precheck`. Its top
-  local code commit before this docs-only hand-off update is
-  `8f6fe0ff632 Avoid AVBD scratch reserve without AVBD rows`, containing the
-  #2977 parent changes, the extraction-precheck changes, the quaternion
-  normalization fast path/test that previously lived only in `stash@{1}`, the
-  contact row-assignment cleanup, and the latest prepare-stage AVBD scratch
-  reserve guard. Before this final docs edit, the branch was clean and ahead of
-  `origin/avbd/source-row-extraction-precheck` by that one commit. After this
-  docs-only hand-off commit is pushed, the branch head on origin is the single
-  fresh-session resume point.
-- No new feature work, lint, build, tests, benchmark, hosted CI refresh, or PR
-  mutation was intentionally performed after the final user stop request. The
-  only allowed action was this hand-off update plus the requested push.
+- #2977 is open, non-draft, milestone `DART 7.0`, base `main`, and `BLOCKED`
+  only because required hosted checks are still running at the latest read-only
+  refresh. As of the latest check on 2026-06-11 local time / 2026-06-12 UTC,
+  CUDA Build, ReadTheDocs, CI Lint, Alt Linux repro, macOS arm64 tests, Python
+  and C++ CodeQL, Windows Release Tests, Windows/macOS/Ubuntu wheels, and
+  multiple Linux jobs have passed; Linux Debug, Linux Release, and Coverage
+  Debug are still running. No new compiler, test, or CodeQL failure is visible
+  on the current head.
+- The active local checkout is `avbd/source-row-extraction-precheck`. The
+  latest pushed head before the origin-anchor follow-up was
+  `31c159f4c02 Update AVBD solver handoff state`. The current local follow-up
+  is the origin-anchor `avbdRigidBodyWorldPoint()` fast path described below;
+  after committing it, that new local commit is the next resume point unless
+  the user explicitly approves a push or PR update.
+- The earlier no-verification stop applied only to the docs-only handoff commit.
+  Work has resumed; the current follow-up has fresh focused local validation
+  recorded below. No hosted CI rerun, PR comment, PR update, merge, or branch
+  deletion has been performed for this resumed slice.
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
 
 Latest consolidated local follow-up:
 
+- `avbdRigidBodyWorldPoint()` now returns `state.position` directly for exact
+  origin anchors. This avoids quaternion normalization and rotation in rigid
+  source rows whose point constraints or radial distance springs attach at body
+  origins, including the one-spring 2D Spring source row. The focused
+  origin-anchor test and full rigid-block test binary pass. This is a narrow
+  helper overhead cleanup; it does not close any source CPU-win, GPU, or
+  paper-number gate.
 - `RigidBodyContactStage::prepare()` now reserves AVBD scratch only when
   contacts could use `RigidAvbdContactConfig` storage or when point-joint /
   distance-spring AVBD pair constraints exist. Ordinary contact scratch still
@@ -126,9 +129,27 @@ Local validation already run for #2977 head `5297462d34b`:
   redirected the task to #2977; do not claim full CUDA `test-all` evidence from
   that aborted run.
 
-Local validation for the consolidated branch after folding in the quaternion
-fast path and contact row-assignment cleanup:
+Local validation for the consolidated branch after the latest source-row
+cleanup:
 
+- Current resumed validation after the origin-anchor world-point fast path:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- Current resumed validation:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition:AvbdRigidBlock.PointPairDistanceSpringStepReducesStretch:AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch:AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows' --gtest_brief=1"`
+  passed, 4 tests.
+- Current resumed validation:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1"`
+  passed, 91 tests.
+- Current resumed validation: `pixi run lint` passed.
+- Current resumed validation: `pixi run build` passed.
+- Current resumed validation: `git diff --check` passed.
+- Current resumed validation: `pixi run test-unit` was attempted after the
+  origin-anchor commit. It built the C++ unit/integration test binaries and
+  entered CTest, but the host load spiked to about 48 and CTest waited behind
+  `--test-load 22` without starting child test processes. The blocked attempt
+  was stopped; do not claim full `test-unit` evidence for this slice from that
+  run.
 - Current resumed validation after the prepare-stage AVBD scratch reserve guard:
   `pixi run -- cmake --build build/default/cpp/Release --target test_world`
   passed.
