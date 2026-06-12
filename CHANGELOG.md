@@ -1542,6 +1542,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     shortcuts through the validated LLT-first helper and raised BGS's standard
     exact gate through the current 96-row comparison packet, moving the
     refreshed Standard profile below `1.5x` average for every solver.
+  - Optimized the shared projected-active-set boxed-LCP exact helper to try
+    LLT-based dense solves before falling back to LU, removing the remaining
+    above-`2x` Boxed averages from the refreshed profile while preserving the
+    previous validated active-set acceptance contract.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

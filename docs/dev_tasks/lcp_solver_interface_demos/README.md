@@ -1,5 +1,118 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Boxed Exact Helper LLT Path
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Checkpoint note: this section records the boxed-helper LLT slice and its
+focused validation evidence. The checkpoint commit should be titled
+`Use LLT for boxed active-set exact helper`.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `13af6a5463c Use LLT for standard BGS and NNCG exact paths`.
+- Current checkpoint target:
+  `Use LLT for boxed active-set exact helper`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 70 commits, with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 71
+  commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes, PR creation, and
+  other GitHub mutations require explicit maintainer/user approval.
+- Pre-commit worktree for this checkpoint contained the boxed-helper slice and
+  its generated docs/demo/profile metadata updates. Expected modified files
+  before the checkpoint commit were `CHANGELOG.md`,
+  `dart/math/lcp/lcp_validation.hpp`,
+  `docs/background/lcp/04_projection-methods.md`,
+  `docs/background/lcp/figures/performance_profile_boxed.csv`,
+  `docs/background/lcp/figures/performance_profile_frictionindex.csv`,
+  `docs/background/lcp/figures/performance_profile_standard.csv`,
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md`,
+  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`,
+  `python/examples/demos/scenes/lcp_physics.py`, and
+  `python/tests/unit/test_py_demo_panels.py`.
+
+Current implementation slice:
+
+- The shared projected-active-set boxed-LCP exact helper now tries LLT-based
+  dense solves for the unconstrained and reduced free-row systems and falls
+  back to the previous LU path if the LLT-based active-set candidate fails
+  validation.
+- The accepted path preserves the previous active-set validation contract while
+  reducing dense-solve cost for the current SPD boxed comparison packets.
+- The regenerated full profile now reports no Boxed solver above `1.51x`
+  average; the previous Boxed `ShockPropagation` and `BGS` above-`2x` rows are
+  gone.
+
+Focused and profile evidence:
+
+- Baseline:
+  `build/boxed_exact_helper_baseline.json`.
+- Accepted focused probe:
+  `build/boxed_exact_helper_llt_probe.json`.
+- Focused Boxed timings moved approximately:
+  - `BGS/24`: `4004.38ns -> 3838.84ns`, `iterations 0 -> 0`.
+  - `BGS/48`: `16886.30ns -> 13481.80ns`, `iterations 0 -> 0`.
+  - `ShockPropagation/24`: `4153.02ns -> 3947.97ns`, `iterations 0 -> 0`.
+  - `ShockPropagation/48`: `15515.32ns -> 13510.71ns`, `iterations 0 -> 0`.
+  - `Dantzig/24`: `4368.56ns -> 2835.80ns`, `iterations 0 -> 0`.
+  - `Sap/48`: `14455.75ns -> 11305.99ns`, `iterations 0 -> 0`.
+- Latest regenerated profile highlights:
+  - Standard: no solver above `1.55x`; highest row is `Sap 1.55`.
+  - Boxed: no solver above `1.51x`; highest rows are
+    `RedBlackGaussSeidel 1.51` and `ShockPropagation 1.50`.
+  - FrictionIndex: no solver above `2x`; highest rows are `BGS 1.65`,
+    `BoxedSemiSmoothNewton 1.52`, `Admm 1.50`, and
+    `ShockPropagation 1.50`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS \
+  pixi run lint
+git diff --check
+```
+
+CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+columns.
+
+Immediate resume guidance:
+
+1. Inspect `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, review the expected dirty files
+   listed above, run the required pre-commit checks, and commit with
+   `Use LLT for boxed active-set exact helper`.
+3. If this checkpoint is already committed, continue with FrictionIndex
+   `BGS 1.65`, FrictionIndex `BoxedSemiSmoothNewton 1.52`, or Standard
+   `Sap 1.55`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Standard BGS/NNCG LLT Exact Paths
 
 This is the latest hand-off state. Sections below are historical checkpoints

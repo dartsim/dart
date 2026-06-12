@@ -62,9 +62,11 @@ unavailable or fails validation. APGD, Jacobi, Red-Black Gauss-Seidel, and
 Symmetric PSOR also use the friction-index exact helper on non-warm-started
 default solves at the packet sizes where refreshed profile evidence shows the
 dense solve is profitable. APGD also uses the shared projected-active-set
-boxed exact helper. Symmetric PSOR intentionally does not use the boxed exact
-helper because current boxed profile probes were slower. Restart-policy
-comparison rows keep the iterative APGD path.
+boxed exact helper. That boxed helper uses an LLT-first dense solve with a full
+LU fallback when the LLT-based active-set candidate does not validate.
+Symmetric PSOR intentionally does not use the boxed exact helper because
+current boxed profile probes were slower. Restart-policy comparison rows keep
+the iterative APGD path.
 
 ## 1. Jacobi Method ✅ (Implemented)
 

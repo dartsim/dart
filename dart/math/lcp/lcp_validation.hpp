@@ -497,80 +497,99 @@ inline bool trySolveProjectedActiveSetBoxedLcp(
   }
 
   const Eigen::Index n = problem.size();
-  Eigen::VectorXd unconstrained = problem.A.partialPivLu().solve(problem.b);
-  if (!unconstrained.allFinite()) {
-    return false;
-  }
-
-  const double activeTol = std::max(0.0, activeSetTolerance);
-  Eigen::VectorXd candidate = Eigen::VectorXd::Zero(n);
-  std::vector<Eigen::Index> freeRows;
-  freeRows.reserve(static_cast<std::size_t>(n));
-
-  for (Eigen::Index i = 0; i < n; ++i) {
-    const double lo = problem.lo[i];
-    const double hi = problem.hi[i];
-    const double value = unconstrained[i];
-    const bool hasLo = std::isfinite(lo);
-    const bool upperBoundFinite = std::isfinite(hi);
-    const bool fixed
-        = hasLo && upperBoundFinite && std::abs(hi - lo) <= validationTolerance;
-
-    if (fixed) {
-      candidate[i] = 0.5 * (lo + hi);
-    } else if (hasLo && value <= lo + activeTol) {
-      candidate[i] = lo;
-    } else if (upperBoundFinite && value >= hi - activeTol) {
-      candidate[i] = hi;
-    } else {
-      freeRows.push_back(i);
-    }
-  }
-
-  if (freeRows.size() == static_cast<std::size_t>(n)) {
-    candidate = std::move(unconstrained);
-  } else if (!freeRows.empty()) {
-    const Eigen::Index freeCount = static_cast<Eigen::Index>(freeRows.size());
-    Eigen::MatrixXd reducedA(freeCount, freeCount);
-    Eigen::VectorXd reducedB(freeCount);
-
-    for (Eigen::Index r = 0; r < freeCount; ++r) {
-      const Eigen::Index row = freeRows[static_cast<std::size_t>(r)];
-      double rhs = problem.b[row];
-      for (Eigen::Index c = 0; c < n; ++c) {
-        rhs -= problem.A(row, c) * candidate[c];
+  const auto solveDense = [](const Eigen::MatrixXd& A,
+                             const Eigen::VectorXd& b,
+                             bool lltFirst) -> Eigen::VectorXd {
+    if (lltFirst) {
+      const Eigen::LLT<Eigen::MatrixXd> llt(A);
+      if (llt.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = llt.solve(b);
+        if (candidate.allFinite()) {
+          return candidate;
+        }
       }
-
-      for (Eigen::Index c = 0; c < freeCount; ++c) {
-        const Eigen::Index col = freeRows[static_cast<std::size_t>(c)];
-        reducedA(r, c) = problem.A(row, col);
-        rhs += problem.A(row, col) * candidate[col];
-      }
-
-      reducedB[r] = rhs;
     }
+    return A.partialPivLu().solve(b);
+  };
 
-    Eigen::VectorXd reducedX = reducedA.partialPivLu().solve(reducedB);
-    if (!reducedX.allFinite()) {
+  const auto tryCandidate = [&](bool lltFirst) -> bool {
+    Eigen::VectorXd unconstrained = solveDense(problem.A, problem.b, lltFirst);
+    if (!unconstrained.allFinite()) {
       return false;
     }
 
-    for (Eigen::Index i = 0; i < freeCount; ++i) {
-      candidate[freeRows[static_cast<std::size_t>(i)]] = reducedX[i];
+    const double activeTol = std::max(0.0, activeSetTolerance);
+    Eigen::VectorXd candidate = Eigen::VectorXd::Zero(n);
+    std::vector<Eigen::Index> freeRows;
+    freeRows.reserve(static_cast<std::size_t>(n));
+
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const double lo = problem.lo[i];
+      const double hi = problem.hi[i];
+      const double value = unconstrained[i];
+      const bool hasLo = std::isfinite(lo);
+      const bool upperBoundFinite = std::isfinite(hi);
+      const bool fixed = hasLo && upperBoundFinite
+                         && std::abs(hi - lo) <= validationTolerance;
+
+      if (fixed) {
+        candidate[i] = 0.5 * (lo + hi);
+      } else if (hasLo && value <= lo + activeTol) {
+        candidate[i] = lo;
+      } else if (upperBoundFinite && value >= hi - activeTol) {
+        candidate[i] = hi;
+      } else {
+        freeRows.push_back(i);
+      }
     }
-  }
 
-  Eigen::VectorXd w = problem.A * candidate - problem.b;
-  if (!validateSolution(
-          candidate, w, problem.lo, problem.hi, validationTolerance)) {
-    return false;
-  }
+    if (freeRows.size() == static_cast<std::size_t>(n)) {
+      candidate = std::move(unconstrained);
+    } else if (!freeRows.empty()) {
+      const Eigen::Index freeCount = static_cast<Eigen::Index>(freeRows.size());
+      Eigen::MatrixXd reducedA(freeCount, freeCount);
+      Eigen::VectorXd reducedB(freeCount);
 
-  x = std::move(candidate);
-  if (wOut) {
-    *wOut = std::move(w);
-  }
-  return true;
+      for (Eigen::Index r = 0; r < freeCount; ++r) {
+        const Eigen::Index row = freeRows[static_cast<std::size_t>(r)];
+        double rhs = problem.b[row];
+        for (Eigen::Index c = 0; c < n; ++c) {
+          rhs -= problem.A(row, c) * candidate[c];
+        }
+
+        for (Eigen::Index c = 0; c < freeCount; ++c) {
+          const Eigen::Index col = freeRows[static_cast<std::size_t>(c)];
+          reducedA(r, c) = problem.A(row, col);
+          rhs += problem.A(row, col) * candidate[col];
+        }
+
+        reducedB[r] = rhs;
+      }
+
+      Eigen::VectorXd reducedX = solveDense(reducedA, reducedB, lltFirst);
+      if (!reducedX.allFinite()) {
+        return false;
+      }
+
+      for (Eigen::Index i = 0; i < freeCount; ++i) {
+        candidate[freeRows[static_cast<std::size_t>(i)]] = reducedX[i];
+      }
+    }
+
+    Eigen::VectorXd w = problem.A * candidate - problem.b;
+    if (!validateSolution(
+            candidate, w, problem.lo, problem.hi, validationTolerance)) {
+      return false;
+    }
+
+    x = std::move(candidate);
+    if (wOut) {
+      *wOut = std::move(w);
+    }
+    return true;
+  };
+
+  return tryCandidate(true) || tryCandidate(false);
 }
 
 inline bool trySolveInteriorFrictionIndexLcp(
