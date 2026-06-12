@@ -593,6 +593,23 @@ TEST(LcpValidationCoverage, DetectsFrictionWithInfiniteHi)
   EXPECT_FALSE(message.empty());
 }
 
+TEST(LcpValidationCoverage, DetectsFrictionWithNegativeHi)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), -0.5;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+  LcpProblem problem(A, b, lo, hi, findex);
+
+  std::string message;
+  EXPECT_FALSE(detail::validateProblem(problem, &message));
+  EXPECT_NE(message.find("non-negative"), std::string::npos);
+}
+
 TEST(LcpValidationCoverage, DetectsLowerBoundAboveUpperBound)
 {
   Eigen::MatrixXd A = Eigen::MatrixXd::Identity(1, 1);
@@ -912,6 +929,26 @@ TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNonFiniteMu)
       detail::computeEffectiveBounds(
           lo, hi, findex, x, loEff, hiEff, &message));
   EXPECT_NE(message.find("Invalid friction coefficient"), std::string::npos);
+}
+
+TEST(LcpValidationCoverage, ComputeEffectiveBoundsRejectsNegativeMu)
+{
+  Eigen::VectorXd lo(2);
+  lo << 0.0, -1.0;
+  Eigen::VectorXd hi(2);
+  hi << std::numeric_limits<double>::infinity(), -0.5;
+  Eigen::VectorXi findex(2);
+  findex << -1, 0;
+  Eigen::VectorXd x(2);
+  x << 0.2, 0.0;
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  EXPECT_FALSE(
+      detail::computeEffectiveBounds(
+          lo, hi, findex, x, loEff, hiEff, &message));
+  EXPECT_NE(message.find("negative"), std::string::npos);
 }
 
 TEST(LcpValidationCoverage, ValidateSolutionRejectsDimensionMismatchWithMessage)

@@ -1,5 +1,72 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-11 Current Continuation — Friction Coefficient Validation
+
+The current continuation resumes from
+`e3353bf04b7 Expose LCP solver sweep metadata` on
+`feature/lcp-solver-interface-demos`. The two docs-only stop-hand-off edits
+from the previous instruction are preserved in the working tree and this
+continuation adds a bounded DART 7 LCP problem-interface validation slice.
+
+Current slice:
+
+- Shared LCP problem validation now rejects friction-index rows whose stored
+  upper coefficient `hi[i]` is negative. The effective-bound helper now uses
+  that non-negative coefficient directly instead of accepting a negative value
+  and normalizing it with `abs()`.
+- `LcpProblem::hasFrictionIndex()` now treats negative friction coefficients as
+  invalid problem metadata, matching `LcpProblem::isValid()` and solver support
+  checks.
+- C++ coverage exercises public problem classification, raw validation,
+  effective-bound construction, and generated invalid-problem solver rejection.
+- dartpy coverage exercises the same invalid problem through
+  `LcpProblem`, `supports_problem()`, and `DantzigSolver.solve()`.
+
+Verification completed for this slice:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+```
+
+Observed results:
+
+- C++ LCP suite: `100% tests passed, 0 tests failed out of 17`.
+- The focused dartpy LCP test reported `62 passed`.
+
+## 2026-06-11 Historical Stop-Only Hand-Off
+
+The previous user instruction was to stop all implementation work, do not run
+further verification, and ensure only the hand-off docs were current. After
+that instruction, the only edits were this file and
+`docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+
+No lint, build, tests, benchmark listing, benchmark execution, solver
+execution, code edits, commit, or push was run after that stop-only
+instruction. The last observed repository state before that docs-only hand-off
+edit was:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `e3353bf04b7 Expose LCP solver sweep metadata`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 16]`.
+- Recent local checkpoints:
+  - `e3353bf04b7 Expose LCP solver sweep metadata`
+  - `46700198d80 Expose LCP scale benchmark metadata`
+  - `197b55c335a Use concrete LCP contact registration gates`
+- The worktree was clean before this final docs-only hand-off edit.
+
+Do not continue implementation from this hand-off alone. A fresh session should
+first inspect `git status --short --branch` and `git log --oneline --decorate
+--max-count=15`, read this file and `RESUME.md`, then wait for or obtain an
+explicit next task before changing code. The broad LCP solver/interface/demo
+objective remains open; this dev-task folder must not be retired from this
+stop-only checkpoint.
+
+That stop-only state is historical after the current continuation.
+
 ## Current Status
 
 - [x] Consolidated the current work on one branch:
@@ -122,6 +189,13 @@
       singular-degenerate rows in the generated representative command.
 - [x] Exposed solver-specific tuning and robustness sweep benchmarks through
       the LCP py-demo representative metadata.
+- [x] Captured the final stop-only hand-off at local checkpoint
+      `e3353bf04b7`, with no lint, build, tests, benchmark listing, solver
+      execution, commit, push, code edits, or further implementation work after
+      the user's final stop-only instruction.
+- [x] Reject negative friction-index `hi` coefficients consistently across C++
+      validation, effective-bound construction, generated invalid-problem
+      coverage, and dartpy.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -170,13 +244,12 @@ existing live contact, solver-profile, concrete support-routing, generated
 coverage, and benchmark registration cleanup slices.
 
 Previous hand-off note: after the local implementation checkpoint
-`197b55c335a Use concrete LCP contact registration gates`, the user instructed
-the agent to stop implementation and verification and only ensure hand-off
-docs. No further verification was run. Because repo policy requires
-`pixi run lint` before committing and the user explicitly forbade further
-verification, this final hand-off edit is intentionally docs-only working-tree
-context for a fresh session unless a later human/session chooses to lint,
-commit, and push it.
+`e3353bf04b7 Expose LCP solver sweep metadata`, the user instructed the agent
+to stop implementation and verification and only ensure hand-off docs. No
+further verification was run. Because repo policy requires `pixi run lint`
+before committing and the user explicitly forbade further verification, this
+final hand-off edit is intentionally docs-only working-tree context for a fresh
+session unless a later human/session chooses to lint, commit, and push it.
 
 ## Py-Demo Representative Scale Metadata Checkpoint
 

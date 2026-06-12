@@ -1181,6 +1181,18 @@ std::vector<LcpProblem> makeInvalidProblems()
     problems.emplace_back(A, b, lo, hi, findex);
   }
 
+  {
+    Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+    Eigen::VectorXd b = Eigen::VectorXd::Ones(2);
+    Eigen::VectorXd lo(2);
+    lo << 0.0, -1.0;
+    Eigen::VectorXd hi(2);
+    hi << std::numeric_limits<double>::infinity(), -0.5;
+    Eigen::VectorXi findex(2);
+    findex << -1, 0;
+    problems.emplace_back(A, b, lo, hi, findex);
+  }
+
   return problems;
 }
 

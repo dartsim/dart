@@ -142,6 +142,13 @@ inline bool validateProblem(
       return false;
     }
 
+    if (ref >= 0 && hi[i] < 0.0) {
+      if (message) {
+        *message = "Friction coefficient (hi) must be non-negative";
+      }
+      return false;
+    }
+
     if (std::isfinite(lo[i]) && std::isfinite(hi[i]) && lo[i] > hi[i]) {
       if (message) {
         *message = "Lower bound exceeds upper bound";
@@ -209,7 +216,7 @@ inline bool computeEffectiveBounds(
     }
 
     const double scale = x[ref];
-    const double mu = std::abs(hi[i]);
+    const double mu = hi[i];
     if (!std::isfinite(scale)) {
       if (message) {
         *message = "Invalid friction index reference value";
@@ -220,6 +227,13 @@ inline bool computeEffectiveBounds(
     if (!std::isfinite(mu)) {
       if (message) {
         *message = "Invalid friction coefficient (hi) for friction index entry";
+      }
+      return false;
+    }
+
+    if (mu < 0.0) {
+      if (message) {
+        *message = "Invalid negative friction coefficient (hi)";
       }
       return false;
     }

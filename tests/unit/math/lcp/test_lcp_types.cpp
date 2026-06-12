@@ -367,3 +367,25 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
       "Friction index entry cannot reference itself");
   EXPECT_EQ(selfReferenceProblem.getType(), LcpProblemType::Invalid);
 }
+
+TEST(LcpTypesTest, FrictionIndexClassificationRejectsNegativeCoefficient)
+{
+  Eigen::Vector2d lo;
+  lo << 0.0, -1.0;
+  Eigen::Vector2d hi;
+  hi << std::numeric_limits<double>::infinity(), -0.5;
+
+  const LcpProblem problem(
+      Eigen::Matrix2d::Identity(),
+      Eigen::Vector2d(0.5, 0.25),
+      lo,
+      hi,
+      Eigen::Vector2i(-1, 0));
+
+  EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_FALSE(problem.isValid());
+  EXPECT_EQ(
+      problem.getValidationMessage(),
+      "Friction coefficient (hi) must be non-negative");
+  EXPECT_EQ(problem.getType(), LcpProblemType::Invalid);
+}

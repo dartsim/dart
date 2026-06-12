@@ -1,15 +1,96 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality — 2026-06-11 Active Continuation
+## Current Reality — 2026-06-11 Friction Coefficient Validation
 
 The current continuation resumes from
-`197b55c335a Use concrete LCP contact registration gates` on
-`feature/lcp-solver-interface-demos`. The branch had two uncommitted
-stop-only hand-off doc edits from the previous instruction; this continuation
-preserves those edits and adds a bounded py-demo benchmark metadata slice.
+`e3353bf04b7 Expose LCP solver sweep metadata` on
+`feature/lcp-solver-interface-demos`. The previous stop-only hand-off edits in
+this file and the dev-task README are preserved, and this continuation adds a
+bounded LCP problem-interface validation slice.
 
-The latest implementation slice extends the Python LCP demo's representative
-benchmark packet metadata:
+The current implementation slice:
+
+- Rejects friction-index rows with negative stored upper coefficients `hi[i]`
+  in shared problem validation. DART's public LCP docs define this slot as the
+  non-negative `+mu` coefficient for effective tangent bounds.
+- Makes `computeEffectiveBounds(...)` use `hi[i]` directly after validation
+  instead of silently accepting a negative coefficient through `abs(hi[i])`.
+- Makes `LcpProblem::hasFrictionIndex()` reject the same invalid metadata so
+  classification, `isValid()`, `supportsProblem(problem)`, and solver dispatch
+  agree.
+- Adds C++ coverage in `test_lcp_types.cpp`,
+  `test_lcp_validation_and_solvers.cpp`, and generated invalid-problem solver
+  coverage.
+- Adds dartpy coverage in `python/tests/unit/math/test_lcp.py`.
+
+Verification completed for this slice:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+```
+
+Observed results:
+
+- C++ LCP suite: `100% tests passed, 0 tests failed out of 17`.
+- The focused dartpy LCP test reported `62 passed`.
+
+Fresh-session resume sequence:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status --short --branch
+git log --oneline --decorate --max-count=15
+```
+
+Then read:
+
+- `docs/ai/principles.md`
+- `docs/dev_tasks/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- this file
+
+Do not treat this slice as completion of the broad LCP solver/interface/demo
+objective. Continue one bounded DART 7 LCP interface, solver completeness,
+demo, benchmark, or performance gap at a time.
+
+## Historical Hand-Off — 2026-06-11 Stop-Only Point
+
+The previous user instruction was to stop all implementation work, do not run
+further verification, ensure only the hand-off docs were current, and then
+fully stop. After that instruction, the only edits were this file and
+`docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+
+No lint, build, tests, benchmark-list commands, benchmark execution, solver
+execution, code edits, commit, or push was run after that stop-only instruction.
+Historical verification below belongs only to the named implementation
+checkpoints that explicitly list it.
+
+That stop-only hand-off recorded:
+
+- Consolidated branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD before that docs-only hand-off edit:
+  `e3353bf04b7 Expose LCP solver sweep metadata`.
+- Tracking state before that docs-only hand-off edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 16]`.
+- Recent local checkpoints:
+  - `e3353bf04b7 Expose LCP solver sweep metadata`
+  - `46700198d80 Expose LCP scale benchmark metadata`
+  - `197b55c335a Use concrete LCP contact registration gates`
+- The worktree was clean before that final docs-only hand-off edit.
+
+The suspected non-finite lower-bound follow-up from that stop-only note was
+rechecked during the current continuation. Existing tests intentionally use
+`lo = -inf` or `lo = 0` storage on some friction-index rows while deriving
+effective tangent bounds from `hi`; do not tighten that behavior without a
+separate design decision.
+
+## Latest Completed Implementation — 2026-06-11 Py-Demo Metadata
+
+The latest completed implementation slices extend the Python LCP demo's
+representative benchmark packet metadata:
 
 - `active_set_scale` now points at the larger, stress, extreme, production,
   and production-batch active-set transition benchmark rows.
@@ -48,21 +129,6 @@ Observed results:
 - A second benchmark-list check listed the newly exposed solver-specific
   tuning and robustness sweep rows.
 - `pixi run lint` passed.
-
-Fresh-session resume sequence:
-
-```bash
-git checkout feature/lcp-solver-interface-demos
-git status --short --branch
-git log --oneline --decorate --max-count=15
-```
-
-Then read:
-
-- `docs/ai/principles.md`
-- `docs/dev_tasks/README.md`
-- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
-- this file
 
 The latest implementation slice removes redundant manifest-family prechecks
 from contact benchmark registration paths:

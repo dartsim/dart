@@ -362,7 +362,7 @@ struct DART_API LcpProblem
       if (ref >= n || ref == i) {
         return false;
       }
-      if (!std::isfinite(hi[i])) {
+      if (!std::isfinite(hi[i]) || hi[i] < 0.0) {
         return false;
       }
 
@@ -456,6 +456,13 @@ private:
       if (ref >= 0 && !std::isfinite(hi[i])) {
         if (message) {
           *message = "Friction coefficient (hi) must be finite";
+        }
+        return false;
+      }
+
+      if (ref >= 0 && hi[i] < 0.0) {
+        if (message) {
+          *message = "Friction coefficient (hi) must be non-negative";
         }
         return false;
       }
