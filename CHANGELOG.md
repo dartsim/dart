@@ -3405,6 +3405,7 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers usable from the
     provider; and built-in panel toggles plus numeric tuning sliders for the
     debug overlays. See `docs/design/renderer_fidelity_and_debug_visuals.md`.
+    ([#2984](https://github.com/dartsim/dart/pull/2984))
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,
