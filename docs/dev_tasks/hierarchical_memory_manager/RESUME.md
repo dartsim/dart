@@ -1,5 +1,33 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-12, Stop-on-Handoff)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. Keep this as the single
+handoff branch unless a maintainer explicitly redirects the work.
+
+Current local stop state:
+
+- the latest implementation/evidence commit before this docs-only handoff is
+  `0cf49869195` (`Record HMM EnTT comparative evidence`);
+- the previous local commit is `e68b88d5756`
+  (`Route public dirty traversal through World allocator`);
+- at the start of this handoff update,
+  `origin/pr/hmm-phase45-replay-snapshot-allocators` was still
+  `a679d98c0d2` (`Record HMM hard stop handoff`);
+- before this docs-only handoff edit, the local branch was ahead of origin by
+  the 2 commits above and had no open PR at this handoff.
+
+Do not continue optimization, add scenes, or run further verification from this
+handoff state unless the maintainer explicitly resumes the work. If the next
+agent is asked to publish or continue implementation, start from this same
+branch and create the next bounded slice only after rechecking the current
+diff/status.
+
+No lint, build, test, or benchmark command was run for this handoff update, by
+explicit maintainer instruction.
+
 ## Current Continuation (2026-06-12, Public Setter Dirty Traversal Allocators)
 
 Resume from exactly one branch:
