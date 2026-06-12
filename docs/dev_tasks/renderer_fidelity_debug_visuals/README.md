@@ -21,6 +21,8 @@
         `pixi run python scripts/check_docs_policy.py`)
   - [x] Address Codex P2 finding: new panel toggles are inert (see Key
         Decisions / RESUME.md)
+  - [x] Address Codex P2 finding: Python descriptor-backed GUI scenes now carry
+        `VisualAspect` PBR values through `MaterialDescriptor`
   - [ ] Watch remaining CI matrix; mark ready for review when green per
         `docs/onboarding/ai-tools.md` draft-ready fast path
 - [ ] Phase 6 (post-merge follow-ups, tracked in the design doc): A2 IBL
@@ -72,6 +74,10 @@ all renderer-neutral (backend-hidden rule).
   extraction path. `DebugDrawOptions` fields and the `BodyNode` helpers stay in
   place for `debugProvider`, which is the functional path for those overlays in
   this PR.
+- **Python descriptor PBR parity**: dartpy exposes `MaterialDescriptor`
+  `metallic` / `roughness` / `reflectance`, and the Python world render bridge
+  copies non-negative `VisualAspect` PBR values into descriptor-backed GUI
+  renderables.
 
 ## Immediate Next Steps
 

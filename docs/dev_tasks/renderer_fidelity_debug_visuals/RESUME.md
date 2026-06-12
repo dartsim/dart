@@ -11,7 +11,10 @@ triggered `@codex review`. CI Lint then failed on a docs-policy check and
 Codex submitted one P2 finding. Follow-up commits indexed the design doc,
 merged latest `origin/main`, and removed unsupported body/joint/velocity
 built-in panel controls while keeping the helpers available through
-`debugProvider`.
+`debugProvider`. A later Codex P2 finding noted that descriptor-backed Python
+GUI scenes did not propagate PBR values; the local follow-up exposes the
+optional `MaterialDescriptor` PBR fields in dartpy and copies non-negative
+`VisualAspect` values through `_world_render_bridge.py`.
 
 ## Current Branch
 
@@ -33,6 +36,12 @@ current local and remote state with `git status --short --branch` and
   `DebugDrawOptions` fields and `BodyNode` helpers stay for `debugProvider`.
   Do NOT reply to the bot; fix silently, resolve the thread via GraphQL only
   after maintainer approval.
+- **Codex P2** (review `4489497208`,
+  `python/dartpy/dynamics/shape_frame.cpp:55`) has a local fix:
+  descriptor-backed Python GUI scenes now propagate `VisualAspect` metallic,
+  roughness, and reflectance values into `gui.MaterialDescriptor`. Do NOT reply
+  to the bot; fix silently, resolve the thread via GraphQL only after the fix is
+  pushed.
 
 ## CI State (snapshot, verify fresh)
 
@@ -63,10 +72,11 @@ current local and remote state with `git status --short --branch` and
   `simulation.pyi` that is not ours to fix). Keep committed style; our
   genuine additions (VisualAspect PBR methods in `dynamics.pyi`) are already
   committed.
-- **Verification evidence so far** (all green on merged head
-  `5ae5b7a9d81`): `pixi run lint`; `pixi run build`; `pixi run test-unit`
-  (162/162); `UNIT_gui_DebugVisuals` 5/5 (run binary directly to confirm all
-  five execute); dartpy PBR smoke (camelCase + snake_case); headless
+- **Verification evidence so far**: `pixi run lint`; `pixi run build`;
+  `pixi run test-unit` (162/162); `UNIT_gui_DebugVisuals` 5/5 (run binary
+  directly to confirm all five execute); dartpy PBR smoke (camelCase +
+  snake_case); focused GUI Python coverage
+  (`python/tests/unit/gui/test_gui_scene.py`, 24/24); headless
   `dartsim --headless --frames 1 --screenshot` renders correctly pre+post
   merge (PPM converted to PNG and inspected — A1/A3 must be judged visually
   per `docs/onboarding/gui-rendering.md`). Pre-merge, the provider path was

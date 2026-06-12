@@ -96,6 +96,18 @@ def test_gui_extract_renderables_from_world():
     material_descriptor = dart.gui.MeshMaterialDescriptor()
     assert hasattr(material_descriptor, "base_color_texture_path")
     assert hasattr(material_descriptor, "metallic_roughness_texture_path")
+    material = dart.gui.MaterialDescriptor()
+    assert material.metallic is None
+    assert material.roughness is None
+    assert material.reflectance is None
+    material.metallic = 0.7
+    material.roughness = 0.25
+    material.reflectance = 0.45
+    assert material.metallic == pytest.approx(0.7)
+    assert material.roughness == pytest.approx(0.25)
+    assert material.reflectance == pytest.approx(0.45)
+    material.metallic = None
+    assert material.metallic is None
     active_state = dart.gui.ActiveRenderableState()
     assert hasattr(active_state, "shape_version")
     assert hasattr(active_state, "render_resource_version")
@@ -476,7 +488,11 @@ def test_gui_extract_renderables_from_simple_frame():
         dart.gui.world_render_frame(), "interactive_target", transform
     )
     frame.set_shape(dart.BoxShape(np.array([0.4, 0.5, 0.6])))
-    frame.get_visual_aspect(True).set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
+    visual = frame.get_visual_aspect(True)
+    visual.set_rgba(np.array([0.9, 0.2, 0.1, 0.8]))
+    visual.set_metallic(0.65)
+    visual.set_roughness(0.2)
+    visual.set_reflectance(-1.0)
     scene.add_simple_frame(frame)
 
     renderables = scene.renderable_provider()
@@ -490,6 +506,9 @@ def test_gui_extract_renderables_from_simple_frame():
     assert descriptor.shape_node_version > 0
     assert descriptor.geometry.kind == dart.gui.ShapeKind.Box
     assert np.allclose(descriptor.geometry.size, [0.4, 0.5, 0.6])
+    assert descriptor.material.metallic == pytest.approx(0.65)
+    assert descriptor.material.roughness == pytest.approx(0.2)
+    assert descriptor.material.reflectance is None
     assert np.allclose(descriptor.world_transform.translation(), [1.0, -2.0, 0.5])
 
     assert not dart.gui.translate_simple_frame_renderable(

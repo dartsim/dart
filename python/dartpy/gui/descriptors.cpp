@@ -139,7 +139,10 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw("rgba", &gui::MaterialDescriptor::rgba)
       .def_rw("visible", &gui::MaterialDescriptor::visible)
       .def_rw("casts_shadows", &gui::MaterialDescriptor::castsShadows)
-      .def_rw("receives_shadows", &gui::MaterialDescriptor::receivesShadows);
+      .def_rw("receives_shadows", &gui::MaterialDescriptor::receivesShadows)
+      .def_rw("metallic", &gui::MaterialDescriptor::metallic)
+      .def_rw("roughness", &gui::MaterialDescriptor::roughness)
+      .def_rw("reflectance", &gui::MaterialDescriptor::reflectance);
 
   nb::class_<gui::RenderableDescriptor>(m, "RenderableDescriptor")
       .def(nb::init<>())
