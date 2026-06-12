@@ -29,7 +29,6 @@ namespace {
 using dart::math::LcpOptions;
 using dart::math::LcpProblem;
 using dart::math::LcpSolverStatus;
-using dart::test::LcpProblemSupport;
 using dart::test::LcpSolverManifestEntry;
 
 enum class GeneratedFamily
@@ -1185,30 +1184,17 @@ std::vector<LcpProblem> makeInvalidProblems()
   return problems;
 }
 
-LcpProblemSupport supportFor(const GeneratedFamily family)
+bool solverSupportsConcreteProblem(
+    const LcpSolverManifestEntry& solverEntry, const LcpProblem& problem)
 {
-  switch (family) {
-    case GeneratedFamily::Standard:
-      return LcpProblemSupport::Standard;
-    case GeneratedFamily::Boxed:
-      return LcpProblemSupport::Boxed;
-    case GeneratedFamily::FrictionIndex:
-      return LcpProblemSupport::FrictionIndex;
-  }
-
-  return LcpProblemSupport::Standard;
+  const auto solver = solverEntry.create();
+  return solver != nullptr && solver->supportsProblem(problem);
 }
 
 bool solverShouldRun(
     const LcpSolverManifestEntry& solver, const GeneratedCase& testCase)
 {
-  if (!supportsProblem(solver, supportFor(testCase.family))) {
-    return false;
-  }
-
-  // DirectSolver enumerates n <= 3 before delegating to Dantzig. Keep generated
-  // coverage limited to actual direct enumeration work.
-  return solver.name != "Direct" || testCase.problem.b.size() <= 3;
+  return solverSupportsConcreteProblem(solver, testCase.problem);
 }
 
 template <std::size_t N>

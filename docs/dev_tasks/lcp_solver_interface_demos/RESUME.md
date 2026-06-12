@@ -163,6 +163,11 @@ argument sets, while mixed world-contact batch rows check the exact generated
 batch problem lists for the baseline, stress-stack, and contact-pipeline-32
 families.
 
+The follow-up continuation aligns generated LCP correctness coverage with that
+same concrete support model: generated cases now skip by each solver's
+`supportsProblem(testCase.problem)` result instead of a manifest-family check
+plus a Direct-only size special case.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
@@ -193,13 +198,13 @@ latest `main` before any later push.
 ## Immediate Next Step
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
-starting points after the heavyweight contact benchmark support-gating slice
-are any remaining manifest-level benchmark gates that still publish native rows
-without a generated problem or representative contact-family support probe, any
-solver whose documented native mathematical domain is still broader than its
-concrete `supportsProblem(problem)` predicate, and GUI/demo packets that still
-lack clear apples-to-apples benchmark coverage. Do not treat the broad LCP
-objective as complete.
+starting points after the generated coverage support-routing slice are any
+remaining manifest-level benchmark or test gates that still publish or execute
+native rows without a generated problem or representative contact-family
+support probe, any solver whose documented native mathematical domain is still
+broader than its concrete `supportsProblem(problem)` predicate, and GUI/demo
+packets that still lack clear apples-to-apples benchmark coverage. Do not treat
+the broad LCP objective as complete.
 
 ## Context That Would Be Lost
 
@@ -289,6 +294,12 @@ objective as complete.
   concrete support probes to avoid registration-time construction of their
   largest fixtures; `BM_LcpWorldContactBatch` baseline, stress-stack, and
   contact-pipeline-32 families check the exact generated batch problem lists.
+- Completed generated-coverage follow-up: `solverShouldRun(...)` in
+  `tests/unit/math/lcp/test_lcp_generated_coverage.cpp` now uses each solver's
+  concrete `supportsProblem(problem)` result, so Direct, Baraff, MPRGP, and
+  future narrow native routes stay aligned with benchmark/demo support
+  reporting. Focused verification rebuilt and passed
+  `UNIT_math_lcp_math_lcp_lcp_generated_coverage`; `pixi run lint` passed.
 - Historical hand-off note: after the earlier 2026-06-11 stop instruction, no
   additional verification was run in that hand-off-only checkpoint, including
   `pixi run lint`. The later heavyweight contact support-gating continuation

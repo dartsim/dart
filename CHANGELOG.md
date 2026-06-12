@@ -1845,6 +1845,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     listing does not eagerly construct the 256-contact fixtures, while the
     lighter mixed world-contact batch rows check their concrete generated batch
     packets directly.
+  - Aligned DART 7 generated LCP correctness coverage with solver-native
+    support predicates: generated cases now skip by each solver's concrete
+    `supportsProblem(problem)` result instead of only the manifest-level
+    problem family, so Direct, Baraff, MPRGP, and future narrow native paths
+    stay consistent with benchmark/demo native-route reporting.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the

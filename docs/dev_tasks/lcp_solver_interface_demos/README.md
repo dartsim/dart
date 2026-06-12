@@ -75,6 +75,8 @@
       benchmark registrations: exact generated-batch checks for mixed
       world-contact batches and representative small contact probes for dense
       box-contact, articulated unified-contact, and dense box-contact batch rows.
+- [x] Aligned generated LCP correctness coverage with concrete
+      `supportsProblem(problem)` predicates instead of manifest-family support.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -114,14 +116,42 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the heavyweight contact benchmark
-support-gating slice. It builds on local commit
-`8f0242c2442 Filter LCP contact benchmark rows concretely`.
+The latest implementation checkpoint is the generated coverage support-routing
+slice, following the heavyweight contact benchmark support-gating slice.
 
 The previous task checkpoint was hand-off only: no lint, build, tests,
 benchmark listing, solver execution, or additional implementation work was run
 after that user's critical stop instruction. The current checkpoint resumes
 implementation from that hand-off.
+
+## Generated Coverage Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns generated LCP correctness coverage
+with the concrete solver support predicate used by demos and benchmarks:
+
+- `tests/unit/math/lcp/test_lcp_generated_coverage.cpp` now creates the solver
+  and calls `supportsProblem(testCase.problem)` before running each generated
+  case.
+- The older manifest-family gate and Direct-only size special case were removed
+  from the shared `solverShouldRun(...)` path. Direct size support, Baraff
+  PSD-only native support, and MPRGP SPD-only native support are now all routed
+  through the same solver predicates as public callers.
+
+Verification for this checkpoint:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_generated_coverage --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R '^UNIT_math_lcp_math_lcp_lcp_generated_coverage$'
+pixi run lint
+```
+
+Observed results:
+
+- `UNIT_math_lcp_math_lcp_lcp_generated_coverage` rebuilt successfully.
+- CTest `^UNIT_math_lcp_math_lcp_lcp_generated_coverage$`: passed.
+- `pixi run lint`: passed.
 
 ## Heavyweight Contact Benchmark Support-Gating Checkpoint
 
