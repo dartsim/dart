@@ -1748,6 +1748,17 @@ TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
   const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
 
   {
+    ApgdSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
     BgsSolver solver;
     Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
     const auto result = solver.solve(problem, x, solver.getDefaultOptions());
@@ -1775,7 +1786,34 @@ TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
   }
 
   {
+    JacobiSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    RedBlackGaussSeidelSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
     ShockPropagationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SymmetricPsorSolver solver;
     Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
     const auto result = solver.solve(problem, x, solver.getDefaultOptions());
     EXPECT_EQ(result.status, LcpSolverStatus::Success);

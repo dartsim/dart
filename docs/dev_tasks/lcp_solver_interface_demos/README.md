@@ -1,5 +1,79 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Projection Iterator Fast Paths
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint:
+  `Fast path strict-interior projection iterator LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 48 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ApgdSolver`, `JacobiSolver`, `SymmetricPsorSolver`, and
+  `RedBlackGaussSeidelSolver` now try the shared validated strict-interior
+  standard-LCP fast path for non-warm-started solves without explicit
+  per-solve custom options.
+- Each shortcut has a profile-shaped size guard so larger packets stay on the
+  existing iterative projection path when the dense linear solve is not
+  profitable.
+- The strict-interior projection/block unit coverage now includes APGD, Jacobi,
+  Symmetric PSOR, and Red-Black Gauss-Seidel.
+- The checked LCP performance profile CSVs, Python demo metadata, projection
+  background docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Standard/(Apgd|Jacobi|SymmetricPsor|RedBlackGaussSeidel)/`.
+- Compared to the previous full profile cache:
+  - `Apgd`: mean `0.745`; best `0.615`; worst `0.988`.
+  - `Jacobi`: mean `0.825`; best `0.490`; worst `1.101`.
+  - `RedBlackGaussSeidel`: mean `0.752`; best `0.413`; worst `1.024`.
+  - `SymmetricPsor`: mean `0.683`; best `0.476`; worst `0.860`.
+  - All focused rows reported `contract_ok=1.0`; fast-pathed rows reported
+    `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard averages: `Apgd` `1.46`, `Jacobi` `1.44`,
+  `RedBlackGaussSeidel` `1.74`, and `SymmetricPsor` `1.56`.
+- Current Standard follow-up targets are `ShockPropagation`,
+  `RedBlackGaussSeidel`, and moderate `FischerBurmeisterNewton`, `NNCG`,
+  `Lemke`, `SymmetricPsor`, `InteriorPoint`, and similar mid-pack rows.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, `Nncg`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/(Apgd|Jacobi|SymmetricPsor|RedBlackGaussSeidel)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/projection_iterators_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The next natural Standard target is
+   `ShockPropagation`, or switch to the Boxed/FrictionIndex high-ratio rows.
+   Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior ADMM Fast Path
 
 Current branch state:

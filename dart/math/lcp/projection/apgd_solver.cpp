@@ -46,6 +46,8 @@
 namespace dart::math {
 namespace {
 
+constexpr int kMaxStrictInteriorFastPathSize = 48;
+
 bool validateParameters(
     const ApgdSolver::Parameters& params, std::string* message)
 {
@@ -138,6 +140,9 @@ LcpResult ApgdSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
   const double relativeTolerance = (options.relativeTolerance > 0)
                                        ? options.relativeTolerance
                                        : mDefaultOptions.relativeTolerance;
@@ -148,6 +153,35 @@ LcpResult ApgdSolver::solve(
   if (!std::isfinite(relaxation) || relaxation <= 0.0 || relaxation > 2.0) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Relaxation parameter must be in (0, 2]";
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  if (options.customOptions == nullptr && !options.warmStart
+      && n <= kMaxStrictInteriorFastPathSize
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem,
+          absTolerance,
+          std::max(absTolerance, compTolerance),
+          x,
+          &fastW)) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolerance);
+    result.validated = options.validateSolution;
     return result;
   }
 
@@ -343,10 +377,7 @@ LcpResult ApgdSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(

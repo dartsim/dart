@@ -227,14 +227,15 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "Admm/Tgs/Pgs and strict-interior pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "Apgd/Jacobi/SymmetricPsor, "
-            "RedBlackGaussSeidel/ShockPropagation/Sap"
+            "ShockPropagation/RedBlackGaussSeidel, "
+            "FischerBurmeisterNewton/NNCG/Lemke/SymmetricPsor"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
             "Dantzig, Newton-family including boxed semi-smooth, projection, "
-            "MPRGP, ADMM, and small/medium block hot rows; remaining standard "
-            "targets are moderate-ratio iterative rows."
+            "MPRGP, ADMM, APGD/Jacobi, and small/medium block hot rows; "
+            "remaining standard targets are layered/two-color and "
+            "moderate-ratio iterative rows."
         ),
     },
     {

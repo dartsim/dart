@@ -1,5 +1,81 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Projection Iterator Fast Paths
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path strict-interior projection iterator LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 48 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ApgdSolver`, `JacobiSolver`, `SymmetricPsorSolver`, and
+  `RedBlackGaussSeidelSolver` now try the shared validated strict-interior
+  standard-LCP fast path for non-warm-started solves without explicit
+  per-solve custom options.
+- Each shortcut has a profile-shaped size guard so larger packets stay on the
+  existing iterative projection path when the dense linear solve is not
+  profitable.
+- Unit coverage was extended so
+  `StandardStrictInteriorFastPath.ProjectionAndBlockSolversUseLinearSolve`
+  includes APGD, Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel.
+- The Python LCP demo profile summary now removes APGD/Jacobi from Standard
+  laggards and points remaining Standard tuning at layered/two-color and
+  moderate iterative rows.
+
+Evidence:
+
+- Focused
+  `BM_LcpCompare/Standard/(Apgd|Jacobi|SymmetricPsor|RedBlackGaussSeidel)/`
+  after-run compared to the previous full profile cache:
+  - `Apgd`: mean `0.745`; best `0.615`; worst `0.988`.
+  - `Jacobi`: mean `0.825`; best `0.490`; worst `1.101`.
+  - `RedBlackGaussSeidel`: mean `0.752`; best `0.413`; worst `1.024`.
+  - `SymmetricPsor`: mean `0.683`; best `0.476`; worst `0.860`.
+  - All focused rows reported `contract_ok=1.0`; fast-pathed rows reported
+    `iterations=0`.
+- Full regenerated Standard profile now reports `Apgd` `1.46`, `Jacobi`
+  `1.44`, `RedBlackGaussSeidel` `1.74`, and `SymmetricPsor` `1.56`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/projection_iterators_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `ShockPropagation`, `RedBlackGaussSeidel`, and moderate
+  `FischerBurmeisterNewton`, `NNCG`, `Lemke`, `SymmetricPsor`,
+  `InteriorPoint`, and similar mid-pack rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`,
+  `Nncg`, and `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior ADMM Fast Path
 
 This section is the latest state; older sections below are historical

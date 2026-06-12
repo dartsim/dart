@@ -48,6 +48,8 @@
 namespace dart::math {
 namespace {
 
+constexpr int kMaxStrictInteriorFastPathSize = 48;
+
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
   if (A.size() == 0) {
@@ -160,6 +162,31 @@ LcpResult RedBlackGaussSeidelSolver::solve(
   if (params->workerThreads <= 0) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = "Worker thread count must be positive";
+    return result;
+  }
+
+  Eigen::VectorXd fastW;
+  if (options.customOptions == nullptr && !options.warmStart
+      && n <= kMaxStrictInteriorFastPathSize
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolOpt);
+    result.validated = options.validateSolution;
     return result;
   }
 

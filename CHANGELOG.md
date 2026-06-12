@@ -1510,6 +1510,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projection/block comparison rows skip iterative setup when the
     unconstrained linear solve is already a valid positive solution, while
     preserving warm-start and custom block/layer validation paths.
+  - Extended the validated strict-interior standard-LCP fast path to APGD,
+    Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel standard comparison
+    rows, with profile-shaped size guards so larger packets stay on their
+    cheaper iterative paths when dense linear solves are not profitable.
   - Extended the validated strict-interior standard-LCP fast path to BGS for
     small and medium standard comparison rows, while preserving explicit custom
     block validation and leaving larger rows on the existing Gauss-Seidel block

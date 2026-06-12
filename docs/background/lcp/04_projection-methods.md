@@ -43,6 +43,16 @@ All specific methods below are specializations of this formula.
 
 Gauss-Seidel style methods update $x_i$ in-place, so the sweep order changes the fixed point they approach. A symmetric variant (forward then backward sweep) halves this bias at twice the per-iteration cost; Jacobi has no order dependency because it updates all entries in parallel.
 
+For non-warm-started standard LCPs without explicit per-solve custom options,
+several projection solvers first try the shared validated strict-interior
+linear-solve fast path before allocating iterative sweep state. DART currently
+enables that path for Jacobi, APGD, Symmetric PSOR, Red-Black Gauss-Seidel,
+BGS, Blocked Jacobi, NNCG, Subspace Minimization, and Shock Propagation when
+the unconstrained candidate is strictly positive and passes solution
+validation. Dense exact solves are only used on packet sizes where current
+profile evidence shows they are profitable; larger rows stay on the iterative
+projection path.
+
 ## 1. Jacobi Method ✅ (Implemented)
 
 ### Splitting
