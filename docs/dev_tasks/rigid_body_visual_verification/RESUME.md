@@ -2,10 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds the next Rigid IPC shelf usability follow-up after the
-capture-metrics slice. The direct metric-backed Rigid IPC shelf scenes can now
-be appended to the workflow capture/review packet with an explicit
-`--include-ipc-shelf` flag.
+This checkpoint is a hand-off-only update after an explicit stop request. The
+latest implementation slice is committed as
+`d6ccdd38c4e Bundle direct rigid IPC shelf captures`: the direct metric-backed
+Rigid IPC shelf scenes can now be appended to the workflow capture/review
+packet with an explicit `--include-ipc-shelf` flag.
 
 Expected repository state after this hand-off:
 
@@ -15,9 +16,11 @@ Expected repository state after this hand-off:
   implementation commits:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
   `a95687dc628 Promote rigid IPC shelf metrics`.
+  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
 - There is no PR associated with this branch at checkpoint time.
-- The current continuation has local uncommitted implementation, test, and docs
-  changes unless a future session commits them.
+- The final hand-off docs commit follows the implementation commit and performs
+  no implementation work.
+- No verification was run after the explicit stop request.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -115,35 +118,32 @@ the workflow manifest and `review_index.html` with
 `workflow_group=rigid_ipc_shelf`, without changing the default 36-row workflow
 or the existing related/packet-only row counts.
 
+The final action in this checkpoint was hand-off documentation only, after the
+user explicitly requested stopping all further work and verification.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
 
 Current snapshot:
 
-- At the start of the current continuation, clean and aligned with
-  `origin/feature/rigid-body-gui-visual-verification`.
-- Latest pushed commits:
-  `0e38e3e807d Fix py-demos cycle scene frame budget`.
-  `e8278b6fb53 Improve rigid workflow capture evidence`.
-- At the start of this continuation, the branch was aligned with
-  `origin/feature/rigid-body-gui-visual-verification` at
-  `226a5b99de9 Refresh rigid visual verification handoff`.
 - Latest implementation commits being handed off and pushed:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
   `a95687dc628 Promote rigid IPC shelf metrics`.
-- A final hand-off-only docs update was added after the explicit stop request.
-  It intentionally did not run verification.
-- The current continuation began from pushed commit
-  `9b8c89bd27c Refresh rigid visual verification handoff` and adds the local
-  `--include-ipc-shelf` capture-bundle slice.
+  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
+- This hand-off update should leave the branch pushed and aligned with
+  `origin/feature/rigid-body-gui-visual-verification`.
+- There is no PR associated with this branch at checkpoint time.
+- A final hand-off-only docs update was added after the explicit stop request
+  and intentionally did not run verification.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` first. Expect local uncommitted changes for the
-`--include-ipc-shelf` capture-bundle slice unless a future session has committed
-them. Do not push new changes without explicit approval in that session, and
-rerun `pixi run lint` before committing further changes.
+Inspect `git status -sb` and `git log -5 --oneline` first. Expect the
+`--include-ipc-shelf` capture-bundle slice to be committed as
+`d6ccdd38c4e Bundle direct rigid IPC shelf captures`, followed by this
+hand-off docs commit. Do not push new changes without explicit approval in that
+session, and rerun `pixi run lint` before committing further changes.
 
 ## Context That Would Be Lost
 
