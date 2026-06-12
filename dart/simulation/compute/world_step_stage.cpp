@@ -1339,36 +1339,74 @@ findAvbdFrictionWarmStartRow(
 
 } // namespace
 
+namespace {
+
 //==============================================================================
-std::vector<avbd_replay::DeformableAvbdWarmStartReplayState>
-avbd_replay::captureDeformableAvbdWarmStartReplayState(
-    const detail::WorldRegistry& registry)
+template <typename StateVector>
+void captureDeformableAvbdWarmStartReplayStateInto(
+    const detail::WorldRegistry& registry,
+    common::MemoryAllocator& allocator,
+    StateVector& states)
 {
-  std::vector<avbd_replay::DeformableAvbdWarmStartReplayState> states;
-  const auto copyRowRecords = [](const auto& records) {
-    return std::vector<dvbd::AvbdScalarRowRecord>(
-        records.begin(), records.end());
+  using ReplayState = avbd_replay::DeformableAvbdWarmStartReplayState;
+  const auto copyRowRecords = [&allocator](const auto& records) {
+    ReplayState::RowVector copy(ReplayState::RowAllocator{allocator});
+    copy.assign(records.begin(), records.end());
+    return copy;
   };
 
   auto view = registry.view<DeformableVbdScratch>();
+  std::size_t stateCount = 0;
+  for (auto entity : view) {
+    static_cast<void>(entity);
+    ++stateCount;
+  }
+  states.reserve(stateCount);
   for (auto entity : view) {
     const auto& scratch = view.get<DeformableVbdScratch>(entity);
-    states.push_back(
-        avbd_replay::DeformableAvbdWarmStartReplayState{
-            entity,
-            copyRowRecords(scratch.avbdContactInventory.records()),
-            copyRowRecords(scratch.avbdFrictionInventory.records()),
-            copyRowRecords(scratch.avbdSelfContactInventory.records()),
-            copyRowRecords(scratch.avbdSelfContactFrictionInventory.records()),
-            copyRowRecords(scratch.avbdAttachmentInventory.records()),
-            copyRowRecords(scratch.avbdSpringInventory.records()),
-            copyRowRecords(scratch.avbdTetInventory.records())});
+    ReplayState state(allocator);
+    state.entity = entity;
+    state.contactRows = copyRowRecords(scratch.avbdContactInventory.records());
+    state.frictionRows
+        = copyRowRecords(scratch.avbdFrictionInventory.records());
+    state.selfContactRows
+        = copyRowRecords(scratch.avbdSelfContactInventory.records());
+    state.selfContactFrictionRows
+        = copyRowRecords(scratch.avbdSelfContactFrictionInventory.records());
+    state.attachmentRows
+        = copyRowRecords(scratch.avbdAttachmentInventory.records());
+    state.springRows = copyRowRecords(scratch.avbdSpringInventory.records());
+    state.tetRows = copyRowRecords(scratch.avbdTetInventory.records());
+    states.push_back(std::move(state));
   }
 
   std::ranges::sort(states, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)
            < static_cast<std::uint32_t>(rhs.entity);
   });
+}
+
+} // namespace
+
+//==============================================================================
+std::vector<avbd_replay::DeformableAvbdWarmStartReplayState>
+avbd_replay::captureDeformableAvbdWarmStartReplayState(
+    const detail::WorldRegistry& registry)
+{
+  std::vector<avbd_replay::DeformableAvbdWarmStartReplayState> states;
+  captureDeformableAvbdWarmStartReplayStateInto(
+      registry, common::MemoryAllocator::GetDefault(), states);
+  return states;
+}
+
+//==============================================================================
+avbd_replay::AllocatedDeformableAvbdWarmStartReplayStates
+avbd_replay::captureDeformableAvbdWarmStartReplayState(
+    const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
+{
+  AllocatedDeformableAvbdWarmStartReplayStates states(
+      common::StlAllocator<DeformableAvbdWarmStartReplayState>{allocator});
+  captureDeformableAvbdWarmStartReplayStateInto(registry, allocator, states);
   return states;
 }
 

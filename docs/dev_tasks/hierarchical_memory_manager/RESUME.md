@@ -1,44 +1,46 @@
 # Resume: Hierarchical Memory Manager
 
-## Authoritative Stop Handoff (2026-06-12, Single Resume Branch)
+## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
-Stop here. The maintainer instruction is handoff only: no more implementation,
-optimization, benchmark, build, lint, test, CI, or verification work. This
-docs-only update intentionally has no fresh verification.
+Current local branch: `pr/hmm-phase45-replay-snapshot-allocators`, created from
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. It has no remote tracking
+branch yet.
 
-Resume from exactly one branch:
-`pr/hmm-phase45-follow-up-clean`, tracking
-`origin/pr/hmm-phase45-follow-up-clean`. The temporary local staging branch
-`pr/hmm-phase45-follow-up-next` was only used to stage the latest two follow-up
-commits and should not be a resume target after those commits are folded into
-`pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Current slice:
 
-Latest follow-up source slice to preserve on the resume branch:
+- A focused non-empty replay ownership assertion reproduced the pre-fix gap:
+  enabling replay recording for a World with one rigid body made one global
+  heap allocation / 368 bytes from replay snapshot storage.
+- `ReplayState::Frame` now constructs its snapshot vectors from the World free
+  allocator, and replay component/loop-closure capture helpers preserve that
+  allocator.
+- AVBD warm-start replay capture now has an allocator-aware overload, and the
+  AVBD replay row vectors can be constructed from the provided allocator for
+  World-owned replay recording.
+- The same ownership test now verifies that enabling replay recording for a
+  non-empty rigid-body World makes zero global heap allocations while the World
+  free-list allocation count grows.
 
-- `ReplayState::frames` uses `StlAllocator` over the World free allocator for
-  the top-level replay frame buffer. Nested replay snapshot payloads remain
-  follow-up work unless a fresh session proves and fixes them.
-- `WorldStorage::ignoredCollisionPairs` uses `StlAllocator` over the World free
-  allocator instead of a default-allocated `std::set`.
-- The focused EnTT run at
-  `.benchmark_results/allocator_entt_followup_current_random_cpuauto_reps7_20260612.json`
-  is not decision-quality allocator evidence because all 12 EnTT comparisons
-  were rejected as noisy under host load, despite zero post-prewarm DART
-  allocator calls in the no-growth rows.
-
-Fresh-session start:
+Focused validation run so far:
 
 ```bash
-git fetch origin
-git checkout pr/hmm-phase45-follow-up-clean
-git pull --ff-only
-git status -sb
-git log --oneline --decorate -8
+pixi run lint
+cmake --build build/default/cpp/Release --target test_world --parallel 3
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.Replay*:World.AvbdGroundFrictionRowsAreActive:World.AvbdSelfContactFrictionGridRowsAreActive:World.AvbdSelfContactFrictionProductionGridRowsAreActive' \
+  --gtest_color=no
 ```
 
-Then verify from scratch before any new code, benchmark, or PR work. Future
-implementation should start from a fresh follow-up PR branch based on this
-single resume branch.
+Immediate next step: inspect the final diff and commit the local checkpoint.
+Do not push or open a PR without explicit maintainer approval.
+
+Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` fields and
+`std::string` names inside richer replay snapshots still use their native
+heap-owning storage. Restore-side replay helper scratch also still uses local
+default vectors. Treat those as separate evidence-first slices.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 

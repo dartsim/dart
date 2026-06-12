@@ -3058,6 +3058,21 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       memoryManager.getFreeListAllocator().getAllocationCount(),
       allocationsBeforeReplay + 2u);
 
+  sx::World replayWorld;
+  replayWorld.addRigidBody("allocator_replay_body");
+  auto& replayFreeList = replayWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeRigidReplay = replayFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    replayWorld.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "non-empty replay frame snapshots should allocate through the "
+           "World free allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(replayFreeList.getAllocationCount(), allocationsBeforeRigidReplay);
+
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
   auto& freeList = memoryManager.getFreeListAllocator();

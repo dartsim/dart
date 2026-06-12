@@ -35,6 +35,9 @@
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/memory_allocator.hpp>
+#include <dart/common/stl_allocator.hpp>
+
 #include <entt/entt.hpp>
 
 #include <span>
@@ -51,22 +54,48 @@ namespace dvbd = dart::simulation::detail::deformable_vbd;
 /// values affect the next AVBD solve.
 struct DeformableAvbdWarmStartReplayState
 {
+  using RowAllocator = dart::common::StlAllocator<dvbd::AvbdScalarRowRecord>;
+  using RowVector = std::vector<dvbd::AvbdScalarRowRecord, RowAllocator>;
+
+  DeformableAvbdWarmStartReplayState() = default;
+
+  explicit DeformableAvbdWarmStartReplayState(
+      dart::common::MemoryAllocator& allocator)
+    : contactRows(RowAllocator{allocator}),
+      frictionRows(RowAllocator{allocator}),
+      selfContactRows(RowAllocator{allocator}),
+      selfContactFrictionRows(RowAllocator{allocator}),
+      attachmentRows(RowAllocator{allocator}),
+      springRows(RowAllocator{allocator}),
+      tetRows(RowAllocator{allocator})
+  {
+    // Empty.
+  }
+
   entt::entity entity = entt::null;
-  std::vector<dvbd::AvbdScalarRowRecord> contactRows;
-  std::vector<dvbd::AvbdScalarRowRecord> frictionRows;
-  std::vector<dvbd::AvbdScalarRowRecord> selfContactRows;
-  std::vector<dvbd::AvbdScalarRowRecord> selfContactFrictionRows;
-  std::vector<dvbd::AvbdScalarRowRecord> attachmentRows;
-  std::vector<dvbd::AvbdScalarRowRecord> springRows;
-  std::vector<dvbd::AvbdScalarRowRecord> tetRows;
+  RowVector contactRows;
+  RowVector frictionRows;
+  RowVector selfContactRows;
+  RowVector selfContactFrictionRows;
+  RowVector attachmentRows;
+  RowVector springRows;
+  RowVector tetRows;
 };
 
 using DeformableAvbdWarmStartReplayStates
     = std::vector<DeformableAvbdWarmStartReplayState>;
+using AllocatedDeformableAvbdWarmStartReplayStates = std::vector<
+    DeformableAvbdWarmStartReplayState,
+    dart::common::StlAllocator<DeformableAvbdWarmStartReplayState>>;
 
 [[nodiscard]] DART_SIMULATION_API DeformableAvbdWarmStartReplayStates
 captureDeformableAvbdWarmStartReplayState(
     const detail::WorldRegistry& registry);
+
+[[nodiscard]] DART_SIMULATION_API AllocatedDeformableAvbdWarmStartReplayStates
+captureDeformableAvbdWarmStartReplayState(
+    const detail::WorldRegistry& registry,
+    dart::common::MemoryAllocator& allocator);
 
 DART_SIMULATION_API void restoreDeformableAvbdWarmStartReplayState(
     detail::WorldRegistry& registry,

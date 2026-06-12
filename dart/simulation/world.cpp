@@ -234,8 +234,17 @@ struct World::CollisionQueryCache
 
 struct World::ReplayState
 {
+  template <typename Value>
+  using SnapshotAllocator = common::StlAllocator<Value>;
+
+  template <typename Value>
+  using SnapshotVector = std::vector<Value, SnapshotAllocator<Value>>;
+
   template <typename Component>
-  using ComponentSnapshot = std::vector<std::pair<entt::entity, Component>>;
+  using ComponentSnapshot = SnapshotVector<std::pair<entt::entity, Component>>;
+
+  using DifferentiableParameterSnapshot
+      = std::pair<entt::entity, PhysicalParameter>;
 
   struct JointLayoutState
   {
@@ -323,6 +332,34 @@ struct World::ReplayState
 
   struct Frame
   {
+    explicit Frame(common::MemoryAllocator& allocator)
+      : differentiableParameters(
+            SnapshotAllocator<DifferentiableParameterSnapshot>{allocator}),
+        deformableNodeStates(
+            SnapshotAllocator<
+                std::pair<entt::entity, comps::DeformableNodeState>>{
+                allocator}),
+        deformableAvbdWarmStartStates(
+            SnapshotAllocator<
+                compute::avbd_replay::DeformableAvbdWarmStartReplayState>{
+                allocator}),
+        multibodyVariationalStates(
+            SnapshotAllocator<
+                std::pair<entt::entity, compute::MultibodyVariationalState>>{
+                allocator}),
+        variationalContactDualStates(
+            SnapshotAllocator<
+                std::pair<entt::entity, comps::VariationalContactDualState>>{
+                allocator}),
+        joints(SnapshotAllocator<JointState>{allocator}),
+        links(SnapshotAllocator<LinkState>{allocator}),
+        publicFrames(SnapshotAllocator<PublicFrameState>{allocator}),
+        loopClosures(SnapshotAllocator<LoopClosureState>{allocator}),
+        rigidBodies(SnapshotAllocator<RigidBodyState>{allocator})
+    {
+      // Empty.
+    }
+
     bool simulationMode = false;
     Eigen::Vector3d gravity{0.0, 0.0, -9.81};
     RigidBodySolver rigidBodySolver{RigidBodySolver::SequentialImpulse};
@@ -340,21 +377,20 @@ struct World::ReplayState
     std::size_t variationalIntegratorMaxIterations = 100;
     double variationalIntegratorTolerance = 1e-10;
     std::optional<StepDerivatives> stepDerivatives;
-    std::vector<std::pair<entt::entity, PhysicalParameter>>
-        differentiableParameters;
+    SnapshotVector<DifferentiableParameterSnapshot> differentiableParameters;
 
     ComponentSnapshot<comps::DeformableNodeState> deformableNodeStates;
-    std::vector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
+    SnapshotVector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
         deformableAvbdWarmStartStates;
     ComponentSnapshot<compute::MultibodyVariationalState>
         multibodyVariationalStates;
     ComponentSnapshot<comps::VariationalContactDualState>
         variationalContactDualStates;
-    std::vector<JointState> joints;
-    std::vector<LinkState> links;
-    std::vector<PublicFrameState> publicFrames;
-    std::vector<LoopClosureState> loopClosures;
-    std::vector<RigidBodyState> rigidBodies;
+    SnapshotVector<JointState> joints;
+    SnapshotVector<LinkState> links;
+    SnapshotVector<PublicFrameState> publicFrames;
+    SnapshotVector<LoopClosureState> loopClosures;
+    SnapshotVector<RigidBodyState> rigidBodies;
   };
 
   using FrameAllocator = common::StlAllocator<Frame>;
@@ -655,10 +691,12 @@ std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
 }
 
 template <typename Component>
-std::vector<std::pair<entt::entity, Component>> captureReplayComponents(
-    const detail::WorldRegistry& registry)
+auto captureReplayComponents(
+    const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
 {
-  std::vector<std::pair<entt::entity, Component>> snapshot;
+  using SnapshotValue = std::pair<entt::entity, Component>;
+  std::vector<SnapshotValue, common::StlAllocator<SnapshotValue>> snapshot(
+      common::StlAllocator<SnapshotValue>{allocator});
   auto view = registry.view<Component>();
   snapshot.reserve(countReplayView(view));
   for (auto entity : view) {
@@ -799,10 +837,11 @@ std::size_t countReplayPublicFrameEntities(
 }
 
 template <typename LoopClosureState>
-std::vector<LoopClosureState> captureReplayLoopClosures(
-    const detail::WorldRegistry& registry)
+auto captureReplayLoopClosures(
+    const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
 {
-  std::vector<LoopClosureState> states;
+  std::vector<LoopClosureState, common::StlAllocator<LoopClosureState>> states(
+      common::StlAllocator<LoopClosureState>{allocator});
   auto view = registry.view<comps::LoopClosure, comps::Name>();
   states.reserve(countReplayView(view));
   for (auto entity : view) {
@@ -5609,7 +5648,8 @@ void World::recordReplayFrame()
         m_replay->frames.end());
   }
 
-  ReplayState::Frame replayFrame;
+  auto& replayAllocator = m_memoryManager.getFreeAllocator();
+  ReplayState::Frame replayFrame(replayAllocator);
   replayFrame.simulationMode = m_simulationMode;
   replayFrame.gravity = m_gravity;
   replayFrame.rigidBodySolver = m_rigidBodySolver;
@@ -5633,16 +5673,16 @@ void World::recordReplayFrame()
 
   replayFrame.deformableNodeStates
       = captureReplayComponents<comps::DeformableNodeState>(
-          m_storage->registry);
+          m_storage->registry, replayAllocator);
   replayFrame.deformableAvbdWarmStartStates
       = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
-          m_storage->registry);
+          m_storage->registry, replayAllocator);
   replayFrame.multibodyVariationalStates
       = captureReplayComponents<compute::MultibodyVariationalState>(
-          m_storage->registry);
+          m_storage->registry, replayAllocator);
   replayFrame.variationalContactDualStates
       = captureReplayComponents<comps::VariationalContactDualState>(
-          m_storage->registry);
+          m_storage->registry, replayAllocator);
 
   auto jointView = m_storage->registry.view<comps::Joint>();
   replayFrame.joints.reserve(countReplayView(jointView));
@@ -5730,7 +5770,7 @@ void World::recordReplayFrame()
 
   replayFrame.loopClosures
       = captureReplayLoopClosures<ReplayState::LoopClosureState>(
-          m_storage->registry);
+          m_storage->registry, replayAllocator);
 
   auto rigidBodyView = m_storage->registry.view<
       comps::RigidBodyTag,

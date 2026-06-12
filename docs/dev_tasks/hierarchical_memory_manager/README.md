@@ -1,27 +1,38 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Authoritative Stop Handoff (2026-06-12, Single Resume Branch)
+## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
-Maintainer instruction: stop all implementation, optimization, benchmark,
-build, lint, test, and CI-followup work. This update is handoff documentation
-only. No fresh verification is intentionally run for this stop checkpoint.
+Work resumed from the single pushed handoff branch on a fresh local follow-up
+branch: `pr/hmm-phase45-replay-snapshot-allocators`, based on
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`.
 
-Use exactly one branch as the resume point:
-`pr/hmm-phase45-follow-up-clean`, tracking
-`origin/pr/hmm-phase45-follow-up-clean`. The temporary local staging branch
-`pr/hmm-phase45-follow-up-next` was only used to stage the latest two follow-up
-commits and should not be a resume target after those commits are folded into
-`pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+This slice closes the next replay ownership gap. A new non-empty replay
+ownership assertion first reproduced the gap with one global heap allocation /
+368 bytes when enabling replay recording for a World with one rigid body. The
+fix routes `ReplayState::Frame` snapshot vectors through the World free
+allocator and adds an allocator-aware AVBD warm-start replay capture overload
+so World-owned replay recording can also allocate AVBD row snapshots from the
+same allocator root.
 
-The latest follow-up source slice to preserve on the resume branch closes two
-deterministic persistent-storage ownership gaps:
+Focused validation run so far:
 
-- `ReplayState::frames` uses `StlAllocator` over the World free allocator for
-  the top-level replay frame buffer. This does not yet route every nested
-  replay snapshot payload through World memory.
-- `WorldStorage::ignoredCollisionPairs` uses `StlAllocator` over the World free
-  allocator instead of a default-allocated `std::set`. Existing behavior remains
-  covered by `World.CollisionQueryCanIgnoreSpecificPairs`.
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release --target test_world --parallel 3
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.Replay*:World.AvbdGroundFrictionRowsAreActive:World.AvbdSelfContactFrictionGridRowsAreActive:World.AvbdSelfContactFrictionProductionGridRowsAreActive' \
+  --gtest_color=no
+```
+
+Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` payloads and
+`std::string` names inside replay joint/loop-closure snapshots still use their
+native heap-owning storage. Restore-side scratch in replay validation/order
+helpers also still uses local default vectors. Treat those as separate
+evidence-first slices; do not claim complete replay zero-heap coverage from
+the current rigid-body ownership gate.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -32,18 +43,17 @@ DART no-growth rows still reported zero post-prewarm allocator calls. Do not
 change allocator policy from that run; use it only as evidence that timing
 measurement is currently noisy.
 
-Fresh-session entry point:
+Fresh-session entry point for this active branch:
 
 ```bash
 git fetch origin
-git checkout pr/hmm-phase45-follow-up-clean
-git pull --ff-only
+git checkout pr/hmm-phase45-replay-snapshot-allocators
 git status -sb
 git log --oneline --decorate -8
 ```
 
-Then read `RESUME.md` and verify from scratch before any new code, benchmark,
-or PR work.
+Before publishing, run `pixi run lint` plus the selected focused test/build
+gate for the final changed scope.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
@@ -1374,11 +1384,12 @@ Follow-up progress after PR #2956:
   storage can be baked, stepped without World-base allocator growth or ECS
   capacity changes, cleared to zero registry capacity, and rebuilt with the
   same storage capacities under the World free-list allocator.
-- The top-level replay frame buffer now follows the World free allocator root.
-  Enabling replay recording for an empty World allocates the replay object and
-  first frame buffer from the World allocator without global heap allocation.
-  Nested replay snapshot payloads remain follow-up work unless a no-growth gate
-  exposes them as step-loop allocations.
+- Replay recording now follows the World free allocator root for the replay
+  controller, top-level frame buffer, `ReplayState::Frame` snapshot vectors,
+  and AVBD warm-start replay row snapshots captured by a World. Enabling replay
+  recording for an empty World and for a one-rigid-body World allocates those
+  structures without global heap allocation. Dynamic `Eigen::VectorXd` and
+  `std::string` payloads inside richer replay snapshots remain follow-up work.
 - Persistent ignored-collision-pair storage now follows the same World free
   allocator root as the registry and differentiable-parameter storage. The
   public `setCollisionPairIgnored()` path no longer allocates the pair set node
