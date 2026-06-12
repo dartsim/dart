@@ -67,7 +67,7 @@
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
   contact-scale budget, baseline first-run diagnostics, contact inspection,
   collision casts, solver comparison, executor equivalence, contact-policy
-  comparison, multibody-link contact, friction threshold,
+  comparison, multibody-link contact, friction threshold, spin/roll coupling,
   fixed/breakage/one-DOF joint constraint errors, and stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
@@ -82,6 +82,18 @@
 
 ## Testing
 
+- Latest spin/roll coupling capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+    - `10 passed`
+  - `pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_spin_roll_metrics_1781230743`
+    - nonblank docked capture, 95 PNG frames, 96 scene-metrics events, latest
+      row `rigid_spin_roll_coupling`, solver `sequential_impulse`, solver enum
+      `SEQUENTIAL_IMPULSE`, per-lane slip/roll/spin/travel ranges, contact
+      count range `0..4`, and low-friction coefficient `0`
+  - `pixi run lint`
+    - passed before the final handoff edit
+  - No later build, capture, test, or `git diff --check` was run after the
+    user's explicit stop/no-further-verification instruction.
 - Latest friction-threshold capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_friction_threshold_separates_stick_and_slip_lanes python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
     - `7 passed`

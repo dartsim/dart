@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -314,6 +314,120 @@ class _RigidSpinRollCoupling:
         self._record_metrics()
         self.bridge.sync()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "summary": lane.summary,
+                "metrics": dict(self._last_metrics[lane.key]),
+            }
+            for lane in self.lanes
+        }
+        slip_history = {
+            lane.key: list(self._slip_history[lane.key]) for lane in self.lanes
+        }
+        roll_history = {
+            lane.key: list(self._roll_ratio_history[lane.key]) for lane in self.lanes
+        }
+        travel_history = {
+            lane.key: list(self._travel_history[lane.key]) for lane in self.lanes
+        }
+        energy_history = {
+            lane.key: list(self._energy_history[lane.key]) for lane in self.lanes
+        }
+
+        def lane_metric(lane_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[lane_key][metric_key])
+
+        return {
+            "row": "rigid_spin_roll_coupling",
+            "solver": "sequential_impulse",
+            "solver_enum": sx.RigidBodySolver.SEQUENTIAL_IMPULSE.name,
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "backspin_ratio": float(self.backspin_ratio),
+                "friction": float(self.friction),
+                "launch_speed": float(self.launch_speed),
+            },
+            "contact_count": float(self._last_contact_count),
+            "step_ms": self._step_profile_ms(),
+            "matched_roll_contact_slip": lane_metric(
+                "matched_roll", "contact_slip"
+            ),
+            "matched_roll_roll_ratio": lane_metric("matched_roll", "roll_ratio"),
+            "matched_roll_travel": lane_metric("matched_roll", "travel"),
+            "matched_roll_total_energy": lane_metric("matched_roll", "total_energy"),
+            "slide_to_roll_contact_slip": lane_metric(
+                "slide_to_roll", "contact_slip"
+            ),
+            "slide_to_roll_roll_ratio": lane_metric("slide_to_roll", "roll_ratio"),
+            "slide_to_roll_spin_delta": lane_metric("slide_to_roll", "spin_delta"),
+            "slide_to_roll_travel": lane_metric("slide_to_roll", "travel"),
+            "backspin_scrub_contact_slip": lane_metric(
+                "backspin_scrub", "contact_slip"
+            ),
+            "backspin_scrub_roll_ratio": lane_metric(
+                "backspin_scrub", "roll_ratio"
+            ),
+            "backspin_scrub_spin_delta": lane_metric(
+                "backspin_scrub", "spin_delta"
+            ),
+            "backspin_scrub_travel": lane_metric("backspin_scrub", "travel"),
+            "low_friction_slip_contact_slip": lane_metric(
+                "low_friction_slip", "contact_slip"
+            ),
+            "low_friction_slip_friction": lane_metric(
+                "low_friction_slip", "friction"
+            ),
+            "low_friction_slip_spin_delta": lane_metric(
+                "low_friction_slip", "spin_delta"
+            ),
+            "low_friction_slip_travel": lane_metric(
+                "low_friction_slip", "travel"
+            ),
+            "lanes": lanes,
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_step_ms": max(self._step_ms_history, default=0.0),
+                "matched_roll_max_slip": max(
+                    slip_history["matched_roll"], default=0.0
+                ),
+                "slide_to_roll_max_slip": max(
+                    slip_history["slide_to_roll"], default=0.0
+                ),
+                "backspin_scrub_max_slip": max(
+                    slip_history["backspin_scrub"], default=0.0
+                ),
+                "low_friction_slip_max_slip": max(
+                    slip_history["low_friction_slip"], default=0.0
+                ),
+                "matched_roll_max_travel": max(
+                    travel_history["matched_roll"], default=0.0
+                ),
+                "low_friction_slip_max_travel": max(
+                    travel_history["low_friction_slip"], default=0.0
+                ),
+                "max_abs_roll_ratio": max(
+                    (abs(value) for values in roll_history.values() for value in values),
+                    default=0.0,
+                ),
+                "min_total_energy": min(
+                    (value for values in energy_history.values() for value in values),
+                    default=0.0,
+                ),
+                "max_total_energy": max(
+                    (value for values in energy_history.values() for value in values),
+                    default=0.0,
+                ),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -466,6 +580,7 @@ def build() -> SceneSetup:
             "replay_capture_state": coupling.capture_replay_state,
             "replay_restore_state": coupling.restore_replay_state,
             "replay_sync": coupling.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: coupling.capture_metrics,
         },
     )
 

@@ -83,7 +83,8 @@
   - Added `rigid_spin_roll_coupling` to Python `py-demos`, a sequential-impulse
     contact-friction row that visualizes matched rolling, slip-to-roll spin-up,
     backspin scrub, and low-friction slip with contact slip, roll ratio, spin
-    change, travel, energy, contact count, and step-timing diagnostics.
+    change, travel, energy, contact count, step-timing diagnostics, and
+    scene-owned capture metrics.
   - Added `rigid_stack_stability` to Python `py-demos`, comparing sequential
     impulse and rigid IPC on a compact top-heavy stack with mass-ratio, drift,
     clearance, speed, and step-profile diagnostics.

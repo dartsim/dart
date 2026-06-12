@@ -76,13 +76,15 @@
       numeric ranges for contact counts, depths, world time, and shape indices.
       The focused workflow/doc drift guard reported `4 passed`; `pixi run lint`,
       bounded default `pixi run build`, and `git diff --check` all passed.
-- [x] Current local completion refresh: runtime-code checkpoints
+- [x] Current pushed handoff refresh: runtime-code checkpoints
       `7ef7a96dda0` (`Expose rigid collision cast capture metrics`),
       `b54c4f5dba3` (`Expose rigid executor equivalence capture metrics`), and
       `a47d52b7aea` (`Hand off rigid friction threshold capture metrics`) are
       followed by a local docs/validation completion for the
-      `rigid_friction_threshold` capture-metrics slice. Future pushes, PR
-      creation, comments, review replies, or other GitHub mutations still
+      `rigid_friction_threshold` capture-metrics slice and a pushed
+      `rigid_spin_roll_coupling` handoff. The user explicitly requested this
+      handoff push and no further verification; future pushes, PR creation,
+      comments, review replies, CI retriggers, or other GitHub mutations still
       require explicit approval.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
@@ -108,6 +110,17 @@
       rolling, no-spin sliding, backspin scrub, and low-friction slip lanes with
       contact-slip, roll-ratio, spin-change, travel, energy, contact-count, and
       step-timing diagnostics.
+- [x] Spin/roll coupling capture-metrics follow-up:
+      `rigid_spin_roll_coupling` now publishes sequential-impulse solver
+      identity, executor, contact-friction/launch/backspin controls, contact
+      count, per-lane slip/roll-ratio/spin-delta/travel/energy/friction/status,
+      step timing, and compact history ranges through the capture hook. The
+      focused workflow/doc drift guard reported `10 passed`; the real docked 96-frame
+      capture wrote 96 scene-metrics events under
+      `/tmp/dart_capture_spin_roll_metrics_1781230743`; `pixi run lint`
+      completed before the final handoff edit. No later build, capture, test,
+      or `git diff --check` was run because the user explicitly requested no
+      further verification.
 - [x] Third stack slice: `rigid_stack_stability` compares sequential impulse and
       rigid IPC on a compact top-heavy mass-ratio stack.
 - [x] Contact-observability slice: `rigid_contact_inspector` exposes raw
@@ -294,7 +307,7 @@
 - [x] Visual smoke: `rigid_friction_threshold` capture writes nonblank PNGs
       with the docked ImGui workspace and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_spin_roll_coupling` capture writes nonblank PNGs with
-      the docked ImGui workspace.
+      the docked ImGui workspace and 96 scene-metrics events.
 - [x] Visual smoke: `rigid_stack_stability` capture writes nonblank PNGs with
       the docked ImGui workspace.
 - [x] Visual smoke: `rigid_contact_manipulation` capture writes nonblank PNGs
@@ -583,9 +596,10 @@ and the no-tunneling scope decision.
 1. Confirm `git status -sb` on
    `feature/rigid-body-gui-visual-verification`, then continue the
    capture-metrics hardening pass one row at a time.
-2. The next likely row is `rigid_spin_roll_coupling`, because it already owns
-   slip/roll/spin/travel/energy histories that are user-facing and useful in
-   docked capture manifests.
+2. The next likely row is `rigid_stack_stability`, because it is the next
+   numbered contact/stability row and already owns stack drift, speed,
+   clearance, height-error, divergence, and step-profile histories that are
+   useful in docked capture manifests.
 3. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.

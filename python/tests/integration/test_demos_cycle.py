@@ -3589,6 +3589,44 @@ def test_rigid_spin_roll_coupling_converts_slip_to_roll() -> None:
         assert controller._energy_history[lane.key]
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_spin_roll_coupling"
+    assert capture_metrics["solver"] == "sequential_impulse"
+    assert capture_metrics["solver_enum"] == "SEQUENTIAL_IMPULSE"
+    assert capture_metrics["controls"]["friction"] == pytest.approx(
+        controller.friction
+    )
+    assert capture_metrics["controls"]["launch_speed"] == pytest.approx(
+        controller.launch_speed
+    )
+    assert capture_metrics["contact_count"] == pytest.approx(
+        controller._last_contact_count
+    )
+    assert set(capture_metrics["lanes"]) == {
+        "matched_roll",
+        "slide_to_roll",
+        "backspin_scrub",
+        "low_friction_slip",
+    }
+    assert capture_metrics["matched_roll_contact_slip"] == pytest.approx(
+        matched["contact_slip"]
+    )
+    assert capture_metrics["slide_to_roll_spin_delta"] == pytest.approx(
+        slide["spin_delta"]
+    )
+    assert capture_metrics["backspin_scrub_spin_delta"] == pytest.approx(
+        backspin["spin_delta"]
+    )
+    assert capture_metrics["low_friction_slip_contact_slip"] == pytest.approx(
+        low_friction["contact_slip"]
+    )
+    assert capture_metrics["low_friction_slip_friction"] == pytest.approx(0.0)
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["low_friction_slip_max_slip"] > 0.5
+
 
 def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
     from examples.demos.scenes.rigid_executor_equivalence import build
