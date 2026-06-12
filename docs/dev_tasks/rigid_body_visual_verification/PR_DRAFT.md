@@ -86,6 +86,14 @@
 
 ## Testing
 
+- Handoff-only stop update:
+  - The maintainer/user explicitly requested no further verification after the
+    `rigid_ipc_tunnel` checkpoint and asked for handoff docs only.
+  - This docs-only handoff records the branch state and interrupted
+    `diff_drone_liftoff` related-shelf audit; it does not implement
+    contact-gradient capture metrics.
+  - Not run after this handoff edit: tests, lint, build, captures, or
+    `git diff --check`.
 - Latest no-tunneling related-shelf capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_ipc_tunnel.py` now publishes
     scene-owned capture metrics for the non-numbered focused Rigid IPC

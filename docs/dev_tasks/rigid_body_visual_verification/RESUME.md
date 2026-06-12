@@ -1,5 +1,76 @@
 # Resume: Rigid-Body Visual Verification
 
+## Critical Stop Handoff - 2026-06-11
+
+This section supersedes older "current local slice" text below. The user
+explicitly requested a handoff-only stop for all current work with no further
+verification.
+
+State at the start of this handoff edit:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Worktree: clean.
+- Local `HEAD`: `5f5445b6826` (`Expose rigid IPC tunnel capture metrics`).
+- Origin: `origin/feature/rigid-body-gui-visual-verification` still pointed at
+  `c69ee66ace9` (`Hand off rigid loop closure metrics`).
+- Local branch was ahead of origin by one code/docs checkpoint before this
+  handoff-only docs commit.
+- There was still no associated GitHub PR in the last checked state.
+
+What is complete in the local checkpoint:
+
+- `rigid_ipc_tunnel` has scene-owned capture metrics for the non-numbered
+  focused Rigid IPC no-tunneling route.
+- The checkpoint includes code, test, CHANGELOG, Python demo README,
+  PLAN-103 sidecar, dev-task README, this resume file, and PR draft updates.
+- Validation for that checkpoint was already collected before the stop request:
+  focused no-tunneling metrics test `1 passed`, docked 24-frame capture with
+  24 scene-metrics events under
+  `/tmp/dart_capture_rigid_ipc_tunnel_metrics_1781240644`, related route/docs
+  drift guard `12 passed`, `pixi run lint` passed, bounded `pixi run build`
+  passed with `ninja: no work to do`, and `git diff --check` passed.
+
+What was interrupted and is not implemented:
+
+- The next continuation only inspected the remaining related-shelf gap. It did
+  not edit code.
+- The likely next candidate is `diff_drone_liftoff`, reached from
+  `rigid_contact_solver_compare` as the Differentiable shelf contact-gradient
+  route.
+- Keep this route non-numbered. Do not add another numbered rigid row unless a
+  distinct user question appears beyond the existing contact-solver comparison.
+
+Context gathered for the interrupted `diff_drone_liftoff` audit:
+
+- File: `python/examples/demos/scenes/diff_drone_liftoff.py`.
+- The scene compares `ANALYTIC` and `COMPLEMENTARITY_AWARE` optimization modes
+  for a clamping-contact saddle-escape example.
+- Constants observed during the audit include `_TIME_STEP=1e-2`,
+  `_HORIZON=150`, `_MAX_ITERS=400`, `_LEARNING_RATE=4.0`,
+  `_DRONE_RADIUS=0.2`, `_DRONE_MASS=1.0`, `_TARGET_Z=1.5`,
+  `_REST_Z=0.19995`, `_THRUST_COLUMN=2`, and `_Z_STATE_ROW=2`.
+- Current `build()` info already exposes `optimized`, `steps`, `note`,
+  `gradient_modes`, `target_z`, `naive_thrust`, `naive_height`,
+  `aware_thrust`, `aware_height`, `aware_history_count`, and
+  `naive_history_count`.
+- The panel already exposes mode, optimized status, frame/current z, target z,
+  playback stride/reset, analytic thrust/final z/loss, aware thrust/final
+  z/loss, and compact plots for aware height/thrust/loss/thrust gradient plus
+  analytic loss.
+- No `CAPTURE_METRICS_INFO_KEY` hook exists in that scene yet.
+
+If a future session implements the contact-gradient metrics candidate, the
+likely payload should stay summary-oriented: row id, scope, status, time step,
+horizon, learning rate, target/rest height, playhead/current height,
+ANALYTIC versus COMPLEMENTARITY_AWARE thrust/final-height/loss values, height
+gap, target error, thrust gap, compact history sample counts/ranges, and
+finite top-level numeric fields for manifest summaries. Add focused assertions
+only after the user permits implementation and verification.
+
+No tests, lint, build, captures, or `git diff --check` were run after this
+handoff-only docs edit. The only expected changes after this section are the
+dev-task handoff docs and the commit/push requested by the user.
+
 ## Current Handoff Snapshot
 
 Latest continuation resumed from pushed handoff commit `c69ee66ace9`, audited
@@ -820,9 +891,11 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 ## Immediate Next Step
 
 Use the current handoff snapshot at the top of this file for live branch state.
-After the no-tunneling metrics checkpoint is committed, continue with
-PR-readiness or non-numbered shelf audit only where a route adds distinct user
-evidence beyond the numbered workflow.
+After the handoff docs commit is pushed, stop. If work resumes later, confirm
+branch state first, then either refresh validation for PR-readiness or continue
+the non-numbered related-shelf audit. The only concrete next implementation
+candidate discovered before the stop request was `diff_drone_liftoff`
+contact-gradient capture metrics, and it has not been implemented.
 
 ## Context That Would Be Lost
 
@@ -888,6 +961,10 @@ evidence beyond the numbered workflow.
   capability scene in the Rigid IPC shelf rather than adding another
   thin-wall comparison until there is a distinct user question not covered by
   `rigid_solver_compare`.
+- The interrupted post-`rigid_ipc_tunnel` audit identified
+  `diff_drone_liftoff` as the next possible related-shelf metrics target for
+  contact-gradient evidence. It should stay in the Differentiable shelf and is
+  not implemented in this branch as of the handoff-only stop.
 - Rigid-body joint motor visuals should stay deferred until that API behavior is
   stable enough to support bounded visual assertions. The current motor/limit
   row uses World multibody joints instead.

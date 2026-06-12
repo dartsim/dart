@@ -419,6 +419,20 @@
       margin about `0.500001` m, and max wall crossing `0.0`. The related
       route/docs drift guard reported `12 passed`; `pixi run lint`, bounded
       default `pixi run build`, and `git diff --check` passed.
+- [x] Critical stop handoff refresh: after the no-tunneling checkpoint, the
+      next continuation only inspected the remaining related-shelf gap and did
+      not edit code. The maintainer/user then explicitly requested a
+      handoff-only stop with no further verification. The interrupted analysis
+      identified `diff_drone_liftoff` as the next plausible non-numbered
+      related route for scene-owned contact-gradient metrics, but that route is
+      not implemented in the current branch. No tests, lint, build, captures,
+      or `git diff --check` were run after this handoff-only docs edit.
+- [ ] Related contact-gradient metrics follow-up candidate:
+      `diff_drone_liftoff` already owns the Differentiable shelf route from
+      `rigid_contact_solver_compare` for analytic versus
+      complementarity-aware contact-gradient behavior. If work resumes, keep it
+      non-numbered and add capture metrics only if they preserve distinct user
+      evidence beyond the numbered contact-solver comparison.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -773,12 +787,12 @@ and the no-tunneling scope decision.
    run after the explicit request to stop verification.
 3. Refresh skipped gates only if the next user/session wants to move from
    handoff into PR-readiness or more implementation.
-4. The numbered workflow capture-metrics pass now reaches the final row. Next,
-   continue auditing remaining non-numbered shelf gaps and PR-readiness rather
-   than adding another numbered row by default. The focused
-   `rigid_ipc_tunnel` no-tunneling route now has capture metrics; audit other
-   related routes only when they add distinct user evidence beyond the numbered
-   row.
+4. The numbered workflow capture-metrics pass now reaches the final row, and
+   the focused `rigid_ipc_tunnel` no-tunneling route now has capture metrics.
+   The interrupted next audit pointed at `diff_drone_liftoff` as the remaining
+   contact-gradient related-shelf candidate; it is not implemented yet. Keep it
+   as a Differentiable shelf route, not a new numbered rigid row, unless a
+   distinct user question appears.
 5. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
