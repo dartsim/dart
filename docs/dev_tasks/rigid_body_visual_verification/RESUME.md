@@ -2,9 +2,16 @@
 
 ## Current Handoff (2026-06-12)
 
-The latest continuation makes failed rows from resilient workflow packets
+The latest continuation improves PLAN-103's remaining planned World-port GUI
+rows after the rigid verifier reached maintainer-acceptance readiness. The
+Planned World Ports placeholders now tell users which current py-demo route to
+try first, which World/API or asset gap blocks the full port, and what
+replacement condition will retire the placeholder; focused panel tests guard the
+metadata and GUI text.
+
+Previous checkpoint: failed rows from resilient workflow packets became
 directly actionable. `py-demo-capture -- --rigid-workflow
---continue-on-failure` now records `failed_rows` with workflow row-range rerun
+--continue-on-failure` records `failed_rows` with workflow row-range rerun
 commands that preserve optional packet flags and absolute row numbering, while
 the final workflow manifest and process exit code still fail when any selected
 row failed. The in-viewer `Rigid Workflow` panel exposes the resilient
@@ -32,15 +39,20 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Current local branch state is clean at
-  `30bedef795c Add rigid workflow failed-row reruns`, four commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification`.
-- Resume check: verify whether the latest failed-row rerun-command slice is in
-  history as `Add rigid workflow failed-row reruns` with `git status -sb` and
-  `git log -5 --oneline` before resuming. If it is not committed yet, inspect
-  the uncommitted diff for the same slice before continuing. Do not push it
-  without explicit approval.
-- Latest local slices update `scripts/capture_py_demo.py`,
+- Current local branch state before this slice was clean at
+  `826d161930e Refresh rigid visual verification acceptance packet`, five
+  commits ahead of `origin/feature/rigid-body-gui-visual-verification`.
+- Resume check: verify whether the latest planned-placeholder usability slice is
+  in history as `Make planned world port rows actionable` with
+  `git status -sb` and `git log -5 --oneline` before resuming. If it is not
+  committed yet, inspect the uncommitted diff for the same slice before
+  continuing. Do not push it without explicit approval.
+- Latest local slices update `python/examples/demos/scenes/planned.py`,
+  `python/examples/demos/scenes/robot_puppets.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/examples/demos/README.md`, PLAN-103, and this handoff to make
+  planned World-port rows actionable instead of inert placeholders.
+- Previous local slices update `scripts/capture_py_demo.py`,
   `python/examples/demos/runner.py`, `python/tests/unit/test_capture_py_demo.py`,
   `python/tests/unit/test_py_demo_panels.py`,
   `python/tests/integration/test_demos_cycle.py`,

@@ -1046,10 +1046,12 @@ comparisons recorded in PLAN-104.
 
 The **`Planned World Ports`** category keeps important DART 6 demo concepts
 visible without keeping the removed DART 6 implementations in the catalog. These
-entries are lightweight launchable placeholders with status panels. They track
-World-native follow-ups for inverse kinematics, SIMBICON walking,
-operational-space control, robot puppets, collision sandbox workflows, and
-mobile manipulation.
+entries are lightweight launchable placeholders with status panels. Each panel
+now tells users which current py-demo row to try first, which World/API or asset
+gap blocks the full port, and what condition will replace the placeholder with a
+usable scene. They track World-native follow-ups for inverse kinematics,
+SIMBICON walking, operational-space control, robot puppets, collision sandbox
+workflows, and mobile manipulation.
 
 ## PLAN-083 CPU Corpus
 

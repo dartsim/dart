@@ -200,7 +200,9 @@ now" because checklist items 1–3 remain open.
 - **DART 7 pruning.** Legacy DART 6 demo implementations and cross-language
   golden parity fixtures were removed from the demo surfaces. High-value missing
   rows appear as planned World-port placeholders until they become usable
-  World-native demos.
+  World-native demos. Those placeholders are still launchable GUI rows, and
+  their panels name the best current route, the blocker, and the replacement
+  condition so users are not left at a bare roadmap label.
 - **Notebook gallery.** `python/tutorials/01_browse_demos.ipynb` imports (does
   not copy) the demo scene modules; Colab publication is PLAN-012.
 - **Interactive viewer.** `pixi run py-demos` delegates to

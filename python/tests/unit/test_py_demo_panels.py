@@ -999,6 +999,41 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         return False, value
 
 
+def test_planned_world_port_panels_expose_actionable_routes() -> None:
+    _require_simulation_symbols("World")
+    scenes = (
+        planned.INVERSE_KINEMATICS,
+        planned.SIMBICON_WALKING,
+        planned.OPERATIONAL_SPACE_CONTROL,
+        planned.COLLISION_SANDBOX,
+        planned.MOBILE_MANIPULATION,
+        robot_puppets.G1_PUPPET,
+    )
+
+    for scene in scenes:
+        setup = scene.build()
+        assert setup.info["planned_status"] == "planned World demo"
+        assert setup.info["planned_world_port"] == scene.id
+        assert setup.info["legacy_seeds"]
+        for key in ("current_route", "target", "unblocker", "retire_when"):
+            assert isinstance(setup.info[key], str), (scene.id, key)
+            assert setup.info[key], (scene.id, key)
+
+        builder = _FakePanelBuilder()
+        setup.panels[0].build(builder, object())
+
+        assert "text:status: planned World demo" in builder.events
+        assert any(
+            event.startswith("text:try now: ") for event in builder.events
+        ), scene.id
+        assert any(
+            event.startswith("text:blocked on: ") for event in builder.events
+        ), scene.id
+        assert any(
+            event.startswith("text:replace when: ") for event in builder.events
+        ), scene.id
+
+
 def test_high_value_world_scenes_expose_custom_panels() -> None:
     sx = _require_simulation_symbols("World")
 
