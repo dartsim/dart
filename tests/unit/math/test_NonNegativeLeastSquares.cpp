@@ -234,6 +234,46 @@ TEST(NonNegativeLeastSquares, ReturnsFalseWhenIterationCapExhausted)
 }
 
 //==============================================================================
+// Regression: a small underdetermined system whose active set churns needs
+// more inner iterations than the old 3*n default cap allowed.
+TEST(NonNegativeLeastSquares, DefaultCapHandlesActiveSetChurn)
+{
+  Eigen::MatrixXd A(2, 3);
+  A << 1.05187293, 1.85882582, -0.25872809, 0.97306807, 1.08103673, -0.20417405;
+  const Eigen::Vector2d b(-2.2066753, 1.49452692);
+
+  Eigen::VectorXd x;
+  EXPECT_TRUE(solveNonNegativeLeastSquares(A, b, x));
+
+  const Eigen::VectorXd expected = bruteForceNnls(A, b);
+  EXPECT_GE(x.minCoeff(), -1e-12);
+  EXPECT_NEAR(
+      (A * x - b).squaredNorm(), (A * expected - b).squaredNorm(), 1e-8);
+}
+
+//==============================================================================
+// Underdetermined systems churn the active set the most; every well-formed
+// instance must converge under the default iteration cap.
+TEST(NonNegativeLeastSquares, ConvergesOnRandomUnderdeterminedProblems)
+{
+  std::srand(97);
+
+  for (int trial = 0; trial < 50; ++trial) {
+    const Eigen::MatrixXd A = Eigen::MatrixXd::Random(2, 4);
+    const Eigen::VectorXd b = Eigen::VectorXd::Random(2);
+
+    Eigen::VectorXd x;
+    ASSERT_TRUE(solveNonNegativeLeastSquares(A, b, x)) << "trial " << trial;
+
+    const Eigen::VectorXd expected = bruteForceNnls(A, b);
+    EXPECT_GE(x.minCoeff(), -1e-12) << "trial " << trial;
+    EXPECT_NEAR(
+        (A * x - b).squaredNorm(), (A * expected - b).squaredNorm(), 1e-8)
+        << "trial " << trial;
+  }
+}
+
+//==============================================================================
 TEST(NonNegativeLeastSquares, LargeToleranceAcceptsZeroSolution)
 {
   const Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);

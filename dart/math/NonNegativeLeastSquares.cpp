@@ -73,8 +73,11 @@ bool solveNonNegativeLeastSquares(
                                * A.cwiseAbs().maxCoeff()
                                * std::max(1.0, b.cwiseAbs().maxCoeff());
 
+  // The cap counts inner iterations (including alpha-step removals), which
+  // is stricter than the classic 3n outer-iteration guidance, so leave
+  // generous headroom; the cap only exists as an anti-cycling backstop.
   const std::size_t maxIters
-      = maxIterations > 0 ? maxIterations : 3 * static_cast<std::size_t>(n);
+      = maxIterations > 0 ? maxIterations : 10 * static_cast<std::size_t>(n);
 
   std::vector<bool> passive(static_cast<std::size_t>(n), false);
   std::vector<Eigen::Index> passiveIndices;
