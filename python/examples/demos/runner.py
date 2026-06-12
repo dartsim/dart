@@ -683,6 +683,17 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
                 "or general proof."
             ),
         ),
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "Rigid IPC / rigid_ipc_edge_drop - degenerate edge-contact view"
+            ),
+            scene_id="rigid_ipc_edge_drop",
+            shelf="Rigid IPC",
+            reason=(
+                "Focused IPC degenerate edge-contact capability scene; not a "
+                "broad solver comparison or contact-manifold inspector."
+            ),
+        ),
     ),
     "rigid_contact_solver_compare": (
         RigidWorkflowRelatedEvidence(

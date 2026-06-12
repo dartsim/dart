@@ -1041,8 +1041,10 @@ def test_rigid_visual_verification_sidecar_matches_registry_order() -> None:
     assert workflow_ids == world_rigid_ids[: len(workflow_ids)]
     assert workflow_ids[-1] == "rigid_loop_closure"
     assert "rigid_ipc_tunnel" not in workflow_ids
+    assert "rigid_ipc_edge_drop" not in workflow_ids
     assert "rigid_ipc_stack_packet" not in workflow_ids
     assert by_id["rigid_ipc_tunnel"].category == "Rigid IPC"
+    assert by_id["rigid_ipc_edge_drop"].category == "Rigid IPC"
     assert by_id["rigid_ipc_stack_packet"].category == "Rigid IPC"
 
 
@@ -1127,6 +1129,19 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
             "Rigid IPC",
             "Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view",
             "Focused IPC capability scene; not a broad solver comparison or general proof.",
+        ),
+        (
+            "rigid_solver_compare",
+            "rigid_ipc_edge_drop",
+            "Rigid IPC",
+            (
+                "Related shelf: Rigid IPC / rigid_ipc_edge_drop - "
+                "degenerate edge-contact view"
+            ),
+            (
+                "Focused IPC degenerate edge-contact capability scene; not a "
+                "broad solver comparison or contact-manifold inspector."
+            ),
         ),
         (
             "rigid_contact_solver_compare",
@@ -1451,6 +1466,67 @@ def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
             float(capture_metrics["tunnel_margin"]),
             float(capture_metrics["wall_left_face_x"]),
             float(capture_metrics["wall_right_face_x"]),
+        ]
+    ).all()
+
+
+def test_rigid_ipc_edge_drop_reports_degenerate_contact_metrics() -> None:
+    import numpy as np
+
+    sx = _require_simulation_symbols("RigidBodySolver")
+
+    from examples.demos.scenes.rigid_ipc_edge_drop import SCENE, build
+
+    assert SCENE.category == "Rigid IPC"
+    assert SCENE.id == "rigid_ipc_edge_drop"
+
+    setup = build()
+    world = setup.info["physics_world"]
+    assert setup.info["sx_world"] is world
+    assert setup.info["rigid_body_solver"] == "ipc"
+    assert world.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert setup.panels
+
+    for _ in range(24):
+        setup.pre_step()
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_ipc_edge_drop"
+    assert capture_metrics["related_source_row"] == "rigid_solver_compare"
+    assert capture_metrics["solver"] == "rigid_ipc"
+    assert capture_metrics["scope"] == "degenerate_edge_contact_capability"
+    assert capture_metrics["status"] in {
+        "airborne",
+        "approaching",
+        "barrier-held",
+        "edge-barrier",
+        "edge-contact",
+        "barrier-contact",
+        "settled",
+    }
+    assert float(capture_metrics["time_step_ms"]) == pytest.approx(5.0)
+    assert float(capture_metrics["world_time"]) > 0.0
+    assert float(capture_metrics["history_samples"]) >= 25.0
+    assert float(capture_metrics["min_barrier_gap"]) <= 0.01
+    assert float(capture_metrics["max_angular_speed"]) >= 0.05
+    assert float(capture_metrics["max_tilt_deg"]) > 45.0
+    assert np.isfinite(
+        [
+            float(capture_metrics["angular_speed"]),
+            float(capture_metrics["clearance"]),
+            float(capture_metrics["contact_count"]),
+            float(capture_metrics["cube_z"]),
+            float(capture_metrics["friction"]),
+            float(capture_metrics["initial_angular_speed"]),
+            float(capture_metrics["max_angular_speed"]),
+            float(capture_metrics["max_contact_count"]),
+            float(capture_metrics["max_step_ms"]),
+            float(capture_metrics["max_tilt_deg"]),
+            float(capture_metrics["min_barrier_gap"]),
+            float(capture_metrics["min_clearance"]),
+            float(capture_metrics["min_tilt_deg"]),
+            float(capture_metrics["tilt_deg"]),
+            float(capture_metrics["vertical_speed"]),
         ]
     ).all()
 
@@ -1818,6 +1894,7 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
         ("floating_base", 72, 960, 540, True),
         ("articulated", 72, 960, 540, True),
         ("rigid_ipc_tunnel", 24, 960, 540, True),
+        ("rigid_ipc_edge_drop", 72, 960, 540, True),
         ("diff_drone_liftoff", 96, 960, 540, True),
         ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
         ("avbd_rigid_breakable_joint", 72, 960, 540, True),

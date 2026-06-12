@@ -173,6 +173,7 @@ non-numbered shelf only through this table. These scenes remain outside the
 | `rigid_free_flight`              | `floating_base`                        | World Rigid Body            | Related shelf: World Rigid Body / floating_base - broader floating-joint row                                     | Broader floating-joint SE(3) drift/spin example; use the numbered row for baseline rigid-body initial-state diagnostics. |
 | `rigid_multibody_dynamics_terms` | `articulated`                          | World Rigid Body            | Related shelf: World Rigid Body / articulated - broader two-link arm row                                         | Broader two-link arm example; use the numbered row for mass, inverse-dynamics, and impulse-response diagnostics.         |
 | `rigid_solver_compare`           | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                          | Focused IPC capability scene; not a broad solver comparison or general proof.                                            |
+| `rigid_solver_compare`           | `rigid_ipc_edge_drop`                  | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_edge_drop - degenerate edge-contact view                                    | Focused IPC degenerate edge-contact capability scene; not a broad solver comparison or contact-manifold inspector.       |
 | `rigid_contact_solver_compare`   | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                      | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.                                       |
 | `contact`                        | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route          | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.                                 |
 | `rigid_joint_breakage`           | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset           | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.                               |
@@ -189,6 +190,7 @@ These commands are also included after the numbered rows by
 pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 --width 960 --height 540 --show-ui
@@ -225,9 +227,12 @@ multibody-link drop/slide/pusher lane summaries, the related World rows
 `floating_base` and `articulated` mirror floating-joint drift/spin and two-link
 arm speed/height/damping diagnostics, `rigid_ipc_tunnel` mirrors no-tunneling
 clearance, through-wall margin, velocity, contact, step-timing, and
-barrier-held status, and `rigid_ipc_stack_packet` mirrors clearance, contact,
-drift, height, wall-time, frame-budget, and benchmark values through the same
-schema. The related `diff_drone_liftoff` route uses the schema for
+barrier-held status, `rigid_ipc_edge_drop` mirrors degenerate edge-contact
+barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
+status,
+and `rigid_ipc_stack_packet` mirrors clearance, contact, drift, height,
+wall-time, frame-budget, and benchmark values through the same schema. The
+related `diff_drone_liftoff` route uses the schema for
 contact-gradient mode outcome, target/rest height, analytic versus aware
 thrust/final-height/loss values, height/target-error gaps, fallback status, and
 history summaries. The related AVBD routes use the schema for fixed-joint
@@ -274,7 +279,7 @@ still writes under `scenes/37_<scene>` when related evidence is included:
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 17 --dry-run
-pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 46 --workflow-end-row 46 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 47 --workflow-end-row 47 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
 For motion evidence, add `--video --fps 24` to the same docked capture path.
@@ -330,33 +335,53 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest rigid IPC edge-drop related-evidence follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_edge_drop_reports_degenerate_contact_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches -q`
+  reported `9 passed`. The new `rigid_ipc_edge_drop` related route reports
+  `row=rigid_ipc_edge_drop`, `related_source_row=rigid_solver_compare`,
+  `solver=rigid_ipc`, `scope=degenerate_edge_contact_capability`,
+  `min_barrier_gap <= 0.01`, and nonzero angular/tilt motion; the route table,
+  docked capture command list, capture-helper related specs, panel route/search
+  coverage, and unnumbered-route guard all include the edge-drop scene. The
+  public dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_edge_drop_dry_run`
+  reported `capture_count=46`, `40/46 rigid_ipc_edge_drop`, and final
+  `46/46 avbd_rigid_prismatic_motor`. The row-range packet dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 47 --workflow-end-row 47 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_row_rerun_edge_drop_dry_run`
+  reported `workflow_total_count=47` and `47/47 rigid_ipc_stack_packet`. The
+  real docked capture
+  `pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_ipc_edge_drop_edge_barrier_current`
+  wrote a nonblank 960x540 screenshot with docked UI detected, 71 converted PNG
+  frames, latest status `edge-barrier`, minimum barrier gap about `0.000384` m,
+  maximum tilt about `55.33` degrees, and maximum angular speed about
+  `0.555` rad/s.
 - Latest row-range workflow rerun follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q`
   reported `11 passed`. The public dry-run
-  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 46 --workflow-end-row 46 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_row_rerun_dry_run_current`
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 47 --workflow-end-row 47 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_row_rerun_edge_drop_dry_run`
   wrote a workflow manifest with `capture_count=1`,
-  `workflow_total_count=46`, `workflow_row_start=46`, `workflow_row_end=46`,
+  `workflow_total_count=47`, `workflow_row_start=47`, `workflow_row_end=47`,
   and the selected row as `rigid_ipc_stack_packet` with
   `workflow_group=capture_first_packet`. The generated `review_index.html`
-  contained the absolute `46/46 rigid_ipc_stack_packet` row.
+  contained the absolute `47/47 rigid_ipc_stack_packet` row.
 - Latest capture-first packet bundle follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented -q`
   reported `8 passed`. The public dry-run
-  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_packets_dry_run`
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_packets_edge_drop_dry_run`
   wrote a workflow manifest with `include_related=true`,
-  `include_packets=true`, `capture_count=46`, and the final row as
+  `include_packets=true`, `capture_count=47`, and the final row as
   `rigid_ipc_stack_packet` with `workflow_group=capture_first_packet`. The
   generated `review_index.html` contained the final
-  `46/46 rigid_ipc_stack_packet` row.
+  `47/47 rigid_ipc_stack_packet` row.
 - Latest related-evidence capture-bundle follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q`
   reported `5 passed`. The public dry-run
   `pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_dry_run`
-  wrote a workflow manifest with `include_related=true`, `capture_count=45`,
+  wrote a workflow manifest with `include_related=true`, `capture_count=46`,
   the first related-evidence row at `captures[36]` as `floating_base`, and the
   final row as `avbd_rigid_prismatic_motor`. The generated
   `review_index.html` contained related-evidence cards and the final
-  `45/45 avbd_rigid_prismatic_motor` row.
+  `46/46 avbd_rigid_prismatic_motor` row.
 - Latest full workflow-capture follow-up:
   `pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow_full_review_index_1781259714`
   completed all 36 numbered rigid verifier captures. The workflow manifest

@@ -149,11 +149,12 @@ aliases such as `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
 remain visible in the row, but the filter ranks positive intent matches first
 so searches such as `contact`, `solver`, `step profile`, `backend comparison`,
 and `sequential impulse` do not get dominated by early rows that only mention
-what not to infer. Related-evidence searches such as `rigid_ipc_tunnel` or
-`avbd prismatic` open the related shelf scene directly through the maintained
-route table. Comparison and parameter rows also label the comparison axis and
-held-fixed controls in the panel and capture metrics so solver, executor,
-contact-policy, workload-size, and parameter-family changes are not conflated.
+what not to infer. Related-evidence searches such as `rigid_ipc_tunnel`,
+`rigid_ipc_edge_drop`, or `avbd prismatic` open the related shelf scene
+directly through the maintained route table. Comparison and parameter rows also
+label the comparison axis and held-fixed controls in the panel and capture
+metrics so solver, executor, contact-policy, workload-size, and
+parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
 frame directories, commands, and metric summaries can be reviewed from one
@@ -206,6 +207,12 @@ row exposes it as a `Related shelf` route. Its capture metrics report wall
 clearance, through-wall margin, velocity, contact count, step timing, and
 whether the IPC barrier held the fast box before it tunneled through the thin
 wall.
+
+For the focused IPC degenerate edge-contact capability view, use
+**`rigid_ipc_edge_drop`** from the **Rigid IPC** shelf. It is also routed from
+`Rigid Solver Compare` as related evidence. Its panel and capture metrics report
+barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
+status as a cube tips near a single edge while IPC keeps positive separation.
 
 The older **`floating_base`** and **`articulated`** rows stay in the broader
 **World Rigid Body** catalog outside the numbered verifier block. In the
@@ -678,7 +685,7 @@ still writes under `scenes/37_<scene>` when related evidence is included:
 pixi run py-demo-capture -- --rigid-workflow \
     --workflow-start-row 15 --workflow-end-row 17 --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
-    --include-packets --workflow-start-row 46 --workflow-end-row 46 \
+    --include-packets --workflow-start-row 47 --workflow-end-row 47 \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
@@ -759,11 +766,13 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 \
     --width 960 --height 540 --show-ui
 ```
 
-Capture the related Rigid IPC no-tunneling view when that focused capability is
-the target:
+Capture the related Rigid IPC no-tunneling or degenerate edge-contact views
+when those focused capabilities are the target:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 \
     --width 960 --height 540 --show-ui
 ```
 
@@ -826,6 +835,8 @@ pixi run py-demo-capture -- --scene floating_base --frames 72 \
 pixi run py-demo-capture -- --scene articulated --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
     --width 960 --height 540 --show-ui

@@ -70,6 +70,7 @@ from examples.demos.scenes import (
     rigid_friction_threshold,
     rigid_free_flight,
     rigid_ipc,
+    rigid_ipc_edge_drop,
     rigid_ipc_incline,
     rigid_ipc_stack_packet,
     rigid_joint_breakage,
@@ -987,6 +988,7 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         (rigid_spin_roll_coupling, "Rigid Spin/Roll Coupling"),
         (rigid_stack_stability, "Rigid Stack Stability"),
         (rigid_ipc, "Rigid IPC Contact"),
+        (rigid_ipc_edge_drop, "Rigid IPC Edge Drop"),
         (rigid_ipc_incline, "Rigid IPC Incline"),
         (rigid_ipc_pile, "Rigid IPC Pile"),
         (rigid_ipc_tunnel, "Rigid IPC Tunnel"),
@@ -1325,6 +1327,29 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     )
     assert context.scene_switch_requests == ["rigid_ipc_tunnel"]
 
+    context = _FakePanelContext()
+    edge_drop_label = (
+        "Related shelf: Rigid IPC / rigid_ipc_edge_drop - "
+        "degenerate edge-contact view"
+        "##rigid_workflow_related_rigid_ipc_edge_drop"
+    )
+    edge_drop_builder = _ScriptedPanelBuilder(selected_items={edge_drop_label})
+
+    workflow_panel.build(edge_drop_builder, context)
+
+    assert (
+        "selectable:Related shelf: Rigid IPC / rigid_ipc_edge_drop - "
+        "degenerate edge-contact view"
+        "##rigid_workflow_related_rigid_ipc_edge_drop:False"
+    ) in edge_drop_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open rigid_ipc_edge_drop from the Rigid IPC shelf."
+        )
+        for event in edge_drop_builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_ipc_edge_drop"]
+
     contact_policy_scene = PythonDemoScene(
         id="rigid_contact_solver_compare",
         title="Test rigid_contact_solver_compare",
@@ -1575,6 +1600,9 @@ def test_rigid_workflow_search_finds_related_evidence_targets() -> None:
         guide.scene_id for guide in _workflow_matching_guides("rigid_ipc_tunnel")
     ][:1] == ["rigid_solver_compare"]
     assert [
+        guide.scene_id for guide in _workflow_matching_guides("rigid_ipc_edge_drop")
+    ][:1] == ["rigid_solver_compare"]
+    assert [
         guide.scene_id for guide in _workflow_matching_guides("floating_base")
     ][:1] == ["rigid_free_flight"]
     assert [
@@ -1668,6 +1696,34 @@ def test_rigid_workflow_panel_opens_related_evidence_search_matches() -> None:
         for event in builder.events
     )
     assert context.scene_switch_requests == ["avbd_rigid_prismatic_motor"]
+
+    context = _FakePanelContext()
+    edge_drop_label = (
+        "15/36 Solver family - rigid_solver_compare "
+        "(related: rigid_ipc_edge_drop)"
+        "##rigid_workflow_find_rigid_solver_compare"
+    )
+    edge_drop_builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "rigid_ipc_edge_drop"},
+        selected_items={edge_drop_label},
+    )
+
+    workflow_panel.build(edge_drop_builder, context)
+
+    assert (
+        "selectable:"
+        "15/36 Solver family - rigid_solver_compare "
+        "(related: rigid_ipc_edge_drop)"
+        "##rigid_workflow_find_rigid_solver_compare:True"
+    ) in edge_drop_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:How do the rigid method families differ visually? "
+            "Related evidence match: Rigid IPC / rigid_ipc_edge_drop:"
+        )
+        for event in edge_drop_builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_ipc_edge_drop"]
 
 
 def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:
