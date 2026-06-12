@@ -209,7 +209,7 @@ plus a warning block if any selected row is missing those fields.
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | World joints, velocity/position/effort limits         | Actuator axis, motor clamp, force gap                         |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | World joints, gravity off, contacts off               | Passive axis, energy decay, slip, armature lag                |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | World screw joints, pitch, mass, inertia              | Screw axis, pitch ratios, travel gap, reverse sign            |
-| 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Response gap, coupling, torque load, Replay marks             |
+| 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | World dynamics, acceleration, impulse, gravity        | Dynamics axis, coupling, torque gap, response ratio           |
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks     |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link speed, Jacobian gap, wrench load, Replay marks           |
 | 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks            |
@@ -732,7 +732,12 @@ response norm.
 `py-demo-capture` records lane order, executor, target-acceleration, impulse,
 heavy-mass, gravity, per-lane mass/coupling/conditioning/residual/torque/
 response fields, heavy-versus-coupled ratios, step timing, and compact history
-metrics into the manifest sidecar.
+metrics into the manifest sidecar. The panel and capture metrics label the
+joint-space dynamics term comparison axis, held-fixed contact-free World
+dynamics/fixed-base/revolute-link/target-acceleration/impulse/gravity/time step
+context, lane names, and top-level review signals for the single-hinge mass
+diagonal, coupled off-diagonal mass term, heavy-load torque gap,
+coupled-versus-heavy response gap, heavy response ratio, and residual checks.
 The shared Replay panel uses coupled-versus-heavy response gap as its value
 track and marks response-separation, off-diagonal-coupling, and heavy-load
 torque frames.

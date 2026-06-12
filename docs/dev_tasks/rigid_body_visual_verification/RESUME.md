@@ -2,32 +2,34 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 31 now gives the World multibody screw-joint pitch row
-the same reviewable comparison shape as the surrounding rigid workflow rows
-while continuing to follow the DART 7 architecture harness from PR #2986.
-`rigid_screw_joint_pitch` names `screw_pitch_coupling_family` as its comparison
-axis in the panel and capture metrics, records held-fixed contact-free World
-screw-joint/z-axis/mass/inertia/time-step context, exports top-level pitch,
-travel-gap, reverse-sign, and acceleration-residual metrics, and feeds decisive
-latest signals into the workflow review index.
+Latest local slice: row 32 now gives the World multibody generalized dynamics
+terms row the same reviewable comparison shape as the surrounding rigid
+workflow rows while continuing to follow the DART 7 architecture harness from
+PR #2986. `rigid_multibody_dynamics_terms` names
+`joint_space_dynamics_term_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World
+dynamics/fixed-base/revolute-link/target-acceleration/impulse/gravity/time-step
+context, exports top-level scalar mass, coupling, torque-gap, response-gap,
+response-ratio, and residual metrics, and feeds decisive latest signals into
+the workflow review index.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed implementation commit before this slice was
-  `403cde40bb3 Surface passive joint workflow signals`; if this slice has been
-  committed, expect one additional local commit for screw-joint pitch workflow
-  signals.
+  `6def027a935 Surface screw joint workflow signals`; if this slice has been
+  committed, expect one additional local commit for multibody dynamics-terms
+  workflow signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-31 diff first. If it is
+- If this slice is still uncommitted, inspect the row-32 diff first. If it is
   committed, continue from a fresh audit for the next concrete rigid
   GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-31 evidence direction before broadening further.
+  row-15-through-row-32 evidence direction before broadening further.
 
-Files touched by this row-31 slice:
+Files touched by this row-32 slice:
 
-- `python/examples/demos/scenes/rigid_screw_joint_pitch.py`
+- `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py`
 - `scripts/capture_py_demo.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/tests/unit/test_capture_py_demo.py`
@@ -37,54 +39,74 @@ Files touched by this row-31 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 
-Row-31 screw-joint pitch slice:
+Row-32 multibody dynamics-terms slice:
 
-- `rigid_screw_joint_pitch` now exports
-  `comparison_axis=screw_pitch_coupling_family`, held-fixed contact-free World
-  screw-joint/z-axis/mass/inertia/time-step context, controls, lane labels, and
-  top-level capture metrics for zero-pitch axial travel, fine/coarse/reverse
-  pitch, coarse/fine travel gap, reverse angle, and fine acceleration residual.
-- The screw-joint pitch panel labels the comparison axis and held-fixed context
-  before the existing screw-pitch diagnostics.
-- `scripts/capture_py_demo.py` prioritizes row-31 latest-signal keys so the
-  review card orders pitch, travel-gap, reverse-sign, residual, and solver
-  signals before generic metrics.
+- `rigid_multibody_dynamics_terms` now exports
+  `comparison_axis=joint_space_dynamics_term_family`, held-fixed contact-free
+  World dynamics/fixed-base/revolute-link/target-acceleration/impulse/gravity/
+  time-step context, controls, lane labels, and top-level capture metrics for
+  scalar mass diagonal, coupled off-diagonal mass term, heavy-load torque gap,
+  coupled/heavy response gap, heavy response ratio, inverse-dynamics residual,
+  and impulse residual.
+- The multibody dynamics-terms panel labels the comparison axis and held-fixed
+  context before the existing generalized-dynamics diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-32 latest-signal keys so the
+  review card orders scalar mass, coupling, torque-gap, response-gap,
+  response-ratio, residual, and solver signals before generic metrics.
 - `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
-  document the screw pitch coupling axis and held-fixed context.
+  document the joint-space dynamics term axis and held-fixed context.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-31 latest signals prioritize
-  zero-pitch axial travel, fine/coarse/reverse pitch, coarse/fine travel gap,
-  reverse angle, fine acceleration residual, and solver.
-- Real row-31 workflow capture completed under
-  `build/captures/rigid_screw_joint_pitch_row_31_1781302747` with
+  sync check, and the unit guard that row-32 latest signals prioritize scalar
+  mass diagonal, coupled off-diagonal mass term, heavy-load torque gap,
+  coupled/heavy response gap, heavy response ratio, inverse-dynamics residual,
+  impulse residual, and solver.
+- Real row-32 workflow capture completed under
+  `build/captures/rigid_multibody_dynamics_terms_row_32_1781303198` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 31 reported `comparison_axis=screw_pitch_coupling_family`, held-fixed
-  `joint_family=screw`, `axis=z`, `contacts=off`, `moving_mass=2.0`,
-  `axial_inertia=0.12`, `solver=world_multibody_screw_joint_pitch`,
-  `time_step_ms=3.0`, controls `executor_index=0.0`, `pitch_scale=0.28`,
-  `gravity_scale=1.0`, `moving_mass=2.0`, `axial_inertia=0.12`,
-  `joint_lanes=[zero_pitch, fine_pitch, coarse_pitch, reverse_pitch]`,
-  `screw_joint_zero_pitch_axial_travel=0.0`,
-  `screw_joint_fine_pitch=0.28`, `screw_joint_coarse_pitch=0.56`,
-  `screw_joint_reverse_pitch=-0.28`,
-  `screw_joint_coarse_fine_travel_gap=0.11219412053322755`,
-  `screw_joint_reverse_angle=0.8316611791907523`,
-  `screw_joint_fine_acceleration_error=-1.1723955140041653e-13`, and history
-  `max_abs_coarse_minus_fine_axial_travel=0.11219412053322755`.
-- `review_index.html` showed the row-31 card with `axis`, `held fixed`,
+- Row 32 reported `comparison_axis=joint_space_dynamics_term_family`,
+  held-fixed `base=fixed`, `contacts=off`, `joint_type=revolute`,
+  `target_acceleration=2.2`, `joint_impulse=3.0`, `gravity_scale=1.0`,
+  `link_length=0.55`, `solver=world_multibody_dynamics_terms`,
+  `time_step_ms=3.0`, controls `executor_index=0.0`, `target_acceleration=2.2`,
+  `joint_impulse=3.0`, `heavy_distal_mass_scale=4.0`, `gravity_scale=1.0`,
+  `dynamics_lanes=[single_hinge, coupled_two_link, heavy_distal]`,
+  `multibody_dynamics_single_mass_diag0=0.27855208333333303`,
+  `multibody_dynamics_coupled_coupling=0.35663328364695346`,
+  `multibody_dynamics_heavy_tau_gap=18.137982615675263`,
+  `multibody_dynamics_coupled_heavy_response_gap=6.830740780136933`,
+  `multibody_dynamics_heavy_response_ratio=0.5582694151303279`,
+  `multibody_dynamics_max_inverse_residual=3.66205343881779e-15`,
+  `multibody_dynamics_max_impulse_residual=2.6645352591003757e-14`, and
+  history `max_abs_coupling=0.37303926820793976`.
+- `review_index.html` showed the row-32 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for zero-pitch axial travel, fine/coarse/reverse pitch, coarse/fine
-  travel gap, reverse angle, fine acceleration residual, and solver. The
-  per-scene capture wrote a nonblank docked screenshot and 95 PNG frames from
-  the 96-frame workflow row capture under `build/captures/`.
+  ordering for scalar mass diagonal, coupling, heavy-load torque gap,
+  coupled/heavy response gap, heavy response ratio, inverse-dynamics residual,
+  impulse residual, and solver. The per-scene capture wrote a nonblank docked
+  screenshot and 95 PNG frames from the 96-frame workflow row capture under
+  `build/captures/`.
+
+Previous completed and verified slice: row 31 gives the World multibody
+screw-joint pitch row the same reviewable comparison shape as the surrounding
+rigid workflow rows. `rigid_screw_joint_pitch` names
+`screw_pitch_coupling_family` as its comparison axis in the panel and capture
+metrics, records held-fixed contact-free World screw-joint/z-axis/mass/inertia/
+time-step context, exports top-level pitch, travel-gap, reverse-sign, and
+acceleration-residual metrics, and feeds decisive latest signals into the
+workflow review index. Evidence: focused row/panel/docs-order/review-index
+pytest subset reported `6 passed`; the real row-31 workflow capture completed
+under `build/captures/rigid_screw_joint_pitch_row_31_1781302747` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 95 PNG frames.
 
 Previous completed and verified slice: row 30 gives the World multibody
 passive joint parameter row the same reviewable comparison shape as the

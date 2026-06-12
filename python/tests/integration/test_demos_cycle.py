@@ -6282,9 +6282,21 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_multibody_dynamics_terms"
+    assert capture_metrics["comparison_axis"] == "joint_space_dynamics_term_family"
     assert capture_metrics["solver"] == "world_multibody_dynamics_terms"
     assert capture_metrics["scope"] == "contact_free_joint_space_dynamics"
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["held_fixed"] == {
+        "solver": "world_multibody_dynamics_terms",
+        "contacts": "off",
+        "base": "fixed",
+        "joint_type": "revolute",
+        "target_acceleration": pytest.approx(controller.target_acceleration),
+        "joint_impulse": pytest.approx(controller.joint_impulse),
+        "gravity_scale": pytest.approx(controller.gravity_scale),
+        "link_length": pytest.approx(0.55),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert capture_metrics["time_step_ms"] == pytest.approx(3.0)
     assert capture_metrics["world_time"] > 0.0
     assert capture_metrics["target_acceleration"] == pytest.approx(
@@ -6310,7 +6322,9 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
         controller.gravity_scale
     )
-    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    expected_lanes = [lane.key for lane in controller.lanes]
+    assert capture_metrics["dynamics_lanes"] == expected_lanes
+    assert capture_metrics["lane_order"] == expected_lanes
     assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
     assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
 
@@ -6340,6 +6354,9 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert capture_metrics["single_hinge_mass_diag0"] == pytest.approx(
         float(single["mass_diag0"])
     )
+    assert capture_metrics["multibody_dynamics_single_mass_diag0"] == pytest.approx(
+        float(single["mass_diag0"])
+    )
     assert capture_metrics["single_hinge_inverse_diag0"] == pytest.approx(
         float(single["inverse_diag0"])
     )
@@ -6347,6 +6364,9 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
         float(single["dynamics_residual"])
     )
     assert capture_metrics["coupled_two_link_coupling"] == pytest.approx(
+        float(coupled["coupling"])
+    )
+    assert capture_metrics["multibody_dynamics_coupled_coupling"] == pytest.approx(
         float(coupled["coupling"])
     )
     assert capture_metrics["coupled_two_link_response1"] == pytest.approx(
@@ -6361,10 +6381,21 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert capture_metrics["heavy_minus_coupled_tau_norm"] == pytest.approx(
         float(heavy["tau_norm"]) - float(coupled["tau_norm"])
     )
+    assert capture_metrics["multibody_dynamics_heavy_tau_gap"] == pytest.approx(
+        float(heavy["tau_norm"]) - float(coupled["tau_norm"])
+    )
     assert capture_metrics["heavy_to_coupled_tau_norm_ratio"] == pytest.approx(
         float(heavy["tau_norm"]) / float(coupled["tau_norm"])
     )
     assert capture_metrics["heavy_to_coupled_response_norm_ratio"] == pytest.approx(
+        float(heavy["response_norm"]) / float(coupled["response_norm"])
+    )
+    assert capture_metrics[
+        "multibody_dynamics_coupled_heavy_response_gap"
+    ] == pytest.approx(
+        max(0.0, float(coupled["response_norm"]) - float(heavy["response_norm"]))
+    )
+    assert capture_metrics["multibody_dynamics_heavy_response_ratio"] == pytest.approx(
         float(heavy["response_norm"]) / float(coupled["response_norm"])
     )
     assert capture_metrics["coupled_response1_abs"] == pytest.approx(
@@ -6379,7 +6410,13 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert capture_metrics["max_inverse_dynamics_residual"] == pytest.approx(
         max(float(value["inverse_dynamics_residual"]) for value in metrics.values())
     )
+    assert capture_metrics["multibody_dynamics_max_inverse_residual"] == pytest.approx(
+        max(float(value["inverse_dynamics_residual"]) for value in metrics.values())
+    )
     assert capture_metrics["max_impulse_residual"] == pytest.approx(
+        max(float(value["impulse_residual"]) for value in metrics.values())
+    )
+    assert capture_metrics["multibody_dynamics_max_impulse_residual"] == pytest.approx(
         max(float(value["impulse_residual"]) for value in metrics.values())
     )
     assert capture_metrics["max_acceleration_error"] == pytest.approx(

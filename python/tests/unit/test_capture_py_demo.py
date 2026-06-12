@@ -1339,6 +1339,33 @@ def test_rigid_workflow_latest_signals_prioritize_screw_joint_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_multibody_dynamics_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "multibody_dynamics_coupled_coupling": 0.19,
+            "multibody_dynamics_coupled_heavy_response_gap": 1.25,
+            "multibody_dynamics_heavy_response_ratio": 0.42,
+            "multibody_dynamics_heavy_tau_gap": 2.5,
+            "multibody_dynamics_max_impulse_residual": 0.0,
+            "multibody_dynamics_max_inverse_residual": 0.0,
+            "multibody_dynamics_single_mass_diag0": 0.33,
+            "solver": "world_multibody_dynamics_terms",
+        }
+    )
+
+    assert highlights[:8] == [
+        "multibody dynamics single mass diag0: 0.33",
+        "multibody dynamics coupled coupling: 0.19",
+        "multibody dynamics heavy tau gap: 2.5",
+        "multibody dynamics coupled heavy response gap: 1.25",
+        "multibody dynamics heavy response ratio: 0.42",
+        "multibody dynamics max inverse residual: 0",
+        "multibody dynamics max impulse residual: 0",
+        "solver: world_multibody_dynamics_terms",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

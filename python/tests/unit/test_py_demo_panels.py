@@ -1277,6 +1277,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World screw joints | contacts off | z-axis screw | moving mass 2.0 | axial inertia 0.12 | time step 3.0 ms",
             ),
         ),
+        (
+            rigid_multibody_dynamics_terms,
+            (
+                "text:comparison axis: joint-space dynamics term family",
+                "text:held fixed: World multibody dynamics | contacts off | fixed-base revolute links | target acceleration 2.2 | impulse 3.0 | gravity scale 1.0 | time step 3.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:

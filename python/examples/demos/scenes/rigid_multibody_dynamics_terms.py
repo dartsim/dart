@@ -500,11 +500,42 @@ class _RigidMultibodyDynamicsTerms:
         coupled_response = lane_value("coupled_two_link", "response_norm")
         heavy_tau = lane_value("heavy_distal", "tau_norm")
         heavy_response = lane_value("heavy_distal", "response_norm")
+        heavy_tau_gap = heavy_tau - coupled_tau
+        response_gap = max(0.0, coupled_response - heavy_response)
+        heavy_response_ratio = heavy_response / max(coupled_response, 1.0e-12)
+        max_dynamics_residual = max(
+            lane_value(lane.key, "dynamics_residual") for lane in self.lanes
+        )
+        max_inverse_dynamics_residual = max(
+            lane_value(lane.key, "inverse_dynamics_residual") for lane in self.lanes
+        )
+        max_impulse_residual = max(
+            lane_value(lane.key, "impulse_residual") for lane in self.lanes
+        )
+        max_acceleration_error = max(
+            lane_value(lane.key, "acceleration_error") for lane in self.lanes
+        )
+        max_identity_error = max(
+            lane_value(lane.key, "identity_error") for lane in self.lanes
+        )
+        lane_order = [lane.key for lane in self.lanes]
         payload: dict[str, Any] = {
             "row": "rigid_multibody_dynamics_terms",
+            "comparison_axis": "joint_space_dynamics_term_family",
             "solver": "world_multibody_dynamics_terms",
             "scope": "contact_free_joint_space_dynamics",
             "executor": self._executors[executor_index][0],
+            "held_fixed": {
+                "solver": "world_multibody_dynamics_terms",
+                "contacts": "off",
+                "base": "fixed",
+                "joint_type": "revolute",
+                "target_acceleration": float(self.target_acceleration),
+                "joint_impulse": float(self.joint_impulse),
+                "gravity_scale": float(self.gravity_scale),
+                "link_length": _LINK_LENGTH,
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "target_acceleration": float(self.target_acceleration),
@@ -518,9 +549,21 @@ class _RigidMultibodyDynamicsTerms:
                 "heavy_distal_mass_scale": float(self.heavy_distal_mass_scale),
                 "gravity_scale": float(self.gravity_scale),
             },
-            "lane_order": [lane.key for lane in self.lanes],
+            "dynamics_lanes": lane_order,
+            "lane_order": lane_order,
             "lane_count": float(len(self.lanes)),
             "lanes": lanes,
+            "multibody_dynamics_single_mass_diag0": lane_value(
+                "single_hinge", "mass_diag0"
+            ),
+            "multibody_dynamics_coupled_coupling": lane_value(
+                "coupled_two_link", "coupling"
+            ),
+            "multibody_dynamics_heavy_tau_gap": heavy_tau_gap,
+            "multibody_dynamics_coupled_heavy_response_gap": response_gap,
+            "multibody_dynamics_heavy_response_ratio": heavy_response_ratio,
+            "multibody_dynamics_max_inverse_residual": max_inverse_dynamics_residual,
+            "multibody_dynamics_max_impulse_residual": max_impulse_residual,
             "single_hinge_mass_diag0": lane_value("single_hinge", "mass_diag0"),
             "single_hinge_inverse_diag0": lane_value(
                 "single_hinge", "inverse_diag0"
@@ -563,31 +606,19 @@ class _RigidMultibodyDynamicsTerms:
             "heavy_distal_impulse_residual": lane_value(
                 "heavy_distal", "impulse_residual"
             ),
-            "heavy_minus_coupled_tau_norm": heavy_tau - coupled_tau,
+            "heavy_minus_coupled_tau_norm": heavy_tau_gap,
             "heavy_to_coupled_tau_norm_ratio": heavy_tau
             / max(coupled_tau, 1.0e-12),
-            "heavy_to_coupled_response_norm_ratio": heavy_response
-            / max(coupled_response, 1.0e-12),
+            "heavy_to_coupled_response_norm_ratio": heavy_response_ratio,
             "coupled_response1_abs": abs(
                 lane_value("coupled_two_link", "response1")
             ),
             "heavy_response1_abs": abs(lane_value("heavy_distal", "response1")),
-            "max_dynamics_residual": max(
-                lane_value(lane.key, "dynamics_residual") for lane in self.lanes
-            ),
-            "max_inverse_dynamics_residual": max(
-                lane_value(lane.key, "inverse_dynamics_residual")
-                for lane in self.lanes
-            ),
-            "max_impulse_residual": max(
-                lane_value(lane.key, "impulse_residual") for lane in self.lanes
-            ),
-            "max_acceleration_error": max(
-                lane_value(lane.key, "acceleration_error") for lane in self.lanes
-            ),
-            "max_identity_error": max(
-                lane_value(lane.key, "identity_error") for lane in self.lanes
-            ),
+            "max_dynamics_residual": max_dynamics_residual,
+            "max_inverse_dynamics_residual": max_inverse_dynamics_residual,
+            "max_impulse_residual": max_impulse_residual,
+            "max_acceleration_error": max_acceleration_error,
+            "max_identity_error": max_identity_error,
             "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
             "history": {
                 "samples": float(len(self._step_ms_history)),
@@ -814,6 +845,13 @@ class _RigidMultibodyDynamicsTerms:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: joint-space dynamics term family")
+        builder.text(
+            "held fixed: World multibody dynamics | contacts off | fixed-base "
+            f"revolute links | target acceleration {self.target_acceleration:.1f} | "
+            f"impulse {self.joint_impulse:.1f} | gravity scale {self.gravity_scale:.1f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: World multibody dynamics | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text("tau = M qddot + C + g; impulse response is joint-space M^-1 f")
