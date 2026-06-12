@@ -27,12 +27,14 @@ do not treat full build or full `pixi run test-unit` validation as complete for
 the dynamic rigid IPC slice. Resume from the pushed branch head, not from this
 session.
 
-Important stop-state cleanup: a cherry-pick of older local commit
-`46155b77c56` (`Route WorldStorage through world allocator`) was attempted
-during this session, conflicted, and was aborted to keep the active handoff
-branch clean. That `WorldStorage` allocator-root candidate is not part of
-`pr/hmm-phase45-follow-up-clean` unless a future fresh session ports and
-verifies it deliberately.
+Important status correction after the handoff-only stop: the docs-only stop
+commit `91c3d83dd35` incorrectly described the `WorldStorage` root-routing
+slice as unapplied. Current source inspection shows the active branch already
+contains the broader persistent-World root route: `WorldStorage`, the private
+built-in step-pipeline cache, built-in stage-owned scratch/cache objects, the
+lazy collision query cache, and the optional replay controller object are
+constructed through the World free-list allocator and covered by
+`WorldPersistentStorageUsesWorldFreeAllocator`.
 
 Measured open gap: a temporary active rigid IPC contact-heavy no-heap probe was
 added locally, failed with 157 global heap allocations / 7968 bytes, and was
@@ -136,6 +138,12 @@ Verification run for the dynamic rigid IPC dynamics-only continuation:
   doc edits.
 - Not completed because of the stop request: full `pixi run build` and full
   `pixi run test-unit`.
+
+Verification run for the persistent-World root-routing status correction:
+
+- `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+&& build/default/cpp/Release/bin/test_world --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' --gtest_color=no`
+  passed, confirming the allocator-root test that already exists on this branch.
 
 Fresh-session reading order:
 
@@ -520,13 +528,20 @@ experimental DART 7 `World` memory hierarchy. It now records the public
 lifetime roles, EnTT registry bake/rebuild boundaries, and the direct
 world-base/global-heap evidence expected before broader zero-allocation claims.
 
-Historical/unapplied root-routing candidate: older local commit
-`46155b77c56` moves the opaque `WorldStorage` object itself onto the World
-free-list allocator and adds focused construction/`World::clear()` rebuild
-coverage. A stopped-session cherry-pick of that commit conflicted and was
-aborted. Do not treat this as current branch behavior unless a future fresh
-session ports the code/docs/test changes, resolves conflicts against the active
-branch, and records verification.
+The persistent-World root-routing slice moves the opaque `WorldStorage` object,
+the private built-in step-pipeline cache, built-in stage-owned scratch/cache
+objects, the lazy collision query cache, and the optional replay controller
+object onto the World free-list allocator, matching the allocator already used
+by the EnTT registry and differentiable-parameter list. The focused
+`WorldPersistentStorageUsesWorldFreeAllocator` test checks initial
+construction, built-in stage scratch construction, lazy collision-cache
+construction, lazy replay-controller construction, and `World::clear()`
+rebuilds through free-list allocation counters, and still directly probes the
+`WorldStorage` pointer through `MemoryManager::hasAllocated()` in debug builds.
+`World::clear()` drops the collision query cache so rebuild boundaries release
+cached collision query capacity; replay frame payload vectors and nested stage
+scratch payload vectors remain governed by the existing same-shape
+no-growth/no-heap gates, not by this allocator-root ownership check.
 
 The current nested-payload slices start with the `RigidBodyVelocityStage`
 force batch: allocator-aware stage construction now gives the entity, force,

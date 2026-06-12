@@ -11,19 +11,15 @@ the work.
 
 The last code checkpoint before the critical handoff request was
 `57cb751eef9` (`Avoid heap allocation in dynamic rigid IPC no-contact steps`).
-This docs-only handoff updates the branch state without running any further
-verification, per the maintainer's explicit 2026-06-11 stop request. Treat
-`git log` on `pr/hmm-phase45-follow-up-clean` as the source of truth for the
-exact pushed branch head, and resume only from a fresh session after reading
-this task state.
-
-Important non-closure: an older local branch contains candidate root-routing
-work in `46155b77c56` (`Route WorldStorage through world allocator`). A
-cherry-pick of that commit was attempted during the stopped session, produced
-conflicts, and was aborted so the active branch could be handed off cleanly.
-That candidate is not part of the active branch unless a future fresh session
-ports it deliberately, commits it on this branch, and records its own
-verification.
+The docs-only stop commit `91c3d83dd35` incorrectly described the
+`WorldStorage` allocator-root slice as unapplied. Current source inspection
+shows the branch already contains the equivalent, broader persistent-World
+root-routing work: `WorldStorage`, the private built-in step-pipeline cache,
+built-in stage-owned scratch/cache objects, the lazy collision query cache, and
+the optional replay controller object are all constructed through the World
+free-list allocator. Treat `git log` on `pr/hmm-phase45-follow-up-clean` as the
+source of truth for the exact pushed branch head, and resume only from a fresh
+session after reading this task state.
 
 Another measured non-closure: a temporary active rigid IPC contact-heavy
 no-heap probe failed before removal with 157 global heap allocations / 7968
@@ -118,6 +114,15 @@ Additional checks completed for the dynamic rigid IPC dynamics-only slice:
   one-body IPC diagnostic counters.
 - `git diff --check` and `pixi run lint` passed before the final handoff-only
   doc edits.
+
+Additional check completed for the persistent-World root-routing status
+correction:
+
+- `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+&& build/default/cpp/Release/bin/test_world --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' --gtest_color=no`
+  passed, confirming the current branch's existing `WorldStorage`,
+  built-in-cache, collision-cache, replay-controller, and `World::clear()`
+  allocator-root coverage.
 
 The docs-only handoff commits intentionally skipped `pixi run lint`, build, and
 tests per the maintainer's 2026-06-11 stop requests. A subsequent
@@ -961,14 +966,18 @@ Follow-up progress after PR #2956:
   `MemoryManager`, allocator lifetime roles, registry bake/rebuild boundaries,
   and the direct evidence expected before making broader zero-allocation
   claims.
-- Historical/unapplied root-routing candidate: an older local branch contains
-  a `WorldStorage` allocator-root slice that would move the opaque
-  `WorldStorage` object through the World free-list allocator and add focused
-  construction/`World::clear()` rebuild coverage. That candidate lives in
-  `46155b77c56` (`Route WorldStorage through world allocator`) and was not
-  applied to the current clean handoff branch after the critical stop request.
-  Do not count this as closed until a fresh session ports it deliberately,
-  resolves the current code/docs/test shape, and records verification.
+- The opaque `WorldStorage` object, private built-in step-pipeline cache,
+  built-in stage-owned scratch/cache objects, lazy collision query cache, and
+  optional replay controller object use the same World free-list allocator as
+  the EnTT registry and differentiable-parameter storage. The focused
+  `WorldPersistentStorageUsesWorldFreeAllocator` test verifies initial
+  construction, built-in stage scratch construction, lazy collision-cache
+  construction, lazy replay-controller construction, and `World::clear()`
+  rebuilds keep persistent World state under the World memory hierarchy while
+  dropping cached collision query state at the rebuild boundary. Replay frame
+  payload vectors and nested stage scratch payload vectors remain governed by
+  the existing same-shape no-growth/no-heap gates, not by this allocator-root
+  ownership check.
 - The first nested stage-scratch payload route covers
   `RigidBodyVelocityStage` force-batch vectors. When that stage borrows the
   World `MemoryManager`, its entity, force, and torque reserve/growth traffic
