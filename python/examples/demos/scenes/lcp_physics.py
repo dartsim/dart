@@ -965,6 +965,26 @@ def _make_friction_index_contact_case() -> tuple[dart.LcpProblem, np.ndarray]:
     return dart.LcpProblem(A, A @ expected, lo, hi, findex), expected
 
 
+def _make_active_friction_index_contact_case() -> tuple[dart.LcpProblem, np.ndarray]:
+    A = np.array(
+        [
+            [3.0, 0.12, 0.04, 0.08, 0.02, 0.0],
+            [0.12, 2.4, 0.08, 0.01, 0.04, 0.0],
+            [0.04, 0.08, 2.1, 0.0, 0.0, 0.03],
+            [0.08, 0.01, 0.0, 2.8, 0.10, 0.05],
+            [0.02, 0.04, 0.0, 0.10, 2.2, 0.07],
+            [0.0, 0.0, 0.03, 0.05, 0.07, 2.0],
+        ],
+        dtype=float,
+    )
+    expected = np.array([0.60, 0.30, -0.24, 0.35, -0.175, 0.05], dtype=float)
+    lo = np.array([0.0, -np.inf, -np.inf, 0.0, -np.inf, -np.inf], dtype=float)
+    hi = np.array([np.inf, 0.50, 0.50, np.inf, 0.50, 0.50], dtype=float)
+    findex = np.array([-1, 0, 0, -1, 3, 3], dtype=np.int32)
+    w = np.array([0.0, -0.04, 0.0, 0.0, 0.03, 0.0], dtype=float)
+    return dart.LcpProblem(A, A @ expected - w, lo, hi, findex), expected
+
+
 def _make_moderate_scale_standard_case() -> tuple[dart.LcpProblem, np.ndarray]:
     n = 12
     A = np.eye(n, dtype=float) * 2.0
@@ -1039,6 +1059,15 @@ _STANDALONE_PROBLEM_CASES: tuple[_StandaloneProblemCase, ...] = (
         support_key="findex",
         challenge="normal-scaled tangential friction bounds",
         make_problem=_make_friction_index_contact_case,
+    ),
+    _StandaloneProblemCase(
+        name="active_friction_index_contact",
+        label="Active friction-index contact",
+        surface="findex",
+        support_key="findex",
+        challenge="two-contact active tangential bounds with coupled normals",
+        make_problem=_make_active_friction_index_contact_case,
+        tolerance=2e-4,
     ),
     _StandaloneProblemCase(
         name="moderate_scale_standard",

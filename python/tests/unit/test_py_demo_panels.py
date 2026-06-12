@@ -793,6 +793,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "mass_ratio_boxed": 24,
         "singular_degenerate_boxed": 24,
         "friction_index_contact": 24,
+        "active_friction_index_contact": 24,
         "moderate_scale_standard": 24,
     }
     expected_native_problem_counts = {
@@ -803,6 +804,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "mass_ratio_boxed": 16,
         "singular_degenerate_boxed": 16,
         "friction_index_contact": 16,
+        "active_friction_index_contact": 16,
         "moderate_scale_standard": 24,
     }
     expected_problem_types = {
@@ -813,6 +815,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "mass_ratio_boxed": "Boxed",
         "singular_degenerate_boxed": "Boxed",
         "friction_index_contact": "FrictionIndex",
+        "active_friction_index_contact": "FrictionIndex",
         "moderate_scale_standard": "Standard",
     }
     expected_case_tolerances = {
@@ -867,7 +870,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
         expected_native_case_count = (
-            4 + 3 * int(manifest_row["boxed"]) + int(manifest_row["findex"])
+            4 + 3 * int(manifest_row["boxed"]) + 2 * int(manifest_row["findex"])
         )
         assert profile_row["problem_count"] == len(expected_problem_counts)
         assert profile_row["native_case_count"] == expected_native_case_count
