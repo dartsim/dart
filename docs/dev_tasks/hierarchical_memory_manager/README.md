@@ -2,12 +2,19 @@
 
 ## Current Handoff
 
-Use one branch for resume/handoff: `pr/hmm-phase45-follow-up-clean`, tracking
+Stop state for fresh handoff: use exactly one branch,
+`pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean` and based on `origin/main` after PR
 #2956 landed. Other similarly named HMM follow-up branches are historical and
 should not be used by fresh sessions unless a maintainer explicitly redirects
-the work. The last pushed checkpoint before the current compute-graph
-continuation was `5efbab2f62d` (`Skip empty rigid contact queries`).
+the work.
+
+The latest code checkpoint before this docs-only handoff is `3a646829301`
+(`Route compute graph traversal scratch through allocator`). A later commit on
+the same branch may update only these handoff docs; treat `git log` on
+`pr/hmm-phase45-follow-up-clean` as the source of truth for the exact branch
+head. Do not continue optimization work in the stopped session that produced
+this handoff.
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -19,7 +26,7 @@ git status -sb
 git log --oneline --decorate -5
 ```
 
-The latest allocator-root slice after `5efbab2f62d` closes a compute-graph
+The latest allocator-root slice closes a compute-graph
 scratch gap: allocator-aware `ComputeGraph` traversal used to allocate from the
 global heap while checking cycles, rebuilding topological order, validating,
 and scanning resource hazards. The focused regression failed before the fix
@@ -75,6 +82,10 @@ Additional checks completed for the compute-graph traversal slice:
 - `pixi run lint`
 - `pixi run build`
 - `pixi run test-unit` passed all 161 tests.
+
+No verification was run after the maintainer's 2026-06-11 stop-and-handoff
+request. The final handoff update is docs-only and intentionally skips
+`pixi run lint`, build, and tests per that request.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that

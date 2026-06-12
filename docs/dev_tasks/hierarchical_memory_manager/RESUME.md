@@ -2,13 +2,22 @@
 
 ## Authoritative Handoff (2026-06-11)
 
-Last session summary: use exactly one branch for the post-#2956 HMM handoff:
+Stop state: use exactly one branch for the post-#2956 HMM handoff,
 `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean`. Other similarly named HMM follow-up
 branches are historical/no-resume targets unless a maintainer explicitly
-redirects the work. The last pushed checkpoint before the current
-compute-graph continuation was `5efbab2f62d` (`Skip empty rigid contact
-queries`).
+redirects the work.
+
+The latest code checkpoint before this docs-only handoff is `3a646829301`
+(`Route compute graph traversal scratch through allocator`). If the branch head
+is newer, it should be a handoff-docs-only commit on top of that checkpoint.
+Treat `git log` on `pr/hmm-phase45-follow-up-clean` as authoritative for the
+exact pushed branch head.
+
+Maintainer stop request: stop current work and hand off without further
+verification. Do not run build/test/lint just to validate this handoff update.
+The next agent should resume from this branch, read the current docs, and only
+then choose the next evidence-first Phase 4/5 slice.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
@@ -86,6 +95,10 @@ Verification run for the compute-graph traversal continuation:
 - `pixi run lint`
 - `pixi run build`
 - `pixi run test-unit` passed all 161 tests.
+
+No verification was run after the 2026-06-11 maintainer stop-and-handoff
+request. The final handoff update is docs-only and intentionally skipped
+`pixi run lint`, build, and tests per that request.
 
 Fresh-session reading order:
 
