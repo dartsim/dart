@@ -136,7 +136,11 @@ stall even though the collision response looks right?" It uses a rigid `World`
 with boxed-LCP contact and shows `ContactGradientMode.ANALYTIC` stalling at the
 clamping saddle while `ContactGradientMode.COMPLEMENTARITY_AWARE` escapes. Keep
 it in the Differentiable shelf so the mode distinction is explicit, but route
-rigid users there from the workflow docs.
+rigid users there from the workflow docs. Its scene-owned capture metrics report
+target/rest height, analytic versus complementarity-aware thrust/final-height/
+loss values, height and target-error gaps, fallback status, and compact history
+summaries. Default builds with `DART_BUILD_DIFF=OFF` record a finite fallback
+payload; diff-enabled builds should show the aware-mode escape.
 
 ```bash
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
@@ -198,7 +202,10 @@ multibody-link drop/slide/pusher lane summaries, `rigid_ipc_tunnel` mirrors
 no-tunneling clearance, through-wall margin, velocity, contact, step-timing,
 and barrier-held status, and `rigid_ipc_stack_packet` mirrors clearance,
 contact, drift, height, wall-time, frame-budget, and benchmark values through
-the same schema.
+the same schema. The related `diff_drone_liftoff` route uses the schema for
+contact-gradient mode outcome, target/rest height, analytic versus aware
+thrust/final-height/loss values, height/target-error gaps, fallback status, and
+history summaries.
 
 ## Regenerating Visual Evidence
 
@@ -843,6 +850,24 @@ Evidence recorded for this slice:
   crossing `0.0`, and world time `0.24` s.
   The related route/docs drift guard reported `12 passed`; `pixi run lint`,
   bounded default `pixi run build`, and `git diff --check` passed.
+- Latest non-numbered contact-gradient metrics follow-up:
+  `diff_drone_liftoff` now exports scene-owned capture metrics for the related
+  Differentiable shelf route from `rigid_contact_solver_compare`: row identity,
+  boxed-LCP contact-gradient scope, optimized/fallback status, target/rest
+  height, playhead/current height, analytic versus complementarity-aware
+  thrust/final-height/loss values, height/target-error/thrust gaps, and compact
+  history summaries. The focused guard
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_diff_drone_liftoff_reports_contact_gradient_metrics -q`
+  reported `1 passed`. The default-build docked capture
+  `pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_diff_drone_liftoff_metrics_1781241455`
+  wrote a nonblank 960x540 screenshot, 95 PNG frames, 96 scene-metrics events,
+  row `diff_drone_liftoff`, status `fallback`, `optimized=false`, target
+  height `1.5`, rest/current/final heights about `0.19995`, target error
+  `1.30005`, zero height/thrust gaps, and top-level numeric ranges for the
+  manifest. This fallback status is expected in the default capture because
+  `DART_BUILD_DIFF=OFF`. The related route/docs drift guard reported
+  `17 passed`; `pixi run lint`, bounded default `pixi run build`, and
+  `git diff --check` passed.
 - Focused behavior tests across the packet cover the ordered rigid workflow:
   default front door, body modes, free flight, external and point loads,
   time-step sensitivity, step diagnostics, contact-scale frame-budget
@@ -858,7 +883,8 @@ Evidence recorded for this slice:
   and panel coverage. The
   differentiable contact-gradient route is covered by the `diff_drone_liftoff`
   panel test, which now checks height, thrust, loss, thrust-gradient,
-  analytic-loss histories, and the public gradient-mode labels.
+  analytic-loss histories, the public gradient-mode labels, and by the focused
+  capture-metrics test above.
 - Visual evidence: every numbered workflow row has a recorded nonblank
   960x540 `py-demo-capture --show-ui` run. The most recent follow-ups wrote a
   nonblank `rigid_joint_breakage` screenshot plus 47 PNG frames with final

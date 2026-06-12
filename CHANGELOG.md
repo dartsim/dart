@@ -197,6 +197,7 @@
     manifest. The baseline, contact-inspection, solver-comparison,
     contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
     multibody solver-family, loop-closure family, no-tunneling IPC,
+    differentiable contact-gradient route,
     step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
     it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
@@ -257,7 +258,10 @@
     diagnostics, residual-ratio histories, and scene-owned capture metrics.
   - Updated the differentiable `diff_drone_liftoff` Python `py-demos` scene so
     rigid-contact users can inspect contact-gradient mode behavior with thrust,
-    loss, thrust-gradient, analytic-loss, and height histories while the rigid
+    loss, thrust-gradient, analytic-loss, and height histories plus
+    scene-owned capture metrics for target/rest height, analytic versus
+    complementarity-aware thrust/final-height/loss values, height/target-error
+    gaps, fallback status, and compact history summaries while the rigid
     workflow routes gradient-stall debugging to the Differentiable shelf instead
     of duplicating the scene.
   - Added replay-control snapshots and focused wall-response coverage for the

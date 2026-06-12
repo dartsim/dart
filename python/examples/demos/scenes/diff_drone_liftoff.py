@@ -43,7 +43,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 # Mirror the C++ test physics. Iterations/lr match optimizeDrone(..., 400, 4.0).
 _TIME_STEP = 1e-2
@@ -114,6 +114,27 @@ def _sample_plot_values(values: list[float], limit: int = 120) -> list[float]:
         return [float(value) for value in values]
     indices = np.linspace(0, len(values) - 1, limit, dtype=int)
     return [float(values[int(index)]) for index in indices]
+
+
+def _finite_float(value: Any, default: float = 0.0) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return default
+    return result if np.isfinite(result) else default
+
+
+def _history_stats(values: Any) -> dict[str, float]:
+    samples = [_finite_float(value) for value in values or []]
+    if not samples:
+        samples = [0.0]
+    return {
+        "samples": float(len(samples)),
+        "first": samples[0],
+        "latest": samples[-1],
+        "min": min(samples),
+        "max": max(samples),
+    }
 
 
 def _optimize_drone(diff: Any, mode: Any) -> dict[str, Any]:
@@ -326,6 +347,101 @@ def build(
         [float(value) for value in naive.get("loss_history", [naive.get("loss", 0.0)])]
     )
 
+    def capture_metrics() -> dict[str, Any]:
+        current_index = playhead["i"] if aware_heights else 0
+        current_z = _finite_float(
+            aware_heights[current_index] if aware_heights else _REST_Z,
+            _REST_Z,
+        )
+        aware_final_z = _finite_float(aware.get("final_z", _REST_Z), _REST_Z)
+        naive_final_z = _finite_float(naive.get("final_z", _REST_Z), _REST_Z)
+        aware_thrust = _finite_float(aware.get("thrust", 0.0))
+        naive_thrust = _finite_float(naive.get("thrust", 0.0))
+        aware_loss = _finite_float(aware.get("loss", 0.0))
+        naive_loss = _finite_float(naive.get("loss", 0.0))
+        height_gap = aware_final_z - naive_final_z
+        aware_target_error = abs(_TARGET_Z - aware_final_z)
+        naive_target_error = abs(_TARGET_Z - naive_final_z)
+        aware_height_stats = _history_stats(aware.get("final_z_history", []))
+        if aware_height_stats["samples"] <= 1.0:
+            aware_height_stats = _history_stats(aware_heights)
+        aware_thrust_stats = _history_stats(aware.get("thrust_history", []))
+        aware_loss_stats = _history_stats(aware.get("loss_history", []))
+        aware_grad_stats = _history_stats(aware.get("thrust_grad_history", []))
+        naive_loss_stats = _history_stats(naive.get("loss_history", []))
+        status = "fallback"
+        if optimized:
+            status = (
+                "saddle_escape"
+                if aware_final_z > naive_final_z + 1e-3
+                else "optimized_no_escape"
+            )
+
+        return {
+            "row": "diff_drone_liftoff",
+            "category": "Differentiable",
+            "related_source_row": "rigid_contact_solver_compare",
+            "solver": "boxed_lcp_contact_gradient_modes",
+            "scope": "rigid_contact_gradient_saddle_escape",
+            "contact_solver_method": "BOXED_LCP",
+            "status": status,
+            "optimized": optimized,
+            "gradient_modes": ["ANALYTIC", "COMPLEMENTARITY_AWARE"],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "horizon": float(_HORIZON),
+            "max_iters": float(_MAX_ITERS),
+            "learning_rate": _LEARNING_RATE,
+            "target_z": _TARGET_Z,
+            "rest_z": _REST_Z,
+            "drone_radius": _DRONE_RADIUS,
+            "drone_mass": _DRONE_MASS,
+            "playhead_index": float(current_index),
+            "steps": float(len(aware_heights)),
+            "current_z": current_z,
+            "naive_mode": "ANALYTIC",
+            "aware_mode": "COMPLEMENTARITY_AWARE",
+            "naive_thrust": naive_thrust,
+            "naive_final_z": naive_final_z,
+            "naive_loss": naive_loss,
+            "aware_thrust": aware_thrust,
+            "aware_final_z": aware_final_z,
+            "aware_loss": aware_loss,
+            "height_gap": height_gap,
+            "aware_target_error": aware_target_error,
+            "naive_target_error": naive_target_error,
+            "target_error_gap": naive_target_error - aware_target_error,
+            "thrust_gap": aware_thrust - naive_thrust,
+            "aware_min_height": aware_height_stats["min"],
+            "aware_max_height": aware_height_stats["max"],
+            "aware_max_thrust": aware_thrust_stats["max"],
+            "aware_last_thrust_gradient": aware_grad_stats["latest"],
+            "aware_min_loss": aware_loss_stats["min"],
+            "naive_min_loss": naive_loss_stats["min"],
+            "aware_history_samples": float(len(aware_thrust_plot)),
+            "naive_history_samples": float(len(naive_loss_plot)),
+            "history": {
+                "aware_height": aware_height_stats,
+                "aware_thrust": aware_thrust_stats,
+                "aware_loss": aware_loss_stats,
+                "aware_thrust_gradient": aware_grad_stats,
+                "naive_loss": naive_loss_stats,
+            },
+            "modes": {
+                "ANALYTIC": {
+                    "thrust": naive_thrust,
+                    "final_z": naive_final_z,
+                    "loss": naive_loss,
+                    "target_error": naive_target_error,
+                },
+                "COMPLEMENTARITY_AWARE": {
+                    "thrust": aware_thrust,
+                    "final_z": aware_final_z,
+                    "loss": aware_loss,
+                    "target_error": aware_target_error,
+                },
+            },
+        }
+
     def pre_step() -> None:
         if not aware_heights:
             return
@@ -384,6 +500,7 @@ def build(
             "aware_height": float(aware.get("final_z", _REST_Z)),
             "aware_history_count": len(aware_thrust_plot),
             "naive_history_count": len(naive_loss_plot),
+            CAPTURE_METRICS_INFO_KEY: capture_metrics,
         },
     )
 

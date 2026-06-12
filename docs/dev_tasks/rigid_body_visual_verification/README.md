@@ -424,15 +424,25 @@
       not edit code. The maintainer/user then explicitly requested a
       handoff-only stop with no further verification. The interrupted analysis
       identified `diff_drone_liftoff` as the next plausible non-numbered
-      related route for scene-owned contact-gradient metrics, but that route is
-      not implemented in the current branch. No tests, lint, build, captures,
-      or `git diff --check` were run after this handoff-only docs edit.
-- [ ] Related contact-gradient metrics follow-up candidate:
+      related route for scene-owned contact-gradient metrics. No tests, lint,
+      build, captures, or `git diff --check` were run after that handoff-only
+      docs edit.
+- [x] Related contact-gradient metrics follow-up:
       `diff_drone_liftoff` already owns the Differentiable shelf route from
       `rigid_contact_solver_compare` for analytic versus
-      complementarity-aware contact-gradient behavior. If work resumes, keep it
-      non-numbered and add capture metrics only if they preserve distinct user
-      evidence beyond the numbered contact-solver comparison.
+      complementarity-aware contact-gradient behavior. It now exports
+      scene-owned capture metrics for target/rest height, playhead/current
+      height, analytic versus complementarity-aware thrust/final-height/loss
+      values, height/target-error/thrust gaps, optimized/fallback status, and
+      compact history summaries while staying non-numbered. The focused metrics
+      guard reported `1 passed`; the default-build docked 96-frame capture
+      wrote 95 PNG frames plus 96 scene-metrics events under
+      `/tmp/dart_capture_diff_drone_liftoff_metrics_1781241455`, with status
+      `fallback`, `optimized=false`, target height `1.5`, rest/current/final
+      heights about `0.19995`, target error `1.30005`, and zero height/thrust
+      gaps because `DART_BUILD_DIFF=OFF` in the default capture environment.
+      The related route/docs drift guard reported `17 passed`; `pixi run lint`,
+      bounded default `pixi run build`, and `git diff --check` passed.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -783,32 +793,31 @@ and the no-tunneling scope decision.
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
    `feature/rigid-body-gui-visual-verification`.
-2. Respect the final stop boundary: no post-handoff lint/build/diff refresh was
-   run after the explicit request to stop verification.
-3. Refresh skipped gates only if the next user/session wants to move from
-   handoff into PR-readiness or more implementation.
-4. The numbered workflow capture-metrics pass now reaches the final row, and
-   the focused `rigid_ipc_tunnel` no-tunneling route now has capture metrics.
-   The interrupted next audit pointed at `diff_drone_liftoff` as the remaining
-   contact-gradient related-shelf candidate; it is not implemented yet. Keep it
-   as a Differentiable shelf route, not a new numbered rigid row, unless a
-   distinct user question appears.
-5. Keep payloads summary-oriented: row identity, solver/contact scope,
+2. The prior stop boundary was superseded by the continuation that implemented
+   the `diff_drone_liftoff` contact-gradient metrics hook. Its focused guard,
+   docked capture, lint, bounded build, and whitespace check are recorded
+   above.
+3. The numbered workflow capture-metrics pass now reaches the final row, and
+   the focused `rigid_ipc_tunnel` no-tunneling route plus the
+   `diff_drone_liftoff` contact-gradient route now have capture metrics. Keep
+   both as related shelf routes, not new numbered rigid rows, unless a distinct
+   user question appears.
+4. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-6. The branch was pushed for handoff only because the maintainer/user explicitly
+5. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-7. Refresh validation as needed, then use the local
+6. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-8. Keep related-evidence routes synchronized between the runner-owned
+7. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-9. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-10. Keep fuller articulated arm/gripper manipulation deferred until the public
-    API/runtime can support it as an interactive verifier. The current audit
-    found rigid-body joints are not IPC-supported, multibody link contacts lack
-    material/friction controls, and scripted IPC two-jaw pinch settings that
-    actually carry an object run at hundreds of milliseconds per step.
+9. Keep fuller articulated arm/gripper manipulation deferred until the public
+   API/runtime can support it as an interactive verifier. The current audit
+   found rigid-body joints are not IPC-supported, multibody link contacts lack
+   material/friction controls, and scripted IPC two-jaw pinch settings that
+   actually carry an object run at hundreds of milliseconds per step.

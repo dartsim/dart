@@ -1261,6 +1261,85 @@ def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
     ).all()
 
 
+def test_diff_drone_liftoff_reports_contact_gradient_metrics() -> None:
+    import numpy as np
+
+    _require_simulation_symbols("World")
+
+    from examples.demos.scenes.diff_drone_liftoff import SCENE, build
+
+    assert SCENE.category == "Differentiable"
+    assert SCENE.id == "diff_drone_liftoff"
+
+    setup = build()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+
+    for _ in range(min(4, int(setup.info["steps"]))):
+        setup.pre_step()
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "diff_drone_liftoff"
+    assert capture_metrics["category"] == "Differentiable"
+    assert capture_metrics["related_source_row"] == "rigid_contact_solver_compare"
+    assert capture_metrics["solver"] == "boxed_lcp_contact_gradient_modes"
+    assert capture_metrics["scope"] == "rigid_contact_gradient_saddle_escape"
+    assert capture_metrics["contact_solver_method"] == "BOXED_LCP"
+    assert capture_metrics["gradient_modes"] == [
+        "ANALYTIC",
+        "COMPLEMENTARITY_AWARE",
+    ]
+    assert capture_metrics["optimized"] is setup.info["optimized"]
+    assert capture_metrics["time_step_ms"] == pytest.approx(10.0)
+    assert capture_metrics["horizon"] == pytest.approx(150.0)
+    assert capture_metrics["max_iters"] == pytest.approx(400.0)
+    assert capture_metrics["learning_rate"] == pytest.approx(4.0)
+    assert capture_metrics["target_z"] == pytest.approx(1.5)
+    assert capture_metrics["steps"] == pytest.approx(float(setup.info["steps"]))
+    assert capture_metrics["aware_history_samples"] >= 1.0
+    assert capture_metrics["naive_history_samples"] >= 1.0
+    assert capture_metrics["history"]["aware_height"]["samples"] >= 1.0
+    assert capture_metrics["history"]["aware_thrust_gradient"]["samples"] >= 1.0
+    assert capture_metrics["modes"]["ANALYTIC"]["final_z"] == pytest.approx(
+        capture_metrics["naive_final_z"]
+    )
+    assert capture_metrics["modes"]["COMPLEMENTARITY_AWARE"][
+        "final_z"
+    ] == pytest.approx(capture_metrics["aware_final_z"])
+    assert np.isfinite(
+        [
+            float(capture_metrics["current_z"]),
+            float(capture_metrics["naive_thrust"]),
+            float(capture_metrics["naive_final_z"]),
+            float(capture_metrics["naive_loss"]),
+            float(capture_metrics["aware_thrust"]),
+            float(capture_metrics["aware_final_z"]),
+            float(capture_metrics["aware_loss"]),
+            float(capture_metrics["height_gap"]),
+            float(capture_metrics["aware_target_error"]),
+            float(capture_metrics["naive_target_error"]),
+            float(capture_metrics["target_error_gap"]),
+            float(capture_metrics["thrust_gap"]),
+            float(capture_metrics["aware_min_height"]),
+            float(capture_metrics["aware_max_height"]),
+            float(capture_metrics["aware_max_thrust"]),
+            float(capture_metrics["aware_last_thrust_gradient"]),
+            float(capture_metrics["aware_min_loss"]),
+            float(capture_metrics["naive_min_loss"]),
+        ]
+    ).all()
+
+    if setup.info["optimized"]:
+        assert capture_metrics["status"] == "saddle_escape"
+        assert capture_metrics["aware_final_z"] > capture_metrics["naive_final_z"]
+        assert capture_metrics["height_gap"] > 0.0
+        assert capture_metrics["target_error_gap"] > 0.0
+        assert capture_metrics["aware_thrust"] >= capture_metrics["naive_thrust"]
+    else:
+        assert capture_metrics["status"] == "fallback"
+        assert capture_metrics["height_gap"] == pytest.approx(0.0)
+        assert capture_metrics["thrust_gap"] == pytest.approx(0.0)
+
+
 def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
     import numpy as np
 

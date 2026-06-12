@@ -702,14 +702,19 @@ per-key presence counts, and numeric ranges for top-level metrics. The step
 diagnostics and contact-scale budget rows use that path for profiling, memory,
 contact, and frame-budget evidence; the IPC no-tunneling route uses it for
 clearance and through-wall margin evidence; and the stack packet uses it for
-clearance, drift, wall time, and benchmark metadata.
+clearance, drift, wall time, and benchmark metadata. The differentiable
+contact-gradient route uses it for target/rest height, analytic versus
+complementarity-aware thrust/final-height/loss values, height and target-error
+gaps, fallback status, and compact history summaries.
 
 When forward rigid contact looks correct but a differentiable optimization is
 stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses
 the same rigid `World` contact-gradient modes to show `ANALYTIC` stalling at a
 clamping contact while `COMPLEMENTARITY_AWARE` escapes, with thrust, loss,
-gradient, and height histories. In the viewer, the `Rigid Contact Solver
-Compare` row exposes it as a `Related shelf` route:
+gradient, and height histories. Its capture metrics report the optimized
+mode outcome when diff bindings are enabled and a finite fallback payload when
+the default build has `DART_BUILD_DIFF=OFF`. In the viewer, the `Rigid Contact
+Solver Compare` row exposes it as a `Related shelf` route:
 
 ```bash
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \

@@ -1,10 +1,72 @@
 # Resume: Rigid-Body Visual Verification
 
-## Critical Stop Handoff - 2026-06-11
+## Current Handoff Snapshot - 2026-06-11 Continuation
 
-This section supersedes older "current local slice" text below. The user
-explicitly requested a handoff-only stop for all current work with no further
-verification.
+The post-stop continuation resumed from pushed handoff commit `377e55ce5cb`
+and implemented the remaining non-numbered related-shelf metrics candidate:
+`diff_drone_liftoff`. This is a Differentiable shelf route from
+`rigid_contact_solver_compare`, not a new numbered World Rigid Body row.
+
+Current local slice: `diff_drone_liftoff` related-shelf capture metrics. The
+checkpoint touches:
+
+- `python/examples/demos/scenes/diff_drone_liftoff.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `diff_drone_liftoff.py` now imports `CAPTURE_METRICS_INFO_KEY` and registers
+  `SceneSetup.info["capture_metrics"]`.
+- The payload exports row identity, category, related source row, boxed-LCP
+  contact-gradient scope, optimized/fallback status, gradient modes, time step,
+  horizon, iteration/learning-rate constants, target/rest height,
+  playhead/current height, analytic and complementarity-aware
+  thrust/final-height/loss values, height/target-error/thrust gaps, compact
+  history summaries, and top-level numeric fields for manifest ranges.
+- `python/tests/integration/test_demos_cycle.py::test_diff_drone_liftoff_reports_contact_gradient_metrics`
+  asserts the hook is callable, mirrors scene state, exports finite
+  manifest-friendly fields, verifies aware-mode escape when diff bindings are
+  enabled, and accepts the explicit fallback payload when the default build has
+  `DART_BUILD_DIFF=OFF`.
+
+Validation collected so far for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_diff_drone_liftoff_reports_contact_gradient_metrics -q`
+  reported `1 passed`.
+- `pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_diff_drone_liftoff_metrics_1781241455`
+  wrote a nonblank docked capture with 95 PNG frames, 96 scene-metrics events,
+  and screenshot
+  `/tmp/dart_capture_diff_drone_liftoff_metrics_1781241455/diff_drone_liftoff.png`.
+- Latest captured payload details from the default build: row
+  `diff_drone_liftoff`, solver `boxed_lcp_contact_gradient_modes`, scope
+  `rigid_contact_gradient_saddle_escape`, status `fallback`, `optimized=false`,
+  target height `1.5`, rest/current/final heights about `0.19995`, target error
+  `1.30005`, zero height/thrust gaps, horizon `150`, max iterations `400`,
+  learning rate `4.0`, and top-level numeric ranges for the manifest. The
+  fallback status is expected because the default capture was configured with
+  `DART_BUILD_DIFF=OFF`.
+- The focused related-route/docs guard with row ordering, viewer-title
+  numbering, sidecar/README/capture-command drift checks,
+  no-tunneling/stack-packet metrics, contact-gradient metrics, and panel
+  related-route coverage reported `17 passed`.
+- `pixi run lint` passed.
+- Bounded default `pixi run build` passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
+
+Future pushes, PR creation, comments, review replies, CI retriggers, merges, or
+other GitHub mutations require fresh explicit maintainer/user approval.
+
+## Historical Critical Stop Handoff - 2026-06-11
+
+This section records the prior handoff-only stop before the continuation above.
+The user explicitly requested a handoff-only stop for all current work with no
+further verification.
 
 State at the start of this handoff edit:
 
@@ -30,11 +92,11 @@ What is complete in the local checkpoint:
   drift guard `12 passed`, `pixi run lint` passed, bounded `pixi run build`
   passed with `ninja: no work to do`, and `git diff --check` passed.
 
-What was interrupted and is not implemented:
+What was interrupted at that time:
 
 - The next continuation only inspected the remaining related-shelf gap. It did
   not edit code.
-- The likely next candidate is `diff_drone_liftoff`, reached from
+- The likely next candidate was `diff_drone_liftoff`, reached from
   `rigid_contact_solver_compare` as the Differentiable shelf contact-gradient
   route.
 - Keep this route non-numbered. Do not add another numbered rigid row unless a
@@ -59,17 +121,16 @@ Context gathered for the interrupted `diff_drone_liftoff` audit:
   analytic loss.
 - No `CAPTURE_METRICS_INFO_KEY` hook exists in that scene yet.
 
-If a future session implements the contact-gradient metrics candidate, the
-likely payload should stay summary-oriented: row id, scope, status, time step,
-horizon, learning rate, target/rest height, playhead/current height,
-ANALYTIC versus COMPLEMENTARITY_AWARE thrust/final-height/loss values, height
-gap, target error, thrust gap, compact history sample counts/ranges, and
-finite top-level numeric fields for manifest summaries. Add focused assertions
-only after the user permits implementation and verification.
+The continuation used this guidance for the contact-gradient metrics payload:
+keep it summary-oriented with row id, scope, status, time step, horizon,
+learning rate, target/rest height, playhead/current height, ANALYTIC versus
+COMPLEMENTARITY_AWARE thrust/final-height/loss values, height gap, target
+error, thrust gap, compact history sample counts/ranges, and finite top-level
+numeric fields for manifest summaries.
 
-No tests, lint, build, captures, or `git diff --check` were run after this
-handoff-only docs edit. The only expected changes after this section are the
-dev-task handoff docs and the commit/push requested by the user.
+No tests, lint, build, captures, or `git diff --check` were run after that
+handoff-only docs edit. The continuation above supersedes the old "not
+implemented" state.
 
 ## Current Handoff Snapshot
 
@@ -891,11 +952,9 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 ## Immediate Next Step
 
 Use the current handoff snapshot at the top of this file for live branch state.
-After the handoff docs commit is pushed, stop. If work resumes later, confirm
-branch state first, then either refresh validation for PR-readiness or continue
-the non-numbered related-shelf audit. The only concrete next implementation
-candidate discovered before the stop request was `diff_drone_liftoff`
-contact-gradient capture metrics, and it has not been implemented.
+After this local contact-gradient metrics slice is committed, confirm the branch
+is clean and ahead of origin by the local commit. Do not push or open a PR
+without fresh explicit approval.
 
 ## Context That Would Be Lost
 
@@ -963,8 +1022,9 @@ contact-gradient capture metrics, and it has not been implemented.
   `rigid_solver_compare`.
 - The interrupted post-`rigid_ipc_tunnel` audit identified
   `diff_drone_liftoff` as the next possible related-shelf metrics target for
-  contact-gradient evidence. It should stay in the Differentiable shelf and is
-  not implemented in this branch as of the handoff-only stop.
+  contact-gradient evidence. It now has capture metrics, should stay in the
+  Differentiable shelf, and should not become a numbered rigid row unless a
+  distinct user question appears.
 - Rigid-body joint motor visuals should stay deferred until that API behavior is
   stable enough to support bounded visual assertions. The current motor/limit
   row uses World multibody joints instead.

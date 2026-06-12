@@ -72,8 +72,8 @@
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
   link center-of-mass offsets, link-origin Jacobian mapping, multibody
-  solver-family routing, loop-closure family selection, no-tunneling IPC, and
-  stack-packet physics/runtime fields in
+  solver-family routing, loop-closure family selection, no-tunneling IPC,
+  contact-gradient route outcome, and stack-packet physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -86,14 +86,37 @@
 
 ## Testing
 
-- Handoff-only stop update:
-  - The maintainer/user explicitly requested no further verification after the
-    `rigid_ipc_tunnel` checkpoint and asked for handoff docs only.
-  - This docs-only handoff records the branch state and interrupted
-    `diff_drone_liftoff` related-shelf audit; it does not implement
-    contact-gradient capture metrics.
-  - Not run after this handoff edit: tests, lint, build, captures, or
-    `git diff --check`.
+- Latest contact-gradient related-shelf capture-metrics follow-up:
+  - `python/examples/demos/scenes/diff_drone_liftoff.py` now publishes
+    scene-owned capture metrics for the non-numbered Differentiable shelf route
+    from `rigid_contact_solver_compare`: row identity, boxed-LCP
+    contact-gradient scope, optimized/fallback status, target/rest height,
+    playhead/current height, analytic versus complementarity-aware
+    thrust/final-height/loss values, height/target-error/thrust gaps, and
+    compact history summaries.
+  - `python/tests/integration/test_demos_cycle.py::test_diff_drone_liftoff_reports_contact_gradient_metrics`
+    asserts the capture hook mirrors the scene state, exposes finite
+    manifest-friendly metrics, and verifies aware-mode escape when diff
+    bindings are enabled while accepting the explicit fallback payload when
+    `DART_BUILD_DIFF=OFF`.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_diff_drone_liftoff_reports_contact_gradient_metrics -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_diff_drone_liftoff_metrics_1781241455`
+    - nonblank docked capture, 95 PNG frames, 96 scene-metrics events, status
+      `fallback`, `optimized=false`, target height `1.5`, rest/current/final
+      heights about `0.19995`, target error `1.30005`, and zero height/thrust
+      gaps because the default build has `DART_BUILD_DIFF=OFF`
+  - Focused related-route/docs drift guard with row ordering, viewer-title
+    numbering, sidecar/README/capture-command drift checks,
+    no-tunneling/stack-packet metrics, contact-gradient metrics, and panel
+    related-route coverage
+    - `17 passed`
+  - `pixi run lint`
+    - passed
+  - bounded default `pixi run build`
+    - passed, `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest no-tunneling related-shelf capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_ipc_tunnel.py` now publishes
     scene-owned capture metrics for the non-numbered focused Rigid IPC
