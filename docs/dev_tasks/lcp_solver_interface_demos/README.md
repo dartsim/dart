@@ -1,5 +1,99 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Boxed Block Projection Active-Set Fast Paths
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint:
+  `Fast path boxed active-set block projection LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 54 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BlockedJacobiSolver` and `BgsSolver` now extend their non-warm-started
+  exact fast-path gateways from strict-interior standard rows to boxed rows
+  without friction-index coupling.
+- The boxed shortcuts use the shared projected-active-set exact solve and are
+  accepted only when the final boxed candidate passes solution validation.
+- Explicit custom block options still build and validate block structure before
+  any exact shortcut is accepted.
+- Warm-started solves and friction-index rows stay on the existing block
+  iteration paths.
+- Unit coverage now checks lower/upper/free boxed BlockedJacobi and BGS
+  packets that solve in zero iterations.
+- The checked LCP performance profile CSVs, Python demo metadata, projection
+  background docs, changelog, Python metadata assertions, and this dev-task
+  hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Boxed/(BlockedJacobi|BGS)/`.
+- `build/block_projection_boxed_projected_active_set_after.json` reported:
+  - `BlockedJacobi` 12 rows: `1764.970ns`
+  - `BlockedJacobi` 24 rows: `4257.723ns`
+  - `BlockedJacobi` 48 rows: `18685.986ns`
+  - `BGS` 12 rows: `1621.035ns`
+  - `BGS` 24 rows: `6811.200ns`
+  - `BGS` 48 rows: `17464.305ns`
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Boxed: `BlockedJacobi` average ratio `1.58` and `BGS` average ratio `1.66`,
+  no longer high-ratio boxed targets.
+- Current Boxed high-ratio targets are `BoxedSemiSmoothNewton`, `Sap`, and
+  `SubspaceMinimization`.
+- FrictionIndex high-ratio targets remain `BlockedJacobi`, `BGS`,
+  `ShockPropagation`, `Staggering`, `SubspaceMinimization`, `NNCG`,
+  `BoxedSemiSmoothNewton`, `Dantzig`, and `Admm`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Boxed/(BlockedJacobi|BGS)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/block_projection_boxed_projected_active_set_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run build
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run lint
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The next natural work is reducing Boxed
+   `BoxedSemiSmoothNewton`/`Sap` or `SubspaceMinimization`, or switching to the
+   larger FrictionIndex high-ratio rows.
+2. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Boxed NNCG Projected Active-Set Fast Path
 
 Current branch state:

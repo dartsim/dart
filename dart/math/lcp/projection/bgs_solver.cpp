@@ -345,11 +345,21 @@ LcpResult BgsSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
-  auto tryStrictInteriorFastPath = [&]() -> bool {
+  auto tryExactFastPath = [&]() -> bool {
     Eigen::VectorXd fastW;
-    if (options.warmStart || n > kMaxStrictInteriorFastPathSize
-        || !detail::trySolveStrictInteriorStandardLcp(
-            problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+    bool exactFastPath = false;
+    if (!options.warmStart && n <= kMaxStrictInteriorFastPathSize) {
+      const double validationTolerance = std::max(absTol, compTolOpt);
+      if (problem.isStandardLcp(absTol)) {
+        exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.isBoxedLcp()) {
+        exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+            problem, absTol, validationTolerance, x, &fastW);
+      }
+    }
+
+    if (!exactFastPath) {
       return false;
     }
 
@@ -373,7 +383,7 @@ LcpResult BgsSolver::solve(
     return true;
   };
 
-  if (options.customOptions == nullptr && tryStrictInteriorFastPath()) {
+  if (options.customOptions == nullptr && tryExactFastPath()) {
     return result;
   }
 
@@ -384,7 +394,7 @@ LcpResult BgsSolver::solve(
     return result;
   }
 
-  if (tryStrictInteriorFastPath()) {
+  if (tryExactFastPath()) {
     return result;
   }
 

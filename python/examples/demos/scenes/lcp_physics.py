@@ -244,12 +244,12 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
             "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
-            "Dantzig/Admm/Nncg/ShockPropagation close"
+            "BlockedJacobi/BGS/Dantzig/Admm/Nncg/ShockPropagation close"
         ),
-        "current_laggards": "BlockedJacobi/BGS, BoxedSemiSmoothNewton/Sap",
+        "current_laggards": "BoxedSemiSmoothNewton/Sap, SubspaceMinimization",
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
-            "trail active-bound rows; block, Newton, and SAP routes remain "
+            "trail active-bound rows; Newton, SAP, and subspace routes remain "
             "tuning targets."
         ),
     },

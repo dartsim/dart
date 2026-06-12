@@ -1,5 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Boxed Block Projection Active-Set Fast Paths
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path boxed active-set block projection LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 54 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BlockedJacobiSolver` and `BgsSolver` now try the shared
+  projected-active-set boxed-LCP exact solve for non-warm-started boxed rows
+  without friction-index coupling through their high-level `LcpProblem`
+  interfaces.
+- Explicit custom block options still build and validate block structure before
+  any exact shortcut is accepted.
+- Warm-started solves and friction-index rows stay on the existing block
+  iteration paths.
+- Unit coverage now checks lower/upper/free boxed BlockedJacobi and BGS packets
+  that solve in zero iterations.
+- The Python LCP demo profile summary now removes `BlockedJacobi` and `BGS`
+  from Boxed laggards and lists them with the close boxed exact-path rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Boxed/(BlockedJacobi|BGS)/` wrote
+  `build/block_projection_boxed_projected_active_set_after.json`.
+- Focused BlockedJacobi rows reported `1764.970ns`, `4257.723ns`, and
+  `18685.986ns` for 12, 24, and 48 row packets.
+- Focused BGS rows reported `1621.035ns`, `6811.200ns`, and `17464.305ns` for
+  12, 24, and 48 row packets.
+- All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Regenerated full profile reports Boxed `BlockedJacobi` average ratio `1.58`
+  and Boxed `BGS` average ratio `1.66`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/block_projection_boxed_projected_active_set_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `BoxedSemiSmoothNewton`, `Sap`, and `SubspaceMinimization`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`,
+  `SubspaceMinimization`, `NNCG`, `BoxedSemiSmoothNewton`, `Dantzig`, and
+  `Admm`.
+- Standard: moderate `Dantzig`, `Baraff`, `Apgd`, `BGS`, `Lemke`,
+  `MinimumMapNewton`, `BlockedJacobi`, and `NNCG`.
+
 ## Current Reality - 2026-06-12 Boxed NNCG Projected Active-Set Fast Path
 
 This section is the latest state; older sections below are historical

@@ -349,7 +349,10 @@ solver.solve(problem, x, options);
 > Small and medium strictly interior standard LCPs without a warm start first
 > try the shared validated linear-solve fast path. Larger standard rows stay on
 > the existing BGS sweep when the dense linear solve would be slower than the
-> block iteration path.
+> block iteration path. Boxed LCPs without friction-index coupling use the
+> shared projected-active-set exact solve under the same high-level gateway for
+> BGS and blocked Jacobi, while warm-started, custom-block-validated, and
+> friction-index rows retain the block iteration path.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
 on standard, boxed, and friction-index fixtures with full-block, 3-row block,
