@@ -1060,14 +1060,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     ]
     assert "Tgs/Pgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]
     assert "Admm" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "Dantzig" in profile_by_surface["Boxed"]["current_leaders"]
     assert "ShockPropagation" in profile_by_surface["Boxed"]["current_leaders"]
     assert "SymmetricPsor" in profile_by_surface["Boxed"]["current_leaders"]
     assert "Admm" not in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Dantzig" not in profile_by_surface["Boxed"]["current_laggards"]
     assert (
         "ShockPropagation"
         not in profile_by_surface["Boxed"]["current_laggards"]
     )
-    assert "Dantzig" in profile_by_surface["Boxed"]["current_laggards"]
     assert "Nncg" in profile_by_surface["Boxed"]["current_laggards"]
     assert "BlockedJacobi" in profile_by_surface["Boxed"]["current_laggards"]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][

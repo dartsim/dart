@@ -1,5 +1,81 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Boxed Dantzig Projected Active-Set Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path boxed active-set Dantzig LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 52 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `DantzigSolver` now tries the shared projected-active-set boxed-LCP exact
+  solve for non-warm-started boxed rows without friction-index coupling through
+  its high-level `LcpProblem` interface.
+- Warm-started solves and low-level matrix/scratch calls stay on the
+  ODE-derived pivoting path, and friction-index rows stay on the existing
+  pivot/refinement route.
+- Unit coverage now checks a lower/upper/free boxed Dantzig packet that solves
+  in zero iterations.
+- The Python LCP demo profile summary now removes `Dantzig` from Boxed laggards
+  and lists it with the close boxed exact-path rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Boxed/Dantzig/` wrote
+  `build/dantzig_boxed_projected_active_set_after.json` with `1281.450ns`,
+  `3993.311ns`, and `14533.545ns` for 12, 24, and 48 row packets.
+- All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Regenerated full profile reports Boxed `Dantzig` average ratio `1.46`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/dantzig_boxed_projected_active_set_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `NNCG`, `BlockedJacobi`, `BGS`, `BoxedSemiSmoothNewton`, `Sap`, and
+  `SubspaceMinimization`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`,
+  `SubspaceMinimization`, `NNCG`, `Dantzig`, `BoxedSemiSmoothNewton`, and
+  `Admm`.
+- Standard: moderate `InteriorPoint`, `Dantzig`, `FischerBurmeisterNewton`,
+  `PenalizedFischerBurmeisterNewton`, `Lemke`, `BoxedSemiSmoothNewton`, and
+  `Sap`.
+
 ## Current Reality - 2026-06-12 Boxed ShockPropagation Projected Active-Set Fast Path
 
 This section is the latest state; older sections below are historical

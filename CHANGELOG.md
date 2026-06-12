@@ -1522,6 +1522,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     without friction-index coupling using the shared projected-active-set solve,
     while preserving warm-started iteration, friction-index blocks, and invalid
     custom block/layer rejection.
+  - Extended `DantzigSolver`'s validated exact fast path to boxed LCPs without
+    friction-index coupling through the shared projected-active-set solve,
+    preserving warm-started and low-level scratch calls on the ODE-derived
+    pivoting path.
   - Added a validated projected-active-set boxed-LCP exact solve and wired it
     into default non-warm-started `AdmmSolver` calls without friction-index
     coupling, preserving ADMM's iterative path for warm starts, custom options,

@@ -92,9 +92,19 @@ LcpResult DantzigSolver::solve(
                              : mDefaultOptions.complementarityTolerance;
 
   Eigen::VectorXd fastW;
-  if (problem.size() > 0 && !options.warmStart
-      && detail::trySolveStrictInteriorStandardLcp(
-          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+  bool exactFastPath = false;
+  if (problem.size() > 0 && !options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTol);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
     Eigen::VectorXd loEffFast;
     Eigen::VectorXd hiEffFast;
     std::string boundsMessage;
