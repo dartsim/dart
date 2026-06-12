@@ -186,7 +186,7 @@ LcpResult InteriorPointSolver::solve(
 
   Eigen::VectorXd fastW;
   if (!options.warmStart
-      && detail::trySolveStrictInteriorStandardLcp(
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
     Eigen::VectorXd loEff = Eigen::VectorXd::Zero(n);
     Eigen::VectorXd hiEff

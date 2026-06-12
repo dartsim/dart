@@ -403,18 +403,14 @@ inline bool validateSolution(
   return true;
 }
 
-inline bool trySolveStrictInteriorStandardLcp(
+inline bool acceptStrictInteriorStandardCandidate(
     const LcpProblem& problem,
     double interiorTolerance,
     double validationTolerance,
+    Eigen::VectorXd candidate,
     Eigen::VectorXd& x,
-    Eigen::VectorXd* wOut = nullptr)
+    Eigen::VectorXd* wOut)
 {
-  if (!problem.isStandardLcp(interiorTolerance)) {
-    return false;
-  }
-
-  Eigen::VectorXd candidate = problem.A.partialPivLu().solve(problem.b);
   if (!candidate.allFinite()) {
     return false;
   }
@@ -435,6 +431,58 @@ inline bool trySolveStrictInteriorStandardLcp(
     *wOut = std::move(w);
   }
   return true;
+}
+
+inline bool trySolveStrictInteriorStandardLcp(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isStandardLcp(interiorTolerance)) {
+    return false;
+  }
+
+  return acceptStrictInteriorStandardCandidate(
+      problem,
+      interiorTolerance,
+      validationTolerance,
+      problem.A.partialPivLu().solve(problem.b),
+      x,
+      wOut);
+}
+
+inline bool trySolveStrictInteriorStandardLcpLltFirst(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isStandardLcp(interiorTolerance)) {
+    return false;
+  }
+
+  const Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+  if (llt.info() == Eigen::Success
+      && acceptStrictInteriorStandardCandidate(
+          problem,
+          interiorTolerance,
+          validationTolerance,
+          llt.solve(problem.b),
+          x,
+          wOut)) {
+    return true;
+  }
+
+  return acceptStrictInteriorStandardCandidate(
+      problem,
+      interiorTolerance,
+      validationTolerance,
+      problem.A.partialPivLu().solve(problem.b),
+      x,
+      wOut);
 }
 
 inline bool trySolveProjectedActiveSetBoxedLcp(

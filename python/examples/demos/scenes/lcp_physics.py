@@ -224,22 +224,23 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Tgs/Pgs/ShockPropagation/Admm and strict-interior "
-            "pivot/barrier/Newton/projection/block rows"
+            "Tgs/Pgs/Admm/ShockPropagation and strict-interior "
+            "FischerBurmeisterNewton/PenalizedFischerBurmeisterNewton/"
+            "MinimumMapNewton/InteriorPoint/BoxedSemiSmoothNewton rows"
         ),
         "current_laggards": (
-            "InteriorPoint is above 2x and "
-            "PenalizedFischerBurmeisterNewton is around 2x; "
-            "FischerBurmeisterNewton, MinimumMapNewton, "
-            "BoxedSemiSmoothNewton, MPRGP, Jacobi, Apgd, Sap, and "
-            "RedBlackGaussSeidel are the next moderate-ratio rows"
+            "No Standard solver average is above 2x; NNCG is around 2x, "
+            "with BGS, BlockedJacobi, SubspaceMinimization, Baraff, Lemke, "
+            "Dantzig, Apgd, Jacobi, RedBlackGaussSeidel, Sap, and "
+            "SymmetricPsor next"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
             "Dantzig, Newton-family including boxed semi-smooth, projection, "
             "MPRGP, ADMM, APGD/Jacobi, ShockPropagation, and small/medium "
-            "block hot rows; remaining standard targets are moderate-ratio "
-            "iterative rows."
+            "block hot rows. The LLT-first Newton/interior-point exact helper "
+            "moves those dense standard rows below the former above-2x band; "
+            "remaining targets are moderate-ratio iterative projection rows."
         ),
     },
     {
@@ -247,14 +248,12 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi; BoxedSemiSmoothNewton/Dantzig stay near the "
-            "leading packet"
+            "Tgs/Pgs/Jacobi; Dantzig stays near the leading packet"
         ),
         "current_laggards": (
-            "No Boxed solver average is above 2x; RedBlackGaussSeidel and "
-            "ShockPropagation are the largest rows, with BGS, Apgd, "
-            "SymmetricPsor, Admm, BlockedJacobi, NNCG, and "
-            "SubspaceMinimization next"
+            "No Boxed solver average is above 2x; BGS, ShockPropagation, "
+            "BoxedSemiSmoothNewton, Sap, NNCG, Apgd, SubspaceMinimization, "
+            "Admm, SymmetricPsor, and BlockedJacobi are the largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -270,13 +269,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
             "Tgs/Pgs/Staggering/Jacobi/RedBlackGaussSeidel/Dantzig/"
-            "SymmetricPsor/BoxedSemiSmoothNewton/BlockedJacobi are the "
-            "current leading group"
+            "BoxedSemiSmoothNewton/BlockedJacobi are the current leading "
+            "group"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 2x; ShockPropagation "
-            "is the largest remaining row, followed by Admm, Sap, BGS, Apgd, "
-            "NNCG, and SubspaceMinimization"
+            "No FrictionIndex solver average is above 2x; Admm, Apgd, "
+            "ShockPropagation, BGS, Sap, NNCG, SymmetricPsor, and "
+            "SubspaceMinimization are the largest remaining rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "

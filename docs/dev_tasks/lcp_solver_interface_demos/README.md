@@ -1,5 +1,143 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Standard LLT Exact Paths
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `a1f83f6fe43 Extend Jacobi and RedBlackGaussSeidel friction exact paths`.
+- Current checkpoint target:
+  `Use LLT for standard Newton exact paths`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 68 commits, with the current
+  Standard LLT slice uncommitted. After this checkpoint is committed, it should
+  be ahead by 69 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes, PR creation, and
+  other GitHub mutations require explicit maintainer/user approval.
+
+Current uncommitted implementation slice:
+
+- `dart/math/lcp/lcp_validation.hpp` now keeps the default
+  `trySolveStrictInteriorStandardLcp(...)` on the prior LU-based path and adds
+  an LLT-first variant, `trySolveStrictInteriorStandardLcpLltFirst(...)`, with
+  the same validated acceptance checks and LU fallback.
+- The broad shared-helper LLT attempt was intentionally narrowed because it
+  helped dense Newton/interior-point Standard rows but risked changing
+  low-overhead exact-path users. The default helper therefore remains the
+  conservative LU helper.
+- The dense Standard fast paths in the following solvers call the new LLT-first
+  helper:
+  `InteriorPointSolver`, `FischerBurmeisterNewtonSolver`,
+  `MinimumMapNewtonSolver`, `PenalizedFischerBurmeisterNewtonSolver`, and
+  `BoxedSemiSmoothNewtonSolver`.
+- The regenerated profile CSVs, Python demo summary strings, Python metadata
+  assertions, projection-method docs, changelog, and this hand-off were
+  refreshed.
+
+Files changed by this checkpoint:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/lcp_validation.hpp`
+- `dart/math/lcp/other/interior_point_solver.cpp`
+- `dart/math/lcp/newton/fischer_burmeister_newton_solver.cpp`
+- `dart/math/lcp/newton/minimum_map_newton_solver.cpp`
+- `dart/math/lcp/newton/penalized_fischer_burmeister_newton_solver.cpp`
+- `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp`
+- `docs/background/lcp/04_projection-methods.md`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+Profile evidence gathered before final verification:
+
+- Baseline before the Standard LLT work:
+  `build/standard_interior_penalized_baseline.json`.
+- Broad shared-helper LLT probe, not the final narrowed implementation:
+  `build/standard_llt_exact_probe.json`.
+- Accepted narrowed focused probe:
+  `build/standard_newton_llt_exact_probe.json`.
+- The full profile was regenerated into `build/lcp_profile_full.json` and
+  `docs/background/lcp/figures/`.
+
+Focused Standard timing evidence from the narrowed probe:
+
+- `InteriorPoint/24`: `3219.35ns -> 2450.15ns`.
+- `InteriorPoint/48`: `13020.26ns -> 10452.61ns`.
+- `InteriorPoint/96`: `81475.85ns -> 46214.64ns`.
+- `PenalizedFischerBurmeisterNewton/24`: `3268.03ns -> 2546.23ns`.
+- `PenalizedFischerBurmeisterNewton/96`: `66040.66ns -> 47382.26ns`.
+- `FischerBurmeisterNewton/24`: `3278.38ns -> 2452.76ns`.
+- `FischerBurmeisterNewton/96`: `66017.55ns -> 47803.73ns`.
+- `MinimumMapNewton/24`: `3352.45ns -> 2467.01ns`.
+- `MinimumMapNewton/96`: `67322.47ns -> 46319.16ns`.
+
+Latest regenerated profile highlights:
+
+- Standard high rows after the LLT-first narrowing:
+  `NNCG 2.00`, `BGS 1.97`, `SubspaceMinimization 1.62`,
+  `Baraff 1.58`, `Lemke 1.56`, `Dantzig 1.49`, `Apgd 1.46`,
+  `Jacobi 1.46`, `RedBlackGaussSeidel 1.46`, and `Sap 1.43`.
+- Standard dense Newton/interior-point rows are now around:
+  `FischerBurmeisterNewton 1.17`, `InteriorPoint 1.17`,
+  `PenalizedFischerBurmeisterNewton 1.17`,
+  `BoxedSemiSmoothNewton 1.16`, and `MinimumMapNewton 1.25`.
+- Boxed high rows:
+  `BGS 1.70`, `ShockPropagation 1.67`,
+  `BoxedSemiSmoothNewton 1.65`, `Sap 1.65`, `NNCG 1.63`,
+  and `Apgd 1.62`.
+- FrictionIndex high rows:
+  `Admm 1.64`, `Apgd 1.63`, `ShockPropagation 1.62`,
+  `BGS 1.60`, `Sap 1.50`, and `NNCG 1.47`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+columns.
+
+Immediate resume guidance for a fresh session:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, review the Standard LLT slice and
+   checkpoint it with `Use LLT for standard Newton exact paths`.
+3. If this checkpoint is already committed, continue with Standard `NNCG 2.00`,
+   Standard `BGS 1.97`, Boxed `BGS 1.70`, Boxed `ShockPropagation 1.67`, or
+   FrictionIndex `Admm 1.64`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Jacobi/RBGS FrictionIndex Exact Paths
 
 This is the latest hand-off state. Sections below are historical checkpoints

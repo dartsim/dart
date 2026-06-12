@@ -320,7 +320,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
   if (!options.warmStart) {
     const double validationTolerance = std::max(absTol, compTol);
     if (problem.isStandardLcp(absTol)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
     } else if (problem.isBoxedLcp()) {
       exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(

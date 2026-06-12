@@ -1505,6 +1505,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Penalized Fischer-Burmeister Newton solvers; it accepts only validated
     positive linear-solve candidates and leaves active-bound pivot,
     path-following, and Newton warm-start behavior unchanged.
+  - Added an LLT-first variant of the validated strict-interior standard-LCP
+    fast path for dense Newton, boxed Newton, and Interior Point rows, while
+    keeping the default standard helper on the previous LU solve for
+    lower-overhead exact-path users; the refreshed Standard profile moves those
+    dense rows below the former above-`2x` band.
   - Extended the validated strict-interior standard-LCP fast path to NNCG,
     Subspace Minimization, Blocked Jacobi, and Shock Propagation so current
     projection/block comparison rows skip iterative setup when the
