@@ -36,6 +36,7 @@
 
 #include <dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cuh>
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
+#include <dart/simulation/compute/cuda/deformable_psd_projection_cuda.cuh>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -611,6 +612,46 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleBarrierHessians)
             << "fixture=" << i << " hessian row=" << row << " col=" << col;
       }
     }
+  }
+}
+
+//==============================================================================
+TEST(BarrierFrictionKernelCuda, ProjectsPointTriangleBarrierHessiansToPsd)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const auto inputs = makePointTriangleHessianFixture();
+
+  std::vector<double> expected(144 * inputs.size(), 0.0);
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::pointTriangleBarrier(
+        readVec3(input.point),
+        readVec3(input.triangleA),
+        readVec3(input.triangleB),
+        readVec3(input.triangleC),
+        input.squaredActivationDistance,
+        input.stiffness);
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        expected[144 * i + static_cast<std::size_t>(12 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+  cuda::projectSymmetricBlocksToPsdReference(expected, 12, inputs.size());
+
+  cuda::PointTriangleBarrierHessianResult result;
+  cuda::evaluatePointTriangleBarrierHessiansCuda(inputs, result);
+  cuda::projectSymmetricBlocksToPsdCuda(
+      result.barrierHessians, 12, inputs.size());
+
+  ASSERT_EQ(result.barrierHessians.size(), expected.size());
+  for (std::size_t entry = 0; entry < expected.size(); ++entry) {
+    EXPECT_NEAR(result.barrierHessians[entry], expected[entry], 1e-7)
+        << "entry=" << entry;
   }
 }
 

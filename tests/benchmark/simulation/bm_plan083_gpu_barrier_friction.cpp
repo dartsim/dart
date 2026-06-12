@@ -36,8 +36,10 @@
 #include <benchmark/benchmark.h>
 #include <dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cuh>
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
+#include <dart/simulation/compute/cuda/deformable_psd_projection_cuda.cuh>
 
 #include <algorithm>
+#include <chrono>
 #include <vector>
 
 #include <cmath>
@@ -47,6 +49,13 @@ namespace cuda = dart::simulation::compute::cuda;
 namespace nb = dart::simulation::detail::newton_barrier;
 
 namespace {
+
+using Clock = std::chrono::steady_clock;
+
+double elapsedNs(const Clock::time_point start, const Clock::time_point end)
+{
+  return std::chrono::duration<double, std::nano>(end - start).count();
+}
 
 struct CpuLocalResult
 {
@@ -964,6 +973,16 @@ double maxOutputError(
   return maxError;
 }
 
+double maxPsdProjectedHessianError(
+    const CpuPointTriangleResult& expected,
+    const cuda::PointTriangleBarrierHessianResult& actual)
+{
+  std::vector<double> expectedProjected = expected.barrierHessians;
+  cuda::projectSymmetricBlocksToPsdReference(
+      expectedProjected, 12, expected.squaredDistances.size());
+  return maxAbsDifference(expectedProjected, actual.barrierHessians);
+}
+
 double maxOutputError(
     const CpuPointPointBarrierResult& expected,
     const cuda::PointPointBarrierHessianResult& actual)
@@ -1324,6 +1343,66 @@ static void BM_Plan083PointTriangleBarrierHessianCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointTriangleBarrierHessianCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleBarrierHessianPsdCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointTriangleHessianFixture(static_cast<int>(state.range(0)));
+  std::vector<double> projected;
+
+  for (auto _ : state) {
+    projected = fixture.cpu.barrierHessians;
+    cuda::projectSymmetricBlocksToPsdReference(
+        projected, 12, fixture.inputs.size());
+    benchmark::DoNotOptimize(projected.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointTriangleBarrierHessianPsdCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleBarrierHessianPsdCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointTriangleHessianFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleBarrierHessianResult result;
+  double psdProjectionNs = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleBarrierHessiansCuda(fixture.inputs, result);
+    const auto psdStart = Clock::now();
+    cuda::projectSymmetricBlocksToPsdCuda(
+        result.barrierHessians, 12, fixture.inputs.size());
+    const auto psdEnd = Clock::now();
+    psdProjectionNs = elapsedNs(psdStart, psdEnd);
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(
+      state, fixture, maxPsdProjectedHessianError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["psd_projection_ns"] = psdProjectionNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointTriangleBarrierHessianPsdCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

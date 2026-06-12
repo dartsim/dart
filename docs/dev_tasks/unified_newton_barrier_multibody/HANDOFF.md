@@ -1,5 +1,57 @@
 # Unified Newton-Barrier Handoff
 
+## Current Continuation State
+
+This is the current fresh-session entry point for PR #2978. The previous
+stop-only handoff left point-triangle Hessian PSD-projection WIP on this same
+branch; that WIP has been resumed into the current focused packet checkpoint.
+
+Current local state when this hand-off was updated:
+
+- Branch: `simx/plan083-gpu-contact-candidate-packet`
+- PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
+- Base: `main`
+- Local branch has two committed checkpoints ahead of
+  `origin/simx/plan083-gpu-contact-candidate-packet` before this PSD
+  checkpoint:
+  - `48dcfb515cf Add point-edge barrier Hessian packet parity`
+  - `1dfb21b24da Add point-triangle barrier Hessian packet parity`
+- The latest pushed origin head observed in this worktree was
+  `6746b63973d Record point-point barrier Hessian packet evidence`.
+- The current checkpoint adds point-triangle primitive barrier-Hessian
+  PSD-projection parity in the CUDA unit test, benchmark packet, packet writer,
+  tracked GPU parity sidecar, completion audit, paper manifest, dashboard, and
+  dev-task handoff docs.
+
+- Unit test:
+  `ProjectsPointTriangleBarrierHessiansToPsd`, using
+  `projectSymmetricBlocksToPsdReference()` as the CPU oracle and
+  `projectSymmetricBlocksToPsdCuda()` after
+  `evaluatePointTriangleBarrierHessiansCuda()`.
+- Benchmark rows:
+  `BM_Plan083PointTriangleBarrierHessianPsdCpu` and
+  `BM_Plan083PointTriangleBarrierHessianPsdCuda`, with a focused
+  `psd_projection_ns` wall-clock counter for the PSD wrapper.
+- Packet-writer support for
+  `point_triangle_barrier_hessian_psd_projection`, including synthetic packet
+  test rows and assertions.
+- Packet evidence from `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`:
+  PSD-projection max error `2.8990143619012088e-12`, PSD-projection speedup
+  `2.6270517059212906x`, and top-level speedup `0.22046365998499093x` with
+  `meets_speedup_gate = false`.
+- Validation for this checkpoint passed `pixi run lint`, `pixi run build`,
+  `pixi run test-unit` (161/161), `pixi run -e cuda build-cuda Release`,
+  focused `test_barrier_friction_kernel_cuda` CTest,
+  `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+  (4 passed), `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`, the
+  PLAN-083 GPU parity/completion-audit checker pair, and the focused
+  packet/audit pytest trio (13 passed).
+
+Before any future push to #2978, merge the latest `origin/main` into this
+published branch, run the required gates for all accumulated changes, and push
+only with explicit maintainer approval. Keep all remaining PLAN-083 work on
+this same branch and PR; do not open another PLAN-083 PR.
+
 ## Historical Stop Directive
 
 On 2026-06-11 the maintainer instructed the agent to stop implementation and
@@ -14,10 +66,11 @@ inferred from this hand-off step after that directive.
 - Branch: `simx/plan083-gpu-contact-candidate-packet`
 - PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
 - Base: `main`
-- Latest pushed commit before the local point-edge barrier-Hessian slice:
+- Latest pushed commit before the local barrier-Hessian slices:
   `6746b63973d Record point-point barrier Hessian packet evidence`
-- Local commit not yet pushed:
+- Local commits not yet pushed:
   `48dcfb515cf Add point-edge barrier Hessian packet parity`
+  `1dfb21b24da Add point-triangle barrier Hessian packet parity`
 - Review rule: keep all remaining PLAN-083 follow-up work on this branch and
   PR. Do not open or revive per-packet, per-phase, or per-slice PRs.
 - Consolidation context: former stack PRs #2979-#2983 were folded into #2978.
@@ -38,11 +91,17 @@ unless `origin/simx/plan083-gpu-contact-candidate-packet` has moved past
 The current slice adds private `PointTriangleBarrierHessianResult` plumbing, a
 CUDA wrapper, kernel/launcher scaffolding, focused CPU/CUDA unit parity
 coverage for non-degenerate Hessian fixtures, benchmark rows, packet
-writer/tests, and durable sidecar updates. The refreshed packet measured
+writer/tests, durable sidecar updates, and a point-triangle Hessian
+PSD-projection subrow using the existing private PSD wrapper. The refreshed
+packet measured
 `point_triangle_barrier_hessian.max_result_abs_error =
 2.5887393237583516e-12`,
-`point_triangle_barrier_hessian.speedup = 1.701903811937476`, and top-level
-`speedup = 0.20658008740799394` with `meets_speedup_gate = false`.
+`point_triangle_barrier_hessian.speedup = 1.3808963801674754`,
+`point_triangle_barrier_hessian_psd_projection.max_result_abs_error =
+2.8990143619012088e-12`,
+`point_triangle_barrier_hessian_psd_projection.speedup =
+2.6270517059212906`, and top-level `speedup = 0.22046365998499093` with
+`meets_speedup_gate = false`.
 
 Validation for this checkpoint passed `pixi run lint`, `pixi run build`,
 `pixi run test-unit` (161/161), `pixi run -e cuda build-cuda Release`,
@@ -87,15 +146,17 @@ Changed implementation and coverage surfaces in this hand-off package:
 - `tests/benchmark/simulation/bm_plan083_gpu_barrier_friction.cpp`,
   `scripts/write_plan083_gpu_barrier_friction_packet.py`, and
   `tests/test_plan083_gpu_barrier_friction_packet.py` add benchmark packet and
-  writer/test coverage for the new primitive barrier-Hessian rows.
+  writer/test coverage for the new primitive barrier-Hessian rows and the
+  point-triangle Hessian PSD-projection subrow.
 
 The current code has local-output parity evidence for the private
 point-triangle primitive barrier gradient, all four primitive-family tangent
-stencils, and now the first three primitive-family barrier Hessian rows. The
-overall barrier/friction row remains `in-progress` because broader Hessian
-assembly, PSD coupling, runtime contact rows, and the top-level/runtime speedup
-gate remain future evidence. Durable plan sidecars now record the
-point-triangle, point-point, and point-edge barrier-Hessian packets as
+stencils, the first three primitive-family barrier Hessian rows, and the first
+point-triangle Hessian PSD-projection row. The overall barrier/friction row
+remains `in-progress` because broader sparse Hessian assembly, runtime contact
+rows, and the top-level/runtime speedup gate remain future evidence. Durable
+plan sidecars now record the point-triangle, point-point, point-edge
+barrier-Hessian packets and point-triangle Hessian PSD projection as
 in-progress evidence, not completion.
 
 ## Resolved Point-Edge WIP
@@ -183,14 +244,14 @@ barrier/friction benchmark packet. It measured
 
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
 2. Inspect local status before editing, committing, or pushing. The point-edge
-   barrier-Hessian checkpoint is locally committed ahead of origin, while the
-   point-triangle barrier-Hessian checkpoint may be either the next local commit
-   or dirty WIP depending on where the previous session stopped.
+   and point-triangle barrier-Hessian checkpoints are locally committed ahead
+   of origin, and this handoff package adds the point-triangle Hessian PSD
+   projection checkpoint on the same branch.
 3. Check hosted CI and new review comments before editing. Do not reply to bot
    comments.
 4. Continue on the same PR with the remaining runtime/parity gaps: broader
-   Hessian assembly, PSD coupling, runtime contact rows, and packet speedup
-   gates.
+   sparse Hessian assembly, remaining PSD-coupled rows, runtime contact rows,
+   and packet speedup gates.
 5. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

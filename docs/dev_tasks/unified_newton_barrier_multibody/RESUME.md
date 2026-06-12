@@ -21,21 +21,38 @@ this branch, and earlier runtime/corpus follow-ups #2970, #2971, #2974, and
 maintainer explicitly asks to inspect them; the active work and PR state live on
 PR #2978.
 
+Current continuation checkpoint (2026-06-11): the prior stop-only handoff left
+uncommitted point-triangle Hessian PSD-projection WIP on this branch. That WIP
+has now been resumed into a focused packet slice with CUDA unit parity,
+benchmark rows, packet writer/test coverage, and durable sidecar updates. The
+branch is locally ahead of
+`origin/simx/plan083-gpu-contact-candidate-packet` by
+`48dcfb515cf Add point-edge barrier Hessian packet parity` and
+`1dfb21b24da Add point-triangle barrier Hessian packet parity`, plus the
+current PSD-projection slice. A fresh session should keep working on PR #2978
+only, inspect `HANDOFF.md`, and avoid pushing until latest
+`origin/main` has been merged into this published branch and required gates
+have passed.
+
 Latest validation checkpoint (2026-06-11): the branch is locally ahead of
-origin by `48dcfb515cf Add point-edge barrier Hessian packet parity`, which
-completed the point-edge primitive barrier-Hessian packet slice. The follow-on
-point-triangle primitive barrier-Hessian slice is completed and validated
-locally on the same branch; it adds private CUDA result/wrapper/kernel plumbing,
+origin by `48dcfb515cf Add point-edge barrier Hessian packet parity` and
+`1dfb21b24da Add point-triangle barrier Hessian packet parity`, which completed
+the point-edge and point-triangle primitive barrier-Hessian packet slices. The
+point-triangle slice adds private CUDA result/wrapper/kernel plumbing,
 focused CPU/CUDA parity coverage for non-degenerate Hessian fixtures, benchmark
 packet rows, packet writer/test coverage, and durable sidecar updates. The
 latest packet evidence measured
 `point_triangle_barrier_hessian.max_result_abs_error =
 2.5887393237583516e-12`,
-`point_triangle_barrier_hessian.speedup = 1.701903811937476x`, and top-level
-`speedup = 0.20658008740799394x` with `meets_speedup_gate=false`; keep the
-barrier/friction row `in-progress` because broader Hessian assembly, PSD
-coupling, runtime contact rows, and the top-level/runtime speedup gate remain
-future evidence.
+`point_triangle_barrier_hessian.speedup = 1.3808963801674754x`,
+`point_triangle_barrier_hessian_psd_projection.max_result_abs_error =
+2.8990143619012088e-12`,
+`point_triangle_barrier_hessian_psd_projection.speedup =
+2.6270517059212906x`, and top-level
+`speedup = 0.22046365998499093x` with `meets_speedup_gate=false`; keep the
+barrier/friction row `in-progress` because broader sparse Hessian assembly,
+runtime contact rows, and the top-level/runtime speedup gate remain future
+evidence.
 
 Validation for the point-triangle barrier-Hessian checkpoint passed
 `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
@@ -46,7 +63,10 @@ Validation for the point-triangle barrier-Hessian checkpoint passed
 PLAN-083 GPU parity/completion-audit checker pair, and the focused packet/audit
 pytest trio (13 passed). The checkpoint has not been pushed unless
 `origin/simx/plan083-gpu-contact-candidate-packet` has moved past
-`6746b63973d`.
+`6746b63973d`. The later PSD-projection continuation has passed
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161), focused
+packet pytest, CUDA build, focused barrier/friction CUDA CTest, the
+barrier/friction benchmark packet, and the PLAN-083 packet/audit checkers.
 
 Continuation checkpoint (2026-06-11, point-edge barrier-Hessian slice): the
 previously dirty point-edge barrier-Hessian prototype on #2978 has been
@@ -95,11 +115,12 @@ Latest PR #2978 checkpoint: the current branch adds private CUDA
 point-triangle primitive barrier-gradient parity plus point-triangle,
 edge-edge, point-edge, and point-point tangent-stencil parity, plus a
 point-triangle, point-point, and point-edge primitive barrier-Hessian packet
-rows, to the existing barrier/friction local-kernel packet. This closes the
-first primitive-gradient, primitive-family tangent-stencil, and primitive
-point-triangle/point-point/point-edge Hessian portions of that row while keeping
-broader Hessian assembly, PSD coupling, runtime contact rows, and the overall
-speedup gate as future evidence. Earlier Codex review threads for the
+rows and point-triangle Hessian PSD-projection parity to the existing
+barrier/friction local-kernel packet. This closes the first primitive-gradient,
+primitive-family tangent-stencil, primitive point-triangle/point-point/
+point-edge Hessian, and first PSD-projected point-triangle Hessian portions of
+that row while keeping broader sparse Hessian assembly, runtime contact rows,
+and the overall speedup gate as future evidence. Earlier Codex review threads for the
 degenerate-triangle contact predicate and winding-independent point-triangle
 CCD were resolved without bot replies.
 
@@ -527,26 +548,27 @@ winding-independent endpoint-linear point-triangle CCD, edge-edge
 CCD/line-search packets, scalar barrier/friction local kernels plus
 point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
 stencils plus point-edge/point-point tangent stencils, point-triangle,
-point-point, and point-edge primitive barrier-Hessian parity, reduced
-assembly/solve parity, reduced scene state-batch parity, and reduced ABD
-complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless their
-full row policy is satisfied: broad-phase/runtime GPU candidate construction,
-rigid curved trajectories, runtime scene line search, broader Hessian assembly,
-PSD coupling, sparse global solving, GPU `World::step`, paper-scale assets,
-and accepted reference timings remain future evidence.
+point-point, and point-edge primitive barrier-Hessian parity, point-triangle
+primitive barrier-Hessian PSD-projection parity, reduced assembly/solve parity,
+reduced scene state-batch parity, and reduced ABD complex-geometry/FEM
+coupling evidence. Keep rows `in-progress` unless their full row policy is
+satisfied: broad-phase/runtime GPU candidate construction, rigid curved
+trajectories, runtime scene line search, broader sparse Hessian assembly,
+remaining PSD-coupled rows, sparse global solving, GPU `World::step`,
+paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next barrier/friction packet gaps are
-downstream Hessian assembly, PSD coupling, runtime contact rows, and
-speedup-gate work. Do not mark the row measured until the top-level speed gate
-and runtime evidence are proven. Keep the dev-task folder active because
-PLAN-083 acceptance criteria are still unmet. If the task later moves out of
-this folder, get maintainer direction before deleting it and keep the remaining
-planned manifest plus in-progress CPU/GPU/scene limitations in durable
-sidecars.
+downstream sparse Hessian assembly, remaining PSD-coupled rows, runtime contact
+rows, and speedup-gate work. Do not mark the row measured until the top-level
+speed gate and runtime evidence are proven. Keep the dev-task folder active
+because PLAN-083 acceptance criteria are still unmet. If the task later moves
+out of this folder, get maintainer direction before deleting it and keep the
+remaining planned manifest plus in-progress CPU/GPU/scene limitations in
+durable sidecars.
 
 ## Context That Would Be Lost
 

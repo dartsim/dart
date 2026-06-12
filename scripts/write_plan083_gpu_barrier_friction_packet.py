@@ -110,6 +110,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "BarrierFrictionLocal(Cpu|Cuda)"
         "|PointTriangleBarrierGradient(Cpu|Cuda)"
         "|PointTriangleBarrierHessian(Cpu|Cuda)"
+        "|PointTriangleBarrierHessianPsd(Cpu|Cuda)"
         "|PointPointBarrierHessian(Cpu|Cuda)"
         "|PointEdgeBarrierHessian(Cpu|Cuda)"
         "|PointTriangleTangentStencil(Cpu|Cuda)"
@@ -191,6 +192,12 @@ def _representative_rows(
         ),
         "point_triangle_hessian_gpu": (
             f"BM_Plan083PointTriangleBarrierHessianCuda/{sample_count}"
+        ),
+        "point_triangle_hessian_psd_cpu": (
+            f"BM_Plan083PointTriangleBarrierHessianPsdCpu/{sample_count}"
+        ),
+        "point_triangle_hessian_psd_gpu": (
+            f"BM_Plan083PointTriangleBarrierHessianPsdCuda/{sample_count}"
         ),
         "point_point_hessian_cpu": (
             f"BM_Plan083PointPointBarrierHessianCpu/{sample_count}"
@@ -296,6 +303,12 @@ def make_packet(
     point_triangle_gpu_row = representative_rows["point_triangle_gpu"]
     point_triangle_hessian_cpu_row = representative_rows["point_triangle_hessian_cpu"]
     point_triangle_hessian_gpu_row = representative_rows["point_triangle_hessian_gpu"]
+    point_triangle_hessian_psd_cpu_row = representative_rows[
+        "point_triangle_hessian_psd_cpu"
+    ]
+    point_triangle_hessian_psd_gpu_row = representative_rows[
+        "point_triangle_hessian_psd_gpu"
+    ]
     point_point_hessian_cpu_row = representative_rows["point_point_hessian_cpu"]
     point_point_hessian_gpu_row = representative_rows["point_point_hessian_gpu"]
     point_edge_hessian_cpu_row = representative_rows["point_edge_hessian_cpu"]
@@ -315,6 +328,12 @@ def make_packet(
     point_triangle_gpu_ns = benchmark_timing_ns(point_triangle_gpu_row)
     point_triangle_hessian_cpu_ns = benchmark_timing_ns(point_triangle_hessian_cpu_row)
     point_triangle_hessian_gpu_ns = benchmark_timing_ns(point_triangle_hessian_gpu_row)
+    point_triangle_hessian_psd_cpu_ns = benchmark_timing_ns(
+        point_triangle_hessian_psd_cpu_row
+    )
+    point_triangle_hessian_psd_gpu_ns = benchmark_timing_ns(
+        point_triangle_hessian_psd_gpu_row
+    )
     point_point_hessian_cpu_ns = benchmark_timing_ns(point_point_hessian_cpu_row)
     point_point_hessian_gpu_ns = benchmark_timing_ns(point_point_hessian_gpu_row)
     point_edge_hessian_cpu_ns = benchmark_timing_ns(point_edge_hessian_cpu_row)
@@ -334,6 +353,8 @@ def make_packet(
         "point-triangle GPU": point_triangle_gpu_ns,
         "point-triangle Hessian CPU": point_triangle_hessian_cpu_ns,
         "point-triangle Hessian GPU": point_triangle_hessian_gpu_ns,
+        "point-triangle Hessian PSD CPU": point_triangle_hessian_psd_cpu_ns,
+        "point-triangle Hessian PSD GPU": point_triangle_hessian_psd_gpu_ns,
         "point-point Hessian CPU": point_point_hessian_cpu_ns,
         "point-point Hessian GPU": point_point_hessian_gpu_ns,
         "point-edge Hessian CPU": point_edge_hessian_cpu_ns,
@@ -357,6 +378,9 @@ def make_packet(
     point_triangle_hessian_max_error = _counter(
         point_triangle_hessian_gpu_row, "max_result_abs_error"
     )
+    point_triangle_hessian_psd_max_error = _counter(
+        point_triangle_hessian_psd_gpu_row, "max_result_abs_error"
+    )
     point_point_hessian_max_error = _counter(
         point_point_hessian_gpu_row, "max_result_abs_error"
     )
@@ -379,6 +403,7 @@ def make_packet(
         scalar_max_error,
         point_triangle_max_error,
         point_triangle_hessian_max_error,
+        point_triangle_hessian_psd_max_error,
         point_point_hessian_max_error,
         point_edge_hessian_max_error,
         point_triangle_tangent_max_error,
@@ -428,6 +453,19 @@ def make_packet(
             "point-triangle Hessian active_barriers count "
             f"{point_triangle_hessian_cpu_active} != gpu_active_barriers count "
             f"{point_triangle_hessian_gpu_active}"
+        )
+
+    point_triangle_hessian_psd_cpu_active = int(
+        _counter(point_triangle_hessian_psd_cpu_row, "active_barriers")
+    )
+    point_triangle_hessian_psd_gpu_active = int(
+        _counter(point_triangle_hessian_psd_gpu_row, "gpu_active_barriers")
+    )
+    if point_triangle_hessian_psd_cpu_active != point_triangle_hessian_psd_gpu_active:
+        raise Plan083GpuBarrierFrictionPacketError(
+            "point-triangle Hessian PSD active_barriers count "
+            f"{point_triangle_hessian_psd_cpu_active} != gpu_active_barriers count "
+            f"{point_triangle_hessian_psd_gpu_active}"
         )
 
     point_point_hessian_cpu_active = int(
@@ -515,6 +553,8 @@ def make_packet(
         "point-triangle GPU": point_triangle_gpu_row,
         "point-triangle Hessian CPU": point_triangle_hessian_cpu_row,
         "point-triangle Hessian GPU": point_triangle_hessian_gpu_row,
+        "point-triangle Hessian PSD CPU": point_triangle_hessian_psd_cpu_row,
+        "point-triangle Hessian PSD GPU": point_triangle_hessian_psd_gpu_row,
         "point-point Hessian CPU": point_point_hessian_cpu_row,
         "point-point Hessian GPU": point_point_hessian_gpu_row,
         "point-edge Hessian CPU": point_edge_hessian_cpu_row,
@@ -540,6 +580,9 @@ def make_packet(
     point_triangle_hessian_speedup = (
         point_triangle_hessian_cpu_ns / point_triangle_hessian_gpu_ns
     )
+    point_triangle_hessian_psd_speedup = (
+        point_triangle_hessian_psd_cpu_ns / point_triangle_hessian_psd_gpu_ns
+    )
     point_point_hessian_speedup = (
         point_point_hessian_cpu_ns / point_point_hessian_gpu_ns
     )
@@ -556,6 +599,7 @@ def make_packet(
         scalar_speedup,
         point_triangle_speedup,
         point_triangle_hessian_speedup,
+        point_triangle_hessian_psd_speedup,
         point_point_hessian_speedup,
         point_edge_hessian_speedup,
         point_triangle_tangent_speedup,
@@ -566,6 +610,9 @@ def make_packet(
     scalar_timing_ns = _timing_ns(scalar_gpu_row)
     point_triangle_timing_ns = _timing_ns(point_triangle_gpu_row)
     point_triangle_hessian_timing_ns = _timing_ns(point_triangle_hessian_gpu_row)
+    point_triangle_hessian_psd_timing_ns = _timing_ns(
+        point_triangle_hessian_psd_gpu_row
+    )
     point_point_hessian_timing_ns = _timing_ns(point_point_hessian_gpu_row)
     point_edge_hessian_timing_ns = _timing_ns(point_edge_hessian_gpu_row)
     point_triangle_tangent_timing_ns = _timing_ns(point_triangle_tangent_gpu_row)
@@ -637,6 +684,28 @@ def make_packet(
                 "timing_ns": point_triangle_hessian_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(point_triangle_hessian_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(point_triangle_hessian_gpu_row),
+            },
+            "point_triangle_barrier_hessian_psd_projection": {
+                "sample_count": sample_count,
+                "active_barrier_count": point_triangle_hessian_psd_cpu_active,
+                "max_barrier_value": _counter(
+                    point_triangle_hessian_psd_cpu_row, "max_barrier_value"
+                ),
+                "max_result_abs_error": point_triangle_hessian_psd_max_error,
+                "speedup": point_triangle_hessian_psd_speedup,
+                "meets_speedup_gate": (
+                    point_triangle_hessian_psd_speedup >= speedup_gate
+                ),
+                "timing_ns": point_triangle_hessian_psd_timing_ns,
+                "psd_projection_ns": _counter(
+                    point_triangle_hessian_psd_gpu_row, "psd_projection_ns"
+                ),
+                "cpu_benchmark_row": _packet_row_name(
+                    point_triangle_hessian_psd_cpu_row
+                ),
+                "gpu_benchmark_row": _packet_row_name(
+                    point_triangle_hessian_psd_gpu_row
+                ),
             },
             "point_point_barrier_hessian": {
                 "sample_count": sample_count,

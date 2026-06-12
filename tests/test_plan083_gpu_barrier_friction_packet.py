@@ -104,6 +104,28 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    point_triangle_hessian_psd_cpu = _row(
+        "BM_Plan083PointTriangleBarrierHessianPsdCpu/1024",
+        samples=1024,
+        active_barriers=930,
+        max_barrier_value=2.0,
+        max_result_abs_error=0.0,
+    )
+    point_triangle_hessian_psd_gpu = _row(
+        "BM_Plan083PointTriangleBarrierHessianPsdCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        active_barriers=930,
+        gpu_active_barriers=930,
+        max_barrier_value=2.0,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        psd_projection_ns=5.0,
+        device_to_host_ns=4.0,
+    )
     point_point_hessian_cpu = _row(
         "BM_Plan083PointPointBarrierHessianCpu/1024",
         samples=1024,
@@ -231,6 +253,8 @@ def _benchmark_data(**overrides):
             point_triangle_gpu,
             point_triangle_hessian_cpu,
             point_triangle_hessian_gpu,
+            point_triangle_hessian_psd_cpu,
+            point_triangle_hessian_psd_gpu,
             point_point_hessian_cpu,
             point_point_hessian_gpu,
             point_edge_hessian_cpu,
@@ -270,6 +294,17 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     assert row["point_triangle_barrier_gradient"]["max_result_abs_error"] == 1e-12
     assert row["point_triangle_barrier_hessian"]["active_barrier_count"] == 930
     assert row["point_triangle_barrier_hessian"]["max_result_abs_error"] == 1e-12
+    assert (
+        row["point_triangle_barrier_hessian_psd_projection"]["active_barrier_count"]
+        == 930
+    )
+    assert (
+        row["point_triangle_barrier_hessian_psd_projection"]["max_result_abs_error"]
+        == 1e-12
+    )
+    assert (
+        row["point_triangle_barrier_hessian_psd_projection"]["psd_projection_ns"] == 5.0
+    )
     assert row["point_point_barrier_hessian"]["active_barrier_count"] == 900
     assert row["point_point_barrier_hessian"]["max_result_abs_error"] == 1e-12
     assert row["point_edge_barrier_hessian"]["active_barrier_count"] == 880

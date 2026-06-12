@@ -15,23 +15,43 @@ Current #2978 checkpoint (2026-06-11): the active branch now carries private
 CUDA point-triangle primitive barrier-gradient parity plus point-triangle,
 edge-edge, point-edge, and point-point tangent-stencil parity in the
 barrier/friction packet, and the current package adds private CUDA
-point-triangle, point-point, and point-edge primitive barrier-Hessian rows. The
-latest packet measured `max_result_abs_error=7.716494110354688e-12` across
-those local rows; point-triangle barrier-Hessian speedup was
-`1.701903811937476x`, point-point barrier-Hessian speedup was
-`0.9032793460959817x`, and point-edge barrier-Hessian speedup was
-`2.4537707827904423x`. The top-level packet still measured
-`speedup=0.20658008740799394x` with `meets_speedup_gate=false`, so the row
-remains `in-progress` because broader Hessian assembly, PSD coupling, runtime
+point-triangle, point-point, and point-edge primitive barrier-Hessian rows plus
+point-triangle primitive barrier-Hessian PSD-projection parity. The latest
+packet measured `max_result_abs_error=7.716494110354688e-12` across those local
+rows; point-triangle barrier-Hessian speedup was `1.3808963801674754x`,
+point-triangle Hessian PSD-projection speedup was `2.6270517059212906x`,
+point-point barrier-Hessian speedup was `1.135961619469845x`, and point-edge
+barrier-Hessian speedup was `2.3452435846147237x`. The top-level packet still
+measured `speedup=0.22046365998499093x` with `meets_speedup_gate=false`, so the
+row remains `in-progress` because broader sparse Hessian assembly, runtime
 contact rows, and the top-level speedup gate remain future evidence.
+
+Historical stop-only handoff (2026-06-11): the maintainer previously asked for
+handoff only with no further verification. That left uncommitted PSD-coupling
+WIP on this same branch. The WIP has since been resumed as the point-triangle
+Hessian PSD-projection packet slice; keep `HANDOFF.md` synchronized for fresh
+sessions.
 
 Latest validation checkpoint (2026-06-11): the point-edge barrier-Hessian slice
 is committed locally as
 `48dcfb515cf Add point-edge barrier Hessian packet parity` and is not yet
-pushed. The follow-on point-triangle barrier-Hessian slice is completed and
-validated locally on the same branch with private CUDA implementation, focused
-unit parity, benchmark packet rows, packet writer/test coverage, and durable
-sidecar updates. `HANDOFF.md` is the authoritative fresh-session entry point.
+pushed. The follow-on point-triangle barrier-Hessian slice is committed locally
+as `1dfb21b24da Add point-triangle barrier Hessian packet parity` and is not
+yet pushed. It was validated locally on the same branch with private CUDA
+implementation, focused unit parity, benchmark packet rows, packet writer/test
+coverage, and durable sidecar updates. The current point-triangle Hessian
+PSD-projection slice adds unit parity, benchmark rows, packet writer/test
+coverage, and sidecar updates on top of those commits. `HANDOFF.md` is the
+authoritative fresh-session entry point.
+
+Validation for the current PSD-projection checkpoint passed `pixi run lint`,
+`pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest,
+`pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+(4 passed), `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`, the
+PLAN-083 GPU parity/completion-audit checker pair, and the focused packet/audit
+pytest trio (13 passed).
 
 Validated hand-off checkpoint (2026-06-11): the formerly unverified
 point-edge/point-point tangent-stencil WIP has now passed lint, CUDA build,
@@ -48,13 +68,13 @@ directive.
 Durable sidecar sync (2026-06-11): `gpu-parity-packet.json`,
 `completion-audit.md`, `paper-deck-manifest.md`, and `docs/plans/dashboard.md`
 now record the point-triangle, point-point, and point-edge barrier-Hessian
-packets as in-progress evidence.
+packets plus the point-triangle Hessian PSD-projection packet as in-progress
+evidence.
 
 Fresh-session continuation: first inspect `git status -sb`, the local diff,
 #2978, the branch head, hosted CI, and new review comments. Then continue with
-the dirty point-triangle Hessian slice or broader Hessian assembly, PSD
-coupling, runtime contact rows, or speedup-gate work on the same PR. Do not
-open another PLAN-083 PR.
+broader sparse Hessian assembly, remaining PSD-coupled rows, runtime contact
+rows, or speedup-gate work on the same PR. Do not open another PLAN-083 PR.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
@@ -225,9 +245,10 @@ open another PLAN-083 PR.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
         primitive barrier-gradient, point-triangle/edge-edge/point-edge/
         point-point tangent-stencil, and point-triangle/point-point/point-edge
-        primitive barrier-Hessian packets with exact CPU/GPU local-output
-        parity; keep the row in-progress because broader Hessian assembly, PSD
-        coupling, runtime contact rows, and runtime speedup remain unproven.
+        primitive barrier-Hessian packets, plus point-triangle Hessian
+        PSD-projection parity, with exact CPU/GPU local-output parity; keep the
+        row in-progress because broader sparse Hessian assembly, runtime
+        contact rows, and runtime speedup remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene
@@ -338,8 +359,9 @@ storage, or backend resources as public API.
 - Current PR #2978 head includes the CUDA CCD review fix plus the private
   barrier/friction point-triangle gradient, all four primitive-family
   tangent-stencil packet rows, and point-triangle/point-point/point-edge
-  primitive barrier-Hessian packet evidence. Continue monitoring CI/review on
-  the same branch and keep further PLAN-083 slices consolidated there.
+  primitive barrier-Hessian plus point-triangle Hessian PSD-projection packet
+  evidence. Continue monitoring CI/review on the same branch and keep further
+  PLAN-083 slices consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is

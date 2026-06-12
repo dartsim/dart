@@ -301,12 +301,13 @@ its own line so status updates remain git-history friendly.
   stencil parity, endpoint-linear point-triangle and edge-edge CCD/line-search
   parity, scalar barrier/friction local-kernel parity plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
-  tangent-stencil parity, point-triangle/point-point/point-edge primitive barrier-Hessian
-  parity, reduced diagonal assembly/solve parity, reduced hanging-bridge scene
+  tangent-stencil parity, point-triangle/point-point/point-edge primitive
+  barrier-Hessian parity, point-triangle primitive barrier-Hessian
+  PSD-projection parity, reduced diagonal assembly/solve parity, reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets, and an
   ABD/FEM coupled micro-solve packet. It still
   keeps broad-phase/runtime GPU candidate construction, rigid curved
-  trajectories, broader Hessian assembly, PSD coupling, off-diagonal sparse
+  trajectories, broader sparse Hessian assembly, remaining PSD-coupled rows, off-diagonal sparse
   assembly, global factorization, GPU `World::step`, paper-scale assets, full
   runtime affine/FEM coupling, and accepted reference timings as future
   evidence. The
