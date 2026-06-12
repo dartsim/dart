@@ -1363,55 +1363,200 @@ def _summarize_standalone_solver_profiles(
 
 
 def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
-    admm = dart.AdmmSolverParameters()
-    sap = dart.SapSolverParameters()
-    newton = dart.BoxedSemiSmoothNewtonSolverParameters()
+    def format_value(value: object) -> str:
+        if isinstance(value, bool):
+            return str(value).lower()
+        if isinstance(value, float):
+            return f"{value:.0e}" if 0.0 < abs(value) < 1e-3 else f"{value:g}"
+        if isinstance(value, list):
+            return "[" + ", ".join(format_value(item) for item in value) + "]"
+        return str(value)
+
+    def make_row(
+        solver: str,
+        surface: str,
+        params: object,
+        parameter_names: list[str],
+        benchmark_filter: str,
+    ) -> dict[str, str]:
+        return {
+            "solver": solver,
+            "surface": surface,
+            "parameters": ", ".join(parameter_names),
+            "defaults": ", ".join(
+                f"{name}={format_value(getattr(params, name))}"
+                for name in parameter_names
+            ),
+            "benchmark_filter": benchmark_filter,
+        }
+
+    newton_parameter_names = [
+        "max_line_search_steps",
+        "step_reduction",
+        "sufficient_decrease",
+        "min_step",
+        "max_gradient_descent_warm_start_steps",
+        "max_gradient_descent_line_search_steps",
+        "gradient_descent_step_reduction",
+        "gradient_descent_sufficient_decrease",
+        "gradient_descent_min_step",
+        "max_pgs_warm_start_iterations",
+        "pgs_warm_start_relaxation",
+    ]
 
     return [
-        {
-            "solver": "Admm",
-            "surface": "boxed/findex",
-            "parameters": (
-                "rho_init, mu_prox, adaptive_rho_tolerance, adaptive_rho"
-            ),
-            "defaults": (
-                f"rho_init={admm.rho_init:g}, mu_prox={admm.mu_prox:.0e}, "
-                f"adaptive_rho_tolerance={admm.adaptive_rho_tolerance:g}, "
-                f"adaptive_rho={str(admm.adaptive_rho).lower()}"
-            ),
-            "benchmark_filter": "BM_LcpAdmmRhoSweep",
-        },
-        {
-            "solver": "Sap",
-            "surface": "boxed/findex",
-            "parameters": (
-                "regularization, armijos_parameter, backtracking_factor, "
-                "max_line_search_iterations"
-            ),
-            "defaults": (
-                f"regularization={sap.regularization:.0e}, "
-                f"armijos_parameter={sap.armijos_parameter:.0e}, "
-                f"backtracking_factor={sap.backtracking_factor:g}, "
-                f"max_line_search_iterations={sap.max_line_search_iterations}"
-            ),
-            "benchmark_filter": "BM_LcpSapRegularizationSweep",
-        },
-        {
-            "solver": "BoxedSemiSmoothNewton",
-            "surface": "boxed/findex",
-            "parameters": (
-                "max_line_search_steps, step_reduction, sufficient_decrease, "
-                "min_step, jacobian_regularization"
-            ),
-            "defaults": (
-                f"max_line_search_steps={newton.max_line_search_steps}, "
-                f"step_reduction={newton.step_reduction:g}, "
-                f"sufficient_decrease={newton.sufficient_decrease:.0e}, "
-                f"min_step={newton.min_step:.0e}, "
-                f"jacobian_regularization={newton.jacobian_regularization:.0e}"
-            ),
-            "benchmark_filter": "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep",
-        },
+        make_row(
+            "Pgs",
+            "boxed/findex",
+            dart.PgsSolverParameters(),
+            ["epsilon_for_division", "randomize_constraint_order"],
+            "BM_LcpPgsRelaxationSweep",
+        ),
+        make_row(
+            "SymmetricPsor",
+            "standard",
+            dart.SymmetricPsorSolverParameters(),
+            ["epsilon_for_division"],
+            "BM_LcpSymmetricPsorRelaxationSweep",
+        ),
+        make_row(
+            "Jacobi",
+            "boxed/findex",
+            dart.JacobiSolverParameters(),
+            ["epsilon_for_division", "worker_threads"],
+            "BM_LcpPgsRelaxationSweep",
+        ),
+        make_row(
+            "RedBlackGaussSeidel",
+            "boxed/findex",
+            dart.RedBlackGaussSeidelSolverParameters(),
+            ["epsilon_for_division", "worker_threads"],
+            "BM_LcpRedBlackGaussSeidelRelaxationSweep",
+        ),
+        make_row(
+            "BlockedJacobi",
+            "boxed/findex",
+            dart.BlockedJacobiSolverParameters(),
+            ["block_sizes", "worker_threads"],
+            "BM_LcpBlockPartitionSweep",
+        ),
+        make_row(
+            "Bgs",
+            "boxed/findex",
+            dart.BgsSolverParameters(),
+            ["block_sizes"],
+            "BM_LcpBlockPartitionSweep",
+        ),
+        make_row(
+            "Nncg",
+            "boxed/findex",
+            dart.NncgSolverParameters(),
+            ["pgs_iterations", "restart_interval", "restart_threshold"],
+            "BM_LcpNncgPgsIterationsSweep",
+        ),
+        make_row(
+            "SubspaceMinimization",
+            "boxed/findex",
+            dart.SubspaceMinimizationSolverParameters(),
+            ["pgs_iterations", "active_set_tolerance"],
+            "BM_LcpSubspaceMinimizationPgsIterationsSweep",
+        ),
+        make_row(
+            "Apgd",
+            "boxed/findex",
+            dart.ApgdSolverParameters(),
+            [
+                "epsilon_for_division",
+                "adaptive_restart",
+                "restart_check_interval",
+            ],
+            "BM_LcpApgdRestartSweep",
+        ),
+        make_row(
+            "Tgs",
+            "boxed/findex",
+            dart.TgsSolverParameters(),
+            ["epsilon_for_division"],
+            "BM_LcpTgsIterationBudgetSweep",
+        ),
+        make_row(
+            "MinimumMapNewton",
+            "standard",
+            dart.MinimumMapNewtonSolverParameters(),
+            newton_parameter_names,
+            "BM_LcpNewtonWarmStart",
+        ),
+        make_row(
+            "FischerBurmeisterNewton",
+            "standard",
+            dart.FischerBurmeisterNewtonSolverParameters(),
+            ["smoothing_epsilon", *newton_parameter_names],
+            "BM_LcpNewtonWarmStart",
+        ),
+        make_row(
+            "PenalizedFischerBurmeisterNewton",
+            "standard",
+            dart.PenalizedFischerBurmeisterNewtonSolverParameters(),
+            ["smoothing_epsilon", "lambda_", *newton_parameter_names],
+            "BM_LcpNewtonWarmStart",
+        ),
+        make_row(
+            "BoxedSemiSmoothNewton",
+            "boxed/findex",
+            dart.BoxedSemiSmoothNewtonSolverParameters(),
+            [
+                "max_line_search_steps",
+                "step_reduction",
+                "sufficient_decrease",
+                "min_step",
+                "jacobian_regularization",
+            ],
+            "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep",
+        ),
+        make_row(
+            "InteriorPoint",
+            "standard",
+            dart.InteriorPointSolverParameters(),
+            ["sigma", "step_scale"],
+            "BM_LcpInteriorPointPathSweep",
+        ),
+        make_row(
+            "Mprgp",
+            "standard",
+            dart.MprgpSolverParameters(),
+            [
+                "symmetry_tolerance",
+                "epsilon_for_division",
+                "check_positive_definite",
+            ],
+            "BM_LcpMprgpSpdCheckSweep",
+        ),
+        make_row(
+            "ShockPropagation",
+            "boxed/findex",
+            dart.ShockPropagationSolverParameters(),
+            ["block_sizes", "layers"],
+            "BM_LcpShockPropagationLayerSweep",
+        ),
+        make_row(
+            "Admm",
+            "boxed/findex",
+            dart.AdmmSolverParameters(),
+            ["rho_init", "mu_prox", "adaptive_rho_tolerance", "adaptive_rho"],
+            "BM_LcpAdmmRhoSweep",
+        ),
+        make_row(
+            "Sap",
+            "boxed/findex",
+            dart.SapSolverParameters(),
+            [
+                "regularization",
+                "armijos_parameter",
+                "backtracking_factor",
+                "max_line_search_iterations",
+            ],
+            "BM_LcpSapRegularizationSweep",
+        ),
     ]
 
 

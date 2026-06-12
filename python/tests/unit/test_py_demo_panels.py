@@ -832,12 +832,49 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert set(problem_summary_by_case) == set(expected_problem_counts)
     assert len(solver_profile_rows) == summary["solver_count"]
     assert set(solver_profile_by_name) == expected_solver_names
-    assert set(parameter_by_solver) == {"Admm", "Sap", "BoxedSemiSmoothNewton"}
+    assert set(parameter_by_solver) == {
+        "Admm",
+        "Apgd",
+        "Bgs",
+        "BlockedJacobi",
+        "BoxedSemiSmoothNewton",
+        "FischerBurmeisterNewton",
+        "InteriorPoint",
+        "Jacobi",
+        "MinimumMapNewton",
+        "Mprgp",
+        "Nncg",
+        "PenalizedFischerBurmeisterNewton",
+        "Pgs",
+        "RedBlackGaussSeidel",
+        "Sap",
+        "ShockPropagation",
+        "SubspaceMinimization",
+        "SymmetricPsor",
+        "Tgs",
+    }
+    assert "epsilon_for_division" in parameter_by_solver["Pgs"]["parameters"]
+    assert "adaptive_restart" in parameter_by_solver["Apgd"]["parameters"]
+    assert "lambda_" in parameter_by_solver["PenalizedFischerBurmeisterNewton"][
+        "parameters"
+    ]
+    assert "sigma" in parameter_by_solver["InteriorPoint"]["parameters"]
+    assert "check_positive_definite" in parameter_by_solver["Mprgp"]["parameters"]
     assert "rho_init" in parameter_by_solver["Admm"]["parameters"]
     assert "regularization" in parameter_by_solver["Sap"]["parameters"]
     assert "max_line_search_steps" in parameter_by_solver["BoxedSemiSmoothNewton"][
         "parameters"
     ]
+    assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
+    assert parameter_by_solver["Apgd"]["benchmark_filter"] == (
+        "BM_LcpApgdRestartSweep"
+    )
+    assert parameter_by_solver["InteriorPoint"]["benchmark_filter"] == (
+        "BM_LcpInteriorPointPathSweep"
+    )
+    assert parameter_by_solver["Mprgp"]["benchmark_filter"] == (
+        "BM_LcpMprgpSpdCheckSweep"
+    )
     assert parameter_by_solver["Admm"]["benchmark_filter"] == "BM_LcpAdmmRhoSweep"
     assert parameter_by_solver["Sap"]["benchmark_filter"] == (
         "BM_LcpSapRegularizationSweep"

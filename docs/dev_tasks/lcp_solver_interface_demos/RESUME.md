@@ -1,5 +1,39 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality — 2026-06-11 Full Parameter Metadata In Py-Demo
+
+Checkpoint `b60e20a8dc8 Expose LCP solver parameters in dartpy` is complete
+locally. The next in-progress slice updates the Python LCP demo's
+advanced-parameter table so it no longer reports only ADMM, SAP, and boxed
+semi-smooth Newton.
+
+Latest implementation slice:
+
+- Generated `advanced_solver_parameter_rows` from the full dartpy parameter
+  surface for projection, Newton, MPRGP, interior-point, shock propagation,
+  ADMM, SAP, and boxed semi-smooth Newton solvers.
+- Kept rows linked to representative benchmark filters from the LCP comparison
+  benchmark metadata.
+- Updated `python/tests/unit/test_py_demo_panels.py`, `CHANGELOG.md`, and this
+  dev-task state.
+
+Verification completed:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+```
+
+Observed results:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+
+Immediate next step:
+
+- Commit the py-demo metadata checkpoint.
+
 ## Current Reality — 2026-06-11 Full dartpy Parameter Surface
 
 Checkpoint `748cef40ea0 Validate advanced LCP solver parameters` is complete

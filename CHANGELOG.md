@@ -1434,6 +1434,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added an advanced-solver parameter table to the Python LCP demo metadata
     and panel, listing the exposed ADMM, SAP, and boxed semi-smooth Newton
     knobs next to their matching benchmark sweep filters.
+  - Extended the Python LCP demo parameter table to the full dartpy-exposed
+    LCP tuning surface, covering projection, Newton, MPRGP, interior-point,
+    shock propagation, ADMM, SAP, and boxed semi-smooth Newton parameters next
+    to representative benchmark filters.
   - Added solve-time validation for ADMM, SAP, and boxed semi-smooth Newton
     LCP parameter structs so invalid Python or C++ tuning values are rejected
     with `InvalidProblem` before numerical iteration begins.
