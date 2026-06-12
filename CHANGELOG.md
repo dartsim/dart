@@ -65,7 +65,8 @@
     their comparison axis and held-fixed controls in both the panel and capture
     metrics. Add `--include-related` and `--include-packets` to append
     non-numbered related evidence routes and capture-first rigid IPC packets
-    to the same rigid workflow capture/review packet.
+    to the same rigid workflow capture/review packet, and row-range options for
+    targeted reruns after a long workflow capture fails or needs inspection.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

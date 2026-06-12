@@ -445,6 +445,53 @@ def test_rigid_workflow_dry_run_can_include_capture_first_packets(
     assert "capture_first_packet" in review_html
 
 
+def test_rigid_workflow_dry_run_can_select_row_range(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_solver_compare", 24, 960, 540, True),
+        ("rigid_loop_closure", 72, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--workflow-start-row",
+            "2",
+            "--workflow-end-row",
+            "2",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["capture_count"] == 1
+    assert manifest["workflow_total_count"] == len(specs)
+    assert manifest["workflow_row_start"] == 2
+    assert manifest["workflow_row_end"] == 2
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_solver_compare"
+    ]
+    assert manifest["captures"][0]["order"] == 2
+    assert manifest["captures"][0]["count"] == len(specs)
+    assert manifest["captures"][0]["manifest"].endswith(
+        "scenes/02_rigid_solver_compare/manifest.json"
+    )
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "2/3 rigid_solver_compare" in review_html
+
+
 def test_rigid_workflow_run_aggregates_scene_manifests(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -553,6 +600,54 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     assert "missing_manifest" in review_index.read_text()
 
 
+def test_rigid_workflow_run_can_resume_from_selected_row(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_solver_compare", 24, 960, 540, True),
+        ("rigid_loop_closure", 72, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    rendered: list[str] = []
+
+    def fake_run(argv: list[str]) -> int:
+        scene = argv[argv.index("--scene") + 1]
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        (output_dir / "manifest.json").write_text(
+            json.dumps({"scene": scene, "artifacts": {}}, sort_keys=True) + "\n"
+        )
+        rendered.append(scene)
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--workflow-start-row",
+            "2",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    assert rendered == ["rigid_solver_compare", "rigid_loop_closure"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["status"] == "complete"
+    assert manifest["capture_count"] == 2
+    assert manifest["workflow_total_count"] == len(specs)
+    assert manifest["workflow_row_start"] == 2
+    assert manifest["workflow_row_end"] == 3
+    assert [capture["status"] for capture in manifest["captures"]] == [
+        "captured",
+        "captured",
+    ]
+
+
 def test_rigid_workflow_scene_capture_runs_in_child_process(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -583,11 +678,47 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
     (
         ("--include-related", "--include-related requires --rigid-workflow"),
         ("--include-packets", "--include-packets requires --rigid-workflow"),
+        (
+            "--workflow-end-row",
+            "--workflow-start-row/--workflow-end-row require --rigid-workflow",
+        ),
     ),
 )
 def test_rigid_workflow_extra_groups_require_workflow(flag: str, message: str) -> None:
+    args = [flag, "--dry-run"]
+    if flag == "--workflow-end-row":
+        args.insert(1, "1")
     with pytest.raises(SystemExit, match=message):
-        capture_py_demo.main([flag, "--dry-run"])
+        capture_py_demo.main(args)
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    (
+        (["--workflow-start-row", "0"], "--workflow-start-row must be >= 1"),
+        (["--workflow-end-row", "0"], "--workflow-end-row must be >= 1"),
+        (
+            ["--workflow-start-row", "3", "--workflow-end-row", "2"],
+            "--workflow-start-row must be <= --workflow-end-row",
+        ),
+        (
+            ["--workflow-end-row", "3"],
+            "--workflow-end-row must be <= 1 for this workflow packet",
+        ),
+    ),
+)
+def test_rigid_workflow_row_selection_validates_bounds(
+    args: list[str], message: str, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setattr(
+        capture_py_demo,
+        "RIGID_WORKFLOW_CAPTURE_SPECS",
+        (("rigid_body", 24, 960, 540, True),),
+    )
+    with pytest.raises(SystemExit, match=message):
+        capture_py_demo.main(
+            ["--rigid-workflow", "--dry-run", "--output-dir", str(tmp_path), *args]
+        )
 
 
 def test_linux_render_env_defaults_to_software_gl(

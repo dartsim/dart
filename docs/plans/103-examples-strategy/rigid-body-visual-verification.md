@@ -267,6 +267,15 @@ pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
+For targeted reruns after a failed or manually inspected row, keep the same
+workflow packet but bound the row range. Row numbers stay absolute, so row 37
+still writes under `scenes/37_<scene>` when related evidence is included:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 17 --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 46 --workflow-end-row 46 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
+```
+
 For motion evidence, add `--video --fps 24` to the same docked capture path.
 The helper encodes an MP4 when `ffmpeg` is available and still keeps the PNG
 frames as inspectable evidence:
@@ -320,6 +329,15 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest row-range workflow rerun follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q`
+  reported `11 passed`. The public dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 46 --workflow-end-row 46 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_row_rerun_dry_run_current`
+  wrote a workflow manifest with `capture_count=1`,
+  `workflow_total_count=46`, `workflow_row_start=46`, `workflow_row_end=46`,
+  and the selected row as `rigid_ipc_stack_packet` with
+  `workflow_group=capture_first_packet`. The generated `review_index.html`
+  contained the absolute `46/46 rigid_ipc_stack_packet` row.
 - Latest capture-first packet bundle follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented -q`
   reported `8 passed`. The public dry-run

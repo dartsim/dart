@@ -3,20 +3,21 @@
 ## Current Handoff (2026-06-12)
 
 This checkpoint resumes after the earlier stop-state hand-off and captures the
-related-evidence bundle as local work.
+workflow row-range rerun helper as local work.
 
 Expected repository state after this checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is three local commits ahead of origin unless a future session has
+- The branch is four local commits ahead of origin unless a future session has
   pushed it:
   - `1e3fd63bc04 Route rigid related search directly`.
   - `Capture rigid related evidence bundle`.
   - `Capture rigid IPC packet bundle`.
+  - `Resume rigid workflow captures by row`.
 - There is no PR associated with this branch at checkpoint time.
-- The latest checkpoint has not been pushed; do not push without explicit
+- The latest checkpoint has not been pushed. Do not push without explicit
   maintainer/user approval in that session.
-- Before any further commit, rerun the repository-mandated `pixi run lint`.
+- Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
 
@@ -81,6 +82,11 @@ The latest continuation adds a second opt-in bundle:
 capture-first `rigid_ipc_stack_packet` after the numbered rows and optional
 related-evidence routes with `workflow_group=capture_first_packet`.
 
+The current continuation adds workflow row-range selection:
+`py-demo-capture -- --rigid-workflow --workflow-start-row N --workflow-end-row M`
+captures or dry-runs only the selected absolute workflow rows while keeping
+their original row labels and `scenes/NN_<scene>` output directories.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -92,17 +98,19 @@ Current snapshot:
 - Latest pushed commits:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current branch is expected to be three local commits ahead of origin after this
+- Current branch is expected to be four local commits ahead of origin after this
   checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
-  `Capture rigid related evidence bundle` and `Capture rigid IPC packet bundle`.
+  `Capture rigid related evidence bundle`, `Capture rigid IPC packet bundle`,
+  and `Resume rigid workflow captures by row`.
 - The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval.
+  maintainer/user approval in the next active session.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and confirm whether the local checkpoint has been
-pushed or is still ahead of origin. Do not push without explicit approval in
-that session, and rerun `pixi run lint` before committing further changes.
+pushed or is still ahead of origin. Expect four unpushed commits unless a
+future session has already handled them. Do not push without explicit approval
+in that session, and rerun `pixi run lint` before committing further changes.
 
 ## Context That Would Be Lost
 
@@ -149,6 +157,10 @@ that session, and rerun `pixi run lint` before committing further changes.
 - The capture-first packet bundle is also opt-in. `--include-packets` appends
   `rigid_ipc_stack_packet` after the numbered rows and, when present, after the
   related-evidence rows.
+- Row-range selection is intended for targeted reruns after a long workflow
+  packet fails or needs manual inspection. It keeps absolute row labels and
+  output directories, so selected row 46 still appears as `46/46` and writes to
+  `scenes/46_rigid_ipc_stack_packet`.
 
 ## How To Resume
 
@@ -267,3 +279,17 @@ The focused pytest reported `8 passed`. The public dry-run completed with
 46 planned capture commands, the manifest reported `include_related=true`,
 `include_packets=true`, `capture_count=46`, and the generated review index
 contained the final `46/46 rigid_ipc_stack_packet` capture-first packet row.
+
+Current row-range workflow rerun validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 46 --workflow-end-row 46 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_row_rerun_dry_run_current
+jq -r '.capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].order, .captures[0].count, .captures[0].scene, .captures[0].workflow_group' /tmp/dart_capture_rigid_workflow_row_rerun_dry_run_current/manifest.json
+rg -n "46/46|rigid_ipc_stack_packet|capture_first_packet" /tmp/dart_capture_rigid_workflow_row_rerun_dry_run_current/review_index.html
+```
+
+The focused pytest reported `11 passed`. The public dry-run completed with
+one selected row-46 command, the manifest reported `capture_count=1`,
+`workflow_total_count=46`, selected row order/count `46/46`, and the generated
+review index contained the absolute `46/46 rigid_ipc_stack_packet` row.

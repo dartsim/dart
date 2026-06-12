@@ -670,6 +670,18 @@ pixi run py-demo-capture -- --rigid-workflow --include-related \
     --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
+For targeted reruns after a failed or manually inspected row, keep the same
+workflow packet but bound the row range. Row numbers stay absolute, so row 37
+still writes under `scenes/37_<scene>` when related evidence is included:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow \
+    --workflow-start-row 15 --workflow-end-row 17 --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related \
+    --include-packets --workflow-start-row 46 --workflow-end-row 46 \
+    --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
+```
+
 Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash
