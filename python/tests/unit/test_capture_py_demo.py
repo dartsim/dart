@@ -448,6 +448,9 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "Rows Missing Guidance" not in review_html
     assert "1-2 / 2" in review_html
     assert "numbered" in review_html
+    assert "rerun workflow row" in review_html
+    assert "--workflow-start-row 1 --workflow-end-row 1" in review_html
+    assert f"{output}/reruns/01_rigid_body" in review_html
     assert "What is the baseline DART 7 World rigid-body path?" in review_html
     assert "Healthy: contacts settle" in review_html
     assert "rigid_solver_compare" in review_html

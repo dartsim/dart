@@ -67,11 +67,12 @@ comparison axis and held-fixed controls directly in both the panel and capture
 metrics.
 The workflow capture helper also writes `review_index.html` beside the
 top-level manifest. That static contact sheet links every numbered row's
-manifest, screenshot, frame directory, live open command, capture command,
-maintained user question, try-first guidance, healthy signal, scope note, and
-comparison/metrics summary so a reviewer can scan all 36 captures without
-opening each scene folder. When workflow captures request `--video`, the same
-review index links each row's MP4 motion artifact if `ffmpeg` is available.
+manifest, screenshot, frame directory, live open command, workflow-row rerun
+command, direct capture command, maintained user question, try-first guidance,
+healthy signal, scope note, and comparison/metrics summary so a reviewer can
+scan all 36 captures without opening each scene folder. When workflow captures
+request `--video`, the same review index links each row's MP4 motion artifact
+if `ffmpeg` is available.
 Rows with scene-owned Replay timeline metadata also export a JSON-safe
 `scene_metadata.replay_timeline` summary, so the per-scene manifest and review
 card name the exact Replay value track and whether it has signal and marker
@@ -414,6 +415,14 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest review-index row-rerun command slice:
+  every workflow review card now includes the packet-preserving
+  `workflow_rerun_command` for that selected row, not only the failed-row
+  summary block. The focused
+  `test_rigid_workflow_dry_run_writes_capture_plan` guard checks that a
+  planned review card exposes `rerun workflow row`, the absolute
+  `--workflow-start-row/--workflow-end-row` selector, and the row-specific
+  `reruns/<row>_<scene>` output directory.
 - Latest workflow failure-resilience slice:
   `py-demo-capture -- --rigid-workflow --continue-on-failure` now keeps
   capturing later selected rows after a row fails while still writing a final

@@ -2,7 +2,13 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: the C++ `dart-demos --list` path is now a non-graphics
+Latest local slice: the rigid workflow `review_index.html` now shows each
+selected row's packet-preserving `workflow_rerun_command` directly on the row
+card, not only inside the Failed Rows summary. This lets reviewers rerun any
+planned, captured, or failed row with the same workflow packet shape, absolute
+row number, and row-specific rerun output directory.
+
+Previous checkpoint: the C++ `dart-demos --list` path is now a non-graphics
 catalog command. `runDemos()` prints the registered C++ demo catalog before GUI
 backend initialization, `examples/demos/CMakeLists.txt` registers
 `EXAMPLE_dart_demos_list` as a normal non-graphics example/catalog test, and
@@ -62,16 +68,16 @@ Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Current continuation started with the branch clean at
-  `41186522838 Retire C++ collision sandbox placeholder`, eight commits ahead
-  of `origin/feature/rigid-body-gui-visual-verification`, then added the
-  non-graphics `dart-demos --list` follow-up in
-  `dart/gui/detail/application.cpp`, `examples/demos/CMakeLists.txt`,
-  `examples/README.md`, this file, and `README.md`.
+  `bb6bede0104 Make dart-demos list catalog without graphics`, nine commits
+  ahead of `origin/feature/rigid-body-gui-visual-verification`, then added the
+  review-index row-rerun command follow-up in `scripts/capture_py_demo.py`,
+  `python/tests/unit/test_capture_py_demo.py`, `python/examples/demos/README.md`,
+  PLAN-103's rigid sidecar, this file, and `README.md`.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
   resumed work. Expect the latest completed implementation commit to be
-  `Make dart-demos list catalog without graphics` if this slice has been
-  committed; otherwise inspect the uncommitted diff for the same non-graphics
-  follow-up files named above.
+  `Expose rigid workflow row reruns in review index` if this slice has been
+  committed; otherwise inspect the uncommitted diff for the same review-index
+  row-rerun command follow-up files named above.
 - Do not push without explicit approval in the session that performs the push.
 - Latest local slice updates `examples/demos/registry.cpp`,
   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
@@ -95,6 +101,15 @@ Observed repository state at this hand-off:
   `python/tests/unit/test_run_cpp_example.py` suite reported `66 passed`, and
   `pixi run lint`, `pixi run check-lint-md`, `pixi run check-docs-policy`,
   `pixi run check-lint-spell`, and `git diff --check` passed.
+- Latest local review-index follow-up updates `scripts/capture_py_demo.py`,
+  `python/tests/unit/test_capture_py_demo.py`, `python/examples/demos/README.md`,
+  PLAN-103's rigid sidecar, and this handoff so every selected workflow row card
+  shows its packet-preserving rerun command.
+- Verification for the latest review-index follow-up: the focused
+  `python/tests/unit/test_capture_py_demo.py -k rigid_workflow` suite reported
+  `25 passed, 14 deselected` with the built `dartpy` PYTHONPATH. The final
+  lint, Markdown-format, docs-policy, spelling, and `git diff --check` gates
+  passed.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -669,9 +684,9 @@ Current snapshot:
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
 first. Expect the latest completed local implementation commit to be
-`Make dart-demos list catalog without graphics` if this slice has been
-committed; otherwise inspect the uncommitted diff for the same non-graphics
-`dart-demos --list` follow-up.
+`Expose rigid workflow row reruns in review index` if this slice has been
+committed; otherwise inspect the uncommitted diff for the same review-index
+row-rerun command follow-up.
 
 If the tree is clean with that slice present, return to maintainer acceptance
 for the current scoped rigid visual workflow. If accepted, prepare the

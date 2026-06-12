@@ -1548,6 +1548,12 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
             '<p class="command-label">open live</p>'
             f"<pre>{html.escape(viewer_command)}</pre>"
         )
+    workflow_rerun_command = capture.get("workflow_rerun_command")
+    if isinstance(workflow_rerun_command, str) and workflow_rerun_command:
+        command_blocks.append(
+            '<p class="command-label">rerun workflow row</p>'
+            f"<pre>{html.escape(workflow_rerun_command)}</pre>"
+        )
     command_blocks.append(
         '<p class="command-label">capture evidence</p>'
         f"<pre>{html.escape(command)}</pre>"

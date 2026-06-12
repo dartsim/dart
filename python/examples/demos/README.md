@@ -158,14 +158,14 @@ metrics so solver, executor, contact-policy, workload-size, and
 parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
-frame directories, live open commands, capture commands, and metric summaries
-can be reviewed from one page. Rows with scene-owned Replay timeline metadata
-also write a JSON-safe `scene_metadata.replay_timeline` summary into each
-per-scene manifest, and the review card names the Replay track plus whether it
-has signal and marker tracks. The panel also includes a current-row motion
-packet command; workflow packets pass `--video --fps` through to the selected
-row captures and the review index links MP4 artifacts when `ffmpeg` is
-available.
+frame directories, live open commands, workflow-row rerun commands, direct
+capture commands, and metric summaries can be reviewed from one page. Rows with
+scene-owned Replay timeline metadata also write a JSON-safe
+`scene_metadata.replay_timeline` summary into each per-scene manifest, and the
+review card names the Replay track plus whether it has signal and marker
+tracks. The panel also includes a current-row motion packet command; workflow
+packets pass `--video --fps` through to the selected row captures and the
+review index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
@@ -710,9 +710,9 @@ Use the workflow mode to plan or run the full numbered rigid capture set. It
 writes a top-level manifest that points at every per-scene manifest and a
 `review_index.html` contact sheet for scanning the 36 screenshots, row
 questions, try-first guidance, scope notes, live open commands, capture
-commands, and metric summaries from one page: the in-viewer `Rigid Workflow`
-panel also shows the full numbered packet, current-row rerun, and extended
-related/IPC-shelf/packet commands.
+commands, workflow-row rerun commands, and metric summaries from one page: the
+in-viewer `Rigid Workflow` panel also shows the full numbered packet,
+current-row rerun, and extended related/IPC-shelf/packet commands.
 Optional related, direct IPC shelf, and capture-first packet rows carry the
 same row-guidance fields in the manifest and review index, so extended packets
 remain readable without opening the live GUI. The same outputs also include a
