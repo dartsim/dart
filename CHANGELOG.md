@@ -1426,6 +1426,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.
+  - Updated LCP background documentation to use DART 7 snake_case
+    `dart/math/lcp` header paths and extended the LCP solver roster lint check
+    to reject stale documented LCP header/source paths.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly

@@ -18,17 +18,19 @@ billiard symmetry is tracked alongside momentum and kinetic-energy error. The
 high-mass-ratio stack benchmark metadata now points at
 `BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp`. The live LCP panel
 also plots billiard momentum, energy, and symmetry invariant histories for both
-comparison worlds. The current slice adds
+comparison worlds. The next checkpoint added
 `representative_benchmark_filter` and `representative_benchmark_command` to the
 LCP py-demo metadata, derived from the benchmark packet table while preserving
-the existing smoke command.
+the existing smoke command. The current slice realigns LCP background docs with
+DART 7 snake_case solver header paths and extends the LCP roster lint gate to
+reject stale documented LCP header/source paths.
 
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — current local work builds on
-`eb2147d9e6b Document current LCP handoff state`. The HTTPS-tracked
-`origin/feature/lcp-solver-interface-demos` ref was refreshed to that commit
-before this slice, and the worktree started clean.
+`feature/lcp-solver-interface-demos` — current local HEAD is
+`f09ea880ea8 Align LCP docs with snake case headers`. The branch is two commits
+ahead of `origin/feature/lcp-solver-interface-demos`, which is at
+`eb2147d9e6b Document current LCP handoff state`.
 
 The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
 succeeded. `origin/main` was refreshed over HTTPS and confirmed to be an
@@ -36,9 +38,11 @@ ancestor of `HEAD` before this representative benchmark-command slice.
 
 ## Immediate Next Step
 
-Commit the current representative benchmark-command checkpoint, then continue
-with the next smallest LCP solver/interface/demo gap. Do not push unless the
-maintainer/user gives explicit approval in the current turn.
+Continue with the next smallest LCP solver/interface/demo gap. A good next
+audit target is whether any standard-only solver support predicate should be
+more precise than family-level support, similar to the completed Direct solver
+per-problem support fix. Do not push unless the maintainer/user gives explicit
+approval in the current turn.
 
 ## Context That Would Be Lost
 
@@ -121,6 +125,20 @@ maintainer/user gives explicit approval in the current turn.
 - Verification for the current slice passed:
   `python/tests/unit/test_py_demo_panels.py` passed 43 tests and
   `pixi run lint` passed.
+- The source-layout docs slice committed as
+  `f09ea880ea8 Align LCP docs with snake case headers` updates
+  `docs/background/lcp/02_overview.md`,
+  `docs/background/lcp/03_pivoting-methods.md`,
+  `docs/background/lcp/05_newton-methods.md`, and
+  `docs/background/lcp/06_other-methods.md` from legacy PascalCase-style header
+  paths to DART 7 snake_case paths.
+- `scripts/check_lcp_solver_roster.py` now scans LCP background docs for
+  documented `dart/math/lcp` and LCP subdirectory header/source paths and fails
+  if the referenced files do not exist.
+- Focused verification for the current source-layout docs slice passed:
+  `pixi run python scripts/check_lcp_solver_roster.py`.
+- Final verification for the current source-layout docs slice passed:
+  `pixi run lint`.
 
 ## How to Resume
 

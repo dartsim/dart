@@ -29,6 +29,8 @@
 - [x] Added a representative benchmark-suite filter and command to the LCP
       py-demo metadata, derived from the benchmark packet table while keeping
       the smoke command intact.
+- [x] Realigned LCP background docs with DART 7 snake_case solver header paths
+      and extended the LCP roster lint gate to catch stale documented paths.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -67,6 +69,33 @@ rediscovering the current branch state.
   demo benchmark seed for Dantzig and friction-index-capable iterative solvers.
 
 ## Latest Code Checkpoint
+
+The latest checkpoint realigns the LCP background docs with the actual DART 7
+source layout:
+
+- `docs/background/lcp/02_overview.md` now lists snake_case `dart/math/lcp`
+  solver header/source paths in the implementation table, repository layout,
+  section headings, and completion checklist.
+- `docs/background/lcp/03_pivoting-methods.md`,
+  `docs/background/lcp/05_newton-methods.md`, and
+  `docs/background/lcp/06_other-methods.md` now use snake_case include paths in
+  C++ snippets.
+- `scripts/check_lcp_solver_roster.py` now scans LCP background docs for
+  documented LCP header/source paths and fails if those paths do not exist.
+
+Verification for this checkpoint:
+
+```bash
+pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+```
+
+Observed results:
+
+- `pixi run python scripts/check_lcp_solver_roster.py`: passed.
+- `pixi run lint`: passed.
+
+## Representative Benchmark Command Checkpoint
 
 The latest implementation checkpoint exposes a practical benchmark-suite
 command in the LCP py-demo metadata:

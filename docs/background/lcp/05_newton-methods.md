@@ -51,7 +51,7 @@ $$\Delta x_{\mathcal{F}} = -H_{\mathcal{F}} = -x_{\mathcal{F}} \quad \text{(dire
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/newton/MinimumMapNewtonSolver.hpp>
+#include <dart/math/lcp/newton/minimum_map_newton_solver.hpp>
 
 dart::math::MinimumMapNewtonSolver solver;
 dart::math::MinimumMapNewtonSolver::Parameters params;
@@ -124,7 +124,7 @@ where $y_i = (Ax - b)_i$.
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/newton/FischerBurmeisterNewtonSolver.hpp>
+#include <dart/math/lcp/newton/fischer_burmeister_newton_solver.hpp>
 
 dart::math::FischerBurmeisterNewtonSolver solver;
 dart::math::FischerBurmeisterNewtonSolver::Parameters params;
@@ -386,7 +386,7 @@ the generalized Jacobian, so coupled friction-index cases are handled by the
 Newton system rather than treated as fixed boxes.
 
 ```cpp
-#include <dart/math/lcp/newton/BoxedSemiSmoothNewtonSolver.hpp>
+#include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>
 
 dart::math::BoxedSemiSmoothNewtonSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();

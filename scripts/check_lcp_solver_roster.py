@@ -14,9 +14,15 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 SELECTION_GUIDE_PATH = ROOT / "docs/background/lcp/07_selection-guide.md"
 LCP_DEMO_PATH = ROOT / "python/examples/demos/scenes/lcp_physics.py"
+LCP_DOCS_DIR = ROOT / "docs/background/lcp"
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
 DARTPY_INIT_STUB_PATH = ROOT / "python/stubs/dartpy/__init__.pyi"
+DOCUMENTED_LCP_PATH_PATTERN = re.compile(
+    r"(?P<path>dart/math/lcp/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+\.(?:hpp|cpp)"
+    r"|(?:pivoting|projection|newton|other)/(?:[A-Za-z0-9_]+/)*"
+    r"[A-Za-z0-9_]+\.(?:hpp|cpp))(?:/cpp)?"
+)
 
 
 @dataclass(frozen=True)
@@ -140,7 +146,45 @@ def assert_unique(values: list[str], label: str) -> None:
         raise AssertionError(f"{label} contains duplicate entries: {duplicates}")
 
 
+def _documented_lcp_path_candidates(raw_path: str, token: str) -> list[Path]:
+    paths = [raw_path]
+    if token.endswith(".hpp/cpp"):
+        paths.append(f"{raw_path.removesuffix('.hpp')}.cpp")
+    if token.endswith(".cpp/hpp"):
+        paths.append(f"{raw_path.removesuffix('.cpp')}.hpp")
+
+    candidates: list[Path] = []
+    for path in paths:
+        if path.startswith("dart/math/lcp/"):
+            candidates.append(ROOT / path)
+        else:
+            candidates.append(ROOT / "dart/math/lcp" / path)
+    return candidates
+
+
+def check_documented_lcp_paths() -> None:
+    missing: list[str] = []
+    for doc_path in sorted(LCP_DOCS_DIR.glob("*.md")):
+        text = _read(doc_path)
+        for match in DOCUMENTED_LCP_PATH_PATTERN.finditer(text):
+            token = match.group(0)
+            raw_path = match.group("path")
+            for candidate in _documented_lcp_path_candidates(raw_path, token):
+                if not candidate.is_file():
+                    rel_doc = doc_path.relative_to(ROOT)
+                    rel_candidate = candidate.relative_to(ROOT)
+                    missing.append(f"{rel_doc}: {token} -> {rel_candidate}")
+
+    if missing:
+        formatted = "\n".join(f"  - {entry}" for entry in missing)
+        raise AssertionError(
+            "documented LCP header/source paths do not exist:\n" f"{formatted}"
+        )
+
+
 def check_roster() -> None:
+    check_documented_lcp_paths()
+
     manifest = parse_cpp_manifest()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]

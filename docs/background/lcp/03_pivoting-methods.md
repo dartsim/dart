@@ -133,7 +133,7 @@ bool SolveLCP(int n, Scalar* A, Scalar* x, Scalar* b, Scalar* w,
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/DantzigSolver.hpp>
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 
 using namespace dart::math;
 
@@ -148,7 +148,7 @@ LcpResult result = solver.solve(problem, x, solver.getDefaultOptions());
 The underlying ODE-derived implementation is also available directly:
 
 ```cpp
-#include <dart/math/lcp/pivoting/dantzig/Lcp.hpp>
+#include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
 
 using namespace dart::math;
 
@@ -206,7 +206,7 @@ $$z^T w = 0$$
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/LemkeSolver.hpp>
+#include <dart/math/lcp/pivoting/lemke_solver.hpp>
 
 using namespace dart::math;
 
@@ -261,7 +261,7 @@ For each active set $S \subseteq \{1, \ldots, n\}$:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/DirectSolver.hpp>
+#include <dart/math/lcp/pivoting/direct_solver.hpp>
 
 using namespace dart::math;
 
@@ -354,7 +354,7 @@ Notes:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/pivoting/BaraffSolver.hpp>
+#include <dart/math/lcp/pivoting/baraff_solver.hpp>
 
 using namespace dart::math;
 

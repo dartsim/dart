@@ -67,7 +67,7 @@ For iter $= 1$ to max_iter:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/InteriorPointSolver.hpp>
+#include <dart/math/lcp/other/interior_point_solver.hpp>
 
 using namespace dart::math;
 
@@ -268,7 +268,7 @@ for layer in layers (bottom to top):
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/ShockPropagationSolver.hpp>
+#include <dart/math/lcp/other/shock_propagation_solver.hpp>
 
 using namespace dart::math;
 
@@ -340,7 +340,7 @@ while not converged:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/other/MprgpSolver.hpp>
+#include <dart/math/lcp/other/mprgp_solver.hpp>
 
 using namespace dart::math;
 
@@ -398,7 +398,7 @@ the focused correctness slice and `BM_LcpMildIllConditioned/ExtremeCoupled*`
 rows keep that claim separate from broader all-solver conditioning coverage.
 
 ```cpp
-#include <dart/math/lcp/other/AdmmSolver.hpp>
+#include <dart/math/lcp/other/admm_solver.hpp>
 
 dart::math::AdmmSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
@@ -436,7 +436,7 @@ friction-index packets at 16 and 24 contacts; the focused correctness slice and
 broader all-solver conditioning coverage.
 
 ```cpp
-#include <dart/math/lcp/other/SapSolver.hpp>
+#include <dart/math/lcp/other/sap_solver.hpp>
 
 dart::math::SapSolver solver;
 dart::math::LcpOptions options = solver.getDefaultOptions();
@@ -469,7 +469,7 @@ for iter = 1 to max_iter:
 ### DART Implementation
 
 ```cpp
-#include <dart/math/lcp/projection/BlockedJacobiSolver.hpp>
+#include <dart/math/lcp/projection/blocked_jacobi_solver.hpp>
 
 using namespace dart::math;
 
