@@ -26,6 +26,43 @@ active barrier subcase failed before its fix with 157 global allocations / 7968
 bytes over four steps. The focused baked dynamic rigid IPC gate now covers both
 with zero global heap allocation.
 
+Critical live-WIP handoff after the final stop request: the shared checkout had
+uncommitted investigative rigid IPC changes when work stopped. They are
+preserved, without committing them as source, in
+`docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch`.
+The patch touches:
+
+- `dart/simulation/compute/world_step_stage.cpp`
+- `dart/simulation/detail/rigid_ipc_barrier.cpp`
+- `dart/simulation/detail/rigid_ipc_barrier.hpp`
+- `tests/unit/simulation/world/test_world.cpp`
+
+The WIP adds baked dynamic rigid IPC fixed-joint, revolute-joint, and two-box
+stack subcases. The fixed/revolute cases passed in the focused gate before the
+stack case was added. The stack case is the measured open gap:
+`World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` fails for
+`dynamic rigid IPC two-box stack` with 1 global allocation / 96 bytes over the
+counted baked steps. The temporary backtrace points through
+`solveRigidIpcProjectedNewtonBarrierSystem()` into
+`assembleRigidIpcObjectiveSystemWithScratch()`.
+
+Do not commit the patch as-is. It includes temporary heap backtrace
+instrumentation in `tests/unit/simulation/world/test_world.cpp` and
+experimental rigid IPC prewarm/small-scratch edits that did not close the
+96-byte allocation. A fresh agent should continue from the local dirty checkout
+if present, or apply the patch to a clean branch with:
+
+```bash
+git apply docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch
+```
+
+Before producing a real commit, remove the debug-only heap logging, reassess or
+remove the experimental `prewarmRigidIpcProjectedNewtonAssemblyScratch()` API,
+and identify the actual allocator-backed object growing inside the
+two-box-stack assembly path. No lint, build, test, or CI verification was run
+after the critical stop request; the failing stack result came from the focused
+test job that was already in progress.
+
 The maintainer then issued a critical stop request for handoff only, with no
 further verification. A `pixi run test-unit` job was in progress and was
 terminated to honor that request; do not treat full `pixi run test-unit`
@@ -70,8 +107,11 @@ git status -sb
 git log --oneline --decorate -5
 ```
 
-Expected status after the handoff push: clean worktree, branch even with
-`origin/pr/hmm-phase45-follow-up-clean`.
+Expected status from a fresh clone after the handoff push: clean worktree,
+branch even with `origin/pr/hmm-phase45-follow-up-clean`, with the WIP patch
+available under this dev-task folder. Expected status in the shared local
+checkout may still show the four uncommitted WIP source/test files listed
+above.
 
 Immediate next step: start from the pushed
 `pr/hmm-phase45-follow-up-clean` branch, choose the next remaining Phase 4/5

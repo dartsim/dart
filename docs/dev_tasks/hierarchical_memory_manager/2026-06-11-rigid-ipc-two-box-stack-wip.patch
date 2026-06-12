@@ -1,0 +1,386 @@
+diff --git a/dart/simulation/compute/world_step_stage.cpp b/dart/simulation/compute/world_step_stage.cpp
+index 503125fb53a..0b804b10af9 100644
+--- a/dart/simulation/compute/world_step_stage.cpp
++++ b/dart/simulation/compute/world_step_stage.cpp
+@@ -10733,6 +10733,17 @@ void RigidIpcContactStage::prepare(World& world)
+       m_scratch->surfaces,
+       m_scratch->dynamicsTerms,
+       m_scratch->payloadAllocator);
++  collectRigidIpcArticulationConstraints(
++      world, m_scratch->solverBodies, m_scratch->articulationConstraints);
++  const auto prewarmSolveSurfaces = [&](auto& solveSurfaces) {
++    solveSurfaces.assign(m_scratch->surfaces.begin(), m_scratch->surfaces.end());
++  };
++  prewarmSolveSurfaces(m_scratch->solveResult.surfaces);
++  prewarmSolveSurfaces(m_scratch->solveScratch.laggedSurfaces);
++  prewarmSolveSurfaces(m_scratch->solveScratch.lineSearchStartSurfaces);
++  prewarmSolveSurfaces(m_scratch->solveScratch.candidateSurfaces);
++  prewarmSolveSurfaces(m_scratch->solveScratch.acceptedSurfaces);
++  prewarmSolveSurfaces(m_scratch->solveScratch.bestDecreasingSurfaces);
+   std::size_t dynamicDofCount = 0u;
+   for (const auto& surface : m_scratch->surfaces) {
+     if (surface.dynamic) {
+@@ -10764,6 +10775,24 @@ void RigidIpcContactStage::prepare(World& world)
+   }
+   assembly.activeConstraints.reserve(primitiveCapacity);
+   assembly.activeFrictionConstraints.reserve(primitiveCapacity);
++
++  sxdetail::RigidIpcBarrierOptions barrierOptions;
++  barrierOptions.squaredActivationDistance
++      = m_options.activationDistance * m_options.activationDistance;
++  barrierOptions.stiffness
++      = std::max(1.0, world.getRigidIpcAdaptiveBarrierStiffnessLowerBound());
++  sxdetail::RigidIpcFrictionOptions frictionOptions;
++  frictionOptions.coefficient = 1.0;
++  frictionOptions.staticFrictionDisplacement
++      = std::max(0.0, m_options.staticFrictionSpeedBound * world.getTimeStep());
++  sxdetail::prewarmRigidIpcProjectedNewtonAssemblyScratch(
++      m_scratch->surfaces,
++      m_scratch->surfaces,
++      m_scratch->dynamicsTerms,
++      m_scratch->articulationConstraints,
++      barrierOptions,
++      frictionOptions,
++      m_scratch->solveScratch);
+ }
+ 
+ //==============================================================================
+diff --git a/dart/simulation/detail/rigid_ipc_barrier.cpp b/dart/simulation/detail/rigid_ipc_barrier.cpp
+index c611bb7ff8e..e900ee1eee0 100644
+--- a/dart/simulation/detail/rigid_ipc_barrier.cpp
++++ b/dart/simulation/detail/rigid_ipc_barrier.cpp
+@@ -43,6 +43,7 @@
+ #include <algorithm>
+ #include <array>
+ #include <limits>
++#include <optional>
+ #include <tuple>
+ #include <utility>
+ #include <vector>
+@@ -167,6 +168,8 @@ using BarrierTripletAllocator = dart::common::StlAllocator<BarrierTriplet>;
+ 
+ struct RigidIpcSurfacePairScratch
+ {
++  static constexpr std::size_t kSmallSurfaceEdgeCapacity = 8u;
++
+   explicit RigidIpcSurfacePairScratch(
+       dart::common::MemoryAllocator* allocator = nullptr)
+     : memoryAllocator(allocator),
+@@ -181,6 +184,23 @@ struct RigidIpcSurfacePairScratch
+ 
+   void resizeSurfaceEdges(std::size_t size)
+   {
++    if (size <= kSmallSurfaceEdgeCapacity) {
++      useSmallSurfaceEdges = true;
++      surfaceEdgeCount = size;
++      for (std::size_t i = 0; i < size; ++i) {
++        if (!smallSurfaceEdges[i].has_value()) {
++          if (memoryAllocator != nullptr) {
++            smallSurfaceEdges[i].emplace(SurfaceEdgeAllocator{*memoryAllocator});
++          } else {
++            smallSurfaceEdges[i].emplace();
++          }
++        }
++      }
++      return;
++    }
++
++    useSmallSurfaceEdges = false;
++    surfaceEdgeCount = size;
+     if (surfaceEdges.size() > size) {
+       surfaceEdges.resize(size);
+     }
+@@ -198,7 +218,22 @@ struct RigidIpcSurfacePairScratch
+     }
+   }
+ 
++  SurfaceEdgeVector& surfaceEdgesAt(std::size_t index)
++  {
++    assert(index < surfaceEdgeCount);
++    if (useSmallSurfaceEdges) {
++      assert(index < kSmallSurfaceEdgeCapacity);
++      assert(smallSurfaceEdges[index].has_value());
++      return *smallSurfaceEdges[index];
++    }
++    return surfaceEdges[index];
++  }
++
+   dart::common::MemoryAllocator* memoryAllocator = nullptr;
++  bool useSmallSurfaceEdges = true;
++  std::size_t surfaceEdgeCount = 0u;
++  std::array<std::optional<SurfaceEdgeVector>, kSmallSurfaceEdgeCapacity>
++      smallSurfaceEdges;
+   std::vector<SurfaceEdgeVector, SurfaceEdgeVectorAllocator> surfaceEdges;
+   std::vector<SurfaceWorldAabb, SurfaceWorldAabbAllocator> surfaceAabbs;
+   std::vector<double, SurfaceMarginAllocator> surfaceMargins;
+@@ -1934,13 +1969,12 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
+   RigidIpcBarrierAssembly assembly;
+   initializeGlobalAssembly(surfaces, assembly);
+ 
+-  auto& surfaceEdges = scratch.pairs.surfaceEdges;
+   scratch.pairs.resizeSurfaceEdges(surfaces.size());
+   auto& surfaceAabbs = scratch.pairs.surfaceAabbs;
+   surfaceAabbs.clear();
+   surfaceAabbs.reserve(surfaces.size());
+   for (std::size_t body = 0; body < surfaces.size(); ++body) {
+-    buildSurfaceEdges(surfaces[body], surfaceEdges[body]);
++    buildSurfaceEdges(surfaces[body], scratch.pairs.surfaceEdgesAt(body));
+     surfaceAabbs.push_back(computeSurfaceWorldAabb(surfaces[body]));
+   }
+ 
+@@ -1998,7 +2032,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
+       }
+ 
+       for (std::size_t pointA = 0; pointA < a.vertices.size(); ++pointA) {
+-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
++        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
+           const auto reduced = rigidIpcPointEdgeReducedBarrier(
+               a.vertices[pointA],
+               a.pose,
+@@ -2020,7 +2054,7 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
+         }
+       }
+       for (std::size_t pointB = 0; pointB < b.vertices.size(); ++pointB) {
+-        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
++        for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
+           const auto reduced = rigidIpcPointEdgeReducedBarrier(
+               b.vertices[pointB],
+               b.pose,
+@@ -2042,8 +2076,8 @@ static RigidIpcBarrierAssembly assembleRigidIpcBarrierSystemWithScratch(
+         }
+       }
+ 
+-      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
++      for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
++        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
+           const auto reduced = rigidIpcEdgeEdgeReducedBarrier(
+               a.vertices[edgeA.vertexA],
+               a.vertices[edgeA.vertexB],
+@@ -2261,7 +2295,6 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
+   const collision::native::CcdOption ccdOption
+       = newton_barrier::makeLineSearchCcdOption(options);
+ 
+-  auto& surfaceEdges = scratch.pairs.surfaceEdges;
+   scratch.pairs.resizeSurfaceEdges(startSurfaces.size());
+   auto& startAabbs = scratch.pairs.surfaceAabbs;
+   startAabbs.clear();
+@@ -2271,7 +2304,8 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
+   motionBounds.reserve(startSurfaces.size());
+   for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
+     assertMatchingSurfaceTopology(startSurfaces[body], endSurfaces[body]);
+-    buildSurfaceEdges(startSurfaces[body], surfaceEdges[body]);
++    buildSurfaceEdges(
++        startSurfaces[body], scratch.pairs.surfaceEdgesAt(body));
+     startAabbs.push_back(computeSurfaceWorldAabb(startSurfaces[body]));
+     motionBounds.push_back(
+         surfaceMotionBound(startSurfaces[body], endSurfaces[body]));
+@@ -2352,7 +2386,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
+       }
+ 
+       for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {
+-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
++        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
+           collision::native::CcdPrimitiveResult ccdResult;
+           ++result.stats.pointEdgeChecks;
+           const bool hit = rigidIpcPointEdgeCcd(
+@@ -2379,7 +2413,7 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
+         }
+       }
+       for (std::size_t pointB = 0; pointB < b0.vertices.size(); ++pointB) {
+-        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
++        for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
+           collision::native::CcdPrimitiveResult ccdResult;
+           ++result.stats.pointEdgeChecks;
+           const bool hit = rigidIpcPointEdgeCcd(
+@@ -2406,8 +2440,8 @@ static RigidIpcLineSearchResult computeRigidIpcLineSearchStepBoundWithScratch(
+         }
+       }
+ 
+-      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+-        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
++      for (const SurfaceEdge& edgeA : scratch.pairs.surfaceEdgesAt(bodyA)) {
++        for (const SurfaceEdge& edgeB : scratch.pairs.surfaceEdgesAt(bodyB)) {
+           collision::native::CcdPrimitiveResult ccdResult;
+           ++result.stats.edgeEdgeChecks;
+           const bool hit = rigidIpcEdgeEdgeCcd(
+@@ -2633,6 +2667,27 @@ RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
+   return result;
+ }
+ 
++void prewarmRigidIpcProjectedNewtonAssemblyScratch(
++    std::span<const RigidIpcBarrierSurface> surfaces,
++    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
++    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
++    std::span<const RigidIpcArticulationConstraintInput>
++        articulationConstraints,
++    const RigidIpcBarrierOptions& barrierOptions,
++    const RigidIpcFrictionOptions& frictionOptions,
++    RigidIpcProjectedNewtonSolveScratch& scratch)
++{
++  RigidIpcAssemblyScratch assemblyScratch(scratch.memoryAllocator);
++  static_cast<void>(assembleRigidIpcObjectiveSystemWithScratch(
++      surfaces,
++      laggedSurfaces,
++      dynamicsTerms,
++      articulationConstraints,
++      barrierOptions,
++      frictionOptions,
++      assemblyScratch));
++}
++
+ void solveRigidIpcProjectedNewtonBarrierSystem(
+     std::span<const RigidIpcBarrierSurface> surfaces,
+     const RigidIpcProjectedNewtonSolveOptions& options,
+diff --git a/dart/simulation/detail/rigid_ipc_barrier.hpp b/dart/simulation/detail/rigid_ipc_barrier.hpp
+index 4388d6f3951..e85d5276169 100644
+--- a/dart/simulation/detail/rigid_ipc_barrier.hpp
++++ b/dart/simulation/detail/rigid_ipc_barrier.hpp
+@@ -937,6 +937,20 @@ DART_SIMULATION_API void solveRigidIpcProjectedNewtonBarrierSystem(
+     RigidIpcProjectedNewtonSolveResult& result,
+     RigidIpcProjectedNewtonSolveScratch& scratch);
+ 
++/// Prewarm solve-local projected-Newton assembly scratch for a same-shape
++/// solve. This performs assembly work but does not mutate input surfaces or
++/// solver results; temporary allocator-backed storage is released before
++/// returning so baked simulation steps can reuse the World free-list blocks.
++DART_SIMULATION_API void prewarmRigidIpcProjectedNewtonAssemblyScratch(
++    std::span<const RigidIpcBarrierSurface> surfaces,
++    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
++    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
++    std::span<const RigidIpcArticulationConstraintInput>
++        articulationConstraints,
++    const RigidIpcBarrierOptions& barrierOptions,
++    const RigidIpcFrictionOptions& frictionOptions,
++    RigidIpcProjectedNewtonSolveScratch& scratch);
++
+ /// Compute the initial IPC adaptive barrier stiffness (kappa) for a solve.
+ ///
+ /// Ports `ipc::initial_barrier_stiffness` (with `dmin = 0`) using DART's
+diff --git a/tests/unit/simulation/world/test_world.cpp b/tests/unit/simulation/world/test_world.cpp
+index d3ea44d58f7..6d7f4e6df25 100644
+--- a/tests/unit/simulation/world/test_world.cpp
++++ b/tests/unit/simulation/world/test_world.cpp
+@@ -80,6 +80,8 @@
+ 
+ #include <cmath>
+ #include <cstdlib>
++#include <cstdio>
++#include <execinfo.h>
+ #if defined(_WIN32)
+   #include <malloc.h>
+ #endif
+@@ -105,6 +107,10 @@ void recordHeapAllocation(std::size_t bytes) noexcept
+   if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+     g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+     g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
++    std::fprintf(stderr, "heap allocation: %zu bytes\n", bytes);
++    void* frames[32];
++    const int frameCount = ::backtrace(frames, 32);
++    ::backtrace_symbols_fd(frames, frameCount, fileno(stderr));
+   }
+ }
+ 
+@@ -2286,6 +2292,87 @@ void configureActiveRigidIpcMeshBarrierScene(dart::simulation::World& world)
+       sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
+ }
+ 
++void configureRigidIpcFixedJointConstraintScene(dart::simulation::World& world)
++{
++  namespace sx = dart::simulation;
++
++  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
++  world.setTimeStep(0.01);
++  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
++
++  sx::RigidBodyOptions parentOptions;
++  parentOptions.isStatic = true;
++  auto parent = world.addRigidBody("ipc_fixed_parent", parentOptions);
++  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
++
++  sx::RigidBodyOptions childOptions;
++  childOptions.position = Eigen::Vector3d::UnitX();
++  childOptions.mass = 1.0;
++  auto child = world.addRigidBody("ipc_fixed_child", childOptions);
++  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
++  child.setAngularVelocity(Eigen::Vector3d(0.0, 0.25, 0.0));
++  child.setTorque(Eigen::Vector3d(0.0, 1.0, 0.0));
++
++  (void)world.addRigidBodyFixedJoint("ipc_fixed_joint", parent, child);
++}
++
++void configureRigidIpcRevoluteJointConstraintScene(
++    dart::simulation::World& world)
++{
++  namespace sx = dart::simulation;
++  namespace dvbd = sx::detail::deformable_vbd;
++
++  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
++  world.setTimeStep(0.001);
++  world.setGravity(-9.81 * Eigen::Vector3d::UnitY());
++
++  sx::RigidBodyOptions parentOptions;
++  parentOptions.isStatic = true;
++  auto parent = world.addRigidBody("ipc_hinge_parent", parentOptions);
++  parent.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
++
++  sx::RigidBodyOptions childOptions;
++  childOptions.position = Eigen::Vector3d::UnitX();
++  childOptions.mass = 1.0;
++  auto child = world.addRigidBody("ipc_hinge_child", childOptions);
++  child.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
++  auto joint = world.addRigidBodyRevoluteJoint(
++      "ipc_hinge_joint", parent, child, Eigen::Vector3d::UnitZ());
++
++  auto& registry = sx::detail::registryOf(world);
++  auto& config = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(
++      sx::detail::toRegistryEntity(joint.getEntity()));
++  config.localAnchorA = Eigen::Vector3d::Zero();
++  config.localAnchorB = -Eigen::Vector3d::UnitX();
++}
++
++void configureRigidIpcTwoBoxStackScene(dart::simulation::World& world)
++{
++  namespace sx = dart::simulation;
++
++  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
++  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
++  world.setTimeStep(0.005);
++
++  sx::RigidBodyOptions groundOptions;
++  groundOptions.isStatic = true;
++  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
++  auto ground = world.addRigidBody("ipc_stack_ground", groundOptions);
++  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
++
++  sx::RigidBodyOptions lowerOptions;
++  lowerOptions.mass = 1.0;
++  lowerOptions.position = Eigen::Vector3d(0.0, 0.0, 0.252);
++  auto lower = world.addRigidBody("ipc_stack_lower", lowerOptions);
++  lower.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
++
++  sx::RigidBodyOptions upperOptions;
++  upperOptions.mass = 1.0;
++  upperOptions.position = Eigen::Vector3d(0.0, 0.0, 0.754);
++  auto upper = world.addRigidBody("ipc_stack_upper", upperOptions);
++  upper.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
++}
++
+ void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
+     dart::simulation::World& world)
+ {
+@@ -6407,6 +6494,14 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
+   expectNoGlobalHeapAllocationsDuringBakedSteps(
+       "dynamic rigid IPC active barrier",
+       configureActiveRigidIpcMeshBarrierScene);
++  expectNoGlobalHeapAllocationsDuringBakedSteps(
++      "dynamic rigid IPC fixed joint",
++      configureRigidIpcFixedJointConstraintScene);
++  expectNoGlobalHeapAllocationsDuringBakedSteps(
++      "dynamic rigid IPC revolute joint",
++      configureRigidIpcRevoluteJointConstraintScene);
++  expectNoGlobalHeapAllocationsDuringBakedSteps(
++      "dynamic rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
+ }
+ 
+ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

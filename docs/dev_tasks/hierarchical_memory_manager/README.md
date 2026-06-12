@@ -25,6 +25,39 @@ free-list allocator. Treat `git log` on `pr/hmm-phase45-follow-up-clean` as the
 source of truth for the exact pushed branch head, and resume only from a fresh
 session after reading this task state.
 
+Critical live-WIP handoff after the final stop request: the shared checkout had
+uncommitted investigative rigid IPC changes when work stopped. To keep the
+single resume branch sufficient for a fresh agent without committing debug code
+as source, those exact uncommitted changes are captured in
+`docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch`.
+The current local checkout may still show these four modified files:
+
+- `dart/simulation/compute/world_step_stage.cpp`
+- `dart/simulation/detail/rigid_ipc_barrier.cpp`
+- `dart/simulation/detail/rigid_ipc_barrier.hpp`
+- `tests/unit/simulation/world/test_world.cpp`
+
+That WIP adds baked dynamic rigid IPC fixed-joint, revolute-joint, and two-box
+stack subcases. The fixed/revolute subcases had passed in the focused gate
+before the stack case was added. The stack case exposes the next measured
+Phase 5 gap: `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` fails for
+`dynamic rigid IPC two-box stack` with 1 global allocation / 96 bytes over the
+counted baked steps. The allocation stack points into
+`assembleRigidIpcObjectiveSystemWithScratch()` via
+`solveRigidIpcProjectedNewtonBarrierSystem()`.
+
+Do not treat the WIP patch as ready to commit. It currently includes temporary
+heap backtrace instrumentation in `tests/unit/simulation/world/test_world.cpp`
+(`<cstdio>`, `<execinfo.h>`, and printing from `recordHeapAllocation()`), plus
+experimental rigid IPC prewarm/small-scratch changes that did not eliminate the
+96-byte stack allocation. The next agent should either continue from the local
+dirty checkout or apply the patch to a clean
+`pr/hmm-phase45-follow-up-clean` checkout, then remove/reassess the temporary
+diagnostics and experimental `prewarmRigidIpcProjectedNewtonAssemblyScratch()`
+API before any real commit. No lint, build, test, or CI verification was run
+after the critical stop request; the failing stack result was from the focused
+test job already in progress.
+
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
 checkout with:
@@ -33,6 +66,13 @@ checkout with:
 git checkout pr/hmm-phase45-follow-up-clean
 git status -sb
 git log --oneline --decorate -5
+```
+
+If starting from a fresh clone or clean branch, inspect the WIP patch before
+editing:
+
+```bash
+git apply --stat docs/dev_tasks/hierarchical_memory_manager/2026-06-11-rigid-ipc-two-box-stack-wip.patch
 ```
 
 The latest allocator-root slice closes a compute-graph
@@ -1174,7 +1214,10 @@ Remaining Phase 4/5 follow-up items for the next PR:
   failing shapes beyond the current contact-free and active two-mesh-barrier
   gates, such as larger mesh contact sets, articulated IPC constraints, or
   mixed rigid/deformable barrier solves that expose new per-step allocator
-  growth.
+  growth. The current live WIP identifies the next concrete shape:
+  dynamic rigid IPC two-box stack fails the baked no-heap gate with 1 global
+  allocation / 96 bytes in the projected-Newton objective assembly path; see
+  `2026-06-11-rigid-ipc-two-box-stack-wip.patch`.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production
