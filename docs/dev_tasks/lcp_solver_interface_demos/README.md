@@ -1,5 +1,196 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ShockPropagation Feasible-Block Fast Path
+
+The goal was resumed after the stop-only hand-off below. Work continued on the
+next high-ratio profile target: `ShockPropagationSolver`.
+
+Current slice:
+
+- `dart/math/lcp/other/shock_propagation_solver.cpp` now tries a small
+  `Eigen::FullPivLU` local solve for uncoupled fixed-bound blocks when the
+  unconstrained candidate is finite and already feasible.
+- Active-bound, singular, non-finite, larger-than-direct, and local `findex`
+  blocks still use the existing Direct/Dantzig local subproblem fallback.
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp` covers a feasible
+  boxed 3-row block that should solve directly in one outer iteration.
+- `tests/unit/math/lcp/test_additional_solvers.cpp` keeps the non-standard
+  fallback test active by forcing an upper-bound clamp.
+- `docs/background/lcp/06_other-methods.md` documents the feasible-block fast
+  path.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated from the optimized solver.
+- The Python demo profile summary and panel test were updated for the refreshed
+  Standard and FrictionIndex leader/laggard text.
+- `CHANGELOG.md` records the `ShockPropagationSolver` optimization.
+
+Focused before/after `BM_LcpCompare` evidence for this slice:
+
+- Standard profile rows: runtime ratios `0.096`, `0.187`, `0.182`, and `0.196`
+  for sizes 12, 24, 48, and 96 relative to the pre-change focused run.
+- Boxed profile rows: runtime ratios `1.031`, `0.651`, and `0.614` for sizes
+  12, 24, and 48; the smallest boxed row regressed within benchmark noise while
+  larger rows improved.
+- FrictionIndex profile rows: runtime ratios `0.463`, `0.586`, and `0.777` for
+  contact counts 4, 16, and 64.
+- Mean focused ratio was `0.478`; best `0.096`; worst `1.031`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `ShockPropagation` average ratio is now `7.75`; current leaders are
+  `Pgs`, tiny-row `Direct`, `Tgs`, and `SymmetricPsor`; current high-ratio
+  targets include `Lemke`, `InteriorPoint`, `Baraff`, and Newton-family rows.
+- Boxed: `ShockPropagation` average ratio is now `19.70`; current leaders are
+  `Jacobi`, `Tgs`, `Apgd`, and `SymmetricPsor`; current high-ratio targets are
+  `Sap`, `Admm`, `BoxedSemiSmoothNewton`, and `ShockPropagation`.
+- FrictionIndex: `ShockPropagation` average ratio is now `6.94`; current
+  leaders are `Tgs`, `Sap`, `Pgs`, `SymmetricPsor`, and `Jacobi`; current
+  high-ratio targets are `BoxedSemiSmoothNewton`, `BlockedJacobi`,
+  `Staggering`, `BGS`, and `ShockPropagation`.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_additional_solvers \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(additional_solvers|lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/ShockPropagation/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/shock_profile_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- The first corrected build attempt failed because `Eigen::FullPivLU` needed
+  `#include <Eigen/LU>`; that include was added and the corrected build/test
+  target set was rerun successfully.
+- Affected C++ targets rebuilt successfully.
+- Additional solver, comparison, generated coverage, and validation solver
+  tests passed through CTest: `100% tests passed, 0 tests failed out of 4`.
+- Focused ShockPropagation after-run showed all Standard, Boxed, and
+  FrictionIndex profile rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.48s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization or interface audit from the refreshed
+  profile. The clearest remaining profile targets are Standard `Lemke`,
+  `InteriorPoint`, `Baraff`, Newton-family rows, and `BlockedJacobi`; Boxed
+  `Sap`, `Admm`, and `BoxedSemiSmoothNewton`; and FrictionIndex
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `Staggering`, and `BGS`.
+
+## 2026-06-12 Stop-Only Hand-Off - Interrupted ShockPropagation Draft
+
+The user explicitly stopped all further work and requested only hand-off docs,
+with no further verification. Treat this as an interrupted state, not a
+completed checkpoint. Do not continue implementation, verification, merging,
+committing, pushing, or PR work unless the user explicitly asks to resume.
+
+Repository state observed before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD:
+  `8d42442e52c Optimize BGS singleton LCP blocks`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 33]`.
+- Pre-existing worktree edits were present in three C++/test files:
+  `dart/math/lcp/other/shock_propagation_solver.cpp`,
+  `tests/unit/math/lcp/test_additional_solvers.cpp`, and
+  `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`.
+- This hand-off edit intentionally did not merge `main`, create a branch,
+  commit, push, open/update a PR, or run any additional verification.
+
+Uncommitted ShockPropagation draft currently in the worktree:
+
+- `ShockPropagationSolver` has a new `solveUnconstrainedFeasibleBlock()` draft
+  helper that tries a small `Eigen::FullPivLU` local solve for finite,
+  uncoupled fixed-bound blocks when the unconstrained candidate is already
+  feasible. Active-bound, singular, non-finite, larger-than-direct, and local
+  `findex` blocks fall back to the existing Direct/Dantzig path.
+- The solver loop calls that helper before constructing the local subproblem.
+- `test_lcp_validation_and_solvers.cpp` adds
+  `ShockPropagationSolverCoverage.SolvesFeasibleBoxedBlockDirectly`.
+- `test_additional_solvers.cpp` adjusts
+  `ShockPropagationSolver.NonStandardBlockUsesDantzig` so the boxed row clamps
+  at the upper bound, preserving fallback coverage if the feasible-block fast
+  path is kept.
+
+Verification state for the interrupted draft:
+
+- A focused ShockPropagation baseline benchmark was run before these draft
+  edits and wrote `build/shock_profile_before.json`.
+- A first focused build/test attempt after the draft edits used the wrong CMake
+  target name, `UNIT_math_lcp_math_lcp_lcp_additional_solvers`. Ninja reported
+  that target as unknown. Because that command did not fail fast, three older
+  CTests still ran and passed; do not treat that as validation of the current
+  draft.
+- The correct target/test name discovered for the additional solver test is
+  `UNIT_math_lcp_math_lcp_additional_solvers`.
+- No correct compile, CTest, benchmark, lint, build, or `git diff --check` was
+  run after the stop request or for this docs-only hand-off.
+
+If a fresh session is explicitly asked to resume, first inspect the current
+branch/worktree and reread `AGENTS.md`, `docs/ai/principles.md`,
+`docs/dev_tasks/README.md`, this file, and `RESUME.md`. Then decide whether to
+keep, revise, or remove the unverified ShockPropagation draft. If keeping it,
+the first required validation target set is:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_additional_solvers \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(additional_solvers|lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+```
+
+Watch for a possible missing Eigen LU include around `Eigen::FullPivLU`. If the
+draft compiles, run the focused ShockPropagation before/after benchmark before
+updating profile artifacts or docs. Do not push without explicit approval.
+
 ## 2026-06-12 Current Continuation - BGS Singleton Fast Path
 
 The goal was resumed after the stop-only hand-off below. Work continued on the

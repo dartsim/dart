@@ -287,6 +287,10 @@ solver.solve(problem, x, options);
 
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
+> Small uncoupled fixed-bound blocks first try a local direct linear solve when
+> the unconstrained candidate is already feasible; active-bound, singular,
+> non-finite, larger, and local `findex` blocks still use the existing
+> Direct/Dantzig fallback path.
 
 DART 7 benchmark evidence includes `BM_LcpShockPropagationLayerSweep`, which
 compares single-layer, two-layer, and serial layer schedules over standard

@@ -223,7 +223,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": "Pgs/Sap/Tgs on scale rows; Direct only on tiny 2x/3x",
+        "current_leaders": (
+            "Pgs/Tgs/SymmetricPsor on scale rows; Direct only on tiny 2x/3x"
+        ),
         "current_laggards": "Lemke, InteriorPoint, Baraff, ShockPropagation",
         "takeaway": (
             "PGS/SAP/TGS lead scalable SPD rows; pivot, barrier, and layered "
@@ -249,13 +251,14 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Tgs/Sap; ADMM and SymmetricPsor next",
+        "current_leaders": "Tgs/Sap/Pgs; SymmetricPsor and Jacobi next",
         "current_laggards": (
-            "BoxedSemiSmoothNewton, BlockedJacobi, BGS, SubspaceMinimization"
+            "BoxedSemiSmoothNewton, BlockedJacobi, Staggering, BGS, "
+            "ShockPropagation"
         ),
         "takeaway": (
-            "TGS/SAP lead current contact-scale rows; boxed semi-smooth "
-            "Newton, BGS, BlockedJacobi, and subspace routes remain targets."
+            "TGS/SAP/PGS lead current contact-scale rows; boxed semi-smooth "
+            "Newton and layered/block contact routes remain targets."
         ),
     },
 )

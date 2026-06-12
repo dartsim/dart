@@ -1033,7 +1033,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert profile_by_surface["Standard"]["problem_sizes"] == (
         "2, 3, 12, 24, 48, 96"
     )
-    assert "Pgs/Sap/Tgs" in profile_by_surface["Standard"]["current_leaders"]
+    assert "Pgs/Tgs/SymmetricPsor" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
     assert "Direct only on tiny" in profile_by_surface["Standard"][
         "current_leaders"
     ]
@@ -1049,18 +1051,22 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
         "current_laggards"
     ]
-    assert "Tgs/Sap" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Tgs/Sap/Pgs" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
     assert "SymmetricPsor" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
+    assert "Jacobi" in profile_by_surface["FrictionIndex"]["current_leaders"]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
+    assert "Staggering" in profile_by_surface["FrictionIndex"]["current_laggards"]
     assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
-    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
+    assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (

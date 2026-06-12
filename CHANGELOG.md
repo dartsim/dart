@@ -1483,6 +1483,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projected update used by the Gauss-Seidel sweep, avoiding one-row local
     solver setup while preserving the existing fallback for coupled
     friction-index and larger blocks.
+  - Optimized `ShockPropagationSolver` fixed-bound blocks by trying a small
+    direct local linear solve when the unconstrained candidate is already
+    feasible, while preserving the existing Direct/Dantzig fallback for
+    active-bound, singular, larger, non-finite, and local friction-index blocks.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

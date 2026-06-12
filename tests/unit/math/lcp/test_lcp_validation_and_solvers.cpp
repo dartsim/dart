@@ -2238,6 +2238,32 @@ TEST(ShockPropagationSolverCoverage, SolvesWithCustomLayers)
   EXPECT_TRUE(x.array().isFinite().all());
 }
 
+TEST(ShockPropagationSolverCoverage, SolvesFeasibleBoxedBlockDirectly)
+{
+  ShockPropagationSolver solver;
+  ShockPropagationSolver::Parameters params;
+  params.blockSizes = {3};
+  params.layers = {{0}};
+
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3) * 2.0;
+  Eigen::Vector3d target(0.25, 0.5, 0.75);
+  Eigen::VectorXd b = A * target;
+  Eigen::VectorXd lo = Eigen::VectorXd::Zero(3);
+  Eigen::VectorXd hi = Eigen::VectorXd::Ones(3);
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  LcpProblem problem(A, b, lo, hi, findex);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+
+  LcpOptions options;
+  options.customOptions = &params;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_EQ(result.status, LcpSolverStatus::Success) << result.message;
+  ASSERT_EQ(x.size(), target.size());
+  EXPECT_TRUE(x.isApprox(target, 1e-12));
+}
+
 TEST(ShockPropagationSolverCoverage, SolvesSimpleThreeByThreeProblem)
 {
   ShockPropagationSolver solver;

@@ -36,6 +36,8 @@
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/pivoting/direct_solver.hpp"
 
+#include <Eigen/LU>
+
 #include <algorithm>
 #include <iterator>
 #include <limits>
@@ -79,6 +81,40 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveUnconstrainedFeasibleBlock(
+    const BlockData& block,
+    const Eigen::VectorXd& bEff,
+    const double absTol,
+    Eigen::VectorXd& xBlock)
+{
+  const auto m = std::ssize(block.indices);
+  if (m == 0 || m > kMaxDirectBlockSize || (block.findex.array() >= 0).any()
+      || !bEff.allFinite()) {
+    return false;
+  }
+
+  const Eigen::FullPivLU<Eigen::MatrixXd> lu(block.A);
+  if (!lu.isInvertible()) {
+    return false;
+  }
+
+  Eigen::VectorXd candidate = lu.solve(bEff);
+  if (!candidate.allFinite()) {
+    return false;
+  }
+
+  for (int i = 0; i < candidate.size(); ++i) {
+    if (candidate[i] < block.lo[i] - absTol
+        || candidate[i] > block.hi[i] + absTol) {
+      return false;
+    }
+    candidate[i] = std::clamp(candidate[i], block.lo[i], block.hi[i]);
+  }
+
+  xBlock = std::move(candidate);
+  return true;
 }
 
 bool buildBlockData(
@@ -470,6 +506,13 @@ LcpResult ShockPropagationSolver::solve(
 
         const Eigen::VectorXd AxSelf = block.A * xBlock;
         const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
+
+        if (solveUnconstrainedFeasibleBlock(block, bEff, absTol, xBlock)) {
+          for (int r = 0; r < m; ++r) {
+            x[block.indices[r]] = xBlock[r];
+          }
+          continue;
+        }
 
         LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
         const bool useDirect
