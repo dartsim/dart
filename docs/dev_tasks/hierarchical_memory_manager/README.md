@@ -1,10 +1,27 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Current Continuation (2026-06-12, Ignored Collision-Pair Storage)
+## Authoritative Stop Handoff (2026-06-12, Single Resume Branch)
 
-Work resumed from the final stop handoff on a fresh local follow-up branch:
-`pr/hmm-phase45-follow-up-next`, based on
-`pr/hmm-phase45-follow-up-clean` at `f17f382e9ad`.
+Maintainer instruction: stop all implementation, optimization, benchmark,
+build, lint, test, and CI-followup work. This update is handoff documentation
+only. No fresh verification is intentionally run for this stop checkpoint.
+
+Use exactly one branch as the resume point:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. The temporary local staging branch
+`pr/hmm-phase45-follow-up-next` was only used to stage the latest two follow-up
+commits and should not be a resume target after those commits are folded into
+`pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+
+The latest follow-up source slice to preserve on the resume branch closes two
+deterministic persistent-storage ownership gaps:
+
+- `ReplayState::frames` uses `StlAllocator` over the World free allocator for
+  the top-level replay frame buffer. This does not yet route every nested
+  replay snapshot payload through World memory.
+- `WorldStorage::ignoredCollisionPairs` uses `StlAllocator` over the World free
+  allocator instead of a default-allocated `std::set`. Existing behavior remains
+  covered by `World.CollisionQueryCanIgnoreSpecificPairs`.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -15,21 +32,18 @@ DART no-growth rows still reported zero post-prewarm allocator calls. Do not
 change allocator policy from that run; use it only as evidence that timing
 measurement is currently noisy.
 
-The current code slice closes two deterministic persistent-storage ownership
-gaps:
+Fresh-session entry point:
 
-- `ReplayState::frames` now uses `StlAllocator` over the World free allocator
-  for the top-level replay frame buffer. The focused ownership test enables
-  replay recording under the global heap counter and expects zero global heap
-  allocations while the World free-list allocation count grows for the replay
-  object and frame buffer.
-- `WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
-  free allocator instead of a default-allocated `std::set`. The same ownership
-  test inserts an ignored collision pair through the public API under the
-  global heap counter, verifies the World free-list allocation count grows for
-  the set node, and verifies `clearIgnoredCollisionPairs()` releases that
-  storage back to the World allocator. Existing behavior is covered by
-  `World.CollisionQueryCanIgnoreSpecificPairs`.
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `RESUME.md` and verify from scratch before any new code, benchmark,
+or PR work.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 

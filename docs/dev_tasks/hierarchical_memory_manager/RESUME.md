@@ -1,47 +1,44 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Ignored Collision-Pair Storage)
+## Authoritative Stop Handoff (2026-06-12, Single Resume Branch)
 
-Current local branch: `pr/hmm-phase45-follow-up-next`, created from
-`pr/hmm-phase45-follow-up-clean` at `f17f382e9ad`. It has no remote tracking
-branch yet.
+Stop here. The maintainer instruction is handoff only: no more implementation,
+optimization, benchmark, build, lint, test, CI, or verification work. This
+docs-only update intentionally has no fresh verification.
 
-Current slice:
+Resume from exactly one branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. The temporary local staging branch
+`pr/hmm-phase45-follow-up-next` was only used to stage the latest two follow-up
+commits and should not be a resume target after those commits are folded into
+`pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
 
-- A fresh focused EnTT run,
-  `.benchmark_results/allocator_entt_followup_current_random_cpuauto_reps7_20260612.json`,
-  was rejected by the strict checker as noisy for all 12 EnTT comparisons. The
-  DART no-growth rows still reported zero post-prewarm allocator calls. Do not
-  keep allocator-policy changes from this run.
-- `ReplayState::frames` now uses `StlAllocator` over the World free allocator
-  for the top-level replay frame buffer. The focused ownership test enables
-  replay recording under the global heap counter and verifies zero global heap
-  allocations while the World free-list allocation count grows.
-- `WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
-  free allocator. The same test inserts an ignored pair through
-  `setCollisionPairIgnored()` under the global heap counter, verifies zero
-  global heap allocations, verifies the World free-list allocation count grows,
-  then verifies `clearIgnoredCollisionPairs()` releases the set storage back to
-  the World allocator.
+Latest follow-up source slice to preserve on the resume branch:
 
-Focused validation already run for this slice:
+- `ReplayState::frames` uses `StlAllocator` over the World free allocator for
+  the top-level replay frame buffer. Nested replay snapshot payloads remain
+  follow-up work unless a fresh session proves and fixes them.
+- `WorldStorage::ignoredCollisionPairs` uses `StlAllocator` over the World free
+  allocator instead of a default-allocated `std::set`.
+- The focused EnTT run at
+  `.benchmark_results/allocator_entt_followup_current_random_cpuauto_reps7_20260612.json`
+  is not decision-quality allocator evidence because all 12 EnTT comparisons
+  were rejected as noisy under host load, despite zero post-prewarm DART
+  allocator calls in the no-growth rows.
+
+Fresh-session start:
 
 ```bash
-pixi run lint
-cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
-build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
-  --gtest_color=no
-build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.CollisionQueryCanIgnoreSpecificPairs:World.WorldPersistentStorageUsesWorldFreeAllocator' \
-  --gtest_color=no
-build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.Replay*' \
-  --gtest_color=no
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
 ```
 
-Before PR publication, run any broader focused gate selected for the final
-changed scope.
+Then verify from scratch before any new code, benchmark, or PR work. Future
+implementation should start from a fresh follow-up PR branch based on this
+single resume branch.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
