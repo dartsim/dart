@@ -2,25 +2,75 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: rows 19-21 are now a verified contact-failure comparison
-mini-packet. `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
-`rigid_stack_stability` expose comparison axes and held-fixed values in both
-their panels and scene-owned capture metrics, and `scripts/capture_py_demo.py`
-surfaces the decisive row 19-21 latest-signal values in `review_index.html`.
+Latest local slice: row 24 now exposes the normal kinematic-push caveat as a
+reviewable comparison packet. `rigid_kinematic_normal_push` labels the
+prescribed normal-contact response axis, records held-fixed normal-paddle
+context, exports lane/solver/case metrics, and gives the workflow
+`review_index.html` visible latest signals for target-travel divergence, SI
+target travel, IPC penetration depth, solver pair, case pair, and solver label.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-  Before this slice was committed, it was 13 commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification` at
-  `3e4ea8ea75f Surface workflow review latest signals`; after commit, expect
-  one additional local commit for the row 19-21 contact-failure packet.
+  Latest completed commit before this slice was
+  `7cefea25c55 Add contact failure workflow signals`; if this slice has been
+  committed, expect one additional local commit for normal-push workflow
+  signals.
 - Do not push without explicit approval in the session that performs the push.
-- Immediate next step after this slice: either request maintainer acceptance for
-  the rigid workflow direction or continue with the next evidence packet only
-  if a fresh audit identifies a concrete user-facing rigid GUI gap that is not
-  blocked by the public dartpy API.
+- If this slice is still uncommitted, inspect the row-24 diff first. If it is
+  committed, the immediate next step is a fresh audit for the next concrete
+  rigid GUI-verification gap, or maintainer acceptance of the current
+  row-15-through-row-24 evidence direction before broadening further.
+
+Row-24 normal-push slice:
+
+- `rigid_kinematic_normal_push` now exports
+  `comparison_axis=prescribed_normal_contact_response`, held-fixed context
+  (`executor=Sequential`, normal kinematic paddle, zero friction, 4 ms time
+  step), solver/case/lane metadata, and top-level capture metrics including
+  `target_travel_divergence`, `ipc_normal_max_depth`,
+  `ipc_heavy_max_depth`, and `si_caveat_target_travel`.
+- Its GUI panel labels the comparison axis, held-fixed context, and solver
+  lanes.
+- `scripts/capture_py_demo.py` prioritizes the row-24 normal-push latest-signal
+  keys so the visible card shows target-travel divergence, SI target travel,
+  IPC depth, solver pair, case pair, and solver label.
+- `python/examples/demos/README.md` and PLAN-103 document the rows 22-24
+  contact/kinematic-push packet and the row-24 normal-contact comparison axis.
+
+Evidence for this slice:
+
+- Focused row/panel/docs-order/review-index pytest subset reported `7 passed`.
+- Real rows 22-24 workflow capture completed under
+  `/tmp/dart_capture_rigid_kinematic_push_rows_22_24_1781297545` with
+  `status=complete`, `capture_count=3`, `completed_count=3`,
+  `failed_count=0`, `workflow_total_count=36`, and
+  `guidance_complete=true`.
+- Row 24 in that capture reported the intended comparison axis, held-fixed
+  context, controls `push_speed=0.45` and `target_mass=1.0`, solver pair
+  `IPC / IPC / SEQUENTIAL_IMPULSE`, target-travel divergence
+  `0.1227970002919199`, SI target travel `0.12304999999999999`, and IPC normal
+  max depth `0.12514700029191989`.
+- `review_index.html` showed the row-24 card with `axis`, `held fixed`,
+  `controls`, Replay signal/markers, metric-key summary, and visible latest
+  signals for target-travel divergence, SI target travel, IPC depth, solver
+  pair, case pair, and solver label. Per-scene captures wrote nonblank docked
+  screenshots and 71 PNG frames for rows 22-24.
+
+Immediate next step if resumed after commit:
+
+1. Verify the branch/worktree with `git status -sb` and
+   `git log -5 --oneline`.
+2. Continue from a fresh audit of the next rigid workflow gap; do not assume the
+   broader DART 7 rigid showcase goal is complete.
+3. Preserve the no-push rule until the user explicitly approves a push.
+
+Previous checkpoint: rows 19-21 are a verified contact-failure comparison
+mini-packet. `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
+`rigid_stack_stability` expose comparison axes and held-fixed values in both
+their panels and scene-owned capture metrics, and `scripts/capture_py_demo.py`
+surfaces the decisive row 19-21 latest-signal values in `review_index.html`.
 
 Rows 19-21 evidence:
 

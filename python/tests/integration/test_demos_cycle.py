@@ -3600,11 +3600,48 @@ def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_kinematic_normal_push"
+    assert (
+        capture_metrics["comparison_axis"]
+        == "prescribed_normal_contact_response"
+    )
+    assert capture_metrics["solver"] == (
+        "ipc_penetration_caveat_vs_sequential_impulse_push"
+    )
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["kinematic_driver"] == "normal paddle"
+    assert capture_metrics["held_fixed"]["time_step_ms"] == pytest.approx(
+        capture_metrics["time_step_ms"]
+    )
+    assert capture_metrics["controls"]["push_speed"] == pytest.approx(
+        controller.push_speed
+    )
+    assert capture_metrics["controls"]["target_mass"] == pytest.approx(
+        controller.target_mass
+    )
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [
+        case.solver.name for case in controller.cases
+    ]
+    assert capture_metrics["lane_order"] == [case.key for case in controller.cases]
     assert set(capture_metrics["lanes"]) == set(metrics)
-    assert capture_metrics["lanes"]["ipc_normal"]["status"] == (
+    assert capture_metrics["lanes"]["ipc_normal"]["metrics"]["status"] == (
         "ipc penetration caveat"
     )
-    assert np.isfinite(float(capture_metrics["lanes"]["si_caveat"]["step_ms"]))
+    assert capture_metrics["ipc_normal_max_depth"] == pytest.approx(
+        float(ipc["max_depth"])
+    )
+    assert capture_metrics["ipc_heavy_max_depth"] == pytest.approx(
+        float(heavy["max_depth"])
+    )
+    assert capture_metrics["si_caveat_target_travel"] == pytest.approx(
+        float(si["target_travel"])
+    )
+    assert capture_metrics["target_travel_divergence"] == pytest.approx(
+        abs(float(si["target_travel"]) - float(ipc["target_travel"]))
+    )
+    assert np.isfinite(
+        float(capture_metrics["lanes"]["si_caveat"]["metrics"]["step_ms"])
+    )
     assert controller._target_history["ipc_normal"]
     assert controller._target_history["si_caveat"]
     assert controller._depth_history["ipc_normal"]

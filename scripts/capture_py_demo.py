@@ -1278,6 +1278,9 @@ def _workflow_link(label: str, href: object) -> str:
 
 
 _WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
+    "target_travel_divergence",
+    "si_caveat_target_travel",
+    "ipc_normal_max_depth",
     "solver_pair",
     "executor_pair",
     "contact_policy_pair",
@@ -1305,6 +1308,9 @@ _WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
     "sequential_impulse_min_clearance",
     "ipc_min_clearance",
     "ipc_top_drift",
+    "ipc_normal_target_travel",
+    "ipc_heavy_max_depth",
+    "si_caveat_contact_count",
 )
 
 _WORKFLOW_NESTED_METRIC_HIGHLIGHT_KEYS = {

@@ -201,7 +201,7 @@ plus a warning block if any selected row is missing those fields.
 | 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics  |
 | 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity, metrics          |
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
-| 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                       |
+| 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts        |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks              |
@@ -585,10 +585,27 @@ question separate: what happens when a kinematic paddle moves normally into a
 target? It is a caveat verifier. Sequential impulse pushes the target forward,
 while IPC normal and heavier-target lanes expose the current penetration
 failure mode instead of silently promoting it as a supported manipulation path.
-The panel shows push speed, target mass, driver travel, target travel, analytic
-gap, penetration depth, contact count, speed ratio, and step timing. The shared
-Replay panel uses target-travel divergence as its value track and marks
-contact, IPC penetration, SI push-progress, and divergence frames.
+The panel names prescribed normal contact response as the comparison axis,
+keeps executor, normal kinematic paddle, zero friction, and time step visible
+as held fixed, and then shows push speed, target mass, driver travel, target
+travel, analytic gap, penetration depth, contact count, speed ratio, and step
+timing. Capture metrics record lane order, solver pair, controls, held-fixed
+values, IPC penetration depth, SI push travel, contact counts, target-travel
+divergence, and compact history ranges. The shared Replay panel uses
+target-travel divergence as its value track and marks contact, IPC penetration,
+SI push-progress, and divergence frames.
+
+Capture rows 22-24 together when reviewing the task-like contact branch:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 22 \
+    --workflow-end-row 24 --output-dir /tmp/dart_capture_rigid_kinematic_push
+```
+
+That packet keeps the rigid pusher, tangential kinematic driver, and normal
+kinematic push caveat adjacent. The row-24 card shows the prescribed normal
+contact axis, held-fixed kinematic-paddle context, push controls, IPC
+penetration depth, SI target travel, and target-travel divergence.
 
 ## Rigid joint constraints
 

@@ -1067,6 +1067,43 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "divergence: current x=0.125, max x=0.25, samples=2" in review_html
 
 
+def test_rigid_workflow_latest_signals_prioritize_normal_push_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "case_pair": [
+                "IPC normal-push caveat",
+                "IPC heavy-target caveat",
+                "Sequential impulse push",
+            ],
+            "executor": "Sequential",
+            "ipc_heavy_max_depth": 0.125147,
+            "ipc_normal_max_depth": 0.125147,
+            "ipc_normal_target_travel": 0.0,
+            "si_caveat_contact_count": 1,
+            "si_caveat_target_travel": 0.122797,
+            "solver": "ipc_penetration_caveat_vs_sequential_impulse_push",
+            "solver_pair": [
+                "IPC",
+                "IPC",
+                "SEQUENTIAL_IMPULSE",
+            ],
+            "target_travel_divergence": 0.122797,
+        }
+    )
+
+    assert highlights[:6] == [
+        "target travel divergence: 0.122797",
+        "si caveat target travel: 0.122797",
+        "ipc normal max depth: 0.125147",
+        "solver pair: IPC / IPC / SEQUENTIAL_IMPULSE",
+        (
+            "case pair: IPC normal-push caveat / IPC heavy-target caveat / "
+            "Sequential impulse push"
+        ),
+        "solver: ipc_penetration_caveat_vs_sequential_impulse_push",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

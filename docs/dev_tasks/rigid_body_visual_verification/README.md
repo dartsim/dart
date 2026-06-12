@@ -2,15 +2,71 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: rows 19-21 now form a contact-failure comparison
-mini-packet with explicit user-facing comparison axes and held-fixed controls.
+Latest local slice: row 24 now gives the normal kinematic-push caveat the same
+reviewable shape as the surrounding rigid contact rows. `rigid_kinematic_normal_push`
+names `prescribed_normal_contact_response` as its comparison axis in the panel
+and capture metrics, records the held-fixed normal-paddle context, exports
+solver/case/lane metadata, and feeds decisive latest-signal values into the
+workflow review index.
+
+Evidence for this slice:
+
+- Focused row/panel/docs-order/review-index pytest subset reported `7 passed`.
+  It included
+  `python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat`
+  and the unit guard that row-24 latest signals prioritize target-travel
+  divergence, SI target travel, IPC depth, solver pair, case pair, and solver
+  label.
+- Real rows 22-24 workflow capture completed under
+  `/tmp/dart_capture_rigid_kinematic_push_rows_22_24_1781297545` with
+  `status=complete`, `capture_count=3`, `completed_count=3`,
+  `failed_count=0`, `workflow_total_count=36`, and
+  `guidance_complete=true`.
+- Row 24 in that capture reported
+  `comparison_axis=prescribed_normal_contact_response`, held-fixed
+  `contact_friction=0.0`, `executor=Sequential`,
+  `kinematic_driver=normal paddle`, `time_step_ms=4.0`, controls
+  `push_speed=0.45`, `target_mass=1.0`, solver pair
+  `IPC / IPC / SEQUENTIAL_IMPULSE`, case pair
+  `IPC normal-push caveat / IPC heavy-target caveat / Sequential impulse push`,
+  `target_travel_divergence=0.1227970002919199`,
+  `si_caveat_target_travel=0.12304999999999999`,
+  `ipc_normal_max_depth=0.12514700029191989`, and
+  `ipc_heavy_max_depth=0.1251493119265266`.
+- `review_index.html` showed row 24 with `axis`, `held fixed`, `controls`,
+  Replay signal/markers, metric-key summary, and visible latest signals for
+  target-travel divergence, SI target travel, IPC depth, solver pair, case
+  pair, and solver label. Rows 22 and 23 stayed adjacent in the same packet.
+- Per-scene captures wrote nonblank docked screenshots and 71 PNG frames for
+  `rigid_contact_manipulation`, `rigid_kinematic_driver`, and
+  `rigid_kinematic_normal_push`.
+
+Repository state notes:
+
+- Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
+  with this branch.
+- Latest completed commit before this slice:
+  `7cefea25c55 Add contact failure workflow signals`.
+- Do not push without explicit approval in the session that performs the push.
+- Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
+  slice has been committed, expect the latest local commit to describe the
+  normal-push workflow signals; otherwise inspect the uncommitted diff for the
+  row-24 follow-up.
+
+Recommended next action: continue the rigid workflow from the next concrete
+user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
+current row-15-through-row-24 review-index/evidence direction before broadening
+to another rigid branch.
+
+Previous checkpoint: rows 19-21 form a contact-failure comparison mini-packet
+with explicit user-facing comparison axes and held-fixed controls.
 `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
 `rigid_stack_stability` label their comparison axis in the panel and
 scene-owned capture metrics, export held-fixed values, and feed the workflow
 review index latest-signal summaries for threshold drift, contact slip/spin
 change, solver pair, top-x divergence, and clearance.
 
-Evidence for this slice:
+Evidence for the rows 19-21 slice:
 
 - Focused row/panel/review-index pytest subset reported `5 passed`.
 - Real workflow capture completed under
@@ -21,11 +77,6 @@ Evidence for this slice:
   `latest signals` for rows 19-21. The latest row cards reported
   `friction_threshold_lane`, `spin_roll_initial_condition`, and
   `rigid_body_solver_family` as the three comparison axes.
-- Branch `feature/rigid-body-gui-visual-verification` had no PR and was
-  13 commits ahead of `origin/feature/rigid-body-gui-visual-verification`
-  before this local slice; after committing this slice, expect one more local
-  commit on top of `3e4ea8ea75f Surface workflow review latest signals`.
-- Do not push without explicit approval in the session that performs the push.
 
 Previous checkpoint: workflow `review_index.html` row cards now surface actual
 decision values from scene-owned metrics, not only metric keys. Captured rows

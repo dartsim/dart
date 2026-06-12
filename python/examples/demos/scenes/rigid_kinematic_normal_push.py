@@ -278,6 +278,11 @@ class _RigidKinematicNormalPush:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _step_profile_ms(self, world: Any) -> float:
         try:
             profile = world.last_step_profile
@@ -390,18 +395,126 @@ class _RigidKinematicNormalPush:
         return renderables
 
     def capture_metrics(self) -> dict[str, Any]:
-        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
-        self.executor_index = executor_index
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_label = self._executor_label()
+        lanes = {
+            case.key: {
+                "label": case.label,
+                "rigid_body_solver": case.solver.name,
+                "target_mass_scale": float(case.target_mass_scale),
+                "metrics": dict(self._last_metrics.get(case.key) or self._sample(case)),
+            }
+            for case in self.cases
+        }
+        driver_history = {
+            case.key: list(self._driver_history[case.key]) for case in self.cases
+        }
+        target_history = {
+            case.key: list(self._target_history[case.key]) for case in self.cases
+        }
+        gap_history = {
+            case.key: list(self._gap_history[case.key]) for case in self.cases
+        }
+        depth_history = {
+            case.key: list(self._depth_history[case.key]) for case in self.cases
+        }
+        contact_history = {
+            case.key: list(self._contact_history[case.key]) for case in self.cases
+        }
+        step_ms_history = {
+            case.key: list(self._step_ms_history[case.key]) for case in self.cases
+        }
+
+        def lane_metric(key: str, metric_key: str) -> float:
+            return float(lanes[key]["metrics"][metric_key])
+
+        def max_abs(values: list[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        def min_abs(values: list[float]) -> float:
+            return min((abs(value) for value in values), default=0.0)
+
+        target_travel_divergence = abs(
+            lane_metric("si_caveat", "target_travel")
+            - lane_metric("ipc_normal", "target_travel")
+        )
+        history_divergence = [
+            abs(float(si_value) - float(ipc_value))
+            for ipc_value, si_value in zip(
+                target_history["ipc_normal"], target_history["si_caveat"]
+            )
+        ]
         return {
-            "executor": self._executors[executor_index][0],
-            "push_speed": float(self.push_speed),
             "row": "rigid_kinematic_normal_push",
-            "target_mass": float(self.target_mass),
+            "comparison_axis": "prescribed_normal_contact_response",
+            "solver": "ipc_penetration_caveat_vs_sequential_impulse_push",
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
-            "lanes": {
-                case.key: dict(self._last_metrics.get(case.key) or self._sample(case))
-                for case in self.cases
+            "held_fixed": {
+                "contact_friction": 0.0,
+                "executor": executor_label,
+                "kinematic_driver": "normal paddle",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
+            "controls": {
+                "push_speed": float(self.push_speed),
+                "target_mass": float(self.target_mass),
+            },
+            "case_pair": [case.label for case in self.cases],
+            "solver_pair": [case.solver.name for case in self.cases],
+            "lane_order": [case.key for case in self.cases],
+            "ipc_normal_solver_enum": self.cases[0].solver.name,
+            "ipc_normal_target_travel": lane_metric(
+                "ipc_normal", "target_travel"
+            ),
+            "ipc_normal_max_depth": lane_metric("ipc_normal", "max_depth"),
+            "ipc_normal_contact_count": lane_metric("ipc_normal", "contact_count"),
+            "ipc_normal_speed_ratio": lane_metric("ipc_normal", "speed_ratio"),
+            "ipc_heavy_solver_enum": self.cases[1].solver.name,
+            "ipc_heavy_target_mass": lane_metric("ipc_heavy", "target_mass"),
+            "ipc_heavy_target_travel": lane_metric("ipc_heavy", "target_travel"),
+            "ipc_heavy_max_depth": lane_metric("ipc_heavy", "max_depth"),
+            "ipc_heavy_contact_count": lane_metric("ipc_heavy", "contact_count"),
+            "si_caveat_solver_enum": self.cases[2].solver.name,
+            "si_caveat_target_travel": lane_metric("si_caveat", "target_travel"),
+            "si_caveat_analytic_gap": lane_metric("si_caveat", "analytic_gap"),
+            "si_caveat_contact_count": lane_metric("si_caveat", "contact_count"),
+            "si_caveat_speed_ratio": lane_metric("si_caveat", "speed_ratio"),
+            "target_travel_divergence": target_travel_divergence,
+            "lanes": lanes,
+            "history": {
+                "samples": float(len(target_history["ipc_normal"])),
+                "ipc_normal_max_driver_travel": max(
+                    driver_history["ipc_normal"], default=0.0
+                ),
+                "ipc_normal_max_abs_target_travel": max_abs(
+                    target_history["ipc_normal"]
+                ),
+                "ipc_normal_max_depth": max(depth_history["ipc_normal"], default=0.0),
+                "ipc_normal_max_contact_count": max(
+                    contact_history["ipc_normal"], default=0.0
+                ),
+                "ipc_normal_min_abs_gap": min_abs(gap_history["ipc_normal"]),
+                "ipc_heavy_max_depth": max(depth_history["ipc_heavy"], default=0.0),
+                "ipc_heavy_max_contact_count": max(
+                    contact_history["ipc_heavy"], default=0.0
+                ),
+                "si_caveat_max_target_travel": max(
+                    target_history["si_caveat"], default=0.0
+                ),
+                "si_caveat_min_abs_gap": min_abs(gap_history["si_caveat"]),
+                "si_caveat_max_contact_count": max(
+                    contact_history["si_caveat"], default=0.0
+                ),
+                "max_target_travel_divergence": max(
+                    history_divergence, default=0.0
+                ),
+                "max_step_ms": max(
+                    (value for values in step_ms_history.values() for value in values),
+                    default=0.0,
+                ),
             },
         }
 
@@ -596,6 +709,13 @@ class _RigidKinematicNormalPush:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: prescribed normal contact response")
+        builder.text(
+            f"held fixed: executor {self._executor_label()} | "
+            f"normal kinematic paddle | zero friction | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
+        builder.text("solver lanes: IPC normal, IPC heavy target, Sequential impulse")
         builder.text("mode: prescribed normal contact")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")

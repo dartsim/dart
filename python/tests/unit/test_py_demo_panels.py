@@ -1205,6 +1205,14 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_kinematic_normal_push,
+            (
+                "text:comparison axis: prescribed normal contact response",
+                "text:held fixed: executor Sequential | normal kinematic paddle | zero friction | time step 4.0 ms",
+                "text:solver lanes: IPC normal, IPC heavy target, Sequential impulse",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",
