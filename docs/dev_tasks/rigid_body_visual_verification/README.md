@@ -36,8 +36,15 @@ Expected repository state after this hand-off:
   `failed_count=0`, `guidance_complete=true`, and nineteen
   Replay-labeled review cards. All per-scene manifests inspected had positive
   frame counts, docked screenshots, and nontrivial unique-color counts.
-- This checkpoint remains local until explicitly pushed in a future approved
-  session.
+- A real extended optional-row workflow capture under
+  `/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053` completed
+  rows 37-51 with `status=complete`, `capture_count=15`,
+  `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
+  selected related/IPC-shelf/packet groups all present.
+- This hand-off checkpoint is being finalized under an explicit stop-and-push
+  instruction. Future sessions should confirm branch status before continuing,
+  and should not start more implementation or verification unless the maintainer
+  explicitly asks.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 - Historical note: immediately before this continuation resumed, the user had
   requested a stop-only hand-off. That stop state left these same
@@ -360,6 +367,10 @@ Expected repository state for that earlier checkpoint:
 - [x] A fresh full 36-row rigid workflow capture after the Replay metadata
       change completed successfully and showed nineteen Replay-labeled review
       cards, matching the sidecar-documented Replay rows.
+- [x] A real extended optional-row capture for rows 37-51 completed the
+      related-evidence, direct Rigid IPC shelf, and capture-first packet groups
+      with docked screenshots, frame sequences, metric events, complete
+      guidance, and no failed rows.
 
 ## Goal
 
@@ -1704,6 +1715,34 @@ index included representative Replay cards such as row 21
 `Top x divergence (signal, markers)` and row 36
 `Max closure residual ratio (signal, markers)`.
 
+## Verified In The Optional Extended Packet Capture Refresh
+
+This continuation captured the optional rows that sit outside the default
+36-row workflow but are exposed by the generated review packet: related
+evidence, direct Rigid IPC shelf rows, and the capture-first IPC stack packet.
+
+Commands:
+
+```bash
+DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053
+jq -r '.status, .capture_count, .completed_count, .failed_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .include_related, .include_ipc_shelf, .include_packets, .selected_include_related, .selected_include_ipc_shelf, .selected_include_packets, .guidance_complete, .guidance_missing_count, .elapsed_s, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/manifest.json
+find /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select((.capture.converted_frames // 0) <= 0 or .visual_evidence.screenshot.docked_workspace != true or (.visual_evidence.screenshot.unique_rgb_count // 0) <= 1) | [.scene, (.capture.converted_frames|tostring), (.visual_evidence.screenshot.docked_workspace|tostring), (.visual_evidence.screenshot.unique_rgb_count|tostring)] | @tsv'
+jq -r '.captures | group_by(.workflow_group)[] | [.[0].workflow_group, length] | @tsv' /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/manifest.json
+rg -n '<strong>rows</strong> 37-51 / 51|<strong>requested groups</strong>|<strong>selected groups</strong>|37/51 floating_base|46/51 avbd_rigid_prismatic_motor|47/51 rigid_ipc|51/51 rigid_ipc_stack_packet|Related evidence|Rigid IPC shelf|Capture-first packet' /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/review_index.html
+```
+
+Observed results: the workflow manifest reported `complete`, `15`, `15`, `0`,
+`workflow_total_count=51`, selected rows `37-51`, all requested/selected
+related, IPC-shelf, and packet groups as `true`, `guidance_complete=true`,
+`guidance_missing_count=0`, elapsed `149.609`, and review index
+`/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/review_index.html`.
+The per-scene manifest anomaly query printed no rows. The group-count query
+reported ten `related_evidence` rows, four `rigid_ipc_shelf` rows, and one
+`capture_first_packet` row. The review index contained the row-span and group
+badges plus representative cards for `37/51 floating_base`,
+`46/51 avbd_rigid_prismatic_motor`, `47/51 rigid_ipc`, and
+`51/51 rigid_ipc_stack_packet`.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
@@ -1716,9 +1755,10 @@ index included representative Replay cards such as row 21
    Replay timeline checkpoints, plus the Replay capture-metadata checkpoint, to
    be present locally and unpushed.
 3. Re-evaluate the durable sidecar and dashboard before selecting the next
-   bounded rigid visual-verification slice. The full workflow capture refresh
-   for Replay review-card labels is complete, but do not treat that as task
-   retirement without maintainer approval.
+   bounded rigid visual-verification slice. The default 36-row and optional
+   rows 37-51 capture refreshes are complete; the next local step should be a
+   completion/retirement readiness audit, while preserving the rule that this
+   dev-task folder is retired only with maintainer approval.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.

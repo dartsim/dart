@@ -397,6 +397,28 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest optional extended-packet capture refresh:
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053`
+  completed the non-numbered related-evidence, direct Rigid IPC shelf, and
+  capture-first packet rows as real docked captures. The top-level manifest
+  reported `status=complete`, `capture_count=15`, `completed_count=15`,
+  `failed_count=0`, `workflow_total_count=51`, selected rows `37-51`,
+  requested and selected related/IPC-shelf/packet groups all `true`,
+  `guidance_complete=true`, `guidance_missing_count=0`, and
+  `elapsed_s=149.609`. The selected packet covered ten related-evidence rows
+  (`floating_base`, `articulated`, `rigid_ipc_tunnel`, `rigid_ipc_edge_drop`,
+  `diff_drone_liftoff`, and five AVBD rigid routes), four direct Rigid IPC shelf
+  rows (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`,
+  `rigid_ipc_pile`), and the capture-first `rigid_ipc_stack_packet` row. Every
+  per-scene manifest inspected had positive frame counts, docked screenshots,
+  nontrivial unique-color counts, and scene-owned metric events. The review
+  index at
+  `/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/review_index.html`
+  showed the `37-51 / 51` row span, requested groups `numbered, related, ipc
+shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
+  complete, representative route cards such as `37/51 floating_base`,
+  `46/51 avbd_rigid_prismatic_motor`, `47/51 rigid_ipc`, and
+  `51/51 rigid_ipc_stack_packet`.
 - Latest Rigid IPC shelf capture-metrics follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_shelf_scenes_report_capture_metrics python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
   reported `2 passed`. The direct Rigid IPC shelf scenes `rigid_ipc`,

@@ -36,8 +36,15 @@ Expected repository state after this hand-off:
   `failed_count=0`, `guidance_complete=true`, and nineteen
   Replay-labeled review cards. All per-scene manifests inspected had positive
   frame counts, docked screenshots, and nontrivial unique-color counts.
-- This checkpoint remains local until explicitly pushed in a future approved
-  session.
+- A real extended optional-row workflow capture under
+  `/tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053` completed
+  rows 37-51 with `status=complete`, `capture_count=15`,
+  `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
+  selected related/IPC-shelf/packet groups all present.
+- This hand-off checkpoint is being finalized under an explicit stop-and-push
+  instruction. Future sessions should confirm branch status before continuing,
+  and should not start more implementation or verification unless the maintainer
+  explicitly asks.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 - Historical note: immediately before this continuation resumed, the user had
   requested a stop-only hand-off. That stop state left these same
@@ -555,10 +562,11 @@ motor-limits, passive-parameters, screw-joint pitch, multibody dynamics-terms,
 link center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
 Replay timeline slices, plus the Replay capture-metadata checkpoint, after the
 pushed docs-only handoff. Re-evaluate the durable sidecar and dashboard before
-selecting the next bounded rigid visual-verification slice. The full workflow
-capture refresh for Replay review-card labels is complete, but do not retire
-the task without maintainer approval. Do not push without explicit approval in
-that session.
+selecting the next bounded rigid visual-verification slice. The default 36-row
+and optional rows 37-51 capture refreshes are complete; the next local step
+should be a completion/retirement readiness audit, while preserving the rule
+that this dev-task folder is retired only with maintainer approval. Do not push
+without explicit approval in that session.
 
 Replay capture-metadata checks for this slice:
 
@@ -592,6 +600,23 @@ The full refresh reported `status=complete`, `capture_count=36`,
 `guidance_missing_count=0`, and elapsed `310.791`. The sidecar,
 per-scene manifests, and review index each reported nineteen Replay rows; the
 per-scene manifest anomaly query printed no rows.
+
+Optional extended-packet capture refresh:
+
+```bash
+DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053
+jq -r '.status, .capture_count, .completed_count, .failed_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .include_related, .include_ipc_shelf, .include_packets, .selected_include_related, .selected_include_ipc_shelf, .selected_include_packets, .guidance_complete, .guidance_missing_count, .elapsed_s, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/manifest.json
+find /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select((.capture.converted_frames // 0) <= 0 or .visual_evidence.screenshot.docked_workspace != true or (.visual_evidence.screenshot.unique_rgb_count // 0) <= 1) | [.scene, (.capture.converted_frames|tostring), (.visual_evidence.screenshot.docked_workspace|tostring), (.visual_evidence.screenshot.unique_rgb_count|tostring)] | @tsv'
+jq -r '.captures | group_by(.workflow_group)[] | [.[0].workflow_group, length] | @tsv' /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053/manifest.json
+```
+
+The optional packet reported `status=complete`, `capture_count=15`,
+`completed_count=15`, `failed_count=0`, `workflow_total_count=51`, selected
+rows `37-51`, all requested/selected related, IPC-shelf, and packet groups as
+`true`, `guidance_complete=true`, `guidance_missing_count=0`, and elapsed
+`149.609`. The per-scene manifest anomaly query printed no rows. The group
+counts were ten `related_evidence`, four `rigid_ipc_shelf`, and one
+`capture_first_packet`.
 
 Passive-parameters checks for this slice:
 
