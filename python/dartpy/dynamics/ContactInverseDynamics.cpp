@@ -56,9 +56,13 @@ void ContactInverseDynamics(py::module& m)
           +[](const CID::Contact& self) -> dart::dynamics::BodyNodePtr {
             return dart::dynamics::BodyNodePtr(self.bodyNode);
           },
-          +[](CID::Contact& self, dart::dynamics::BodyNode* bodyNode) {
-            self.bodyNode = bodyNode;
-          })
+          // keep_alive ties the Python BodyNode (and hence its Skeleton) to
+          // the Contact so the stored raw pointer cannot dangle.
+          ::py::cpp_function(
+              +[](CID::Contact& self, dart::dynamics::BodyNode* bodyNode) {
+                self.bodyNode = bodyNode;
+              },
+              ::py::keep_alive<1, 2>()))
       .def_readwrite("localOffset", &CID::Contact::localOffset)
       .def_readwrite("normal", &CID::Contact::normal)
       .def_readwrite("frictionCoeff", &CID::Contact::frictionCoeff)

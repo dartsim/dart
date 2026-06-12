@@ -105,7 +105,7 @@ TEST(NonNegativeLeastSquares, SolvesIdentitySystem)
 //==============================================================================
 TEST(NonNegativeLeastSquares, MatchesUnconstrainedWhenInterior)
 {
-  dart::math::Random::setSeed(7);
+  std::srand(7);
 
   for (int trial = 0; trial < 20; ++trial) {
     const Eigen::MatrixXd A
@@ -211,6 +211,45 @@ TEST(NonNegativeLeastSquares, IsDeterministic)
   ASSERT_TRUE(solveNonNegativeLeastSquares(A, b, x2));
 
   EXPECT_TRUE(x1 == x2);
+}
+
+//==============================================================================
+TEST(NonNegativeLeastSquares, ReturnsFalseWhenIterationCapExhausted)
+{
+  std::srand(31);
+  const Eigen::MatrixXd A = Eigen::MatrixXd::Random(6, 8);
+  const Eigen::VectorXd b = Eigen::VectorXd::Random(6);
+
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveNonNegativeLeastSquares(A, b, x, -1.0, 1));
+
+  // The iterate left in x must still be finite and nonnegative.
+  ASSERT_EQ(x.size(), 8);
+  EXPECT_TRUE(x.allFinite());
+  EXPECT_GE(x.minCoeff(), -1e-12);
+}
+
+//==============================================================================
+TEST(NonNegativeLeastSquares, LargeToleranceAcceptsZeroSolution)
+{
+  const Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);
+  const Eigen::Vector3d b(1.0, 2.0, 3.0);
+
+  // Every dual is below the explicit tolerance, so x = 0 is accepted.
+  Eigen::VectorXd x;
+  EXPECT_TRUE(solveNonNegativeLeastSquares(A, b, x, 10.0));
+  EXPECT_NEAR(x.norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(NonNegativeLeastSquares, RejectsNonFiniteRhs)
+{
+  const Eigen::MatrixXd A = Eigen::MatrixXd::Identity(2, 2);
+  Eigen::Vector2d b(1.0, 1.0);
+  b[1] = std::numeric_limits<double>::quiet_NaN();
+
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveNonNegativeLeastSquares(A, b, x));
 }
 
 //==============================================================================

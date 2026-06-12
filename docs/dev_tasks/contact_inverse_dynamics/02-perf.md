@@ -23,11 +23,15 @@ tolerance with strict re-solve fallback (commit on this branch):
 
 | Case                  | Before  | After   | Speedup |
 | --------------------- | ------- | ------- | ------- |
-| 2 contacts x 4 basis  | 22.8 us | 17.9 us | 1.3x    |
-| 4 contacts x 4 basis  | 54.9 us | 7.6 us  | 7.2x    |
-| 8 contacts x 4 basis  | 259 us  | 12.0 us | 21x     |
-| 4 contacts x 8 basis  | 291 us  | 12.8 us | 23x     |
+| 2 contacts x 4 basis  | 22.8 us | 18.6 us | 1.2x    |
+| 4 contacts x 4 basis  | 54.9 us | 11.2 us | 4.9x    |
+| 8 contacts x 4 basis  | 259 us  | 14.7 us | 18x     |
+| 4 contacts x 8 basis  | 291 us  | 14.6 us | 20x     |
 | 4 contacts x 16 basis | 1938 us | 27.8 us | 70x     |
+
+The "after" numbers additionally include per-iteration position dirtying
+(transform/Jacobian cache recompute, added after review), which the "before"
+numbers did not pay; the speedup is therefore understated.
 
 All 12 `UNIT_dynamics_ContactInverseDynamics` and 10
 `UNIT_math_NonNegativeLeastSquares` tests pass before and after; the

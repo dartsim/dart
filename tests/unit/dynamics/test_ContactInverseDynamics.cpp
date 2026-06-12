@@ -41,6 +41,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -343,16 +344,18 @@ TEST(ContactInverseDynamics, StaticBoxContactForcesBalanceWeight)
   ASSERT_TRUE(result.feasible);
   ASSERT_EQ(result.contactForces.size(), 4u);
 
+  // The documented contract bounds the residual by tolerance * |target|_inf.
+  const double bound = solver.getResidualTolerance() * mass * kGravity;
   const Eigen::Vector3d total = sumForces(result.contactForces);
-  EXPECT_NEAR(total.x(), 0.0, 1e-6);
-  EXPECT_NEAR(total.y(), 0.0, 1e-6);
-  EXPECT_NEAR(total.z(), mass * kGravity, 1e-6);
+  EXPECT_NEAR(total.x(), 0.0, bound);
+  EXPECT_NEAR(total.y(), 0.0, bound);
+  EXPECT_NEAR(total.z(), mass * kGravity, bound);
 
   for (const auto& force : result.contactForces) {
     EXPECT_GE(force.z(), -1e-9);
   }
 
-  EXPECT_LT(result.unactuatedResidual.lpNorm<Eigen::Infinity>(), 1e-6);
+  EXPECT_LE(result.unactuatedResidual.lpNorm<Eigen::Infinity>(), bound);
 }
 
 //==============================================================================
@@ -373,9 +376,10 @@ TEST(ContactInverseDynamics, FeasibleTangentialAcceleration)
   const auto result = solver.compute();
 
   ASSERT_TRUE(result.feasible);
+  const double bound = solver.getResidualTolerance() * mass * kGravity;
   const Eigen::Vector3d total = sumForces(result.contactForces);
-  EXPECT_NEAR(total.x(), mass * ax, 1e-5);
-  EXPECT_NEAR(total.z(), mass * kGravity, 1e-5);
+  EXPECT_NEAR(total.x(), mass * ax, bound);
+  EXPECT_NEAR(total.z(), mass * kGravity, bound);
 
   // Aggregate friction-cone consistency.
   EXPECT_LE(std::hypot(total.x(), total.y()), frictionCoeff * total.z() + 1e-6);
@@ -417,7 +421,10 @@ TEST(ContactInverseDynamics, ZeroFrictionForcesAlongNormal)
     EXPECT_NEAR(force.y(), 0.0, 1e-9);
     EXPECT_GE(force.z(), -1e-9);
   }
-  EXPECT_NEAR(sumForces(result.contactForces).z(), mass * kGravity, 1e-6);
+  EXPECT_NEAR(
+      sumForces(result.contactForces).z(),
+      mass * kGravity,
+      solver.getResidualTolerance() * mass * kGravity);
 }
 
 //==============================================================================
@@ -617,4 +624,224 @@ TEST(ContactInverseDynamics, RejectsNullSkeleton)
   const auto result = solver.compute();
   EXPECT_FALSE(result.feasible);
   EXPECT_EQ(result.jointForces.size(), 0);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, ComputeDoesNotModifyJointCommands)
+{
+  auto skel = createFixedArm();
+  // Order matters: setForces() overwrites the commands of FORCE-actuated
+  // joints, so set the commands afterwards to give them a distinct value.
+  skel->setForces(Eigen::Vector3d(0.1, 0.2, 0.3));
+  const Eigen::Vector3d commands(0.4, 0.5, 0.6);
+  skel->setCommands(commands);
+
+  ContactInverseDynamics solver(skel);
+  solver.compute();
+
+  EXPECT_TRUE(skel->getCommands().isApprox(commands, 1e-12));
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, MultiTreeSkeletonDetectionAndForceSplit)
+{
+  // One Skeleton holding two floating boxes (two trees).
+  auto skel = Skeleton::create("two_boxes");
+  std::array<BodyNode*, 2> boxes;
+  const std::array<double, 2> masses = {2.0, 5.0};
+  for (int tree = 0; tree < 2; ++tree) {
+    dynamics::FreeJoint::Properties joint;
+    joint.mName = "root" + std::to_string(tree);
+    dynamics::BodyNode::Properties body;
+    body.mName = "box" + std::to_string(tree);
+    auto pair = skel->createJointAndBodyNodePair<dynamics::FreeJoint>(
+        nullptr, joint, body);
+    boxes[tree] = pair.second;
+    auto shape
+        = std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.4, 0.4, 0.2));
+    boxes[tree]->createShapeNodeWith<dynamics::VisualAspect>(shape);
+    dynamics::Inertia inertia;
+    inertia.setMass(masses[tree]);
+    inertia.setMoment(shape->computeInertia(masses[tree]));
+    boxes[tree]->setInertia(inertia);
+  }
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(12);
+  positions[9] = 1.0; // translate the second tree along x
+  skel->setPositions(positions);
+
+  ContactInverseDynamics solver(skel);
+  const auto unactuated = solver.getUnactuatedDofs();
+  ASSERT_EQ(unactuated.size(), 12u);
+  for (std::size_t i = 0; i < 12u; ++i) {
+    EXPECT_EQ(unactuated[i], i);
+  }
+
+  std::vector<ContactInverseDynamics::Contact> contacts;
+  for (int tree = 0; tree < 2; ++tree) {
+    for (const double x : {0.2, -0.2}) {
+      for (const double y : {0.2, -0.2}) {
+        ContactInverseDynamics::Contact contact;
+        contact.bodyNode = boxes[tree];
+        contact.localOffset = Eigen::Vector3d(x, y, -0.1);
+        contact.normal = Eigen::Vector3d::UnitZ();
+        contact.frictionCoeff = 0.6;
+        contacts.push_back(contact);
+      }
+    }
+  }
+  solver.setContacts(contacts);
+  const auto result = solver.compute();
+
+  ASSERT_TRUE(result.feasible);
+  // Contacts on one tree cannot balance the other tree's root rows, so each
+  // tree's contacts carry exactly that tree's weight.
+  for (int tree = 0; tree < 2; ++tree) {
+    double treeVertical = 0.0;
+    for (int k = 0; k < 4; ++k) {
+      treeVertical += result.contactForces[4 * tree + k].z();
+    }
+    EXPECT_NEAR(
+        treeVertical,
+        masses[tree] * kGravity,
+        solver.getResidualTolerance() * masses[1] * kGravity * 10.0);
+  }
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, FloatingBaseWithoutContactsIsInfeasible)
+{
+  auto box = createFloatingBox();
+  ContactInverseDynamics solver(box);
+  const auto result = solver.compute();
+
+  EXPECT_FALSE(result.feasible);
+  EXPECT_TRUE(result.contactForces.empty());
+  // The residual is the full gravity wrench on the root.
+  EXPECT_NEAR(
+      result.unactuatedResidual.lpNorm<Eigen::Infinity>(),
+      2.0 * kGravity,
+      1e-9);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, RejectsOutOfRangeUnactuatedIndex)
+{
+  auto box = createFloatingBox();
+  ContactInverseDynamics solver(box);
+  solver.setUnactuatedDofs({99});
+  const auto result = solver.compute();
+  EXPECT_FALSE(result.feasible);
+  EXPECT_EQ(result.jointForces.size(), 0);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, SolverReuseAcrossContactChanges)
+{
+  const double mass = 2.0;
+  auto box = createFloatingBox(mass);
+
+  ContactInverseDynamics solver(box);
+
+  // 4 contacts, then 1 contact, then 4 again; each result must match a
+  // fresh solver (workspace reuse must not leak state).
+  const auto fourContacts = createBoxBottomContacts(box, 0.6);
+  const std::vector<ContactInverseDynamics::Contact> oneContact
+      = {fourContacts[0]};
+
+  for (const auto* contacts : {&fourContacts, &oneContact, &fourContacts}) {
+    solver.setContacts(*contacts);
+    const auto reused = solver.compute();
+
+    ContactInverseDynamics fresh(box);
+    fresh.setContacts(*contacts);
+    const auto reference = fresh.compute();
+
+    EXPECT_EQ(reused.feasible, reference.feasible);
+    ASSERT_EQ(reused.contactForces.size(), reference.contactForces.size());
+    EXPECT_TRUE(reused.jointForces.isApprox(reference.jointForces, 1e-12));
+  }
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, DampingFlagIsForwarded)
+{
+  auto skel = createFixedArm();
+  for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
+    skel->getDof(i)->setDampingCoefficient(2.5);
+  }
+  skel->setPositions(Eigen::Vector3d(0.3, -0.2, 0.1));
+  skel->setVelocities(Eigen::Vector3d(0.5, -0.4, 0.3));
+  skel->setAccelerations(Eigen::Vector3d(0.1, 0.2, -0.3));
+
+  skel->computeInverseDynamics(false, true, false);
+  const Eigen::VectorXd expected = skel->getForces();
+  skel->resetGeneralizedForces();
+
+  ContactInverseDynamics solver(skel);
+  const auto withDamping = solver.compute(false, true, false);
+  const auto withoutDamping = solver.compute(false, false, false);
+
+  EXPECT_TRUE(withDamping.jointForces.isApprox(expected, 1e-10));
+  EXPECT_FALSE(
+      withDamping.jointForces.isApprox(withoutDamping.jointForces, 1e-10));
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, MinimumBasisCountWorks)
+{
+  const double mass = 2.0;
+  auto box = createFloatingBox(mass);
+
+  ContactInverseDynamics solver(box);
+  solver.setContacts(createBoxBottomContacts(box, 0.6, 3));
+  const auto result = solver.compute();
+
+  ASSERT_TRUE(result.feasible);
+  EXPECT_NEAR(
+      sumForces(result.contactForces).z(),
+      mass * kGravity,
+      solver.getResidualTolerance() * mass * kGravity);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, NumBasisIgnoredForFrictionlessContacts)
+{
+  const double mass = 2.0;
+  auto box = createFloatingBox(mass);
+
+  // numBasis below the frictional minimum must be accepted when mu == 0.
+  ContactInverseDynamics solver(box);
+  solver.setContacts(createBoxBottomContacts(box, 0.0, 2));
+  const auto result = solver.compute();
+
+  ASSERT_TRUE(result.feasible);
+  EXPECT_NEAR(
+      sumForces(result.contactForces).z(),
+      mass * kGravity,
+      solver.getResidualTolerance() * mass * kGravity);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, NormalLengthDoesNotChangeResult)
+{
+  auto box = createFloatingBox();
+
+  ContactInverseDynamics unitSolver(box);
+  unitSolver.setContacts(createBoxBottomContacts(box, 0.6));
+  const auto unitResult = unitSolver.compute();
+
+  auto scaledContacts = createBoxBottomContacts(box, 0.6);
+  for (auto& contact : scaledContacts) {
+    contact.normal *= 2.0;
+  }
+  ContactInverseDynamics scaledSolver(box);
+  scaledSolver.setContacts(scaledContacts);
+  const auto scaledResult = scaledSolver.compute();
+
+  ASSERT_TRUE(unitResult.feasible);
+  ASSERT_TRUE(scaledResult.feasible);
+  for (std::size_t k = 0; k < unitResult.contactForces.size(); ++k) {
+    EXPECT_TRUE(unitResult.contactForces[k].isApprox(
+        scaledResult.contactForces[k], 1e-9));
+  }
 }

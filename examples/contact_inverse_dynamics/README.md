@@ -45,11 +45,16 @@ The ImGui widget provides:
 - **Joint Torques**: Real-time torque history for 3 representative leg joints
 - **Total Vertical GRF**: Total vertical ground reaction force over time
 
-## Headless Mode
+## Frame-Limited Mode
 
-For testing or automation:
+For testing or automation (still opens a window, so a display or Xvfb is
+required):
+
 ```bash
 ./contact_inverse_dynamics --frames 30 --screenshot /tmp/demo.png
 ```
 
-This runs 30 frames and saves a screenshot before exiting.
+This runs 30 frames and captures the final frame before exiting. The OSG
+screen-capture handler appends a context/frame suffix to the base name, so the
+file is written as `/tmp/demo_0_<frame>.png`. `--screenshot` has no effect
+without `--frames`.

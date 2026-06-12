@@ -134,7 +134,10 @@ bool solveNonNegativeLeastSquares(
       for (Eigen::Index k = 0; k < numPassive; ++k) {
         if (z[k] <= 0.0) {
           const double xk = x[passiveIndices[static_cast<std::size_t>(k)]];
-          const double step = xk / (xk - z[k]);
+          const double denominator = xk - z[k];
+          // Guard the 0/0 case (xk == 0 with z exactly 0 on a rank-deficient
+          // passive set): the correct step is 0.
+          const double step = denominator > 0.0 ? xk / denominator : 0.0;
           alpha = std::min(alpha, step);
         }
       }

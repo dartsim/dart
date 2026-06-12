@@ -314,12 +314,18 @@ static void BM_ContactInverseDynamics(benchmark::State& state)
   dynamics::ContactInverseDynamics solver(biped.skel);
   solver.setContacts(createFootContacts(biped, numContacts, 4));
 
+  // Dirty the positions every iteration (bounded wobble) so transform and
+  // Jacobian caches are recomputed per call, like in a real playback loop.
+  Eigen::VectorXd positions = biped.skel->getPositions();
+  const double basePosition = positions[6];
   Eigen::VectorXd accelerations
       = Eigen::VectorXd::Zero(biped.skel->getNumDofs());
-  double perturbation = 0.0;
+  int iteration = 0;
   for (auto _ : state) {
-    perturbation += 1e-6;
-    accelerations[5] = perturbation;
+    ++iteration;
+    positions[6] = basePosition + 1e-6 * (iteration % 1000);
+    biped.skel->setPositions(positions);
+    accelerations[5] = 1e-6 * (iteration % 1000);
     biped.skel->setAccelerations(accelerations);
     auto result = solver.compute();
     benchmark::DoNotOptimize(result.jointForces);
@@ -344,12 +350,18 @@ static void BM_ContactInverseDynamicsBasis(benchmark::State& state)
   dynamics::ContactInverseDynamics solver(biped.skel);
   solver.setContacts(createFootContacts(biped, 4, numBasis));
 
+  // Dirty the positions every iteration (bounded wobble) so transform and
+  // Jacobian caches are recomputed per call, like in a real playback loop.
+  Eigen::VectorXd positions = biped.skel->getPositions();
+  const double basePosition = positions[6];
   Eigen::VectorXd accelerations
       = Eigen::VectorXd::Zero(biped.skel->getNumDofs());
-  double perturbation = 0.0;
+  int iteration = 0;
   for (auto _ : state) {
-    perturbation += 1e-6;
-    accelerations[5] = perturbation;
+    ++iteration;
+    positions[6] = basePosition + 1e-6 * (iteration % 1000);
+    biped.skel->setPositions(positions);
+    accelerations[5] = 1e-6 * (iteration % 1000);
     biped.skel->setAccelerations(accelerations);
     auto result = solver.compute();
     benchmark::DoNotOptimize(result.jointForces);

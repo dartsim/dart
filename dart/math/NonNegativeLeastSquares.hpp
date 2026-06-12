@@ -52,10 +52,13 @@ namespace math {
 /// \param[in] A Matrix of size (m x n). Must contain only finite values.
 /// \param[in] b Vector of size m. Must contain only finite values.
 /// \param[out] x Solution vector of size n. Resized as needed. Set to zero
-/// when the function returns false.
+/// on invalid inputs; when the iteration cap is exhausted it contains the
+/// last (nonnegative) iterate instead.
 /// \param[in] tolerance Nonnegativity/optimality tolerance on the dual
 /// vector. A non-positive value selects an automatic tolerance scaled by the
-/// magnitude of \c A.
+/// magnitudes of \c A and \c b with an absolute floor of 1 on the \c b
+/// factor; callers that need relative accuracy for very small \c b should
+/// pass an explicit tolerance.
 /// \param[in] maxIterations Iteration cap for the active-set loop. Zero
 /// selects an automatic cap proportional to the number of columns.
 /// \return True when the optimality conditions were met within the iteration

@@ -68,11 +68,19 @@ class BodyNode;
 /// is reported and Result::feasible is set to false.
 ///
 /// The solver reads the Skeleton's current positions, velocities, and
-/// accelerations, exactly like Skeleton::computeInverseDynamics(), but it
-/// does not modify the Skeleton; apply the output with
-/// Skeleton::setForces(Result::jointForces) if desired.
+/// accelerations, exactly like Skeleton::computeInverseDynamics(). The
+/// Skeleton's generalized joint forces and joint commands are saved and
+/// restored internally, so they are unchanged when compute() returns; apply
+/// the output with Skeleton::setForces(Result::jointForces) if desired.
+/// As with calling Skeleton::computeInverseDynamics() directly, the
+/// per-body transmitted wrenches reported by BodyNode::getBodyForce() and
+/// Joint::getWrenchToChildBodyNode()/getWrenchToParentBodyNode() reflect the
+/// inverse-dynamics pass afterwards.
 ///
-/// This class is not thread-safe: use one instance per thread.
+/// compute() mutates the Skeleton (force state and lazy kinematics caches)
+/// while it runs, so the Skeleton must not be accessed concurrently. For
+/// parallel evaluation, use one solver and one Skeleton clone per thread
+/// (see Skeleton::cloneSkeleton()).
 class ContactInverseDynamics
 {
 public:
@@ -160,14 +168,16 @@ public:
 
   /// Computes joint forces and contact forces for the Skeleton's current
   /// positions, velocities, and accelerations. The flags mirror
-  /// Skeleton::computeInverseDynamics(). The Skeleton's joint forces are left
-  /// unchanged.
+  /// Skeleton::computeInverseDynamics(). The Skeleton's generalized joint
+  /// forces and joint commands are left unchanged; see the class
+  /// documentation for the side effects shared with
+  /// Skeleton::computeInverseDynamics().
   Result compute(
       bool withExternalForces = false,
       bool withDampingForces = false,
       bool withSpringForces = false);
 
-protected:
+private:
   /// Skeleton this solver operates on.
   SkeletonPtr mSkeleton;
 
@@ -186,7 +196,6 @@ protected:
   /// Whether setUnactuatedDofs() was called.
   bool mHasUnactuatedDofsOverride;
 
-private:
   /// Workspace: stacked generator directions for all contacts.
   std::vector<Eigen::Matrix3Xd> mGenerators;
 

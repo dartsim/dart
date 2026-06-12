@@ -241,13 +241,16 @@ ContactInverseDynamics::Result ContactInverseDynamics::compute(
     }
   }
 
-  // Inverse dynamics for the current state; restore the joint forces so this
-  // call has no side effects on the Skeleton.
+  // Inverse dynamics for the current state. Restore the joint forces and the
+  // joint commands afterwards: setForces() overwrites the commands of
+  // FORCE-actuated joints, so the commands must be restored last.
   const Eigen::VectorXd savedForces = mSkeleton->getForces();
+  const Eigen::VectorXd savedCommands = mSkeleton->getCommands();
   mSkeleton->computeInverseDynamics(
       withExternalForces, withDampingForces, withSpringForces);
   const Eigen::VectorXd fullForces = mSkeleton->getForces();
   mSkeleton->setForces(savedForces);
+  mSkeleton->setCommands(savedCommands);
 
   const std::size_t numUnactuated = unactuated.size();
   const auto residualOf = [&](const Eigen::VectorXd& forces) {
@@ -325,8 +328,19 @@ ContactInverseDynamics::Result ContactInverseDynamics::compute(
         .lpNorm<Eigen::Infinity>();
   };
   if (!converged || residualNormOf() > mResidualTolerance * feasibilityScale) {
-    converged
+    const Eigen::VectorXd looseCoefficients = mCoefficients;
+    const double looseResidual = converged
+                                     ? residualNormOf()
+                                     : std::numeric_limits<double>::infinity();
+    const bool strictConverged
         = math::solveNonNegativeLeastSquares(mSystem, mRhs, mCoefficients);
+    if (!strictConverged && looseResidual < residualNormOf()) {
+      // Neither pass met the tolerance; keep the better iterate.
+      mCoefficients = looseCoefficients;
+      converged = true;
+    } else {
+      converged = strictConverged;
+    }
   }
 
   // Recover per-contact forces and the corrected joint forces.

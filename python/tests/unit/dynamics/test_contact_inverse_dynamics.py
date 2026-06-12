@@ -45,10 +45,12 @@ def test_static_box_contact_forces_balance_weight():
     result = solver.compute()
 
     assert result.feasible
+    # The documented contract bounds the residual by tolerance * |target|_inf.
+    bound = solver.getResidualTolerance() * mass * 9.81
     total = np.sum(result.contactForces, axis=0)
-    np.testing.assert_allclose(total[:2], 0.0, atol=1e-6)
-    np.testing.assert_allclose(total[2], mass * 9.81, atol=1e-5)
-    assert np.linalg.norm(result.unactuatedResidual, ord=np.inf) < 1e-6
+    np.testing.assert_allclose(total[:2], 0.0, atol=bound)
+    np.testing.assert_allclose(total[2], mass * 9.81, atol=bound)
+    assert np.linalg.norm(result.unactuatedResidual, ord=np.inf) <= bound
 
 
 def test_infeasible_acceleration_is_reported():

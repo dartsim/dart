@@ -39,6 +39,7 @@
 #include <osgViewer/ViewerEventHandlers>
 
 #include <array>
+#include <atomic>
 #include <iostream>
 #include <vector>
 
@@ -104,9 +105,8 @@ public:
       ImGui::Checkbox("Play", &mPlaying);
       ImGui::SliderFloat("Playback Speed", &mPlaybackSpeed, 0.1f, 2.0f);
 
-      bool depthChanged
-          = ImGui::SliderFloat("Squat Depth (m)", &mSquatDepth, 0.0f, 0.25f);
-      if (depthChanged && ImGui::IsItemDeactivatedAfterEdit()) {
+      ImGui::SliderFloat("Squat Depth (m)", &mSquatDepth, 0.0f, 0.25f);
+      if (ImGui::IsItemDeactivatedAfterEdit()) {
         if (mRegenerateCallback) {
           mRegenerateCallback();
         }
@@ -279,6 +279,7 @@ public:
 
     if (!mLeftHeel || !mLeftToe || !mRightHeel || !mRightToe) {
       std::cerr << "Error: Could not find foot body nodes" << std::endl;
+      mValid = false;
       return;
     }
 
@@ -492,8 +493,21 @@ public:
     return result;
   }
 
+  bool isValid() const
+  {
+    return mValid;
+  }
+
   void customPreRefresh() override
   {
+    if (!mValid) {
+      return;
+    }
+
+    if (mRegenerateRequested.exchange(false) && mWidget) {
+      generateSquatKeyframes(mWidget->getSquatDepth());
+    }
+
     const double cycleDuration = 3.0;
     const bool playing = mWidget && mWidget->isPlaying();
     const double speed
@@ -577,11 +591,12 @@ public:
     mWidget = std::move(widget);
   }
 
-  void regenerateKeyframes()
+  /// Called from the ImGui widget (draw callback). The actual regeneration
+  /// runs at the start of the next update traversal to avoid touching the
+  /// skeleton and keyframes from the draw thread.
+  void requestKeyframeRegeneration()
   {
-    if (mWidget) {
-      generateSquatKeyframes(mWidget->getSquatDepth());
-    }
+    mRegenerateRequested = true;
   }
 
 protected:
@@ -604,6 +619,8 @@ protected:
 
   double mTime;
   std::shared_ptr<ContactInverseDynamicsWidget> mWidget;
+  std::atomic<bool> mRegenerateRequested{false};
+  bool mValid{true};
 };
 
 //==============================================================================
@@ -623,20 +640,40 @@ int main(int argc, char* argv[])
 
   auto world
       = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+  if (!world) {
+    std::cerr << "Error: Could not load dart://sample/skel/fullbody1.skel"
+              << std::endl;
+    return 1;
+  }
   world->setGravity(Eigen::Vector3d(0, -9.81, 0));
 
   auto biped = world->getSkeleton("fullbody1");
-  biped->getDof("j_pelvis_rot_y")->setPosition(-0.20);
-  biped->getDof("j_thigh_left_z")->setPosition(0.15);
-  biped->getDof("j_shin_left")->setPosition(-0.40);
-  biped->getDof("j_heel_left_1")->setPosition(0.25);
-  biped->getDof("j_thigh_right_z")->setPosition(0.15);
-  biped->getDof("j_shin_right")->setPosition(-0.40);
-  biped->getDof("j_heel_right_1")->setPosition(0.25);
-  biped->getDof("j_abdomen_2")->setPosition(0.00);
+  if (!biped) {
+    std::cerr << "Error: Could not find the fullbody1 skeleton" << std::endl;
+    return 1;
+  }
+
+  const auto setDofPosition = [&](const std::string& name, double position) {
+    if (auto* dof = biped->getDof(name)) {
+      dof->setPosition(position);
+    } else {
+      std::cerr << "Warning: missing DOF " << name << std::endl;
+    }
+  };
+  setDofPosition("j_pelvis_rot_y", -0.20);
+  setDofPosition("j_thigh_left_z", 0.15);
+  setDofPosition("j_shin_left", -0.40);
+  setDofPosition("j_heel_left_1", 0.25);
+  setDofPosition("j_thigh_right_z", 0.15);
+  setDofPosition("j_shin_right", -0.40);
+  setDofPosition("j_heel_right_1", 0.25);
+  setDofPosition("j_abdomen_2", 0.00);
 
   ::osg::ref_ptr<ContactInverseDynamicsWorldNode> node
       = new ContactInverseDynamicsWorldNode(world, biped);
+  if (!node->isValid()) {
+    return 1;
+  }
 
   if (maxFrames > 0) {
     osg::ref_ptr<dart::gui::osg::ImGuiViewer> viewer
@@ -644,7 +681,9 @@ int main(int argc, char* argv[])
     viewer->addWorldNode(node);
 
     auto widget = std::make_shared<ContactInverseDynamicsWidget>(
-        viewer, world, biped, [node]() { node->regenerateKeyframes(); });
+        viewer, world, biped, [nodePtr = node.get()]() {
+          nodePtr->requestKeyframeRegeneration();
+        });
     viewer->getImGuiHandler()->addWidget(widget);
     node->setWidget(widget);
 
@@ -695,7 +734,9 @@ int main(int argc, char* argv[])
   viewer->addWorldNode(node);
 
   auto widget = std::make_shared<ContactInverseDynamicsWidget>(
-      viewer, world, biped, [node]() { node->regenerateKeyframes(); });
+      viewer, world, biped, [nodePtr = node.get()]() {
+        nodePtr->requestKeyframeRegeneration();
+      });
   viewer->getImGuiHandler()->addWidget(widget);
   node->setWidget(widget);
 
