@@ -2338,6 +2338,23 @@ struct PreparedDeformableBodyData
   double damping = 0.0;
 };
 
+using DeformableSurfaceFaceKey = std::array<std::size_t, 3>;
+using DeformableTetrahedronKey = std::array<std::size_t, 4>;
+
+template <typename Key>
+using DeformableValidationSet
+    = std::set<Key, std::less<Key>, common::StlAllocator<Key>>;
+
+using DeformableSurfaceFaceValue
+    = std::pair<comps::DeformableSurfaceTriangle, std::size_t>;
+using DeformableSurfaceFaceEntry
+    = std::pair<const DeformableSurfaceFaceKey, DeformableSurfaceFaceValue>;
+using DeformableSurfaceFaceMap = std::map<
+    DeformableSurfaceFaceKey,
+    DeformableSurfaceFaceValue,
+    std::less<DeformableSurfaceFaceKey>,
+    common::StlAllocator<DeformableSurfaceFaceEntry>>;
+
 //==============================================================================
 bool hasValidBoundaryEndTime(double value)
 {
@@ -2465,7 +2482,8 @@ void validateBoundaryNodes(
     std::span<const std::size_t> nodes,
     std::size_t nodeCount,
     std::string_view fieldName,
-    std::size_t boundaryIndex)
+    std::size_t boundaryIndex,
+    common::MemoryAllocator& allocator)
 {
   DART_SIMULATION_THROW_T_IF(
       nodes.empty(),
@@ -2473,7 +2491,8 @@ void validateBoundaryNodes(
       "DeformableBodyOptions.{}[{}] must reference at least one node",
       fieldName,
       boundaryIndex);
-  std::set<std::size_t> uniqueNodes;
+  DeformableValidationSet<std::size_t> uniqueNodes{
+      std::less<std::size_t>{}, common::StlAllocator<std::size_t>{allocator}};
   for (const auto node : nodes) {
     DART_SIMULATION_THROW_T_IF(
         node >= nodeCount,
@@ -2574,7 +2593,9 @@ validateDeformableSurfaceTriangles(
       common::StlAllocator<comps::DeformableSurfaceTriangle>{allocator});
   surfaceTriangles.reserve(options.surfaceTriangles.size());
 
-  std::set<std::array<std::size_t, 3>> uniqueFaces;
+  DeformableValidationSet<DeformableSurfaceFaceKey> uniqueFaces{
+      std::less<DeformableSurfaceFaceKey>{},
+      common::StlAllocator<DeformableSurfaceFaceKey>{allocator}};
   for (std::size_t i = 0; i < options.surfaceTriangles.size(); ++i) {
     const auto& triangle = options.surfaceTriangles[i];
     const std::array<std::size_t, 3> nodes{
@@ -2617,10 +2638,7 @@ validateDeformableSurfaceTriangles(
 
 //==============================================================================
 void addBoundaryFace(
-    std::map<
-        std::array<std::size_t, 3>,
-        std::pair<comps::DeformableSurfaceTriangle, std::size_t>>& faces,
-    comps::DeformableSurfaceTriangle face)
+    DeformableSurfaceFaceMap& faces, comps::DeformableSurfaceTriangle face)
 {
   const auto key = sortedFaceKey(face.nodeA, face.nodeB, face.nodeC);
   auto [it, inserted] = faces.emplace(key, std::pair{face, 0u});
@@ -2640,10 +2658,9 @@ deriveDeformableBoundarySurface(
     std::span<const comps::DeformableTetrahedron> tetrahedra,
     common::MemoryAllocator& allocator)
 {
-  std::map<
-      std::array<std::size_t, 3>,
-      std::pair<comps::DeformableSurfaceTriangle, std::size_t>>
-      faces;
+  DeformableSurfaceFaceMap faces{
+      std::less<DeformableSurfaceFaceKey>{},
+      DeformableSurfaceFaceMap::allocator_type{allocator}};
   for (const auto& tet : tetrahedra) {
     addBoundaryFace(faces, {tet.nodeA, tet.nodeC, tet.nodeB});
     addBoundaryFace(faces, {tet.nodeA, tet.nodeB, tet.nodeD});
@@ -2700,7 +2717,9 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
 
   validateDeformableMaterial(options.material);
 
-  std::set<std::array<std::size_t, 4>> uniqueTetrahedra;
+  DeformableValidationSet<DeformableTetrahedronKey> uniqueTetrahedra{
+      std::less<DeformableTetrahedronKey>{},
+      common::StlAllocator<DeformableTetrahedronKey>{allocator}};
   data.tetrahedra.reserve(options.tetrahedra.size());
   data.tetrahedronRestVolumes.reserve(options.tetrahedra.size());
   for (std::size_t i = 0; i < options.tetrahedra.size(); ++i) {
@@ -2835,7 +2854,7 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
   for (std::size_t i = 0; i < options.dirichletBoundaryConditions.size(); ++i) {
     const auto& boundary = options.dirichletBoundaryConditions[i];
     validateBoundaryNodes(
-        boundary.nodes, nodeCount, "dirichletBoundaryConditions", i);
+        boundary.nodes, nodeCount, "dirichletBoundaryConditions", i, allocator);
     validateDeformableFiniteVector(
         boundary.linearVelocity,
         "dirichletBoundaryConditions.linearVelocity",
@@ -2868,7 +2887,7 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
   for (std::size_t i = 0; i < options.neumannBoundaryConditions.size(); ++i) {
     const auto& boundary = options.neumannBoundaryConditions[i];
     validateBoundaryNodes(
-        boundary.nodes, nodeCount, "neumannBoundaryConditions", i);
+        boundary.nodes, nodeCount, "neumannBoundaryConditions", i, allocator);
     validateDeformableFiniteVector(
         boundary.acceleration, "neumannBoundaryConditions.acceleration", i);
     validateBoundaryTimeRange(

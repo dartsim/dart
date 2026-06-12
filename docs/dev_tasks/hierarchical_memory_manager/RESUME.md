@@ -1,6 +1,59 @@
 # Resume: Hierarchical Memory Manager
 
-## Hard Stop Handoff (2026-06-12)
+## Current Continuation (2026-06-12, Deformable Creation Scratch Allocators)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. It remains the single
+fresh-session entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: deformable body creation validation and derived-topology
+scratch now use the World free allocator. The pre-fix gap was that live
+deformable persistent payloads had been moved to World-backed vectors, but
+`World::addDeformableBody()` still used native-heap `std::set`/`std::map`
+scratch for boundary node uniqueness, explicit surface-triangle uniqueness,
+tetrahedron uniqueness, and tetrahedral boundary-surface derivation.
+
+The fix has three parts:
+
+- validation-time uniqueness sets now use `common::StlAllocator` backed by the
+  World free allocator;
+- derived tetrahedral boundary-surface face maps now use the same allocator;
+- `World.WorldPersistentStorageUsesWorldFreeAllocator` now covers richer
+  deformable creation inputs: spring edges, tetrahedra, derived surface
+  topology, Dirichlet/Neumann boundary conditions with nested vectors, and a
+  separate explicit surface-triangle topology body.
+
+Validation for this slice:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+pixi run lint
+pixi run build
+pixi run test-unit
+```
+
+Immediate follow-up candidates:
+
+- Live joint component storage still uses `Eigen::VectorXd`; replay snapshots
+  are allocator-aware but live multibody dynamic payload storage remains a
+  separate evidence-first slice.
+- Allocator comparative matrix: remaining standard/foonathan misses are still
+  EnTT steady-state registry rows. Do not tune thresholds or keep allocator
+  policy changes without a clean, apple-to-apples EnTT matrix improvement.
+- Further Phase 4/5 deformable work should start from focused heap/no-growth
+  probes around default-solver projected-Newton storage or production-scale
+  deformable cases. Avoid broad scene expansion without a bounded follow-up PR
+  scope.
+
+Before publishing or opening any PR from this branch, rerun the relevant gates
+from a clean source state and get explicit maintainer approval before pushing.
+
+## Previous Hard Stop Handoff (2026-06-12, Superseded)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking

@@ -3206,7 +3206,19 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   storageOptions.velocities.assign(
       storageOptions.positions.size(), Eigen::Vector3d::Zero());
   storageOptions.masses.assign(storageOptions.positions.size(), 1.0);
+  storageOptions.edges = {{0, 1}, {1, 4}, {2, 4}};
+  storageOptions.tetrahedra = {{0, 1, 2, 4}};
   storageOptions.fixedNodes = {0, 3};
+  sx::DeformableDirichletBoundaryCondition dirichletBoundary;
+  dirichletBoundary.nodes = {1, 2};
+  dirichletBoundary.linearVelocity = Eigen::Vector3d(0.0, 0.1, 0.0);
+  dirichletBoundary.endTime = 0.25;
+  storageOptions.dirichletBoundaryConditions.push_back(dirichletBoundary);
+  sx::DeformableNeumannBoundaryCondition neumannBoundary;
+  neumannBoundary.nodes = {4};
+  neumannBoundary.acceleration = Eigen::Vector3d(0.0, -9.8, 0.0);
+  neumannBoundary.endTime = 0.25;
+  storageOptions.neumannBoundaryConditions.push_back(neumannBoundary);
   auto& deformableStorageFreeList
       = deformableStorageWorld.getMemoryManager().getFreeListAllocator();
   const auto allocationsBeforeDeformableStorage
@@ -3229,12 +3241,17 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
         = sx::detail::storageOf(deformableStorageWorld).registry;
     auto view = registry.view<
         sx::comps::DeformableNodeState,
-        sx::comps::DeformableMeshTopology>();
+        sx::comps::DeformableSpringModel,
+        sx::comps::DeformableMeshTopology,
+        sx::comps::DeformableBoundaryConditions>();
     ASSERT_EQ(view.size_hint(), 1u);
     for (const auto entity : view) {
       const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
       const auto& topology
           = view.get<sx::comps::DeformableMeshTopology>(entity);
+      const auto& boundaries
+          = view.get<sx::comps::DeformableBoundaryConditions>(entity);
       auto& memory = deformableStorageWorld.getMemoryManager();
       EXPECT_TRUE(memory.hasAllocated(
           state.positions.data(),
@@ -3252,9 +3269,70 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       EXPECT_TRUE(memory.hasAllocated(
           topology.restPositions.data(),
           topology.restPositions.size() * sizeof(Eigen::Vector3d)));
+      EXPECT_TRUE(memory.hasAllocated(
+          spring.edges.data(),
+          spring.edges.size() * sizeof(sx::comps::DeformableSpringEdge)));
+      EXPECT_TRUE(memory.hasAllocated(
+          topology.surfaceTriangles.data(),
+          topology.surfaceTriangles.size()
+              * sizeof(sx::comps::DeformableSurfaceTriangle)));
+      EXPECT_TRUE(memory.hasAllocated(
+          topology.tetrahedra.data(),
+          topology.tetrahedra.size()
+              * sizeof(sx::comps::DeformableTetrahedron)));
+      EXPECT_TRUE(memory.hasAllocated(
+          topology.tetrahedronRestVolumes.data(),
+          topology.tetrahedronRestVolumes.size() * sizeof(double)));
+      ASSERT_EQ(boundaries.dirichlet.size(), 1u);
+      EXPECT_TRUE(memory.hasAllocated(
+          boundaries.dirichlet.data(),
+          boundaries.dirichlet.size()
+              * sizeof(sx::comps::DeformableDirichletBoundary)));
+      EXPECT_TRUE(memory.hasAllocated(
+          boundaries.dirichlet[0].nodes.data(),
+          boundaries.dirichlet[0].nodes.size() * sizeof(std::size_t)));
+      EXPECT_TRUE(memory.hasAllocated(
+          boundaries.dirichlet[0].referencePositions.data(),
+          boundaries.dirichlet[0].referencePositions.size()
+              * sizeof(Eigen::Vector3d)));
+      ASSERT_EQ(boundaries.neumann.size(), 1u);
+      EXPECT_TRUE(memory.hasAllocated(
+          boundaries.neumann.data(),
+          boundaries.neumann.size()
+              * sizeof(sx::comps::DeformableNeumannBoundary)));
+      EXPECT_TRUE(memory.hasAllocated(
+          boundaries.neumann[0].nodes.data(),
+          boundaries.neumann[0].nodes.size() * sizeof(std::size_t)));
     }
   }
 #endif
+
+  sx::World surfaceStorageWorld;
+  sx::DeformableBodyOptions surfaceStorageOptions;
+  surfaceStorageOptions.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  surfaceStorageOptions.masses.assign(
+      surfaceStorageOptions.positions.size(), 1.0);
+  surfaceStorageOptions.surfaceTriangles = {{0, 1, 2}};
+  auto& surfaceStorageFreeList
+      = surfaceStorageWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeSurfaceStorage
+      = surfaceStorageFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    surfaceStorageWorld.addDeformableBody("s", surfaceStorageOptions);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "explicit deformable surface-topology validation scratch should "
+           "allocate through the World free allocator during body creation, "
+           "not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(
+      surfaceStorageFreeList.getAllocationCount(),
+      allocationsBeforeSurfaceStorage);
 
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
