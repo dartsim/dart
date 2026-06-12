@@ -25,11 +25,20 @@ the existing smoke command. The current slice realigns LCP background docs with
 DART 7 snake_case solver header paths and extends the LCP roster lint gate to
 reject stale documented LCP header/source paths.
 
+The user then gave a critical stop instruction: focus on hand-off only and run
+no further verification. No code changes were made after that instruction. The
+interrupted next-slice audit found a likely bounded follow-up in
+`MprgpSolver::supportsProblem(...)`: MPRGP currently inherits the base
+form-level predicate even though its native standard-LCP path rejects
+non-symmetric matrices and, by default, matrices that fail an LLT positive
+definite check before delegating to Dantzig.
+
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — current local HEAD is
-`f09ea880ea8 Align LCP docs with snake case headers`. The branch is two commits
-ahead of `origin/feature/lcp-solver-interface-demos`, which is at
+`feature/lcp-solver-interface-demos` — consolidated branch for this work. At
+the start of this docs-only hand-off update, the latest code checkpoint was
+`7f4b0227eaf Align LCP docs with snake case headers`; the branch was two
+commits ahead of `origin/feature/lcp-solver-interface-demos`, which was at
 `eb2147d9e6b Document current LCP handoff state`.
 
 The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
@@ -38,11 +47,11 @@ ancestor of `HEAD` before this representative benchmark-command slice.
 
 ## Immediate Next Step
 
-Continue with the next smallest LCP solver/interface/demo gap. A good next
-audit target is whether any standard-only solver support predicate should be
-more precise than family-level support, similar to the completed Direct solver
-per-problem support fix. Do not push unless the maintainer/user gives explicit
-approval in the current turn.
+First confirm whether this docs-only hand-off checkpoint has already been
+pushed. After that, continue with the next smallest LCP solver/interface/demo
+gap: make MPRGP's per-problem support predicate match its native standard-LCP
+route, then add focused tests. Do not push unless the maintainer/user gives
+explicit approval in the current turn.
 
 ## Context That Would Be Lost
 
@@ -139,6 +148,28 @@ approval in the current turn.
   `pixi run python scripts/check_lcp_solver_roster.py`.
 - Final verification for the current source-layout docs slice passed:
   `pixi run lint`.
+- No verification was run after the user's critical stop-and-handoff
+  instruction.
+- Interrupted audit evidence for MPRGP:
+  - `dart/math/lcp/lcp_solver.hpp` currently provides the base virtual
+    `supportsProblem(problem, standardTolerance)` as a form-level predicate:
+    standard, friction-index, or boxed.
+  - `dart/math/lcp/other/mprgp_solver.hpp` documents MPRGP as a standard-LCP
+    solver for symmetric positive definite matrices, but it does not override
+    `supportsProblem(...)`.
+  - `dart/math/lcp/other/mprgp_solver.cpp` has `isSymmetric(...)`, delegates
+    non-standard problems to Dantzig, delegates non-symmetric standard problems
+    to Dantzig, and delegates matrices that fail `Eigen::LLT` when
+    `checkPositiveDefinite` is true.
+  - A likely patch is to add `using LcpSolver::supportsProblem;` and override
+    `bool supportsProblem(const LcpProblem&, double standardTolerance) const`
+    in `MprgpSolver`, returning true only for standard problems that satisfy the
+    configured native symmetry and positive-definite checks.
+  - Focused C++ coverage should include an SPD standard packet, a boxed packet,
+    a non-symmetric standard packet, a symmetric indefinite packet, and the
+    `checkPositiveDefinite = false` parameter case.
+  - Python/demo counts are expected to remain unchanged because the current
+    representative standard demo packets appear symmetric positive definite.
 
 ## How to Resume
 
@@ -162,6 +193,17 @@ Expected files in the Direct support checkpoint:
 - `python/tests/unit/math/test_lcp.py`
 - `python/tests/unit/test_py_demo_panels.py`
 - `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
+
+Expected files in the latest source-layout docs checkpoint:
+
+- `CHANGELOG.md`
+- `docs/background/lcp/02_overview.md`
+- `docs/background/lcp/03_pivoting-methods.md`
+- `docs/background/lcp/05_newton-methods.md`
+- `docs/background/lcp/06_other-methods.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `scripts/check_lcp_solver_roster.py`
 
 Then read:
 

@@ -31,6 +31,8 @@
       the smoke command intact.
 - [x] Realigned LCP background docs with DART 7 snake_case solver header paths
       and extended the LCP roster lint gate to catch stale documented paths.
+- [x] Captured the critical stop-and-handoff state without running further
+      verification, including the interrupted MPRGP support-predicate audit.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -70,8 +72,9 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest checkpoint realigns the LCP background docs with the actual DART 7
-source layout:
+The latest code checkpoint, `7f4b0227eaf Align LCP docs with snake case
+headers`, realigns the LCP background docs with the actual DART 7 source
+layout:
 
 - `docs/background/lcp/02_overview.md` now lists snake_case `dart/math/lcp`
   solver header/source paths in the implementation table, repository layout,
@@ -94,6 +97,46 @@ Observed results:
 
 - `pixi run python scripts/check_lcp_solver_roster.py`: passed.
 - `pixi run lint`: passed.
+
+## Critical Hand-Off Snapshot
+
+The user explicitly stopped implementation work and requested hand-off only
+with no further verification. No lint, build, tests, benchmark listing, or
+solver execution was run after that instruction.
+
+Branch state at the start of this hand-off update:
+
+- Current branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD before this docs-only hand-off update:
+  `7f4b0227eaf Align LCP docs with snake case headers`.
+- Remote tracking branch before this docs-only hand-off update:
+  `origin/feature/lcp-solver-interface-demos` at
+  `eb2147d9e6b Document current LCP handoff state`.
+- Local branch was two commits ahead of the tracking branch before this
+  docs-only hand-off update.
+
+Interrupted next-slice audit, with no code changes made:
+
+- The next bounded interface gap appears to be
+  `dart/math/lcp/other/mprgp_solver.hpp` and
+  `dart/math/lcp/other/mprgp_solver.cpp`.
+- `LcpSolver::supportsProblem(problem, standardTolerance)` currently reports
+  form-level support by checking whether a problem is standard, friction-index,
+  or boxed and whether the solver supports that form.
+- `MprgpSolver` advertises support for standard LCPs and inherits that base
+  predicate, but its native solve path is narrower: non-standard problems,
+  non-symmetric matrices, and matrices that fail `Eigen::LLT` when
+  `checkPositiveDefinite` is true are delegated to Dantzig.
+- A likely focused patch is to add an MPRGP override for
+  `supportsProblem(problem, standardTolerance)` that returns native support
+  only for standard packets satisfying the solver's configured symmetry and
+  positive-definite checks.
+- Focused C++ tests should cover: SPD standard true, boxed false,
+  non-symmetric standard false, symmetric indefinite false by default, and
+  symmetric indefinite true after setting `checkPositiveDefinite = false`.
+- Current py-demo representative standard packets appear symmetric positive
+  definite, so the Python panel native/delegated counts are not expected to
+  change for this patch.
 
 ## Representative Benchmark Command Checkpoint
 
