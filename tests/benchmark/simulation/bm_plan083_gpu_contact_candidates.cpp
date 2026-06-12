@@ -68,6 +68,17 @@ struct EdgeEdgeCandidateFixture
   std::size_t acceptedCount = 0;
 };
 
+struct EdgeEdgeCandidateMaskFixture
+{
+  std::vector<double> positions;
+  std::vector<std::uint32_t> edgeIndices;
+  std::vector<double> cpuSquaredDistances;
+  std::vector<std::uint8_t> cpuAccepted;
+  std::size_t edgeCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+};
+
 struct CandidateMaskFixture
 {
   std::vector<double> positions;
@@ -91,6 +102,17 @@ void appendPoint(
 
 void appendPoint(
     EdgeEdgeCandidateFixture& fixture,
+    const double x,
+    const double y,
+    const double z)
+{
+  fixture.positions.push_back(x);
+  fixture.positions.push_back(y);
+  fixture.positions.push_back(z);
+}
+
+void appendPoint(
+    EdgeEdgeCandidateMaskFixture& fixture,
     const double x,
     const double y,
     const double z)
@@ -126,6 +148,15 @@ bool isIncidentPointTriangle(
   const std::size_t tri = 3u * triangle;
   return point == triangles[tri] || point == triangles[tri + 1u]
          || point == triangles[tri + 2u];
+}
+
+bool edgesShareVertex(
+    const std::uint32_t a0,
+    const std::uint32_t a1,
+    const std::uint32_t b0,
+    const std::uint32_t b1)
+{
+  return a0 == b0 || a0 == b1 || a1 == b0 || a1 == b1;
 }
 
 CandidateFixture makeCandidateFixture(const int stencilCount)
@@ -210,6 +241,65 @@ EdgeEdgeCandidateFixture makeEdgeEdgeCandidateFixture(const int stencilCount)
     fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
     if (accepted) {
       ++fixture.acceptedCount;
+    }
+  }
+
+  return fixture;
+}
+
+EdgeEdgeCandidateMaskFixture makeEdgeEdgeCandidateMaskFixture(
+    const int pairCount)
+{
+  const int side = std::max(2, static_cast<int>(std::sqrt(pairCount)));
+  EdgeEdgeCandidateMaskFixture fixture;
+  fixture.edgeCount = static_cast<std::size_t>(side);
+  fixture.pairCount = fixture.edgeCount * fixture.edgeCount;
+  fixture.positions.reserve(2u * fixture.edgeCount * 3u);
+  fixture.edgeIndices.reserve(2u * fixture.edgeCount);
+  fixture.cpuSquaredDistances.reserve(fixture.pairCount);
+  fixture.cpuAccepted.reserve(fixture.pairCount);
+
+  for (int i = 0; i < side; ++i) {
+    const int group = i / 2;
+    const double x = static_cast<double>(group % 64) * 2.0;
+    const double y = static_cast<double>(group / 64) * 2.0;
+    const std::uint32_t base
+        = static_cast<std::uint32_t>(fixture.positions.size() / 3u);
+    if ((i % 2) == 0) {
+      appendPoint(fixture, x, y, 0.0);
+      appendPoint(fixture, x + 1.0, y, 0.0);
+    } else {
+      const bool accepted = (group % 4) != 0;
+      const double offset = accepted ? 0.02 : 0.08;
+      appendPoint(fixture, x + 0.25, y + offset, -0.5);
+      appendPoint(fixture, x + 0.25, y + offset, 0.5);
+    }
+    fixture.edgeIndices.insert(fixture.edgeIndices.end(), {base, base + 1u});
+  }
+
+  for (std::size_t edgeA = 0; edgeA < fixture.edgeCount; ++edgeA) {
+    for (std::size_t edgeB = 0; edgeB < fixture.edgeCount; ++edgeB) {
+      double squaredDistance = 0.0;
+      bool accepted = false;
+      const std::uint32_t a0 = fixture.edgeIndices[2u * edgeA];
+      const std::uint32_t a1 = fixture.edgeIndices[2u * edgeA + 1u];
+      const std::uint32_t b0 = fixture.edgeIndices[2u * edgeB];
+      const std::uint32_t b1 = fixture.edgeIndices[2u * edgeB + 1u];
+      if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+        const auto distance = dc::edgeEdgeSquaredDistance(
+            pointAt(fixture.positions, a0),
+            pointAt(fixture.positions, a1),
+            pointAt(fixture.positions, b0),
+            pointAt(fixture.positions, b1));
+        squaredDistance = distance.squaredDistance;
+        accepted = dc::detail::withinActivationDistance(
+            squaredDistance, kActivationDistance);
+      }
+      fixture.cpuSquaredDistances.push_back(squaredDistance);
+      fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++fixture.acceptedCount;
+      }
     }
   }
 
@@ -303,6 +393,19 @@ void recordCandidateMaskCounters(
   state.counters["pairs"] = static_cast<double>(fixture.pairCount);
   state.counters["points"] = static_cast<double>(fixture.pointCount);
   state.counters["triangles"] = static_cast<double>(fixture.triangleCount);
+  state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.pairCount));
+}
+
+void recordEdgeEdgeCandidateMaskCounters(
+    benchmark::State& state,
+    const EdgeEdgeCandidateMaskFixture& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
   state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
@@ -464,6 +567,92 @@ static void BM_Plan083PointTriangleCandidateMaskCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointTriangleCandidateMaskCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeCandidateMaskCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeEdgeEdgeCandidateMaskFixture(static_cast<int>(state.range(0)));
+
+  std::size_t acceptedCount = 0;
+  for (auto _ : state) {
+    acceptedCount = 0;
+    for (std::size_t edgeA = 0; edgeA < fixture.edgeCount; ++edgeA) {
+      for (std::size_t edgeB = 0; edgeB < fixture.edgeCount; ++edgeB) {
+        double squaredDistance = 0.0;
+        const std::uint32_t a0 = fixture.edgeIndices[2u * edgeA];
+        const std::uint32_t a1 = fixture.edgeIndices[2u * edgeA + 1u];
+        const std::uint32_t b0 = fixture.edgeIndices[2u * edgeB];
+        const std::uint32_t b1 = fixture.edgeIndices[2u * edgeB + 1u];
+        if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+          const auto distance = dc::edgeEdgeSquaredDistance(
+              pointAt(fixture.positions, a0),
+              pointAt(fixture.positions, a1),
+              pointAt(fixture.positions, b0),
+              pointAt(fixture.positions, b1));
+          squaredDistance = distance.squaredDistance;
+          acceptedCount += dc::detail::withinActivationDistance(
+                               squaredDistance, kActivationDistance)
+                               ? 1u
+                               : 0u;
+        }
+        benchmark::DoNotOptimize(squaredDistance);
+      }
+    }
+  }
+
+  benchmark::DoNotOptimize(acceptedCount);
+  recordEdgeEdgeCandidateMaskCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083EdgeEdgeCandidateMaskCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeCandidateMaskCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeEdgeEdgeCandidateMaskFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeCandidateBuildResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::buildEdgeEdgeContactCandidateMaskCuda(
+        fixture.positions, fixture.edgeIndices, kActivationDistance, result);
+    benchmark::DoNotOptimize(result.squaredDistances.data());
+    benchmark::DoNotOptimize(result.accepted.data());
+  }
+
+  for (std::size_t i = 0; i < fixture.cpuSquaredDistances.size(); ++i) {
+    maxError = std::max(
+        maxError,
+        std::abs(result.squaredDistances[i] - fixture.cpuSquaredDistances[i]));
+  }
+
+  recordEdgeEdgeCandidateMaskCounters(state, fixture, maxError);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_edges"] = static_cast<double>(result.edgeCount);
+  state.counters["gpu_accepted_count"]
+      = static_cast<double>(result.acceptedCount);
+  state.counters["gpu_compacted_edge_a_count"]
+      = static_cast<double>(result.acceptedEdgeAIndices.size());
+  state.counters["gpu_compacted_edge_b_count"]
+      = static_cast<double>(result.acceptedEdgeBIndices.size());
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083EdgeEdgeCandidateMaskCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

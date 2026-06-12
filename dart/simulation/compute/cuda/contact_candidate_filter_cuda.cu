@@ -390,6 +390,15 @@ __global__ void compactPointTriangleContactCandidateMaskKernel(
       = static_cast<std::uint32_t>(triangle);
 }
 
+__device__ bool edgesShareVertex(
+    const std::uint32_t a0,
+    const std::uint32_t a1,
+    const std::uint32_t b0,
+    const std::uint32_t b1)
+{
+  return a0 == b0 || a0 == b1 || a1 == b0 || a1 == b1;
+}
+
 __global__ void filterEdgeEdgeContactStencilKernel(
     const double* positions,
     const EdgeEdgeContactStencil* stencils,
@@ -416,6 +425,91 @@ __global__ void filterEdgeEdgeContactStencilKernel(
   const double tolerance = kRelativeEpsilon * fmax(1.0, threshold);
   squaredDistances[index] = squaredDistance;
   accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
+}
+
+__global__ void buildEdgeEdgeContactCandidateMaskKernel(
+    const double* positions,
+    const std::uint32_t* edgeIndices,
+    const double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    const std::size_t edgeCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t pairCount = edgeCount * edgeCount;
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::size_t edgeA = index / edgeCount;
+  const std::size_t edgeB = index - edgeA * edgeCount;
+  if (edgeA >= edgeB) {
+    squaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const std::uint32_t a0 = edgeIndices[2u * edgeA];
+  const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+  const std::uint32_t b0 = edgeIndices[2u * edgeB];
+  const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+  if (edgesShareVertex(a0, a1, b0, b1)) {
+    squaredDistances[index] = 0.0;
+    accepted[index] = 0u;
+    return;
+  }
+
+  const Vec3 a = loadPoint(positions, a0);
+  const Vec3 b = loadPoint(positions, a1);
+  const Vec3 c = loadPoint(positions, b0);
+  const Vec3 d = loadPoint(positions, b1);
+
+  const double squaredDistance = edgeEdgeSquaredDistance(a, b, c, d);
+  const double threshold = activationDistance * activationDistance;
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double tolerance = kRelativeEpsilon * fmax(1.0, threshold);
+  squaredDistances[index] = squaredDistance;
+  accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
+}
+
+__global__ void compactEdgeEdgeContactCandidateMaskKernel(
+    const std::uint8_t* accepted,
+    const std::uint32_t* acceptedBlockOffsets,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    const std::size_t edgeCount)
+{
+  extern __shared__ std::uint32_t localRanks[];
+
+  const auto local = static_cast<unsigned int>(threadIdx.x);
+  const auto index = static_cast<std::size_t>(blockIdx.x * blockDim.x + local);
+  const std::size_t pairCount = edgeCount * edgeCount;
+  const std::uint32_t acceptedFlag
+      = index < pairCount && accepted[index] != 0u ? 1u : 0u;
+  localRanks[local] = acceptedFlag;
+  __syncthreads();
+
+  for (unsigned int offset = 1u; offset < blockDim.x; offset <<= 1u) {
+    std::uint32_t previous = 0u;
+    if (local >= offset) {
+      previous = localRanks[local - offset];
+    }
+    __syncthreads();
+    localRanks[local] += previous;
+    __syncthreads();
+  }
+
+  if (acceptedFlag == 0u) {
+    return;
+  }
+
+  const std::size_t edgeA = index / edgeCount;
+  const std::size_t edgeB = index - edgeA * edgeCount;
+  const std::uint32_t compactedIndex
+      = acceptedBlockOffsets[blockIdx.x] + localRanks[local] - 1u;
+  acceptedEdgeAIndices[compactedIndex] = static_cast<std::uint32_t>(edgeA);
+  acceptedEdgeBIndices[compactedIndex] = static_cast<std::uint32_t>(edgeB);
 }
 
 } // namespace
@@ -539,6 +633,69 @@ cudaError_t launchEdgeEdgeContactStencilFilterKernel(
       squaredDistances,
       accepted,
       stencilCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
+    const double* positions,
+    const std::uint32_t* edgeIndices,
+    double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t edgeCount)
+{
+  const std::size_t pairCount = edgeCount * edgeCount;
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  buildEdgeEdgeContactCandidateMaskKernel<<<gridSize, blockSize>>>(
+      positions,
+      edgeIndices,
+      activationDistance,
+      squaredDistances,
+      accepted,
+      edgeCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  countPointTriangleAcceptedBlocksKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted, acceptedBlockCounts, pairCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixPointTriangleAcceptedBlockCountsKernel<<<1u, 1u>>>(
+      acceptedBlockCounts, acceptedBlockOffsets, compactedCount, gridSize);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  compactEdgeEdgeContactCandidateMaskKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted,
+      acceptedBlockOffsets,
+      acceptedEdgeAIndices,
+      acceptedEdgeBIndices,
+      edgeCount);
 
   return cudaGetLastError();
 }

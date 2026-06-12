@@ -170,6 +170,15 @@ struct CandidateMaskExpectation
   std::size_t acceptedCount = 0;
 };
 
+struct EdgeEdgeCandidateMaskExpectation
+{
+  std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::size_t acceptedCount = 0;
+};
+
 CandidateMaskExpectation cpuCandidateMask(
     const Fixture& fixture,
     const std::vector<std::uint32_t>& pointIndices,
@@ -202,6 +211,58 @@ CandidateMaskExpectation cpuCandidateMask(
         expected.acceptedPointIndices.push_back(point);
         expected.acceptedTriangleIndices.push_back(
             static_cast<std::uint32_t>(triangle));
+      }
+    }
+  }
+
+  return expected;
+}
+
+bool edgesShareVertex(
+    const std::uint32_t a0,
+    const std::uint32_t a1,
+    const std::uint32_t b0,
+    const std::uint32_t b1)
+{
+  return a0 == b0 || a0 == b1 || a1 == b0 || a1 == b1;
+}
+
+EdgeEdgeCandidateMaskExpectation cpuEdgeEdgeCandidateMask(
+    const EdgeEdgeFixture& fixture,
+    const std::vector<std::uint32_t>& edgeIndices,
+    const double activationDistance)
+{
+  EdgeEdgeCandidateMaskExpectation expected;
+  const std::size_t edgeCount = edgeIndices.size() / 2u;
+  expected.squaredDistances.reserve(edgeCount * edgeCount);
+  expected.accepted.reserve(edgeCount * edgeCount);
+
+  for (std::size_t edgeA = 0; edgeA < edgeCount; ++edgeA) {
+    for (std::size_t edgeB = 0; edgeB < edgeCount; ++edgeB) {
+      double squaredDistance = 0.0;
+      bool accepted = false;
+      const std::uint32_t a0 = edgeIndices[2u * edgeA];
+      const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+      const std::uint32_t b0 = edgeIndices[2u * edgeB];
+      const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+      if (edgeA < edgeB && !edgesShareVertex(a0, a1, b0, b1)) {
+        const auto distance = dc::edgeEdgeSquaredDistance(
+            pointAt(fixture.positions, a0),
+            pointAt(fixture.positions, a1),
+            pointAt(fixture.positions, b0),
+            pointAt(fixture.positions, b1));
+        squaredDistance = distance.squaredDistance;
+        accepted = dc::detail::withinActivationDistance(
+            squaredDistance, activationDistance);
+      }
+      expected.squaredDistances.push_back(squaredDistance);
+      expected.accepted.push_back(accepted ? 1u : 0u);
+      if (accepted) {
+        ++expected.acceptedCount;
+        expected.acceptedEdgeAIndices.push_back(
+            static_cast<std::uint32_t>(edgeA));
+        expected.acceptedEdgeBIndices.push_back(
+            static_cast<std::uint32_t>(edgeB));
       }
     }
   }
@@ -290,6 +351,66 @@ TEST(ContactCandidateFilterCuda, MasksIncidentPointTriangleCandidatePairs)
   EXPECT_EQ(result.accepted[0], 0u);
   EXPECT_TRUE(result.acceptedPointIndices.empty());
   EXPECT_TRUE(result.acceptedTriangleIndices.empty());
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuEdgeEdgeCandidateMask)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const EdgeEdgeFixture fixture = makeEdgeEdgeFixture();
+  const std::vector<std::uint32_t> edgeIndices
+      = {0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u};
+  const EdgeEdgeCandidateMaskExpectation expected
+      = cpuEdgeEdgeCandidateMask(fixture, edgeIndices, 0.05);
+
+  cuda::EdgeEdgeCandidateBuildResult result;
+  cuda::buildEdgeEdgeContactCandidateMaskCuda(
+      fixture.positions, edgeIndices, 0.05, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), expected.squaredDistances.size());
+  ASSERT_EQ(result.accepted.size(), expected.accepted.size());
+  EXPECT_EQ(result.edgeCount, edgeIndices.size() / 2u);
+  EXPECT_EQ(result.pairCount, expected.squaredDistances.size());
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedEdgeAIndices, expected.acceptedEdgeAIndices);
+  EXPECT_EQ(result.acceptedEdgeBIndices, expected.acceptedEdgeBIndices);
+
+  for (std::size_t pair = 0; pair < expected.squaredDistances.size(); ++pair) {
+    EXPECT_NEAR(
+        result.squaredDistances[pair], expected.squaredDistances[pair], 1e-14)
+        << pair;
+    EXPECT_EQ(result.accepted[pair], expected.accepted[pair]) << pair;
+  }
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MasksIncidentEdgeEdgeCandidatePairs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  EdgeEdgeFixture fixture;
+  appendPoint(fixture, {0.0, 0.0, 0.0});
+  appendPoint(fixture, {1.0, 0.0, 0.0});
+  appendPoint(fixture, {1.0, 1.0, 0.0});
+  const std::vector<std::uint32_t> edgeIndices = {0u, 1u, 1u, 2u};
+
+  cuda::EdgeEdgeCandidateBuildResult result;
+  cuda::buildEdgeEdgeContactCandidateMaskCuda(
+      fixture.positions, edgeIndices, 0.05, result);
+
+  ASSERT_EQ(result.pairCount, 4u);
+  ASSERT_EQ(result.squaredDistances.size(), 4u);
+  ASSERT_EQ(result.accepted.size(), 4u);
+  EXPECT_EQ(result.squaredDistances[1], 0.0);
+  EXPECT_EQ(result.accepted[1], 0u);
+  EXPECT_TRUE(result.acceptedEdgeAIndices.empty());
+  EXPECT_TRUE(result.acceptedEdgeBIndices.empty());
 }
 
 //==============================================================================
@@ -392,5 +513,22 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidEdgeEdgeStencil)
   EXPECT_THROW(
       cuda::filterEdgeEdgeContactStencilsCuda(
           fixture.positions, fixture.stencils, 0.05, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, RejectsInvalidEdgeEdgeCandidateMaskInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  EdgeEdgeFixture fixture = makeEdgeEdgeFixture();
+  const std::vector<std::uint32_t> edgeIndices = {0u, 1u, 99u, 3u};
+
+  cuda::EdgeEdgeCandidateBuildResult result;
+  EXPECT_THROW(
+      cuda::buildEdgeEdgeContactCandidateMaskCuda(
+          fixture.positions, edgeIndices, 0.05, result),
       dart::simulation::InvalidArgumentException);
 }

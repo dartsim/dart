@@ -298,8 +298,8 @@ its own line so status updates remain git-history friendly.
   packets without claiming gear assets, Bullet/reference baselines, GPU parity,
   or paper-scale parity. PR #2978 is the single consolidated follow-up for the
   remaining private packet work: it adds point-triangle and edge-edge contact
-  stencil parity plus a brute-force all-pairs point-triangle candidate mask
-  with device-side compacted point/triangle metadata, endpoint-linear
+  stencil parity plus brute-force all-pairs point-triangle and edge-edge
+  candidate masks with device-side compacted-pair metadata, endpoint-linear
   point-triangle and
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
   plus point-triangle

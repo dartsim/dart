@@ -99,6 +99,31 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    edge_mask_cpu = _row(
+        "BM_Plan083EdgeEdgeCandidateMaskCpu/1024",
+        pairs=1024,
+        edges=32,
+        accepted_count=12,
+        max_result_abs_error=0.0,
+    )
+    edge_mask_gpu = _row(
+        "BM_Plan083EdgeEdgeCandidateMaskCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        pairs=1024,
+        edges=32,
+        accepted_count=12,
+        gpu_pairs=1024,
+        gpu_edges=32,
+        gpu_accepted_count=12,
+        gpu_compacted_edge_a_count=12,
+        gpu_compacted_edge_b_count=12,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_gpu.update(overrides)
     return {
         "benchmarks": [
@@ -108,6 +133,8 @@ def _benchmark_data(**overrides):
             edge_gpu,
             mask_cpu,
             mask_gpu,
+            edge_mask_cpu,
+            edge_mask_gpu,
         ]
     }
 
@@ -126,10 +153,14 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert row["row_id"] == "contact-stencils-candidate-filtering"
     assert row["same_scene_cpu_gpu"] is True
     assert row["accepted_count"] == 1536
-    assert row["candidate_pair_count"] == 1024
+    assert row["candidate_pair_count"] == 2048
     assert row["max_result_abs_error"] == 1e-14
     assert row["meets_speedup_gate"] is True
     assert set(row["primitive_families"]) == {"point_triangle", "edge_edge"}
+    assert set(row["candidate_construction"]) == {
+        "point_triangle_all_pairs_mask",
+        "edge_edge_all_pairs_mask",
+    }
     assert (
         row["candidate_construction"]["point_triangle_all_pairs_mask"]["accepted_count"]
         == 24
@@ -139,6 +170,22 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
             "compacted_count"
         ]
         == 24
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_all_pairs_mask"]["accepted_count"]
+        == 12
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_all_pairs_mask"][
+            "compacted_edge_a_count"
+        ]
+        == 12
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_all_pairs_mask"][
+            "compacted_edge_b_count"
+        ]
+        == 12
     )
     assert (
         row["candidate_construction"]["point_triangle_all_pairs_mask"][
@@ -216,6 +263,26 @@ def test_plan083_gpu_contact_candidate_packet_rejects_triangle_compaction_mismat
         assert "compacted triangle count" in str(exc)
     else:
         raise AssertionError("expected triangle compaction failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_edge_compaction_mismatch() -> (
+    None
+):
+    module = _load_module()
+    data = _benchmark_data()
+    data["benchmarks"][7]["gpu_compacted_edge_b_count"] = 11
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "compacted edge-b count" in str(exc)
+    else:
+        raise AssertionError("expected edge compaction failure")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:

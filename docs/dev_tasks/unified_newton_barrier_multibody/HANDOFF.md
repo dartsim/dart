@@ -1,5 +1,51 @@
 # Unified Newton-Barrier Handoff
 
+## Latest Edge-Edge Candidate-Mask Checkpoint (2026-06-12)
+
+Implementation resumed on `simx/plan083-gpu-contact-candidate-packet`, the
+consolidated PLAN-083 branch for PR #2978 (`Advance unified Newton-barrier
+runtime and parity evidence`). Keep all remaining PLAN-083 work on this single
+branch/PR. Do not push, PR-comment, resolve review threads, trigger CI, or open
+another PLAN-083 PR without explicit maintainer approval. Before any future
+push, merge latest `origin/main` into this published branch, rerun the required
+gates, and push only with explicit approval.
+
+This checkpoint validates the previously dirty edge-edge all-pairs
+contact-candidate mask packet. It adds a private
+`buildEdgeEdgeContactCandidateMaskCuda()` path, masks self/duplicate/incident
+edge pairs, writes the all-pairs accepted mask, and compacts accepted edge-slot
+pairs on the device before readback. Focused CUDA unit coverage checks CPU/GPU
+parity, incident-edge rejection, and input validation. Benchmark and packet
+writer coverage now require
+`candidate_construction.edge_edge_all_pairs_mask` with matching accepted and
+compacted edge-a/edge-b counts.
+
+The regenerated contact-candidate packet reports exact parity for 65,536
+point-triangle stencils, 65,536 edge-edge stencils, a 65,536-pair
+point-triangle all-pairs mask, and a 65,536-pair edge-edge all-pairs mask. The
+point-triangle mask row has `accepted_count=192`,
+`compacted_count=192`, `compacted_triangle_count=192`,
+`max_result_abs_error=0`, and `speedup=0.8860940784354572x`. The edge-edge
+mask row has `edge_count=256`, `accepted_count=96`,
+`compacted_edge_a_count=96`, `compacted_edge_b_count=96`,
+`max_result_abs_error=0`, and `speedup=0.6679555059736084x`. The top-level
+contact-candidate packet speedup is `0.37765557710841663x`
+(`meets_speedup_gate=false`).
+
+This remains reduced private packet evidence only. It does not claim sweep
+broad-phase construction, runtime scene candidate-list construction, or
+contact-candidate speedup-gate completion.
+
+Validation for this checkpoint passed focused packet pytest (7 tests),
+`pixi run python scripts/check_plan083_gpu_parity_packet.py`,
+`pixi run python scripts/check_plan083_completion_audit.py`, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio (16 passed),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
 ## Latest Continuation Handoff (2026-06-12)
 
 Implementation resumed from the stop-only handoff on the consolidated PLAN-083

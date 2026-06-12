@@ -77,6 +77,19 @@ cudaError_t launchEdgeEdgeContactStencilFilterKernel(
     std::uint8_t* accepted,
     std::size_t stencilCount);
 
+cudaError_t launchEdgeEdgeContactCandidateMaskKernel(
+    const double* positions,
+    const std::uint32_t* edgeIndices,
+    double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
+    std::size_t edgeCount);
+
 } // namespace detail
 namespace {
 
@@ -210,6 +223,38 @@ std::size_t validateCandidateMaskInputs(
         index >= pointCount,
         sx::InvalidArgumentException,
         "{} triangle index {} is outside {} positions",
+        operation,
+        index,
+        pointCount);
+  }
+
+  return pointCount;
+}
+
+std::size_t validateEdgeEdgeCandidateMaskInputs(
+    const std::vector<double>& positions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    std::string_view operation)
+{
+  DART_SIMULATION_THROW_T_IF(
+      positions.size() % 3 != 0,
+      sx::InvalidArgumentException,
+      "{} expects xyz-packed positions but received {} doubles",
+      operation,
+      positions.size());
+  DART_SIMULATION_THROW_T_IF(
+      edgeIndices.size() % 2 != 0,
+      sx::InvalidArgumentException,
+      "{} expects pair-packed edges but received {} indices",
+      operation,
+      edgeIndices.size());
+
+  const std::size_t pointCount = positions.size() / 3;
+  for (const std::uint32_t index : edgeIndices) {
+    DART_SIMULATION_THROW_T_IF(
+        index >= pointCount,
+        sx::InvalidArgumentException,
+        "{} edge index {} is outside {} positions",
         operation,
         index,
         pointCount);
@@ -458,6 +503,102 @@ void filterEdgeEdgeContactStencilsCuda(
   for (std::size_t i = 0; i < result.accepted.size(); ++i) {
     if (result.accepted[i] != 0) {
       ++result.acceptedCount;
+      result.maxAcceptedSquaredDistance = std::max(
+          result.maxAcceptedSquaredDistance, result.squaredDistances[i]);
+    }
+  }
+}
+
+//==============================================================================
+void buildEdgeEdgeContactCandidateMaskCuda(
+    const std::vector<double>& positions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    double activationDistance,
+    EdgeEdgeCandidateBuildResult& result)
+{
+  const auto setupStart = Clock::now();
+  static constexpr std::string_view kOperation
+      = "buildEdgeEdgeContactCandidateMaskCuda";
+  validateEdgeEdgeCandidateMaskInputs(positions, edgeIndices, kOperation);
+
+  result = EdgeEdgeCandidateBuildResult{};
+  result.edgeCount = edgeIndices.size() / 2u;
+  result.pairCount = result.edgeCount * result.edgeCount;
+  result.squaredDistances.resize(result.pairCount);
+  result.accepted.resize(result.pairCount);
+
+  if (result.pairCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<double> devicePositions(positions.size());
+  DeviceBuffer<std::uint32_t> deviceEdges(edgeIndices.size());
+  DeviceBuffer<double> deviceSquaredDistances(result.pairCount);
+  DeviceBuffer<std::uint8_t> deviceAccepted(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedEdgeAIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedEdgeBIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceCompactedCount(1u);
+  const std::size_t compactBlockCount
+      = (result.pairCount + kContactCandidateMaskBlockSize - 1u)
+        / kContactCandidateMaskBlockSize;
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockCounts(compactBlockCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockOffsets(compactBlockCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  devicePositions.copyToDevice(
+      positions, "edge-edge candidate mask positions copy");
+  deviceEdges.copyToDevice(edgeIndices, "edge-edge candidate mask edges copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchEdgeEdgeContactCandidateMaskKernel(
+          devicePositions.data(),
+          deviceEdges.data(),
+          std::max(0.0, activationDistance),
+          deviceSquaredDistances.data(),
+          deviceAccepted.data(),
+          deviceAcceptedEdgeAIndices.data(),
+          deviceAcceptedEdgeBIndices.data(),
+          deviceCompactedCount.data(),
+          deviceAcceptedBlockCounts.data(),
+          deviceAcceptedBlockOffsets.data(),
+          result.edgeCount),
+      "edge-edge contact candidate mask kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "edge-edge contact candidate mask synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceSquaredDistances.copyFromDevice(
+      result.squaredDistances,
+      "edge-edge candidate mask squared distances copy");
+  deviceAccepted.copyFromDevice(
+      result.accepted, "edge-edge candidate mask accepted copy");
+  std::vector<std::uint32_t> compactedCount(1u);
+  deviceCompactedCount.copyFromDevice(
+      compactedCount, "edge-edge candidate mask compacted count copy");
+  result.acceptedCount = compactedCount[0];
+  result.acceptedEdgeAIndices.resize(result.acceptedCount);
+  result.acceptedEdgeBIndices.resize(result.acceptedCount);
+  deviceAcceptedEdgeAIndices.copyFromDevice(
+      result.acceptedEdgeAIndices,
+      "edge-edge candidate mask compacted edge-a copy");
+  deviceAcceptedEdgeBIndices.copyFromDevice(
+      result.acceptedEdgeBIndices,
+      "edge-edge candidate mask compacted edge-b copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t i = 0; i < result.accepted.size(); ++i) {
+    if (result.accepted[i] != 0) {
       result.maxAcceptedSquaredDistance = std::max(
           result.maxAcceptedSquaredDistance, result.squaredDistances[i]);
     }

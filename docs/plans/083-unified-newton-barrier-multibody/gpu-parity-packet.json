@@ -35,22 +35,22 @@
       "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets plus a brute-force all-pairs point-triangle candidate-mask packet with device-side compacted-pair metadata exist, but they cover reduced primitive fixtures only and do not yet cover sweep broad-phase construction, compacted runtime scene candidate lists, or the speedup gate.",
-      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils, 65536 edge-edge stencils, and a 65536-pair point-triangle all-pairs mask on 2026-06-12. The candidate mask row used 256 candidate points, 256 triangles, 192 accepted pairs, 192 compacted accepted point entries, and 192 compacted accepted triangle entries with max_result_abs_error=0.0 and speedup=0.9911014836006811x. The top-level packet speedup was 0.4065799369175524x, so this remains in-progress rather than measured.",
+      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets plus brute-force all-pairs point-triangle and edge-edge candidate-mask packets with device-side compacted-pair metadata exist, but they cover reduced primitive fixtures only and do not yet cover sweep broad-phase construction, compacted runtime scene candidate lists, or the speedup gate.",
+      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils, 65536 edge-edge stencils, a 65536-pair point-triangle all-pairs mask, and a 65536-pair edge-edge all-pairs mask on 2026-06-12. The point-triangle mask row used 256 candidate points, 256 triangles, 192 accepted pairs, 192 compacted accepted point entries, and 192 compacted accepted triangle entries with max_result_abs_error=0.0 and speedup=0.8860940784354572x. The edge-edge mask row used 256 edges, 96 accepted pairs, 96 compacted edge-a entries, and 96 compacted edge-b entries with max_result_abs_error=0.0 and speedup=0.6679555059736084x. The top-level packet speedup was 0.37765557710841663x, so this remains in-progress rather than measured.",
       "same_scene_cpu_gpu": true,
       "primitive_families": {
         "point_triangle": {
           "stencil_count": 65536,
           "accepted_count": 49152,
           "max_result_abs_error": 0.0,
-          "speedup": 0.4065799369175524,
+          "speedup": 0.37765557710841663,
           "meets_speedup_gate": false,
           "timing_ns": {
-            "setup": 199527.0,
-            "host_to_device": 1214215.0,
-            "kernel": 399255.0,
+            "setup": 872673.0,
+            "host_to_device": 2676356.0,
+            "kernel": 454647.0,
             "solve": 0.0,
-            "device_to_host": 143777.0,
+            "device_to_host": 306658.0,
             "readback": 0.0
           },
           "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
@@ -60,14 +60,14 @@
           "stencil_count": 65536,
           "accepted_count": 49152,
           "max_result_abs_error": 0.0,
-          "speedup": 0.7212991902668027,
+          "speedup": 0.5730560330710015,
           "meets_speedup_gate": false,
           "timing_ns": {
-            "setup": 181801.0,
-            "host_to_device": 631186.0,
-            "kernel": 123732.0,
+            "setup": 667274.0,
+            "host_to_device": 2314525.0,
+            "kernel": 422031.0,
             "solve": 0.0,
-            "device_to_host": 101713.0,
+            "device_to_host": 279596.0,
             "readback": 0.0
           },
           "cpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCpu/65536",
@@ -83,35 +83,58 @@
           "compacted_count": 192,
           "compacted_triangle_count": 192,
           "max_result_abs_error": 0.0,
-          "speedup": 0.9911014836006811,
+          "speedup": 0.8860940784354572,
           "meets_speedup_gate": false,
           "timing_ns": {
-            "setup": 65475.0,
-            "host_to_device": 349567.0,
-            "kernel": 67371.0,
+            "setup": 320609.0,
+            "host_to_device": 361505.0,
+            "kernel": 86791.0,
             "solve": 0.0,
-            "device_to_host": 161524.0,
+            "device_to_host": 351403.0,
             "readback": 0.0
           },
           "cpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCpu/65536",
           "gpu_benchmark_row": "BM_Plan083PointTriangleCandidateMaskCuda/65536"
+        },
+        "edge_edge_all_pairs_mask": {
+          "pair_count": 65536,
+          "edge_count": 256,
+          "accepted_count": 96,
+          "compacted_edge_a_count": 96,
+          "compacted_edge_b_count": 96,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.6679555059736084,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 275201.0,
+            "host_to_device": 350818.0,
+            "kernel": 78374.0,
+            "solve": 0.0,
+            "device_to_host": 301158.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083EdgeEdgeCandidateMaskCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083EdgeEdgeCandidateMaskCuda/65536"
         }
       },
       "stencil_count": 131072,
-      "candidate_pair_count": 65536,
+      "candidate_pair_count": 131072,
       "accepted_count": 98304,
       "max_result_abs_error": 0.0,
-      "result_abs_error_tolerance": 1E-10,
-      "speedup": 0.4065799369175524,
+      "result_abs_error_tolerance": 1e-10,
+      "speedup": 0.37765557710841663,
       "min_speedup": 1.25,
       "timing_ns": {
-        "setup": 199527.0,
-        "host_to_device": 1214215.0,
-        "kernel": 399255.0,
+        "setup": 872673.0,
+        "host_to_device": 2676356.0,
+        "kernel": 454647.0,
         "solve": 0.0,
-        "device_to_host": 143777.0,
+        "device_to_host": 306658.0,
         "readback": 0.0
-      }
+      },
+      "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
+      "gpu_benchmark_row": "BM_Plan083ContactCandidateCuda/65536",
+      "meets_speedup_gate": false
     },
     {
       "row_id": "ccd-line-search",
@@ -172,7 +195,7 @@
       "hit_count": 98304,
       "min_step_bound": 0.4999995,
       "max_result_abs_error": 0.0,
-      "result_abs_error_tolerance": 1E-8,
+      "result_abs_error_tolerance": 1e-08,
       "speedup": 3.749183559921358,
       "min_speedup": 1.25,
       "timing_ns": {
@@ -207,8 +230,8 @@
       "dynamic_friction_count": 21846,
       "max_barrier_value": 5.691895854036562,
       "max_friction_work": 1.02,
-      "max_result_abs_error": 7.844391802791506E-12,
-      "result_abs_error_tolerance": 1E-10,
+      "max_result_abs_error": 7.844391802791506e-12,
+      "result_abs_error_tolerance": 1e-10,
       "speedup": 0.3604503271533569,
       "min_speedup": 1.25,
       "timing_ns": {
@@ -226,7 +249,7 @@
         "dynamic_friction_count": 21846,
         "max_barrier_value": 5.691895854036562,
         "max_friction_work": 1.02,
-        "max_result_abs_error": 5.551115123125783E-17,
+        "max_result_abs_error": 5.551115123125783e-17,
         "speedup": 0.3604503271533569,
         "meets_speedup_gate": false,
         "timing_ns": {
@@ -244,7 +267,7 @@
         "sample_count": 65536,
         "active_barrier_count": 57670,
         "max_barrier_value": 0.872872069188204,
-        "max_result_abs_error": 3.982848877516439E-14,
+        "max_result_abs_error": 3.982848877516439e-14,
         "speedup": 12.938319042299675,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -261,7 +284,7 @@
       "point_triangle_tangent_stencil": {
         "sample_count": 65536,
         "fallback_basis_count": 0,
-        "max_result_abs_error": 6.661338147750939E-16,
+        "max_result_abs_error": 6.661338147750939e-16,
         "speedup": 2.355244744225941,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -278,7 +301,7 @@
       "edge_edge_tangent_stencil": {
         "sample_count": 65536,
         "fallback_basis_count": 0,
-        "max_result_abs_error": 8.881784197001252E-16,
+        "max_result_abs_error": 8.881784197001252e-16,
         "speedup": 2.0371898530411743,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -295,7 +318,7 @@
       "point_edge_tangent_stencil": {
         "sample_count": 65536,
         "fallback_basis_count": 0,
-        "max_result_abs_error": 1.1268763699945339E-14,
+        "max_result_abs_error": 1.1268763699945339e-14,
         "speedup": 3.856357894416271,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -312,7 +335,7 @@
       "point_point_tangent_stencil": {
         "sample_count": 65536,
         "fallback_basis_count": 0,
-        "max_result_abs_error": 3.3306690738754696E-16,
+        "max_result_abs_error": 3.3306690738754696e-16,
         "speedup": 1.4089589955102408,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -330,7 +353,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.5084692803385604,
-        "max_result_abs_error": 2.4868995751603507E-14,
+        "max_result_abs_error": 2.4868995751603507e-14,
         "speedup": 1.3681853755001632,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -348,7 +371,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.8728720691882058,
-        "max_result_abs_error": 7.716494110354688E-12,
+        "max_result_abs_error": 7.716494110354688e-12,
         "speedup": 1.8065117930616938,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -369,7 +392,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.872872069188204,
-        "max_result_abs_error": 2.5887393237583516E-12,
+        "max_result_abs_error": 2.5887393237583516e-12,
         "speedup": 1.3792236932217794,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -388,7 +411,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.872872069188204,
-        "max_result_abs_error": 2.8990143619012088E-12,
+        "max_result_abs_error": 2.8990143619012088e-12,
         "speedup": 2.4324816046452007,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -407,7 +430,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.5084692803385604,
-        "max_result_abs_error": 9.592326932761353E-14,
+        "max_result_abs_error": 9.592326932761353e-14,
         "speedup": 2.6247434778815464,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -426,7 +449,7 @@
         "sample_count": 65536,
         "active_barrier_count": 59578,
         "max_barrier_value": 0.8728720691882058,
-        "max_result_abs_error": 7.844391802791506E-12,
+        "max_result_abs_error": 7.844391802791506e-12,
         "speedup": 4.388364832151794,
         "meets_speedup_gate": true,
         "timing_ns": {
@@ -461,8 +484,8 @@
       "same_scene_cpu_gpu": true,
       "block_dimension": 12,
       "block_count": 4096,
-      "max_result_abs_error": 2.4868995751603507E-14,
-      "result_abs_error_tolerance": 1E-9,
+      "max_result_abs_error": 2.4868995751603507e-14,
+      "result_abs_error_tolerance": 1e-09,
       "speedup": 4.451557656446166,
       "min_speedup": 1.25,
       "timing_ns": {
@@ -495,10 +518,10 @@
       "body_count": 8192,
       "dof_count": 49152,
       "active_dof_count": 49152,
-      "max_result_abs_error": 1.7763568394002505E-15,
-      "result_abs_error_tolerance": 1E-10,
-      "residual_norm": 3.0267237170020088E-15,
-      "residual_norm_tolerance": 1E-8,
+      "max_result_abs_error": 1.7763568394002505e-15,
+      "result_abs_error_tolerance": 1e-10,
+      "residual_norm": 3.0267237170020088e-15,
+      "residual_norm_tolerance": 1e-08,
       "step_norm": 10.69230682957083,
       "speedup": 0.26051227540244215,
       "min_speedup": 1.25,
@@ -519,8 +542,8 @@
         "body_count": 8192,
         "dof_count": 49152,
         "active_dof_count": 49152,
-        "max_result_abs_error": 1.7763568394002505E-15,
-        "residual_norm": 3.0267237170020088E-15,
+        "max_result_abs_error": 1.7763568394002505e-15,
+        "residual_norm": 3.0267237170020088e-15,
         "step_norm": 10.69230682957083,
         "speedup": 0.26051227540244215,
         "meets_speedup_gate": false,
@@ -580,8 +603,8 @@
       "body_count": 7,
       "step_count": 64,
       "time_step": 0.005,
-      "max_result_abs_error": 1.1102230246251565E-16,
-      "result_abs_error_tolerance": 1E-9,
+      "max_result_abs_error": 1.1102230246251565e-16,
+      "result_abs_error_tolerance": 1e-09,
       "speedup": 18.792052761946252,
       "min_speedup": 1.25
     }

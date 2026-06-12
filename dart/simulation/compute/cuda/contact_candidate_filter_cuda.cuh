@@ -92,6 +92,19 @@ struct EdgeEdgeCandidateFilterResult
   ContactCandidateFilterTiming timing;
 };
 
+struct EdgeEdgeCandidateBuildResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::size_t edgeCount = 0;
+  std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
 /// Filter preassembled point-triangle contact stencils on CUDA.
 ///
 /// This is private evidence for the PLAN-083 GPU packet: it compares the same
@@ -130,5 +143,18 @@ void filterEdgeEdgeContactStencilsCuda(
     const std::vector<EdgeEdgeContactStencil>& stencils,
     double activationDistance,
     EdgeEdgeCandidateFilterResult& result);
+
+/// Build a private all-pairs edge-edge candidate mask on CUDA.
+///
+/// This packet evaluates every supplied edge slot against every supplied edge
+/// slot, masks self/duplicate/incident edge pairs, and writes a deterministic
+/// accepted mask plus compact accepted edge-slot pairs produced on the device
+/// before readback. It intentionally does not cover sweep broad-phase pruning,
+/// scene-level solver state, or a public GPU solver backend.
+void buildEdgeEdgeContactCandidateMaskCuda(
+    const std::vector<double>& positions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    double activationDistance,
+    EdgeEdgeCandidateBuildResult& result);
 
 } // namespace dart::simulation::compute::cuda

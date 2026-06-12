@@ -2,6 +2,35 @@
 
 ## Current Reality (2026-06-09)
 
+Latest edge-edge candidate-mask checkpoint (2026-06-12): implementation
+resumed on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and
+validated the private edge-edge all-pairs contact-candidate mask packet. The
+checkpoint adds `buildEdgeEdgeContactCandidateMaskCuda()`, rejects
+self/duplicate/incident edge pairs, compacts accepted edge-slot pairs on the
+device, extends focused CUDA unit coverage, and updates the contact-candidate
+benchmark/packet writer to require
+`candidate_construction.edge_edge_all_pairs_mask`.
+
+The regenerated packet records exact parity for 65,536 point-triangle stencils,
+65,536 edge-edge stencils, a 65,536-pair point-triangle all-pairs mask, and a
+65,536-pair edge-edge all-pairs mask. The edge-edge mask row records
+`edge_count=256`, `accepted_count=96`, `compacted_edge_a_count=96`,
+`compacted_edge_b_count=96`, `max_result_abs_error=0`, and
+`speedup=0.6679555059736084x`; the top-level contact-candidate packet records
+`speedup=0.37765557710841663x` (`meets_speedup_gate=false`). This remains
+reduced private packet evidence only; sweep broad-phase construction, runtime
+candidate-list construction, and the speedup gate remain future work.
+
+Validation for this checkpoint passed focused packet pytest (7 tests), the
+PLAN-083 GPU parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio (16 passed),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run -e cuda build-cuda Release`, focused
+`test_contact_candidate_filter_cuda` CTest, `pixi run -e cuda test-cuda`
+(8/8), and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. Read
+`HANDOFF.md` and inspect `git status -sb` before continuing.
+
 Latest continuation checkpoint (2026-06-12): implementation resumed on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). Keep all
@@ -693,7 +722,8 @@ build/CTest entries.
 
 `simx/plan083-gpu-contact-candidate-packet` - the single consolidated PLAN-083
 follow-up PR for the remaining private packet work (#2978). This branch now
-carries point-triangle and edge-edge contact-stencil filtering,
+carries point-triangle and edge-edge contact-stencil filtering plus
+brute-force all-pairs point-triangle and edge-edge candidate-mask packets,
 winding-independent endpoint-linear point-triangle CCD, edge-edge
 CCD/line-search packets, scalar barrier/friction local kernels plus
 point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
