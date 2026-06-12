@@ -9,6 +9,12 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest critical stop (2026-06-11): the user explicitly directed the session
+  to stop implementation and focus only on hand-off for all current work,
+  without any further verification. This handoff update must not be treated as
+  new lint/build/test/CI evidence. It records the current branch, PR, stash,
+  validation, and cleanup state so a fresh Claude/Codex session can resume
+  without reconstructing context.
 - Consolidated branch handoff: resume from
   `avbd/source-row-extraction-precheck`. It is the single branch for the next
   fresh Claude/Codex session and includes the #2977 source-row prep fix, the
@@ -16,11 +22,14 @@ Corpus matrix:
   formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
   and the origin-anchor `avbdRigidBodyWorldPoint()` fast path with focused
   rigid-block coverage. Local stashes may still exist as historical recovery
-  points, but fresh work should not depend on them. PR
-  #2977 (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open and
-  should only receive CI-fix commits if a fresh status refresh reveals a
-  concrete failure. `RESUME.md` is the detailed source of truth for the current
-  plan, branch inventory, validation, and branch-cleanup rules.
+  points, but fresh work should not depend on them. The latest code commit
+  before this docs-only handoff is `2b1a0ef4489` (`Skip rigid world-point
+  rotation for origin anchors`); the handoff docs commit is expected to sit on
+  top of it if pushed. PR #2977 (`avbd/source-row-perf-slice`, head
+  `5297462d34b`) remains open in the latest known state and should only receive
+  CI-fix commits if a fresh status refresh reveals a concrete failure.
+  `RESUME.md` is the detailed source of truth for the current plan, branch
+  inventory, validation, and branch-cleanup rules.
 - Prior handoff stop: the user previously redirected the session to hand-off
   only with no further verification, and that docs-only handoff was pushed.
   Work has since resumed on the same consolidated branch. Do not treat that
