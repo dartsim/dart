@@ -1,5 +1,94 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior MPRGP Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint: `Fast path strict-interior MPRGP LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 46 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- Default `MprgpSolver` calls now try the shared validated strict-interior
+  standard-LCP fast path after MPRGP's symmetry and positive-definite checks.
+- The fast path reuses the existing LLT factorization instead of factoring the
+  matrix again, so it preserves MPRGP's SPD contract while removing the
+  reduced-gradient loop on strict-interior rows.
+- Custom-option and warm-started MPRGP calls stay on the iterative path so
+  parameter stress tests and user tuning remain observable.
+- The strict-interior "Other" unit coverage now includes `MprgpSolver`.
+- The checked LCP performance profile CSVs, Python demo metadata, background
+  docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/MPRGP/`.
+- Compared to the previous full profile cache:
+  - 12 rows: `0.390`
+  - 24 rows: `0.481`
+  - 48 rows: `0.580`
+  - 96 rows: `0.458`
+  - Mean focused ratio `0.477`; best `0.390`; worst `0.580`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `MPRGP` average ratio `1.70`; it is no longer a Standard profile
+  high-ratio target.
+- Current Standard high-ratio target is `Admm`, with moderate follow-up rows
+  including `Apgd`, `Jacobi`, `SymmetricPsor`, `RedBlackGaussSeidel`, and
+  `ShockPropagation`.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `Staggering`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel 1
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/MPRGP/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/mprgp_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run build
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target `Admm` on Standard rows, or
+   one of the remaining boxed/friction-index high-ratio rows. Do not push
+   without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Dantzig Fast Path
 
 Current branch state:

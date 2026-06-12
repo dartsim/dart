@@ -213,12 +213,56 @@ LcpResult MprgpSolver::solve(
     return fallback.solve(problem, x, options);
   }
 
+  Eigen::LLT<Eigen::MatrixXd> positiveDefiniteFactorization;
+  bool hasPositiveDefiniteFactorization = false;
   if (params->checkPositiveDefinite) {
-    Eigen::LLT<Eigen::MatrixXd> llt(A);
-    if (llt.info() != Eigen::Success) {
+    positiveDefiniteFactorization.compute(A);
+    if (positiveDefiniteFactorization.info() != Eigen::Success) {
       DantzigSolver fallback;
       return fallback.solve(problem, x, options);
     }
+    hasPositiveDefiniteFactorization = true;
+  }
+
+  Eigen::VectorXd fastW;
+  bool strictInteriorFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
+    if (hasPositiveDefiniteFactorization) {
+      Eigen::VectorXd candidate = positiveDefiniteFactorization.solve(b);
+      if (candidate.allFinite()
+          && candidate.minCoeff() > std::max(0.0, absTol)) {
+        fastW = A * candidate - b;
+        if (detail::validateSolution(
+                candidate, fastW, lo, hi, std::max(absTol, compTolOpt))) {
+          x = std::move(candidate);
+          strictInteriorFastPath = true;
+        }
+      }
+    } else {
+      strictInteriorFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTolOpt), x, &fastW);
+    }
+  }
+
+  if (strictInteriorFastPath) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTolOpt);
+    result.validated = options.validateSolution;
+    return result;
   }
 
   Eigen::VectorXd w;

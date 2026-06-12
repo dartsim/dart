@@ -1522,6 +1522,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `DantzigSolver` through the `LcpProblem` solver interface, preserving the
     ODE-derived boxed and friction-index pivoting path and the low-level
     matrix/scratch entry point.
+  - Extended the validated strict-interior standard-LCP fast path to default
+    `MprgpSolver` calls after the solver's symmetry and positive-definite
+    checks, reusing the existing LLT factorization and preserving custom-option
+    stress paths.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

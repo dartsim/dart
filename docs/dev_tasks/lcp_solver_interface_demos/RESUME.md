@@ -1,5 +1,82 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior MPRGP Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint: `Fast path strict-interior MPRGP LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 46 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- Default `MprgpSolver` calls now try the shared validated strict-interior
+  standard-LCP fast path after MPRGP's symmetry and positive-definite checks.
+- The fast path reuses the existing LLT factorization instead of factoring the
+  matrix again, preserving MPRGP's SPD contract while removing the
+  reduced-gradient loop on strict-interior rows.
+- Custom-option and warm-started MPRGP calls stay on the iterative path so
+  parameter stress tests and user tuning remain observable.
+- Unit coverage was extended so
+  `StandardStrictInteriorFastPath.OtherSolversUseLinearSolve` includes
+  `MprgpSolver`.
+- The Python LCP demo profile summary now removes `MPRGP` from Standard
+  laggards and points remaining Standard tuning at ADMM and moderate iterative
+  rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/MPRGP/` after-run compared to the previous
+  full profile cache:
+  - 12 rows: `0.390`
+  - 24 rows: `0.481`
+  - 48 rows: `0.580`
+  - 96 rows: `0.458`
+  - Mean focused ratio `0.477`; best `0.390`; worst `0.580`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full regenerated Standard profile now reports `MPRGP` average ratio `1.70`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to `build/mprgp_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `Admm`, plus moderate `Apgd`, `Jacobi`, `SymmetricPsor`,
+  `RedBlackGaussSeidel`, and `ShockPropagation` rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `Staggering`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior Dantzig Fast Path
 
 This section is the latest state; older sections below are historical

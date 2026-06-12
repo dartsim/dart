@@ -1793,6 +1793,21 @@ TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
   }
 }
 
+TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    MprgpSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
 {
   LemkeSolver solver;

@@ -375,6 +375,10 @@ auto result = solver.solve(problem, x, options);
 > subset by default, while boxed, friction-indexed, non-symmetric, and
 > non-positive-definite packets still delegate to the boxed-capable pivoting
 > solver through `solve()`.
+> Default, non-warm-started, strictly interior standard LCPs reuse the
+> positive-definite factorization check as a validated linear-solve fast path
+> before the reduced-gradient loop. Custom-option solves stay on the iterative
+> path so parameter stress tests and user tuning remain observable.
 
 DART 7 benchmark evidence includes `BM_LcpMprgpSpdCheckSweep`, which compares
 well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and
