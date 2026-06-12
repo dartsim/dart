@@ -11867,7 +11867,8 @@ bool SolverShouldRunNearSingularBenchmark(
 
 bool SolverShouldRunLargerActiveSetTransitionBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const LargerActiveSetTransitionBenchmarkCase testCase)
+    const LargerActiveSetTransitionBenchmarkCase testCase,
+    const LcpProblem& problem)
 {
   if (!dart::test::supportsProblem(
           solver, getLargerActiveSetTransitionProblemSupport(testCase))) {
@@ -11894,7 +11895,22 @@ bool SolverShouldRunLargerActiveSetTransitionBenchmark(
       "BoxedSemiSmoothNewton",
   }};
 
-  return SolverNameIn(solver, kScalableSolvers);
+  return SolverNameIn(solver, kScalableSolvers)
+         && SolverSupportsConcreteProblem(solver, problem);
+}
+
+bool SolverShouldRunProductionActiveSetTransitionBatchBenchmark(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const LargerActiveSetTransitionBenchmarkCase testCase,
+    const std::vector<LcpProblem>& problems)
+{
+  if (problems.empty()) {
+    return false;
+  }
+
+  return SolverShouldRunLargerActiveSetTransitionBenchmark(
+             solver, testCase, problems.front())
+         && SolverSupportsConcreteProblemBatch(solver, problems);
 }
 
 std::string MakeSingularDegenerateBenchmarkName(
@@ -12329,9 +12345,11 @@ void RegisterLargerActiveSetTransitionBenchmarks()
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8};
 
   for (const auto testCase : cases) {
+    const auto problem
+        = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
       if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase)) {
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12358,9 +12376,11 @@ void RegisterStressActiveSetTransitionBenchmarks()
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex12};
 
   for (const auto testCase : cases) {
+    const auto problem
+        = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
       if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase)) {
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12387,9 +12407,11 @@ void RegisterExtremeActiveSetTransitionBenchmarks()
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16};
 
   for (const auto testCase : cases) {
+    const auto problem
+        = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
       if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase)) {
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12421,9 +12443,11 @@ void RegisterProductionActiveSetTransitionBenchmarks()
       LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex256};
 
   for (const auto testCase : cases) {
+    const auto problem
+        = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
       if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase)) {
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12465,9 +12489,11 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
+    const auto problems
+        = MakeProductionActiveSetTransitionBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase)) {
+      if (!SolverShouldRunProductionActiveSetTransitionBatchBenchmark(
+              solver, testCase, problems)) {
         continue;
       }
 

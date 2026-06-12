@@ -1,6 +1,54 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality — 2026-06-11 Critical Hand-Off
+## Current Reality — 2026-06-11 Active Continuation
+
+The current continuation resumes from
+`c564b6b2ba2 Report concrete LCP demo native coverage` on
+`feature/lcp-solver-interface-demos`.
+
+The latest implementation slice filters larger active-set transition benchmark
+registrations through concrete generated-problem support:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now precomputes the generated
+  problem for larger, stress, extreme, and production active-set transition
+  rows and only publishes solver rows whose concrete
+  `supportsProblem(problem)` predicate accepts the packet.
+- Production active-set transition batch rows now precompute the exact
+  four-problem batch and require every concrete batch problem to be supported
+  before publishing serial or parallel rows.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition/(Standard32|Boxed32|CoupledFrictionIndex8|Standard64|Boxed64|CoupledFrictionIndex12|Standard128|Boxed128|CoupledFrictionIndex16|CoupledFrictionIndex24)/(MPRGP|Baraff|Direct|Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)/(Standard32|Boxed32|CoupledFrictionIndex8)/(MPRGP|Baraff|Direct|Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpLargerActiveSetTransition/Standard32/MPRGP|BM_LcpStressActiveSetTransition/Boxed64/Pgs|BM_LcpProductionActiveSetTransitionBatchSerial/CoupledFrictionIndex8/BoxedSemiSmoothNewton' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+```
+
+Observed results:
+
+- The single-row benchmark-list check rebuilt `BM_LCP_COMPARE` and listed
+  concrete larger/stress/extreme/production active-set transition rows for
+  Dantzig, PGS, MPRGP, and BoxedSemiSmoothNewton where supported; Direct and
+  Baraff were absent from the filtered row set.
+- The production-batch benchmark-list check listed serial and parallel rows for
+  Standard32, Boxed32, and CoupledFrictionIndex8 for the supported solver set.
+- The short benchmark execution reported `contract_ok=1` for the sampled
+  larger active-set, stress active-set, and production batch rows.
+- `pixi run lint`: passed.
+
+The broader LCP solver/interface/demo objective is not complete. Resume from
+the next concrete support-routing, solver-domain, demo, benchmark, or
+performance gap after this slice lands.
+
+## Previous Reality — 2026-06-11 Critical Hand-Off
 
 The latest user instruction was to stop implementation and focus on hand-off
 only, with no further verification. No lint, build, tests, benchmark listing,

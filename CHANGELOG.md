@@ -1460,6 +1460,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `lcp_compare` benchmark registration paths that already had concrete
     generated problem filters, leaving `supportsProblem(problem)` as the
     authoritative native-route gate.
+  - Filtered larger/stress/extreme/production active-set transition benchmark
+    registrations through concrete generated problem support, including exact
+    support checks for the production batch problem lists.
   - Filtered separated world-contact, world stack-contact, and contact-solver
     comparison benchmark registrations through concrete contact packets, keeping
     representative DART 7 contact rows aligned with solver native support while

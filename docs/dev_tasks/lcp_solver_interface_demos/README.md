@@ -91,6 +91,9 @@
 - [x] Captured the latest critical no-verification hand-off after the Python
       demo concrete native-case profile slice, with the branch refreshed
       against `main` and ready for publication as one consolidated branch.
+- [x] Filtered larger, stress, extreme, and production active-set transition
+      benchmark registrations through concrete generated-problem support,
+      including exact production-batch problem-list checks.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -130,10 +133,51 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the Python demo concrete native-case
-profile slice, following the benchmark concrete-gate cleanup, grouped batch
-support-routing, generated coverage support-routing, and heavyweight contact
-benchmark support-gating slices.
+The latest implementation checkpoint is larger active-set transition benchmark
+concrete support-routing, following the Python demo concrete native-case
+profile slice, benchmark concrete-gate cleanup, grouped batch support-routing,
+generated coverage support-routing, and heavyweight contact benchmark
+support-gating slices.
+
+## Larger Active-Set Transition Benchmark Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns active-set scaling benchmark
+registration with concrete solver support:
+
+- Larger, stress, extreme, and production active-set transition benchmark
+  registrations now build the generated problem for each published case once
+  and keep only solver rows whose concrete `supportsProblem(problem)` predicate
+  accepts that packet.
+- Production active-set transition batch registrations now build the exact
+  four-problem batch used by the benchmark row and require every concrete batch
+  problem to be supported before publishing serial or parallel rows.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition/(Standard32|Boxed32|CoupledFrictionIndex8|Standard64|Boxed64|CoupledFrictionIndex12|Standard128|Boxed128|CoupledFrictionIndex16|CoupledFrictionIndex24)/(MPRGP|Baraff|Direct|Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)/(Standard32|Boxed32|CoupledFrictionIndex8)/(MPRGP|Baraff|Direct|Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpLargerActiveSetTransition/Standard32/MPRGP|BM_LcpStressActiveSetTransition/Boxed64/Pgs|BM_LcpProductionActiveSetTransitionBatchSerial/CoupledFrictionIndex8/BoxedSemiSmoothNewton' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+```
+
+Observed results:
+
+- The single-row benchmark-list check rebuilt `BM_LCP_COMPARE` and listed
+  concrete larger/stress/extreme/production active-set transition rows for
+  Dantzig, PGS, MPRGP, and BoxedSemiSmoothNewton where the generated packets
+  are supported; Direct and Baraff were absent from the filtered row set.
+- The production-batch benchmark-list check listed serial and parallel rows for
+  Standard32, Boxed32, and CoupledFrictionIndex8 for the supported solver set.
+- The short benchmark execution reported `contract_ok=1` for
+  `BM_LcpLargerActiveSetTransition/Standard32/MPRGP`,
+  `BM_LcpStressActiveSetTransition/Boxed64/Pgs`, and
+  `BM_LcpProductionActiveSetTransitionBatchSerial/CoupledFrictionIndex8/BoxedSemiSmoothNewton/4`.
+- `pixi run lint`: passed.
 
 ## Python Demo Concrete Native-Case Profile Checkpoint
 
