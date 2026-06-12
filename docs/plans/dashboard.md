@@ -301,7 +301,7 @@ its own line so status updates remain git-history friendly.
   stencil parity plus brute-force all-pairs point-triangle and edge-edge
   candidate masks and motion-aware swept-AABB point-triangle/edge-edge
   candidate-list packets with device-side compacted candidate ids and distance
-  metadata,
+  metadata plus compact runtime sweep-buffer endpoint-distance packets,
   endpoint-linear
   point-triangle and
   edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
@@ -312,10 +312,10 @@ its own line so status updates remain git-history friendly.
   barrier-Hessian PSD-projection parity, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly parity, reduced hanging-bridge
   scene state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry
-  packets, and an ABD/FEM coupled micro-solve packet. It still
-  keeps sweep-and-prune broad-phase/runtime GPU candidate construction, rigid
-  curved trajectories, equality-reduced/global sparse assembly and
-  factorization, GPU `World::step`, paper-scale assets, full runtime
+  packets, and an ABD/FEM coupled micro-solve packet. It still keeps GPU
+  sweep-and-prune broad-phase construction, scene-owned runtime GPU candidate
+  buffers, rigid curved trajectories, equality-reduced/global sparse assembly
+  and factorization, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer

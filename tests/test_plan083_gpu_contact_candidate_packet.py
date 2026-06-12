@@ -181,6 +181,49 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    runtime_point_cpu = _row(
+        "BM_Plan083RuntimePointTriangleCandidateBufferCpu/1024",
+        candidates=32,
+        points=320,
+        triangles=96,
+        max_result_abs_error=0.0,
+    )
+    runtime_point_gpu = _row(
+        "BM_Plan083RuntimePointTriangleCandidateBufferCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        candidates=32,
+        points=320,
+        triangles=96,
+        gpu_candidates=32,
+        gpu_points=320,
+        gpu_triangles=96,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    runtime_edge_cpu = _row(
+        "BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu/1024",
+        candidates=16,
+        edges=288,
+        max_result_abs_error=0.0,
+    )
+    runtime_edge_gpu = _row(
+        "BM_Plan083RuntimeEdgeEdgeCandidateBufferCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        candidates=16,
+        edges=288,
+        gpu_candidates=16,
+        gpu_edges=288,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     point_gpu.update(overrides)
     return {
         "benchmarks": [
@@ -196,6 +239,10 @@ def _benchmark_data(**overrides):
             swept_mask_gpu,
             swept_edge_mask_cpu,
             swept_edge_mask_gpu,
+            runtime_point_cpu,
+            runtime_point_gpu,
+            runtime_edge_cpu,
+            runtime_edge_gpu,
         ]
     }
 
@@ -223,6 +270,8 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         "edge_edge_all_pairs_mask",
         "point_triangle_swept_aabb_candidates",
         "edge_edge_swept_aabb_candidates",
+        "point_triangle_runtime_sweep_buffer",
+        "edge_edge_runtime_sweep_buffer",
     }
     assert (
         row["candidate_construction"]["point_triangle_all_pairs_mask"]["accepted_count"]
@@ -277,6 +326,18 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert (
         row["candidate_construction"]["edge_edge_swept_aabb_candidates"][
             "compacted_distance_count"
+        ]
+        == 16
+    )
+    assert (
+        row["candidate_construction"]["point_triangle_runtime_sweep_buffer"][
+            "candidate_count"
+        ]
+        == 32
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_runtime_sweep_buffer"][
+            "candidate_count"
         ]
         == 16
     )
@@ -390,6 +451,24 @@ def test_plan083_gpu_contact_candidate_packet_rejects_distance_compaction_mismat
         assert "compacted distance count" in str(exc)
     else:
         raise AssertionError("expected distance compaction failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_runtime_buffer_mismatch() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    data["benchmarks"][13]["gpu_candidates"] = 31
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "runtime point-triangle candidate buffer" in str(exc)
+    else:
+        raise AssertionError("expected runtime buffer failure")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:

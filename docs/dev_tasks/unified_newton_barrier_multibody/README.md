@@ -2,6 +2,31 @@
 
 ## Current Status
 
+Validated runtime sweep-buffer checkpoint (2026-06-12): work continued on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added private CUDA
+evaluators for compact point-triangle and edge-edge candidate buffers produced
+by the CPU motion-aware sweep builder. The packet rows recompute endpoint
+squared-distance metadata on the GPU for compact runtime sweep candidate keys:
+512 point-triangle candidates over 2,560 points and 768 triangles, plus 1,536
+edge-edge candidates over 2,304 surface edges.
+
+Fresh local packet evidence records `candidate_pair_count=262144`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.11821712677569206x` (`meets_speedup_gate=false`). The runtime
+point-triangle sweep-buffer row records `speedup=0.11821712677569206x`; the
+runtime edge-edge sweep-buffer row records `speedup=0.28057906386249953x`.
+This is runtime-buffer parity evidence only: GPU sweep-and-prune broad-phase
+sorting, scene-owned GPU candidate buffers, runtime scene filtering, and the
+speedup gate remain future work.
+
+Validation passed: focused contact-candidate packet pytest, PLAN-083 GPU
+parity/completion-audit checkers, focused contact-candidate/GPU-parity/audit
+pytest trio, `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run check-api-boundaries`, `pixi run -e cuda build-cuda Release`,
+`pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
 Latest compacted-distance candidate-buffer checkpoint (2026-06-12): work
 resumed after the stop-only handoff. Keep all remaining PLAN-083 work
 consolidated on `simx/plan083-gpu-contact-candidate-packet`, PR #2978
@@ -458,9 +483,11 @@ the same PR. Do not open another PLAN-083 PR.
         plus brute-force all-pairs point-triangle and edge-edge candidate-mask
         packets plus motion-aware swept-AABB point-triangle and edge-edge
         candidate-list packets with exact CPU/GPU parity and device-side
-        compacted candidate ids plus distance metadata for reduced primitive
-        fixtures; keep the row in-progress because sweep-and-prune broad-phase
-        sorting, runtime scene filtering, and speedup remain unproven.
+        compacted candidate ids plus distance metadata, and compact runtime
+        sweep-buffer endpoint-distance packets that consume CPU sweep candidate
+        keys; keep the row in-progress because GPU sweep-and-prune broad-phase
+        sorting, scene-owned runtime candidate buffers, runtime scene
+        filtering, and speedup remain unproven.
   - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and
@@ -620,9 +647,9 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue sweep-and-prune broad-phase/runtime candidate-list construction,
-   downstream Hessian/PSD/runtime contact evidence, or assembly/solve evidence
-   on the same PR.
+   continue GPU sweep-and-prune broad-phase construction, scene-owned runtime
+   candidate buffers, downstream Hessian/PSD/runtime contact evidence, or
+   assembly/solve evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

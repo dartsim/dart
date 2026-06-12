@@ -2,6 +2,37 @@
 
 ## Current Reality (2026-06-09)
 
+Validated runtime sweep-buffer checkpoint (2026-06-12): continue from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). This validated
+checkpoint adds private CUDA evaluators for compact point-triangle and
+edge-edge candidate buffers produced by the CPU motion-aware sweep builder.
+The packet rows recompute endpoint squared-distance metadata on the GPU for
+512 compact point-triangle runtime sweep candidates over 2,560 points and 768
+triangles, plus 1,536 compact edge-edge runtime sweep candidates over 2,304
+surface edges.
+
+Fresh local packet evidence records `candidate_pair_count=262144`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.11821712677569206x` (`meets_speedup_gate=false`). The runtime
+point-triangle sweep-buffer row records `speedup=0.11821712677569206x`; the
+runtime edge-edge sweep-buffer row records `speedup=0.28057906386249953x`.
+This is runtime-buffer parity evidence only: GPU sweep-and-prune broad-phase
+sorting, scene-owned GPU candidate buffers, runtime scene filtering, and the
+speedup gate remain future work.
+
+Validation passed: focused contact-candidate packet pytest, PLAN-083 GPU
+parity/completion-audit checkers, focused contact-candidate/GPU-parity/audit
+pytest trio, `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run check-api-boundaries`, `pixi run -e cuda build-cuda Release`,
+`pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
+Before any future push, merge latest `origin/main` into this published branch,
+rerun the required gates, and get explicit maintainer approval. Keep all
+remaining PLAN-083 work consolidated on PR #2978.
+
 Latest compacted-distance candidate-buffer checkpoint (2026-06-12): work
 resumed after the stop-only handoff. Continue from
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
@@ -796,33 +827,36 @@ follow-up PR for the remaining private packet work (#2978). This branch now
 carries point-triangle and edge-edge contact-stencil filtering plus
 brute-force all-pairs point-triangle and edge-edge candidate-mask packets plus
 motion-aware swept-AABB point-triangle and edge-edge candidate-list packets,
-winding-independent endpoint-linear point-triangle CCD, edge-edge
-CCD/line-search packets, scalar barrier/friction local kernels plus
+compact runtime sweep-buffer endpoint-distance packets, winding-independent
+endpoint-linear point-triangle CCD, edge-edge CCD/line-search packets, scalar
+barrier/friction local kernels plus
 point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
 stencils plus point-edge/point-point tangent stencils, point-triangle,
 point-point, and point-edge primitive barrier-Hessian parity,
 point-triangle/point-point/point-edge primitive barrier-Hessian PSD-projection
 parity, reduced assembly/solve parity, reduced scene state-batch parity, and
 reduced ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress`
-unless their full row policy is satisfied: sweep-and-prune broad-phase/runtime
-GPU candidate construction, rigid curved trajectories, runtime scene line search,
-equality-reduced/global sparse assembly and solving, GPU `World::step`,
-paper-scale assets, and accepted reference timings remain future evidence.
+unless their full row policy is satisfied: GPU sweep-and-prune broad-phase
+construction, scene-owned runtime GPU candidate buffers, rigid curved
+trajectories, runtime scene line search, equality-reduced/global sparse
+assembly and solving, GPU `World::step`, paper-scale assets, and accepted
+reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
-sweep-and-prune broad-phase/runtime candidate buffers and speedup-gate work; the
-next barrier/friction packet gaps are runtime contact rows and speedup-gate
-work; the next assembly/solve gaps are equality reduction, global sparse
-factorization, runtime scene rows, and speedup-gate work. Do not mark these
-rows measured until the top-level speed gate and runtime evidence are proven.
-Keep the dev-task folder active because PLAN-083 acceptance criteria are still
-unmet. If the task later moves out of this folder, get maintainer direction
-before deleting it and keep the remaining planned manifest plus in-progress
-CPU/GPU/scene limitations in durable sidecars.
+GPU sweep-and-prune broad-phase construction, scene-owned runtime candidate
+buffers, and speedup-gate work; the next barrier/friction packet gaps are
+runtime contact rows and speedup-gate work; the next assembly/solve gaps are
+equality reduction, global sparse factorization, runtime scene rows, and
+speedup-gate work. Do not mark these rows measured until the top-level speed
+gate and runtime evidence are proven. Keep the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet. If the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned manifest plus in-progress CPU/GPU/scene limitations in durable
+sidecars.
 
 ## Context That Would Be Lost
 

@@ -45,6 +45,7 @@
 
 namespace cuda = dart::simulation::compute::cuda;
 namespace dc = dart::simulation::detail::deformable_contact;
+namespace sx = dart::simulation;
 
 namespace {
 
@@ -69,6 +70,23 @@ struct SweptFixture
   std::vector<std::uint32_t> edges;
 };
 
+struct RuntimeSweepCandidateBufferFixture
+{
+  std::vector<Eigen::Vector3d> start;
+  std::vector<Eigen::Vector3d> end;
+  std::vector<sx::DeformableSurfaceTriangle> triangles;
+  std::vector<double> packedStart;
+  std::vector<double> packedEnd;
+  std::vector<std::uint32_t> packedTriangles;
+  std::vector<std::uint32_t> packedEdges;
+  std::vector<std::uint32_t> candidatePointIndices;
+  std::vector<std::uint32_t> candidateTriangleIndices;
+  std::vector<double> pointTriangleEndpointSquaredDistances;
+  std::vector<std::uint32_t> candidateEdgeAIndices;
+  std::vector<std::uint32_t> candidateEdgeBIndices;
+  std::vector<double> edgeEdgeEndpointSquaredDistances;
+};
+
 template <typename FixtureT>
 void appendPoint(FixtureT& fixture, const Eigen::Vector3d& point)
 {
@@ -82,6 +100,17 @@ void appendPoint(std::vector<double>& positions, const Eigen::Vector3d& point)
   positions.push_back(point.x());
   positions.push_back(point.y());
   positions.push_back(point.z());
+}
+
+void appendMotionPoint(
+    RuntimeSweepCandidateBufferFixture& fixture,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end)
+{
+  fixture.start.push_back(start);
+  fixture.end.push_back(end);
+  appendPoint(fixture.packedStart, start);
+  appendPoint(fixture.packedEnd, end);
 }
 
 Fixture makeFixture()
@@ -156,6 +185,65 @@ SweptFixture makeSweptFixture()
   appendPoint(fixture.startPositions, {2.25, 0.20, 0.5});
   appendPoint(fixture.endPositions, {2.25, -0.20, 0.5});
   fixture.edges.insert(fixture.edges.end(), {4u, 5u, 6u, 7u});
+
+  return fixture;
+}
+
+RuntimeSweepCandidateBufferFixture makeRuntimeSweepCandidateBufferFixture()
+{
+  RuntimeSweepCandidateBufferFixture fixture;
+  fixture.start.reserve(18);
+  fixture.end.reserve(18);
+  fixture.triangles.reserve(6);
+
+  appendMotionPoint(fixture, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0});
+  appendMotionPoint(fixture, {1.0, 0.0, 0.0}, {1.0, 0.0, 0.0});
+  appendMotionPoint(fixture, {0.0, 1.0, 0.0}, {0.0, 1.0, 0.0});
+  appendMotionPoint(fixture, {0.25, 0.25, 0.20}, {0.25, 0.25, -0.20});
+  fixture.triangles.push_back({0u, 1u, 2u});
+
+  appendMotionPoint(fixture, {2.0, 0.0, 0.0}, {2.0, 0.0, 0.0});
+  appendMotionPoint(fixture, {3.0, 0.0, 0.0}, {3.0, 0.0, 0.0});
+  appendMotionPoint(fixture, {2.25, 0.20, -0.5}, {2.25, -0.20, -0.5});
+  appendMotionPoint(fixture, {2.25, 0.20, 0.5}, {2.25, -0.20, 0.5});
+  fixture.triangles.push_back({4u, 5u, 6u});
+  fixture.triangles.push_back({4u, 5u, 7u});
+
+  for (const auto& triangle : fixture.triangles) {
+    fixture.packedTriangles.push_back(
+        static_cast<std::uint32_t>(triangle.nodeA));
+    fixture.packedTriangles.push_back(
+        static_cast<std::uint32_t>(triangle.nodeB));
+    fixture.packedTriangles.push_back(
+        static_cast<std::uint32_t>(triangle.nodeC));
+  }
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+  const dc::ContactCandidateSet candidates
+      = dc::buildMotionAwareContactCandidatesSweep(
+          fixture.start, fixture.end, fixture.triangles, options);
+
+  for (const auto& edge : candidates.surfaceEdges) {
+    fixture.packedEdges.push_back(static_cast<std::uint32_t>(edge.nodeA));
+    fixture.packedEdges.push_back(static_cast<std::uint32_t>(edge.nodeB));
+  }
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    fixture.candidatePointIndices.push_back(
+        static_cast<std::uint32_t>(candidate.point));
+    fixture.candidateTriangleIndices.push_back(
+        static_cast<std::uint32_t>(candidate.triangle));
+    fixture.pointTriangleEndpointSquaredDistances.push_back(
+        candidate.squaredDistance);
+  }
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    fixture.candidateEdgeAIndices.push_back(
+        static_cast<std::uint32_t>(candidate.edgeA));
+    fixture.candidateEdgeBIndices.push_back(
+        static_cast<std::uint32_t>(candidate.edgeB));
+    fixture.edgeEdgeEndpointSquaredDistances.push_back(
+        candidate.squaredDistance);
+  }
 
   return fixture;
 }
@@ -755,6 +843,66 @@ TEST(ContactCandidateFilterCuda, MatchesCpuSweptEdgeEdgeCandidateMask)
 }
 
 //==============================================================================
+TEST(
+    ContactCandidateFilterCuda, MatchesRuntimeSweptPointTriangleCandidateBuffer)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const RuntimeSweepCandidateBufferFixture fixture
+      = makeRuntimeSweepCandidateBufferFixture();
+  ASSERT_FALSE(fixture.candidatePointIndices.empty());
+
+  cuda::SweptPointTriangleCandidateBufferResult result;
+  cuda::evaluateSweptPointTriangleCandidateBufferCuda(
+      fixture.packedStart,
+      fixture.packedEnd,
+      fixture.packedTriangles,
+      fixture.candidatePointIndices,
+      fixture.candidateTriangleIndices,
+      result);
+
+  EXPECT_EQ(result.pointCount, fixture.start.size());
+  EXPECT_EQ(result.triangleCount, fixture.triangles.size());
+  EXPECT_EQ(result.pairCount, fixture.candidatePointIndices.size());
+  expectNearVector(
+      result.endpointSquaredDistances,
+      fixture.pointTriangleEndpointSquaredDistances,
+      1e-14);
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesRuntimeSweptEdgeEdgeCandidateBuffer)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const RuntimeSweepCandidateBufferFixture fixture
+      = makeRuntimeSweepCandidateBufferFixture();
+  ASSERT_FALSE(fixture.candidateEdgeAIndices.empty());
+
+  cuda::SweptEdgeEdgeCandidateBufferResult result;
+  cuda::evaluateSweptEdgeEdgeCandidateBufferCuda(
+      fixture.packedStart,
+      fixture.packedEnd,
+      fixture.packedEdges,
+      fixture.candidateEdgeAIndices,
+      fixture.candidateEdgeBIndices,
+      result);
+
+  EXPECT_EQ(result.edgeCount, fixture.packedEdges.size() / 2u);
+  EXPECT_EQ(result.pairCount, fixture.candidateEdgeAIndices.size());
+  expectNearVector(
+      result.endpointSquaredDistances,
+      fixture.edgeEdgeEndpointSquaredDistances,
+      1e-14);
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
 TEST(ContactCandidateFilterCuda, KeepsSmallValidTriangleNondegenerate)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -902,6 +1050,46 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidSweptCandidateMaskInputs)
           fixture.endPositions,
           fixture.edges,
           0.05,
+          edgeEdgeResult),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, RejectsInvalidRuntimeCandidateBufferInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const RuntimeSweepCandidateBufferFixture fixture
+      = makeRuntimeSweepCandidateBufferFixture();
+
+  cuda::SweptPointTriangleCandidateBufferResult pointTriangleResult;
+  std::vector<std::uint32_t> truncatedTriangles
+      = fixture.candidateTriangleIndices;
+  truncatedTriangles.pop_back();
+  EXPECT_THROW(
+      cuda::evaluateSweptPointTriangleCandidateBufferCuda(
+          fixture.packedStart,
+          fixture.packedEnd,
+          fixture.packedTriangles,
+          fixture.candidatePointIndices,
+          truncatedTriangles,
+          pointTriangleResult),
+      dart::simulation::InvalidArgumentException);
+
+  cuda::SweptEdgeEdgeCandidateBufferResult edgeEdgeResult;
+  std::vector<std::uint32_t> invalidEdgeA = fixture.candidateEdgeAIndices;
+  ASSERT_FALSE(invalidEdgeA.empty());
+  invalidEdgeA.front()
+      = static_cast<std::uint32_t>(fixture.packedEdges.size() / 2u);
+  EXPECT_THROW(
+      cuda::evaluateSweptEdgeEdgeCandidateBufferCuda(
+          fixture.packedStart,
+          fixture.packedEnd,
+          fixture.packedEdges,
+          invalidEdgeA,
+          fixture.candidateEdgeBIndices,
           edgeEdgeResult),
       dart::simulation::InvalidArgumentException);
 }

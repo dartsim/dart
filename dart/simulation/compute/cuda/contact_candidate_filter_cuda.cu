@@ -733,6 +733,78 @@ __global__ void buildSweptEdgeEdgeContactCandidateMaskKernel(
   accepted[index] = 1u;
 }
 
+__global__ void evaluateSweptPointTriangleCandidateBufferKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* triangleIndices,
+    const std::uint32_t* candidatePointIndices,
+    const std::uint32_t* candidateTriangleIndices,
+    double* endpointSquaredDistances,
+    const std::size_t pairCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::uint32_t point = candidatePointIndices[index];
+  const std::size_t triangleBase
+      = 3u * static_cast<std::size_t>(candidateTriangleIndices[index]);
+  const std::uint32_t aIndex = triangleIndices[triangleBase];
+  const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+  const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+
+  const double startSquaredDistance = pointTriangleSquaredDistance(
+      loadPoint(startPositions, point),
+      loadPoint(startPositions, aIndex),
+      loadPoint(startPositions, bIndex),
+      loadPoint(startPositions, cIndex));
+  const double endSquaredDistance = pointTriangleSquaredDistance(
+      loadPoint(endPositions, point),
+      loadPoint(endPositions, aIndex),
+      loadPoint(endPositions, bIndex),
+      loadPoint(endPositions, cIndex));
+  endpointSquaredDistances[index]
+      = fmin(startSquaredDistance, endSquaredDistance);
+}
+
+__global__ void evaluateSweptEdgeEdgeCandidateBufferKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    const std::uint32_t* candidateEdgeAIndices,
+    const std::uint32_t* candidateEdgeBIndices,
+    double* endpointSquaredDistances,
+    const std::size_t pairCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= pairCount) {
+    return;
+  }
+
+  const std::size_t edgeA = candidateEdgeAIndices[index];
+  const std::size_t edgeB = candidateEdgeBIndices[index];
+  const std::uint32_t a0 = edgeIndices[2u * edgeA];
+  const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+  const std::uint32_t b0 = edgeIndices[2u * edgeB];
+  const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+
+  const double startSquaredDistance = edgeEdgeSquaredDistance(
+      loadPoint(startPositions, a0),
+      loadPoint(startPositions, a1),
+      loadPoint(startPositions, b0),
+      loadPoint(startPositions, b1));
+  const double endSquaredDistance = edgeEdgeSquaredDistance(
+      loadPoint(endPositions, a0),
+      loadPoint(endPositions, a1),
+      loadPoint(endPositions, b0),
+      loadPoint(endPositions, b1));
+  endpointSquaredDistances[index]
+      = fmin(startSquaredDistance, endSquaredDistance);
+}
+
 } // namespace
 
 //==============================================================================
@@ -1065,6 +1137,62 @@ cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
       acceptedEdgeBIndices,
       acceptedEndpointSquaredDistances,
       edgeCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchSweptPointTriangleCandidateBufferKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* triangleIndices,
+    const std::uint32_t* candidatePointIndices,
+    const std::uint32_t* candidateTriangleIndices,
+    double* endpointSquaredDistances,
+    std::size_t pairCount)
+{
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  evaluateSweptPointTriangleCandidateBufferKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      triangleIndices,
+      candidatePointIndices,
+      candidateTriangleIndices,
+      endpointSquaredDistances,
+      pairCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchSweptEdgeEdgeCandidateBufferKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    const std::uint32_t* candidateEdgeAIndices,
+    const std::uint32_t* candidateEdgeBIndices,
+    double* endpointSquaredDistances,
+    std::size_t pairCount)
+{
+  if (pairCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(pairCount, blockSize);
+  evaluateSweptEdgeEdgeCandidateBufferKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      edgeIndices,
+      candidateEdgeAIndices,
+      candidateEdgeBIndices,
+      endpointSquaredDistances,
+      pairCount);
 
   return cudaGetLastError();
 }

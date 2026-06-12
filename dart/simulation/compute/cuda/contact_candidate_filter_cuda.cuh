@@ -136,6 +136,25 @@ struct SweptEdgeEdgeCandidateBuildResult
   ContactCandidateFilterTiming timing;
 };
 
+struct SweptPointTriangleCandidateBufferResult
+{
+  std::vector<double> endpointSquaredDistances;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCount = 0;
+  double maxEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
+struct SweptEdgeEdgeCandidateBufferResult
+{
+  std::vector<double> endpointSquaredDistances;
+  std::size_t edgeCount = 0;
+  std::size_t pairCount = 0;
+  double maxEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
 /// Filter preassembled point-triangle contact stencils on CUDA.
 ///
 /// This is private evidence for the PLAN-083 GPU packet: it compares the same
@@ -217,5 +236,33 @@ void buildSweptEdgeEdgeContactCandidateMaskCuda(
     const std::vector<std::uint32_t>& edgeIndices,
     double activationDistance,
     SweptEdgeEdgeCandidateBuildResult& result);
+
+/// Evaluate a compact runtime point-triangle candidate buffer on CUDA.
+///
+/// This packet consumes candidate keys produced by the CPU motion-aware sweep
+/// builder and recomputes the endpoint-distance metadata on the GPU. It proves
+/// private runtime-buffer parity without claiming GPU sweep-and-prune sorting,
+/// scene-owned buffers, or a public GPU solver backend.
+void evaluateSweptPointTriangleCandidateBufferCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& triangleIndices,
+    const std::vector<std::uint32_t>& candidatePointIndices,
+    const std::vector<std::uint32_t>& candidateTriangleIndices,
+    SweptPointTriangleCandidateBufferResult& result);
+
+/// Evaluate a compact runtime edge-edge candidate buffer on CUDA.
+///
+/// This packet consumes edge-slot candidate keys produced by the CPU
+/// motion-aware sweep builder and recomputes the endpoint-distance metadata on
+/// the GPU. It intentionally stays private packet evidence rather than a
+/// runtime broad-phase or public GPU backend.
+void evaluateSweptEdgeEdgeCandidateBufferCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    const std::vector<std::uint32_t>& candidateEdgeAIndices,
+    const std::vector<std::uint32_t>& candidateEdgeBIndices,
+    SweptEdgeEdgeCandidateBufferResult& result);
 
 } // namespace dart::simulation::compute::cuda

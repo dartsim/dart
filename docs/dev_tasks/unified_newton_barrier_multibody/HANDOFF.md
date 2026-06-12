@@ -1,5 +1,39 @@
 # Unified Newton-Barrier Handoff
 
+## Validated Runtime Sweep-Buffer Checkpoint (2026-06-12)
+
+Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this single branch/PR. Do not push, PR-comment,
+resolve review threads, trigger CI, open another PLAN-083 PR, or delete
+branches without explicit maintainer approval. Before any future push, merge
+latest `origin/main` into this published branch, rerun the required gates, and
+push only with explicit approval.
+
+This validated checkpoint adds private CUDA evaluators for compact
+point-triangle and edge-edge candidate buffers produced by the CPU
+motion-aware sweep builder. The packet rows recompute endpoint
+squared-distance metadata on the GPU for compact runtime sweep candidate keys:
+512 point-triangle candidates over 2,560 points and 768 triangles, plus 1,536
+edge-edge candidates over 2,304 surface edges.
+
+Fresh local packet evidence records `candidate_pair_count=262144`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.11821712677569206x` (`meets_speedup_gate=false`). The runtime
+point-triangle sweep-buffer row records `speedup=0.11821712677569206x`; the
+runtime edge-edge sweep-buffer row records `speedup=0.28057906386249953x`.
+This is runtime-buffer parity evidence only. It does not claim GPU
+sweep-and-prune broad-phase sorting, scene-owned GPU candidate buffers,
+runtime scene filtering, or contact-candidate speedup-gate completion.
+
+Validation passed: focused contact-candidate packet pytest, PLAN-083 GPU
+parity/completion-audit checkers, focused contact-candidate/GPU-parity/audit
+pytest trio, `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run build-simulation-tests`, `pixi run test-simulation` (65/65),
+`pixi run check-api-boundaries`, `pixi run -e cuda build-cuda Release`,
+`pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
 ## Resumed Compacted-Distance Candidate-Buffer Checkpoint (2026-06-12)
 
 Work resumed after the stop-only handoff. Continue from

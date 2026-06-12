@@ -111,7 +111,9 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "PointTriangleCandidateMask|"
         "EdgeEdgeCandidateMask|"
         "SweptPointTriangleCandidateMask|"
-        "SweptEdgeEdgeCandidateMask"
+        "SweptEdgeEdgeCandidateMask|"
+        "RuntimePointTriangleCandidateBuffer|"
+        "RuntimeEdgeEdgeCandidateBuffer"
         ")(Cpu|Cuda)"
         f"/{args.stencil_count}(/real_time)?$"
     )
@@ -214,6 +216,24 @@ def _expected_swept_edge_edge_candidate_mask_row_names(
     )
 
 
+def _expected_runtime_point_triangle_candidate_buffer_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083RuntimePointTriangleCandidateBufferCpu/{pair_count}",
+        f"BM_Plan083RuntimePointTriangleCandidateBufferCuda/{pair_count}",
+    )
+
+
+def _expected_runtime_edge_edge_candidate_buffer_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu/{pair_count}",
+        f"BM_Plan083RuntimeEdgeEdgeCandidateBufferCuda/{pair_count}",
+    )
+
+
 def _representative_rows(
     rows: list[Mapping[str, Any]], stencil_count: int
 ) -> dict[str, Mapping[str, Any]]:
@@ -224,6 +244,12 @@ def _representative_rows(
     expected_names.update(_expected_swept_candidate_mask_row_names(stencil_count))
     expected_names.update(
         _expected_swept_edge_edge_candidate_mask_row_names(stencil_count)
+    )
+    expected_names.update(
+        _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
+    )
+    expected_names.update(
+        _expected_runtime_edge_edge_candidate_buffer_row_names(stencil_count)
     )
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
@@ -522,6 +548,135 @@ def _validate_edge_edge_candidate_mask(
     }
 
 
+def _validate_runtime_point_triangle_candidate_buffer(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    label = "runtime point-triangle candidate buffer"
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
+        )
+
+    cpu_candidates = int(_counter(cpu_row, "candidates"))
+    gpu_candidates = int(_counter(gpu_row, "gpu_candidates"))
+    if cpu_candidates != gpu_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU candidate count mismatch: "
+            f"{cpu_candidates}/{gpu_candidates}"
+        )
+
+    cpu_points = int(_counter(cpu_row, "points"))
+    gpu_points = int(_counter(gpu_row, "gpu_points"))
+    cpu_triangles = int(_counter(cpu_row, "triangles"))
+    gpu_triangles = int(_counter(gpu_row, "gpu_triangles"))
+    if cpu_points != gpu_points or cpu_triangles != gpu_triangles:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU shape mismatch: "
+            f"points {cpu_points}/{gpu_points}, "
+            f"triangles {cpu_triangles}/{gpu_triangles}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+
+    return {
+        "candidate_count": cpu_candidates,
+        "point_count": cpu_points,
+        "triangle_count": cpu_triangles,
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
+
+
+def _validate_runtime_edge_edge_candidate_buffer(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    label = "runtime edge-edge candidate buffer"
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
+        )
+
+    cpu_candidates = int(_counter(cpu_row, "candidates"))
+    gpu_candidates = int(_counter(gpu_row, "gpu_candidates"))
+    if cpu_candidates != gpu_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU candidate count mismatch: "
+            f"{cpu_candidates}/{gpu_candidates}"
+        )
+
+    cpu_edges = int(_counter(cpu_row, "edges"))
+    gpu_edges = int(_counter(gpu_row, "gpu_edges"))
+    if cpu_edges != gpu_edges:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU shape mismatch: edges {cpu_edges}/{gpu_edges}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+
+    return {
+        "candidate_count": cpu_candidates,
+        "edge_count": cpu_edges,
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
+
+
 def make_packet(
     benchmark_data: dict[str, Any],
     *,
@@ -594,6 +749,26 @@ def make_packet(
         speedup_gate=speedup_gate,
         label="swept edge-edge candidate mask",
     )
+    runtime_point_cpu, runtime_point_gpu = (
+        _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
+    )
+    runtime_point_triangle_candidate_buffer = (
+        _validate_runtime_point_triangle_candidate_buffer(
+            cpu_row=representative_rows[runtime_point_cpu],
+            gpu_row=representative_rows[runtime_point_gpu],
+            tolerance=tolerance,
+            speedup_gate=speedup_gate,
+        )
+    )
+    runtime_edge_cpu, runtime_edge_gpu = (
+        _expected_runtime_edge_edge_candidate_buffer_row_names(stencil_count)
+    )
+    runtime_edge_edge_candidate_buffer = _validate_runtime_edge_edge_candidate_buffer(
+        cpu_row=representative_rows[runtime_edge_cpu],
+        gpu_row=representative_rows[runtime_edge_gpu],
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+    )
     candidate_construction = {
         "point_triangle_all_pairs_mask": point_triangle_candidate_construction,
         "edge_edge_all_pairs_mask": edge_edge_candidate_construction,
@@ -601,6 +776,10 @@ def make_packet(
             swept_point_triangle_candidate_construction
         ),
         "edge_edge_swept_aabb_candidates": swept_edge_edge_candidate_construction,
+        "point_triangle_runtime_sweep_buffer": (
+            runtime_point_triangle_candidate_buffer
+        ),
+        "edge_edge_runtime_sweep_buffer": runtime_edge_edge_candidate_buffer,
     }
 
     point_triangle = primitive_families["point_triangle"]
@@ -625,7 +804,8 @@ def make_packet(
             "candidate_construction": candidate_construction,
             "stencil_count": stencil_count * len(primitive_families),
             "candidate_pair_count": sum(
-                family["pair_count"] for family in candidate_construction.values()
+                family.get("pair_count", 0)
+                for family in candidate_construction.values()
             ),
             "accepted_count": sum(
                 family["accepted_count"] for family in primitive_families.values()
