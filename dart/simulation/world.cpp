@@ -174,6 +174,9 @@ void reserveMultibodyDynamicsRegistryStorage(
 
 struct World::CollisionQueryCache
 {
+  template <typename Value>
+  using CacheAllocator = common::StlAllocator<Value>;
+
   struct Key
   {
     entt::entity entity;
@@ -200,6 +203,29 @@ struct World::CollisionQueryCache
     Eigen::Isometry3d pose;
   };
 
+  using KeyVector = std::vector<Key, CacheAllocator<Key>>;
+  using ObjectEntryVector
+      = std::vector<ObjectEntry, CacheAllocator<ObjectEntry>>;
+  using ObjectIdIndexVector
+      = std::vector<std::size_t, CacheAllocator<std::size_t>>;
+  using ShapeEntrySpecVector
+      = std::vector<ShapeEntrySpec, CacheAllocator<ShapeEntrySpec>>;
+  using CollisionPairVector = std::vector<
+      detail::WorldStorage::CollisionPairKey,
+      CacheAllocator<detail::WorldStorage::CollisionPairKey>>;
+
+  CollisionQueryCache() = default;
+
+  explicit CollisionQueryCache(common::MemoryAllocator& allocator)
+    : keys(CacheAllocator<Key>{allocator}),
+      entries(CacheAllocator<ObjectEntry>{allocator}),
+      entryByObjectId(CacheAllocator<std::size_t>{allocator}),
+      specs(CacheAllocator<ShapeEntrySpec>{allocator}),
+      liveRigidBodyJointPairs(
+          CacheAllocator<detail::WorldStorage::CollisionPairKey>{allocator})
+  {
+  }
+
   void clearObjectsAndResultsPreservingSpecs()
   {
     // queryContacts() rebuilds native objects from `specs` after this call, so
@@ -222,12 +248,12 @@ struct World::CollisionQueryCache
   }
 
   ncol::CollisionWorld collisionWorld;
-  std::vector<Key> keys;
-  std::vector<ObjectEntry> entries;
-  std::vector<std::size_t> entryByObjectId;
-  std::vector<ShapeEntrySpec> specs;
+  KeyVector keys;
+  ObjectEntryVector entries;
+  ObjectIdIndexVector entryByObjectId;
+  ShapeEntrySpecVector specs;
   ncol::BroadPhaseSnapshot candidatePairs;
-  std::vector<detail::WorldStorage::CollisionPairKey> liveRigidBodyJointPairs;
+  CollisionPairVector liveRigidBodyJointPairs;
   std::vector<Contact> contacts;
   ncol::CollisionResult pairResult;
 };
@@ -2112,10 +2138,9 @@ detail::WorldStorage::CollisionPairKey makeCollisionPairKey(
 }
 
 //==============================================================================
-template <typename Registry>
+template <typename Registry, typename PairVector>
 void collectLivePublicRigidBodyJointPairsInto(
-    const Registry& registry,
-    std::vector<detail::WorldStorage::CollisionPairKey>& pairs)
+    const Registry& registry, PairVector& pairs)
 {
   pairs.clear();
 
@@ -3126,7 +3151,8 @@ void World::WorldStorageDeleter::operator()(void* storage) const noexcept
 World::CollisionQueryCachePtr World::makeCollisionQueryCache(
     common::MemoryManager& memoryManager)
 {
-  auto* cache = memoryManager.constructUsingFree<CollisionQueryCache>();
+  auto* cache = memoryManager.constructUsingFree<CollisionQueryCache>(
+      memoryManager.getFreeAllocator());
   if (cache == nullptr) {
     throw std::bad_alloc();
   }

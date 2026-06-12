@@ -1,5 +1,63 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Continuation (2026-06-12, Collision Query Cache Scratch Allocators)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM follow-up entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: DART-owned collision query cache scratch now uses the
+World free allocator for reusable cache vectors. The pre-fix gap was that the
+`CollisionQueryCache` object itself lived under the World memory hierarchy, but
+its shape specs, object keys, object-id lookup, native object entries, and live
+rigid-body joint-pair filter vector used default STL storage. First population
+of a contact query shape set therefore grew default-allocator storage instead
+of making the World allocator ownership visible.
+
+The fix has three parts:
+
+- `CollisionQueryCache` now has an allocator-aware constructor and allocator-
+  backed vectors for keys, entries, object-id lookup, shape specs, and live
+  rigid-body joint pairs;
+- `makeCollisionQueryCache()` passes the World's free allocator into that
+  constructor;
+- `collectLivePublicRigidBodyJointPairsInto()` accepts allocator-aware vector
+  storage, preserving the existing live rigid-body joint filtering behavior.
+
+This does not claim that native collision internals or the public
+`std::vector<Contact>` return object have been moved under the World allocator;
+those remain separate API/native-boundary work. The closed gap is the
+DART-owned reusable cache scratch.
+
+New regression coverage:
+
+- `World.CollisionQueryCacheScratchUsesWorldAllocator` warms the empty cache,
+  adds an overlapping rigid-body pair, checks that first shape-set population
+  grows the World free allocator, and checks that a same-shape second query
+  does not grow it again.
+
+Validation for this slice:
+
+```bash
+cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.CollisionQueryCacheScratchUsesWorldAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.CollisionQueryCacheScratchUsesWorldAllocator:World.CollisionQuerySkipsLiveRigidBodyJointPairs:World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+pixi run lint
+pixi run build
+pixi run test-unit
+```
+
+Immediate next step: continue evidence-first HMM work from this same branch.
+Prefer measured allocator/no-growth gaps in DART-owned simulation-loop storage
+or stage scratch. Do not push or open a PR without explicit maintainer
+approval.
+
 ## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 
 Resume from exactly one branch:

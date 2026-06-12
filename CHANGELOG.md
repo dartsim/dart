@@ -569,6 +569,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Reused AVBD rigid-world contact transform-writeback frame-dirty traversal
     scratch from the allocator-aware snapshot, so same-shape detail writeback
     paths do not grow a default-allocator traversal vector.
+  - Routed experimental `World` collision-query cache shape specs, object
+    keys, object-id lookup, native object entries, and live rigid-body joint
+    pair scratch through the World free allocator. Same-shape contact-query
+    cache coverage now checks that the DART-owned cache storage grows from the
+    World allocator once and then reuses capacity.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory

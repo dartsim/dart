@@ -11447,6 +11447,37 @@ TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
   }
 }
 
+TEST(World, CollisionQueryCacheScratchUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+
+  (void)world.collide();
+
+  auto bodyA = world.addRigidBody("cache_allocator_a");
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions bodyBOptions;
+  bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("cache_allocator_b", bodyBOptions);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto allocationsBeforePopulate = freeList.getAllocationCount();
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePopulate)
+      << "DART-owned collision query cache vectors should reserve from the "
+         "World free allocator when a query shape set first appears";
+
+  const auto allocationsAfterPopulate = freeList.getAllocationCount();
+  const auto warmedContacts = world.collide();
+  ASSERT_FALSE(warmedContacts.empty());
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsAfterPopulate)
+      << "same-shape collision query cache scratch should reuse capacity";
+}
+
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).
