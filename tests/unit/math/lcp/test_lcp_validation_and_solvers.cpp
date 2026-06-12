@@ -104,7 +104,7 @@ LcpProblem makeBoxedActiveProblem(Eigen::VectorXd* expected = nullptr)
       std::move(findex));
 }
 
-LcpProblem makeFrictionProblem()
+LcpProblem makeFrictionProblem(Eigen::VectorXd* expected = nullptr)
 {
   Eigen::MatrixXd A(3, 3);
   A << 3.0, 0.1, 0.0, 0.1, 2.5, 0.05, 0.0, 0.05, 2.0;
@@ -119,6 +119,9 @@ LcpProblem makeFrictionProblem()
   hi << std::numeric_limits<double>::infinity(), 0.5, 0.5;
   Eigen::VectorXi findex(3);
   findex << -1, 0, 0;
+  if (expected) {
+    *expected = target;
+  }
   return LcpProblem(
       std::move(A),
       std::move(b),
@@ -2034,6 +2037,61 @@ TEST(BoxedProjectedActiveSetFastPath, SubspaceMinimizationUsesLinearSolve)
   EXPECT_EQ(result.status, LcpSolverStatus::Success);
   EXPECT_EQ(result.iterations, 0);
   EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(FrictionIndexInteriorFastPath, HighOverheadSolversUseLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionProblem(&expected);
+
+  const auto expectFastPath = [&](auto& solver) {
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    options.maxIterations = 1;
+
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  };
+
+  {
+    DantzigSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BlockedJacobiSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BgsSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    NncgSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    SubspaceMinimizationSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    ShockPropagationSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    StaggeringSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    AdmmSolver solver;
+    expectFastPath(solver);
+  }
+  {
+    BoxedSemiSmoothNewtonSolver solver;
+    expectFastPath(solver);
+  }
 }
 
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)

@@ -198,6 +198,9 @@ solver.solve(problem, x, options);
 
 > Note: DART partitions variables by `findex` (normal indices are `findex < 0`,
 > friction indices are `findex >= 0`) and alternates normal and friction sub-solves.
+> Non-warm-started strictly interior friction-index rows first try the shared
+> validated friction-index exact solve; active friction bounds, warm starts, and
+> validator-rejected rows continue through the normal/friction staggering loop.
 
 DART 7 benchmark evidence includes `BM_LcpStaggeringContactPipelineSweep`,
 which exercises the normal/friction split on DART-owned contact-pipeline
@@ -299,10 +302,13 @@ solver.solve(problem, x, options);
 > shared linear-solve helper. Boxed LCPs without friction-index coupling use the
 > same structure-validation gate, then try the shared projected-active-set exact
 > solve before block data construction; the shortcut is accepted only when the
-> final boxed solution passes validation.
+> final boxed solution passes validation. Strictly interior friction-index rows
+> up to 48 variables use the shared validated friction-index exact solve after
+> custom block/layer validation, while larger or validator-rejected
+> friction-index rows continue through the layered block path.
 > Small uncoupled fixed-bound blocks first try a local direct linear solve when
 > the unconstrained candidate is already feasible; active-bound, singular,
-> non-finite, larger, and local `findex` blocks still use the existing
+> non-finite, larger, and active local `findex` blocks still use the existing
 > Direct/Dantzig fallback path.
 
 DART 7 benchmark evidence includes `BM_LcpShockPropagationLayerSweep`, which
@@ -420,8 +426,10 @@ is strictly positive and passes solution validation. Non-warm-started boxed
 LCPs without friction-index coupling then try a projected active-set exact solve:
 the unconstrained solution proposes lower/upper/free rows, the free block is
 solved exactly, and the shortcut is accepted only if the final boxed solution
-passes the shared validator. Friction-index, warm-started, and explicit
-custom-option calls stay on the operator-splitting loop.
+passes the shared validator. Small strictly interior friction-index rows use the
+shared validated friction-index exact solve; larger friction-index,
+warm-started, and explicit custom-option calls stay on the operator-splitting
+loop.
 The ADMM loop reuses its linear-solve right-hand side and projected-step
 workspace across iterations, avoiding repeated per-iteration vector allocation
 without changing the operator-splitting updates or convergence tests.
@@ -540,7 +548,10 @@ auto result = solver.solve(problem, x, options);
 > Strictly interior standard LCPs without a warm start first try the shared
 > validated linear-solve fast path. Default-option solves can take that path
 > before block construction, while explicit custom block partitions are still
-> validated before the fast path is accepted.
+> validated before the fast path is accepted. Strictly interior friction-index
+> rows use the shared validated friction-index exact solve through the same
+> validation gateway, and contact-sized local `findex` blocks try that helper
+> before falling back to Dantzig.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
 Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with

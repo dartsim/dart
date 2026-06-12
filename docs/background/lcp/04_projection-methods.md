@@ -351,8 +351,11 @@ solver.solve(problem, x, options);
 > the existing BGS sweep when the dense linear solve would be slower than the
 > block iteration path. Boxed LCPs without friction-index coupling use the
 > shared projected-active-set exact solve under the same high-level gateway for
-> BGS and blocked Jacobi, while warm-started, custom-block-validated, and
-> friction-index rows retain the block iteration path.
+> BGS and blocked Jacobi. Strictly interior friction-index rows also use the
+> shared validated friction-index exact solve for small/medium high-level rows,
+> and contact-sized local blocks try that helper before falling back to Dantzig.
+> Warm-started, custom-block-validated, and validator-rejected rows retain the
+> block iteration path.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
 on standard, boxed, and friction-index fixtures with full-block, 3-row block,
@@ -477,8 +480,10 @@ tries the shared validated linear-solve fast path. The candidate is accepted
 only when it is strictly positive and passes normal LCP validation; otherwise
 the PGS-preconditioned NNCG iteration runs normally. Boxed LCPs without
 friction-index coupling use the shared projected-active-set exact solve under
-the same non-warm-started high-level interface, while coupled friction rows
-continue through the PGS-preconditioned NNCG path.
+the same non-warm-started high-level interface. Strictly interior
+friction-index rows use the shared validated friction-index exact solve; active
+friction bounds, warm starts, and validator-rejected rows continue through the
+PGS-preconditioned NNCG path.
 
 ### Properties
 
@@ -551,7 +556,9 @@ For strictly interior standard LCPs without a warm start,
 path. Boxed LCPs without friction-index coupling use the shared
 projected-active-set exact solve under the same non-warm-started high-level
 interface. The active-set estimation and subspace refinement path remains the
-fallback for warm-started, coupled friction-index, or validator-rejected solves.
+fallback for warm-started, active-bound friction-index, or validator-rejected
+solves. Strictly interior friction-index rows use the shared validated
+friction-index exact solve before the PGS active-set-estimation phase.
 
 ### Properties
 

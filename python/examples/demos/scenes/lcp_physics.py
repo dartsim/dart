@@ -260,14 +260,19 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Pgs/Tgs/Sap; Jacobi and SymmetricPsor next",
+        "current_leaders": (
+            "Tgs/Pgs; Admm/SymmetricPsor/BGS/SubspaceMinimization/"
+            "Dantzig/NNCG/Staggering/Jacobi close; Sap/Apgd just under 2x"
+        ),
         "current_laggards": (
-            "BlockedJacobi, BGS, ShockPropagation, Staggering, "
-            "SubspaceMinimization"
+            "BoxedSemiSmoothNewton and ShockPropagation remain above 2x; "
+            "BlockedJacobi is near 2x"
         ),
         "takeaway": (
-            "PGS/TGS/SAP lead current contact-scale rows; layered/block "
-            "contact routes remain targets."
+            "Validated interior friction-index fast paths removed most block, "
+            "staggering, NNCG, Dantzig, and subspace hot rows; remaining "
+            "targets are boxed semi-smooth Newton and large-contact "
+            "ShockPropagation."
         ),
     },
 )

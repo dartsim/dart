@@ -399,9 +399,13 @@ enables a short PGS warm start before the Newton loop. The warm start is accepte
 only when it reduces the boxed natural residual, which keeps poor projection
 starts from displacing a better caller-provided initial guess.
 Strictly interior standard LCPs without a warm start first try the shared
-validated linear-solve fast path after parameter validation. Warm-started boxed
-and friction-index rows stay on the semi-smooth Newton path so the
-residual-reducing PGS warm start and moving-bound Jacobian remain active.
+validated linear-solve fast path after parameter validation. Boxed LCPs without
+friction-index coupling use the shared projected-active-set exact solve, and
+small strictly interior friction-index rows use the shared validated
+friction-index exact solve. Warm-started boxed/findex rows, larger findex rows,
+active friction bounds, and validator-rejected rows stay on the semi-smooth
+Newton path so the residual-reducing PGS warm start and moving-bound Jacobian
+remain active.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>

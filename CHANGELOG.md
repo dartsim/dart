@@ -1518,6 +1518,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     to boxed LCPs without friction-index coupling through the shared
     projected-active-set solve, while preserving warm-started, custom
     block-validated, and coupled contact rows on the block iteration paths.
+  - Added a shared validated strict-interior friction-index exact solve and
+    wired it into Dantzig, Blocked Jacobi, BGS, NNCG, Subspace Minimization,
+    Shock Propagation, Staggering, small-packet ADMM, and small-packet
+    BoxedSemiSmoothNewton high-level solves. Contact-sized local block solves
+    also try the helper before Dantzig fallback, while active-bound,
+    warm-started, large size-sensitive, and validator-rejected rows stay on
+    their original iterative or Newton paths.
   - Extended `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
     `SubspaceMinimizationSolver` validated exact fast paths to boxed LCPs
     without friction-index coupling through the shared projected-active-set

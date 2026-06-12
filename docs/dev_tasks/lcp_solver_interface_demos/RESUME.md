@@ -1,5 +1,97 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Friction-Index Fast Paths
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path strict-interior friction-index LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 56 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- Added a shared validated strict-interior friction-index exact solve in
+  `dart/math/lcp/lcp_validation.hpp`.
+- Dantzig, Blocked Jacobi, BGS, NNCG, Subspace Minimization,
+  ShockPropagation, Staggering, small-packet ADMM, and small-packet
+  BoxedSemiSmoothNewton now try that helper for non-warm-started
+  strict-interior friction-index rows.
+- Blocked Jacobi, BGS, and ShockPropagation local contact blocks also try the
+  helper before Dantzig fallback.
+- ShockPropagation still validates custom block/layer partitions before any
+  top-level friction-index shortcut.
+- Active-bound friction rows, warm starts, large size-sensitive rows, and
+  validator-rejected rows remain on each solver's original iterative, block,
+  or Newton path.
+- SAP stays on its regularized Newton path for friction-index rows.
+- The Python LCP demo profile summary now moves BGS, Staggering,
+  SubspaceMinimization, Dantzig, NNCG, and ADMM into the close
+  FrictionIndex cluster and identifies BoxedSemiSmoothNewton and
+  ShockPropagation as the remaining above-`2x` rows.
+
+Evidence:
+
+- Focused
+  `BM_LcpCompare/FrictionIndex/(Dantzig|BlockedJacobi|BGS|NNCG|SubspaceMinimization|ShockPropagation|Staggering|Admm|BoxedSemiSmoothNewton|Sap)/`
+  wrote `build/friction_index_interior_fast_path_after.json`.
+- Focused run reported `contract_ok=1.0` for all rows.
+- Focused speedups over the previous full profile cache:
+  - `BlockedJacobi`: `17.71x`, `11.39x`, `2.80x`.
+  - `BGS`: `9.28x`, `3.39x`, `1.45x`.
+  - `ShockPropagation`: `6.49x`, `3.21x`, `1.47x`.
+  - `Staggering`: `6.13x`, `3.14x`, `3.14x`.
+  - `SubspaceMinimization`: `3.27x`, `2.77x`, `2.70x`.
+  - `NNCG`: `3.68x`, `2.53x`, `1.66x`.
+  - `Dantzig`: `1.90x`, `1.50x`, `2.04x`.
+- Regenerated full profile reports FrictionIndex averages:
+  `BoxedSemiSmoothNewton 2.84`, `ShockPropagation 2.35`,
+  `BlockedJacobi 2.00`, `Sap 1.94`, `Apgd 1.88`, `NNCG 1.83`,
+  `Dantzig 1.83`, `Staggering 1.83`, `SubspaceMinimization 1.77`,
+  `BGS 1.69`, and `Admm 1.63`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/friction_index_interior_fast_path_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- FrictionIndex: `BoxedSemiSmoothNewton`, `ShockPropagation`, then
+  `BlockedJacobi` large-contact rows if the `2x` boundary remains important.
+- Boxed: no solver above `2x` in the refreshed profile.
+- Standard: moderate spread only.
+
 ## Current Reality - 2026-06-12 Remaining Boxed Active-Set Fast Paths
 
 This section is the latest state; older sections below are historical

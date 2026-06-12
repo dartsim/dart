@@ -356,6 +356,9 @@ LcpResult BgsSolver::solve(
       } else if (problem.isBoxedLcp()) {
         exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
             problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.hasFrictionIndex()) {
+        exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW);
       }
     }
 
@@ -485,6 +488,15 @@ LcpResult BgsSolver::solve(
       const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
       LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+      const double validationTolerance = std::max(absTol, compTolOpt);
+      if (detail::trySolveInteriorFrictionIndexLcp(
+              subProblem, absTol, validationTolerance, xBlock)) {
+        for (int r = 0; r < m; ++r) {
+          x[block.indices[r]] = xBlock[r];
+        }
+        continue;
+      }
+
       const bool useDirect
           = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
       const LcpResult blockResult

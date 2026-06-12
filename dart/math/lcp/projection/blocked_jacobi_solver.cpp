@@ -364,6 +364,9 @@ LcpResult BlockedJacobiSolver::solve(
       } else if (problem.isBoxedLcp()) {
         exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
             problem, absTol, validationTolerance, x, &fastW);
+      } else if (problem.hasFrictionIndex()) {
+        exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW);
       }
     }
 
@@ -494,6 +497,19 @@ LcpResult BlockedJacobiSolver::solve(
     const Eigen::VectorXd bEff = block.baseB - (AxBlock - AxSelf);
 
     LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (detail::trySolveInteriorFrictionIndexLcp(
+            subProblem, absTol, validationTolerance, xBlock)) {
+      for (int r = 0; r < m; ++r) {
+        xNext[block.indices[r]] = xBlock[r];
+      }
+
+      LcpResult blockResult;
+      blockResult.status = LcpSolverStatus::Success;
+      blockResult.iterations = 1;
+      return blockResult;
+    }
+
     const bool useDirect
         = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
     DirectSolver directSolver;

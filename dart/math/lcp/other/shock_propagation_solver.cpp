@@ -544,6 +544,14 @@ LcpResult ShockPropagationSolver::solve(
               problem, absTol, validationTolerance, x, &fastW)) {
         return false;
       }
+    } else if (problem.hasFrictionIndex()) {
+      if (problem.size() > 48) {
+        return false;
+      }
+      if (!detail::trySolveInteriorFrictionIndexLcp(
+              problem, absTol, validationTolerance, x, &fastW)) {
+        return false;
+      }
     } else {
       return false;
     }
@@ -552,7 +560,8 @@ LcpResult ShockPropagationSolver::solve(
   };
 
   if (!options.warmStart
-      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp())
+      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
+          || problem.hasFrictionIndex())
       && !validateBlockLayerStructure(
           static_cast<int>(n), *params, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
@@ -560,12 +569,24 @@ LcpResult ShockPropagationSolver::solve(
     return result;
   }
 
+  std::vector<BlockData> blocks;
+  bool blocksBuilt = false;
+  if (!options.warmStart && problem.hasFrictionIndex()
+      && options.customOptions != nullptr) {
+    if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+    blocksBuilt = true;
+  }
+
   if (tryExactFastPath()) {
     return result;
   }
 
-  std::vector<BlockData> blocks;
-  if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+  if (!blocksBuilt
+      && !buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
     return result;
@@ -659,6 +680,15 @@ LcpResult ShockPropagationSolver::solve(
         }
 
         LcpProblem subProblem(block.A, bEff, block.lo, block.hi, block.findex);
+        const double validationTolerance = std::max(absTol, compTolOpt);
+        if (detail::trySolveInteriorFrictionIndexLcp(
+                subProblem, absTol, validationTolerance, xBlock)) {
+          for (int r = 0; r < m; ++r) {
+            x[block.indices[r]] = xBlock[r];
+          }
+          continue;
+        }
+
         const bool useDirect
             = (m <= kMaxDirectBlockSize) && isStandardBlock(block, absTol);
         const LcpResult blockResult

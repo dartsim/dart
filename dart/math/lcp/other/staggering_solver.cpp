@@ -161,6 +161,32 @@ LcpResult StaggeringSolver::solve(
     return result;
   }
 
+  if (!options.warmStart && problem.hasFrictionIndex()) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    Eigen::VectorXd fastW;
+    if (detail::trySolveInteriorFrictionIndexLcp(
+            problem, absTol, validationTolerance, x, &fastW)) {
+      Eigen::VectorXd loEffFast;
+      Eigen::VectorXd hiEffFast;
+      std::string boundsMessage;
+      if (!detail::computeEffectiveBounds(
+              lo, hi, findex, x, loEffFast, hiEffFast, &boundsMessage)) {
+        result.status = LcpSolverStatus::InvalidProblem;
+        result.message = boundsMessage;
+        return result;
+      }
+
+      result.status = LcpSolverStatus::Success;
+      result.iterations = 0;
+      result.residual
+          = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+      result.complementarity = detail::complementarityInfinityNorm(
+          x, fastW, loEffFast, hiEffFast, compTolOpt);
+      result.validated = options.validateSolution;
+      return result;
+    }
+  }
+
   std::vector<int> normalIndices;
   std::vector<int> frictionIndices;
   normalIndices.reserve(static_cast<std::size_t>(n));

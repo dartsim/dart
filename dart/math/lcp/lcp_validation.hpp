@@ -524,4 +524,51 @@ inline bool trySolveProjectedActiveSetBoxedLcp(
   return true;
 }
 
+inline bool trySolveInteriorFrictionIndexLcp(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.hasFrictionIndex()) {
+    return false;
+  }
+
+  Eigen::VectorXd candidate = problem.A.partialPivLu().solve(problem.b);
+  if (!candidate.allFinite()) {
+    return false;
+  }
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  if (!computeEffectiveBounds(
+          problem.lo, problem.hi, problem.findex, candidate, loEff, hiEff)) {
+    return false;
+  }
+
+  const double strictInteriorTol = std::max(0.0, interiorTolerance);
+  for (Eigen::Index i = 0; i < candidate.size(); ++i) {
+    if (std::isfinite(loEff[i])
+        && candidate[i] <= loEff[i] + strictInteriorTol) {
+      return false;
+    }
+    if (std::isfinite(hiEff[i])
+        && candidate[i] >= hiEff[i] - strictInteriorTol) {
+      return false;
+    }
+  }
+
+  Eigen::VectorXd w = problem.A * candidate - problem.b;
+  if (!validateSolution(candidate, w, loEff, hiEff, validationTolerance)) {
+    return false;
+  }
+
+  x = std::move(candidate);
+  if (wOut) {
+    *wOut = std::move(w);
+  }
+  return true;
+}
+
 } // namespace dart::math::detail

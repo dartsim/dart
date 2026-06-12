@@ -1094,24 +1094,40 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "SubspaceMinimization"
         not in profile_by_surface["Boxed"]["current_laggards"]
     )
-    assert "Pgs/Tgs/Sap" in profile_by_surface["FrictionIndex"][
+    assert "Tgs/Pgs" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
+    assert "Admm" in profile_by_surface["FrictionIndex"]["current_leaders"]
     assert "SymmetricPsor" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
     assert "Jacobi" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "BGS" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Dantzig" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "NNCG" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "Staggering" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
     assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
-    assert "Staggering" in profile_by_surface["FrictionIndex"]["current_laggards"]
-    assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
     assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
-    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
+    assert "Staggering" not in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
+    assert "BGS" not in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert (
+        "SubspaceMinimization"
+        not in profile_by_surface["FrictionIndex"]["current_laggards"]
+    )
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
         "BM_LcpWorldBilliardsStep_BoxedLcp"
     )

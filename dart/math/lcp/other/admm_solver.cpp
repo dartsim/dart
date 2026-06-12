@@ -169,6 +169,9 @@ LcpResult AdmmSolver::solve(
     } else if (problem.isBoxedLcp()) {
       exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
           problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex() && problem.size() <= 12) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
     }
   }
 
