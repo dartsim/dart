@@ -301,7 +301,7 @@ its own line so status updates remain git-history friendly.
   stencil parity, endpoint-linear point-triangle and edge-edge CCD/line-search
   parity, scalar barrier/friction local-kernel parity plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
-  tangent-stencil parity, point-point/point-edge primitive barrier-Hessian
+  tangent-stencil parity, point-triangle/point-point/point-edge primitive barrier-Hessian
   parity, reduced diagonal assembly/solve parity, reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets, and an
   ABD/FEM coupled micro-solve packet. It still

@@ -143,6 +143,18 @@ struct PointTriangleBarrierGradientResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct PointTriangleBarrierHessianResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<double> barrierValues;
+  std::vector<double> barrierGradients;
+  std::vector<double> barrierHessians;
+  std::vector<std::uint8_t> activeBarriers;
+  std::size_t activeBarrierCount = 0;
+  double maxBarrierValue = 0.0;
+  BarrierFrictionLocalTiming timing;
+};
+
 struct PointPointBarrierHessianResult
 {
   std::vector<double> squaredDistances;
@@ -224,6 +236,16 @@ void evaluateBarrierFrictionLocalKernelsCuda(
 void evaluatePointTriangleBarrierGradientsCuda(
     const std::vector<PointTriangleBarrierInput>& inputs,
     PointTriangleBarrierGradientResult& result);
+
+/// Evaluate private point-triangle barrier values, gradients, and Hessians on
+/// CUDA.
+///
+/// This packet extends primitive Hessian evidence to the point-triangle family.
+/// It intentionally does not cover PSD projection, runtime contact rows,
+/// off-diagonal sparse assembly, or a public GPU backend.
+void evaluatePointTriangleBarrierHessiansCuda(
+    const std::vector<PointTriangleBarrierInput>& inputs,
+    PointTriangleBarrierHessianResult& result);
 
 /// Evaluate private point-point barrier values, gradients, and Hessians on
 /// CUDA.

@@ -215,6 +215,40 @@ std::vector<cuda::PointTriangleBarrierInput> makePointTriangleFixture()
   };
 }
 
+std::vector<cuda::PointTriangleBarrierInput> makePointTriangleHessianFixture()
+{
+  return {
+      makePointTriangleInput(
+          Eigen::Vector3d(0.25, 0.25, 0.1),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          2.0),
+      makePointTriangleInput(
+          Eigen::Vector3d(0.5, -0.1, 0.05),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          1.5),
+      makePointTriangleInput(
+          Eigen::Vector3d(-0.1, -0.05, 0.04),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          2.5),
+      makePointTriangleInput(
+          Eigen::Vector3d(0.2, 0.2, 2.0),
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(0.0, 1.0, 0.0),
+          0.25,
+          3.0),
+  };
+}
+
 std::vector<cuda::PointTriangleTangentInput> makePointTriangleTangentFixture()
 {
   return {
@@ -523,6 +557,59 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleBarrierGradients)
           expected.gradient[entry],
           1e-10)
           << "fixture=" << i << " entry=" << entry;
+    }
+  }
+}
+
+//==============================================================================
+TEST(BarrierFrictionKernelCuda, MatchesCpuPointTriangleBarrierHessians)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const auto inputs = makePointTriangleHessianFixture();
+
+  cuda::PointTriangleBarrierHessianResult result;
+  cuda::evaluatePointTriangleBarrierHessiansCuda(inputs, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), inputs.size());
+  ASSERT_EQ(result.barrierValues.size(), inputs.size());
+  ASSERT_EQ(result.barrierGradients.size(), 12 * inputs.size());
+  ASSERT_EQ(result.barrierHessians.size(), 144 * inputs.size());
+  ASSERT_EQ(result.activeBarriers.size(), inputs.size());
+  EXPECT_EQ(result.activeBarrierCount, 3u);
+
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto expected = nb::pointTriangleBarrier(
+        readVec3(input.point),
+        readVec3(input.triangleA),
+        readVec3(input.triangleB),
+        readVec3(input.triangleC),
+        input.squaredActivationDistance,
+        input.stiffness);
+
+    EXPECT_EQ(result.activeBarriers[i] != 0u, expected.active) << i;
+    EXPECT_NEAR(result.squaredDistances[i], expected.squaredDistance, 1e-12)
+        << i;
+    EXPECT_NEAR(result.barrierValues[i], expected.value, 1e-12) << i;
+    for (int entry = 0; entry < 12; ++entry) {
+      EXPECT_NEAR(
+          result.barrierGradients[12 * i + static_cast<std::size_t>(entry)],
+          expected.gradient[entry],
+          1e-10)
+          << "fixture=" << i << " gradient entry=" << entry;
+    }
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        EXPECT_NEAR(
+            result.barrierHessians
+                [144 * i + static_cast<std::size_t>(12 * row + col)],
+            expected.hessian(row, col),
+            1e-8)
+            << "fixture=" << i << " hessian row=" << row << " col=" << col;
+      }
     }
   }
 }
@@ -948,6 +1035,12 @@ TEST(BarrierFrictionKernelCuda, RejectsNonFiniteInput)
   EXPECT_THROW(
       cuda::evaluatePointTriangleBarrierGradientsCuda(
           pointTriangleInputs, pointTriangleResult),
+      dart::simulation::InvalidArgumentException);
+
+  cuda::PointTriangleBarrierHessianResult pointTriangleHessianResult;
+  EXPECT_THROW(
+      cuda::evaluatePointTriangleBarrierHessiansCuda(
+          pointTriangleInputs, pointTriangleHessianResult),
       dart::simulation::InvalidArgumentException);
 
   auto pointPointBarrierInputs = makePointPointBarrierFixture();

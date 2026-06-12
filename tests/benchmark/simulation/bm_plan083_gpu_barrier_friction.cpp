@@ -78,6 +78,7 @@ struct CpuPointTriangleResult
   std::vector<double> squaredDistances;
   std::vector<double> barrierValues;
   std::vector<double> barrierGradients;
+  std::vector<double> barrierHessians;
   std::vector<std::uint8_t> activeBarriers;
   std::size_t activeBarrierCount = 0;
   double maxBarrierValue = 0.0;
@@ -204,13 +205,14 @@ Eigen::Vector3d readVec3(const double values[3])
   return {values[0], values[1], values[2]};
 }
 
-cuda::PointTriangleBarrierInput makePointTriangleInput(const int i)
+cuda::PointTriangleBarrierInput makePointTriangleInput(
+    const int i, const bool includeDegenerate = true)
 {
   const double column = static_cast<double>(i % 257) / 257.0;
   const double row = static_cast<double>((i / 257) % 251) / 251.0;
   const bool outsideEdge = (i % 7) == 0;
   const bool inactive = (i % 11) == 0;
-  const bool degenerate = (i % 23) == 0;
+  const bool degenerate = includeDegenerate && (i % 23) == 0;
 
   const Eigen::Vector3d a(0.0, 0.0, 0.0);
   const Eigen::Vector3d b = degenerate ? Eigen::Vector3d(1e-8, 0.0, 0.0)
@@ -412,6 +414,7 @@ void resizeCpuResult(CpuPointTriangleResult& result, const std::size_t count)
   result.squaredDistances.assign(count, 0.0);
   result.barrierValues.assign(count, 0.0);
   result.barrierGradients.assign(12 * count, 0.0);
+  result.barrierHessians.assign(144 * count, 0.0);
   result.activeBarriers.assign(count, 0u);
   result.activeBarrierCount = 0;
   result.maxBarrierValue = 0.0;
@@ -534,6 +537,13 @@ void evaluateCpu(
     for (int entry = 0; entry < 12; ++entry) {
       result.barrierGradients[12 * i + static_cast<std::size_t>(entry)]
           = barrier.gradient[entry];
+    }
+    for (int row = 0; row < 12; ++row) {
+      for (int col = 0; col < 12; ++col) {
+        result
+            .barrierHessians[144 * i + static_cast<std::size_t>(12 * row + col)]
+            = barrier.hessian(row, col);
+      }
     }
   }
 }
@@ -799,6 +809,17 @@ PointTriangleFixture makePointTriangleFixture(const int sampleCount)
   return fixture;
 }
 
+PointTriangleFixture makePointTriangleHessianFixture(const int sampleCount)
+{
+  PointTriangleFixture fixture;
+  fixture.inputs.reserve(static_cast<std::size_t>(sampleCount));
+  for (int i = 0; i < sampleCount; ++i) {
+    fixture.inputs.push_back(makePointTriangleInput(i, false));
+  }
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
 PointPointBarrierFixture makePointPointBarrierFixture(const int sampleCount)
 {
   PointPointBarrierFixture fixture;
@@ -921,6 +942,25 @@ double maxOutputError(
   maxError = std::max(
       maxError,
       maxAbsDifference(expected.barrierGradients, actual.barrierGradients));
+  return maxError;
+}
+
+double maxOutputError(
+    const CpuPointTriangleResult& expected,
+    const cuda::PointTriangleBarrierHessianResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.squaredDistances, actual.squaredDistances));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.barrierValues, actual.barrierValues));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierGradients, actual.barrierGradients));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierHessians, actual.barrierHessians));
   return maxError;
 }
 
@@ -1233,6 +1273,57 @@ static void BM_Plan083PointTriangleBarrierGradientCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointTriangleBarrierGradientCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleBarrierHessianCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointTriangleHessianFixture(static_cast<int>(state.range(0)));
+  CpuPointTriangleResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointTriangleBarrierHessianCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointTriangleBarrierHessianCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointTriangleHessianFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointTriangleBarrierHessianCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();
