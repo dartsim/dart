@@ -45,10 +45,12 @@ Landed (build + headless render + unit/extraction tests + dartpy smoke verified)
   skeletons was retired with the legacy world, so world-derived overlays will
   be re-wired when debug extraction lands for the promoted
   `dart::simulation::World`.
-- **B2 — built-in panel.** Toggles for the new debug types plus a "Debug tuning"
-  slider group (grid spacing, axis lengths, velocity scales, contact-force
-  scale). The skeleton-derived toggles are inert until world debug extraction
-  is reintroduced for the promoted world (see B3 note).
+- **B2 — built-in panel.** The built-in panel exposes only debug controls backed
+  by the current overlay extraction path: grid/world-frame toggles, contact
+  toggles, and a "Debug tuning" slider group for grid spacing, world-frame axis
+  length, and contact-force scale. Body/joint/velocity controls stay out of the
+  panel until world debug extraction is reintroduced for the promoted world (see
+  B3 note), while applications can draw those helpers through `debugProvider`.
 
 Remaining (deliberately deferred — see rationale):
 
@@ -97,8 +99,8 @@ Debug drawing is also partly centralized already: `dart/gui/debug.hpp` defines
 renderer-neutral `DebugLineDescriptor` / `DebugTriangleDescriptor` /
 `DebugLabelDescriptor` + `DebugDrawOptions`, and a built-in status panel
 (`panel.cpp:377-517`, `renderBuiltInStatusPanel`) ships runtime checkboxes for
-Grid, World, Body frames, COM, Inertia, Collision bounds, Contacts, Support
-polygons, contact Normals, and Contact forces. The `DebugOverlayController`
+Grid, World frame, Contacts, contact Normals, and Contact forces. The
+`DebugOverlayController`
 (`debug_overlay.cpp`) renders lines + triangles through the unlit `debug_color`
 material, and `ui_frame.cpp:139-187` draws `debugLabels` as 2D-projected ImGui
 text (capped at 96, `kMaxDebugLabels`).
@@ -241,9 +243,13 @@ hook.
 `drawWorldFrame`'s siblings like `drawContactNormals`-vs-`drawSupportCentroids`
 granularity. Tuning requires a code edit + rebuild.
 
-**Recommendation.** Add a collapsible "Debug" section (sliders for the scale/length
-fields, grouped static vs contact) to the built-in panel, driven directly by the
-existing `DebugDrawOptions` struct so it stays the single source of truth.
+**Recommendation.** Add a collapsible "Debug" section for supported scale/length
+fields (grid spacing, world-frame axis length, and contact-force scale) to the
+built-in panel, driven directly by the existing `DebugDrawOptions` struct so it
+stays the single source of truth. Keep body/joint/velocity controls hidden from
+the built-in panel until the promoted `dart::simulation::World` can provide the
+body-node data those overlays require; applications can still expose those
+helpers through `ApplicationOptions::debugProvider`.
 
 ### B3. Missing debug primitive types
 
@@ -309,7 +315,7 @@ Ordered by return on a small, surgical change. Each is independently shippable.
 | A2    | IBL specular reflection cubemap                    | M      | High | none (internal)                        | screenshot of A1 metal sphere               |
 | B3    | Arrowheads + velocity/force/joint-axis debug types | M      | High | `DebugDrawOptions` + helpers           | per-helper unit tests                       |
 | A4    | Capture fidelity = GPU-gated, not headless-gated   | M      | Med  | via `FidelityProfile`                  | offscreen-parity + GPU headless screenshot  |
-| B2    | Numeric debug tuning in built-in panel             | S      | Med  | none                                   | manual/headless smoke                       |
+| B2    | Supported numeric debug tuning in built-in panel   | S      | Med  | none                                   | manual/headless smoke                       |
 | B4    | Depth-tested debug variant + view layers           | M      | Med  | per-descriptor flag                    | screenshot occluded-vs-xray                 |
 | A5/B5 | Exposure, clearcoat, label scaling                 | M      | Low  | `FidelityProfile` / `DebugDrawOptions` | deferred                                    |
 

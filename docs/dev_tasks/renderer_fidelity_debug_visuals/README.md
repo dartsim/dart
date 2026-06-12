@@ -16,10 +16,10 @@
 - [x] Phase 4: Open draft PR [#2984](https://github.com/dartsim/dart/pull/2984)
       (milestone DART 7.0) and trigger Codex review
 - [ ] Phase 5: Shepherd PR through CI + Codex to merge
-  - [ ] Fix CI Lint: `check_docs_policy.py` requires the new design doc to be
+  - [x] Fix CI Lint: `check_docs_policy.py` requires the new design doc to be
         indexed in `docs/design/README.md` (verify with
         `pixi run python scripts/check_docs_policy.py`)
-  - [ ] Address Codex P2 finding: new panel toggles are inert (see Key
+  - [x] Address Codex P2 finding: new panel toggles are inert (see Key
         Decisions / RESUME.md)
   - [ ] Watch remaining CI matrix; mark ready for review when green per
         `docs/onboarding/ai-tools.md` draft-ready fast path
@@ -67,13 +67,11 @@ all renderer-neutral (backend-hidden rule).
   formatting/staleness churn vs upstream's committed stubs (different
   nanobind/postprocess version) — do NOT blindly regenerate and commit; keep
   only genuine additions (our `dynamics.pyi` PBR methods are already in).
-- **Codex P2 (open)**: the new built-in panel checkboxes (Joint axes /
-  Lin vel / Ang vel) and the pre-existing skeleton-derived toggles are inert
-  post-#2932 because `extractDebugLines(world,...)` is stubbed. Recommended
-  fix: remove the three new checkboxes + joint/velocity sliders from
-  `renderBuiltInStatusPanel` for now (keep `DebugDrawOptions` fields and the
-  helpers — providers remain the functional path), OR gate them behind a
-  capability flag. Decide and implement in Phase 5.
+- **Codex P2 resolution**: body/joint/velocity built-in panel controls are
+  hidden until the promoted `dart::simulation::World` has a real debug
+  extraction path. `DebugDrawOptions` fields and the `BodyNode` helpers stay in
+  place for `debugProvider`, which is the functional path for those overlays in
+  this PR.
 
 ## Immediate Next Steps
 

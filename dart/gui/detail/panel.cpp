@@ -480,31 +480,13 @@ bool renderBuiltInStatusPanel(
     changed |= ImGui::Checkbox("Grid", &staticDebugOptions.drawGrid);
     ImGui::SameLine();
     changed |= ImGui::Checkbox("World", &staticDebugOptions.drawWorldFrame);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox("Body", &staticDebugOptions.drawBodyFrames);
-    changed |= ImGui::Checkbox("COM", &staticDebugOptions.drawCentersOfMass);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox("Inertia", &staticDebugOptions.drawInertiaBoxes);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox(
-        "Collision", &staticDebugOptions.drawCollisionShapeBounds);
-    ImGui::SameLine();
     changed |= ImGui::Checkbox("Contacts", &contactDebugOptions.drawContacts);
     ImGui::SameLine();
-    changed
-        |= ImGui::Checkbox("Support", &staticDebugOptions.drawSupportPolygons);
     changed
         |= ImGui::Checkbox("Normals", &contactDebugOptions.drawContactNormals);
     ImGui::SameLine();
     changed |= ImGui::Checkbox(
         "Contact forces", &contactDebugOptions.drawContactForces);
-    changed |= ImGui::Checkbox("Joint axes", &staticDebugOptions.drawJointAxes);
-    ImGui::SameLine();
-    changed
-        |= ImGui::Checkbox("Lin vel", &staticDebugOptions.drawLinearVelocities);
-    ImGui::SameLine();
-    changed |= ImGui::Checkbox(
-        "Ang vel", &staticDebugOptions.drawAngularVelocities);
 
     if (ImGui::TreeNode("Debug tuning")) {
       const float sliderWidth = 140.0f * static_cast<float>(guiScale);
@@ -517,33 +499,12 @@ bool renderBuiltInStatusPanel(
           &kDebugGridSpacingMax,
           "%.2f");
       changed |= ImGui::SliderScalar(
-          "Body axis len",
+          "World axis len",
           ImGuiDataType_Double,
-          &staticDebugOptions.bodyFrameAxisLength,
+          &staticDebugOptions.worldFrameAxisLength,
           &kDebugAxisLengthMin,
           &kDebugAxisLengthMax,
           "%.2f");
-      changed |= ImGui::SliderScalar(
-          "Joint axis len",
-          ImGuiDataType_Double,
-          &staticDebugOptions.jointAxisLength,
-          &kDebugAxisLengthMin,
-          &kDebugAxisLengthMax,
-          "%.2f");
-      changed |= ImGui::SliderScalar(
-          "Lin vel scale",
-          ImGuiDataType_Double,
-          &staticDebugOptions.linearVelocityScale,
-          &kDebugVelocityScaleMin,
-          &kDebugVelocityScaleMax,
-          "%.3f");
-      changed |= ImGui::SliderScalar(
-          "Ang vel scale",
-          ImGuiDataType_Double,
-          &staticDebugOptions.angularVelocityScale,
-          &kDebugVelocityScaleMin,
-          &kDebugVelocityScaleMax,
-          "%.3f");
       changed |= ImGui::SliderScalar(
           "Contact force scale",
           ImGuiDataType_Double,

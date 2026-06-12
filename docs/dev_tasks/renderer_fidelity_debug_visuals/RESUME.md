@@ -8,8 +8,10 @@ design doc), fixed all internal code-review findings, merged upstream `main`
 test), opened draft PR
 [#2984](https://github.com/dartsim/dart/pull/2984) (milestone DART 7.0), and
 triggered `@codex review`. CI Lint then failed on a docs-policy check and
-Codex submitted one P2 finding. This follow-up indexes the design doc so the
-docs-policy check can pass; the Codex P2 finding remains open.
+Codex submitted one P2 finding. Follow-up commits indexed the design doc,
+merged latest `origin/main`, and removed unsupported body/joint/velocity
+built-in panel controls while keeping the helpers available through
+`debugProvider`.
 
 ## Current Branch
 
@@ -19,27 +21,18 @@ current local and remote state with `git status --short --branch` and
 
 ## Immediate Next Step
 
-1. Decide + implement the Codex P2 fix (inert panel toggles — see below).
-2. Then: `pixi run lint` → verify
-   `pixi run python scripts/check_docs_policy.py` passes → rebuild + rerun
-   `UNIT_gui_DebugVisuals` if C++ changed → `git fetch origin main &&
-git merge --no-ff origin/main` (mandatory before EVERY push) → commit →
-   **ask maintainer approval, then push** → re-trigger `@codex review`
-   (one top-level comment; only after a push that addressed its findings).
+1. Push the latest local follow-up commits after validation.
+2. Re-trigger `@codex review` once the branch is pushed, then monitor CI and
+   review state.
 
 ## Open Review Findings
 
-- **Codex P2** (review `4482029601`, `dart/gui/detail/panel.cpp:507`): the
-  new "Joint axes" / "Lin vel" / "Ang vel" checkboxes never produce overlays —
-  the built-in static overlay refresh calls the world-less
-  `extractDebugLines(options)` (grid + world frame only, post-#2932), and the
-  new helpers need a `dynamics::BodyNode`, which the promoted
-  `dart::simulation::World` does not expose.
-  **Recommended**: remove those three checkboxes and the joint/velocity
-  sliders from `renderBuiltInStatusPanel` (keep `DebugDrawOptions` fields and
-  helpers; `debugProvider` is the functional path), and note it in the design
-  doc's B2 entry. Do NOT reply to the bot; fix silently, resolve the thread
-  via GraphQL only after maintainer approval.
+- **Codex P2** (review `4482029601`, `dart/gui/detail/panel.cpp:507`) has a
+  local fix: the built-in panel now hides body/joint/velocity controls that
+  cannot be backed by the current world-less static overlay path. The
+  `DebugDrawOptions` fields and `BodyNode` helpers stay for `debugProvider`.
+  Do NOT reply to the bot; fix silently, resolve the thread via GraphQL only
+  after maintainer approval.
 
 ## CI State (snapshot, verify fresh)
 
@@ -102,10 +95,9 @@ gh api repos/dartsim/dart/pulls/2984/comments \
   --jq '.[] | "\(.path):\(.line // .original_line) \(.body)"'
 ```
 
-Then: implement the Codex P2 panel fix, run the validation battery below,
-merge `origin/main`, commit both fixes, get push approval, push, re-trigger
-`@codex review`, and keep watching `gh pr checks 2984` (long matrix; use a
-resilient poll, not a single `--watch`).
+Then: push the validated local commits, re-trigger `@codex review`, and keep
+watching `gh pr checks 2984` (long matrix; use a resilient poll, not a single
+`--watch`).
 
 ## Validation Battery (this area)
 
