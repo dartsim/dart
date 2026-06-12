@@ -60,11 +60,12 @@ gh pr checks <PR_NUMBER>
    - For bug fixes, verify the required `release-6.17` and `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body is readable by a user or downstream maintainer who is
-     not already familiar with the implementation. The Summary and Motivation
-     should lead with what changes for them, what remains compatible, how they
-     opt in or migrate, and why the evidence matters; detailed implementation
-     mechanics belong in Changes unless they explain user-visible risk.
+   - Confirm the PR body is readable and follows template order: Summary,
+     Motivation / Problem, Changes / Key Changes, optional Before / After,
+     Testing, Breaking Changes, and Related Issues / PRs. Keep Summary first as
+     the skimmable user/downstream outcome; if problem context must lead, fold
+     it into Summary and keep the fuller why in Motivation. Mechanics belong in
+     Changes unless they explain user-visible risk.
    - When the PR has meaningful user-facing API, workflow, behavior, or
      performance impact, confirm the body has a concise Before / After section
      that compares the relevant old and new surfaces. For performance claims,
