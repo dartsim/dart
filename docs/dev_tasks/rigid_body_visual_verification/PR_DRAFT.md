@@ -2,40 +2,35 @@
 
 ## Current Local Continuation - 2026-06-12
 
-After the pushed full-stop handoff, the active goal was explicitly continued.
-The latest local slice hardens capture metric ownership for the rigid visual
-verification packet:
+After the pushed capture-ownership checkpoint `f22db3b7751`, the active goal
+was explicitly continued. The latest local slice is PR-readiness/doc-drift
+hardening rather than a new GUI row:
 
-- `rigid_ipc_tunnel` now records
-  `related_source_row: rigid_solver_compare`.
-- `avbd_rigid_breakable_joint` now records
-  `related_source_row: rigid_joint_breakage`; the numbered
-  `rigid_joint_breakage` wrapper keeps only its direct row identity.
-- `rigid_ipc_stack_packet` now records `row: rigid_ipc_stack_packet`.
-- A registry-level invariant now verifies every sidecar-defined numbered row,
-  related-evidence route, and capture-first IPC packet has a self-identifying
-  capture metrics payload.
-- Real docked captures under `/tmp/dart_capture_metric_ownership_1781249077`
-  verified that the generated `manifest.json` and `scene_metrics.jsonl`
-  artifacts contain the new ownership fields for `rigid_ipc_tunnel`,
-  `rigid_ipc_stack_packet`, and `avbd_rigid_breakable_joint`.
+- The PLAN-103 evidence matrix and Python demo README now explicitly name
+  capture-metrics coverage for `rigid_step_diagnostics`,
+  `rigid_contact_scale_budget`, and `rigid_collision_query_options`, matching
+  their existing capture hooks.
+- `test_rigid_visual_workflow_capture_metric_docs_match_hooks` now verifies
+  every sidecar-defined numbered workflow row both exposes a capture hook and
+  documents capture metrics in the PLAN-103 table controls/evidence cells.
+- The `Rigid Workflow` search now handles explicit solver/backend aliases such
+  as `SI`, `boxed LCP`, `step profile`, and `accelerated backend`, treats short
+  tokens as exact words, and keeps related-route caveat text out of
+  high-priority ranking.
+- A PR-readiness audit found no obvious next implementation row in the curated
+  36-row workflow; remaining publication work is final validation, dev-task
+  cleanup decision, and explicit maintainer/user approval before any GitHub
+  mutation.
 
-## Current Stop Handoff - 2026-06-12
+## Current Publication State
 
-The latest local state is a handoff-only docs stop. The user explicitly
-requested no further work and no additional verification. Before this docs edit,
-the branch `feature/rigid-body-gui-visual-verification` was clean, at local
-checkpoint `5127bf7e6c73` (`Refresh rigid visual verification PR readiness`),
-and ahead of `origin/feature/rigid-body-gui-visual-verification`
-(`4a2fb7a0714e`) by three commits:
-
-- `5127bf7e6c7` `Refresh rigid visual verification PR readiness`
-- `22d1a02de55` `Attach shared replay to related rigid scenes`
-- `7c853bee1af` `Expose fundamental rigid workflow capture metrics`
-
-Latest checked GitHub state still reported no PR associated with this branch.
-No tests, lint, build, captures, `git diff --check`, push, PR creation, or other
-GitHub mutation were performed after this stop-handoff docs edit.
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Latest pushed checkpoint before this local PR-readiness slice:
+  `f22db3b7751` (`Record rigid capture ownership visual evidence`).
+- Latest checked GitHub state before this local slice still reported no PR
+  associated with this branch.
+- Future pushes, PR creation, comments, CI retriggers, or other GitHub
+  mutations require explicit maintainer/user approval.
 
 ## Summary
 
@@ -152,7 +147,7 @@ GitHub mutation were performed after this stop-handoff docs edit.
     `test_avbd_breakable_joint_demo_marks_and_resets_joint`
     - `6 passed` before and after lint
   - `pixi run lint`
-    - passed
+    - passed after the final evidence update
   - `git diff --check`
     - passed
   - Real docked capture artifacts under
@@ -170,6 +165,31 @@ GitHub mutation were performed after this stop-handoff docs edit.
       docked nonblank screenshot with 2721 unique RGB values, row
       `avbd_rigid_breakable_joint`, related source row
       `rigid_joint_breakage`, status `broken`, and `saw_broken=1.0`
+- Latest PR-readiness/doc-drift follow-up:
+  - PLAN-103 and the Python demo README now explicitly name capture-metrics
+    sidecar coverage for `rigid_step_diagnostics`,
+    `rigid_contact_scale_budget`, and `rigid_collision_query_options`.
+  - `test_rigid_visual_workflow_capture_metric_docs_match_hooks` keeps every
+    numbered workflow row's capture hook matched by PLAN-103 wording.
+  - The runner search now routes `sequential impulse` and `SI` to the solver
+    comparison rows before related-route caveats, and routes backend/profile
+    phrases to `rigid_step_diagnostics`.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+    - `4 passed`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+    - initially exposed `contact`/alias ranking regressions while the fix was
+      being tuned, then `4 passed`
+  - Combined focused guard:
+    `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+    - `8 passed`
+  - `pixi run lint`
+    - passed
+  - bounded default `pixi run build`
+    - passed with `DART safe jobs: 3`, `ninja: no work to do`
+  - full `pixi run test-py`
+    - passed with `953 passed, 10 skipped` using `DART safe jobs: 3`
+  - `git diff --check`
+    - passed after the final evidence update
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,
@@ -961,5 +981,8 @@ GitHub mutation were performed after this stop-handoff docs edit.
 - [ ] Milestone set: `DART 7.0`
 - [x] CHANGELOG.md updated
 - [x] Add unit tests for new functionality
-- [x] Document new methods and classes: N/A; scene docs and sidecar updated.
-- [x] Add Python bindings (dartpy) if applicable: N/A; uses existing dartpy APIs.
+- [x] Document new methods and classes: scene docs, PLAN-103 sidecar, and GUI
+      lifecycle/control APIs documented through Python stubs.
+- [x] Add Python bindings (dartpy) if applicable: GUI lifecycle/control
+      bindings and stubs were added earlier in this branch for viewer state,
+      scene switch/replay requests, and panel context requests.

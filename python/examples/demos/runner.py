@@ -32,6 +32,7 @@ import copy
 import json
 import math
 import os
+import re
 import signal
 import sys
 import threading
@@ -455,6 +456,41 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Change gravity scale and compare POINT, DISTANCE, and RIGID families.",
         "Healthy: each closure family reduces its matching residual in solved lanes.",
     ),
+}
+
+_RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
+    "rigid_step_diagnostics": (
+        "step profile",
+        "step profiling",
+        "stage timing",
+        "accelerated backend",
+        "backend active",
+        "backend status",
+        "memory diagnostics",
+    ),
+    "rigid_contact_scale_budget": (
+        "performance",
+        "frame budget",
+        "contact budget",
+    ),
+    "rigid_solver_compare": (
+        "si",
+        "si vs ipc",
+        "sequential impulse",
+        "sequential impulse vs ipc",
+        "ipc",
+    ),
+    "rigid_contact_solver_compare": (
+        "boxed lcp",
+        "boxed-lcp",
+        "contact policy",
+        "sequential impulse contacts",
+        "sequential impulse vs boxed lcp",
+    ),
+    "rigid_friction_threshold": ("ipc friction",),
+    "rigid_stack_stability": ("sequential impulse vs ipc stack", "ipc stack"),
+    "rigid_kinematic_driver": ("ipc kinematic",),
+    "rigid_kinematic_normal_push": ("ipc normal", "sequential impulse normal"),
 }
 
 
@@ -1525,9 +1561,29 @@ def _workflow_search_row_id_text(guide: RigidWorkflowGuide) -> str:
     return f"row {guide.index} row {guide.index:02d} {row_id} {unpadded_row_id}"
 
 
+def _workflow_search_tokens(query: str) -> tuple[str, ...]:
+    return tuple(token for token in query.strip().lower().split() if token)
+
+
+def _workflow_text_matches(text: str, tokens: tuple[str, ...]) -> bool:
+    if not tokens:
+        return False
+    lowered = text.lower()
+    words = set(re.findall(r"[a-z0-9]+", lowered))
+    for token in tokens:
+        if len(token) <= 2:
+            if token not in words:
+                return False
+        elif token not in lowered:
+            return False
+    return True
+
+
 def _workflow_core_search_score(
     guide: RigidWorkflowGuide, tokens: tuple[str, ...]
 ) -> int:
+    query_text = " ".join(tokens)
+    aliases = _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES.get(guide.scene_id, ())
     positive_fields = (
         (1000, _workflow_search_row_id_text(guide)),
         (900, guide.scene_id),
@@ -1539,9 +1595,18 @@ def _workflow_core_search_score(
     )
 
     positive_score = 0
+    if query_text == guide.scene_id.lower():
+        positive_score += 1800
+    if query_text == guide.label.lower():
+        positive_score += 1600
+    if query_text in {alias.lower() for alias in aliases}:
+        positive_score += 1200
+    elif len(tokens) > 1 and any(
+        _workflow_text_matches(alias, tokens) for alias in aliases
+    ):
+        positive_score += 700
     for weight, text in positive_fields:
-        lowered = text.lower()
-        if all(token in lowered for token in tokens):
+        if _workflow_text_matches(text, tokens):
             positive_score += weight
 
     return positive_score
@@ -1555,8 +1620,8 @@ def _workflow_related_evidence_matches(
 
     matches: list[RigidWorkflowRelatedEvidence] = []
     for entry in _RIGID_WORKFLOW_RELATED_EVIDENCE.get(guide.scene_id, ()):
-        text = " ".join((entry.scene_id, entry.shelf, entry.label, entry.reason))
-        if all(token in text.lower() for token in tokens):
+        text = " ".join((entry.scene_id, entry.shelf, entry.label))
+        if _workflow_text_matches(text, tokens):
             matches.append(entry)
     return tuple(matches)
 
@@ -1567,16 +1632,16 @@ def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -
         return positive_score
 
     if _workflow_related_evidence_matches(guide, tokens):
-        return 500
+        return 200
 
     scope = guide.scope.lower()
-    if all(token in scope for token in tokens):
+    if _workflow_text_matches(scope, tokens):
         return 25
     return 0
 
 
 def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
-    tokens = tuple(token for token in query.strip().lower().split() if token)
+    tokens = _workflow_search_tokens(query)
     if not tokens:
         return ()
 
@@ -1601,7 +1666,7 @@ def _workflow_search_rows(
     if changed:
         query = str(next_query)
 
-    tokens = tuple(token for token in query.strip().lower().split() if token)
+    tokens = _workflow_search_tokens(query)
     matches = _workflow_matching_guides(query)
     for match in matches:
         selected = match.scene_id == guide.scene_id

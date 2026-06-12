@@ -1375,6 +1375,10 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
 def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
     contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
     solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]
+    sequential_impulse_ids = [
+        guide.scene_id for guide in _workflow_matching_guides("sequential impulse")
+    ]
+    si_ids = [guide.scene_id for guide in _workflow_matching_guides("SI")]
 
     assert contact_ids[:4] == [
         "contact",
@@ -1394,6 +1398,24 @@ def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> N
         "rigid_multibody_solver_family",
     ]
     assert "rigid_body" not in solver_ids[:3]
+    assert sequential_impulse_ids[:2] == [
+        "rigid_solver_compare",
+        "rigid_contact_solver_compare",
+    ]
+    assert "rigid_joint_breakage" not in sequential_impulse_ids[:2]
+    assert si_ids[:1] == ["rigid_solver_compare"]
+
+
+def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("step profile")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("accelerated backend")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("memory diagnostics")
+    ][:1] == ["rigid_step_diagnostics"]
 
 
 def test_rigid_workflow_search_finds_related_evidence_targets() -> None:

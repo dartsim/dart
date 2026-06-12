@@ -189,6 +189,10 @@
     row-id/question/checklist/signal filter without leaving `py-demos`.
     The Python GUI lifecycle bindings now also expose scene-switch and replay
     requests so those route controls are covered by direct dartpy tests.
+  - Hardened the `Rigid Workflow` search ranking so visible shorthand and
+    backend vocabulary such as `SI`, `sequential impulse`, `boxed LCP`,
+    `step profile`, and `accelerated backend` route to the intended rows, while
+    related-route caveat text no longer outranks positive row-intent matches.
   - Made `py-demo-capture` default to the same `rigid_body` front door as
     `py-demos`, so first-run visual captures open the rigid-body verification
     workflow unless a scene is selected explicitly.

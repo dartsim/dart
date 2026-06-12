@@ -1,5 +1,85 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 PR-Readiness And Workflow Search
+
+The latest continuation resumed from pushed checkpoint `f22db3b7751` and
+audited the current rigid visual-verification surface before adding more
+features. No new implementation gap was found in the curated 36-row workflow;
+the bounded local slice instead closes a PR-readiness/doc-drift gap where the
+PLAN-103 evidence matrix did not explicitly say that three already
+capture-enabled rows preserve metrics in their capture artifacts. A parallel
+UX audit also found the `Rigid Workflow` search could rank related-route
+negative caveats ahead of the intended positive solver row and could not find
+visible shorthand/backend phrases such as `SI` or `accelerated backend`.
+
+Current local slice: PR-readiness/doc drift and workflow-search hardening. The checkpoint
+touches:
+
+- `python/examples/demos/runner.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `CHANGELOG.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `python/examples/demos/README.md`
+- `python/tests/integration/test_demos_cycle.py`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed:
+
+- The PLAN-103 table now names capture metrics for
+  `rigid_step_diagnostics`, `rigid_contact_scale_budget`, and
+  `rigid_collision_query_options`, matching their existing capture hooks and
+  focused integration assertions.
+- The Python demo README now explains which sidecar metric families
+  `py-demo-capture` records for those three rows.
+- `test_rigid_visual_workflow_capture_metric_docs_match_hooks` now verifies
+  every sidecar-defined numbered workflow row both exposes
+  `SceneSetup.info["capture_metrics"]` and says `capture metrics` in the
+  PLAN-103 table's controls/evidence cells.
+- The runner search now treats one- and two-character tokens as exact words, so
+  `SI` no longer matches incidental substrings.
+- The runner now searches explicit aliases for solver and backend vocabulary
+  such as `SI`, `boxed LCP`, `step profile`, `accelerated backend`, and
+  `memory diagnostics`.
+- Related-evidence search now ranks scene id, shelf, and visible label matches,
+  while keeping explanatory caveat reasons in tooltips instead of using them
+  as high-priority search matches.
+- The PLAN-103 sidecar and Python demo README now describe the alias-aware
+  workflow search.
+- The dev-task folder remains active because this PR has not yet been opened or
+  accepted and the final publication/cleanup decision still needs maintainer
+  approval. The durable evidence owner is already the PLAN-103 sidecar; delete
+  this folder in the completing PR only after final scope and cleanup are
+  explicitly settled.
+
+Validation collected so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `4 passed`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+  initially exposed the `contact`/alias ranking regressions while the fix was
+  being tuned, then reported `4 passed`.
+- Combined focused guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+  reported `8 passed`.
+- `pixi run lint` passed after the final evidence update.
+- Bounded default `pixi run build` passed with `DART safe jobs: 3` and
+  `ninja: no work to do`.
+- Full `pixi run test-py` passed with `953 passed, 10 skipped` using
+  `DART safe jobs: 3`.
+- `git diff --check` passed after the final evidence update.
+
+Immediate next step:
+
+1. Commit the current local PR-readiness/search-hardening slice if the working
+   tree still shows only the files listed above.
+2. After that local checkpoint, either continue the next bounded rigid
+   visual-verification slice or publish/open the PR only after explicit
+   maintainer/user approval.
+3. Do not push, open a PR, comment, re-trigger CI, or mutate GitHub state
+   unless the user explicitly approves it in the current turn.
+
 ## Current Active Snapshot - 2026-06-12 Capture Metric Ownership
 
 The latest continuation resumed from pushed full-stop handoff
@@ -166,6 +246,15 @@ continue implementation unless the user explicitly resumes it.
       bounded `pixi run build` (`DART safe jobs: 2`, `ninja: no work to do`),
       and ran full `pixi run test-py` (`950 passed, 10 skipped`, `DART safe
 jobs: 1`). No push or GitHub mutation was performed.
+- [x] PR-readiness/doc-drift and workflow-search hardening: PLAN-103 and the
+      Python demo README now explicitly name capture-metrics sidecar coverage
+      for the already capture-enabled `rigid_step_diagnostics`,
+      `rigid_contact_scale_budget`, and `rigid_collision_query_options` rows,
+      and a focused integration guard keeps every numbered workflow row's
+      capture hook matched by PLAN-103 capture-metrics wording. The
+      `Rigid Workflow` search now handles `SI`, backend/profile aliases, and
+      related-route caveats without ranking negative caveats above intended
+      solver rows. Focused drift and search guards reported `4 passed` each.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

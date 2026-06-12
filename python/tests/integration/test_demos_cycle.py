@@ -87,6 +87,27 @@ def _read_rigid_visual_workflow_rows() -> list[tuple[int, str]]:
     ]
 
 
+def _read_rigid_visual_workflow_capture_metric_docs() -> dict[str, str]:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    sidecar = (
+        root
+        / "docs"
+        / "plans"
+        / "103-examples-strategy"
+        / "rigid-body-visual-verification.md"
+    )
+    rows: dict[str, str] = {}
+    for line in sidecar.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("| "):
+            continue
+        cells = [cell.strip() for cell in line.split("|")]
+        if len(cells) < 9 or not cells[1].isdigit():
+            continue
+        scene_id = cells[2].strip("`")
+        rows[scene_id] = " ".join((cells[5], cells[7]))
+    return rows
+
+
 def _read_rigid_visual_related_evidence_rows() -> list[RelatedEvidenceSpec]:
     root = pathlib.Path(__file__).resolve().parents[3]
     sidecar = (
@@ -1241,6 +1262,19 @@ def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
         assert metrics["row"] == scene_id
         assert metrics["capture_first"] is True
         assert scene_id not in workflow_ids
+
+
+def test_rigid_visual_workflow_capture_metric_docs_match_hooks() -> None:
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+    workflow_ids = [scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()]
+    sidecar_docs = _read_rigid_visual_workflow_capture_metric_docs()
+
+    assert set(sidecar_docs) == set(workflow_ids)
+    for scene_id in workflow_ids:
+        setup = by_id[scene_id].build()
+        assert callable(setup.info.get(CAPTURE_METRICS_INFO_KEY)), scene_id
+        assert "capture metrics" in sidecar_docs[scene_id].lower(), scene_id
 
 
 def test_world_related_evidence_routes_report_capture_metrics() -> None:

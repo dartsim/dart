@@ -130,11 +130,12 @@ compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
 the current row as a small checklist: what to try first, what to look for, and
 what not to infer from that row. The panel also has selectable previous/next
 numbered rows, a restart command, a direct row selector, and a ranked text
-filter over row ids, scene ids, labels, questions, and signals that request
+filter over row ids, scene ids, labels, questions, signals, and explicit
+aliases such as `SI`, `boxed LCP`, and `accelerated backend` that request
 in-viewer scene switches. Scope caveats remain visible in the row, but the
-filter ranks positive intent matches first so searches such as `contact` and
-`solver` do not get dominated by early rows that only mention what not to
-infer.
+filter ranks positive intent matches first so searches such as `contact`,
+`solver`, `step profile`, and `sequential impulse` do not get dominated by
+early rows that only mention what not to infer.
 
 | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |
@@ -289,6 +290,8 @@ stage also reports its domain, backend-neutral acceleration mask, and whether
 any accelerated backend stage was active, so users can separate executor choice
 from actual accelerator use. If step profiling is compiled out, the row still
 reports memory and contact diagnostics and marks profile timing as unavailable.
+`py-demo-capture` records the same profiling, memory, contact, worker, and
+backend-status metrics into the manifest sidecar.
 
 ## Rigid contact scale budget
 
@@ -300,6 +303,8 @@ contacts per body, wall time, per-contact cost, top profile stage, frame-scratch
 peak usage, ECS counters, worker count, dense/single wall-time ratio, and whether
 each lane is within the selected budget. It is a bounded frame-budget diagnostic,
 not a benchmark suite or heavy IPC stress packet.
+`py-demo-capture` records the same contact workload, frame-budget, wall-time,
+scratch-memory, ECS, and budget-status metrics into the manifest sidecar.
 
 ## Rigid restitution ladder
 
@@ -344,6 +349,8 @@ toggles each `CollisionQueryOptions` include flag, selects one ignored pair,
 shows baseline, option-filtered, pair-ignored, and active contact counts, marks
 filtered lanes explicitly, and keeps shape-index diagnostics available without
 turning the row into a solver comparison.
+`py-demo-capture` records the same include-toggle, ignored-pair, contact-count,
+body-kind, cast, lane-status, and shape-index metrics into the manifest sidecar.
 
 ## Rigid collision casts
 
