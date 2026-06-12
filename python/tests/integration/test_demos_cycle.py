@@ -910,7 +910,6 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "planned_simbicon_walking",
             "planned_operational_space_control",
             "g1_puppet",
-            "planned_collision_sandbox",
             "planned_mobile_manipulation",
         },
         "Robot Models": {

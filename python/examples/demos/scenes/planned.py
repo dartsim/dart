@@ -150,20 +150,6 @@ ROBOT_PUPPETS = _planned_scene(
     retire_when="all intended robot puppet rows are usable World-native scenes",
 )
 
-COLLISION_SANDBOX = _planned_scene(
-    scene_id="planned_collision_sandbox",
-    title="Collision Sandbox",
-    summary="Placeholder for collision-pair inspection on the World demos path.",
-    legacy_seeds=("collision_sandbox", "point_cloud", "polyhedron_visual"),
-    target="interactive collision/debug visualization for World bodies",
-    current_route=(
-        "rigid_contact_inspector, rigid_collision_query_options, "
-        "and rigid_collision_casts"
-    ),
-    unblocker="interactive pair picking and editable collision-debug overlays",
-    retire_when="a sandbox row covers live pair selection plus capture evidence",
-)
-
 MOBILE_MANIPULATION = _planned_scene(
     scene_id="planned_mobile_manipulation",
     title="Mobile Manipulation",

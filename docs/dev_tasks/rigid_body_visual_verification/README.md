@@ -2,7 +2,13 @@
 
 ## Current Handoff (2026-06-12)
 
-The latest continuation improves PLAN-103's remaining planned World-port GUI
+The latest continuation retires the `planned_collision_sandbox` placeholder
+from the py-demos catalog because concrete collision-debugging GUI rows already
+cover that route: `rigid_contact_inspector`,
+`rigid_collision_query_options`, and `rigid_collision_casts`. PLAN-103 and the
+Python demo README now name that replacement path.
+
+Previous checkpoint: PLAN-103's remaining planned World-port GUI
 rows after the rigid verifier reached maintainer-acceptance readiness. The
 Planned World Ports placeholders now tell users which current py-demo route to
 try first, which World/API or asset gap blocks the full port, and what
@@ -39,17 +45,24 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Resume check: verify whether the latest planned-placeholder usability slice is
-  in history as `Make planned world port rows actionable` with
+- Resume check: verify whether the latest collision-sandbox placeholder
+  retirement slice is in history as `Retire planned collision sandbox row` with
   `git status -sb` and `git log -5 --oneline` before resuming. If it is not
   committed yet, inspect the uncommitted diff for the same slice before
   continuing. Do not push it without explicit approval.
-- Latest local slices update `python/examples/demos/scenes/planned.py`,
+- Latest local slices update `python/examples/demos/registry.py`,
+  `python/examples/demos/scenes/planned.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/integration/test_demos_cycle.py`,
+  `python/examples/demos/README.md`, PLAN-103, and this handoff to remove the
+  obsolete collision sandbox placeholder and route users to the real collision
+  rows.
+- Previous local slices update `python/examples/demos/scenes/planned.py`,
   `python/examples/demos/scenes/robot_puppets.py`,
   `python/tests/unit/test_py_demo_panels.py`,
   `python/examples/demos/README.md`, PLAN-103, and this handoff to make
   planned World-port rows actionable instead of inert placeholders.
-- Previous local slices update `scripts/capture_py_demo.py`,
+- Earlier local slices update `scripts/capture_py_demo.py`,
   `python/examples/demos/runner.py`, `python/tests/unit/test_capture_py_demo.py`,
   `python/tests/unit/test_py_demo_panels.py`,
   `python/tests/integration/test_demos_cycle.py`,

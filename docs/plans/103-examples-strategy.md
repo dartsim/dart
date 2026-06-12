@@ -154,8 +154,11 @@ explicit "not now"):
    constraint rows, planned World ports, robot/control placeholders, Rigid IPC,
    PLAN-083 placeholders, replay, variational, differentiable, VBD, and IPC
    deformable categories. Planned rows keep remaining IK, puppet, SIMBICON,
-   operational-space-control, collision-sandbox, and mobile-manipulation gaps
-   visible without preserving legacy DART 6 implementations in the catalog.
+   operational-space-control, and mobile-manipulation gaps visible without
+   preserving legacy DART 6 implementations in the catalog. The old
+   collision-sandbox placeholder is retired to the concrete
+   `rigid_contact_inspector`, `rigid_collision_query_options`, and
+   `rigid_collision_casts` GUI rows.
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.

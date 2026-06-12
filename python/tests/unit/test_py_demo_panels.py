@@ -597,7 +597,6 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "g1_puppet",
         "planned_simbicon_walking",
         "planned_operational_space_control",
-        "planned_collision_sandbox",
         "planned_mobile_manipulation",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
@@ -1005,7 +1004,6 @@ def test_planned_world_port_panels_expose_actionable_routes() -> None:
         planned.INVERSE_KINEMATICS,
         planned.SIMBICON_WALKING,
         planned.OPERATIONAL_SPACE_CONTROL,
-        planned.COLLISION_SANDBOX,
         planned.MOBILE_MANIPULATION,
         robot_puppets.G1_PUPPET,
     )
@@ -1992,7 +1990,6 @@ def test_planned_world_port_placeholders_expose_status_panels() -> None:
         planned.SIMBICON_WALKING,
         planned.OPERATIONAL_SPACE_CONTROL,
         planned.ROBOT_PUPPETS,
-        planned.COLLISION_SANDBOX,
         planned.MOBILE_MANIPULATION,
     ]:
         setup = scene.build()

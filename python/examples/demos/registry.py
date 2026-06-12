@@ -118,7 +118,6 @@ from .scenes.ipc_deformable_seg_strand import SCENE as IPC_DEFORMABLE_SEG_STRAND
 from .scenes.ipc_deformable_trampoline import SCENE as IPC_DEFORMABLE_TRAMPOLINE
 from .scenes.loop_closure import SCENE as LOOP_CLOSURE
 from .scenes.plan083_unified_newton_barrier import PLAN083_SCENES
-from .scenes.planned import COLLISION_SANDBOX as PLANNED_COLLISION_SANDBOX
 from .scenes.planned import INVERSE_KINEMATICS as PLANNED_INVERSE_KINEMATICS
 from .scenes.planned import MOBILE_MANIPULATION as PLANNED_MOBILE_MANIPULATION
 from .scenes.planned import OPERATIONAL_SPACE_CONTROL as PLANNED_OSC
@@ -317,7 +316,6 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         ATLAS_SIMBICON,
         PLANNED_SIMBICON_WALKING,
         PLANNED_OSC,
-        PLANNED_COLLISION_SANDBOX,
         PLANNED_MOBILE_MANIPULATION,
         # Rigid IPC (PLAN-082) contact-dynamics showcase, grouped by capability:
         # a drop, friction (flat + inclined), a multi-body pile, then the

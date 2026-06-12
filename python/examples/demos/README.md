@@ -1050,8 +1050,10 @@ entries are lightweight launchable placeholders with status panels. Each panel
 now tells users which current py-demo row to try first, which World/API or asset
 gap blocks the full port, and what condition will replace the placeholder with a
 usable scene. They track World-native follow-ups for inverse kinematics,
-SIMBICON walking, operational-space control, robot puppets, collision sandbox
-workflows, and mobile manipulation.
+SIMBICON walking, operational-space control, robot puppets, and mobile
+manipulation. The old collision sandbox placeholder is retired: use
+`rigid_contact_inspector`, `rigid_collision_query_options`, and
+`rigid_collision_casts` for concrete collision debugging workflows.
 
 ## PLAN-083 CPU Corpus
 
