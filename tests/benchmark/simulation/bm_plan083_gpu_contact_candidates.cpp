@@ -454,6 +454,8 @@ static void BM_Plan083PointTriangleCandidateMaskCuda(benchmark::State& state)
   state.counters["gpu_triangles"] = static_cast<double>(result.triangleCount);
   state.counters["gpu_accepted_count"]
       = static_cast<double>(result.acceptedCount);
+  state.counters["gpu_compacted_count"]
+      = static_cast<double>(result.acceptedPointIndices.size());
   state.counters["host_setup_ns"] = result.timing.setupNs;
   state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
   state.counters["kernel_ns"] = result.timing.kernelNs;

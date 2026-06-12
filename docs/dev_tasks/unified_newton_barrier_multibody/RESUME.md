@@ -2,6 +2,34 @@
 
 ## Current Reality (2026-06-09)
 
+Latest continuation handoff (2026-06-11): resume only from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`), after reading
+`HANDOFF.md`, `git status -sb`, and the PR state. Keep all remaining PLAN-083
+work on this consolidated branch/PR. Do not push, PR-comment, resolve review
+threads, trigger CI, or open another PLAN-083 PR without explicit maintainer
+approval.
+
+The latest checkpoint builds on
+`bed8ab7569b Add point-triangle candidate mask packet parity` by adding
+compacted point-triangle candidate-pair metadata after GPU mask readback. The
+contact-candidate CUDA result records accepted point/triangle index lists, the
+benchmark emits `gpu_compacted_count`, and the packet writer/test reject
+compaction-count mismatches. This remains reduced private packet evidence: it
+does not claim sweep broad-phase construction, runtime scene candidate-list
+construction, or a speedup-gate completion claim.
+
+Validation for this checkpoint passed focused contact-candidate packet pytest
+(5 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
+packet records `pair_count=65536`, `accepted_count=192`,
+`compacted_count=192`, `max_result_abs_error=0`, candidate-mask
+`speedup=1.5943055078570016x`, and top-level contact-candidate packet
+`speedup=0.35669978298935295x` (`meets_speedup_gate=false`). Before any future
+push, merge latest `origin/main` into this published branch, rerun the required
+gates, and push only with explicit maintainer approval.
+
 Active continuation handoff (2026-06-11): implementation resumed after the
 stop-only handoff. Resume only from
 `simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
@@ -59,9 +87,9 @@ candidate list construction, or a speedup-gate claim. Focused evidence passed
 contact-candidate/GPU-parity/completion-audit pytest trio. The generated packet
 recorded
 `pair_count=65536`, `point_count=256`, `triangle_count=256`,
-`accepted_count=192`, `max_result_abs_error=0`,
-`speedup=1.3875084380296558x`, and `meets_speedup_gate=true`; top-level
-contact-candidate packet speedup was `0.4828002058826909x`.
+`accepted_count=192`, `compacted_count=192`, `max_result_abs_error=0`,
+`speedup=1.5943055078570016x`, and `meets_speedup_gate=true`; top-level
+contact-candidate packet speedup was `0.35669978298935295x`.
 
 Fresh-session next step: inspect `HANDOFF.md`, `git status -sb`, and the local
 diff. Continue with sweep broad-phase/runtime compacted candidate lists,

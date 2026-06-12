@@ -91,6 +91,7 @@ def _benchmark_data(**overrides):
         gpu_points=32,
         gpu_triangles=32,
         gpu_accepted_count=24,
+        gpu_compacted_count=24,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -132,6 +133,12 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         row["candidate_construction"]["point_triangle_all_pairs_mask"]["accepted_count"]
         == 24
     )
+    assert (
+        row["candidate_construction"]["point_triangle_all_pairs_mask"][
+            "compacted_count"
+        ]
+        == 24
+    )
 
 
 def test_plan083_gpu_contact_candidate_packet_rejects_accuracy_failure() -> None:
@@ -164,6 +171,24 @@ def test_plan083_gpu_contact_candidate_packet_rejects_count_mismatch() -> None:
         assert "accepted count" in str(exc)
     else:
         raise AssertionError("expected count failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_compaction_mismatch() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    data["benchmarks"][5]["gpu_compacted_count"] = 23
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "compacted count" in str(exc)
+    else:
+        raise AssertionError("expected compaction failure")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:

@@ -1,5 +1,50 @@
 # Unified Newton-Barrier Handoff
 
+## Latest Continuation Handoff (2026-06-11)
+
+Implementation resumed on the consolidated PLAN-083 branch. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
+PLAN-083 work on this consolidated branch/PR. Do not push, PR-comment, resolve
+review threads, or trigger CI without explicit maintainer approval.
+
+Current local state for a fresh session:
+
+- Branch: `simx/plan083-gpu-contact-candidate-packet`
+- PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
+- Base: `main`
+- Last observed pushed origin head:
+  `6746b63973d Record point-point barrier Hessian packet evidence`
+- Earlier local committed checkpoints ahead of origin:
+  - `48dcfb515cf Add point-edge barrier Hessian packet parity`
+  - `1dfb21b24da Add point-triangle barrier Hessian packet parity`
+  - `1022b609f8c Add point-triangle Hessian PSD packet parity`
+  - `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`
+  - `e41941db91c Add off-diagonal sparse block assembly packet parity`
+  - `bed8ab7569b Add point-triangle candidate mask packet parity`
+- Current checkpoint: compacted point-triangle candidate-pair metadata on top
+  of `bed8ab7569b`. It records accepted point/triangle index lists after GPU
+  mask readback and teaches the contact-candidate packet writer/test to require
+  `gpu_compacted_count == accepted_count`.
+
+This checkpoint is reduced private packet evidence. It strengthens the
+brute-force all-pairs point-triangle candidate-mask packet with readback
+compaction metadata, but it still does not claim sweep broad-phase
+construction, runtime scene candidate-list construction, or completion of the
+contact-candidate speedup gate. The regenerated packet reports
+`pair_count=65536`, `accepted_count=192`, `compacted_count=192`,
+`max_result_abs_error=0`, candidate-mask `speedup=1.5943055078570016x`, and
+top-level contact-candidate packet `speedup=0.35669978298935295x`
+(`meets_speedup_gate=false`).
+
+Validation for this checkpoint passed focused contact-candidate packet pytest
+(5 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8),
+and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. Before any
+future push, merge latest `origin/main` into this published branch, rerun the
+required gates, and push only with explicit maintainer approval. Keep all
+remaining PLAN-083 work consolidated on PR #2978; do not open another PLAN-083
+PR.
+
 ## Active Continuation Handoff (2026-06-11)
 
 Implementation resumed after the stop-only handoff. Continue locally on
@@ -104,10 +149,10 @@ Focused evidence gathered so far for the candidate-mask checkpoint:
 
 The generated contact-candidate packet reported exact parity for the new
 all-pairs row with `pair_count=65536`, `point_count=256`,
-`triangle_count=256`, `accepted_count=192`, `max_result_abs_error=0`,
-`speedup=1.3875084380296558x`, and `meets_speedup_gate=true`. The top-level
-contact-candidate packet reported `speedup=0.4828002058826909x`, so the row
-stays `in-progress`.
+`triangle_count=256`, `accepted_count=192`, `compacted_count=192`,
+`max_result_abs_error=0`, `speedup=1.5943055078570016x`, and
+`meets_speedup_gate=true`. The top-level contact-candidate packet reported
+`speedup=0.35669978298935295x`, so the row stays `in-progress`.
 
 Likely next steps:
 

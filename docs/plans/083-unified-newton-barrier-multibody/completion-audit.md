@@ -59,8 +59,9 @@ moves entirely into durable plan sidecars.
   projection local-kernel row is
   measured separately. The contact-stencil filter packet is in-progress because
   parity exists for preassembled point-triangle and edge-edge stencils plus a
-  brute-force all-pairs point-triangle candidate mask, but sweep broad-phase
-  construction, compacted runtime scene filtering, and speedup remain unproven.
+  brute-force all-pairs point-triangle candidate mask with readback
+  compacted-pair metadata, but sweep broad-phase construction, compacted
+  runtime scene filtering, and speedup remain unproven.
   The
   endpoint-linear point-triangle and edge-edge CCD/line-search packet is
   in-progress because parity exists for reduced endpoint-linear fixtures but

@@ -320,6 +320,12 @@ def _validate_candidate_mask(
             "point-triangle candidate mask CPU accepted count "
             f"{cpu_accepted:g} != GPU accepted count {gpu_accepted:g}"
         )
+    gpu_compacted = _counter(gpu_row, "gpu_compacted_count")
+    if int(gpu_compacted) != int(cpu_accepted):
+        raise Plan083GpuContactCandidatePacketError(
+            "point-triangle candidate mask GPU compacted count "
+            f"{gpu_compacted:g} != accepted count {cpu_accepted:g}"
+        )
 
     cpu_pairs = int(_counter(cpu_row, "pairs"))
     gpu_pairs = int(_counter(gpu_row, "gpu_pairs"))
@@ -360,6 +366,7 @@ def _validate_candidate_mask(
         "point_count": cpu_points,
         "triangle_count": cpu_triangles,
         "accepted_count": int(cpu_accepted),
+        "compacted_count": int(gpu_compacted),
         "max_result_abs_error": max_error,
         "speedup": speedup,
         "meets_speedup_gate": speedup >= speedup_gate,

@@ -165,6 +165,8 @@ struct CandidateMaskExpectation
 {
   std::vector<double> squaredDistances;
   std::vector<std::uint8_t> accepted;
+  std::vector<std::uint32_t> acceptedPointIndices;
+  std::vector<std::uint32_t> acceptedTriangleIndices;
   std::size_t acceptedCount = 0;
 };
 
@@ -197,6 +199,9 @@ CandidateMaskExpectation cpuCandidateMask(
       expected.accepted.push_back(accepted ? 1u : 0u);
       if (accepted) {
         ++expected.acceptedCount;
+        expected.acceptedPointIndices.push_back(point);
+        expected.acceptedTriangleIndices.push_back(
+            static_cast<std::uint32_t>(triangle));
       }
     }
   }
@@ -252,6 +257,8 @@ TEST(ContactCandidateFilterCuda, MatchesCpuPointTriangleCandidateMask)
   EXPECT_EQ(result.triangleCount, fixture.triangles.size() / 3u);
   EXPECT_EQ(result.pairCount, expected.squaredDistances.size());
   EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedPointIndices, expected.acceptedPointIndices);
+  EXPECT_EQ(result.acceptedTriangleIndices, expected.acceptedTriangleIndices);
 
   for (std::size_t pair = 0; pair < expected.squaredDistances.size(); ++pair) {
     EXPECT_NEAR(
@@ -281,6 +288,8 @@ TEST(ContactCandidateFilterCuda, MasksIncidentPointTriangleCandidatePairs)
   ASSERT_EQ(result.accepted.size(), 2u);
   EXPECT_EQ(result.squaredDistances[0], 0.0);
   EXPECT_EQ(result.accepted[0], 0u);
+  EXPECT_TRUE(result.acceptedPointIndices.empty());
+  EXPECT_TRUE(result.acceptedTriangleIndices.empty());
 }
 
 //==============================================================================

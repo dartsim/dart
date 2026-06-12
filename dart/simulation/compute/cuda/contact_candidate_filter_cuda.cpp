@@ -356,11 +356,18 @@ void buildPointTriangleContactCandidateMaskCuda(
   result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
   result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
 
+  result.acceptedPointIndices.reserve(result.pairCount);
+  result.acceptedTriangleIndices.reserve(result.pairCount);
   for (std::size_t i = 0; i < result.accepted.size(); ++i) {
     if (result.accepted[i] != 0) {
       ++result.acceptedCount;
       result.maxAcceptedSquaredDistance = std::max(
           result.maxAcceptedSquaredDistance, result.squaredDistances[i]);
+      const std::size_t pointSlot = i / result.triangleCount;
+      const std::size_t triangle = i - pointSlot * result.triangleCount;
+      result.acceptedPointIndices.push_back(pointIndices[pointSlot]);
+      result.acceptedTriangleIndices.push_back(
+          static_cast<std::uint32_t>(triangle));
     }
   }
 }
