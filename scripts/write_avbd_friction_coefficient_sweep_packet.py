@@ -38,6 +38,16 @@ class AvbdFrictionCoefficientSweepPacketError(RuntimeError):
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark-json", type=Path, required=True)
+    parser.add_argument(
+        "--reference-timing-json",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "JSON from scripts/run_avbd_demo2d_reference_timing.py. Pass one "
+            "file per expected friction value to embed a native source sweep."
+        ),
+    )
     parser.add_argument("--plot-svg", type=Path)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     return parser.parse_args(argv)
@@ -263,7 +273,242 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
     }
 
 
-def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str, Any]:
+def _finite_field(data: dict[str, Any], key: str) -> float:
+    value = data.get(key)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise AvbdFrictionCoefficientSweepPacketError(f"reference timing missing {key}")
+    value = float(value)
+    if not math.isfinite(value):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing has non-finite {key}"
+        )
+    return value
+
+
+def _int_field(data: dict[str, Any], key: str) -> int:
+    value = data.get(key)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing missing integer {key}"
+        )
+    return value
+
+
+def _validate_reference_timing(
+    reference_json: Path,
+    expected_max_friction: float,
+) -> dict[str, Any]:
+    data = _load_json(reference_json)
+    expected = {
+        "schema_version": 1,
+        "source_demo": "avbd-demo2d",
+        "source_revision": "74699a11f858",
+        "scene_index": SOURCE_SCENE_INDEX,
+        "scene_name": "Dynamic Friction",
+        "scene_builder": "sceneDynamicFriction",
+    }
+    for key, value in expected.items():
+        if data.get(key) != value:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"reference timing expected {key}={value!r}, " f"got {data.get(key)!r}"
+            )
+    if _int_field(data, "rigid_bodies") != RIGID_BODIES:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing expected {RIGID_BODIES} rigid bodies"
+        )
+    if _int_field(data, "dynamic_bodies") != BOX_COUNT:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing expected {BOX_COUNT} dynamic bodies"
+        )
+    if _int_field(data, "static_bodies") != 1:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing expected 1 static body"
+        )
+    if _int_field(data, "joints") != 0:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing expected 0 joints"
+        )
+    if _int_field(data, "collision_shapes") != COLLISION_SHAPES:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing expected {COLLISION_SHAPES} collision shapes"
+        )
+    if _int_field(data, "box_count") != BOX_COUNT:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing expected box_count={BOX_COUNT}"
+        )
+    if _int_field(data, "friction_samples") != BOX_COUNT:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing expected friction_samples={BOX_COUNT}"
+        )
+    if _int_field(data, "steps") < 1:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing steps must be positive"
+        )
+    if _int_field(data, "warmup_steps") < 0:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing warmup_steps must be non-negative"
+        )
+    if not math.isclose(
+        _finite_field(data, "initial_speed"),
+        10.0,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing expected initial_speed=10"
+        )
+    for key in ("requested_max_friction", "dynamic_max_friction"):
+        if not math.isclose(
+            _finite_field(data, key),
+            expected_max_friction,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"reference timing expected {key}={expected_max_friction:g}"
+            )
+    if not math.isclose(
+        _finite_field(data, "dynamic_min_friction"),
+        0.0,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "reference timing expected dynamic_min_friction=0"
+        )
+    for key in (
+        "elapsed_ns",
+        "cpu_time_per_step_ns",
+        "final_time",
+        "min_friction",
+        "max_friction",
+    ):
+        _finite_field(data, key)
+
+    return {
+        "json_sha256": _sha256(reference_json),
+        "source_demo": data["source_demo"],
+        "repository": data.get(
+            "repository", "https://github.com/savant117/avbd-demo2d"
+        ),
+        "source_revision": data["source_revision"],
+        "scene_index": data["scene_index"],
+        "scene_name": data["scene_name"],
+        "scene_builder": data["scene_builder"],
+        "compiler": data.get("compiler"),
+        "compile_flags": data.get("compile_flags"),
+        "compile_command": data.get("compile_command"),
+        "warmup_steps": data["warmup_steps"],
+        "steps": data["steps"],
+        "elapsed_ns": data["elapsed_ns"],
+        "cpu_time_per_step_ns": data["cpu_time_per_step_ns"],
+        "max_friction": expected_max_friction,
+        "invariants": {
+            "rigid_bodies": data["rigid_bodies"],
+            "dynamic_bodies": data["dynamic_bodies"],
+            "static_bodies": data["static_bodies"],
+            "joints": data["joints"],
+            "collision_shapes": data["collision_shapes"],
+            "box_count": data["box_count"],
+            "friction_samples": data["friction_samples"],
+            "initial_speed": data["initial_speed"],
+            "requested_max_friction": data["requested_max_friction"],
+            "dynamic_min_friction": data["dynamic_min_friction"],
+            "dynamic_max_friction": data["dynamic_max_friction"],
+            "overall_min_friction": data["min_friction"],
+            "overall_max_friction": data["max_friction"],
+            "final_time": data["final_time"],
+        },
+    }
+
+
+def _validate_reference_sweep(
+    reference_jsons: list[Path],
+    benchmark: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not reference_jsons:
+        return None
+
+    expected_by_key = _expected_friction_by_key()
+    rows_by_key: dict[int, dict[str, Any]] = {}
+    for reference_json in reference_jsons:
+        data = _load_json(reference_json)
+        max_friction = _finite_field(data, "requested_max_friction")
+        friction_key = _friction_key(max_friction)
+        if friction_key not in expected_by_key:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"reference timing unexpected max_friction={max_friction:g}"
+            )
+        if friction_key in rows_by_key:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"reference timing duplicate max_friction={max_friction:g}"
+            )
+        expected = expected_by_key[friction_key]
+        rows_by_key[friction_key] = _validate_reference_timing(reference_json, expected)
+
+    missing = [
+        expected_by_key[key] for key in expected_by_key if key not in rows_by_key
+    ]
+    if missing:
+        missing_text = ", ".join(f"{value:g}" for value in missing)
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"reference timing missing max_friction values: {missing_text}"
+        )
+
+    benchmark_by_key = {
+        _friction_key(row["max_friction"]): row for row in benchmark["plot_data"]
+    }
+    plot_data = []
+    comparison = []
+    for friction_key in sorted(rows_by_key):
+        reference_row = rows_by_key[friction_key]
+        max_friction = expected_by_key[friction_key]
+        reference_ns = float(reference_row["cpu_time_per_step_ns"])
+        dart_ns = float(benchmark_by_key[friction_key]["cpu_time_per_step_ns"])
+        plot_data.append(
+            {
+                "max_friction": max_friction,
+                "cpu_time_per_step_ns": reference_ns,
+                "time_unit": "ns",
+            }
+        )
+        ratio = dart_ns / reference_ns
+        comparison.append(
+            {
+                "max_friction": max_friction,
+                "dart_cpu_time_per_step_ns": dart_ns,
+                "reference_cpu_time_per_step_ns": reference_ns,
+                "dart_to_reference_cpu_time_ratio": ratio,
+                "dart_faster_than_reference": ratio < 1.0,
+            }
+        )
+
+    return {
+        "source_demo": "avbd-demo2d",
+        "repository": "https://github.com/savant117/avbd-demo2d",
+        "source_revision": "74699a11f858",
+        "scene_index": SOURCE_SCENE_INDEX,
+        "scene_name": "Dynamic Friction",
+        "scene_builder": "sceneDynamicFriction",
+        "rows": [rows_by_key[key] for key in sorted(rows_by_key)],
+        "plot_data": plot_data,
+        "comparison": comparison,
+        "all_dart_faster_than_reference": all(
+            row["dart_faster_than_reference"] for row in comparison
+        ),
+    }
+
+
+def make_packet(
+    benchmark_json: Path,
+    reference_timing_jsons: list[Path] | None = None,
+    plot_svg: Path | None = None,
+) -> dict[str, Any]:
+    benchmark = _validate_benchmark(benchmark_json)
+    reference_sweep = _validate_reference_sweep(
+        reference_timing_jsons or [],
+        benchmark,
+    )
     packet = {
         "schema_version": 1,
         "packet": "avbd_friction_coefficient_sweep",
@@ -294,24 +539,38 @@ def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str,
                 "scene; the new artifact is benchmark/plot evidence only."
             ),
         },
-        "benchmark": _validate_benchmark(benchmark_json),
+        "benchmark": benchmark,
         "reproduction": {
             "benchmark_command": (
                 "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint "
                 "--benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep "
                 "--benchmark_min_time=0.5s --benchmark_repetitions=3 "
                 "--benchmark_out=<benchmark-json> --benchmark_out_format=json"
-            )
+            ),
+            "reference_timing_command": (
+                "python scripts/run_avbd_demo2d_reference_timing.py "
+                "--source-dir <avbd-demo2d-source-dir> --scene dynamic_friction "
+                "--dynamic-friction-max-friction <max-friction> "
+                "--output <reference-timing-json>"
+            ),
         },
     }
+    if reference_sweep is not None:
+        packet["reference_sweep"] = reference_sweep
     if plot_svg is not None:
         packet["rendered_plot"] = _validate_plot(plot_svg)
     remaining_gates = [
-        "source/reference friction-sweep timing comparison",
         "per-coefficient visual capture or video evidence",
         "same-hardware paper/site friction comparison",
         "GPU AVBD row parity and benchmark packets",
     ]
+    if reference_sweep is None:
+        remaining_gates.insert(0, "source/reference friction-sweep timing comparison")
+    elif not reference_sweep["all_dart_faster_than_reference"]:
+        remaining_gates.insert(
+            0,
+            "DART CPU performance must beat the native source sweep before a CPU win is claimed for every friction coefficient",
+        )
     if plot_svg is None:
         remaining_gates.insert(0, "rendered friction-sweep plot")
     packet["remaining_gates"] = remaining_gates
@@ -326,7 +585,11 @@ def write_packet(path: Path, packet: dict[str, Any]) -> None:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     try:
-        packet = make_packet(args.benchmark_json, args.plot_svg)
+        packet = make_packet(
+            args.benchmark_json,
+            args.reference_timing_json,
+            args.plot_svg,
+        )
     except AvbdFrictionCoefficientSweepPacketError as exc:
         raise SystemExit(str(exc)) from exc
     write_packet(args.output, packet)

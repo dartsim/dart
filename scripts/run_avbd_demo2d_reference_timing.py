@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import platform
 import subprocess
@@ -110,6 +111,8 @@ int main()
 {
   Solver solver;
   sceneDynamicFriction(&solver);
+  const float requestedMaxFriction = DYNAMIC_FRICTION_MAX_FRICTION;
+  const float frictionScale = requestedMaxFriction / 5.0f;
 
   int rigidBodies = 0;
   int dynamicBodies = 0;
@@ -117,17 +120,26 @@ int main()
   int boxCount = 0;
   float minFriction = 1.0e30f;
   float maxFriction = -1.0e30f;
+  float dynamicMinFriction = 1.0e30f;
+  float dynamicMaxFriction = -1.0e30f;
   float maxInitialSpeed = 0.0f;
   for (Rigid* body = solver.bodies; body != 0; body = body->next) {
     ++rigidBodies;
     if (body->mass > 0.0f) {
       ++dynamicBodies;
       ++boxCount;
+      body->friction *= frictionScale;
       const float speed = std::sqrt(
           body->velocity.x * body->velocity.x +
           body->velocity.y * body->velocity.y);
       if (speed > maxInitialSpeed) {
         maxInitialSpeed = speed;
+      }
+      if (body->friction < dynamicMinFriction) {
+        dynamicMinFriction = body->friction;
+      }
+      if (body->friction > dynamicMaxFriction) {
+        dynamicMaxFriction = body->friction;
       }
     } else {
       ++staticBodies;
@@ -181,9 +193,13 @@ int main()
   std::printf("  \"joints\": %d,\n", joints);
   std::printf("  \"collision_shapes\": %d,\n", rigidBodies);
   std::printf("  \"box_count\": %d,\n", boxCount);
+  std::printf("  \"friction_samples\": %d,\n", boxCount);
   std::printf("  \"initial_speed\": %.6f,\n", maxInitialSpeed);
+  std::printf("  \"requested_max_friction\": %.6f,\n", requestedMaxFriction);
   std::printf("  \"min_friction\": %.6f,\n", minFriction);
   std::printf("  \"max_friction\": %.6f,\n", maxFriction);
+  std::printf("  \"dynamic_min_friction\": %.6f,\n", dynamicMinFriction);
+  std::printf("  \"dynamic_max_friction\": %.6f,\n", dynamicMaxFriction);
   std::printf("  \"final_time\": %.9g\n", solver.dt * (warmupSteps + steps));
   std::printf("}\n");
 }
@@ -1699,6 +1715,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--warmup-steps", type=int, default=128)
     parser.add_argument("--steps", type=int, default=200_000)
     parser.add_argument(
+        "--dynamic-friction-max-friction",
+        type=float,
+        default=5.0,
+        help=(
+            "Maximum dynamic-box friction coefficient for the Dynamic Friction "
+            "scene. Only valid with --scene dynamic_friction."
+        ),
+    )
+    parser.add_argument(
         "--cxx",
         default=os.environ.get("CXX", "g++"),
         help="C++ compiler used for the temporary runner.",
@@ -1717,6 +1742,13 @@ def _source_file(source_dir: Path, name: str) -> Path:
     if not path.is_file():
         raise ReferenceTimingError(f"{path}: required source file not found")
     return path
+
+
+def _cpp_float_literal(value: float) -> str:
+    text = f"{value:.9g}"
+    if "." not in text and "e" not in text.lower():
+        text += ".0"
+    return f"{text}f"
 
 
 def _runner_source(args: argparse.Namespace) -> str:
@@ -1744,6 +1776,10 @@ def _runner_source(args: argparse.Namespace) -> str:
         dedent(runners[args.scene])
         .replace("WARMUP_STEPS", str(args.warmup_steps))
         .replace("TIMED_STEPS", str(args.steps))
+        .replace(
+            "DYNAMIC_FRICTION_MAX_FRICTION",
+            _cpp_float_literal(args.dynamic_friction_max_friction),
+        )
         .replace("COMPILER_NAME", args.cxx)
     )
 
@@ -1796,6 +1832,17 @@ def run_reference_timing(args: argparse.Namespace) -> dict[str, Any]:
         raise ReferenceTimingError("--warmup-steps must be non-negative")
     if args.steps < 1:
         raise ReferenceTimingError("--steps must be positive")
+    if not math.isfinite(args.dynamic_friction_max_friction):
+        raise ReferenceTimingError("--dynamic-friction-max-friction must be finite")
+    if args.dynamic_friction_max_friction < 0.0:
+        raise ReferenceTimingError(
+            "--dynamic-friction-max-friction must be non-negative"
+        )
+    if args.scene != "dynamic_friction" and args.dynamic_friction_max_friction != 5.0:
+        raise ReferenceTimingError(
+            "--dynamic-friction-max-friction is only valid with "
+            "--scene dynamic_friction"
+        )
 
     with tempfile.TemporaryDirectory(prefix="avbd_demo2d_ref_") as temp_dir_text:
         temp_dir = Path(temp_dir_text)

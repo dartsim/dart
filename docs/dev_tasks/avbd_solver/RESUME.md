@@ -8,27 +8,42 @@ paper/source-demo, CPU/GPU, and paper-number claims narrow unless the artifacts
 directly prove them.
 
 Current resumed slice: the paper/source-corpus friction coefficient comparison
-now has a first benchmark/plot packet. `BM_AvbdDemo2dFrictionCoefficientSweep`
+now has same-source reference timing evidence. `BM_AvbdDemo2dFrictionCoefficientSweep`
 reuses the source-shaped `avbd-demo2d` Dynamic Friction scene and sweeps maximum
-Coulomb friction values 0, 0.5, 1, 2.5, and 5 over the 11-box setup. The tracked
-`avbd-friction-coefficient-sweep-packet.json` validates the real benchmark
-rows and exact counters, and `avbd-friction-coefficient-sweep-plot.svg` renders
-CPU step time against maximum friction. This is benchmark/plot evidence only;
-it is not a same-source reference sweep, per-coefficient visual capture, GPU
-parity, or paper-number claim.
+dynamic-box Coulomb friction values 0, 0.5, 1, 2.5, and 5 over the 11-box
+setup. `scripts/run_avbd_demo2d_reference_timing.py` now accepts
+`--dynamic-friction-max-friction` for `--scene dynamic_friction`, so the native
+source runner can time the same coefficient ladder. The tracked
+`avbd-friction-coefficient-sweep-packet.json` validates the real DART
+benchmark rows plus five same-source timing rows, and
+`avbd-friction-coefficient-sweep-plot.svg` plots both DART and native CPU step
+time against maximum friction. On this host DART is faster at max friction 0.5
+and 5.0, but slower at 0, 1.0, and 2.5. This closes only the source/reference
+timing-evidence gap for the coefficient sweep; it is not a full-coefficient
+CPU-win, per-coefficient visual capture, GPU parity, or paper-number claim.
 
 Validation for this slice:
 
-- `pixi run -- pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py python/tests/unit/test_benchmark_display_names.py python/tests/unit/test_run_performance_dashboard_benchmarks.py -q`
-  passed, 14 tests, before and after lint.
+- `pixi run -- pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py -q`
+  passed, 11 tests, before generating the tracked reference packet.
 - `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
   passed.
 - `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep.json --benchmark_out_format=json'`
   passed and produced all five sweep values.
-- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json && pixi run -- python scripts/write_avbd_friction_coefficient_sweep_plot.py && pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --plot-svg docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg`
-  passed and wrote the tracked packet plus rendered plot.
+- Five `pixi run -- python scripts/run_avbd_demo2d_reference_timing.py --source-dir /tmp/avbd-demo2d-74699a11f858-codex --scene dynamic_friction --dynamic-friction-max-friction <value> --output /tmp/avbd-demo2d-dynamic-friction-reference-sweep-<value>.json`
+  runs passed for `<value>` 0, 0.5, 1, 2.5, and 5 after checking out native
+  source revision `74699a11f858`.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-1.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-2_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-5.json`
+  passed and wrote the tracked packet.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_plot.py`
+  passed and wrote the rendered DART/native plot.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-1.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-2_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-5.json --plot-svg docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg`
+  passed and relinked the rendered plot into the tracked packet.
+- `pixi run -- pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py python/tests/unit/test_benchmark_display_names.py python/tests/unit/test_run_performance_dashboard_benchmarks.py -q`
+  passed, 20 tests, after lint.
 - `pixi run lint` passed.
 - `pixi run build` passed.
+- `git diff --check` passed.
 
 Fresh-session state for this slice: branch
 `avbd/source-row-extraction-precheck`, upstream
@@ -36,12 +51,13 @@ Fresh-session state for this slice: branch
 use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
 mutate PRs, or clean/delete branches without explicit user approval.
 
-Next preferred local gaps: source/reference friction-sweep timing,
-per-coefficient visual capture, and GPU parity remain open for the friction
-coefficient comparison. Broader PLAN-104 gaps also remain: source-demo CPU wins
-for the slower rows, broader visual breakable-wall/fracture corpus coverage,
-rigid contact persistence completeness, and source-demo CPU/GPU parity. Do not
-count this packet as full paper/source-demo completion.
+Next preferred local gaps: CPU optimization for the slower friction
+coefficients, per-coefficient visual capture, and GPU parity remain open for
+the friction coefficient comparison. Broader PLAN-104 gaps also remain:
+source-demo CPU wins for the slower rows, broader visual
+breakable-wall/fracture corpus coverage, rigid contact persistence
+completeness, and source-demo CPU/GPU parity. Do not count this packet as full
+paper/source-demo completion.
 
 ## Previous Explicit Hand-Off Stop (2026-06-12)
 

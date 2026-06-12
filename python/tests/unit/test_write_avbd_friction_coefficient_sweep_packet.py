@@ -10,6 +10,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 PACKET_SCRIPT = ROOT / "scripts" / "write_avbd_friction_coefficient_sweep_packet.py"
 PLOT_SCRIPT = ROOT / "scripts" / "write_avbd_friction_coefficient_sweep_plot.py"
+REFERENCE_SCRIPT = ROOT / "scripts" / "run_avbd_demo2d_reference_timing.py"
 
 
 def _load_module(path: Path, name: str):
@@ -73,6 +74,55 @@ def _write_benchmark_json(
     return path
 
 
+def _write_reference_timing_json(
+    tmp_path: Path,
+    max_friction: float,
+    *,
+    wrong_dynamic_bodies: bool = False,
+) -> Path:
+    arg = int(round(max_friction * 10.0))
+    payload = {
+        "box_count": 11,
+        "collision_shapes": 12,
+        "compile_command": ["c++", "<temp-dir>/reference_runner.cpp"],
+        "compile_flags": "-std=c++17 -O3 -DNDEBUG",
+        "compiler": "c++",
+        "cpu_time_per_step_ns": 200.0 + arg,
+        "dynamic_bodies": 10 if wrong_dynamic_bodies else 11,
+        "dynamic_max_friction": max_friction,
+        "dynamic_min_friction": 0.0,
+        "elapsed_ns": 200_000.0 + arg,
+        "final_time": 166.6666667,
+        "friction_samples": 11,
+        "initial_speed": 10.0,
+        "joints": 0,
+        "max_friction": max(0.5, max_friction),
+        "min_friction": 0.0,
+        "repository": "https://github.com/savant117/avbd-demo2d",
+        "requested_max_friction": max_friction,
+        "rigid_bodies": 12,
+        "scene_builder": "sceneDynamicFriction",
+        "scene_index": 2,
+        "scene_name": "Dynamic Friction",
+        "schema_version": 1,
+        "source_demo": "avbd-demo2d",
+        "source_revision": "74699a11f858",
+        "static_bodies": 1,
+        "steps": 1000,
+        "warmup_steps": 8,
+    }
+    path = tmp_path / f"reference-{arg}.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def _write_reference_sweep_jsons(tmp_path: Path) -> list[Path]:
+    return [
+        _write_reference_timing_json(tmp_path, max_friction)
+        for max_friction in (0.0, 0.5, 1.0, 2.5, 5.0)
+    ]
+
+
 def test_avbd_friction_coefficient_sweep_packet_records_rows(
     tmp_path: Path,
 ) -> None:
@@ -116,6 +166,39 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
     assert "rendered friction-sweep plot" in packet["remaining_gates"]
 
 
+def test_avbd_friction_coefficient_sweep_packet_records_reference_sweep(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(PACKET_SCRIPT, "write_avbd_friction_sweep_packet_ref")
+    benchmark_json = _write_benchmark_json(tmp_path)
+    reference_jsons = _write_reference_sweep_jsons(tmp_path)
+    output = tmp_path / "packet.json"
+
+    args = [
+        "--benchmark-json",
+        str(benchmark_json),
+        "--output",
+        str(output),
+    ]
+    for reference_json in reference_jsons:
+        args.extend(["--reference-timing-json", str(reference_json)])
+    assert module.main(args) == 0
+
+    packet = json.loads(output.read_text(encoding="utf-8"))
+    assert packet["reference_sweep"]["scene_builder"] == "sceneDynamicFriction"
+    assert [
+        row["max_friction"] for row in packet["reference_sweep"]["plot_data"]
+    ] == [0.0, 0.5, 1.0, 2.5, 5.0]
+    assert packet["reference_sweep"]["all_dart_faster_than_reference"] is True
+    assert [
+        row["dart_faster_than_reference"]
+        for row in packet["reference_sweep"]["comparison"]
+    ] == [True, True, True, True, True]
+    assert "source/reference friction-sweep timing comparison" not in packet[
+        "remaining_gates"
+    ]
+
+
 def test_avbd_friction_coefficient_sweep_packet_rejects_missing_value(
     tmp_path: Path,
 ) -> None:
@@ -134,6 +217,46 @@ def test_avbd_friction_coefficient_sweep_packet_rejects_wrong_counts(
 
     with pytest.raises(SystemExit, match="expected rigid_bodies=12"):
         module.main(["--benchmark-json", str(benchmark_json)])
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_missing_reference_value(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT, "write_avbd_friction_sweep_packet_missing_ref"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    reference_jsons = [
+        _write_reference_timing_json(tmp_path, max_friction)
+        for max_friction in (0.0, 0.5, 1.0, 5.0)
+    ]
+    args = ["--benchmark-json", str(benchmark_json)]
+    for reference_json in reference_jsons:
+        args.extend(["--reference-timing-json", str(reference_json)])
+
+    with pytest.raises(
+        SystemExit, match="reference timing missing max_friction values: 2.5"
+    ):
+        module.main(args)
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_reference_counts(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT, "write_avbd_friction_sweep_packet_wrong_ref"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    reference_jsons = _write_reference_sweep_jsons(tmp_path)
+    reference_jsons[2] = _write_reference_timing_json(
+        tmp_path, 1.0, wrong_dynamic_bodies=True
+    )
+    args = ["--benchmark-json", str(benchmark_json)]
+    for reference_json in reference_jsons:
+        args.extend(["--reference-timing-json", str(reference_json)])
+
+    with pytest.raises(SystemExit, match="expected 11 dynamic bodies"):
+        module.main(args)
 
 
 def test_avbd_friction_coefficient_sweep_plot_and_packet_link(
@@ -188,6 +311,40 @@ def test_avbd_friction_coefficient_sweep_plot_and_packet_link(
     assert "rendered friction-sweep plot" not in packet["remaining_gates"]
 
 
+def test_avbd_friction_coefficient_sweep_plot_draws_reference_sweep(
+    tmp_path: Path,
+) -> None:
+    packet_module = _load_module(
+        PACKET_SCRIPT,
+        "write_avbd_friction_coefficient_sweep_packet_ref_plot",
+    )
+    plot_module = _load_module(
+        PLOT_SCRIPT, "write_avbd_friction_coefficient_sweep_plot_ref"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    packet_path = tmp_path / "packet.json"
+    plot_path = tmp_path / "plot.svg"
+    args = [
+        "--benchmark-json",
+        str(benchmark_json),
+        "--output",
+        str(packet_path),
+    ]
+    for reference_json in _write_reference_sweep_jsons(tmp_path):
+        args.extend(["--reference-timing-json", str(reference_json)])
+
+    assert packet_module.main(args) == 0
+    assert (
+        plot_module.main(["--packet", str(packet_path), "--output", str(plot_path)])
+        == 0
+    )
+
+    svg = plot_path.read_text(encoding="utf-8")
+    assert "DART" in svg
+    assert "Native source" in svg
+    assert "#dc2626" in svg
+
+
 def test_avbd_friction_coefficient_sweep_plot_rejects_wrong_packet(
     tmp_path: Path,
 ) -> None:
@@ -204,3 +361,54 @@ def test_avbd_friction_coefficient_sweep_plot_rejects_wrong_packet(
         SystemExit, match="packet must be avbd_friction_coefficient_sweep"
     ):
         plot_module.main(["--packet", str(packet_path)])
+
+
+def test_avbd_demo2d_reference_timing_dynamic_friction_max_is_threaded() -> None:
+    module = _load_module(
+        REFERENCE_SCRIPT, "run_avbd_demo2d_reference_timing_for_sweep"
+    )
+    args = module.parse_args(
+        [
+            "--source-dir",
+            "/tmp/unused",
+            "--scene",
+            "dynamic_friction",
+            "--dynamic-friction-max-friction",
+            "2.5",
+            "--steps",
+            "1",
+            "--output",
+            "/tmp/unused.json",
+        ]
+    )
+
+    source = module._runner_source(args)
+    assert "const float requestedMaxFriction = 2.5f;" in source
+    assert "body->friction *= frictionScale;" in source
+    assert "dynamic_max_friction" in source
+
+
+def test_avbd_demo2d_reference_timing_rejects_non_dynamic_friction_max() -> None:
+    module = _load_module(
+        REFERENCE_SCRIPT, "run_avbd_demo2d_reference_timing_reject_sweep"
+    )
+    args = module.parse_args(
+        [
+            "--source-dir",
+            "/tmp/unused",
+            "--scene",
+            "ground",
+            "--dynamic-friction-max-friction",
+            "2.5",
+            "--steps",
+            "1",
+            "--output",
+            "/tmp/unused.json",
+        ]
+    )
+
+    with pytest.raises(
+        module.ReferenceTimingError,
+        match="only valid with --scene dynamic_friction",
+    ):
+        module.run_reference_timing(args)

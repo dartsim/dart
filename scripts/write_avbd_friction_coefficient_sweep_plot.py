@@ -81,18 +81,41 @@ def _validate_packet(packet_path: Path) -> list[dict[str, float]]:
             "packet benchmark missing plot_data"
         )
 
+    reference_by_friction: dict[float, float] = {}
+    reference_sweep = packet.get("reference_sweep")
+    if reference_sweep is not None:
+        if not isinstance(reference_sweep, dict):
+            raise AvbdFrictionCoefficientSweepPlotError(
+                "packet reference_sweep must be an object"
+            )
+        raw_reference_rows = reference_sweep.get("plot_data")
+        if not isinstance(raw_reference_rows, list):
+            raise AvbdFrictionCoefficientSweepPlotError(
+                "packet reference_sweep missing plot_data"
+            )
+        for raw_row in raw_reference_rows:
+            if not isinstance(raw_row, dict):
+                raise AvbdFrictionCoefficientSweepPlotError(
+                    "reference plot_data rows must be objects"
+                )
+            reference_by_friction[_finite(raw_row, "max_friction")] = (
+                _finite(raw_row, "cpu_time_per_step_ns") / 1000.0
+            )
+
     rows: list[dict[str, float]] = []
     for raw_row in raw_plot_data:
         if not isinstance(raw_row, dict):
             raise AvbdFrictionCoefficientSweepPlotError(
                 "plot_data rows must be objects"
             )
-        rows.append(
-            {
-                "max_friction": _finite(raw_row, "max_friction"),
-                "cpu_time_us": _finite(raw_row, "cpu_time_per_step_ns") / 1000.0,
-            }
-        )
+        max_friction = _finite(raw_row, "max_friction")
+        row = {
+            "max_friction": max_friction,
+            "dart_cpu_time_us": _finite(raw_row, "cpu_time_per_step_ns") / 1000.0,
+        }
+        if max_friction in reference_by_friction:
+            row["reference_cpu_time_us"] = reference_by_friction[max_friction]
+        rows.append(row)
     if len(rows) < 2:
         raise AvbdFrictionCoefficientSweepPlotError(
             "plot_data must contain at least two rows"
@@ -126,7 +149,10 @@ def _format_tick(value: float) -> str:
 
 def render_svg(rows: list[dict[str, float]]) -> str:
     x_values = [row["max_friction"] for row in rows]
-    y_values = [row["cpu_time_us"] for row in rows]
+    y_values = [row["dart_cpu_time_us"] for row in rows]
+    y_values.extend(
+        row["reference_cpu_time_us"] for row in rows if "reference_cpu_time_us" in row
+    )
     x_min = min(x_values)
     x_max = max(x_values)
     y_min = min(0.0, min(y_values))
@@ -137,10 +163,25 @@ def render_svg(rows: list[dict[str, float]]) -> str:
     points = [
         (
             _scale(row["max_friction"], x_min, x_max, PLOT_LEFT, PLOT_RIGHT),
-            _scale(row["cpu_time_us"], y_min, y_max, PLOT_BOTTOM, PLOT_TOP),
+            _scale(row["dart_cpu_time_us"], y_min, y_max, PLOT_BOTTOM, PLOT_TOP),
         )
         for row in rows
     ]
+    reference_points = [
+        (
+            _scale(row["max_friction"], x_min, x_max, PLOT_LEFT, PLOT_RIGHT),
+            _scale(
+                row["reference_cpu_time_us"],
+                y_min,
+                y_max,
+                PLOT_BOTTOM,
+                PLOT_TOP,
+            ),
+        )
+        for row in rows
+        if "reference_cpu_time_us" in row
+    ]
+    has_reference = len(reference_points) == len(rows)
     svg_lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">',
@@ -167,9 +208,36 @@ def render_svg(rows: list[dict[str, float]]) -> str:
             'stroke="#2563eb" stroke-width="3"/>'
         ),
     ]
+    if has_reference:
+        svg_lines.extend(
+            [
+                (
+                    f'<polyline points="{_polyline(reference_points)}" fill="none" '
+                    'stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5"/>'
+                ),
+                '<line x1="514" y1="34" x2="548" y2="34" stroke="#2563eb" stroke-width="3"/>',
+                '<text x="556" y="38" class="tick">DART</text>',
+                (
+                    '<line x1="514" y1="54" x2="548" y2="54" '
+                    'stroke="#dc2626" stroke-width="3" stroke-dasharray="8 5"/>'
+                ),
+                '<text x="556" y="58" class="tick">Native source</text>',
+            ]
+        )
     for row, (x, y) in zip(rows, points):
         label = html.escape(_format_tick(row["max_friction"]))
         svg_lines.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="5" fill="#2563eb"/>')
+        if has_reference:
+            reference_y = _scale(
+                row["reference_cpu_time_us"],
+                y_min,
+                y_max,
+                PLOT_BOTTOM,
+                PLOT_TOP,
+            )
+            svg_lines.append(
+                f'<circle cx="{x:.2f}" cy="{reference_y:.2f}" r="5" fill="#dc2626"/>'
+            )
         svg_lines.append(
             f'<text x="{x:.2f}" y="{PLOT_BOTTOM + 24}" class="tick" text-anchor="middle">{label}</text>'
         )

@@ -409,11 +409,14 @@ The companion `BM_AvbdDemo2dFrictionCoefficientSweep` benchmark now sweeps the
 same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
 and 5. The tracked
 [`avbd-friction-coefficient-sweep-packet.json`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
-validates the sweep rows and
+validates the sweep rows, embeds same-source native timing for each coefficient,
+and records that DART is faster for max friction 0.5 and 5.0 but still slower
+for 0, 1.0, and 2.5 on this host. The rendered
 [`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
-renders CPU step time versus maximum friction. This is benchmark/plot evidence
-for the friction-coefficient comparison gap; it is not yet a same-source
-reference sweep, per-coefficient visual capture, GPU, or paper-number claim.
+plots DART and native source CPU step time versus maximum friction. This closes
+only the source/reference timing-evidence gap for this friction-coefficient
+comparison; it is not a full CPU-win, per-coefficient visual capture, GPU, or
+paper-number claim.
 The `avbd_demo2d_static_friction` py-demo now ports the `avbd-demo2d` Static
 Friction source row with source revision/scene metadata, one rotated static
 ground slab, 11 rotated dynamic boxes, uniform source friction 1.0, focused
@@ -1176,7 +1179,8 @@ implementation work should prefer one of these gaps, in order:
    Ratio/Soft Body/Bridge/Breakable rows now
    have matched source-row harnesses. The Dynamic Friction path now also has a
    dashboard friction-coefficient sweep over maximum friction 0, 0.5, 1, 2.5,
-   and 5 with a tracked benchmark packet and rendered plot. All listed rows now
+   and 5 with a tracked benchmark/native-reference packet and rendered plot.
+   All listed rows now
    have tracked
    visual/benchmark/native-reference packets, with the
    narrow 2D Dynamic Friction, 2D Static Friction, 2D

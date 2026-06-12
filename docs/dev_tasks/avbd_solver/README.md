@@ -10,19 +10,23 @@ Corpus matrix:
 ## Current Status
 
 - Latest resumed checkpoint (2026-06-12): the paper/source-corpus friction
-  coefficient comparison now has first benchmark/plot evidence. The new
+  coefficient comparison now has same-source reference timing evidence. The
   `BM_AvbdDemo2dFrictionCoefficientSweep` row reuses the source-shaped
-  `avbd-demo2d` Dynamic Friction scene and sweeps maximum Coulomb friction
-  values 0, 0.5, 1, 2.5, and 5 across the existing 11 sliding-box setup. The
-  tracked
+  `avbd-demo2d` Dynamic Friction scene and sweeps maximum dynamic-box Coulomb
+  friction values 0, 0.5, 1, 2.5, and 5 across the existing 11 sliding-box
+  setup. The native `avbd-demo2d` timing runner now accepts
+  `--dynamic-friction-max-friction` so the same source scene can be timed for
+  the matching coefficient ladder. The tracked
   [`avbd-friction-coefficient-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
-  validates the real benchmark rows, and
+  validates the real benchmark rows plus the five same-source timing rows, and
   [`avbd-friction-coefficient-sweep-plot.svg`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
-  renders CPU step time against maximum friction. Local validation passed the
-  focused packet/display/dashboard pytest, focused benchmark target build, real
-  five-row benchmark run with three repetitions, packet/plot generation,
-  `pixi run lint`, and `pixi run build`. This is not a same-source reference
-  sweep, per-coefficient visual capture, GPU parity, or paper-number claim.
+  renders DART and native CPU step time against maximum friction. On this host
+  DART is faster at max friction 0.5 and 5.0, but slower at 0, 1.0, and 2.5.
+  Local validation passed the focused packet/plot pytest, focused benchmark
+  target build, real five-row DART benchmark run with three repetitions, five
+  native source timing runs, packet/plot generation, `pixi run lint`,
+  `pixi run build`, and `git diff --check`. This is not a full-coefficient
+  CPU-win, per-coefficient visual capture, GPU parity, or paper-number claim.
 - Previous explicit hand-off stop (2026-06-12): the user explicitly directed this
   session to stop working further, only ensure the hand-off docs, and then
   literally stop. Do not continue implementation, validation, hosted CI work,
