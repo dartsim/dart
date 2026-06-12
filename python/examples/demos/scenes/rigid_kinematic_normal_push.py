@@ -441,6 +441,72 @@ class _RigidKinematicNormalPush:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        histories = snapshot.get("target_history", {})
+        if not isinstance(histories, dict):
+            return 0.0
+        ipc_history = histories.get("ipc_normal", [])
+        si_history = histories.get("si_caveat", [])
+        if not ipc_history or not si_history:
+            return 0.0
+        try:
+            return abs(float(si_history[-1]) - float(ipc_history[-1]))
+        except (TypeError, ValueError):
+            return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            ipc = metrics.get("ipc_normal", {})
+            if isinstance(ipc, dict):
+                try:
+                    if float(ipc.get("contact_count", 0.0)) >= 1.0:
+                        return 1.0
+                    if float(ipc.get("max_depth", 0.0)) >= 0.05:
+                        return 1.0
+                    if ipc.get("status") == "ipc penetration caveat":
+                        return 1.0
+                except (TypeError, ValueError):
+                    pass
+            si = metrics.get("si_caveat", {})
+            if isinstance(si, dict):
+                try:
+                    if float(si.get("contact_count", 0.0)) >= 1.0:
+                        return 1.0
+                    if float(si.get("target_travel", 0.0)) >= 0.08:
+                        return 1.0
+                    if si.get("status") == "pushed":
+                        return 1.0
+                except (TypeError, ValueError):
+                    pass
+        contact_histories = snapshot.get("contact_history", {})
+        if isinstance(contact_histories, dict):
+            try:
+                for key in ("ipc_normal", "si_caveat"):
+                    values = contact_histories.get(key, [])
+                    if values and float(values[-1]) >= 1.0:
+                        return 1.0
+            except (TypeError, ValueError, IndexError):
+                pass
+        depth_histories = snapshot.get("depth_history", {})
+        if isinstance(depth_histories, dict):
+            try:
+                values = depth_histories.get("ipc_normal", [])
+                if values and float(values[-1]) >= 0.05:
+                    return 1.0
+            except (TypeError, ValueError, IndexError):
+                pass
+        try:
+            if float(self.replay_timeline_signal(snapshot)) >= 0.06:
+                return 1.0
+        except (TypeError, ValueError):
+            return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.push_speed = float(controls.get("push_speed", self.push_speed))
@@ -571,6 +637,11 @@ def build() -> SceneSetup:
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller._sync,
+            "replay_timeline": {
+                "signal_label": "Target travel divergence",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
         },
     )
 

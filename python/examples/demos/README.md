@@ -547,7 +547,9 @@ target? It is a caveat verifier. Sequential impulse pushes the target forward,
 while IPC normal and heavier-target lanes expose the current penetration
 failure mode instead of silently promoting it as a supported manipulation path.
 The panel shows push speed, target mass, driver travel, target travel, analytic
-gap, penetration depth, contact count, speed ratio, and step timing.
+gap, penetration depth, contact count, speed ratio, and step timing. The shared
+Replay panel uses target-travel divergence as its value track and marks
+contact, IPC penetration, SI push-progress, and divergence frames.
 
 ## Rigid joint constraints
 

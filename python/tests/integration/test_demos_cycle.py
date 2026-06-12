@@ -3499,6 +3499,69 @@ def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:
     assert controller._target_history["ipc_normal"]
     assert controller._target_history["si_caveat"]
     assert controller._depth_history["ipc_normal"]
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Target travel divergence"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        abs(
+            controller._target_history["si_caveat"][-1]
+            - controller._target_history["ipc_normal"][-1]
+        )
+    )
+    assert (
+        timeline["markers"](
+            {
+                "target_history": {
+                    "ipc_normal": [0.0, 0.01],
+                    "si_caveat": [0.0, 0.071],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"depth_history": {"ipc_normal": [0.0, 0.051]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"contact_history": {"si_caveat": [0.0, 1.0]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"last_metrics": {"ipc_normal": {"status": "ipc penetration caveat"}}}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"last_metrics": {"si_caveat": {"target_travel": 0.081}}}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "target_history": {
+                    "ipc_normal": [0.01],
+                    "si_caveat": [0.04],
+                },
+                "last_metrics": {
+                    "ipc_normal": {
+                        "contact_count": 0.0,
+                        "max_depth": 0.02,
+                        "status": "partial push",
+                    },
+                    "si_caveat": {
+                        "contact_count": 0.0,
+                        "status": "partial push",
+                        "target_travel": 0.04,
+                    },
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:

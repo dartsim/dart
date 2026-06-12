@@ -2,10 +2,10 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_kinematic_driver` Replay timeline slice
-after the contact-manipulation checkpoint. The kinematic-driver row now uses
-IPC grip box travel as its Replay value track and marks IPC contact/carry
-progress, slip-lane slip, and static-like caveat frames.
+This checkpoint completes the `rigid_kinematic_normal_push` Replay timeline
+slice after the kinematic-driver checkpoint. The normal-push row now uses
+target-travel divergence as its Replay value track and marks contact, IPC
+penetration, sequential-impulse push-progress, and solver-divergence frames.
 
 Expected repository state after this hand-off:
 
@@ -23,14 +23,19 @@ Expected repository state after this hand-off:
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `d6ca1e55634 Add contact manipulation replay timeline`; the branch was ahead
-  of `origin/feature/rigid-body-gui-visual-verification` by one commit before
-  the kinematic-driver slice.
-- The current `rigid_kinematic_driver` slice adds
+  `98ec4175ccf Add kinematic driver replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by two commits before the
+  normal-push slice.
+- The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
   `IPC grip box travel`, with markers for IPC grip contact/carry progress,
   slip-lane slip, and static-like caveat frames.
+- The current `rigid_kinematic_normal_push` slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Target travel divergence`, with markers for contact, IPC penetration, SI
+  push-progress, and divergence frames.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -47,6 +52,9 @@ Expected repository state after this hand-off:
 - The kinematic-driver Replay timeline continuation added
   `replay_timeline` metadata to `rigid_kinematic_driver`, updated tests and
   docs, and ran focused tests plus a real docked capture.
+- The normal-push Replay timeline continuation added `replay_timeline` metadata
+  to `rigid_kinematic_normal_push`, updated tests and docs, and ran focused
+  tests plus a real docked capture.
 - Do not push this new implementation commit without explicit approval in a
   future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -216,6 +224,13 @@ static-like caveat frames for targeted visual debugging. Focused pytest,
 sidecar/README drift guards, `pixi run lint`, `git diff --check`, and a real
 docked capture passed.
 
+The current continuation completes the next Replay timeline slice for
+`rigid_kinematic_normal_push`. The shared Replay panel now uses target-travel
+divergence as its value track and marks contact, IPC penetration, SI
+push-progress, and divergence frames for targeted visual debugging. Focused
+pytest, sidecar/README drift guards, and a real docked capture passed; lint and
+diff checks are still expected before committing this slice.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -235,19 +250,19 @@ Current snapshot:
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `d6ca1e55634 Add contact manipulation replay timeline`; it was one commit
-  ahead of `origin/feature/rigid-body-gui-visual-verification` before the
-  kinematic-driver Replay timeline slice.
-- The current kinematic-driver Replay timeline checkpoint is local and
-  unpushed until explicit future approval.
+  `98ec4175ccf Add kinematic driver replay timeline`; it was two commits ahead
+  of `origin/feature/rigid-body-gui-visual-verification` before the normal-push
+  Replay timeline slice.
+- The current normal-push Replay timeline checkpoint is local and unpushed
+  until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
-local checkpoints to include contact-manipulation and kinematic-driver Replay
-timeline slices after the pushed docs-only handoff. Do not push without
-explicit approval in that session.
+local checkpoints to include contact-manipulation, kinematic-driver, and
+normal-push Replay timeline slices after the pushed docs-only handoff. Do not
+push without explicit approval in that session.
 
 ## Context That Would Be Lost
 
@@ -346,6 +361,12 @@ explicit approval in that session.
   `python/examples/demos/scenes/rigid_kinematic_driver.py`, with tests and
   capture evidence for the `IPC grip box travel` value track and contact,
   carry, slip, and caveat markers.
+- The completed normal-push Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_kinematic_normal_push.py`, with tests and
+  capture evidence for the `Target travel divergence` value track and contact,
+  penetration, SI push, and divergence markers.
 
 ## How To Resume
 
@@ -709,3 +730,21 @@ travel about `0.0896` m, IPC slip maximum about `0.1008` m, and
 sequential-impulse caveat driver travel `0.0`. The sidecar/README/capture
 command drift guard reported `4 passed`. `pixi run lint` passed and
 `git diff --check` was clean.
+
+Current normal-push Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_kinematic_normal_push --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_kinematic_normal_push_timeline_1781273413
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.lanes.ipc_normal.status, .scene_metrics.latest.metrics.lanes.ipc_normal.max_depth, .scene_metrics.latest.metrics.lanes.ipc_normal.target_travel, .scene_metrics.latest.metrics.lanes.si_caveat.status, .scene_metrics.latest.metrics.lanes.si_caveat.target_travel, .scene_metrics.latest.metrics.lanes.si_caveat.analytic_gap' /tmp/dart_capture_kinematic_normal_push_timeline_1781273413/manifest.json
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+```
+
+The focused Replay/normal-push pytest reported `2 passed`. The real docked
+capture completed with exit code 0 and wrote a nonblank 960x540 screenshot with
+docked UI detected, 71 PNG frames, and 72 scene-metric events. The manifest
+reported row `rigid_kinematic_normal_push`, IPC normal status
+`ipc penetration caveat`, IPC normal max depth about `0.125` m, near-zero IPC
+target travel, SI status `pushed`, SI target travel about `0.123` m, and SI
+analytic gap about `-0.00055` m. The sidecar/README/capture-command drift
+guard reported `4 passed`.

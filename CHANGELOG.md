@@ -213,7 +213,8 @@
   - Added `rigid_kinematic_normal_push` to Python `py-demos`, showing explicit
     normal prescribed motion with IPC normal/heavy penetration-caveat lanes and
     a sequential-impulse push lane, including target travel, analytic gap,
-    penetration depth, contact count, speed ratio, and capture metrics.
+    penetration depth, contact count, speed ratio, capture metrics, and Replay
+    timeline markers for contact/penetration/push/divergence frames.
   - Made `rigid_body` the Python `py-demos` default launch scene and moved the
     curated rigid-body visual-verification workflow to the front of the World
     Rigid Body category, so first-run and cycle behavior match the documented
