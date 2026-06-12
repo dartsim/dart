@@ -445,6 +445,30 @@ LcpResult PenalizedFischerBurmeisterNewtonSolver::solve(
     return result;
   }
 
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity
+        = detail::complementarityInfinityNorm(x, fastW, loEff, hiEff, absTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);
 

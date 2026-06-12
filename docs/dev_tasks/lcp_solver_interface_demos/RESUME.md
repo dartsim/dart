@@ -1,5 +1,86 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Newton Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Parent checkpoint: `9057b15a9bf Fast path strict-interior standard LCPs`
+- Latest local checkpoint: `Fast path strict-interior Newton LCPs`
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 41 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- Reuses `detail::trySolveStrictInteriorStandardLcp()` in
+  `MinimumMapNewtonSolver`, `FischerBurmeisterNewtonSolver`, and
+  `PenalizedFischerBurmeisterNewtonSolver`.
+- The fast path runs only after solver-parameter validation and only when the
+  caller is not warm-starting, preserving invalid custom option handling and
+  warm-started Newton behavior.
+- Adds unit coverage for zero-iteration strict-interior success on all three
+  standard-LCP Newton solvers.
+- Regenerates the LCP performance profile CSVs and updates demo/docs/changelog
+  text.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/(FischerBurmeisterNewton|PenalizedFischerBurmeisterNewton|MinimumMapNewton)/`
+  after-run compared to the previous full profile cache:
+  - Minimum Map Newton ratios: `0.193`, `0.264`, `0.310`, `0.114`.
+  - Fischer-Burmeister Newton ratios: `0.099`, `0.119`, `0.153`, `0.135`.
+  - Penalized Fischer-Burmeister Newton ratios: `0.097`, `0.073`, `0.163`,
+    `0.139`.
+  - Mean focused ratio `0.155`; best `0.073`; worst `0.310`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full regenerated profile snapshot:
+  - Standard `MinimumMapNewton` average ratio `1.43`.
+  - Standard `PenalizedFischerBurmeisterNewton` average ratio `1.55`.
+  - Standard `FischerBurmeisterNewton` average ratio `1.57`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/newton_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.39s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `BlockedJacobi`, `Nncg`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, and `Nncg`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior Standard Fast Path
 
 This section is the latest state; older sections below are historical

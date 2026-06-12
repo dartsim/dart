@@ -1501,8 +1501,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction-index comparison rows, reducing current boxed/findex Newton
     profile rows while preserving standard-row behavior.
   - Added a shared strict-interior standard-LCP fast path used by Lemke, Baraff,
-    and Interior Point solvers; it accepts only validated positive linear-solve
-    candidates and leaves active-bound pivot/path-following behavior unchanged.
+    Interior Point, Minimum Map Newton, Fischer-Burmeister Newton, and
+    Penalized Fischer-Burmeister Newton solvers; it accepts only validated
+    positive linear-solve candidates and leaves active-bound pivot,
+    path-following, and Newton warm-start behavior unchanged.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

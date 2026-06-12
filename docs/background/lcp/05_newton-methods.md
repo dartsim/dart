@@ -24,6 +24,13 @@ All Newton methods follow this pattern:
 4. Update: $x^{k+1} = \max(0, x^k + t \Delta x^k)$
 5. Repeat until convergence
 
+DART's standard-LCP Newton solvers first try the shared validated
+strict-interior fast path when the caller is not warm-starting. If the
+unconstrained linear solve is strictly positive and passes normal LCP solution
+validation, the solver returns that zero-iteration result. Boundary, active-set,
+boxed, friction-index, warm-started, and invalid-parameter cases continue
+through the Newton or fallback paths.
+
 ## 1. Minimum Map Newton Method ✅ (Implemented)
 
 ### Reformulation

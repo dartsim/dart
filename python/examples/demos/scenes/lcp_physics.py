@@ -223,15 +223,16 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": "Tgs/Pgs/Sap and strict-interior pivot/barrier rows",
+        "current_leaders": (
+            "Tgs/Pgs/Sap and strict-interior pivot/barrier/Newton rows"
+        ),
         "current_laggards": (
-            "PenalizedFischerBurmeisterNewton, FischerBurmeisterNewton, "
-            "MinimumMapNewton, Nncg"
+            "BlockedJacobi, Nncg, ShockPropagation, SubspaceMinimization"
         ),
         "takeaway": (
-            "Strict-interior linear solves remove the old pivot/barrier "
-            "hot rows; Newton-family and block/projection rows remain tuning "
-            "targets."
+            "Strict-interior linear solves remove the old pivot, barrier, "
+            "and Newton-family hot rows; block/projection rows remain tuning "
+            "targets for standard packets."
         ),
     },
     {

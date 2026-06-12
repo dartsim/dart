@@ -1,5 +1,102 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Newton Fast Path
+
+Current branch state for this slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Parent checkpoint:
+  `9057b15a9bf Fast path strict-interior standard LCPs`.
+- Latest local checkpoint: `Fast path strict-interior Newton LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 41 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- Reused `detail::trySolveStrictInteriorStandardLcp()` in
+  `MinimumMapNewtonSolver`, `FischerBurmeisterNewtonSolver`, and
+  `PenalizedFischerBurmeisterNewtonSolver`.
+- The fast path runs only after solver-parameter validation and only when the
+  caller is not warm-starting, so invalid custom options and warm-started
+  Newton behavior stay on the existing paths.
+- Added unit coverage proving all three Newton solvers report zero-iteration
+  success on a validated strict-interior standard LCP.
+- Regenerated the checked LCP performance profile CSV artifacts and refreshed
+  demo/docs/changelog text.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Standard/(FischerBurmeisterNewton|PenalizedFischerBurmeisterNewton|MinimumMapNewton)/`.
+- Compared to the prior full profile cache:
+  - Minimum Map Newton row runtime ratios: `0.193`, `0.264`, `0.310`,
+    `0.114`.
+  - Fischer-Burmeister Newton row runtime ratios: `0.099`, `0.119`,
+    `0.153`, `0.135`.
+  - Penalized Fischer-Burmeister Newton row runtime ratios: `0.097`,
+    `0.073`, `0.163`, `0.139`.
+  - Mean focused ratio was `0.155`; best `0.073`; worst `0.310`.
+  - All focused after rows reported `contract_ok=1.0` and `iterations=0`.
+- Focused validation CTest
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` passed.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `MinimumMapNewton` average ratio `1.43`,
+  `PenalizedFischerBurmeisterNewton` `1.55`, and
+  `FischerBurmeisterNewton` `1.57`; these are no longer Standard profile
+  laggards.
+- Current Standard high-ratio targets are `BlockedJacobi`, `Nncg`,
+  `ShockPropagation`, and `SubspaceMinimization`.
+- Boxed/FrictionIndex targets are unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`; FrictionIndex `BlockedJacobi`, `BGS`,
+  `ShockPropagation`, `Staggering`, and `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/(FischerBurmeisterNewton|PenalizedFischerBurmeisterNewton|MinimumMapNewton)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/newton_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile; do not push without explicit
+   maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Standard Fast Path
 
 Checkpoint hand-off:
