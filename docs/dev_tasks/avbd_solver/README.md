@@ -9,6 +9,15 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest literal stop handoff (2026-06-11): the user explicitly directed the
+  session to stop working further and only ensure the handoff docs. No further
+  implementation, lint, build, tests, CI refresh, PR mutation, push, merge, or
+  branch cleanup was performed after that instruction. The active branch is
+  `avbd/source-row-extraction-precheck`; at the stop point it has two local
+  commits on top of pushed `origin/avbd/source-row-extraction-precheck`:
+  `51eb9b48e08` (`Record AVBD angular motor validation evidence`) and
+  `13604d8b8b5` (`Reuse AVBD distance spring row scratch`). Treat this branch
+  as the consolidated local resume branch and push only with explicit approval.
 - Latest resumed follow-up (2026-06-11): rigid distance-spring source-row
   extraction now has reusable private active-row scratch for the large-input
   path, and the world contact solve scratch reserves/reuses it alongside joint

@@ -7,6 +7,17 @@ deformable row coverage with evidence against the native source corpus. Do not
 count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
+Literal stop handoff: on 2026-06-11 the user explicitly directed the session to
+stop working further and only ensure the handoff docs. No further
+implementation, lint, build, tests, CI refresh, PR mutation, push, merge, or
+branch cleanup was performed after that instruction. The active branch is
+`avbd/source-row-extraction-precheck`; at the stop point it had two local
+commits on top of pushed `origin/avbd/source-row-extraction-precheck`:
+`51eb9b48e08 Record AVBD angular motor validation evidence` and
+`13604d8b8b5 Reuse AVBD distance spring row scratch`. This docs-only stop note
+is intentionally only a handoff update. Treat the branch as the consolidated
+local resume branch and push only with explicit approval.
+
 Immediate critical-stop handoff: on 2026-06-11 the user explicitly directed the
 session to stop implementation and focus only on hand-off for all current work,
 without any further verification. Preserve this branch state before doing new
@@ -577,7 +588,7 @@ Local branch inventory at this handoff:
 
 | Branch                                 | Upstream                                      | Local head at handoff                                       | State and handling                                                                                                  |
 | -------------------------------------- | --------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `ada568afa85` plus local validation/distance-spring commits | Current checkout and single resume branch. Latest source-row slices are locally validated; push only with approval. |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `13604d8b8b5` plus this docs-only stop note                 | Current checkout and single resume branch. Latest source-row slices are locally validated; push only with approval. |
 | `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                               | Active #2977 branch; pushed, latest known state was waiting on hosted Linux Debug Tests.                            |
 | `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                               | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
 | `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                               | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
@@ -625,8 +636,9 @@ Fresh-session plan after this progress checkpoint:
 
 1. Start with `git switch avbd/source-row-extraction-precheck`,
    `git status --short --branch`, and read this file before doing any work.
-   If the critical-stop handoff commit has not been pushed, preserve it before
-   doing any new implementation. Do not apply local stashes by default.
+   The branch intentionally has local commits beyond origin unless a later
+   session pushes them with explicit approval. Do not apply local stashes by
+   default.
 2. If the next session is asked to resume PR/CI work, then fetch and refresh:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
