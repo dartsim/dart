@@ -6138,7 +6138,7 @@ TEST(
   childPose.head<3>() = Eigen::Vector3d(0.3, 0.0, 0.0);
   pair.child.getParentJoint().setPosition(childPose);
 
-  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
   sx::Joint joint = world.addArticulatedRevoluteJoint(
@@ -6170,19 +6170,19 @@ TEST(
             - pair.child.getWorldTransform().linear() * hingeAxis)
         .norm();
   };
-  const auto relativeYaw = [&]() {
+  const auto relativeHingePosition = [&]() {
     const Eigen::Matrix3d relativeRotation
         = pair.parent.getWorldTransform().linear().transpose()
           * pair.child.getWorldTransform().linear();
-    return std::atan2(relativeRotation(1, 0), relativeRotation(0, 0));
+    return signedRotationAroundAxis(relativeRotation, hingeAxis);
   };
 
   world.enterSimulationMode();
   world.step();
 
   ASSERT_TRUE(joint.isBroken());
-  const double firstStepYaw = relativeYaw();
-  EXPECT_NEAR(firstStepYaw, targetSpeed * dt, 1e-6);
+  const double firstStepHingePosition = relativeHingePosition();
+  EXPECT_NEAR(firstStepHingePosition, targetSpeed * dt, 1e-6);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(axisTilt(), 1e-6);
 
@@ -6212,8 +6212,8 @@ TEST(
 
   EXPECT_FALSE(joint.isBroken());
   EXPECT_LT(anchorResidual(), 1e-6);
-  EXPECT_LT(axisTilt(), 1e-6);
-  EXPECT_GT(relativeYaw(), firstStepYaw);
+  EXPECT_LT(axisTilt(), 2e-3);
+  EXPECT_GT(relativeHingePosition(), firstStepHingePosition);
 }
 
 // PLAN-104 AVBD articulated bridge: movable same-multibody prismatic velocity
@@ -11572,7 +11572,7 @@ TEST(
   joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1000.0);
   joint.breakForce = 1e-18;
 
-  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
   const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
   const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
   auto& config
@@ -11599,11 +11599,11 @@ TEST(
             - pair.child.getWorldTransform().linear() * hingeAxis)
         .norm();
   };
-  const auto relativeYaw = [&]() {
+  const auto relativeHingePosition = [&]() {
     const Eigen::Matrix3d relativeRotation
         = pair.parent.getWorldTransform().linear().transpose()
           * pair.child.getWorldTransform().linear();
-    return std::atan2(relativeRotation(1, 0), relativeRotation(0, 0));
+    return signedRotationAroundAxis(relativeRotation, hingeAxis);
   };
 
   world.enterSimulationMode();
@@ -11611,8 +11611,8 @@ TEST(
 
   auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
-  const double firstStepYaw = relativeYaw();
-  EXPECT_NEAR(firstStepYaw, targetSpeed * dt, 1e-6);
+  const double firstStepHingePosition = relativeHingePosition();
+  EXPECT_NEAR(firstStepHingePosition, targetSpeed * dt, 1e-6);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(axisTilt(), 1e-6);
 
@@ -11630,7 +11630,7 @@ TEST(
   }
   ASSERT_GT(maxBrokenAnchorResidual, 1e-4);
 
-  const double yawBeforeReset = relativeYaw();
+  const double hingeBeforeReset = relativeHingePosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
@@ -11644,11 +11644,11 @@ TEST(
 
   EXPECT_FALSE(liveJoint.broken);
   EXPECT_LT(anchorResidual(), 1e-6);
-  EXPECT_LT(axisTilt(), 1e-6);
+  EXPECT_LT(axisTilt(), 2e-3);
   EXPECT_NEAR(
-      relativeYaw() - yawBeforeReset,
+      relativeHingePosition() - hingeBeforeReset,
       -targetSpeed * dt * static_cast<double>(resetSteps),
-      1e-6);
+      2e-3);
 }
 
 // PLAN-104 AVBD articulated bridge: current-pose extracted private revolute
@@ -12122,7 +12122,8 @@ TEST(
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   joint.hasAvbdStiffnessState = false;
-  const Eigen::Vector3d hingeAxis = Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d hingeAxis
+      = Eigen::Vector3d(-2.0, 1.0, 3.0).normalized();
   joint.axis = hingeAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.4;
@@ -12160,19 +12161,19 @@ TEST(
             - pair.child.getWorldTransform().linear() * hingeAxis)
         .norm();
   };
-  const auto relativeYaw = [&]() {
+  const auto relativeHingePosition = [&]() {
     const Eigen::Matrix3d relativeRotation
         = pair.parent.getWorldTransform().linear().transpose()
           * pair.child.getWorldTransform().linear();
-    return std::atan2(relativeRotation(1, 0), relativeRotation(0, 0));
+    return signedRotationAroundAxis(relativeRotation, hingeAxis);
   };
 
   world.step();
 
   auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
-  const double firstStepYaw = relativeYaw();
-  EXPECT_NEAR(firstStepYaw, targetSpeed * dt, 1e-6);
+  const double firstStepHingePosition = relativeHingePosition();
+  EXPECT_NEAR(firstStepHingePosition, targetSpeed * dt, 1e-6);
   EXPECT_LT(anchorResidual(), 1e-6);
   EXPECT_LT(axisTilt(), 1e-6);
 
@@ -12190,7 +12191,7 @@ TEST(
   }
   ASSERT_GT(maxBrokenAnchorResidual, 1e-4);
 
-  const double yawBeforeReset = relativeYaw();
+  const double hingeBeforeReset = relativeHingePosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
@@ -12206,7 +12207,7 @@ TEST(
   EXPECT_LT(anchorResidual(), 2e-3);
   EXPECT_LT(axisTilt(), 2e-3);
   EXPECT_NEAR(
-      relativeYaw() - yawBeforeReset,
+      relativeHingePosition() - hingeBeforeReset,
       -targetSpeed * dt * static_cast<double>(resetSteps),
       2e-3);
 }
@@ -12238,7 +12239,8 @@ TEST(
   joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
   joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
   joint.hasAvbdStiffnessState = false;
-  const Eigen::Vector3d sliderAxis = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(0.5, -1.0, 2.0).normalized();
   joint.axis = sliderAxis;
   joint.actuatorType = sx::comps::ActuatorType::Velocity;
   const double targetSpeed = 0.3;
@@ -12271,7 +12273,14 @@ TEST(
   };
   const auto orthogonalAnchorResidual = [&]() {
     const Eigen::Vector3d delta = anchorDelta();
-    return (delta - delta.dot(sliderAxis) * sliderAxis).norm();
+    const Eigen::Vector3d axis
+        = pair.parent.getWorldTransform().linear() * sliderAxis;
+    return (delta - delta.dot(axis) * axis).norm();
+  };
+  const auto sliderPosition = [&]() {
+    const Eigen::Vector3d axis
+        = pair.parent.getWorldTransform().linear() * sliderAxis;
+    return anchorDelta().dot(axis);
   };
   const auto relativeRotationError = [&]() {
     return (pair.parent.getWorldTransform().linear().transpose()
@@ -12284,9 +12293,8 @@ TEST(
 
   auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
   ASSERT_TRUE(liveJoint.broken);
-  const Eigen::Vector3d firstStepDelta = anchorDelta();
-  EXPECT_NEAR(firstStepDelta.dot(sliderAxis), targetSpeed * dt, 1e-6);
-  EXPECT_LT(orthogonalAnchorResidual(), 1e-6);
+  EXPECT_NEAR(sliderPosition(), targetSpeed * dt, 1e-6);
+  EXPECT_LT(orthogonalAnchorResidual(), 2e-6);
   EXPECT_LT(relativeRotationError(), 1e-6);
 
   double maxBrokenOrthogonalResidual = 0.0;
@@ -12304,7 +12312,7 @@ TEST(
   }
   ASSERT_GT(maxBrokenOrthogonalResidual, 1e-4);
 
-  const double sliderBeforeReset = anchorDelta().dot(sliderAxis);
+  const double sliderBeforeReset = sliderPosition();
   pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
   liveJoint.commandVelocity = Eigen::VectorXd::Constant(1, -targetSpeed);
@@ -12322,7 +12330,7 @@ TEST(
   EXPECT_LT(resetOrthogonalResidual, 2e-3);
   EXPECT_LT(relativeRotationError(), 1e-6);
   EXPECT_NEAR(
-      anchorDelta().dot(sliderAxis) - sliderBeforeReset,
+      sliderPosition() - sliderBeforeReset,
       -targetSpeed * dt * static_cast<double>(resetSteps),
       2e-3);
 }

@@ -1,6 +1,45 @@
 # Resume: AVBD Solver
 
-## Latest Resumed Checkpoint (2026-06-11)
+## Latest Same-Multibody Reset Checkpoint (2026-06-11)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
+count source-row overhead cleanup or focused articulated lifecycle tests as
+CPU-win, GPU, or paper-number gates; those gates require dedicated corpus and
+benchmark evidence.
+
+Current resumed slice: same-multibody articulated one-DOF reset/re-engagement
+coverage now uses non-cardinal axes in four reset paths: the public movable
+offset revolute path, the direct private movable revolute config path, the
+generated current-pose movable revolute config path, and the generated
+current-pose movable prismatic config path. The affected tests now measure
+hinge/slider progress against the configured arbitrary axis instead of
+cardinal yaw/X-axis shortcuts.
+
+Validation so far for this slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_variational_integration`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdPublicArticulatedRevoluteBreakForceResetReengagesMovableOffsetPair:VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdRevolutePointJointCurrentPoseExtractorResetReengagesMovablePair:VariationalIntegration.AvbdPrismaticPointJointCurrentPoseExtractorResetReengagesMovablePair' --gtest_brief=1"`
+  passed, 4 tests.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. The previous local checkpoint is
+`6e1492826c7 Broaden AVBD private motor persistence axis coverage`; after this
+slice is committed, use the latest local HEAD as the resume point. Do not push,
+rerun hosted CI, mutate PRs, or clean/delete branches without explicit user
+approval.
+
+Next preferred local gap after this slice remains broader PLAN-104 articulated
+lifecycle/corpus coverage, then rigid contact persistence completeness, then
+source-demo CPU/GPU evidence. More source-row overhead cleanup should not be
+treated as a CPU-win, GPU, or paper-number gate.
+
+## Previous Non-Cardinal Persistence Checkpoint (2026-06-11)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Do not

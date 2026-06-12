@@ -9,6 +9,16 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-11): same-multibody articulated one-DOF
+  reset/re-engagement coverage now exercises non-cardinal axes in the public
+  movable offset revolute path, the direct private movable revolute config
+  path, and the generated current-pose movable revolute/prismatic config paths.
+  The affected tests measure hinge/slider progress against the configured
+  arbitrary axis instead of cardinal yaw/X-axis shortcuts. Local validation
+  passed the focused `test_variational_integration` target build, the four-test
+  reset filter, `pixi run build`, `pixi run lint`, and `git diff --check`. This
+  is narrow articulated lifecycle evidence only, not a CPU-win, GPU, or
+  paper-number claim.
 - Latest resumed checkpoint (2026-06-11): direct private articulated
   revolute/prismatic velocity point-joint broken-state save/load/reset coverage
   now exercises non-cardinal free-axis bases for both child-link and parent-link
