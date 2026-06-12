@@ -9,6 +9,22 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest critical handoff stop (2026-06-11): the user explicitly directed this
+  session to stop implementation and focus only on hand-off for all current
+  work, without any further verification. No lint/build/test/CI refresh was run
+  after that instruction. The current checkout is the consolidated continuation
+  branch `avbd/source-row-extraction-precheck`, which was already ahead of
+  `origin/avbd/source-row-extraction-precheck` by local commit
+  `63e3a1d44a1` and now includes the latest handoff update plus the current
+  point-attachment world-point reuse slice. That slice computes the
+  point-attachment world anchor once in `addAvbdRigidPointAttachment()` and
+  reuses it for both constraint value and 6D direction assembly. Pre-stop local
+  validation for that source edit had already passed the focused rigid-block
+  target/filter, full `test_avbd_rigid_block`, `pixi run build`, and
+  `pixi run test-unit`, but `pixi run lint` and `git diff --check` were not
+  rerun afterward by explicit instruction. This remains a narrow helper
+  overhead cleanup and does not close any source CPU-win, GPU, or paper-number
+  gate.
 - Latest resumed validation (2026-06-11): the handoff-captured
   point-attachment and distance-spring direction helper slice on
   `avbd/source-row-extraction-precheck` has now been validated locally.
@@ -56,12 +72,14 @@ lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
   formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
   the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
   origin-anchor distance-spring, generic point-pair, point-attachment, and
-  distance-spring direction helper fast paths. The point-attachment and final
+  distance-spring direction helper fast paths, plus the latest
+  point-attachment world-point reuse cleanup. The point-attachment and final
   distance-spring direction edits now have local validation recorded in
-  `RESUME.md`. Local stashes may still exist as historical recovery points, but
-  fresh work should not depend on them. The latest pushed parent before the
-  final local follow-ups was `7a9e24b487b`
-  (`Checkpoint AVBD source-row origin-anchor handoff`). PR #2977
+  `RESUME.md`; the final handoff docs themselves intentionally have no fresh
+  verification after the critical stop instruction. Local stashes may still
+  exist as historical recovery points, but fresh work should not depend on
+  them. The latest pushed parent before the final local follow-ups was
+  `7a9e24b487b` (`Checkpoint AVBD source-row origin-anchor handoff`). PR #2977
   (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
   known state; the latest read-only refresh showed all visible completed checks
   green/skipped/neutral and only Linux `Debug Tests` still in progress. It

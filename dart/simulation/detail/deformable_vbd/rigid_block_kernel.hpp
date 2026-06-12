@@ -1127,11 +1127,19 @@ inline AvbdScalarRowDescriptor makeAvbdRigidLinearMotorRowDescriptor(
 } // namespace detail
 
 //==============================================================================
+inline double avbdRigidPointAttachmentConstraintValueAtWorldPoint(
+    const Eigen::Vector3d& worldPoint,
+    const AvbdRigidPointAttachmentRow& row)
+{
+  return row.axis.dot(row.target - worldPoint);
+}
+
+//==============================================================================
 inline double avbdRigidPointAttachmentConstraintValue(
     const AvbdRigidBodyState& state, const AvbdRigidPointAttachmentRow& row)
 {
-  return row.axis.dot(
-      row.target - avbdRigidBodyWorldPoint(state, row.localPoint));
+  return avbdRigidPointAttachmentConstraintValueAtWorldPoint(
+      avbdRigidBodyWorldPoint(state, row.localPoint), row);
 }
 
 //==============================================================================
@@ -1564,13 +1572,16 @@ inline double addAvbdRigidPointAttachment(
     const AvbdRigidPointAttachmentRow& row,
     double alpha)
 {
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(state, row.localPoint);
   const double constraintValue = regularizeAvbdConstraintValue(
-      avbdRigidPointAttachmentConstraintValue(state, row),
+      avbdRigidPointAttachmentConstraintValueAtWorldPoint(worldPoint, row),
       row.previousConstraintValue,
       alpha);
   const double forceMagnitude
       = computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
-  const Vector6d direction = avbdRigidPointAttachmentDirection(state, row);
+  const Vector6d direction
+      = avbdRigidWorldPointDirection(state, worldPoint, row.axis);
   block.force.noalias() += forceMagnitude * direction;
   block.hessian.noalias()
       += row.state.stiffness * (direction * direction.transpose());
