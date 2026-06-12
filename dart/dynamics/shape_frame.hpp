@@ -81,6 +81,19 @@ public:
   // void setShadowed(const bool& value);
   // const bool& getShadowed() const;
 
+  /// PBR metallic factor in [0, 1]; a negative value lets the renderer choose a
+  /// per-shape default. Only affects primitive shapes; loaded meshes keep their
+  /// asset materials.
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Metallic)
+
+  /// PBR roughness factor in [0, 1]; a negative value lets the renderer choose
+  /// a per-shape default.
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Roughness)
+
+  /// PBR dielectric reflectance in [0, 1]; a negative value uses the renderer
+  /// default.
+  DART_COMMON_SET_GET_ASPECT_PROPERTY(double, Reflectance)
+
   /// Identical to setRGB(const Eigen::Vector3d&)
   void setColor(const Eigen::Vector3d& color);
 

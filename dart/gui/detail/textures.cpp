@@ -89,6 +89,18 @@ struct ImageData
       owned);
 }
 
+/// Number of mip levels for a full chain down to a 1x1 texel.
+std::uint8_t computeMipLevels(std::uint32_t width, std::uint32_t height)
+{
+  std::uint32_t largest = std::max(width, height);
+  std::uint8_t levels = 1u;
+  while (largest > 1u) {
+    largest >>= 1u;
+    ++levels;
+  }
+  return levels;
+}
+
 std::string lowerExtension(const std::filesystem::path& path)
 {
   std::string extension = path.extension().string();
@@ -237,10 +249,20 @@ std::optional<ImageData> loadTextureImage(const std::string& source)
     return nullptr;
   }
 
+  // A full mip chain plus trilinear/anisotropic sampling removes the aliasing
+  // and shimmer that single-level textures show at distance and grazing angles.
+  // generateMipmaps requires BLIT_SRC | BLIT_DST usage in addition to the
+  // default sampleable/uploadable bits.
+  const std::uint8_t levels = computeMipLevels(image.width, image.height);
+  const ::filament::Texture::Usage usage
+      = levels > 1u ? (::filament::Texture::Usage::DEFAULT
+                       | ::filament::Texture::Usage::GEN_MIPMAPPABLE)
+                    : ::filament::Texture::Usage::DEFAULT;
   auto* texture = ::filament::Texture::Builder()
                       .width(image.width)
                       .height(image.height)
-                      .levels(1)
+                      .levels(levels)
+                      .usage(usage)
                       .sampler(::filament::Texture::Sampler::SAMPLER_2D)
                       .format(
                           colorSpace == TextureColorSpace::Srgb
@@ -254,6 +276,9 @@ std::optional<ImageData> loadTextureImage(const std::string& source)
           std::move(image.rgba),
           ::filament::backend::PixelDataFormat::RGBA,
           ::filament::backend::PixelDataType::UBYTE));
+  if (levels > 1u) {
+    texture->generateMipmaps(engine);
+  }
   return texture;
 }
 
@@ -264,8 +289,12 @@ bool isBoundTexture(const TextureBinding* binding)
 
 ::filament::TextureSampler makeRepeatTextureSampler()
 {
+  // This sampler is also applied to the 1x1 solid fallback texture, which is
+  // deliberately single-level; sampling a one-level texture with a mipmap min
+  // filter is well-defined (it clamps to level 0), so the trilinear chain is
+  // simply a no-op there.
   ::filament::TextureSampler sampler(
-      ::filament::TextureSampler::MinFilter::LINEAR,
+      ::filament::TextureSampler::MinFilter::LINEAR_MIPMAP_LINEAR,
       ::filament::TextureSampler::MagFilter::LINEAR,
       ::filament::TextureSampler::WrapMode::REPEAT);
   sampler.setAnisotropy(8.0f);
@@ -396,10 +425,16 @@ void setPbrTextureParameters(
     }
   }
 
+  const std::uint8_t levels = computeMipLevels(size, size);
+  const ::filament::Texture::Usage usage
+      = levels > 1u ? (::filament::Texture::Usage::DEFAULT
+                       | ::filament::Texture::Usage::GEN_MIPMAPPABLE)
+                    : ::filament::Texture::Usage::DEFAULT;
   auto* texture = ::filament::Texture::Builder()
                       .width(size)
                       .height(size)
-                      .levels(1)
+                      .levels(levels)
+                      .usage(usage)
                       .sampler(::filament::Texture::Sampler::SAMPLER_2D)
                       .format(::filament::Texture::InternalFormat::SRGB8_A8)
                       .build(engine);
@@ -410,6 +445,9 @@ void setPbrTextureParameters(
           std::move(pixels),
           ::filament::backend::PixelDataFormat::RGBA,
           ::filament::backend::PixelDataType::UBYTE));
+  if (levels > 1u) {
+    texture->generateMipmaps(engine);
+  }
   return texture;
 }
 

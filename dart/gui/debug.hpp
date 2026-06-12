@@ -77,6 +77,19 @@ struct DebugLabelDescriptor
   std::string text;
 };
 
+/// A renderer-neutral bundle of application-supplied debug geometry.
+///
+/// Returned by an application's per-frame debug provider so any host can feed
+/// custom debug lines, triangles, and labels into the built-in debug overlay
+/// with the correct unlit, no-shadow, always-on-top treatment, instead of each
+/// example re-implementing its own overlay wiring.
+struct DebugScene
+{
+  std::vector<DebugLineDescriptor> lines;
+  std::vector<DebugTriangleDescriptor> triangles;
+  std::vector<DebugLabelDescriptor> labels;
+};
+
 struct DebugDrawOptions
 {
   bool drawGrid = true;
@@ -90,6 +103,9 @@ struct DebugDrawOptions
   bool drawContacts = true;
   bool drawContactNormals = true;
   bool drawContactForces = true;
+  bool drawJointAxes = false;
+  bool drawLinearVelocities = false;
+  bool drawAngularVelocities = false;
   double gridHalfExtent = 4.0;
   double gridSpacing = 0.5;
   double gridZ = 0.08;
@@ -105,6 +121,11 @@ struct DebugDrawOptions
   double contactForceScale = 0.002;
   double contactForceMinLength = 0.04;
   double contactForceMaxLength = 0.45;
+  double jointAxisLength = 0.3;
+  double linearVelocityScale = 0.15;
+  double angularVelocityScale = 0.15;
+  double velocityMinLength = 0.03;
+  double velocityMaxLength = 1.2;
 };
 
 /// Applies the standard debug visual styling to a world-backed shape frame.
@@ -140,6 +161,21 @@ DART_GUI_API std::vector<DebugLineDescriptor> makeCollisionShapeDebugLines(
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeSupportPolygonDebugLines(
     const dynamics::Skeleton& skeleton,
+    const DebugDrawOptions& options = {},
+    const std::string& labelPrefix = {});
+
+/// Draws the motion axis of a body's parent joint (a double-ended line for
+/// revolute joints, an arrow for prismatic joints) anchored at the joint
+/// origin.
+DART_GUI_API std::vector<DebugLineDescriptor> makeJointAxisDebugLines(
+    const dynamics::BodyNode& bodyNode,
+    const DebugDrawOptions& options = {},
+    const std::string& labelPrefix = {});
+
+/// Draws linear (at the center of mass) and/or angular (about the body origin)
+/// velocity vectors as arrows, scaled and clamped by the options.
+DART_GUI_API std::vector<DebugLineDescriptor> makeVelocityDebugLines(
+    const dynamics::BodyNode& bodyNode,
     const DebugDrawOptions& options = {},
     const std::string& labelPrefix = {});
 

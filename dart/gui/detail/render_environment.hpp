@@ -70,6 +70,14 @@ struct SceneLights
 
 ::filament::Skybox* createNeutralSkybox(::filament::Engine& engine);
 
+/// True when the user opted into full-fidelity rendering on the headless path
+/// (the `DART_GUI_HIGH_FIDELITY` environment variable). The heavy screen-space
+/// passes are normally disabled when headless because CI renders on the
+/// llvmpipe software rasterizer; on a real GPU (synthetic-data / sensor
+/// capture) this opt-in restores the windowed-quality passes without changing
+/// the CI default.
+bool highFidelityHeadlessRequested();
+
 void configureViewQuality(::filament::View& view, bool headless);
 
 void configureMainView(

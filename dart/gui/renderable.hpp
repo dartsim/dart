@@ -155,6 +155,11 @@ struct MaterialDescriptor
   bool visible = true;
   bool castsShadows = true;
   bool receivesShadows = true;
+  /// Optional PBR overrides for primitive shapes. When unset, the renderer uses
+  /// its per-shape default. Loaded meshes keep their own asset materials.
+  std::optional<double> metallic;
+  std::optional<double> roughness;
+  std::optional<double> reflectance;
 };
 
 struct RenderableDescriptor

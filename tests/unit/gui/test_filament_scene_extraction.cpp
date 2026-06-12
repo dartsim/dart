@@ -77,6 +77,7 @@
 #include <dart/dynamics/plane_shape.hpp>
 #include <dart/dynamics/point_cloud_shape.hpp>
 #include <dart/dynamics/pyramid_shape.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -108,6 +109,13 @@
 
 #include <cmath>
 #include <cstdint>
+
+namespace dart::gui::detail {
+// Declared locally because detail/renderable_factory.hpp pulls Filament math
+// headers whose include directories are private to dart-gui-core; the symbol
+// itself is exported, and a signature drift fails at link time.
+bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
+} // namespace dart::gui::detail
 
 namespace {
 
@@ -1541,7 +1549,7 @@ TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
       mainSource.find("dart::gui::extractRenderables"), std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
+TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesContractMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "gui_scene_diagnostics" / "main.cpp");
@@ -1549,12 +1557,14 @@ TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
       std::filesystem::path("examples") / "gui_scene_diagnostics"
       / "README.md");
 
-  EXPECT_NE(mainSource.find("options.run.maxFrames = 10"), std::string::npos);
+  EXPECT_NE(mainSource.find("runDefaults.maxFrames = 10"), std::string::npos);
+  EXPECT_NE(mainSource.find("runDefaults.headless = true"), std::string::npos);
   EXPECT_NE(mainSource.find("--frames"), std::string::npos);
   EXPECT_NE(mainSource.find("--width"), std::string::npos);
   EXPECT_NE(mainSource.find("--height"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::gui::normalizeRunOptions"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::runApplication"), std::string::npos);
+  EXPECT_NE(mainSource.find("appOptions.debugProvider"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::DebugScene"), std::string::npos);
   EXPECT_NE(mainSource.find("createDiagnosticWorld"), std::string::npos);
   EXPECT_NE(mainSource.find("gui_scene_diagnostics"), std::string::npos);
   EXPECT_NE(mainSource.find("diagnostic_box"), std::string::npos);
@@ -1570,12 +1580,14 @@ TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
       mainSource.find("dart::gui::makePerspectivePickRay"), std::string::npos);
   EXPECT_NE(
       mainSource.find("dart::gui::pickNearestRenderable"), std::string::npos);
-  EXPECT_NE(mainSource.find("\"frames: \""), std::string::npos);
   EXPECT_NE(mainSource.find("\"renderables: \""), std::string::npos);
   EXPECT_NE(mainSource.find("\"debug lines: \""), std::string::npos);
-  EXPECT_NE(mainSource.find("\"selection lines: \""), std::string::npos);
   EXPECT_NE(mainSource.find("\"camera eye: \""), std::string::npos);
   EXPECT_NE(mainSource.find("\"center pick: \""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"debug provider frames: \""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("\"debug provider selection lines: \""),
+      std::string::npos);
   EXPECT_NE(
       readmeSource.find("GUI Scene Diagnostics Example"), std::string::npos);
   EXPECT_NE(
@@ -6205,6 +6217,136 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   EXPECT_NEAR(overrideProjection.aspectRatio, 1.0, 1e-12);
   EXPECT_NEAR(overrideProjection.nearPlane, 0.1, 1e-12);
   EXPECT_NEAR(overrideProjection.farPlane, 10.0, 1e-12);
+}
+
+TEST(FilamentSceneExtraction, JointAxisDebugLinesFollowRevoluteAxis)
+{
+  auto skeleton = Skeleton::create("joint_axis");
+  auto pair
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>();
+  pair.first->setAxis(Eigen::Vector3d::UnitZ());
+  const dart::dynamics::BodyNode* body = pair.second;
+
+  dart::gui::DebugDrawOptions options;
+  options.drawJointAxes = false;
+  EXPECT_TRUE(dart::gui::makeJointAxisDebugLines(*body, options).empty());
+
+  options.drawJointAxes = true;
+  options.jointAxisLength = 0.5;
+  const auto lines = dart::gui::makeJointAxisDebugLines(*body, options);
+  ASSERT_FALSE(lines.empty());
+  const Eigen::Vector3d direction
+      = (lines.front().to - lines.front().from).normalized();
+  EXPECT_NEAR(std::abs(direction.dot(Eigen::Vector3d::UnitZ())), 1.0, 1e-9);
+}
+
+TEST(FilamentSceneExtraction, VelocityDebugLinesRespectOptions)
+{
+  auto skeleton = Skeleton::create("velocity");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  dart::dynamics::BodyNode* body = pair.second;
+
+  dart::gui::DebugDrawOptions options;
+  // Both off by default -> nothing drawn even with motion.
+  Eigen::VectorXd velocities = Eigen::VectorXd::Zero(6);
+  velocities[3] = 2.0; // body-frame linear x velocity
+  pair.first->setVelocities(velocities);
+  EXPECT_TRUE(dart::gui::makeVelocityDebugLines(*body, options).empty());
+
+  options.drawLinearVelocities = true;
+  EXPECT_FALSE(dart::gui::makeVelocityDebugLines(*body, options).empty());
+
+  // Zero velocity produces no arrow even when the option is on.
+  pair.first->setVelocities(Eigen::VectorXd::Zero(6));
+  EXPECT_TRUE(dart::gui::makeVelocityDebugLines(*body, options).empty());
+}
+
+TEST(FilamentSceneExtraction, PerShapePbrOverridesFlowThroughDescriptor)
+{
+  auto skeleton = Skeleton::create("pbr");
+  auto pair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  auto* visual = shapeNode->getVisualAspect();
+  EXPECT_LT(visual->getMetallic(), 0.0);
+  visual->setMetallic(0.8);
+  visual->setRoughness(0.25);
+
+  auto world = dart::simulation::World::create();
+  world->addSkeleton(skeleton);
+  const auto renderables = dart::gui::extractRenderables(*world);
+  ASSERT_FALSE(renderables.empty());
+  const auto& material = renderables.front().material;
+  ASSERT_TRUE(material.metallic.has_value());
+  ASSERT_TRUE(material.roughness.has_value());
+  EXPECT_NEAR(*material.metallic, 0.8, 1e-9);
+  EXPECT_NEAR(*material.roughness, 0.25, 1e-9);
+  EXPECT_FALSE(material.reflectance.has_value());
+
+  // The new aspect properties must survive a skeleton clone.
+  const auto clone = skeleton->cloneSkeleton();
+  auto* cloneVisual = clone->getBodyNode(0)->getShapeNode(0)->getVisualAspect();
+  ASSERT_NE(cloneVisual, nullptr);
+  EXPECT_NEAR(cloneVisual->getMetallic(), 0.8, 1e-9);
+  EXPECT_NEAR(cloneVisual->getRoughness(), 0.25, 1e-9);
+  EXPECT_LT(cloneVisual->getReflectance(), 0.0);
+}
+
+TEST(FilamentSceneExtraction, ShapeUsesLitMaterialOverrideGatesByKind)
+{
+  using dart::gui::ShapeKind;
+  using dart::gui::detail::shapeUsesLitMaterialOverride;
+
+  // Lit primitives accept the per-shape PBR override.
+  EXPECT_TRUE(shapeUsesLitMaterialOverride(ShapeKind::Box));
+  EXPECT_TRUE(shapeUsesLitMaterialOverride(ShapeKind::Sphere));
+  EXPECT_TRUE(shapeUsesLitMaterialOverride(ShapeKind::Capsule));
+  EXPECT_TRUE(shapeUsesLitMaterialOverride(ShapeKind::Plane));
+  EXPECT_TRUE(shapeUsesLitMaterialOverride(ShapeKind::Heightmap));
+
+  // Asset meshes keep their own materials; unlit renderables have no PBR
+  // parameters.
+  EXPECT_FALSE(shapeUsesLitMaterialOverride(ShapeKind::Mesh));
+  EXPECT_FALSE(shapeUsesLitMaterialOverride(ShapeKind::LineSegments));
+  EXPECT_FALSE(shapeUsesLitMaterialOverride(ShapeKind::PointCloud));
+  EXPECT_FALSE(shapeUsesLitMaterialOverride(ShapeKind::VoxelGrid));
+  EXPECT_FALSE(shapeUsesLitMaterialOverride(ShapeKind::Unsupported));
+}
+
+TEST(FilamentSceneExtraction, DebugProviderPropagatesToDartScene)
+{
+  dart::gui::detail::AppOptions appOptions;
+  appOptions.world = World::create("debug_provider_scene");
+  appOptions.debugProvider = [] {
+    dart::gui::DebugScene debugScene;
+    dart::gui::DebugLineDescriptor line;
+    line.to = Eigen::Vector3d::UnitX();
+    line.label = "provider.line";
+    debugScene.lines.push_back(line);
+    dart::gui::DebugTriangleDescriptor triangle;
+    triangle.b = Eigen::Vector3d::UnitX();
+    triangle.c = Eigen::Vector3d::UnitY();
+    triangle.label = "provider.triangle";
+    debugScene.triangles.push_back(triangle);
+    dart::gui::DebugLabelDescriptor label;
+    label.position = Eigen::Vector3d::UnitZ();
+    label.text = "provider label";
+    debugScene.labels.push_back(label);
+    return debugScene;
+  };
+
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
+  ASSERT_TRUE(static_cast<bool>(scene.debugProvider));
+  const dart::gui::DebugScene provided = scene.debugProvider();
+  ASSERT_EQ(provided.lines.size(), 1u);
+  EXPECT_EQ(provided.lines.front().label, "provider.line");
+  ASSERT_EQ(provided.triangles.size(), 1u);
+  EXPECT_EQ(provided.triangles.front().label, "provider.triangle");
+  ASSERT_EQ(provided.labels.size(), 1u);
+  EXPECT_EQ(provided.labels.front().text, "provider label");
 }
 
 } // namespace

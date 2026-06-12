@@ -2554,6 +2554,18 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
+  - Improved Filament rendering fidelity and made debug visuals a first-class
+    `dart::gui` feature: per-shape PBR (`VisualAspect` metallic/roughness/
+    reflectance, threaded through `MaterialDescriptor` to primitive shapes);
+    full texture mip chains with trilinear/anisotropic sampling; a
+    `DART_GUI_HIGH_FIDELITY` opt-in that restores the heavy screen-space passes
+    on the headless path for GPU capture; an `ApplicationOptions::debugProvider`
+    callback that feeds per-frame debug lines/triangles/labels into the built-in
+    overlay (so hosts no longer re-implement overlay wiring per example; the
+    `gui_scene_diagnostics` example is ported to it and now performs a bounded
+    headless application run); new joint-axis and linear/angular velocity debug
+    primitives; and built-in panel toggles plus numeric tuning sliders for the
+    debug overlays. See `docs/design/renderer_fidelity_and_debug_visuals.md`.
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,

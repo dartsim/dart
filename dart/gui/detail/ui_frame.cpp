@@ -664,6 +664,10 @@ void updateFrameUi(
     renderDebugLabels(
         dartScene.debugLabels(), viewport, guiScale.effectiveScale);
   }
+  if (!debugOverlays.providerLabels.empty()) {
+    renderDebugLabels(
+        debugOverlays.providerLabels, viewport, guiScale.effectiveScale);
+  }
   if (showPerfHud) {
     drawPerfHud(perfHud, profile, backendName);
   }

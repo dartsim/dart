@@ -46,7 +46,13 @@ void defShapeFrame(nb::module_& m)
       .def("setHidden", &VisualAspect::setHidden, nb::arg("value"))
       .def("getHidden", &VisualAspect::getHidden)
       .def("setShadowed", &VisualAspect::setShadowed, nb::arg("value"))
-      .def("getShadowed", &VisualAspect::getShadowed);
+      .def("getShadowed", &VisualAspect::getShadowed)
+      .def("setMetallic", &VisualAspect::setMetallic, nb::arg("value"))
+      .def("getMetallic", &VisualAspect::getMetallic)
+      .def("setRoughness", &VisualAspect::setRoughness, nb::arg("value"))
+      .def("getRoughness", &VisualAspect::getRoughness)
+      .def("setReflectance", &VisualAspect::setReflectance, nb::arg("value"))
+      .def("getReflectance", &VisualAspect::getReflectance);
 
   nb::class_<CollisionAspect>(m, "CollisionAspect")
       .def(nb::init<>())

@@ -42,6 +42,17 @@
 
 namespace {
 
+// Bounds for the built-in debug-tuning sliders (doubles so they can back
+// ImGui::SliderScalar with ImGuiDataType_Double directly).
+constexpr double kDebugGridSpacingMin = 0.1;
+constexpr double kDebugGridSpacingMax = 2.0;
+constexpr double kDebugAxisLengthMin = 0.05;
+constexpr double kDebugAxisLengthMax = 1.5;
+constexpr double kDebugVelocityScaleMin = 0.01;
+constexpr double kDebugVelocityScaleMax = 1.0;
+constexpr double kDebugForceScaleMin = 0.0001;
+constexpr double kDebugForceScaleMax = 0.02;
+
 std::string visiblePanelLabel(std::string_view label)
 {
   const auto idMarker = label.find("##");
@@ -487,6 +498,62 @@ bool renderBuiltInStatusPanel(
     ImGui::SameLine();
     changed |= ImGui::Checkbox(
         "Contact forces", &contactDebugOptions.drawContactForces);
+    changed |= ImGui::Checkbox("Joint axes", &staticDebugOptions.drawJointAxes);
+    ImGui::SameLine();
+    changed
+        |= ImGui::Checkbox("Lin vel", &staticDebugOptions.drawLinearVelocities);
+    ImGui::SameLine();
+    changed |= ImGui::Checkbox(
+        "Ang vel", &staticDebugOptions.drawAngularVelocities);
+
+    if (ImGui::TreeNode("Debug tuning")) {
+      const float sliderWidth = 140.0f * static_cast<float>(guiScale);
+      ImGui::PushItemWidth(sliderWidth);
+      changed |= ImGui::SliderScalar(
+          "Grid spacing",
+          ImGuiDataType_Double,
+          &staticDebugOptions.gridSpacing,
+          &kDebugGridSpacingMin,
+          &kDebugGridSpacingMax,
+          "%.2f");
+      changed |= ImGui::SliderScalar(
+          "Body axis len",
+          ImGuiDataType_Double,
+          &staticDebugOptions.bodyFrameAxisLength,
+          &kDebugAxisLengthMin,
+          &kDebugAxisLengthMax,
+          "%.2f");
+      changed |= ImGui::SliderScalar(
+          "Joint axis len",
+          ImGuiDataType_Double,
+          &staticDebugOptions.jointAxisLength,
+          &kDebugAxisLengthMin,
+          &kDebugAxisLengthMax,
+          "%.2f");
+      changed |= ImGui::SliderScalar(
+          "Lin vel scale",
+          ImGuiDataType_Double,
+          &staticDebugOptions.linearVelocityScale,
+          &kDebugVelocityScaleMin,
+          &kDebugVelocityScaleMax,
+          "%.3f");
+      changed |= ImGui::SliderScalar(
+          "Ang vel scale",
+          ImGuiDataType_Double,
+          &staticDebugOptions.angularVelocityScale,
+          &kDebugVelocityScaleMin,
+          &kDebugVelocityScaleMax,
+          "%.3f");
+      changed |= ImGui::SliderScalar(
+          "Contact force scale",
+          ImGuiDataType_Double,
+          &contactDebugOptions.contactForceScale,
+          &kDebugForceScaleMin,
+          &kDebugForceScaleMax,
+          "%.4f");
+      ImGui::PopItemWidth();
+      ImGui::TreePop();
+    }
     return changed;
   };
 

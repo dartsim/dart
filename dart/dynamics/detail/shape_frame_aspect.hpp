@@ -65,6 +65,18 @@ struct DART_API VisualAspectProperties
   /// True if this shape node should be shadowed
   bool mShadowed;
 
+  /// PBR metallic factor in [0, 1]. A negative value (the default) means the
+  /// renderer chooses a per-shape default.
+  double mMetallic;
+
+  /// PBR roughness factor in [0, 1]. A negative value (the default) means the
+  /// renderer chooses a per-shape default.
+  double mRoughness;
+
+  /// PBR dielectric reflectance in [0, 1]. A negative value (the default) means
+  /// the renderer chooses a default.
+  double mReflectance;
+
   /// Default color for visual aspects without an explicit override.
   static Eigen::Vector4d getDefaultRGBA();
 
@@ -72,7 +84,10 @@ struct DART_API VisualAspectProperties
   VisualAspectProperties(
       const Eigen::Vector4d& color = getDefaultRGBA(),
       const bool hidden = false,
-      const bool shadowed = true);
+      const bool shadowed = true,
+      const double metallic = -1.0,
+      const double roughness = -1.0,
+      const double reflectance = -1.0);
 
   /// Destructor
   virtual ~VisualAspectProperties() = default;

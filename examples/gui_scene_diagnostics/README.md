@@ -2,14 +2,18 @@
 
 ## Summary
 
-- Goal: inspect the renderer-independent GUI descriptors without opening a
-  window or adding another renderer.
+- Goal: inspect the renderer-independent GUI descriptors and exercise the
+  built-in debug overlay through `ApplicationOptions::debugProvider`, without
+  opening a window (the bounded run is headless by default).
 - Concepts/APIs: `dart::gui::extractRenderables`, `extractDebugLines`,
-  `makeSelectionDebugLines`, `RunOptions`, `OrbitCamera`, picking helpers, and
+  `makeSelectionDebugLines`, `ApplicationOptions::debugProvider` /
+  `DebugScene`, `RunOptions`, `OrbitCamera`, picking helpers, and
   `SimpleFrame` visual descriptors.
-- Expected output: descriptor counts, debug/selection line counts, camera
-  information, and center-pick diagnostics printed to the console.
-- Controls: CLI flags for frame count and diagnostic viewport size.
+- Expected output: descriptor counts, debug line counts, camera information,
+  center-pick diagnostics, and per-frame debug-provider statistics printed to
+  the console.
+- Controls: the standard application CLI (`--frames`, `--width`, `--height`,
+  `--screenshot`, ...); see `--help`.
 
 This example is intended for API diagnostics. The maintained GUI application is
 `dartsim`.

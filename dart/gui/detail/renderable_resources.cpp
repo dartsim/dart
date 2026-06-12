@@ -57,6 +57,12 @@ namespace {
 using ::filament::math::float3;
 using ::filament::math::float4;
 
+// Roughness floor for the lit material: below this Filament's specular lobe
+// degenerates to a near-perfect mirror highlight. The default configuration
+// and per-shape descriptor overrides must clamp to the same floor so the two
+// paths cannot diverge.
+constexpr float kMinLitRoughness = 0.04f;
+
 float3 rgb(const float4& color)
 {
   return {color.x, color.y, color.z};
@@ -226,7 +232,8 @@ void configureLitMaterialInstance(
 {
   material.setParameter("baseColor", color);
   material.setParameter("metallic", std::clamp(metallic, 0.0f, 1.0f));
-  material.setParameter("roughness", std::clamp(roughness, 0.04f, 1.0f));
+  material.setParameter(
+      "roughness", std::clamp(roughness, kMinLitRoughness, 1.0f));
   material.setParameter("reflectance", 0.5f);
   material.setParameter("emissiveColor", emissiveColor);
   if (hasTextureBindings(textures)) {
@@ -235,6 +242,35 @@ void configureLitMaterialInstance(
       std::exit(1);
     }
     setPbrTextureParameters(material, *fallbackTexture, textures);
+  }
+}
+
+void applyDescriptorMaterialOverride(
+    Renderable& renderable, const dart::gui::MaterialDescriptor& material)
+{
+  if (!material.metallic && !material.roughness && !material.reflectance) {
+    return;
+  }
+  for (auto& slot : renderable.materials) {
+    if (slot.instance == nullptr) {
+      continue;
+    }
+    if (material.metallic) {
+      slot.instance->setParameter(
+          "metallic",
+          std::clamp(static_cast<float>(*material.metallic), 0.0f, 1.0f));
+    }
+    if (material.roughness) {
+      slot.instance->setParameter(
+          "roughness",
+          std::clamp(
+              static_cast<float>(*material.roughness), kMinLitRoughness, 1.0f));
+    }
+    if (material.reflectance) {
+      slot.instance->setParameter(
+          "reflectance",
+          std::clamp(static_cast<float>(*material.reflectance), 0.0f, 1.0f));
+    }
   }
 }
 

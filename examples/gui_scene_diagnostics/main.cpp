@@ -29,6 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -46,95 +47,12 @@
 #include <Eigen/Geometry>
 
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
-#include <cstdlib>
-
 namespace {
-
-struct ExampleOptions
-{
-  dart::gui::RunOptions run;
-};
-
-void printUsage(const char* argv0)
-{
-  std::cout << "Usage: " << argv0 << " [--frames N] [--width N] [--height N]\n";
-}
-
-bool parseInt(std::string_view value, int& output)
-{
-  if (value.empty()) {
-    return false;
-  }
-
-  const std::string str(value);
-  char* end = nullptr;
-  const long result = std::strtol(str.c_str(), &end, 10);
-  if (!end || *end != '\0') {
-    return false;
-  }
-  if (result < std::numeric_limits<int>::min()
-      || result > std::numeric_limits<int>::max()) {
-    return false;
-  }
-
-  output = static_cast<int>(result);
-  return true;
-}
-
-bool parseArgs(int argc, char* argv[], ExampleOptions& options)
-{
-  options.run.maxFrames = 10;
-
-  for (int i = 1; i < argc; ++i) {
-    const std::string_view arg(argv[i]);
-    if (arg == "-h" || arg == "--help") {
-      printUsage(argv[0]);
-      std::exit(0);
-    }
-
-    int value = 0;
-    if (arg == "--frames" && i + 1 < argc) {
-      if (!parseInt(argv[++i], value) || value <= 0) {
-        std::cerr << "Invalid frame count: " << argv[i] << "\n";
-        return false;
-      }
-      options.run.maxFrames = value;
-      continue;
-    }
-
-    if (arg == "--width" && i + 1 < argc) {
-      if (!parseInt(argv[++i], value)) {
-        std::cerr << "Invalid width: " << argv[i] << "\n";
-        return false;
-      }
-      options.run.width = value;
-      continue;
-    }
-
-    if (arg == "--height" && i + 1 < argc) {
-      if (!parseInt(argv[++i], value)) {
-        std::cerr << "Invalid height: " << argv[i] << "\n";
-        return false;
-      }
-      options.run.height = value;
-      continue;
-    }
-
-    std::cerr << "Unknown argument: " << arg << "\n";
-    printUsage(argv[0]);
-    return false;
-  }
-
-  dart::gui::normalizeRunOptions(options.run);
-  return true;
-}
 
 std::shared_ptr<dart::simulation::World> createDiagnosticWorld()
 {
@@ -208,19 +126,9 @@ std::string describeHit(
 
 int main(int argc, char* argv[])
 {
-  ExampleOptions options;
-  if (!parseArgs(argc, argv, options)) {
-    return 1;
-  }
-
   auto world = createDiagnosticWorld();
 
-  int renderedFrames = 0;
-  while (!dart::gui::shouldStopAfterFrame(options.run, renderedFrames)) {
-    world->step();
-    ++renderedFrames;
-  }
-
+  // Startup inspector pass over the renderer-neutral descriptors.
   const auto renderables = dart::gui::extractRenderables(*world);
 
   dart::gui::DebugDrawOptions debugOptions;
@@ -228,28 +136,70 @@ int main(int argc, char* argv[])
   debugOptions.drawCentersOfMass = true;
   const auto debugLines = dart::gui::extractDebugLines(*world, debugOptions);
 
+  // The application owns the CLI (`--frames`, `--width`, `--height`,
+  // `--screenshot`, ...);
+  // this example only changes the defaults: a short, always-headless run so it
+  // stays a console diagnostic and never opens a window.
+  dart::gui::RunOptions runDefaults;
+  runDefaults.windowTitle = "gui_scene_diagnostics";
+  runDefaults.headless = true;
+  runDefaults.maxFrames = 10;
+
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
   const auto basis = dart::gui::makeOrbitCameraBasis(camera);
   const auto centerRay = dart::gui::makePerspectivePickRay(
       camera,
-      options.run.width * 0.5,
-      options.run.height * 0.5,
-      options.run.width,
-      options.run.height);
+      runDefaults.width * 0.5,
+      runDefaults.height * 0.5,
+      runDefaults.width,
+      runDefaults.height);
   const auto hit = dart::gui::pickNearestRenderable(renderables, centerRay);
-  std::vector<dart::gui::DebugLineDescriptor> selectionLines;
-  if (hit) {
-    selectionLines
-        = dart::gui::makeSelectionDebugLines(renderables[hit->renderableIndex]);
-  }
 
-  std::cout << "frames: " << renderedFrames << "\n"
-            << "renderables: " << renderables.size() << "\n"
+  // Custom debug geometry flows through the component seam: the per-frame
+  // debugProvider feeds the built-in overlay (unlit, no-shadow, always on
+  // top), so the example no longer carries its own overlay wiring. The
+  // provider re-picks each frame, so the selection highlight follows the
+  // falling box while the world simulates. Re-extracting the whole world per
+  // frame is fine for this three-renderable scene; real hosts should derive
+  // provider geometry from state they already track (the provider runs every
+  // frame on the render thread).
+  auto providerFrames = std::make_shared<int>(0);
+  auto providerLines = std::make_shared<std::size_t>(0);
+
+  dart::gui::ApplicationOptions appOptions;
+  appOptions.world = world;
+  appOptions.runDefaults = runDefaults;
+  appOptions.camera = camera;
+  appOptions.debugProvider = [world, centerRay, providerFrames, providerLines] {
+    dart::gui::DebugScene debugScene;
+    const auto frameRenderables = dart::gui::extractRenderables(*world);
+    const auto frameHit
+        = dart::gui::pickNearestRenderable(frameRenderables, centerRay);
+    if (frameHit) {
+      const auto& renderable = frameRenderables[frameHit->renderableIndex];
+      debugScene.lines = dart::gui::makeSelectionDebugLines(renderable);
+      dart::gui::DebugLabelDescriptor label;
+      label.position = renderable.worldTransform.translation();
+      label.text = "center pick";
+      debugScene.labels.push_back(label);
+    }
+    ++(*providerFrames);
+    *providerLines = debugScene.lines.size();
+    return debugScene;
+  };
+
+  const int appResult = dart::gui::runApplication(argc, argv, appOptions);
+
+  std::cout << "renderables: " << renderables.size() << "\n"
             << "debug lines: " << debugLines.size() << "\n"
-            << "selection lines: " << selectionLines.size() << "\n"
             << "camera eye: " << basis.eye.transpose() << "\n"
-            << "center pick: " << describeHit(renderables, hit) << "\n";
+            << "center pick: " << describeHit(renderables, hit) << "\n"
+            << "debug provider frames: " << *providerFrames << "\n"
+            << "debug provider selection lines: " << *providerLines << "\n";
 
+  if (appResult != 0) {
+    return appResult;
+  }
   return renderables.empty() ? 1 : 0;
 }

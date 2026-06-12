@@ -55,6 +55,9 @@ struct DebugOverlayController
   std::optional<Renderable> staticOverlay;
   std::optional<Renderable> contactOverlay;
   std::optional<Renderable> gizmoOverlay;
+  /// Overlay and labels supplied by the application's per-frame debug provider.
+  std::optional<Renderable> providerOverlay;
+  std::vector<dart::gui::DebugLabelDescriptor> providerLabels;
 };
 
 DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons);
@@ -88,6 +91,16 @@ void refreshContactDebugOverlay(
     ::filament::Scene& scene,
     ::filament::Material& material,
     const dart::collision::CollisionResult& result,
+    DebugOverlayController& controller);
+
+/// Refreshes the application-provided debug overlay from a DebugScene's lines
+/// and triangles. Labels are stored on the controller for the UI pass.
+void refreshProviderDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugTriangleDescriptor>& triangles,
     DebugOverlayController& controller);
 
 void refreshGizmoDebugOverlay(

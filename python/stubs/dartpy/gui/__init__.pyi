@@ -1585,17 +1585,7 @@ class PanelBuilder:
 
     def slider(self, label: str, value: float, minimum: float, maximum: float) -> tuple: ...
 
-    def timeline(
-        self,
-        label: str,
-        value: float,
-        minimum: float,
-        maximum: float,
-        value_track: Sequence[float] = ...,
-        marker_track: Sequence[float] = ...,
-        cursor_track: Sequence[float] = ...,
-        value_track_label: str = ...,
-    ) -> tuple: ...
+    def timeline(self, label: str, value: float, minimum: float, maximum: float, value_track: Sequence[float] = ..., marker_track: Sequence[float] = ..., cursor_track: Sequence[float] = ..., value_track_label: str = ...) -> tuple: ...
 
     def color_edit(self, label: str, rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]) -> tuple: ...
 

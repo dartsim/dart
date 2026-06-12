@@ -94,6 +94,8 @@ void clearDebugOverlays(
   clearDebugLineOverlay(engine, scene, controller.staticOverlay);
   clearDebugLineOverlay(engine, scene, controller.contactOverlay);
   clearDebugLineOverlay(engine, scene, controller.gizmoOverlay);
+  clearDebugLineOverlay(engine, scene, controller.providerOverlay);
+  controller.providerLabels.clear();
 }
 
 void refreshDebugLineOverlay(
@@ -150,6 +152,18 @@ void refreshContactDebugOverlay(
       material,
       extractContactDebugLines(result, controller.contactOptions),
       controller.contactOverlay);
+}
+
+void refreshProviderDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugTriangleDescriptor>& triangles,
+    DebugOverlayController& controller)
+{
+  refreshDebugLineOverlay(
+      engine, scene, material, lines, triangles, controller.providerOverlay);
 }
 
 void refreshGizmoDebugOverlay(

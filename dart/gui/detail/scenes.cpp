@@ -726,6 +726,7 @@ DartScene createDartScene(const AppOptions& options)
     scene.dockingEnabled = options.dockingEnabled;
     scene.gizmos = options.gizmos;
     scene.debugLabels = options.debugLabels;
+    scene.debugProvider = options.debugProvider;
     scene.bodyNodeDragHandles = options.bodyNodeDragHandles;
     scene.keyboardActions = options.keyboardActions;
     scene.ikHandles.reserve(options.ikHandles.size());
