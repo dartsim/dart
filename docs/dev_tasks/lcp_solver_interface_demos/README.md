@@ -26,6 +26,9 @@
       contact benchmarks as well as the boxed world-step benchmark.
 - [x] Added GUI plots for billiard momentum, energy, and symmetry invariant
       histories in the LCP py-demo.
+- [x] Added a representative benchmark-suite filter and command to the LCP
+      py-demo metadata, derived from the benchmark packet table while keeping
+      the smoke command intact.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -64,6 +67,33 @@ rediscovering the current branch state.
   demo benchmark seed for Dantzig and friction-index-capable iterative solvers.
 
 ## Latest Code Checkpoint
+
+The latest implementation checkpoint exposes a practical benchmark-suite
+command in the LCP py-demo metadata:
+
+- `benchmark_command` remains the quick smoke command for
+  `BM_LCP_COMPARE_SMOKE`.
+- `representative_benchmark_filter` is derived from every
+  `_BENCHMARK_PACKET_ROWS[*]["benchmark_filter"]` token in table order.
+- `representative_benchmark_command` wraps that filter as a runnable
+  `pixi run bm lcp_compare` command.
+- `python/tests/unit/test_py_demo_panels.py` now asserts the representative
+  filter exactly matches the union of the benchmark packet table filters.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+```
+
+Observed results:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- `pixi run lint`: passed.
+
+## Billiard Invariant Plot Checkpoint
 
 The latest implementation checkpoint adds GUI plots for billiard momentum,
 kinetic-energy, and symmetry invariant histories in the LCP py-demo:
@@ -161,7 +191,7 @@ Observed results:
 - `python/tests/unit/math/test_lcp.py`: 59 tests passed.
 - `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 
-## Hand-Off Snapshot
+## Previous Hand-Off Snapshot
 
 The current session was stopped for hand-off only after the billiard invariant
 plot checkpoint. No implementation work and no verification were run after the

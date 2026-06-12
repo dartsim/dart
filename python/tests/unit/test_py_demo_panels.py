@@ -917,6 +917,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         for row in problem_rows
         if row["case"] == "friction_index_contact" and not row["native_supported"]
     } == {name for name, manifest_row in solver_by_name.items() if not manifest_row["findex"]}
+    assert info["benchmark_smoke_filter"] == "BM_LCP_COMPARE_SMOKE"
     assert "BM_LCP_COMPARE_SMOKE" in info["benchmark_command"]
     benchmark_by_packet = {
         row["packet"]: row for row in info["benchmark_packet_rows"]
@@ -941,6 +942,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "batch_scale",
     }
     assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
+    representative_tokens: list[str] = []
+    for row in info["benchmark_packet_rows"]:
+        for token in row["benchmark_filter"].split("|"):
+            if token not in representative_tokens:
+                representative_tokens.append(token)
+    assert info["representative_benchmark_filter"].split("|") == (
+        representative_tokens
+    )
+    assert info["representative_benchmark_command"] == (
+        "pixi run bm lcp_compare -- --benchmark_filter="
+        f"'{info['representative_benchmark_filter']}'"
+    )
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
         "BM_LcpWorldBilliardsStep_BoxedLcp"
     )

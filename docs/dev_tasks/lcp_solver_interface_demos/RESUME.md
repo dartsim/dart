@@ -18,35 +18,27 @@ billiard symmetry is tracked alongside momentum and kinetic-energy error. The
 high-mass-ratio stack benchmark metadata now points at
 `BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp`. The live LCP panel
 also plots billiard momentum, energy, and symmetry invariant histories for both
-comparison worlds.
-
-The latest session was stopped for hand-off only. No implementation, lint,
-tests, benchmarks, or other verification were run after the user's explicit
-instruction to stop and focus on hand-off without further verification.
+comparison worlds. The current slice adds
+`representative_benchmark_filter` and `representative_benchmark_command` to the
+LCP py-demo metadata, derived from the benchmark packet table while preserving
+the existing smoke command.
 
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — before this docs-only hand-off update,
-local HEAD was `cae4efcce30 Plot LCP billiard invariants` and the tracking
-branch was `origin/feature/lcp-solver-interface-demos` at
-`b2f5632b277 Expose LCP problem validation diagnostics`. The local branch was
-six commits ahead before this hand-off update.
+`feature/lcp-solver-interface-demos` — current local work builds on
+`eb2147d9e6b Document current LCP handoff state`. The HTTPS-tracked
+`origin/feature/lcp-solver-interface-demos` ref was refreshed to that commit
+before this slice, and the worktree started clean.
 
 The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
-succeeded. `origin/main` was confirmed to be an ancestor of `HEAD` before the
-contact-pipeline metadata checkpoint.
+succeeded. `origin/main` was refreshed over HTTPS and confirmed to be an
+ancestor of `HEAD` before this representative benchmark-command slice.
 
 ## Immediate Next Step
 
-Resume by inspecting branch state. If local commits are not on
-`origin/feature/lcp-solver-interface-demos`, fetch `origin/main`, merge it if it
-moved, then push the consolidated branch once network access is available and
-maintainer/user approval is still in force. Continue with one bounded LCP
-solver/interface/demo gap at a time.
-
-The next bounded gap was interrupted before any code change: expose a practical
-representative benchmark command/filter in the LCP py-demo metadata, assembled
-from the existing benchmark packet rows, while preserving the smoke command.
+Commit the current representative benchmark-command checkpoint, then continue
+with the next smallest LCP solver/interface/demo gap. Do not push unless the
+maintainer/user gives explicit approval in the current turn.
 
 ## Context That Would Be Lost
 
@@ -115,16 +107,18 @@ from the existing benchmark packet rows, while preserving the smoke command.
 - Current smoke command metadata in
   `python/examples/demos/scenes/lcp_physics.py` is still
   `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`.
-- A practical next patch is to add metadata such as
-  `representative_benchmark_filter` and `representative_benchmark_command`,
-  derived from the union of `_BENCHMARK_PACKET_ROWS[*]["benchmark_filter"]`.
-  Keep `benchmark_command` as the smoke command for compatibility.
-- Suggested test update: in
-  `python/tests/unit/test_py_demo_panels.py`, assert that splitting the
+- The current slice adds `benchmark_smoke_filter`,
+  `representative_benchmark_filter`, and `representative_benchmark_command` to
+  `SceneSetup.info` from `lcp_physics.build()`.
+- The representative filter is assembled from the union of every
+  `_BENCHMARK_PACKET_ROWS[*]["benchmark_filter"]` token in row order. This keeps
+  fresh sessions from having to manually concatenate active-set, contact,
+  degeneracy, scaling, billiards, stack, card-pile, and articulated-contact
+  benchmark filters.
+- `python/tests/unit/test_py_demo_panels.py` should prove that splitting the
   representative filter on `|` equals the union of every benchmark packet row
   filter token, and keep the existing smoke assertion.
-- No verification was run after the final hand-off-only instruction. The newest
-  recorded verification is from the billiard invariant plot checkpoint:
+- Verification for the current slice passed:
   `python/tests/unit/test_py_demo_panels.py` passed 43 tests and
   `pixi run lint` passed.
 

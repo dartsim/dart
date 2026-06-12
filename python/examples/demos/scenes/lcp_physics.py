@@ -25,8 +25,9 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 0.002
 _RAMP_TILT_RAD = math.radians(12.0)
 _HISTORY = 180
+_BENCHMARK_SMOKE_FILTER = "BM_LCP_COMPARE_SMOKE"
 _BENCHMARK_COMMAND = (
-    "pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE"
+    f"pixi run bm lcp_compare -- --benchmark_filter={_BENCHMARK_SMOKE_FILTER}"
 )
 _STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY = True
 _STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0])
@@ -147,6 +148,24 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "benchmark_filter": "BM_LcpWorldArticulated|BM_LcpArticulatedUnifiedContact",
         "coverage": "robot-link contact assembly and solve cost",
     },
+)
+
+
+def _benchmark_filter_union(rows: tuple[dict[str, str], ...]) -> str:
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for token in row["benchmark_filter"].split("|"):
+            if token and token not in seen:
+                seen.add(token)
+                tokens.append(token)
+    return "|".join(tokens)
+
+
+_REPRESENTATIVE_BENCHMARK_FILTER = _benchmark_filter_union(_BENCHMARK_PACKET_ROWS)
+_REPRESENTATIVE_BENCHMARK_COMMAND = (
+    "pixi run bm lcp_compare -- --benchmark_filter="
+    f"'{_REPRESENTATIVE_BENCHMARK_FILTER}'"
 )
 
 _SOLVER_SUPPORT_ROWS: tuple[dict[str, Any], ...] = (
@@ -1629,6 +1648,9 @@ def build() -> SceneSetup:
             ],
             "solver_manifest_summary": _solver_manifest_summary(),
             "benchmark_command": _BENCHMARK_COMMAND,
+            "benchmark_smoke_filter": _BENCHMARK_SMOKE_FILTER,
+            "representative_benchmark_filter": _REPRESENTATIVE_BENCHMARK_FILTER,
+            "representative_benchmark_command": _REPRESENTATIVE_BENCHMARK_COMMAND,
             "standalone_lcp_solvers_exposed_in_dartpy": (
                 _STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY
             ),

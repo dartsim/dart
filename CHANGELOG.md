@@ -1423,6 +1423,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard
     packets remain solvable through fallback delegation.
+  - Exposed a representative LCP benchmark-suite command in the Python LCP demo
+    metadata by deriving one runnable filter from the demo's benchmark packet
+    table while preserving the quick smoke benchmark command.
   - Fixed boxed semi-smooth Newton LCP solves with friction-index moving
     bounds by including the bound derivative in the natural-residual
     Jacobian. Added manifest-driven coverage for coupled mildly
