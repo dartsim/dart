@@ -121,6 +121,16 @@ __device__ double squaredNorm(const Vec3 value)
   return dot(value, value);
 }
 
+__device__ double component(const Vec3 value, const int index)
+{
+  return index == 0 ? value.x : (index == 1 ? value.y : value.z);
+}
+
+__device__ double identityEntry(const int row, const int col)
+{
+  return row == col ? 1.0 : 0.0;
+}
+
 __device__ bool isFinite(const Vec3 value)
 {
   return isfinite(value.x) && isfinite(value.y) && isfinite(value.z);
@@ -236,6 +246,126 @@ pointEdgeSquaredDistanceDevice(const Vec3 p, const Vec3 a, const Vec3 b)
   result.closestPoint = add(a, scale(result.edgeCoordinate, edge));
   result.squaredDistance = squaredNorm(subtract(p, result.closestPoint));
   return result;
+}
+
+__device__ void writePointEdgeDistanceGradient(
+    const PointEdgeDistanceDevice& distance, const Vec3 p, double* gradient)
+{
+  const Vec3 residual = subtract(p, distance.closestPoint);
+  const double t = distance.edgeCoordinate;
+  const Vec3 blocks[3] = {
+      scale(2.0, residual),
+      scale(-2.0 * (1.0 - t), residual),
+      scale(-2.0 * t, residual),
+  };
+  for (int block = 0; block < 3; ++block) {
+    gradient[3 * block] = blocks[block].x;
+    gradient[3 * block + 1] = blocks[block].y;
+    gradient[3 * block + 2] = blocks[block].z;
+  }
+}
+
+__device__ void writePointPointDistanceHessianMapped(
+    const int blockA, const int blockB, double* hessian)
+{
+  for (int i = 0; i < 81; ++i) {
+    hessian[i] = 0.0;
+  }
+  for (int componentIndex = 0; componentIndex < 3; ++componentIndex) {
+    const int a = 3 * blockA + componentIndex;
+    const int b = 3 * blockB + componentIndex;
+    hessian[9 * a + a] += 2.0;
+    hessian[9 * a + b] -= 2.0;
+    hessian[9 * b + a] -= 2.0;
+    hessian[9 * b + b] += 2.0;
+  }
+}
+
+__device__ void writePointEdgeDistanceHessian(
+    const Vec3 p,
+    const Vec3 a,
+    const Vec3 b,
+    const PointEdgeDistanceDevice& distance,
+    double* hessian)
+{
+  if (distance.edgeCoordinate <= 0.0) {
+    writePointPointDistanceHessianMapped(0, 1, hessian);
+    return;
+  }
+  if (distance.edgeCoordinate >= 1.0) {
+    writePointPointDistanceHessianMapped(0, 2, hessian);
+    return;
+  }
+
+  const Vec3 u = subtract(b, a);
+  const Vec3 w = subtract(p, a);
+  const double numerator = squaredNorm(cross(u, w));
+  const double denominator = squaredNorm(u);
+  if (!(denominator > 0.0) || !isfinite(denominator)) {
+    writePointPointDistanceHessianMapped(0, 1, hessian);
+    return;
+  }
+
+  constexpr double coeffU[4] = {0.0, -1.0, 1.0, 0.0};
+  constexpr double coeffW[4] = {1.0, -1.0, 0.0, 0.0};
+  const double u2 = squaredNorm(u);
+  const double w2 = squaredNorm(w);
+  const double uw = dot(u, w);
+  const Vec3 gradientU = subtract(scale(2.0 * w2, u), scale(2.0 * uw, w));
+  const Vec3 gradientW = subtract(scale(2.0 * u2, w), scale(2.0 * uw, u));
+
+  double numeratorGradient[12];
+  double denominatorGradient[12];
+  for (int block = 0; block < 4; ++block) {
+    for (int c = 0; c < 3; ++c) {
+      numeratorGradient[3 * block + c]
+          = coeffU[block] * component(gradientU, c)
+            + coeffW[block] * component(gradientW, c);
+      denominatorGradient[3 * block + c]
+          = 2.0 * coeffU[block] * component(u, c);
+    }
+  }
+
+  const double denominatorSquared = denominator * denominator;
+  const double denominatorCubed = denominatorSquared * denominator;
+  for (int row = 0; row < 9; ++row) {
+    const int rowBlock = row / 3;
+    const int rowComponent = row % 3;
+    for (int col = 0; col < 9; ++col) {
+      const int colBlock = col / 3;
+      const int colComponent = col % 3;
+      const double identity = identityEntry(rowComponent, colComponent);
+      const double hUU
+          = 2.0 * w2 * identity
+            - 2.0 * component(w, rowComponent) * component(w, colComponent);
+      const double hWW
+          = 2.0 * u2 * identity
+            - 2.0 * component(u, rowComponent) * component(u, colComponent);
+      const double hUW
+          = 4.0 * component(u, rowComponent) * component(w, colComponent)
+            - 2.0 * component(w, rowComponent) * component(u, colComponent)
+            - 2.0 * uw * identity;
+      const double hWU
+          = 4.0 * component(u, colComponent) * component(w, rowComponent)
+            - 2.0 * component(w, colComponent) * component(u, rowComponent)
+            - 2.0 * uw * identity;
+      const double numeratorHessian
+          = coeffU[rowBlock] * coeffU[colBlock] * hUU
+            + coeffU[rowBlock] * coeffW[colBlock] * hUW
+            + coeffW[rowBlock] * coeffU[colBlock] * hWU
+            + coeffW[rowBlock] * coeffW[colBlock] * hWW;
+      const double denominatorHessian
+          = 2.0 * coeffU[rowBlock] * coeffU[colBlock] * identity;
+      hessian[9 * row + col]
+          = numeratorHessian / denominator
+            - numerator * denominatorHessian / denominatorSquared
+            - (numeratorGradient[row] * denominatorGradient[col]
+               + denominatorGradient[row] * numeratorGradient[col])
+                  / denominatorSquared
+            + 2.0 * numerator * denominatorGradient[row]
+                  * denominatorGradient[col] / denominatorCubed;
+    }
+  }
 }
 
 __device__ EdgeEdgeDistanceDevice edgeEdgeSquaredDistanceDevice(
@@ -915,6 +1045,77 @@ __global__ void pointPointBarrierHessianKernel(
   }
 }
 
+__global__ void pointEdgeBarrierHessianKernel(
+    const PointEdgeBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    double* barrierHessians,
+    std::uint8_t* activeBarriers,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  squaredDistances[index] = 0.0;
+  barrierValues[index] = 0.0;
+  activeBarriers[index] = 0u;
+
+  const std::size_t gradientOffset = 9 * index;
+  const std::size_t hessianOffset = 81 * index;
+  double distanceGradient[9];
+  double distanceHessian[81];
+  for (double& entry : distanceGradient) {
+    entry = 0.0;
+  }
+  for (double& entry : distanceHessian) {
+    entry = 0.0;
+  }
+  for (int entry = 0; entry < 9; ++entry) {
+    barrierGradients[gradientOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  for (int entry = 0; entry < 81; ++entry) {
+    barrierHessians[hessianOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+
+  const PointEdgeBarrierInput input = inputs[index];
+  const Vec3 p = makeVec3(input.point);
+  const Vec3 a = makeVec3(input.edgeA);
+  const Vec3 b = makeVec3(input.edgeB);
+  const auto distance = pointEdgeSquaredDistanceDevice(p, a, b);
+  squaredDistances[index] = distance.squaredDistance;
+  writePointEdgeDistanceGradient(distance, p, distanceGradient);
+  writePointEdgeDistanceHessian(p, a, b, distance, distanceHessian);
+
+  const double stiffness
+      = isfinite(input.stiffness) ? fmax(0.0, input.stiffness) : 0.0;
+  const BarrierScalar barrier = c2ClampedLogBarrierDevice(
+      distance.squaredDistance, input.squaredActivationDistance);
+  if (barrier.active == 0u || !(stiffness > 0.0)) {
+    return;
+  }
+
+  activeBarriers[index] = 1u;
+  barrierValues[index] = stiffness * barrier.value;
+  for (int entry = 0; entry < 9; ++entry) {
+    barrierGradients[gradientOffset + static_cast<std::size_t>(entry)]
+        = stiffness * barrier.firstDerivative * distanceGradient[entry];
+  }
+
+  for (int row = 0; row < 9; ++row) {
+    for (int col = 0; col < 9; ++col) {
+      barrierHessians[hessianOffset + static_cast<std::size_t>(9 * row + col)]
+          = stiffness
+            * (barrier.secondDerivative * distanceGradient[row]
+                   * distanceGradient[col]
+               + barrier.firstDerivative * distanceHessian[9 * row + col]);
+    }
+  }
+}
+
 __global__ void pointTriangleTangentStencilKernel(
     const PointTriangleTangentInput* inputs,
     double* basisValues,
@@ -1157,6 +1358,34 @@ cudaError_t launchPointPointBarrierHessianKernel(
   constexpr unsigned int blockSize = 256;
   const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
   pointPointBarrierHessianKernel<<<gridSize, blockSize>>>(
+      inputs,
+      squaredDistances,
+      barrierValues,
+      barrierGradients,
+      barrierHessians,
+      activeBarriers,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointEdgeBarrierHessianKernel(
+    const PointEdgeBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    double* barrierHessians,
+    std::uint8_t* activeBarriers,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointEdgeBarrierHessianKernel<<<gridSize, blockSize>>>(
       inputs,
       squaredDistances,
       barrierValues,

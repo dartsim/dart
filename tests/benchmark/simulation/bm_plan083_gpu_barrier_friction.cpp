@@ -94,6 +94,17 @@ struct CpuPointPointBarrierResult
   double maxBarrierValue = 0.0;
 };
 
+struct CpuPointEdgeBarrierResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<double> barrierValues;
+  std::vector<double> barrierGradients;
+  std::vector<double> barrierHessians;
+  std::vector<std::uint8_t> activeBarriers;
+  std::size_t activeBarrierCount = 0;
+  double maxBarrierValue = 0.0;
+};
+
 struct CpuPointTriangleTangentResult
 {
   std::vector<double> basisValues;
@@ -132,6 +143,12 @@ struct PointPointBarrierFixture
 {
   std::vector<cuda::PointPointBarrierInput> inputs;
   CpuPointPointBarrierResult cpu;
+};
+
+struct PointEdgeBarrierFixture
+{
+  std::vector<cuda::PointEdgeBarrierInput> inputs;
+  CpuPointEdgeBarrierResult cpu;
 };
 
 struct PointTriangleTangentFixture
@@ -235,6 +252,38 @@ cuda::PointPointBarrierInput makePointPointBarrierInput(const int i)
   cuda::PointPointBarrierInput input;
   writeVec3(input.pointA, a);
   writeVec3(input.pointB, a + offset);
+  input.squaredActivationDistance = 0.25;
+  input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
+  return input;
+}
+
+cuda::PointEdgeBarrierInput makePointEdgeBarrierInput(const int i)
+{
+  const bool inactive = (i % 11) == 0;
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const Eigen::Vector3d a(
+      -0.2 + 0.15 * row,
+      0.05 * static_cast<double>(i % 11),
+      0.02 * static_cast<double>(i % 17));
+  const Eigen::Vector3d edge(
+      1.0 + 0.001 * static_cast<double>(i % 13),
+      0.25 + 0.1 * row,
+      0.15 + 0.01 * static_cast<double>(i % 7));
+  Eigen::Vector3d normal = edge.cross(Eigen::Vector3d::UnitZ());
+  if (normal.squaredNorm() < 1e-12) {
+    normal = edge.cross(Eigen::Vector3d::UnitY());
+  }
+  normal.normalize();
+
+  const double t = 0.15 + 0.7 * column;
+  const double offset = inactive ? 0.75 : 0.03 + 0.0005 * (i % 23);
+  const Eigen::Vector3d p = a + t * edge + offset * normal;
+
+  cuda::PointEdgeBarrierInput input;
+  writeVec3(input.point, p);
+  writeVec3(input.edgeA, a);
+  writeVec3(input.edgeB, a + edge);
   input.squaredActivationDistance = 0.25;
   input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
   return input;
@@ -380,6 +429,17 @@ void resizeCpuResult(
   result.maxBarrierValue = 0.0;
 }
 
+void resizeCpuResult(CpuPointEdgeBarrierResult& result, const std::size_t count)
+{
+  result.squaredDistances.assign(count, 0.0);
+  result.barrierValues.assign(count, 0.0);
+  result.barrierGradients.assign(9 * count, 0.0);
+  result.barrierHessians.assign(81 * count, 0.0);
+  result.activeBarriers.assign(count, 0u);
+  result.activeBarrierCount = 0;
+  result.maxBarrierValue = 0.0;
+}
+
 void resizeCpuResult(
     CpuPointTriangleTangentResult& result, const std::size_t count)
 {
@@ -505,6 +565,40 @@ void evaluateCpu(
     for (int row = 0; row < 6; ++row) {
       for (int col = 0; col < 6; ++col) {
         result.barrierHessians[36 * i + static_cast<std::size_t>(6 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+}
+
+void evaluateCpu(
+    const std::vector<cuda::PointEdgeBarrierInput>& inputs,
+    CpuPointEdgeBarrierResult& result)
+{
+  resizeCpuResult(result, inputs.size());
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::pointEdgeBarrier(
+        readVec3(input.point),
+        readVec3(input.edgeA),
+        readVec3(input.edgeB),
+        input.squaredActivationDistance,
+        input.stiffness);
+    result.squaredDistances[i] = barrier.squaredDistance;
+    result.barrierValues[i] = barrier.value;
+    if (barrier.active) {
+      result.activeBarriers[i] = 1u;
+      ++result.activeBarrierCount;
+      result.maxBarrierValue
+          = std::max(result.maxBarrierValue, result.barrierValues[i]);
+    }
+    for (int entry = 0; entry < 9; ++entry) {
+      result.barrierGradients[9 * i + static_cast<std::size_t>(entry)]
+          = barrier.gradient[entry];
+    }
+    for (int row = 0; row < 9; ++row) {
+      for (int col = 0; col < 9; ++col) {
+        result.barrierHessians[81 * i + static_cast<std::size_t>(9 * row + col)]
             = barrier.hessian(row, col);
       }
     }
@@ -716,6 +810,17 @@ PointPointBarrierFixture makePointPointBarrierFixture(const int sampleCount)
   return fixture;
 }
 
+PointEdgeBarrierFixture makePointEdgeBarrierFixture(const int sampleCount)
+{
+  PointEdgeBarrierFixture fixture;
+  fixture.inputs.reserve(static_cast<std::size_t>(sampleCount));
+  for (int i = 0; i < sampleCount; ++i) {
+    fixture.inputs.push_back(makePointEdgeBarrierInput(i));
+  }
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
 PointTriangleTangentFixture makePointTriangleTangentFixture(
     const int sampleCount)
 {
@@ -839,6 +944,25 @@ double maxOutputError(
 }
 
 double maxOutputError(
+    const CpuPointEdgeBarrierResult& expected,
+    const cuda::PointEdgeBarrierHessianResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.squaredDistances, actual.squaredDistances));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.barrierValues, actual.barrierValues));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierGradients, actual.barrierGradients));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.barrierHessians, actual.barrierHessians));
+  return maxError;
+}
+
+double maxOutputError(
     const CpuPointTriangleTangentResult& expected,
     const cuda::PointTriangleTangentStencilResult& actual)
 {
@@ -930,6 +1054,20 @@ void recordCounters(
 void recordCounters(
     benchmark::State& state,
     const PointPointBarrierFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["active_barriers"]
+      = static_cast<double>(fixture.cpu.activeBarrierCount);
+  state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
+void recordCounters(
+    benchmark::State& state,
+    const PointEdgeBarrierFixture& fixture,
     const double maxError)
 {
   state.counters["samples"] = static_cast<double>(fixture.inputs.size());
@@ -1146,6 +1284,57 @@ static void BM_Plan083PointPointBarrierHessianCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointPointBarrierHessianCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointEdgeBarrierHessianCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  CpuPointEdgeBarrierResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointEdgeBarrierHessianCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointEdgeBarrierHessianCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  cuda::PointEdgeBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluatePointEdgeBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointEdgeBarrierHessianCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

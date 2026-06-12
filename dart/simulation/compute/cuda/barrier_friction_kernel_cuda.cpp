@@ -77,6 +77,15 @@ cudaError_t launchPointPointBarrierHessianKernel(
     std::uint8_t* activeBarriers,
     std::size_t inputCount);
 
+cudaError_t launchPointEdgeBarrierHessianKernel(
+    const PointEdgeBarrierInput* inputs,
+    double* squaredDistances,
+    double* barrierValues,
+    double* barrierGradients,
+    double* barrierHessians,
+    std::uint8_t* activeBarriers,
+    std::size_t inputCount);
+
 cudaError_t launchPointTriangleTangentStencilKernel(
     const PointTriangleTangentInput* inputs,
     double* basisValues,
@@ -178,6 +187,22 @@ void validateInputs(const std::vector<PointPointBarrierInput>& inputs)
             || !std::isfinite(input.stiffness),
         sx::InvalidArgumentException,
         "evaluatePointPointBarrierHessiansCuda input {} has a non-finite "
+        "field",
+        i);
+  }
+}
+
+void validateInputs(const std::vector<PointEdgeBarrierInput>& inputs)
+{
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    DART_SIMULATION_THROW_T_IF(
+        !isFiniteVec3(input.point) || !isFiniteVec3(input.edgeA)
+            || !isFiniteVec3(input.edgeB)
+            || !std::isfinite(input.squaredActivationDistance)
+            || !std::isfinite(input.stiffness),
+        sx::InvalidArgumentException,
+        "evaluatePointEdgeBarrierHessiansCuda input {} has a non-finite "
         "field",
         i);
   }
@@ -474,6 +499,81 @@ void evaluatePointPointBarrierHessiansCuda(
       result.barrierHessians, "point-point barrier Hessians copy");
   deviceActiveBarriers.copyFromDevice(
       result.activeBarriers, "point-point active barriers copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    if (result.activeBarriers[i] != 0u) {
+      ++result.activeBarrierCount;
+      result.maxBarrierValue
+          = std::max(result.maxBarrierValue, result.barrierValues[i]);
+    }
+  }
+}
+
+//==============================================================================
+void evaluatePointEdgeBarrierHessiansCuda(
+    const std::vector<PointEdgeBarrierInput>& inputs,
+    PointEdgeBarrierHessianResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateInputs(inputs);
+
+  result = PointEdgeBarrierHessianResult{};
+  result.squaredDistances.resize(inputs.size(), 0.0);
+  result.barrierValues.resize(inputs.size(), 0.0);
+  result.barrierGradients.resize(9 * inputs.size(), 0.0);
+  result.barrierHessians.resize(81 * inputs.size(), 0.0);
+  result.activeBarriers.resize(inputs.size(), 0u);
+
+  if (inputs.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<PointEdgeBarrierInput> deviceInputs(inputs.size());
+  DeviceBuffer<double> deviceSquaredDistances(inputs.size());
+  DeviceBuffer<double> deviceBarrierValues(inputs.size());
+  DeviceBuffer<double> deviceBarrierGradients(9 * inputs.size());
+  DeviceBuffer<double> deviceBarrierHessians(81 * inputs.size());
+  DeviceBuffer<std::uint8_t> deviceActiveBarriers(inputs.size());
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceInputs.copyToDevice(inputs, "point-edge barrier inputs copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto kernelStart = Clock::now();
+  throwIfCudaError(
+      detail::launchPointEdgeBarrierHessianKernel(
+          deviceInputs.data(),
+          deviceSquaredDistances.data(),
+          deviceBarrierValues.data(),
+          deviceBarrierGradients.data(),
+          deviceBarrierHessians.data(),
+          deviceActiveBarriers.data(),
+          inputs.size()),
+      "point-edge barrier Hessian kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "point-edge barrier Hessian synchronize");
+  const auto kernelEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceSquaredDistances.copyFromDevice(
+      result.squaredDistances, "point-edge squared distances copy");
+  deviceBarrierValues.copyFromDevice(
+      result.barrierValues, "point-edge barrier values copy");
+  deviceBarrierGradients.copyFromDevice(
+      result.barrierGradients, "point-edge barrier gradients copy");
+  deviceBarrierHessians.copyFromDevice(
+      result.barrierHessians, "point-edge barrier Hessians copy");
+  deviceActiveBarriers.copyFromDevice(
+      result.activeBarriers, "point-edge active barriers copy");
   const auto d2hEnd = Clock::now();
 
   result.timing.setupNs = elapsedNs(setupStart, setupEnd);

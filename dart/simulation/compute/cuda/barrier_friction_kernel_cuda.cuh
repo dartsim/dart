@@ -66,6 +66,15 @@ struct PointPointBarrierInput
   double stiffness = 1.0;
 };
 
+struct PointEdgeBarrierInput
+{
+  double point[3] = {0.0, 0.0, 0.0};
+  double edgeA[3] = {0.0, 0.0, 0.0};
+  double edgeB[3] = {0.0, 0.0, 0.0};
+  double squaredActivationDistance = 1.0;
+  double stiffness = 1.0;
+};
+
 struct PointTriangleTangentInput
 {
   double point[3] = {0.0, 0.0, 0.0};
@@ -146,6 +155,18 @@ struct PointPointBarrierHessianResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct PointEdgeBarrierHessianResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<double> barrierValues;
+  std::vector<double> barrierGradients;
+  std::vector<double> barrierHessians;
+  std::vector<std::uint8_t> activeBarriers;
+  std::size_t activeBarrierCount = 0;
+  double maxBarrierValue = 0.0;
+  BarrierFrictionLocalTiming timing;
+};
+
 struct PointTriangleTangentStencilResult
 {
   std::vector<double> basisValues;
@@ -213,6 +234,15 @@ void evaluatePointTriangleBarrierGradientsCuda(
 void evaluatePointPointBarrierHessiansCuda(
     const std::vector<PointPointBarrierInput>& inputs,
     PointPointBarrierHessianResult& result);
+
+/// Evaluate private point-edge barrier values, gradients, and Hessians on CUDA.
+///
+/// This packet extends primitive Hessian assembly evidence beyond point-point
+/// contacts. It intentionally does not cover PSD projection, runtime contact
+/// rows, off-diagonal sparse assembly, or a public GPU backend.
+void evaluatePointEdgeBarrierHessiansCuda(
+    const std::vector<PointEdgeBarrierInput>& inputs,
+    PointEdgeBarrierHessianResult& result);
 
 /// Evaluate private point-triangle tangent stencils on CUDA.
 ///
