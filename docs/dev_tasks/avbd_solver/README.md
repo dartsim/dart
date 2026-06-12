@@ -9,15 +9,21 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest literal stop handoff (2026-06-11): the user explicitly directed the
-  session to stop working further and only ensure the handoff docs. No further
-  implementation, lint, build, tests, CI refresh, PR mutation, push, merge, or
-  branch cleanup was performed after that instruction. The active branch is
-  `avbd/source-row-extraction-precheck`; at the stop point it has two local
-  commits on top of pushed `origin/avbd/source-row-extraction-precheck`:
-  `51eb9b48e08` (`Record AVBD angular motor validation evidence`) and
-  `13604d8b8b5` (`Reuse AVBD distance spring row scratch`). Treat this branch
-  as the consolidated local resume branch and push only with explicit approval.
+- Latest resumed checkpoint (2026-06-11): work resumed after the prior
+  stop-only handoff to finish the contact-manifold small-row scratch cleanup on
+  the consolidated local branch `avbd/source-row-extraction-precheck`.
+  `buildAvbdRigidContactManifoldRows()` now uses stack-backed active contact,
+  normal descriptor, local-point, and friction descriptor storage for small
+  contact manifolds, while larger manifolds keep using reusable scratch. Local
+  validation passed `pixi run lint`, the affected rigid-block/contact target
+  build, the focused rigid contact-manifold filter (2 tests), the focused
+  boxed-LCP contact filter (17 tests), full `test_avbd_rigid_block` (95 tests),
+  full `test_boxed_lcp_contact` (122 tests), `pixi run build`, and
+  `git diff --check`. A follow-up audit tightened the small path so cached
+  previous friction directions also use stack storage instead of the scratch
+  vector. This checkpoint remains local; no push, PR mutation, hosted CI rerun,
+  merge, or branch cleanup was performed. This is only source-row extraction
+  overhead cleanup, not a source CPU-win, GPU, or paper-number claim.
 - Latest resumed follow-up (2026-06-11): rigid distance-spring source-row
   extraction now has reusable private active-row scratch for the large-input
   path, and the world contact solve scratch reserves/reuses it alongside joint
