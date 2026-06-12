@@ -1104,6 +1104,34 @@ def test_rigid_workflow_latest_signals_prioritize_normal_push_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_contact_push_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "case_pair": ["Sequential impulse", "IPC barrier"],
+            "executor": "Sequential",
+            "ipc_contact_count": 2.0,
+            "ipc_max_contact_count": 3.0,
+            "ipc_min_gap": 0.004,
+            "ipc_target_travel": 0.134,
+            "sequential_impulse_contact_count": 1.0,
+            "sequential_impulse_max_contact_count": 2.0,
+            "sequential_impulse_target_travel": 0.142,
+            "solver": "sequential_impulse_vs_ipc",
+            "solver_pair": ["SEQUENTIAL_IMPULSE", "IPC"],
+            "travel_divergence": 0.008,
+        }
+    )
+
+    assert highlights[:6] == [
+        "travel divergence: 0.008",
+        "sequential impulse target travel: 0.142",
+        "ipc target travel: 0.134",
+        "sequential impulse max contact count: 2",
+        "ipc min gap: 0.004",
+        "solver pair: SEQUENTIAL_IMPULSE / IPC",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

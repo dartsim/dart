@@ -259,6 +259,11 @@ class _RigidContactManipulation:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _step_profile_ms(self, world: Any) -> float:
         try:
             profile = world.last_step_profile
@@ -345,10 +350,10 @@ class _RigidContactManipulation:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
-        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
-        self.executor_index = executor_index
+        executor_label = self._executor_label()
         cases = {
             case.label: {
+                "label": case.label,
                 "rigid_body_solver": case.solver.name,
                 "metrics": dict(self._last_metrics[case.label]),
             }
@@ -388,16 +393,29 @@ class _RigidContactManipulation:
 
         return {
             "row": "rigid_contact_manipulation",
+            "comparison_axis": "rigid_pusher_contact_response",
             "solver": "sequential_impulse_vs_ipc",
-            "executor": self._executors[executor_index][0],
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
+            "held_fixed": {
+                "executor": executor_label,
+                "goal_relative_x": _GOAL_RELATIVE_X,
+                "target_mass": 1.0,
+                "time_step_ms": _TIME_STEP * 1000.0,
+                "workspace": "matched table pusher lanes",
+            },
             "controls": {
                 "friction": float(self.friction),
                 "launch_speed": float(self.launch_speed),
                 "pusher_mass": float(self.pusher_mass),
             },
             "case_pair": [case.label for case in self.cases],
+            "solver_pair": [case.solver.name for case in self.cases],
+            "lane_order": [case.label for case in self.cases],
+            "sequential_impulse_status": str(
+                self._last_metrics[si_label]["status"]
+            ),
             "sequential_impulse_solver_enum": self.cases[0].solver.name,
             "sequential_impulse_target_travel": case_metric(
                 si_label, "target_travel"
@@ -414,6 +432,11 @@ class _RigidContactManipulation:
             ),
             "sequential_impulse_goal_error": case_metric(si_label, "goal_error"),
             "sequential_impulse_step_ms": case_metric(si_label, "step_ms"),
+            "sequential_impulse_max_contact_count": max(
+                contact_history[si_label], default=0.0
+            ),
+            "sequential_impulse_min_gap": min(gap_history[si_label], default=0.0),
+            "ipc_status": str(self._last_metrics[ipc_label]["status"]),
             "ipc_solver_enum": self.cases[1].solver.name,
             "ipc_target_travel": case_metric(ipc_label, "target_travel"),
             "ipc_gap": case_metric(ipc_label, "gap"),
@@ -422,6 +445,8 @@ class _RigidContactManipulation:
             "ipc_lateral_drift": case_metric(ipc_label, "lateral_drift"),
             "ipc_goal_error": case_metric(ipc_label, "goal_error"),
             "ipc_step_ms": case_metric(ipc_label, "step_ms"),
+            "ipc_max_contact_count": max(contact_history[ipc_label], default=0.0),
+            "ipc_min_gap": min(gap_history[ipc_label], default=0.0),
             "travel_divergence": (
                 float(self._divergence_history[-1])
                 if self._divergence_history
@@ -662,6 +687,12 @@ class _RigidContactManipulation:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: rigid pusher contact response")
+        builder.text(
+            f"held fixed: executor {self._executor_label()} | shared table/goal | "
+            f"target mass 1.0 | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
+        builder.text("solver pair: Sequential impulse vs IPC barrier")
         builder.text("task: block pusher moves a table object toward the goal strip")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")

@@ -2,20 +2,20 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 24 now exposes the normal kinematic-push caveat as a
-reviewable comparison packet. `rigid_kinematic_normal_push` labels the
-prescribed normal-contact response axis, records held-fixed normal-paddle
-context, exports lane/solver/case metrics, and gives the workflow
-`review_index.html` visible latest signals for target-travel divergence, SI
-target travel, IPC penetration depth, solver pair, case pair, and solver label.
+Latest local slice: row 22 now exposes the task-like rigid pusher scene as a
+reviewable comparison packet. `rigid_contact_manipulation` labels the rigid
+pusher contact-response axis, records held-fixed matched table/goal context,
+exports lane/solver/case metrics, and gives the workflow `review_index.html`
+visible latest signals for travel divergence, both solver lanes' target travel,
+sequential-impulse contact evidence, IPC proximity gap, and solver pair.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed commit before this slice was
-  `7cefea25c55 Add contact failure workflow signals`; if this slice has been
-  committed, expect one additional local commit for normal-push workflow
+  `acf9f942542 Surface normal push workflow signals`; if this slice has been
+  committed, expect one additional local commit for contact-manipulation
   signals.
 - Do not push without explicit approval in the session that performs the push.
 - If this slice is still uncommitted, inspect the row-24 diff first. If it is
@@ -23,40 +23,44 @@ Resume from this state:
   rigid GUI-verification gap, or maintainer acceptance of the current
   row-15-through-row-24 evidence direction before broadening further.
 
-Row-24 normal-push slice:
+Row-22 contact-manipulation slice:
 
-- `rigid_kinematic_normal_push` now exports
-  `comparison_axis=prescribed_normal_contact_response`, held-fixed context
-  (`executor=Sequential`, normal kinematic paddle, zero friction, 4 ms time
+- `rigid_contact_manipulation` now exports
+  `comparison_axis=rigid_pusher_contact_response`, held-fixed context
+  (`executor=Sequential`, matched table/goal lanes, target mass, 4 ms time
   step), solver/case/lane metadata, and top-level capture metrics including
-  `target_travel_divergence`, `ipc_normal_max_depth`,
-  `ipc_heavy_max_depth`, and `si_caveat_target_travel`.
+  `travel_divergence`, `sequential_impulse_target_travel`,
+  `ipc_target_travel`, `sequential_impulse_max_contact_count`, and
+  `ipc_min_gap`.
 - Its GUI panel labels the comparison axis, held-fixed context, and solver
-  lanes.
-- `scripts/capture_py_demo.py` prioritizes the row-24 normal-push latest-signal
-  keys so the visible card shows target-travel divergence, SI target travel,
-  IPC depth, solver pair, case pair, and solver label.
+  pair.
+- `scripts/capture_py_demo.py` prioritizes the row-22 latest-signal keys so the
+  visible card shows travel divergence, both solver lanes' target travel,
+  sequential-impulse contact evidence, IPC proximity gap, and solver pair.
 - `python/examples/demos/README.md` and PLAN-103 document the rows 22-24
-  contact/kinematic-push packet and the row-24 normal-contact comparison axis.
+  contact/kinematic-push packet plus the row-22 pusher-contact and row-24
+  normal-contact comparison axes.
 
 Evidence for this slice:
 
-- Focused row/panel/docs-order/review-index pytest subset reported `7 passed`.
+- Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
 - Real rows 22-24 workflow capture completed under
-  `/tmp/dart_capture_rigid_kinematic_push_rows_22_24_1781297545` with
+  `/tmp/dart_capture_rigid_contact_kinematic_rows_22_24_1781298573` with
   `status=complete`, `capture_count=3`, `completed_count=3`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 24 in that capture reported the intended comparison axis, held-fixed
-  context, controls `push_speed=0.45` and `target_mass=1.0`, solver pair
-  `IPC / IPC / SEQUENTIAL_IMPULSE`, target-travel divergence
-  `0.1227970002919199`, SI target travel `0.12304999999999999`, and IPC normal
-  max depth `0.12514700029191989`.
-- `review_index.html` showed the row-24 card with `axis`, `held fixed`,
+- Row 22 in that capture reported the intended comparison axis, held-fixed
+  context, controls `friction=0.18`, `launch_speed=1.2`,
+  `pusher_mass=10.0`, solver pair `SEQUENTIAL_IMPULSE / IPC`,
+  `travel_divergence=0.021727719348242358`, SI target travel
+  `0.20253235976416473`, IPC target travel `0.22426007911240708`, SI max
+  contact count `4.0`, and IPC minimum gap `0.001615760232517638`.
+- `review_index.html` showed the row-22 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and visible latest
-  signals for target-travel divergence, SI target travel, IPC depth, solver
-  pair, case pair, and solver label. Per-scene captures wrote nonblank docked
-  screenshots and 71 PNG frames for rows 22-24.
+  signals for travel divergence, both solver lanes' target travel,
+  sequential-impulse contact evidence, IPC proximity gap, and solver pair. The
+  same packet kept the previously improved row-24 card adjacent. Per-scene
+  captures wrote nonblank docked screenshots and 71 PNG frames for rows 22-24.
 
 Immediate next step if resumed after commit:
 
@@ -65,6 +69,13 @@ Immediate next step if resumed after commit:
 2. Continue from a fresh audit of the next rigid workflow gap; do not assume the
    broader DART 7 rigid showcase goal is complete.
 3. Preserve the no-push rule until the user explicitly approves a push.
+
+Previous checkpoint: row 24 exposes the normal kinematic-push caveat as a
+reviewable comparison packet. `rigid_kinematic_normal_push` labels the
+prescribed normal-contact response axis, records held-fixed normal-paddle
+context, exports lane/solver/case metrics, and gives the workflow
+`review_index.html` visible latest signals for target-travel divergence, SI
+target travel, IPC penetration depth, solver pair, case pair, and solver label.
 
 Previous checkpoint: rows 19-21 are a verified contact-failure comparison
 mini-packet. `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and

@@ -3331,8 +3331,14 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_contact_manipulation"
+    assert capture_metrics["comparison_axis"] == "rigid_pusher_contact_response"
     assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
-    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["target_mass"] == pytest.approx(1.0)
+    assert capture_metrics["held_fixed"]["time_step_ms"] == pytest.approx(
+        capture_metrics["time_step_ms"]
+    )
     assert capture_metrics["controls"]["launch_speed"] == pytest.approx(
         controller.launch_speed
     )
@@ -3343,12 +3349,22 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
         controller.pusher_mass
     )
     assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [
+        case.solver.name for case in controller.cases
+    ]
+    assert capture_metrics["lane_order"] == [case.label for case in controller.cases]
     assert set(capture_metrics["cases"]) == {"Sequential impulse", "IPC barrier"}
     assert (
         capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]
         == "SEQUENTIAL_IMPULSE"
     )
     assert capture_metrics["cases"]["IPC barrier"]["rigid_body_solver"] == "IPC"
+    assert capture_metrics["sequential_impulse_status"] == str(
+        controller._last_metrics["Sequential impulse"]["status"]
+    )
+    assert capture_metrics["ipc_status"] == str(
+        controller._last_metrics["IPC barrier"]["status"]
+    )
     assert capture_metrics["sequential_impulse_target_travel"] == pytest.approx(
         controller._last_metrics["Sequential impulse"]["target_travel"]
     )
@@ -3357,6 +3373,12 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
     )
     assert capture_metrics["ipc_gap"] == pytest.approx(
         controller._last_metrics["IPC barrier"]["gap"]
+    )
+    assert capture_metrics["sequential_impulse_max_contact_count"] == pytest.approx(
+        max(controller._contact_history["Sequential impulse"])
+    )
+    assert capture_metrics["ipc_max_contact_count"] == pytest.approx(
+        max(controller._contact_history["IPC barrier"])
     )
     assert capture_metrics["travel_divergence"] == pytest.approx(
         controller._divergence_history[-1]

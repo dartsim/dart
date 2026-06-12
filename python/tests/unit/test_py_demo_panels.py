@@ -1205,6 +1205,14 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_contact_manipulation,
+            (
+                "text:comparison axis: rigid pusher contact response",
+                "text:held fixed: executor Sequential | shared table/goal | target mass 1.0 | time step 4.0 ms",
+                "text:solver pair: Sequential impulse vs IPC barrier",
+            ),
+        ),
+        (
             rigid_kinematic_normal_push,
             (
                 "text:comparison axis: prescribed normal contact response",

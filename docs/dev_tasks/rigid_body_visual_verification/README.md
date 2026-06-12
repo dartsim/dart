@@ -2,27 +2,38 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 24 now gives the normal kinematic-push caveat the same
-reviewable shape as the surrounding rigid contact rows. `rigid_kinematic_normal_push`
-names `prescribed_normal_contact_response` as its comparison axis in the panel
-and capture metrics, records the held-fixed normal-paddle context, exports
-solver/case/lane metadata, and feeds decisive latest-signal values into the
-workflow review index.
+Latest local slice: row 22 now gives the task-like rigid pusher row the same
+reviewable comparison shape as the surrounding rigid contact rows.
+`rigid_contact_manipulation` names `rigid_pusher_contact_response` as its
+comparison axis in the panel and capture metrics, records the held-fixed
+matched table/goal context, exports solver/case/lane metadata, and feeds
+decisive latest-signal values into the workflow review index.
 
 Evidence for this slice:
 
-- Focused row/panel/docs-order/review-index pytest subset reported `7 passed`.
+- Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat`
-  and the unit guard that row-24 latest signals prioritize target-travel
-  divergence, SI target travel, IPC depth, solver pair, case pair, and solver
-  label.
+  `python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal`
+  and the unit guard that row-22 latest signals prioritize travel divergence,
+  both solver lanes' target travel, sequential-impulse contact evidence, IPC
+  proximity gap, and solver pair.
 - Real rows 22-24 workflow capture completed under
-  `/tmp/dart_capture_rigid_kinematic_push_rows_22_24_1781297545` with
+  `/tmp/dart_capture_rigid_contact_kinematic_rows_22_24_1781298573` with
   `status=complete`, `capture_count=3`, `completed_count=3`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 24 in that capture reported
+- Row 22 in that capture reported
+  `comparison_axis=rigid_pusher_contact_response`, held-fixed
+  `executor=Sequential`, `goal_relative_x=0.28`, `target_mass=1.0`,
+  `time_step_ms=4.0`, `workspace=matched table pusher lanes`, controls
+  `friction=0.18`, `launch_speed=1.2`, `pusher_mass=10.0`, solver pair
+  `SEQUENTIAL_IMPULSE / IPC`, case pair `Sequential impulse / IPC barrier`,
+  `travel_divergence=0.021727719348242358`,
+  `sequential_impulse_target_travel=0.20253235976416473`,
+  `ipc_target_travel=0.22426007911240708`,
+  `sequential_impulse_max_contact_count=4.0`, and
+  `ipc_min_gap=0.001615760232517638`.
+- Row 24 in the same capture reported
   `comparison_axis=prescribed_normal_contact_response`, held-fixed
   `contact_friction=0.0`, `executor=Sequential`,
   `kinematic_driver=normal paddle`, `time_step_ms=4.0`, controls
@@ -36,7 +47,10 @@ Evidence for this slice:
 - `review_index.html` showed row 24 with `axis`, `held fixed`, `controls`,
   Replay signal/markers, metric-key summary, and visible latest signals for
   target-travel divergence, SI target travel, IPC depth, solver pair, case
-  pair, and solver label. Rows 22 and 23 stayed adjacent in the same packet.
+  pair, and solver label. Row 22 showed the same review-card surfaces with
+  travel divergence, both solver lanes' target travel, sequential-impulse
+  contact evidence, IPC proximity gap, and solver pair. Row 23 stayed adjacent
+  in the same packet.
 - Per-scene captures wrote nonblank docked screenshots and 71 PNG frames for
   `rigid_contact_manipulation`, `rigid_kinematic_driver`, and
   `rigid_kinematic_normal_push`.
@@ -46,17 +60,25 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed commit before this slice:
-  `7cefea25c55 Add contact failure workflow signals`.
+  `acf9f942542 Surface normal push workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  normal-push workflow signals; otherwise inspect the uncommitted diff for the
-  row-24 follow-up.
+  contact-manipulation workflow signals; otherwise inspect the uncommitted diff
+  for the row-22 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
 current row-15-through-row-24 review-index/evidence direction before broadening
 to another rigid branch.
+
+Previous checkpoint: row 24 gives the normal kinematic-push caveat the same
+reviewable shape as the surrounding rigid contact rows.
+`rigid_kinematic_normal_push` names `prescribed_normal_contact_response` as its
+comparison axis in the panel and capture metrics, records the held-fixed
+normal-paddle context, exports solver/case/lane metadata, and feeds
+target-travel divergence, SI target travel, IPC penetration depth, solver pair,
+case pair, and solver label into the workflow review index.
 
 Previous checkpoint: rows 19-21 form a contact-failure comparison mini-packet
 with explicit user-facing comparison axes and held-fixed controls.

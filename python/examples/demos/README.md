@@ -199,7 +199,7 @@ plus a warning block if any selected row is missing those fields.
 | 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | IPC fixed, executor, ramp angle, controlled friction  | Friction-threshold axis, drift, speed, clearance, metrics      |
 | 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | SI fixed, executor, friction, speed, backspin         | Spin/roll axis, slip speed, roll ratio, spin change, metrics   |
 | 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics  |
-| 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity, metrics          |
+| 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | SI vs IPC, pusher speed, friction, pusher mass        | Pusher-contact axis, travel divergence, contact/proximity      |
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | IPC vs SI caveat, push speed, target mass, executor   | Normal-contact axis, travel divergence, depth, contacts        |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
@@ -554,15 +554,20 @@ solver-family divergence make the stack worth scrubbing.
 The **`rigid_contact_manipulation`** scene turns the rigid workflow from
 isolated micro-cases into a small task-like push. Sequential impulse and rigid
 IPC solve matched table scenes side by side: a heavier moving pusher block
-drives a lighter target box toward a goal strip. The panel exposes pusher launch
-speed, table friction, pusher mass, and executor choice, then plots target
-travel, pusher-target gap, contact/proximity evidence, target speed, lateral
-drift, solver divergence, and per-step timing.
-Capture metrics record the solver pair, executor, controls, per-solver target
-travel, pusher gap, contact count, target speed, lateral drift, goal error,
-step timing, travel divergence, and compact history ranges. The shared Replay
-panel uses travel divergence as its value track and marks pusher contact,
-proximity, target-motion, and solver-divergence frames for fast scrubbing.
+drives a lighter target box toward a goal strip. The panel names the rigid
+pusher contact response as the comparison axis, keeps the matched table/goal,
+target mass, executor, and time step visible as held fixed, exposes pusher
+launch speed, table friction, pusher mass, and executor choice, then plots
+target travel, pusher-target gap, contact/proximity evidence, target speed,
+lateral drift, solver divergence, and per-step timing.
+Capture metrics record the comparison axis, solver pair, executor, held-fixed
+values, controls, per-solver target travel, pusher gap, contact count, target
+speed, lateral drift, goal error, step timing, travel divergence, and compact
+history ranges. The workflow review card surfaces travel divergence, both
+solver lanes' target travel, contact counts, and solver pair as latest signals.
+The shared Replay panel uses travel divergence as its value track and marks
+pusher contact, proximity, target-motion, and solver-divergence frames for fast
+scrubbing.
 
 ## Rigid kinematic driver
 
