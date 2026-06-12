@@ -1,5 +1,79 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Full Performance Profile Refresh
+
+After checkpoint `dcf0d835c1b Refresh LCP performance profile tooling`, work
+continued into the next benchmark-focused gap: regenerating the checked
+performance-profile CSV artifacts from current benchmark rows.
+
+Latest implementation slice:
+
+- A first full script run exposed that the profile script was launching every
+  benchmark in `BM_LCP_COMPARE`, including many unrelated stress/sweep rows
+  ignored by the profile parser; that unfiltered run timed out after 600s.
+- `scripts/lcp_performance_profile.py` now defaults benchmark execution to the
+  profile row family `BM_LcpCompare/`.
+- The script now exposes `--benchmark-timeout` and reports timeout failures with
+  an actionable message instead of a raw Python traceback.
+- `docs/background/lcp/figures/performance_profile_standard.csv`,
+  `docs/background/lcp/figures/performance_profile_boxed.csv`, and
+  `docs/background/lcp/figures/performance_profile_frictionindex.csv` were
+  regenerated from a current full `BM_LcpCompare/` JSON packet.
+- The generated CSVs now have 23 Standard solver columns, 15 Boxed solver
+  columns, and 16 FrictionIndex solver columns, matching native manifest
+  coverage.
+
+Verification completed so far:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+pixi run python scripts/check_lcp_solver_roster.py
+pixi run python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows, header[:4], header[-3:])
+PY
+```
+
+Observed results:
+
+- The current full profile row family completed and cached results to
+  `build/lcp_profile_full.json`.
+- Cached replay completed and wrote check copies under
+  `build/lcp_profile_full_check`.
+- LCP solver roster check passed:
+  `24 solvers, 23 standard, 15 boxed, 16 findex`.
+- Generated CSV shape check reported:
+  - `performance_profile_standard.csv`: 23 solver columns, 200 rows.
+  - `performance_profile_boxed.csv`: 15 solver columns, 200 rows.
+  - `performance_profile_frictionindex.csv`: 16 solver columns, 200 rows.
+
+## Immediate Next Step
+
+After this checkpoint, continue the broad objective with the next concrete
+solver/interface/demo/performance gap. The refreshed profiles now make the next
+benchmark-driven optimization target visible: inspect the slow/high-ratio
+solver families and decide whether to improve implementation performance, tune
+benchmark parameters, or improve the py-demo explanations for solver pros/cons.
+Do not push without explicit approval.
+
+Start by inspecting current branch state:
+
+```bash
+git status --short --branch
+git log --oneline --decorate --max-count=15
+git diff --stat
+```
+
 ## Current Reality - 2026-06-12 Performance Profile Regeneration Schema
 
 After the stop-only hand-off, work resumed on the broad DART 7 LCP objective.

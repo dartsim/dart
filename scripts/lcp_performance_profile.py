@@ -8,6 +8,14 @@ Usage:
 Options:
     --run           Run benchmarks (otherwise use cached results)
     --output DIR    Output directory for results (default: docs/background/lcp/figures)
+    --benchmark-filter REGEX
+                    Google Benchmark regex (default: BM_LcpCompare/)
+    --benchmark-min-time VALUE
+                    Optional Google Benchmark minimum time for smoke runs
+    --benchmark-timeout SECONDS
+                    Benchmark subprocess timeout (default: 600)
+    --allow-partial
+                    Allow incomplete native solver coverage for smoke runs
 """
 
 import argparse
@@ -36,6 +44,8 @@ except ImportError:
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 
 PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
+DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
+DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
 
 
 def canonical_solver_name(name: str) -> str:
@@ -49,8 +59,9 @@ def canonical_solver_name(name: str) -> str:
 
 def run_benchmarks(
     benchmark_exe: Path,
-    filter_pattern: str = "",
+    filter_pattern: str = DEFAULT_BENCHMARK_FILTER,
     benchmark_min_time: str = "",
+    benchmark_timeout: int = DEFAULT_BENCHMARK_TIMEOUT_SECONDS,
 ) -> dict:
     cmd = [str(benchmark_exe), "--benchmark_format=json"]
     if filter_pattern:
@@ -58,7 +69,21 @@ def run_benchmarks(
     if benchmark_min_time:
         cmd.append(f"--benchmark_min_time={benchmark_min_time}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=benchmark_timeout
+        )
+    except subprocess.TimeoutExpired:
+        print(
+            f"Benchmark timed out after {benchmark_timeout} seconds: {' '.join(cmd)}",
+            file=sys.stderr,
+        )
+        print(
+            "Use --benchmark-filter to narrow the run or --benchmark-timeout "
+            "to allow a longer full-profile run.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     if result.returncode != 0:
         print(f"Benchmark failed: {result.stderr}", file=sys.stderr)
         sys.exit(1)
@@ -329,8 +354,11 @@ def main():
     )
     parser.add_argument(
         "--benchmark-filter",
-        default="",
-        help="Optional Google Benchmark regex passed to BM_LCP_COMPARE",
+        default=DEFAULT_BENCHMARK_FILTER,
+        help=(
+            "Google Benchmark regex passed to BM_LCP_COMPARE "
+            f"(default: {DEFAULT_BENCHMARK_FILTER!r})"
+        ),
     )
     parser.add_argument(
         "--benchmark-min-time",
@@ -341,6 +369,15 @@ def main():
         "--allow-partial",
         action="store_true",
         help="Allow incomplete native solver coverage in benchmark JSON",
+    )
+    parser.add_argument(
+        "--benchmark-timeout",
+        type=int,
+        default=DEFAULT_BENCHMARK_TIMEOUT_SECONDS,
+        help=(
+            "Timeout in seconds for the BM_LCP_COMPARE subprocess "
+            f"(default: {DEFAULT_BENCHMARK_TIMEOUT_SECONDS})"
+        ),
     )
     args = parser.parse_args()
 
@@ -357,7 +394,10 @@ def main():
 
         print("Running benchmarks (this may take a few minutes)...")
         data = run_benchmarks(
-            benchmark_exe, args.benchmark_filter, args.benchmark_min_time
+            benchmark_exe,
+            args.benchmark_filter,
+            args.benchmark_min_time,
+            args.benchmark_timeout,
         )
 
         args.cache.parent.mkdir(parents=True, exist_ok=True)
