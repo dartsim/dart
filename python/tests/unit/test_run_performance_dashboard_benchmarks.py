@@ -66,6 +66,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_AvbdDemo2dFractureStep$" in result.stdout
     assert "BM_AvbdDemo2dGroundStep$" in result.stdout
     assert "BM_AvbdDemo2dDynamicFrictionStep$" in result.stdout
+    assert "BM_AvbdDemo2dFrictionCoefficientSweep/.*" in result.stdout
     assert "BM_AvbdDemo2dStaticFrictionStep$" in result.stdout
     assert "BM_AvbdDemo2dPyramidStep$" in result.stdout
     assert "BM_AvbdDemo2dCardsStep$" in result.stdout

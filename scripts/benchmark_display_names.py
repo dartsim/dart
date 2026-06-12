@@ -121,6 +121,11 @@ SURFACES: dict[str, Surface] = {
     "BM_AvbdDemo2dDynamicFrictionStep": Surface(
         "AVBD demo2d dynamic friction step", FAMILY_AVBD
     ),
+    "BM_AvbdDemo2dFrictionCoefficientSweep": Surface(
+        "AVBD demo2d friction coefficient sweep",
+        FAMILY_AVBD,
+        ("max friction x10",),
+    ),
     "BM_AvbdDemo2dStaticFrictionStep": Surface(
         "AVBD demo2d static friction step", FAMILY_AVBD
     ),

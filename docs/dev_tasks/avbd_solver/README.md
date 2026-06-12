@@ -9,6 +9,20 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the paper/source-corpus friction
+  coefficient comparison now has first benchmark/plot evidence. The new
+  `BM_AvbdDemo2dFrictionCoefficientSweep` row reuses the source-shaped
+  `avbd-demo2d` Dynamic Friction scene and sweeps maximum Coulomb friction
+  values 0, 0.5, 1, 2.5, and 5 across the existing 11 sliding-box setup. The
+  tracked
+  [`avbd-friction-coefficient-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+  validates the real benchmark rows, and
+  [`avbd-friction-coefficient-sweep-plot.svg`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
+  renders CPU step time against maximum friction. Local validation passed the
+  focused packet/display/dashboard pytest, focused benchmark target build, real
+  five-row benchmark run with three repetitions, packet/plot generation,
+  `pixi run lint`, and `pixi run build`. This is not a same-source reference
+  sweep, per-coefficient visual capture, GPU parity, or paper-number claim.
 - Previous explicit hand-off stop (2026-06-12): the user explicitly directed this
   session to stop working further, only ensure the hand-off docs, and then
   literally stop. Do not continue implementation, validation, hosted CI work,

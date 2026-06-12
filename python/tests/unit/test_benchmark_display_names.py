@@ -69,6 +69,10 @@ def test_humanize_new_solver_surfaces():
         == "AVBD demo2d dynamic friction step"
     )
     assert (
+        module.humanize_name("BM_AvbdDemo2dFrictionCoefficientSweep/25")
+        == "AVBD demo2d friction coefficient sweep · 25 max friction x10"
+    )
+    assert (
         module.humanize_name("BM_AvbdDemo2dStaticFrictionStep")
         == "AVBD demo2d static friction step"
     )
@@ -261,6 +265,10 @@ def test_family_grouping():
     assert module.family_of("BM_AvbdDemo2dFractureStep") == module.FAMILY_AVBD
     assert (
         module.family_of("BM_AvbdDemo2dDynamicFrictionStep")
+        == module.FAMILY_AVBD
+    )
+    assert (
+        module.family_of("BM_AvbdDemo2dFrictionCoefficientSweep/25")
         == module.FAMILY_AVBD
     )
     assert (

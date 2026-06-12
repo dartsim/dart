@@ -92,6 +92,7 @@ BENCHMARK_SPECS = [
             "BM_AvbdDemo2dFractureStep$|"
             "BM_AvbdDemo2dGroundStep$|"
             "BM_AvbdDemo2dDynamicFrictionStep$|"
+            "BM_AvbdDemo2dFrictionCoefficientSweep/.*|"
             "BM_AvbdDemo2dStaticFrictionStep$|"
             "BM_AvbdDemo2dPyramidStep$|"
             "BM_AvbdDemo2dCardsStep$|"

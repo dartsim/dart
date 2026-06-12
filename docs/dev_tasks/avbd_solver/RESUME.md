@@ -1,5 +1,48 @@
 # Resume: AVBD Solver
 
+## Latest Resumed Checkpoint (2026-06-12)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Keep
+paper/source-demo, CPU/GPU, and paper-number claims narrow unless the artifacts
+directly prove them.
+
+Current resumed slice: the paper/source-corpus friction coefficient comparison
+now has a first benchmark/plot packet. `BM_AvbdDemo2dFrictionCoefficientSweep`
+reuses the source-shaped `avbd-demo2d` Dynamic Friction scene and sweeps maximum
+Coulomb friction values 0, 0.5, 1, 2.5, and 5 over the 11-box setup. The tracked
+`avbd-friction-coefficient-sweep-packet.json` validates the real benchmark
+rows and exact counters, and `avbd-friction-coefficient-sweep-plot.svg` renders
+CPU step time against maximum friction. This is benchmark/plot evidence only;
+it is not a same-source reference sweep, per-coefficient visual capture, GPU
+parity, or paper-number claim.
+
+Validation for this slice:
+
+- `pixi run -- pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py python/tests/unit/test_benchmark_display_names.py python/tests/unit/test_run_performance_dashboard_benchmarks.py -q`
+  passed, 14 tests, before and after lint.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
+  passed.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep.json --benchmark_out_format=json'`
+  passed and produced all five sweep values.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json && pixi run -- python scripts/write_avbd_friction_coefficient_sweep_plot.py && pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --plot-svg docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg`
+  passed and wrote the tracked packet plus rendered plot.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. After this slice is committed,
+use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
+mutate PRs, or clean/delete branches without explicit user approval.
+
+Next preferred local gaps: source/reference friction-sweep timing,
+per-coefficient visual capture, and GPU parity remain open for the friction
+coefficient comparison. Broader PLAN-104 gaps also remain: source-demo CPU wins
+for the slower rows, broader visual breakable-wall/fracture corpus coverage,
+rigid contact persistence completeness, and source-demo CPU/GPU parity. Do not
+count this packet as full paper/source-demo completion.
+
 ## Previous Explicit Hand-Off Stop (2026-06-12)
 
 User directive: stop working further, only ensure the hand-off docs, and then

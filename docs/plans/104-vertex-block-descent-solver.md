@@ -405,6 +405,15 @@ it records the DART public World Dynamic Friction row at 5.73 us median CPU
 time per step versus 10.49 us for the native source runner on this host,
 closing that narrow source row while leaving broad contact-manifold friction
 persistence, stacking/friction sweeps, GPU, and paper-number gates open.
+The companion `BM_AvbdDemo2dFrictionCoefficientSweep` benchmark now sweeps the
+same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
+and 5. The tracked
+[`avbd-friction-coefficient-sweep-packet.json`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+validates the sweep rows and
+[`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
+renders CPU step time versus maximum friction. This is benchmark/plot evidence
+for the friction-coefficient comparison gap; it is not yet a same-source
+reference sweep, per-coefficient visual capture, GPU, or paper-number claim.
 The `avbd_demo2d_static_friction` py-demo now ports the `avbd-demo2d` Static
 Friction source row with source revision/scene metadata, one rotated static
 ground slab, 11 rotated dynamic boxes, uniform source friction 1.0, focused
@@ -1165,7 +1174,10 @@ implementation work should prefer one of these gaps, in order:
    and `avbd-demo3d` Ground/Dynamic Friction/Static
    Friction/Pyramid/Rope/Heavy Rope/Spring/Spring Ratio/Stack/Stack
    Ratio/Soft Body/Bridge/Breakable rows now
-   have matched source-row harnesses. All listed rows now have tracked
+   have matched source-row harnesses. The Dynamic Friction path now also has a
+   dashboard friction-coefficient sweep over maximum friction 0, 0.5, 1, 2.5,
+   and 5 with a tracked benchmark packet and rendered plot. All listed rows now
+   have tracked
    visual/benchmark/native-reference packets, with the
    narrow 2D Dynamic Friction, 2D Static Friction, 2D
    Pyramid, 2D Stack, 2D Stack Ratio, Fracture, 2D Ground, 3D Ground, 3D Dynamic

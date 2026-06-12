@@ -306,7 +306,8 @@ std::unique_ptr<sx::World> makeAvbdDemo2dGroundWorld()
   return world;
 }
 
-std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld()
+std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld(
+    const double maxFriction = 5.0)
 {
   constexpr int kBoxCount = 11;
 
@@ -336,7 +337,7 @@ std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld()
         Eigen::Vector3d(-30.0 + 2.0 * static_cast<double>(i), 0.75, 0.0),
         false,
         Eigen::Vector3d(10.0, 0.0, 0.0),
-        5.0 - static_cast<double>(i) / 10.0 * 5.0));
+        maxFriction - static_cast<double>(i) / 10.0 * maxFriction));
   }
 
   benchmark::DoNotOptimize(boxes.data());
@@ -2853,6 +2854,34 @@ static void BM_AvbdDemo2dDynamicFrictionStep(benchmark::State& state)
   state.counters["source_scene_index"] = 2.0;
 }
 BENCHMARK(BM_AvbdDemo2dDynamicFrictionStep);
+
+//==============================================================================
+static void BM_AvbdDemo2dFrictionCoefficientSweep(benchmark::State& state)
+{
+  constexpr double kFrictionScale = 10.0;
+  const double maxFriction
+      = static_cast<double>(state.range(0)) / kFrictionScale;
+  auto world = makeAvbdDemo2dDynamicFrictionWorld(maxFriction);
+  world->enterSimulationMode();
+
+  for (auto _ : state) {
+    world->step();
+    benchmark::ClobberMemory();
+  }
+  state.counters["rigid_bodies"] = 12.0;
+  state.counters["rigid_body_joints"] = 0.0;
+  state.counters["collision_shapes"] = 12.0;
+  state.counters["source_scene_index"] = 2.0;
+  state.counters["max_friction"] = maxFriction;
+  state.counters["min_friction"] = 0.0;
+  state.counters["friction_samples"] = 11.0;
+}
+BENCHMARK(BM_AvbdDemo2dFrictionCoefficientSweep)
+    ->Arg(0)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50);
 
 //==============================================================================
 static void BM_AvbdDemo2dStaticFrictionStep(benchmark::State& state)
