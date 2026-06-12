@@ -90,39 +90,43 @@ For the standard 16-row active-set transition packet, Baraff and MPRGP remain
 registered as native rows while Direct is excluded by its own native-support
 predicate instead of a benchmark-local size special case.
 
+The latest user instruction is another critical stop: do not continue
+implementation and do not run further verification. The only intended final
+work is this hand-off documentation checkpoint, followed by publishing the
+single consolidated branch so a fresh session can resume there.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the active-friction-index and active-set routing slices:
+Current reality for the final hand-off checkpoint:
 
-- This checkpoint changes `CHANGELOG.md`,
+- The latest implementation checkpoints changed `CHANGELOG.md`,
   `python/examples/demos/scenes/lcp_physics.py`,
   `python/tests/unit/test_py_demo_panels.py`,
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
-- After committing the active-friction-index slice and this active-set
-  transition follow-up, the local branch is expected to be two additive commits
-  ahead of `origin/feature/lcp-solver-interface-demos` at
-  `d143d0dc355 Document latest LCP handoff state`.
-- Do not push without explicit maintainer/user approval. If pushing later,
-  fetch and merge latest `origin/main` first.
-
-State before this docs-only hand-off checkpoint:
-
-- Local HEAD was `7ef5b79e602 Filter contact normal benchmark native rows`.
+  `python/tests/unit/test_py_demo_panels.py`, and
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`.
+- This final hand-off checkpoint is docs-only and changes
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+- Local HEAD before this docs-only hand-off update was
+  `02c6d0acb4b4 Filter active-set LCP benchmark rows concretely`.
 - `origin/feature/lcp-solver-interface-demos` was
-  `f86a095ce9a Document final LCP handoff state`.
+  `d143d0dc355c Document latest LCP handoff state`.
 - The local branch was clean and two commits ahead of the tracking branch:
-  `fdc9a0c13fd Filter singular LCP benchmark native rows` and
-  `7ef5b79e602 Filter contact normal benchmark native rows`.
-- `origin/main` was fetched over HTTPS to `7d05d7b9ea72`; merging it with
-  `git merge --no-edit origin/main` reported `Already up to date.`
+  `b2e212db5c4 Add active friction-index LCP benchmark rows` and
+  `02c6d0acb4b Filter active-set LCP benchmark rows concretely`.
+- `main` was fetched over HTTPS to `7d05d7b9ea72`; merging it with
+  `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 - No PR was associated with the branch when checked earlier in the session.
 
-After this docs-only hand-off checkpoint is committed and pushed, the expected
-remote state is one consolidated branch,
-`origin/feature/lcp-solver-interface-demos`, containing the two benchmark
-routing commits plus the final hand-off docs commit.
+After this docs-only hand-off checkpoint is committed and pushed, the remote
+state should be one consolidated branch,
+`origin/feature/lcp-solver-interface-demos`, containing the active
+friction-index benchmark routing commit, the active-set transition benchmark
+routing commit, and this final hand-off docs commit. The user explicitly asked
+for that push and consolidation, but also explicitly prohibited further
+verification after the stop instruction.
 
 ## Immediate Next Step
 
@@ -205,12 +209,6 @@ as complete.
   and mild/near-singular SPD builders may already be fine. Do not refactor all
   benchmark registration gates mechanically without inspecting the generated
   concrete packet.
-- The interrupted next-slice audit found that
-  `python/examples/demos/scenes/lcp_physics.py` still points
-  `active_friction_index_contact` at the older two-solver benchmark filter
-  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
-  Inspect the broader manifest-driven registrations in
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` before changing this metadata.
 - That active-friction-index metadata gap is now closed: the demo filter is
   `BM_LcpActiveFrictionIndexContact`, which matches the main `lcp_compare`
   benchmark row family added in this slice. The old two-solver rows remain in

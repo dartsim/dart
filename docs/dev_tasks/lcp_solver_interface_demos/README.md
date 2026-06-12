@@ -56,6 +56,10 @@
 - [x] Filtered active-set transition benchmark registrations through concrete
       `supportsProblem(problem)` checks, replacing the Direct-only standard
       packet special case with the shared native-route gate.
+- [x] Captured the final 2026-06-11 consolidated hand-off after the latest
+      two local benchmark-routing commits. No lint, build, tests, benchmark
+      listing, solver execution, or further implementation work was run after
+      the user's critical stop instruction.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -96,7 +100,9 @@ rediscovering the current branch state.
 ## Latest Code Checkpoint
 
 The latest implementation checkpoint is the active-set transition benchmark
-routing slice.
+routing slice. The latest overall checkpoint is a docs-only hand-off snapshot
+recording the consolidated branch state after the user explicitly stopped all
+implementation and verification work.
 
 ## Active-Set Transition Benchmark Routing Checkpoint
 
@@ -169,42 +175,43 @@ Observed results:
 - `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 - `pixi run lint`: passed.
 
-## 2026-06-11 Critical Hand-Off Snapshot
+## 2026-06-11 Final Consolidated Hand-Off Snapshot
 
 The user explicitly stopped implementation work and requested hand-off only
-with no further verification. No lint, build, tests, benchmark listing, or
-solver execution was run after that instruction.
+with no further verification. No lint, build, tests, benchmark listing, solver
+execution, or implementation work was run after that instruction.
 
 Branch state before this docs-only hand-off update:
 
 - Current branch: `feature/lcp-solver-interface-demos`.
-- Local HEAD: `7ef5b79e602 Filter contact normal benchmark native rows`.
+- Local HEAD: `02c6d0acb4b4 Filter active-set LCP benchmark rows concretely`.
 - Remote tracking branch: `origin/feature/lcp-solver-interface-demos` at
-  `f86a095ce9a Document final LCP handoff state`.
+  `d143d0dc355c Document latest LCP handoff state`.
 - Local branch was two commits ahead of the tracking branch:
-  - `fdc9a0c13fd Filter singular LCP benchmark native rows`
-  - `7ef5b79e602 Filter contact normal benchmark native rows`
-- `origin/main` was refreshed over HTTPS to `7d05d7b9ea72`, then
-  `git merge --no-edit origin/main` reported `Already up to date.`
+  - `b2e212db5c4 Add active friction-index LCP benchmark rows`
+  - `02c6d0acb4b Filter active-set LCP benchmark rows concretely`
+- `main` was refreshed over HTTPS to `7d05d7b9ea72`, then
+  `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
+- The working tree was clean before this docs-only hand-off update.
 - No PR was associated with the branch when checked earlier in the session.
 
-Interrupted next-slice audit, with no code changes made after the stop:
+This final hand-off checkpoint should remain on the same consolidated branch,
+`feature/lcp-solver-interface-demos`, together with the two latest
+benchmark-routing commits. A fresh session should resume from that branch tip
+and continue the remaining LCP interface/demo audit; the broad task is not
+complete.
 
-- `python/examples/demos/scenes/lcp_physics.py` still points the
-  `active_friction_index_contact` benchmark packet at the older two-solver
-  filter:
-  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
-- Those rows live in `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp`,
-  while the representative command runs `pixi run bm lcp_compare`.
-- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` does not yet expose an
-  equivalent manifest-driven `BM_LcpActiveFrictionIndexContact` row.
-- A likely next bounded continuation is to add a concrete
-  `LcpProblemFactory::activeFrictionIndexContact()` registration to
-  `bm_lcp_compare.cpp`, gate participating solvers with
-  `supportsProblem(problem)`, then update the py-demo metadata and panel test
-  so the representative command points at the `lcp_compare` row.
-- Re-inspect the generated problem and solver options before implementing; the
-  note above is hand-off reconnaissance, not verified design.
+Likely next bounded continuations:
+
+- Inspect remaining manifest-level benchmark gates in
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` and only convert them to
+  concrete `supportsProblem(problem)` gates when the generated packet actually
+  exercises a narrower native domain.
+- Re-check solver documentation against concrete per-problem support predicates
+  for any solver that still delegates internally from its public `solve()` path.
+- Improve py-demo benchmark packets only when the referenced rows exist on the
+  same benchmark executable surface used by
+  `representative_benchmark_command`.
 
 ## Contact-Normal Benchmark Routing Checkpoint
 
