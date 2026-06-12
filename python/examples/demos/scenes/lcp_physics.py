@@ -224,12 +224,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Admm/Tgs/Pgs/ShockPropagation/Jacobi/SymmetricPsor and "
-            "strict-interior pivot/barrier/Newton/projection/block rows"
+            "Tgs/Pgs/ShockPropagation/Admm and strict-interior "
+            "pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "Dantzig/Lemke/Baraff remain the largest averages; "
-            "MinimumMapNewton/FischerBurmeisterNewton are next"
+            "RedBlackGaussSeidel/MinimumMapNewton/Lemke/Baraff remain the "
+            "largest averages; PenalizedFischerBurmeisterNewton/"
+            "FischerBurmeisterNewton/InteriorPoint/NNCG rows are next"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -244,18 +245,18 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
-            "BlockedJacobi/BGS/Dantzig/Admm/Nncg/"
-            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization close"
+            "Tgs/Pgs/Jacobi; RedBlack/SymmetricPsor/BlockedJacobi/Dantzig/"
+            "Nncg/SubspaceMinimization/Admm/BoxedSemiSmoothNewton stay below "
+            "about 1.6x"
         ),
         "current_laggards": (
-            "ShockPropagation is back above 2x; Apgd, Sap, and "
-            "BoxedSemiSmoothNewton remain the largest moderate rows"
+            "No Boxed solver average is above 2x; BGS, Sap, and "
+            "ShockPropagation are the largest remaining rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
-            "trail active-bound rows; remaining boxed work centers on the "
-            "ShockPropagation row."
+            "trail active-bound rows; delayed ShockPropagation reset removes "
+            "the last above-2x boxed average in the refreshed profile."
         ),
     },
     {
@@ -265,20 +266,20 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs; Sap/SymmetricPsor/RedBlackGaussSeidel/"
-            "BGS/Jacobi/Staggering/Admm/SubspaceMinimization close"
+            "Tgs/Pgs; Sap/BGS/Admm/Staggering/Jacobi/Dantzig/"
+            "RedBlackGaussSeidel/NNCG stay near the leading packet"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 2x; ShockPropagation, "
-            "Apgd, NNCG, SubspaceMinimization, and BlockedJacobi are "
-            "near-boundary or high-max rows"
+            "Apgd is the only FrictionIndex average above 2x; "
+            "ShockPropagation, SymmetricPsor, SubspaceMinimization, "
+            "BoxedSemiSmoothNewton, BlockedJacobi, and NNCG are next"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, and subspace hot rows, and the boxed semi-smooth "
             "line-search shortcut plus configurable exact shortcut trim Newton "
-            "iterations; the remaining FrictionIndex work is near-boundary "
-            "and high-max rather than a single above-2x average."
+            "iterations; the remaining FrictionIndex work now centers on the "
+            "Apgd above-2x average and the near-boundary rows behind it."
         ),
     },
 )

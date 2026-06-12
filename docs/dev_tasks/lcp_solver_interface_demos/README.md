@@ -1,5 +1,116 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ShockPropagation Delayed Reset
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `0c6e8bb7902 Tune boxed SSN friction exact gate`.
+- Current checkpoint target:
+  `Delay ShockPropagation reset after exact path`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 63 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes and other GitHub
+  mutations require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ShockPropagationSolver::solve()` now delays non-warm-start initial-guess
+  zeroing until after the validated exact-fast-path attempts and block
+  validation.
+- The change avoids a zero-vector write when a standard, boxed, or
+  friction-index exact candidate is accepted.
+- The layered fallback still resets the initial guess before computing fallback
+  metrics and layer order, so warm-start and fallback solver behavior stay on
+  the existing path.
+- The checked performance-profile CSVs, Python demo profile summary, Python
+  metadata assertions, background note, changelog, and this hand-off were
+  refreshed.
+
+Focused benchmark evidence:
+
+- Focused rows before the experiment, from the committed profile cache, were
+  approximately:
+  - `BM_LcpCompare/Boxed/ShockPropagation/12`: `1374.0ns`,
+    `iterations=0`, `contract_ok=1.0`, `block_count=4`.
+  - `BM_LcpCompare/Boxed/ShockPropagation/24`: `7560.7ns`,
+    `iterations=0`, `contract_ok=1.0`, `block_count=8`.
+  - `BM_LcpCompare/Boxed/ShockPropagation/48`: `16664.5ns`,
+    `iterations=0`, `contract_ok=1.0`, `block_count=16`.
+- A focused after-run was written to
+  `build/boxed_shock_delay_reset_after.json`. The observed ShockPropagation
+  timings were approximately:
+  - contacts 12: `1376.3ns`, neutral versus baseline.
+  - contacts 24: `4303.6ns`, a large focused improvement.
+  - contacts 48: `15914.9ns`, a modest focused improvement.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard average ratios: `RedBlackGaussSeidel 1.60`,
+  `MinimumMapNewton 1.57`, `Baraff 1.56`, `Lemke 1.56`,
+  `PenalizedFischerBurmeisterNewton 1.53`, `InteriorPoint 1.52`,
+  `FischerBurmeisterNewton 1.51`, `NNCG 1.51`, `BGS 1.49`,
+  `BlockedJacobi 1.46`, `Apgd 1.45`, `SubspaceMinimization 1.45`,
+  `SymmetricPsor 1.43`, `BoxedSemiSmoothNewton 1.42`, `Sap 1.42`,
+  `MPRGP 1.41`, `Dantzig 1.40`, `Jacobi 1.38`, `Pgs 1.28`,
+  `Admm 1.19`, `ShockPropagation 1.19`, `Tgs 1.13`, and `Direct 1.00`.
+- Boxed average ratios: `BGS 1.83`, `Sap 1.77`,
+  `ShockPropagation 1.75`, `Apgd 1.65`,
+  `BoxedSemiSmoothNewton 1.60`, `Admm 1.59`,
+  `SubspaceMinimization 1.56`, `NNCG 1.54`, `Dantzig 1.53`,
+  `BlockedJacobi 1.51`, `SymmetricPsor 1.47`,
+  `RedBlackGaussSeidel 1.44`, `Jacobi 1.15`, `Pgs 1.03`, and `Tgs 1.01`.
+- FrictionIndex average ratios: `Apgd 2.08`,
+  `ShockPropagation 1.91`, `SubspaceMinimization 1.86`,
+  `SymmetricPsor 1.86`, `BoxedSemiSmoothNewton 1.82`,
+  `BlockedJacobi 1.81`, `NNCG 1.80`, `RedBlackGaussSeidel 1.78`,
+  `Dantzig 1.74`, `Jacobi 1.71`, `Staggering 1.67`,
+  `Admm 1.63`, `BGS 1.59`, `Sap 1.54`, `Tgs 1.06`, and `Pgs 1.00`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output /tmp/lcp_profile_check
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+Immediate resume guidance:
+
+1. Continue with the current leading FrictionIndex target: `Apgd` is the only
+   refreshed average above `2x`.
+2. Also inspect near-boundary FrictionIndex `ShockPropagation`,
+   `SymmetricPsor`, `SubspaceMinimization`, `BoxedSemiSmoothNewton`,
+   `BlockedJacobi`, and `NNCG`.
+3. Run `pixi run lint` before committing any further slice.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Configurable Boxed SSN Friction Exact Gate
 
 Current branch state:

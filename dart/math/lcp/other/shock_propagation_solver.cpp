@@ -466,9 +466,8 @@ LcpResult ShockPropagationSolver::solve(
     return result;
   }
 
-  if (x.size() != n || !options.warmStart || !x.allFinite()) {
-    x = Eigen::VectorXd::Zero(n);
-  }
+  const bool resetInitialGuess
+      = x.size() != n || !options.warmStart || !x.allFinite();
 
   const int maxIterations = std::max(
       1,
@@ -623,6 +622,10 @@ LcpResult ShockPropagationSolver::solve(
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
     return result;
+  }
+
+  if (resetInitialGuess) {
+    x = Eigen::VectorXd::Zero(n);
   }
 
   std::vector<std::vector<int>> layers;

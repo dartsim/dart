@@ -1533,6 +1533,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     problem validation for non-empty standard, boxed, and friction-index forms,
     while preserving zero-row validation and eager non-empty custom friction
     block validation before shortcut acceptance.
+  - Optimized `ShockPropagationSolver` exact-path solves to delay
+    non-warm-start initial-guess zeroing until after exact fast-path attempts
+    and block validation, avoiding a zero-vector write on accepted exact
+    candidates and moving the refreshed boxed profile below an above-2x average.
   - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
     already reaches the natural residual tolerance, avoiding an extra Newton
     loop on warm-started or larger friction-index rows that converge directly

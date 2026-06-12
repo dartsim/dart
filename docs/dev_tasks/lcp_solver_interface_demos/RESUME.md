@@ -1,5 +1,89 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ShockPropagation Delayed Reset
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `0c6e8bb7902 Tune boxed SSN friction exact gate`.
+- Current checkpoint target:
+  `Delay ShockPropagation reset after exact path`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 63 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push or mutate
+  GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ShockPropagationSolver::solve()` delays non-warm-start initial-guess zeroing
+  until after exact-fast-path attempts and block validation.
+- Accepted exact candidates avoid the zero-vector write; layered fallback paths
+  still reset the initial guess before fallback metrics and layer order.
+- The performance-profile CSVs, Python demo profile summary, metadata
+  assertions, background note, changelog, and hand-off docs were refreshed.
+
+Evidence:
+
+- Focused after-run:
+  `build/boxed_shock_delay_reset_after.json`.
+- Focused ShockPropagation timings were approximately:
+  - contacts 12: `1376.3ns`, neutral versus the prior `1374.0ns`.
+  - contacts 24: `4303.6ns`, improved versus the prior `7560.7ns`.
+  - contacts 48: `15914.9ns`, improved versus the prior `16664.5ns`.
+- Cached full-profile summary from `build/lcp_profile_full.json` now reports
+  Boxed `ShockPropagation 1.75`, so there is no refreshed Boxed average above
+  `2x`.
+- FrictionIndex `Apgd 2.08` is now the only refreshed average above `2x`.
+
+Verification completed:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output /tmp/lcp_profile_check
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Then continue with the refreshed profile: FrictionIndex `Apgd` is the only
+above-`2x` average, with FrictionIndex `ShockPropagation`, `SymmetricPsor`,
+`SubspaceMinimization`, `BoxedSemiSmoothNewton`, `BlockedJacobi`, and `NNCG`
+as near-boundary follow-up targets. Do not push or mutate GitHub state without
+explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Configurable Boxed SSN Friction Exact Gate
 
 This section is the latest state; older sections below are historical
