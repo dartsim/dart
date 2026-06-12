@@ -387,6 +387,38 @@ TEST_F(AllSolversSmokeTest, FrictionProblemDoesNotCrash)
   }
 }
 
+TEST_F(AllSolversSmokeTest, ActiveFrictionProblemStaysComparable)
+{
+  auto problem = LcpProblemFactory::activeFrictionIndexContact();
+  ASSERT_TRUE(problem.expectedSolution.has_value());
+  EXPECT_FALSE(problem.problem.isStandardLcp());
+  EXPECT_FALSE(problem.problem.isBoxedLcp());
+  EXPECT_TRUE(problem.problem.hasFrictionIndex());
+
+  for (const auto& solverCase : kLcpSolverManifest) {
+    const auto solver = solverCase.create();
+    Eigen::VectorXd x;
+    LcpOptions options = solver->getDefaultOptions();
+    options.maxIterations = 2000;
+    options.absoluteTolerance = 1e-8;
+    options.relativeTolerance = 1e-8;
+    options.complementarityTolerance = 1e-8;
+    options.validateSolution = false;
+    auto result = solver->solve(problem.problem, x, options);
+
+    EXPECT_TRUE(producedIterate(result))
+        << solverCase.name << " failed on " << problem.name << ": "
+        << result.message;
+    EXPECT_TRUE(x.allFinite())
+        << solverCase.name << " produced non-finite values";
+    ASSERT_EQ(x.size(), problem.expectedSolution->size()) << solverCase.name;
+    expectWithinEffectiveBounds(
+        std::string(solverCase.name), problem.problem, x);
+    EXPECT_LE((x - *problem.expectedSolution).lpNorm<Eigen::Infinity>(), 2e-4)
+        << solverCase.name << " should stay comparable on " << problem.name;
+  }
+}
+
 TEST(AdvancedBoxedSolvers, MetadataAndParametersCanBeCustomized)
 {
   AdmmSolver admm;
