@@ -102,6 +102,9 @@
     Add scene-owned Replay timeline metadata to the link center-of-mass row so
     saved-state scrubbing can track mirrored COM angle spread and jump to
     centered-still or high-inertia-lag frames.
+    Add scene-owned Replay timeline metadata to the multibody solver-family
+    row so saved-state scrubbing can track residual solve ratio and jump to
+    solve-advantage, residual-drift, or solved-tight frames.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,
@@ -359,7 +362,10 @@
   - Added `rigid_multibody_solver_family` to Python `py-demos`, showing
     semi-implicit residual-only, variational residual-only, and variational
     solved loop-closure lanes with residual, tip-error, solve-ratio, and
-    step-timing diagnostics plus scene-owned capture metrics.
+    step-timing diagnostics plus scene-owned capture metrics. The scene now
+    also publishes Replay timeline metadata using residual solve ratio as the
+    value track and markers for solve-advantage, residual-only drift, or
+    solved-tight frames while residual rows remain loose.
   - Updated `rigid_loop_closure` in Python `py-demos` to compare POINT,
     DISTANCE, and RIGID loop-closure families with residual-only versus solved
     lanes, gravity-scale controls, closure residuals, tip/distance/orientation

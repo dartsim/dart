@@ -52,6 +52,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _SolverFamilyCase:
     key: str
@@ -529,6 +538,123 @@ class _RigidMultibodySolverFamily:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        ratio = _last_float(snapshot.get("solve_ratio_history", []))
+        if ratio is not None:
+            return max(0.0, ratio)
+
+        try:
+            if "residual_solve_ratio" in snapshot:
+                return max(0.0, float(snapshot.get("residual_solve_ratio", 0.0)))
+        except (TypeError, ValueError):
+            return 0.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                semi_metrics = metrics.get("semi_residual", {})
+                variational_metrics = metrics.get("variational_residual", {})
+                solved_metrics = metrics.get("variational_solved", {})
+                if (
+                    isinstance(semi_metrics, dict)
+                    and isinstance(variational_metrics, dict)
+                    and isinstance(solved_metrics, dict)
+                ):
+                    residual_only = max(
+                        float(semi_metrics.get("residual", 0.0)),
+                        float(variational_metrics.get("residual", 0.0)),
+                    )
+                    solved = max(float(solved_metrics.get("residual", 0.0)), 1.0e-12)
+                    return max(0.0, residual_only / solved)
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 1.0e8:
+            return 1.0
+
+        residuals = snapshot.get("residual_history", {})
+        if isinstance(residuals, dict):
+            semi = _last_float(residuals.get("semi_residual", []))
+            variational = _last_float(residuals.get("variational_residual", []))
+            solved = _last_float(residuals.get("variational_solved", []))
+            residual_only_values = [
+                value for value in (semi, variational) if value is not None
+            ]
+            if residual_only_values and max(residual_only_values) >= 0.50:
+                return 1.0
+            if (
+                residual_only_values
+                and solved is not None
+                and solved <= 1.0e-8
+                and max(residual_only_values) >= 0.25
+            ):
+                return 1.0
+
+        tip_errors = snapshot.get("tip_error_history", {})
+        if isinstance(tip_errors, dict):
+            semi = _last_float(tip_errors.get("semi_residual", []))
+            variational = _last_float(tip_errors.get("variational_residual", []))
+            solved = _last_float(tip_errors.get("variational_solved", []))
+            residual_only_values = [
+                value for value in (semi, variational) if value is not None
+            ]
+            if residual_only_values and max(residual_only_values) >= 0.50:
+                return 1.0
+            if (
+                residual_only_values
+                and solved is not None
+                and solved <= 1.0e-8
+                and max(residual_only_values) >= 0.25
+            ):
+                return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                semi_metrics = metrics.get("semi_residual", {})
+                variational_metrics = metrics.get("variational_residual", {})
+                solved_metrics = metrics.get("variational_solved", {})
+                if (
+                    isinstance(semi_metrics, dict)
+                    and isinstance(variational_metrics, dict)
+                    and isinstance(solved_metrics, dict)
+                ):
+                    residual_only_residual = max(
+                        float(semi_metrics.get("residual", 0.0)),
+                        float(variational_metrics.get("residual", 0.0)),
+                    )
+                    residual_only_tip_error = max(
+                        float(semi_metrics.get("tip_error", 0.0)),
+                        float(variational_metrics.get("tip_error", 0.0)),
+                    )
+                    solved_residual = float(solved_metrics.get("residual", 0.0))
+                    solved_tip_error = float(solved_metrics.get("tip_error", 0.0))
+                    if (
+                        residual_only_residual >= 0.50
+                        or residual_only_tip_error >= 0.50
+                    ):
+                        return 1.0
+                    if (
+                        solved_residual <= 1.0e-8
+                        and residual_only_residual >= 0.25
+                    ):
+                        return 1.0
+                    if (
+                        solved_tip_error <= 1.0e-8
+                        and residual_only_tip_error >= 0.25
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -661,6 +787,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Residual solve ratio",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
             "replay_sync": verifier._sync,
         },
     )

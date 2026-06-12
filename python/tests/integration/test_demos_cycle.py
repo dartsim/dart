@@ -6868,6 +6868,82 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     assert np.isfinite(
         [float(value) for value in controller._step_ms_history["semi_residual"]]
     ).all()
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Residual solve ratio"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._solve_ratio_history[-1]
+    )
+    assert timeline["signal"]({"residual_solve_ratio": 42.0}) == pytest.approx(42.0)
+    assert timeline["signal"](
+        {
+            "last_metrics": {
+                "semi_residual": {"residual": 0.35},
+                "variational_residual": {"residual": 0.62},
+                "variational_solved": {"residual": 0.02},
+            }
+        }
+    ) == pytest.approx(31.0)
+    assert timeline["markers"]({"solve_ratio_history": [1.0e9]}) == pytest.approx(
+        1.0
+    )
+    assert (
+        timeline["markers"](
+            {
+                "residual_history": {
+                    "semi_residual": [0.10],
+                    "variational_residual": [0.65],
+                    "variational_solved": [0.02],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "tip_error_history": {
+                    "semi_residual": [0.30],
+                    "variational_residual": [0.22],
+                    "variational_solved": [1.0e-9],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "semi_residual": {"residual": 0.30, "tip_error": 0.30},
+                    "variational_residual": {"residual": 0.20, "tip_error": 0.20},
+                    "variational_solved": {
+                        "residual": 1.0e-9,
+                        "tip_error": 1.0e-9,
+                    },
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "residual_history": {
+                    "semi_residual": [0.12],
+                    "variational_residual": [0.15],
+                    "variational_solved": [0.10],
+                },
+                "solve_ratio_history": [10.0],
+                "tip_error_history": {
+                    "semi_residual": [0.12],
+                    "variational_residual": [0.15],
+                    "variational_solved": [0.10],
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
