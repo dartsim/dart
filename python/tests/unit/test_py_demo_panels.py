@@ -1053,8 +1053,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "current_leaders"
     ]
     assert "Admm" in profile_by_surface["Standard"]["current_leaders"]
-    assert "Admm" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Sap and Apgd are above 1.6x" in profile_by_surface[
+    assert "Admm" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "No Standard solver average is above 1.6x" in profile_by_surface[
         "Standard"
     ]["current_laggards"]
     assert "SubspaceMinimization" not in profile_by_surface["Standard"][
@@ -1083,7 +1083,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "ShockPropagation" in profile_by_surface["Standard"][
         "current_leaders"
     ]
-    assert "ShockPropagation" in profile_by_surface["Standard"][
+    assert "ShockPropagation" not in profile_by_surface["Standard"][
         "current_laggards"
     ]
     assert "FischerBurmeisterNewton" in profile_by_surface["Standard"][
@@ -1108,7 +1108,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "SymmetricPsor" not in profile_by_surface["Boxed"][
         "current_leaders"
     ]
-    assert "NNCG is the only row above 1.6x" in profile_by_surface[
+    assert "No Boxed solver average is above 1.6x" in profile_by_surface[
         "Boxed"
     ]["current_laggards"]
     assert "Admm" not in profile_by_surface["Boxed"]["current_laggards"]
@@ -1116,7 +1116,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "current_laggards"
     ]
     assert "BGS" in profile_by_surface["Boxed"]["current_laggards"]
-    assert "Apgd" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Apgd" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "RedBlackGaussSeidel" in profile_by_surface["Boxed"][
         "current_laggards"
     ]
@@ -1182,7 +1182,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "BlockedJacobi" not in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
-    assert "BoxedSemiSmoothNewton" not in profile_by_surface["FrictionIndex"][
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][

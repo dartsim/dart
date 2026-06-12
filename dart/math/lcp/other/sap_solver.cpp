@@ -205,7 +205,7 @@ LcpResult SapSolver::solve(
   if (!options.warmStart) {
     const double validationTolerance = std::max(absTolerance, compTolerance);
     if (problem.isStandardLcp(absTolerance)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTolerance, validationTolerance, x, &fastW);
     } else if (problem.isBoxedLcp()) {
       exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(

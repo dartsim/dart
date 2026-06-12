@@ -1,5 +1,96 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 APGD/SAP Standard LLT Paths
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 72]`
+- Last committed checkpoint:
+  `4b9ad147c09 Use LLT for RedBlackGaussSeidel standard exact path`
+- Checkpoint target:
+  `Use LLT for APGD and SAP standard exact paths`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 73 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `ApgdSolver` and `SapSolver` route their Standard strict-interior exact paths
+  through `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- The APGD 96-row focused benchmark remains on the iterative path; the observed
+  timing movement there is benchmark noise, not acceptance evidence.
+- The slice follows the PR #2986 harness stance captured below: evidence uses
+  the current interim LCP solver identity path from `BM_LcpCompare` benchmark
+  names, `contract_ok` counters, timing fields, manifest metadata, and native
+  support checks.
+
+Evidence:
+
+- Baseline:
+  `build/standard_sap_apgd_baseline.json`.
+- Accepted focused probe:
+  `build/standard_sap_apgd_llt_probe.json`.
+- Focused Standard `Apgd` timings:
+  - `Apgd/12`: `856.00ns -> 783.00ns`.
+  - `Apgd/24`: `2893.00ns -> 2134.00ns`.
+  - `Apgd/48`: `11232.00ns -> 8900.00ns`.
+  - `Apgd/96`: `64871.00ns -> 58359.00ns`
+    (iterative path; not used as acceptance evidence).
+- Focused Standard `Sap` timings:
+  - `Sap/12`: `958.00ns -> 777.00ns`.
+  - `Sap/24`: `2843.00ns -> 2250.00ns`.
+  - `Sap/48`: `11199.00ns -> 9113.00ns`.
+  - `Sap/96`: `59969.00ns -> 40996.00ns`.
+- Latest regenerated profile highlights:
+  - Standard: no solver average is above `1.6x`; highest rows are
+    `Jacobi 1.59`, `MPRGP 1.47`, `Sap 1.46`,
+    `BoxedSemiSmoothNewton 1.43`, and `Apgd 1.40`.
+  - Boxed: no solver average is above `1.6x`; highest rows are
+    `RedBlackGaussSeidel 1.55`, `SymmetricPsor 1.54`,
+    `ShockPropagation 1.43`, `NNCG 1.39`, and `Sap 1.35`.
+  - FrictionIndex: no solver average is above `1.6x`; highest rows are
+    `ShockPropagation 1.54`, `Sap 1.45`, `Apgd 1.44`, and
+    `BoxedSemiSmoothNewton 1.37`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and accepted focused probe for
+    `BM_LcpCompare/Standard/(Sap|Apgd)/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks and commit
+with `Use LLT for APGD and SAP standard exact paths`. If it is already
+committed, investigate Standard `Jacobi 1.59`, Boxed
+`RedBlackGaussSeidel 1.55`, or Boxed `SymmetricPsor 1.54` under the same
+packet-like evidence rules. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 RedBlackGaussSeidel Standard LLT Path
 
 This is the latest hand-off. Older sections below are historical checkpoints

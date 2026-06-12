@@ -1,5 +1,116 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - APGD/SAP Standard LLT Paths
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 72]`.
+- Last committed checkpoint:
+  `4b9ad147c09 Use LLT for RedBlackGaussSeidel standard exact path`.
+- Checkpoint target:
+  `Use LLT for APGD and SAP standard exact paths`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 73 commits.
+- This current slice has not been pushed. No PR is associated with this branch
+  yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- This is a bounded packet-like slice under the PR #2986 harness constraints:
+  the accepted code changes are the `ApgdSolver` and `SapSolver` Standard
+  strict-interior exact paths.
+- The evidence packet uses the current interim LCP identity path: benchmark
+  names encode problem family, manifest solver name, and size; the profile
+  script derives rows from those names plus `contract_ok` and timing fields;
+  the Python demo exposes manifest metadata and native support checks.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/other/sap_solver.cpp`
+- `dart/math/lcp/projection/apgd_solver.cpp`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+Current implementation slice:
+
+- `ApgdSolver` and `SapSolver` Standard strict-interior exact paths now use
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)` instead of the
+  LU-only strict-interior helper.
+- The APGD 96-row focused benchmark remains on the iterative path; the observed
+  96-row movement is recorded as benchmark noise rather than acceptance
+  evidence for the exact-path change.
+
+Focused and profile evidence:
+
+- Baseline:
+  `build/standard_sap_apgd_baseline.json`.
+- Accepted focused probe:
+  `build/standard_sap_apgd_llt_probe.json`.
+- Focused Standard `Apgd` timings moved approximately:
+  - `Apgd/12`: `856.00ns -> 783.00ns`.
+  - `Apgd/24`: `2893.00ns -> 2134.00ns`.
+  - `Apgd/48`: `11232.00ns -> 8900.00ns`.
+  - `Apgd/96`: `64871.00ns -> 58359.00ns`
+    (iterative path; not used as acceptance evidence).
+- Focused Standard `Sap` timings moved approximately:
+  - `Sap/12`: `958.00ns -> 777.00ns`.
+  - `Sap/24`: `2843.00ns -> 2250.00ns`.
+  - `Sap/48`: `11199.00ns -> 9113.00ns`.
+  - `Sap/96`: `59969.00ns -> 40996.00ns`.
+- Latest regenerated profile highlights:
+  - Standard: no solver average is above `1.6x`; highest rows are
+    `Jacobi 1.59`, `MPRGP 1.47`, `Sap 1.46`,
+    `BoxedSemiSmoothNewton 1.43`, and `Apgd 1.40`.
+  - Boxed: no solver average is above `1.6x`; highest rows are
+    `RedBlackGaussSeidel 1.55`, `SymmetricPsor 1.54`,
+    `ShockPropagation 1.43`, `NNCG 1.39`, and `Sap 1.35`.
+  - FrictionIndex: no solver average is above `1.6x`; highest rows are
+    `ShockPropagation 1.54`, `Sap 1.45`, `Apgd 1.44`, and
+    `BoxedSemiSmoothNewton 1.37`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and accepted focused probe for
+    `BM_LcpCompare/Standard/(Sap|Apgd)/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test:
+    `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+    passed.
+  - Focused CTest:
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' -j 1`
+    passed.
+- Still required before commit:
+  - Run `pixi run lint`.
+  - Run `git diff --check`.
+- No push has been performed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, run final lint/diff checks and
+   commit with `Use LLT for APGD and SAP standard exact paths`.
+3. If this checkpoint is already committed, investigate Standard `Jacobi 1.59`
+   or Boxed `RedBlackGaussSeidel 1.55` / `SymmetricPsor 1.54` under the same
+   packet-like evidence rules.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - RedBlackGaussSeidel Standard LLT Path
 
 This is the latest hand-off state. Sections below are historical checkpoints
