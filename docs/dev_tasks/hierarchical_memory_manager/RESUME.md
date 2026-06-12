@@ -9,7 +9,13 @@ Resume from exactly one branch:
 merged. Treat `pr/hmm-phase45-follow-up-clean` and older HMM branches as
 historical base branches unless a maintainer explicitly redirects the work.
 
-Latest local slice: transient replay restore now reinserts recorded
+Hard stop state: the last implementation commit before this hand-off update is
+`675ec79a5c7` (`Route replay transient restore allocations through World
+memory`). Do not continue implementation on this branch as part of the stopped
+session. A fresh Claude/Codex session should start from this branch HEAD,
+review this section, and only then choose the next bounded follow-up slice.
+
+Latest completed slice: transient replay restore now reinserts recorded
 `MultibodyVariationalState` and `VariationalContactDualState` components
 without global-heap allocation when those transient components are missing
 live. The pre-fix probe reproduced 21 global allocations / 793 bytes during
@@ -57,9 +63,10 @@ git log --oneline --decorate -8
 git diff --stat
 ```
 
-If this slice has not been committed yet, run `git diff --stat` and inspect the
-transient replay restore / compute graph metadata diff before continuing. If it
-has been committed, start from the next measured HMM gap below.
+The transient replay restore / compute graph metadata slice is committed as
+`675ec79a5c7`. This hand-off update intentionally does not add more
+verification. Before any future implementation, publishing, or PR work, rerun
+the relevant lint/build/test gates from a clean source state.
 
 Immediate follow-up candidates for the next fresh session:
 
