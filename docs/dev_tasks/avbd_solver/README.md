@@ -9,6 +9,25 @@ Corpus matrix:
 
 ## Current Status
 
+- Critical handoff stop (2026-06-11): the user explicitly directed the session
+  to stop implementation and focus only on hand-off for all current work,
+  without any further verification. No lint, build, test, CI refresh, PR
+  refresh, branch deletion, or further implementation was run for this final
+  handoff. The active checkout is `avbd/source-row-extraction-precheck`; before
+  this handoff edit it was one commit ahead of
+  `origin/avbd/source-row-extraction-precheck` at
+  `e4b72c704d6` (`Skip origin-anchor point-pair direction cross products`) with
+  uncommitted WIP in:
+  `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp` and
+  `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`.
+  That WIP moves `avbdRigidWorldPointDirection()` earlier so point attachments
+  can use it, routes point-attachment and distance-spring direction helpers
+  through the exact-origin helper, and adds
+  `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`.
+  Treat this newest attachment/distance-spring direction WIP as unverified by
+  explicit request. A fresh session should start from `RESUME.md`, run the
+  required validation before review or PR work, and avoid applying local stashes
+  unless a human asks for recovery.
 - Latest resumed follow-up (2026-06-11): generic rigid point-pair and paired
   friction direction assembly now share `avbdRigidWorldPointDirection()`, the
   same exact-origin helper used by distance springs. Source rows whose rigid
@@ -31,24 +50,20 @@ Corpus matrix:
 lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
   still only a narrow helper overhead cleanup and does not close any source
   CPU-win, GPU, or paper-number gate.
-- Latest critical stop (2026-06-11): the user explicitly directed the session
-  to stop implementation and focus only on hand-off for all current work,
-  without any further verification. This handoff update must not be treated as
-  new lint/build/test/CI evidence. It records the current branch, PR, stash,
-  validation, and cleanup state so a fresh Claude/Codex session can resume
-  without reconstructing context.
 - Consolidated branch handoff: resume from
   `avbd/source-row-extraction-precheck`. It is the single branch for the next
   fresh Claude/Codex session and includes the #2977 source-row prep fix, the
   stacked source-row extraction precheck work, the current resume docs, the
   formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
   the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
-  origin-anchor distance-spring and generic point-pair direction fast paths
-  with focused rigid-block coverage. Local stashes may still exist as
-  historical recovery points, but fresh work should not depend on them. The
-  latest pushed parent before this local follow-up was `7a9e24b487b`
-  (`Checkpoint AVBD source-row origin-anchor handoff`); the current follow-up
-  commit is expected to sit on top of it if pushed. PR #2977
+  origin-anchor distance-spring, generic point-pair, point-attachment, and
+  distance-spring direction helper fast paths. The point-attachment and final
+  distance-spring direction edits are handoff-captured and unverified by the
+  final stop instruction; do not claim their validation until a fresh session
+  runs it. Local stashes may still exist as historical recovery points, but
+  fresh work should not depend on them. The latest pushed parent before the
+  final local follow-ups was `7a9e24b487b`
+  (`Checkpoint AVBD source-row origin-anchor handoff`). PR #2977
   (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
   known state and should only receive CI-fix commits if a fresh status refresh
   reveals a concrete failure. `RESUME.md` is the detailed source of truth for

@@ -547,6 +547,29 @@ inline Eigen::Vector3d avbdRigidBodyWorldPoint(
 }
 
 //==============================================================================
+inline bool avbdRigidWorldPointIsBodyOrigin(
+    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
+{
+  return worldPoint.x() == state.position.x()
+         && worldPoint.y() == state.position.y()
+         && worldPoint.z() == state.position.z();
+}
+
+//==============================================================================
+inline Vector6d avbdRigidWorldPointDirection(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& axis)
+{
+  Vector6d direction = Vector6d::Zero();
+  direction.head<3>() = axis;
+  if (!avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    direction.tail<3>() = (worldPoint - state.position).cross(axis);
+  }
+  return direction;
+}
+
+//==============================================================================
 inline Eigen::Vector3d normalizedAvbdRigidPointPairAxis(
     const Eigen::Vector3d& axis,
     const Eigen::Vector3d& fallback = Eigen::Vector3d::UnitX())
@@ -1115,13 +1138,9 @@ inline double avbdRigidPointAttachmentConstraintValue(
 inline Vector6d avbdRigidPointAttachmentDirection(
     const AvbdRigidBodyState& state, const AvbdRigidPointAttachmentRow& row)
 {
-  const Eigen::Vector3d arm
-      = avbdRigidBodyWorldPoint(state, row.localPoint) - state.position;
-
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = row.axis;
-  direction.tail<3>() = arm.cross(row.axis);
-  return direction;
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(state, row.localPoint);
+  return avbdRigidWorldPointDirection(state, worldPoint, row.axis);
 }
 
 //==============================================================================
@@ -1377,29 +1396,6 @@ inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
 }
 
 //==============================================================================
-inline bool avbdRigidWorldPointIsBodyOrigin(
-    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
-{
-  return worldPoint.x() == state.position.x()
-         && worldPoint.y() == state.position.y()
-         && worldPoint.z() == state.position.z();
-}
-
-//==============================================================================
-inline Vector6d avbdRigidWorldPointDirection(
-    const AvbdRigidBodyState& state,
-    const Eigen::Vector3d& worldPoint,
-    const Eigen::Vector3d& axis)
-{
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = axis;
-  if (!avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
-    direction.tail<3>() = (worldPoint - state.position).cross(axis);
-  }
-  return direction;
-}
-
-//==============================================================================
 inline Vector6d avbdRigidPointPairDirectionA(
     const AvbdRigidBodyState& stateA, const AvbdRigidPointPairRow& row)
 {
@@ -1440,13 +1436,9 @@ inline Vector6d avbdRigidPointPairDistanceSpringDirectionA(
 {
   const Eigen::Vector3d axis
       = avbdRigidPointPairDistanceSpringAxis(stateA, stateB, row);
-  const Eigen::Vector3d arm
-      = avbdRigidBodyWorldPoint(stateA, row.localPointA) - stateA.position;
-
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = axis;
-  direction.tail<3>() = arm.cross(axis);
-  return direction;
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(stateA, row.localPointA);
+  return avbdRigidWorldPointDirection(stateA, worldPoint, axis);
 }
 
 //==============================================================================
@@ -1457,13 +1449,9 @@ inline Vector6d avbdRigidPointPairDistanceSpringDirectionB(
 {
   const Eigen::Vector3d axis
       = avbdRigidPointPairDistanceSpringAxis(stateA, stateB, row);
-  const Eigen::Vector3d arm
-      = avbdRigidBodyWorldPoint(stateB, row.localPointB) - stateB.position;
-
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = -axis;
-  direction.tail<3>() = arm.cross(-axis);
-  return direction;
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(stateB, row.localPointB);
+  return avbdRigidWorldPointDirection(stateB, worldPoint, -axis);
 }
 
 //==============================================================================

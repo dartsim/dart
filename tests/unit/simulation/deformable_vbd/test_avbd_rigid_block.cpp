@@ -219,6 +219,25 @@ TEST(AvbdRigidBlock, PointAttachmentStampsForceTorqueAndPsdHessian)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, PointAttachmentOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(-1.0, 0.25, 2.0);
+  state.orientation = rotationX(0.25 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidPointAttachmentRow row;
+  row.axis = Vec3(0.5, -1.0, 2.0).normalized();
+
+  const vbd::Vector6d direction
+      = vbd::avbdRigidPointAttachmentDirection(state, row);
+
+  vbd::Vector6d expected = vbd::Vector6d::Zero();
+  expected.head<3>() = row.axis;
+
+  EXPECT_EQ(direction, expected);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointAttachmentDualUpdateGrowsInsideBounds)
 {
   vbd::AvbdRigidBodyState state;

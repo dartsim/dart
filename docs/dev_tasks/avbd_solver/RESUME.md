@@ -8,24 +8,29 @@ count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
 Current resumed note: after the pushed handoff checkpoint at `7a9e24b487b`,
-implementation resumed on `avbd/source-row-extraction-precheck` for one small
-source-row overhead slice. The latest local follow-up should be committed on
-top of `7a9e24b487b`: generic rigid point-pair and paired friction direction
-assembly now share the same exact-origin helper as distance springs. This keeps
-source rows whose rigid point-joint, motor, spring, or friction anchors sit
-exactly at a body origin from computing angular-arm cross products during
-standalone row stamping and serial rigid row assembly. It remains a narrow
-helper cleanup, not a CPU-win, GPU, or paper-number claim.
+implementation resumed on `avbd/source-row-extraction-precheck` for small
+source-row overhead slices. One committed local follow-up,
+`e4b72c704d6 Skip origin-anchor point-pair direction cross products`, makes
+generic rigid point-pair and paired friction direction assembly share the same
+exact-origin helper as distance springs. The newest handoff-captured WIP then
+moves that helper earlier so point attachments can use it, routes
+point-attachment and distance-spring direction helpers through the same
+exact-origin path, and adds
+`AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`.
+This keeps source rows whose rigid point-joint, motor, spring, attachment, or
+friction anchors sit exactly at a body origin from computing angular-arm cross
+products in those helper paths. It remains a narrow helper cleanup, not a
+CPU-win, GPU, or paper-number claim.
 
 Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
 without any further verification. No lint, build, test, CI refresh, PR refresh,
-branch deletion, or additional implementation should be inferred from this final
-handoff update. The handoff documentation records the already-known local state,
-and the final handoff commit is expected to preserve the already-written
-distance-spring Hessian code/test WIP, so a fresh Claude/Codex session can
-resume without reconstructing the branch, PR, validation, stash, and cleanup
-context.
+branch deletion, or additional implementation was run after that instruction.
+The handoff documentation records the already-known local state and the current
+handoff-captured WIP so a fresh Claude/Codex session can resume without
+reconstructing the branch, PR, validation, stash, and cleanup context. Treat the
+newest point-attachment/distance-spring direction helper WIP as unverified until
+a future session runs the required validation.
 
 Historical stop note: an earlier session was also redirected to hand-off only
 and requested no further verification. The branch was then resumed for a narrow
@@ -43,14 +48,18 @@ Current continuation state:
   #2977 parent changes, the stacked extraction-precheck changes, the current
   handoff docs, the formerly stash-only quaternion normalization fast path, the
   origin-anchor rigid world-point fast path, the origin-anchor distance-spring
-  Hessian fast path, the origin-anchor distance-spring direction fast path, and
-  the latest generic point-pair/friction origin-anchor direction fast path. The
-  latest pushed parent before this local follow-up is `7a9e24b487b`
-  (`Checkpoint AVBD source-row origin-anchor handoff`), and the current resumed
-  follow-up should sit on top of it. Do not require a fresh session to inspect
-  or apply local stashes before continuing. Keep this as the one consolidated
-  local continuation branch for source-row cleanup until the user explicitly
-  redirects or approves PR updates.
+  Hessian fast path, the origin-anchor distance-spring direction fast path, the
+  generic point-pair/friction origin-anchor direction fast path, and the newest
+  handoff-captured point-attachment/distance-spring direction helper WIP. The
+  latest pushed parent before these local follow-ups was `7a9e24b487b`
+  (`Checkpoint AVBD source-row origin-anchor handoff`). The last committed
+  local code follow-up before this handoff was `e4b72c704d6`
+  (`Skip origin-anchor point-pair direction cross products`), leaving the
+  branch one commit ahead of upstream plus the final handoff-captured WIP until
+  it is committed/pushed. Do not require a fresh session to inspect or apply
+  local stashes before continuing. Keep this as the one consolidated local
+  continuation branch for source-row cleanup until the user explicitly redirects
+  or approves PR updates.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
@@ -67,15 +76,16 @@ Current continuation state:
   `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   Refresh this in a future session before making any PR decision.
 - The active local checkout is `avbd/source-row-extraction-precheck`. The
-  latest pushed head at the start of this resumed slice was
-  `7a9e24b487b Checkpoint AVBD source-row origin-anchor handoff`. The current
-  local head is expected to be one commit ahead at
-  `Skip origin-anchor point-pair direction cross products` until a future
-  session receives explicit push approval. The resumed local follow-up touches:
+  latest pushed head at the start of these resumed slices was
+  `7a9e24b487b Checkpoint AVBD source-row origin-anchor handoff`. Before this
+  handoff edit, the current local head was one commit ahead at
+  `e4b72c704d6 Skip origin-anchor point-pair direction cross products`, with
+  final uncommitted WIP in:
   `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp`,
   `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`,
   `docs/dev_tasks/avbd_solver/README.md`, and
-  `docs/dev_tasks/avbd_solver/RESUME.md`.
+  `docs/dev_tasks/avbd_solver/RESUME.md`. The final code WIP touches only the
+  first two files and is unverified by explicit user request.
 - The earlier no-verification stop applied only to the previous docs-only
   handoff commit. Work resumed afterward; the origin-anchor follow-up has fresh
   focused local validation recorded below. The latest stop again returned the
@@ -102,6 +112,26 @@ Latest resumed local follow-up:
   `pixi run build` and `pixi run lint` also passed. This is a narrow source-row
   helper overhead cleanup; it does not close any source CPU-win, GPU, or
   paper-number gate.
+
+Newest handoff-captured WIP, unverified by explicit stop instruction:
+
+- `avbdRigidWorldPointIsBodyOrigin()` and `avbdRigidWorldPointDirection()` were
+  moved immediately after `avbdRigidBodyWorldPoint()` so earlier helper paths
+  can share them.
+- `avbdRigidPointAttachmentDirection()` now builds the world point with
+  `avbdRigidBodyWorldPoint()` and uses `avbdRigidWorldPointDirection()`, so an
+  exact body-origin attachment anchor returns a purely translational direction.
+- `avbdRigidPointPairDistanceSpringDirectionA/B()` now compute each endpoint
+  world point and use `avbdRigidWorldPointDirection()`, preserving the existing
+  off-origin angular cross-product path while skipping it for exact
+  body-origin anchors.
+- `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational` was
+  added to cover the new point-attachment origin-anchor behavior.
+- No validation was run for this newest WIP after the user said to stop and
+  focus on handoff without further verification. A fresh session should run the
+  rigid-block target, a focused helper filter, full `test_avbd_rigid_block`,
+  `pixi run build`, `pixi run lint`, and `git diff --check` before treating it
+  as review-ready.
 
 Previous resumed local follow-up:
 
@@ -337,7 +367,7 @@ Local branch inventory at this handoff:
 
 | Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                           |
 | -------------------------------------- | --------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | current local head    | Current checkout and single resume branch. One local commit ahead of upstream unless it has since been pushed with approval. |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `e4b72c704d6` plus final WIP before handoff commit | Current checkout and single resume branch. One committed local follow-up ahead of upstream plus handoff-captured WIP before the final checkpoint/push. |
 | `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                    |
 | `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                           |
 | `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                           |
@@ -385,29 +415,34 @@ Fresh-session plan after this progress checkpoint:
 
 1. Start with `git switch avbd/source-row-extraction-precheck`,
    `git status --short --branch`, and read this file before doing any work.
-   If the branch is still one commit ahead of origin, do not push it without
-   explicit user approval.
+   If the handoff commit has not been pushed, preserve it before doing any new
+   implementation. Do not apply local stashes by default.
 2. If the next session is asked to resume PR/CI work, then fetch and refresh:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-3. If #2977 CI has failed, inspect only the newest failed run/job and keep any
+3. Before treating the newest handoff-captured helper WIP as review-ready, run
+   the rigid-block target, a focused helper filter including
+   `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`,
+   full `test_avbd_rigid_block`, `pixi run build`, `pixi run lint`, and
+   `git diff --check`. This was intentionally skipped for the handoff stop.
+4. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
    issue. Run `pixi run lint` before committing.
-4. If #2977 is green and mergeable, ask before merging; do not merge without
+5. If #2977 is green and mergeable, ask before merging; do not merge without
    explicit user approval.
-5. After #2977 lands, ask before branch cleanup. Likely cleanup candidates are
+6. After #2977 lands, ask before branch cleanup. Likely cleanup candidates are
    `avbd/source-row-perf-slice` and
    `avbd/articulated-stiffness-roundtrip`; keep
    `feature/avbd-articulated-masked-rows` as the raw checkpoint until the full
    split AVBD work is safely landed, and leave
    `feature/free-joint-energy-benchmarks` alone.
-6. Continue stacked work on `avbd/source-row-extraction-precheck` only after
+7. Continue stacked work on `avbd/source-row-extraction-precheck` only after
    merging the latest parent branch. Do not apply local stashes by default; the
    known still-relevant quaternion hunk has already been committed to the
    consolidated branch, and the duplicate `world_step_stage.cpp` hunk should be
    skipped.
-7. Keep updating this handoff with every plan/progress change that affects the
+8. Keep updating this handoff with every plan/progress change that affects the
    next session, including branch heads, stashes, PR state, validation, and
    cleanup decisions.
 
