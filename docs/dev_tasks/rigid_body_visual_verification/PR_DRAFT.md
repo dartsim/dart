@@ -64,10 +64,13 @@
   clearance, contact-count, drift, height-error, speed, and benchmark-owner
   diagnostics.
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
-  `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
-  contact-scale budget, baseline first-run diagnostics, contact inspection,
-  collision casts, solver comparison, executor equivalence, contact-policy
-  comparison, multibody-link contact, friction threshold, spin/roll coupling,
+  `SceneSetup.info["capture_metrics"]`, including baseline first-run
+  diagnostics, body-mode flags, free-flight residuals, frame residuals,
+  force/torque accumulator response, point-load response, time-step error
+  ratios, step-diagnostics, contact-scale budget, restitution rebound,
+  pair-material mixing, contact inspection, collision casts, solver
+  comparison, executor equivalence, contact-policy comparison,
+  multibody-link contact, friction threshold, spin/roll coupling,
   stack stability, contact manipulation, kinematic driver,
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
@@ -87,6 +90,45 @@
 
 ## Testing
 
+- Latest fundamental numbered-row capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_body_modes.py`,
+    `rigid_free_flight.py`, `rigid_frame_hierarchy.py`,
+    `rigid_external_loads.py`, `rigid_link_point_loads.py`,
+    `rigid_timestep_sensitivity.py`, `rigid_restitution_ladder.py`, and
+    `rigid_material_mixing.py` now publish scene-owned capture metrics.
+  - The payloads report row identity, solver/executor or scope, controls,
+    per-lane metrics, compact history extrema, and top-level manifest fields
+    for mode flags, free-flight residuals, frame residuals, load response,
+    point-load response, time-step error ratio, restitution rebound, and
+    material mixing.
+  - `rigid_kinematic_normal_push.py` now uses the shared capture-metrics info
+    key; `rigid_joint_breakage` remains covered through the shared AVBD
+    breakable-joint builder.
+  - Focused affected-row guard
+    - `9 passed`
+  - Focused workflow/docs drift guard
+    - `10 passed`
+  - Real docked captures under
+    `/tmp/dart_capture_*_fundamental_metrics_1781245202`
+    - `rigid_body_modes`, `rigid_external_loads`,
+      `rigid_frame_hierarchy`, `rigid_link_point_loads`, and
+      `rigid_material_mixing` wrote 72 scene-metrics events each.
+    - `rigid_free_flight`, `rigid_restitution_ladder`, and
+      `rigid_timestep_sensitivity` wrote 96 scene-metrics events each.
+    - All eight manifests reported docked first-frame visual evidence and
+      latest row-matched metrics; representative latest values include
+      body-mode dynamic speed about `1.861`, free-flight arc error about
+      `0.00414`, frame residuals `0.0`, light/heavy load acceleration about
+      `4.0`/`1.0`, off-center point-load yaw acceleration about `-4.896`,
+      material effective restitution `0.82`, ordered restitution rebound
+      heights about `0.0792`/`0.1183`/`0.1526`, and a timestep coarse/fine
+      error ratio about `1.0`.
+  - `pixi run lint`
+    - passed
+  - bounded default `pixi run build`
+    - passed with `DART safe jobs: 4`, `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest World related-route capture-metrics follow-up:
   - `python/examples/demos/scenes/floating_base.py` and
     `python/examples/demos/scenes/articulated.py` now publish scene-owned

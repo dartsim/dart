@@ -71,11 +71,12 @@
     and scene-owned capture metrics.
   - Added `rigid_restitution_ladder` to Python `py-demos`, showing matched
     low/medium/high restitution bounce lanes with solver/executor controls,
-    rebound height, vertical velocity, contact, energy-trend, and step-profile
-    diagnostics.
+    rebound height, vertical velocity, contact, energy-trend, step-profile
+    diagnostics, and scene-owned capture metrics.
   - Added `rigid_material_mixing` to Python `py-demos`, showing swapped
     body/surface material ownership lanes for rigid contact pair rules:
-    `max(restitution)` and geometric-mean friction.
+    `max(restitution)` and geometric-mean friction, with scene-owned capture
+    metrics.
   - Added `rigid_friction_threshold` to Python `py-demos`, a three-lane rigid
     IPC ramp that shows below-threshold sliding, user-controlled friction near
     the threshold, and above-threshold sticking with down-slope drift and speed
@@ -110,25 +111,28 @@
   - Added `rigid_body_modes` to Python `py-demos`, showing dynamic, static,
     and kinematic rigid-body mode semantics in a contact-free World with shared
     solver, executor, gravity, force, prescribed-path, drift, and path-error
-    diagnostics.
+    diagnostics plus scene-owned capture metrics.
   - Added `rigid_free_flight` to Python `py-demos`, showing contact-free
     zero-gravity drift, gravity-arc trajectory and momentum diagnostics,
     low/high-inertia spin response, energy drift, contact count, and
-    step-profile timing.
+    step-profile timing plus scene-owned capture metrics.
   - Added `rigid_frame_hierarchy` to Python `py-demos`, showing a body-fixed
     sensor/tool frame on a moving rigid body with local/world transform,
-    relative-transform, parent-frame, orientation, and step-timing residuals.
+    relative-transform, parent-frame, orientation, step-timing residuals, and
+    scene-owned capture metrics.
   - Added `rigid_external_loads` to Python `py-demos`, showing persistent
     force/torque accumulators, mass-scaled acceleration, inertia-scaled angular
-    response, pulse clearing, and static-body load caveats for rigid bodies.
+    response, pulse clearing, static-body load caveats, and scene-owned capture
+    metrics for rigid bodies.
   - Added `rigid_link_point_loads` to Python `py-demos`, showing one-shot
     `Link.apply_force()` point-load behavior on floating rigid links with
     centered translation, off-center lever-arm yaw acceleration, double-call
-    accumulation, pulse clearing, and world/local frame diagnostics.
+    accumulation, pulse clearing, world/local frame diagnostics, and
+    scene-owned capture metrics.
   - Added `rigid_timestep_sensitivity` to Python `py-demos`, showing matched
     fine/medium/coarse World time-step lanes with gravity scaling, free-fall
     error, contact timing, clearance, coarse/fine error ratio, and step-profile
-    diagnostics.
+    diagnostics plus scene-owned capture metrics.
   - Added `rigid_step_diagnostics` to Python `py-demos`, showing single-body,
     contact-pair, and small-stack Worlds under one selected solver/executor
     with step-profile stage/domain, backend-neutral acceleration/backend-active

@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -372,6 +372,82 @@ class _RigidExternalLoads:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {key: dict(value) for key, value in self._last_metrics.items()}
+        if not metrics:
+            zeros = {lane.key: np.zeros(3, dtype=float) for lane in self.lanes}
+            self._record_metrics(zeros, zeros)
+            metrics = {key: dict(value) for key, value in self._last_metrics.items()}
+        light = metrics["light_force"]
+        heavy = metrics["heavy_force"]
+        pulse = metrics["pulse_force"]
+        static = metrics["static_load"]
+        low = metrics["low_inertia_torque"]
+        high = metrics["high_inertia_torque"]
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_external_loads",
+            "solver": "sequential_impulse",
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "external_force_torque_accumulator_response",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "force_magnitude": float(self.force_magnitude),
+            "torque_magnitude": float(self.torque_magnitude),
+            "mass_ratio": float(self.mass_ratio),
+            "inertia_ratio": float(self.inertia_ratio),
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "force_magnitude": float(self.force_magnitude),
+                "torque_magnitude": float(self.torque_magnitude),
+                "mass_ratio": float(self.mass_ratio),
+                "inertia_ratio": float(self.inertia_ratio),
+            },
+            "light_force_accel_x": float(light["linear_accel_x"]),
+            "heavy_force_accel_x": float(heavy["linear_accel_x"]),
+            "pulse_force_norm": float(pulse["force_norm"]),
+            "static_drift": float(static["drift"]),
+            "low_inertia_angular_accel_z": float(low["angular_accel_z"]),
+            "high_inertia_angular_accel_z": float(high["angular_accel_z"]),
+            "step_ms": float(step_values[-1]) if step_values else 0.0,
+            "history": {
+                "samples": float(len(step_values)),
+                "max_light_speed": max(
+                    (float(value) for value in self._speed_history["light_force"]),
+                    default=0.0,
+                ),
+                "max_heavy_speed": max(
+                    (float(value) for value in self._speed_history["heavy_force"]),
+                    default=0.0,
+                ),
+                "max_low_inertia_angular_speed": max(
+                    (
+                        float(value)
+                        for value in self._angular_speed_history[
+                            "low_inertia_torque"
+                        ]
+                    ),
+                    default=0.0,
+                ),
+                "max_high_inertia_angular_speed": max(
+                    (
+                        float(value)
+                        for value in self._angular_speed_history[
+                            "high_inertia_torque"
+                        ]
+                    ),
+                    default=0.0,
+                ),
+                "max_static_drift": max(
+                    (float(value) for value in self._static_drift_history),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -539,6 +615,7 @@ def build() -> SceneSetup:
             "replay_capture_state": loads.capture_replay_state,
             "replay_restore_state": loads.restore_replay_state,
             "replay_sync": loads.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: loads.capture_metrics,
         },
     )
 

@@ -1,5 +1,83 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Checkpoint Snapshot - 2026-06-11 Fundamental Workflow Metrics
+
+The continuation resumed from pushed handoff commit `4a2fb7a0714` and closed
+the remaining live capture-metrics gap in the early numbered World Rigid Body
+workflow rows. All related-evidence routes were already covered; this slice
+adds or normalizes the numbered fundamentals.
+
+Current local slice: fundamental numbered-row capture metrics. The checkpoint
+touches:
+
+- `python/examples/demos/scenes/rigid_body_modes.py`
+- `python/examples/demos/scenes/rigid_free_flight.py`
+- `python/examples/demos/scenes/rigid_frame_hierarchy.py`
+- `python/examples/demos/scenes/rigid_external_loads.py`
+- `python/examples/demos/scenes/rigid_link_point_loads.py`
+- `python/examples/demos/scenes/rigid_timestep_sensitivity.py`
+- `python/examples/demos/scenes/rigid_restitution_ladder.py`
+- `python/examples/demos/scenes/rigid_material_mixing.py`
+- `python/examples/demos/scenes/rigid_kinematic_normal_push.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `rigid_body_modes`, `rigid_free_flight`, `rigid_frame_hierarchy`,
+  `rigid_external_loads`, `rigid_link_point_loads`,
+  `rigid_timestep_sensitivity`, `rigid_restitution_ladder`, and
+  `rigid_material_mixing` now expose
+  `SceneSetup.info["capture_metrics"]` payloads with row identity,
+  solver/executor or scope, controls, per-lane metrics, compact history
+  extrema, and top-level manifest-friendly fields.
+- `rigid_kinematic_normal_push` now uses the shared
+  `CAPTURE_METRICS_INFO_KEY` constant instead of a literal string.
+- `rigid_joint_breakage` remains covered through
+  `build_breakable_joint_scene(row_id="rigid_joint_breakage")`; no wrapper
+  code change was needed beyond the focused test coverage that already asserts
+  its capture hook.
+- Existing focused integration tests for the affected rows now assert the new
+  capture payload identity and representative finite top-level fields.
+
+Validation collected so far for this slice:
+
+- `python -m py_compile` over the changed scene files and
+  `python/tests/integration/test_demos_cycle.py` passed.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_external_loads_scale_force_and_torque_response python/tests/integration/test_demos_cycle.py::test_rigid_free_flight_preserves_initial_state_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_frame_hierarchy_tracks_body_fixed_frame python/tests/integration/test_demos_cycle.py::test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size python/tests/integration/test_demos_cycle.py::test_rigid_restitution_ladder_orders_rebound_height python/tests/integration/test_demos_cycle.py::test_rigid_material_mixing_applies_pair_rules python/tests/integration/test_demos_cycle.py::test_rigid_link_point_loads_show_lever_arm_and_frame_semantics python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage -q`
+  reported `9 passed`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets -q`
+  reported `10 passed`.
+- Real docked captures under `/tmp/dart_capture_*_fundamental_metrics_1781245202`
+  wrote scene-metrics sidecars and docked first-frame visual evidence:
+  `rigid_body_modes` 72 events with dynamic speed about `1.861`, static drift
+  `0.0`, and kinematic error `0.0`; `rigid_free_flight` 96 events with
+  near-zero drift residual, arc error about `0.00414`, and spin momentum ratio
+  `4.0`; `rigid_frame_hierarchy` 72 events with zero world/relative/orientation
+  residuals; `rigid_external_loads` 72 events with light/heavy acceleration
+  about `4.0`/`1.0` and static drift `0.0`; `rigid_link_point_loads` 72 events
+  with centered acceleration about `2.0` and off-center yaw acceleration about
+  `-4.896`; `rigid_material_mixing` 72 events with effective restitution
+  `0.82`, effective friction about `0.1897`, and slide speed loss about
+  `0.525`; `rigid_restitution_ladder` 96 events with ordered dead/middle/high
+  rebound heights about `0.0792`/`0.1183`/`0.1526`; and
+  `rigid_timestep_sensitivity` 96 events with fine/coarse freefall errors about
+  `1.508` and coarse/fine ratio about `1.0`.
+- `pixi run lint` passed.
+- Bounded default `pixi run build` passed with `DART safe jobs: 4` and
+  `ninja: no work to do`.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Do not push, open a PR, comment, or mutate GitHub state
+   unless the user explicitly approves it in the current turn.
+
 ## Critical Stop Handoff - 2026-06-11 World Related Metrics
 
 The user explicitly stopped further work and requested handoff-only docs with

@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _BASE_TIME_STEP = 0.002
 _GRAVITY_Z = -9.81
@@ -364,6 +364,79 @@ class _RigidTimeStepSensitivity:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {
+            lane.key: dict(self._last_metrics.get(lane.key) or self._sample(lane))
+            for lane in self.lanes
+        }
+        fine = metrics["fine"]
+        medium = metrics["medium"]
+        coarse = metrics["coarse"]
+        fine_step_values = list(self._step_ms_history["fine"])
+        all_step_values = [
+            float(value)
+            for lane in self.lanes
+            for value in self._step_ms_history[lane.key]
+        ]
+        coarse_error_ratio = (
+            float(self._coarse_error_ratio[-1]) if self._coarse_error_ratio else 0.0
+        )
+        return {
+            "row": "rigid_timestep_sensitivity",
+            "solver": _SOLVERS[int(self.solver_index)][0],
+            "solver_enum": self._solver().name,
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "matched_time_step_freefall_contact_sensitivity",
+            "base_time_step_ms": float(max(0.0005, self.base_time_step) * 1000.0),
+            "display_step_ms": float(max(0.0005, self.base_time_step) * 4.0 * 1000.0),
+            "world_time": float(self.primary_world.time),
+            "gravity_z": float(self._gravity()[2]),
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "solver_index": float(self.solver_index),
+                "executor_index": float(self.executor_index),
+                "base_time_step": float(self.base_time_step),
+                "gravity_scale": float(self.gravity_scale),
+            },
+            "fine_freefall_error": float(fine["freefall_error"]),
+            "medium_freefall_error": float(medium["freefall_error"]),
+            "coarse_freefall_error": float(coarse["freefall_error"]),
+            "coarse_error_ratio": coarse_error_ratio,
+            "fine_clearance": float(fine["clearance"]),
+            "coarse_clearance": float(coarse["clearance"]),
+            "fine_step_ms": float(fine["step_ms"]),
+            "coarse_step_ms": float(coarse["step_ms"]),
+            "history": {
+                "samples": float(len(fine_step_values)),
+                "max_fine_freefall_error": max(
+                    (float(value) for value in self._freefall_error_history["fine"]),
+                    default=0.0,
+                ),
+                "max_medium_freefall_error": max(
+                    (float(value) for value in self._freefall_error_history["medium"]),
+                    default=0.0,
+                ),
+                "max_coarse_freefall_error": max(
+                    (float(value) for value in self._freefall_error_history["coarse"]),
+                    default=0.0,
+                ),
+                "max_coarse_error_ratio": max(
+                    (float(value) for value in self._coarse_error_ratio),
+                    default=0.0,
+                ),
+                "min_fine_clearance": min(
+                    (float(value) for value in self._clearance_history["fine"]),
+                    default=float(fine["clearance"]),
+                ),
+                "min_coarse_clearance": min(
+                    (float(value) for value in self._clearance_history["coarse"]),
+                    default=float(coarse["clearance"]),
+                ),
+                "max_step_ms": max(all_step_values, default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.solver_index = max(
@@ -524,6 +597,7 @@ def build() -> SceneSetup:
             "replay_capture_state": sensitivity.capture_replay_state,
             "replay_restore_state": sensitivity.restore_replay_state,
             "replay_sync": sensitivity._sync,
+            CAPTURE_METRICS_INFO_KEY: sensitivity.capture_metrics,
         },
     )
 

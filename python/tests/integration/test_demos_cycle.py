@@ -1826,6 +1826,24 @@ def test_rigid_body_modes_compare_dynamic_static_kinematic_semantics() -> None:
     assert max(controller._static_drift_history) == pytest.approx(0.0, abs=1.0e-12)
     assert max(controller._kinematic_error_history) == pytest.approx(0.0, abs=1.0e-12)
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_body_modes"
+    assert capture_metrics["solver"] == "Sequential impulse"
+    assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["dynamic_height"] == pytest.approx(dynamic["height"])
+    assert capture_metrics["dynamic_displacement_x"] == pytest.approx(
+        dynamic["displacement_x"]
+    )
+    assert capture_metrics["static_drift"] == pytest.approx(static["displacement"])
+    assert capture_metrics["kinematic_error"] == pytest.approx(
+        kinematic["kinematic_error"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None:
@@ -1961,6 +1979,26 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
     assert float(static["torque_norm"]) == pytest.approx(controller.torque_magnitude)
     assert float(static["drift"]) == pytest.approx(0.0, abs=1.0e-12)
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_external_loads"
+    assert capture_metrics["solver"] == "sequential_impulse"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["light_force_accel_x"] == pytest.approx(
+        light["linear_accel_x"]
+    )
+    assert capture_metrics["heavy_force_accel_x"] == pytest.approx(
+        heavy["linear_accel_x"]
+    )
+    assert capture_metrics["pulse_force_norm"] == pytest.approx(pulse["force_norm"])
+    assert capture_metrics["static_drift"] == pytest.approx(static["drift"])
+    assert capture_metrics["low_inertia_angular_accel_z"] == pytest.approx(
+        low["angular_accel_z"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_free_flight_preserves_initial_state_diagnostics() -> None:
@@ -2008,6 +2046,27 @@ def test_rigid_free_flight_preserves_initial_state_diagnostics() -> None:
     assert controller._spin_momentum_ratio_history
     assert controller._spin_energy_ratio_history
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_free_flight"
+    assert capture_metrics["solver"] == "sequential_impulse"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["drift_position_error"] == pytest.approx(
+        metrics["drift_position_error"]
+    )
+    assert capture_metrics["arc_position_error"] == pytest.approx(
+        metrics["arc_position_error"]
+    )
+    assert capture_metrics["arc_momentum_residual"] == pytest.approx(
+        metrics["arc_momentum_residual"]
+    )
+    assert capture_metrics["spin_momentum_ratio"] == pytest.approx(
+        metrics["spin_momentum_ratio"]
+    )
+    assert capture_metrics["contact_count"] == pytest.approx(0.0)
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_frame_hierarchy_tracks_body_fixed_frame() -> None:
@@ -2052,6 +2111,21 @@ def test_rigid_frame_hierarchy_tracks_body_fixed_frame() -> None:
     assert controller._world_error_history
     assert controller._relative_error_history
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_frame_hierarchy"
+    assert capture_metrics["solver"] == "world_frame_hierarchy"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["parent"] == controller.body.name
+    assert capture_metrics["world_error"] == pytest.approx(metrics["world_error"])
+    assert capture_metrics["relative_error"] == pytest.approx(metrics["relative_error"])
+    assert capture_metrics["orientation_error"] == pytest.approx(
+        metrics["orientation_error"]
+    )
+    assert capture_metrics["sensor_x"] == pytest.approx(metrics["sensor_x"])
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size() -> None:
@@ -2100,6 +2174,28 @@ def test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size() -> None
         assert controller._freefall_error_history[lane.key]
         assert controller._clearance_history[lane.key]
         assert controller._step_ms_history[lane.key]
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_timestep_sensitivity"
+    assert capture_metrics["solver"] == "Sequential impulse"
+    assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["fine_freefall_error"] == pytest.approx(
+        metrics["fine"]["freefall_error"]
+    )
+    assert capture_metrics["medium_freefall_error"] == pytest.approx(
+        metrics["medium"]["freefall_error"]
+    )
+    assert capture_metrics["coarse_freefall_error"] == pytest.approx(
+        metrics["coarse"]["freefall_error"]
+    )
+    assert capture_metrics["coarse_error_ratio"] == pytest.approx(
+        controller._coarse_error_ratio[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history["fine"]))
+    )
 
 
 def test_rigid_step_diagnostics_reports_profile_and_memory_counters() -> None:
@@ -2590,6 +2686,25 @@ def test_rigid_restitution_ladder_orders_rebound_height() -> None:
     assert float(dead["restitution"]) == pytest.approx(0.0)
     assert float(middle["restitution"]) == pytest.approx(0.5)
     assert float(high["restitution"]) == pytest.approx(0.9)
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_restitution_ladder"
+    assert capture_metrics["solver"] == "Sequential impulse"
+    assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(controller._last_metrics)
+    assert capture_metrics["dead_rebound_height"] == pytest.approx(
+        dead["max_rebound_height"]
+    )
+    assert capture_metrics["middle_rebound_height"] == pytest.approx(
+        middle["max_rebound_height"]
+    )
+    assert capture_metrics["high_rebound_height"] == pytest.approx(
+        high["max_rebound_height"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_material_mixing_applies_pair_rules() -> None:
@@ -2634,6 +2749,27 @@ def test_rigid_material_mixing_applies_pair_rules() -> None:
     assert metrics["slide_surface_high"]["speed_loss"] > 0.5
     assert metrics["slide_body_high"]["speed_loss"] == pytest.approx(
         metrics["slide_surface_high"]["speed_loss"], abs=1.0e-9
+    )
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_material_mixing"
+    assert capture_metrics["solver"] == "sequential_impulse"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(metrics)
+    assert capture_metrics["expected_restitution_rule"] == "max"
+    assert capture_metrics["expected_friction_rule"] == "sqrt_product"
+    assert capture_metrics["effective_restitution"] == pytest.approx(
+        expected_restitution
+    )
+    assert capture_metrics["effective_friction"] == pytest.approx(expected_friction)
+    assert capture_metrics["bounce_body_high_rebound"] == pytest.approx(
+        metrics["bounce_body_high"]["max_rebound_height"]
+    )
+    assert capture_metrics["slide_body_high_speed_loss"] == pytest.approx(
+        metrics["slide_body_high"]["speed_loss"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
     )
 
 
@@ -5262,6 +5398,27 @@ def test_rigid_link_point_loads_show_lever_arm_and_frame_semantics() -> None:
     assert controller._speed_history["center"]
     assert controller._yaw_rate_history["offcenter"]
     assert np.isfinite(float(local_frame["displacement_y"]))
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_link_point_loads"
+    assert capture_metrics["solver"] == "sequential_impulse"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert set(capture_metrics["lanes"]) == set(controller._last_metrics)
+    assert capture_metrics["center_world_accel_x"] == pytest.approx(
+        controller._last_metrics["center"]["world_accel_x"]
+    )
+    assert capture_metrics["offcenter_yaw_accel"] == pytest.approx(
+        controller._last_metrics["offcenter"]["yaw_accel"]
+    )
+    assert capture_metrics["pulse_applied_count"] == pytest.approx(
+        pulse_after_clear["applied_count"]
+    )
+    assert capture_metrics["local_frame_world_accel_y"] == pytest.approx(
+        controller._last_metrics["local_frame"]["world_accel_y"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._step_ms_history))
+    )
 
 
 def test_rigid_loop_closure_compares_closure_families() -> None:

@@ -1,5 +1,20 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-11 Fundamental Workflow Metrics
+
+The latest continuation resumed from pushed handoff commit `4a2fb7a0714` and
+added local scene-owned capture metrics to the early numbered World Rigid Body
+fundamental rows. The local slice covers `rigid_body_modes`,
+`rigid_free_flight`, `rigid_frame_hierarchy`, `rigid_external_loads`,
+`rigid_link_point_loads`, `rigid_timestep_sensitivity`,
+`rigid_restitution_ladder`, and `rigid_material_mixing`; it also normalizes
+`rigid_kinematic_normal_push` to use the shared capture-metrics info key. The
+focused affected-row guard reported `9 passed` so far, and inspected docked
+captures under `/tmp/dart_capture_*_fundamental_metrics_1781245202` wrote
+scene metrics for all eight rows. The related docs drift guard reported
+`10 passed`; `pixi run lint`, bounded `pixi run build`, and `git diff --check`
+passed locally before commit.
+
 ## Critical Stop Handoff - 2026-06-11 World Related Metrics
 
 The user explicitly stopped further work and requested handoff-only docs with
@@ -503,6 +518,28 @@ continue implementation unless the user explicitly resumes it.
       shoulder speed about `0.643`, wrist speed about `0.583`, and forearm
       height about `-0.0257`. `pixi run lint`, bounded default
       `pixi run build`, and `git diff --check` passed.
+- [x] Fundamental numbered-row capture-metrics follow-up:
+      `rigid_body_modes`, `rigid_free_flight`, `rigid_frame_hierarchy`,
+      `rigid_external_loads`, `rigid_link_point_loads`,
+      `rigid_timestep_sensitivity`, `rigid_restitution_ladder`, and
+      `rigid_material_mixing` now publish scene-owned capture metrics. The
+      payloads report row identity, solver/executor or scope, controls,
+      per-lane metrics, compact history extrema, and top-level manifest fields
+      for mode flags, free-flight residuals, frame residuals, load response,
+      point-load response, time-step error ratio, restitution rebound, and
+      material mixing. `rigid_kinematic_normal_push` now uses the shared
+      capture-metrics info key; `rigid_joint_breakage` remains covered through
+      the shared AVBD builder. The focused affected-row guard reported
+      `9 passed`. Real docked captures under
+      `/tmp/dart_capture_*_fundamental_metrics_1781245202` wrote 72
+      scene-metrics events for `rigid_body_modes`, `rigid_external_loads`,
+      `rigid_frame_hierarchy`, `rigid_link_point_loads`, and
+      `rigid_material_mixing`, plus 96 events for `rigid_free_flight`,
+      `rigid_restitution_ladder`, and `rigid_timestep_sensitivity`; all
+      manifests reported docked first-frame visual evidence. The related
+      workflow/docs drift guard reported `10 passed`; `pixi run lint`, bounded
+      default `pixi run build` with `DART safe jobs: 4`, and
+      `git diff --check` passed.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -852,16 +889,15 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
-   `feature/rigid-body-gui-visual-verification`. If this handoff was pushed,
-   expect a docs-only handoff commit on top of code checkpoint `7fb9163794d`.
-2. Do not run tests, lint, build, captures, or whitespace verification unless
-   the user explicitly resumes implementation or asks for verification.
-3. The prior stop boundary was superseded by the continuation that implemented
-   the `diff_drone_liftoff` contact-gradient metrics hook. Its focused guard,
-   docked capture, lint, bounded build, and whitespace check are recorded
-   above.
-4. The numbered workflow capture-metrics pass now reaches the final row, and
-   the focused `rigid_ipc_tunnel` no-tunneling route plus the
+   `feature/rigid-body-gui-visual-verification`.
+2. Do not push, open a PR, comment, or mutate GitHub state unless the user
+   explicitly approves it in the current turn.
+3. The numbered workflow capture-metrics pass now covers the early
+   fundamentals, the runtime/profiling rows, contact/query rows,
+   solver/executor rows, manipulation/kinematic rows, and the final multibody
+   rows. `rigid_joint_breakage` gets its hook from the shared AVBD breakable
+   builder. Keep future payloads summary-oriented and manifest-friendly.
+4. The focused `rigid_ipc_tunnel` no-tunneling route plus the
    `diff_drone_liftoff` contact-gradient route now have capture metrics. Keep
    both as related shelf routes, not new numbered rigid rows, unless a distinct
    user question appears.
@@ -876,17 +912,15 @@ and the no-tunneling scope decision.
 7. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-8. Future pushes after this handoff, PR creation, comments, review replies, or
-   other GitHub mutations still require explicit approval.
-9. Refresh validation for any later code/docs changes, then use the local
+8. Refresh validation for any later code/docs changes, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-10. Keep related-evidence routes synchronized between the runner-owned
-    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
-    non-numbered evidence shelves are added.
-11. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+9. Keep related-evidence routes synchronized between the runner-owned
+   `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
+   non-numbered evidence shelves are added.
+10. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
     compliance deferrals when public dartpy APIs expose those surfaces.
-12. Keep fuller articulated arm/gripper manipulation deferred until the public
+11. Keep fuller articulated arm/gripper manipulation deferred until the public
     API/runtime can support it as an interactive verifier. The current audit
     found rigid-body joints are not IPC-supported, multibody link contacts lack
     material/friction controls, and scripted IPC two-jaw pinch settings that

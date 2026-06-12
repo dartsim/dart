@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _PADDLE_HALF = np.array([0.060, 0.26, 0.20])
 _TARGET_HALF = np.array([0.12, 0.12, 0.12])
@@ -562,7 +562,7 @@ def build() -> SceneSetup:
         renderable_provider=controller.renderable_provider,
         panels=[ScenePanel("Rigid Kinematic Normal Push", controller.build_panel)],
         info={
-            "capture_metrics": controller.capture_metrics,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "sx_world": controller.primary_world,
             "rigid_kinematic_normal_push_controller": controller,
             "rigid_kinematic_normal_push_worlds": [

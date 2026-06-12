@@ -711,7 +711,12 @@ complementarity-aware thrust/final-height/loss values, height and target-error
 gaps, fallback status, and compact history summaries. The AVBD related routes
 use it for fixed-joint contact offset/clearance/contact counts, spherical
 breakage anchor/orientation drift, and free-rigid revolute/prismatic motor
-tracking.
+tracking. The early numbered rigid workflow rows use it for body-mode flags,
+free-flight momentum/energy residuals, frame-transform residuals,
+force/torque accumulator response, point-load lever-arm response,
+time-step error ratios, restitution rebound, and pair-material mixing fields,
+so the first-run fundamentals now preserve physics diagnostics in capture
+artifacts instead of only screenshots.
 
 When forward rigid contact looks correct but a differentiable optimization is
 stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses

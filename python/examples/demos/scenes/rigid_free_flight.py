@@ -10,7 +10,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -473,6 +473,90 @@ class _RigidFreeFlight:
             "last_metrics": dict(self._last_metrics),
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = dict(self._last_metrics)
+        if not metrics:
+            metrics = {
+                "drift_position_error": 0.0,
+                "drift_momentum_drift": 0.0,
+                "drift_speed": float(np.linalg.norm(self.drift_body.linear_velocity)),
+                "arc_position_error": 0.0,
+                "arc_momentum_residual": 0.0,
+                "arc_energy_drift": 0.0,
+                "arc_height": float(self.arc_body.translation[2]),
+                "arc_expected_height": float(self.arc_body.translation[2]),
+                "spin_low_angular_speed": float(
+                    np.linalg.norm(self.spin_low_body.angular_velocity)
+                ),
+                "spin_high_angular_speed": float(
+                    np.linalg.norm(self.spin_high_body.angular_velocity)
+                ),
+                "spin_momentum_ratio": float(self.inertia_ratio),
+                "spin_energy_ratio": float(self.inertia_ratio),
+                "step_ms": 0.0,
+                "time": float(self.primary_world.time),
+                "contact_count": 0.0,
+                "status": "no contacts",
+            }
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_free_flight",
+            "solver": "sequential_impulse",
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "contact_free_initial_velocity_gravity_spin",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.primary_world.time),
+            "launch_speed": float(self.launch_speed),
+            "launch_angle_deg": float(self.launch_angle_deg),
+            "gravity_z": float(self._arc_gravity()[2]),
+            "spin_speed": float(self.spin_speed),
+            "inertia_ratio": float(self.inertia_ratio),
+            "metrics": metrics,
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "launch_speed": float(self.launch_speed),
+                "launch_angle_deg": float(self.launch_angle_deg),
+                "gravity_scale": float(self.gravity_scale),
+                "spin_speed": float(self.spin_speed),
+                "inertia_ratio": float(self.inertia_ratio),
+            },
+            "drift_position_error": float(metrics["drift_position_error"]),
+            "drift_momentum_drift": float(metrics["drift_momentum_drift"]),
+            "drift_speed": float(metrics["drift_speed"]),
+            "arc_position_error": float(metrics["arc_position_error"]),
+            "arc_momentum_residual": float(metrics["arc_momentum_residual"]),
+            "arc_energy_drift": float(metrics["arc_energy_drift"]),
+            "arc_height": float(metrics["arc_height"]),
+            "spin_momentum_ratio": float(metrics["spin_momentum_ratio"]),
+            "spin_energy_ratio": float(metrics["spin_energy_ratio"]),
+            "contact_count": float(metrics["contact_count"]),
+            "step_ms": float(metrics["step_ms"]),
+            "history": {
+                "samples": float(len(step_values)),
+                "max_drift_position_error": max(
+                    (float(value) for value in self._drift_error_history),
+                    default=0.0,
+                ),
+                "max_arc_position_error": max(
+                    (float(value) for value in self._arc_error_history),
+                    default=0.0,
+                ),
+                "max_arc_momentum_residual": max(
+                    (float(value) for value in self._arc_momentum_residual_history),
+                    default=0.0,
+                ),
+                "max_arc_energy_drift": max(
+                    (float(value) for value in self._arc_energy_drift_history),
+                    default=0.0,
+                ),
+                "max_spin_momentum_ratio": max(
+                    (float(value) for value in self._spin_momentum_ratio_history),
+                    default=float(self.inertia_ratio),
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -653,6 +737,7 @@ def build() -> SceneSetup:
             "replay_capture_state": flight.capture_replay_state,
             "replay_restore_state": flight.restore_replay_state,
             "replay_sync": flight._sync,
+            CAPTURE_METRICS_INFO_KEY: flight.capture_metrics,
         },
     )
 

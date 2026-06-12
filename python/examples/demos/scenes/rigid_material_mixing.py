@@ -12,7 +12,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _BALL_RADIUS = 0.065
 _BOX_HALF = np.array([0.07, 0.07, 0.07])
@@ -413,6 +413,82 @@ class _RigidMaterialMixing:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {
+            lane.key: dict(self._last_metrics.get(lane.key) or self._sample(lane, 0))
+            for lane in self.lanes
+        }
+        bounce_body = metrics["bounce_body_high"]
+        bounce_surface = metrics["bounce_surface_high"]
+        slide_body = metrics["slide_body_high"]
+        slide_surface = metrics["slide_surface_high"]
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_material_mixing",
+            "solver": "sequential_impulse",
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "body_surface_pair_material_mixing_rules",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "impact_speed": float(self.impact_speed),
+            "tangential_speed": float(self.tangential_speed),
+            "low_restitution": float(self.low_restitution),
+            "high_restitution": float(self.high_restitution),
+            "low_friction": float(self.low_friction),
+            "high_friction": float(self.high_friction),
+            "expected_restitution_rule": "max",
+            "expected_friction_rule": "sqrt_product",
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "impact_speed": float(self.impact_speed),
+                "tangential_speed": float(self.tangential_speed),
+                "low_restitution": float(self.low_restitution),
+                "high_restitution": float(self.high_restitution),
+                "low_friction": float(self.low_friction),
+                "high_friction": float(self.high_friction),
+            },
+            "bounce_body_high_rebound": float(bounce_body["max_rebound_height"]),
+            "bounce_surface_high_rebound": float(
+                bounce_surface["max_rebound_height"]
+            ),
+            "slide_body_high_speed_loss": float(slide_body["speed_loss"]),
+            "slide_surface_high_speed_loss": float(slide_surface["speed_loss"]),
+            "effective_restitution": float(bounce_body["effective_restitution"]),
+            "effective_friction": float(slide_body["effective_friction"]),
+            "step_ms": float(step_values[-1]) if step_values else 0.0,
+            "history": {
+                "samples": float(len(step_values)),
+                "max_bounce_body_high_rebound": float(
+                    self._max_rebound_height.get("bounce_body_high", 0.0)
+                ),
+                "max_bounce_surface_high_rebound": float(
+                    self._max_rebound_height.get("bounce_surface_high", 0.0)
+                ),
+                "max_slide_body_high_speed_loss": max(
+                    (float(value) for value in self._speed_loss_history["slide_body_high"]),
+                    default=0.0,
+                ),
+                "max_slide_surface_high_speed_loss": max(
+                    (
+                        float(value)
+                        for value in self._speed_loss_history["slide_surface_high"]
+                    ),
+                    default=0.0,
+                ),
+                "max_contact_count": max(
+                    (
+                        float(value)
+                        for history in self._contact_history.values()
+                        for value in history
+                    ),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -590,6 +666,7 @@ def build() -> SceneSetup:
             "replay_capture_state": mixing.capture_replay_state,
             "replay_restore_state": mixing.restore_replay_state,
             "replay_sync": mixing.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: mixing.capture_metrics,
         },
     )
 

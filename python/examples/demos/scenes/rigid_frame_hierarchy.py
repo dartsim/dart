@@ -11,7 +11,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -357,6 +357,62 @@ class _RigidFrameHierarchy:
             "last_metrics": dict(self._last_metrics),
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = dict(self._last_metrics)
+        if not metrics:
+            self._record_metrics()
+            metrics = dict(self._last_metrics)
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_frame_hierarchy",
+            "solver": "world_frame_hierarchy",
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "body_fixed_frame_transform_residuals",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "body_yaw_speed": float(self.body_yaw_speed),
+            "path_radius": float(self.path_radius),
+            "local_offset_x": float(self.local_offset_x),
+            "local_offset_y": float(self.local_offset_y),
+            "local_yaw_deg": float(self.local_yaw_deg),
+            "parent": str(metrics["parent"]),
+            "metrics": metrics,
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "body_yaw_speed": float(self.body_yaw_speed),
+                "path_radius": float(self.path_radius),
+                "local_offset_x": float(self.local_offset_x),
+                "local_offset_y": float(self.local_offset_y),
+                "local_yaw_deg": float(self.local_yaw_deg),
+            },
+            "body_x": float(metrics["body_x"]),
+            "body_y": float(metrics["body_y"]),
+            "body_z": float(metrics["body_z"]),
+            "sensor_x": float(metrics["sensor_x"]),
+            "sensor_y": float(metrics["sensor_y"]),
+            "sensor_z": float(metrics["sensor_z"]),
+            "world_error": float(metrics["world_error"]),
+            "relative_error": float(metrics["relative_error"]),
+            "orientation_error": float(metrics["orientation_error"]),
+            "step_ms": float(metrics["step_ms"]),
+            "history": {
+                "samples": float(len(step_values)),
+                "max_world_error": max(
+                    (float(value) for value in self._world_error_history),
+                    default=0.0,
+                ),
+                "max_relative_error": max(
+                    (float(value) for value in self._relative_error_history),
+                    default=0.0,
+                ),
+                "max_orientation_error": max(
+                    (float(value) for value in self._orientation_error_history),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -498,6 +554,7 @@ def build() -> SceneSetup:
             "replay_capture_state": hierarchy.capture_replay_state,
             "replay_restore_state": hierarchy.restore_replay_state,
             "replay_sync": hierarchy._sync_visuals,
+            CAPTURE_METRICS_INFO_KEY: hierarchy.capture_metrics,
         },
     )
 

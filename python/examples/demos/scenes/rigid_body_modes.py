@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -374,6 +374,64 @@ class _RigidBodyModes:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {
+            lane.key: dict(self._last_metrics.get(lane.key) or self._sample_lane(lane))
+            for lane in self.lanes
+        }
+        dynamic = metrics["dynamic"]
+        static = metrics["static"]
+        kinematic = metrics["kinematic"]
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_body_modes",
+            "solver": _SOLVERS[int(self.solver_index)][0],
+            "solver_enum": self._solver().name,
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "dynamic_static_kinematic_mode_semantics",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "gravity_z": float(self.world.gravity[2]),
+            "force_magnitude": float(self.force_magnitude),
+            "drive_speed": float(self.drive_speed),
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "solver_index": float(self.solver_index),
+                "executor_index": float(self.executor_index),
+                "gravity_scale": float(self.gravity_scale),
+                "force_magnitude": float(self.force_magnitude),
+                "drive_speed": float(self.drive_speed),
+            },
+            "dynamic_height": float(dynamic["height"]),
+            "dynamic_speed": float(dynamic["speed"]),
+            "dynamic_displacement_x": float(dynamic["displacement_x"]),
+            "static_drift": float(static["displacement"]),
+            "kinematic_x": float(kinematic["x"]),
+            "kinematic_error": float(kinematic["kinematic_error"]),
+            "step_ms": float(step_values[-1]) if step_values else 0.0,
+            "history": {
+                "samples": float(len(step_values)),
+                "max_dynamic_speed": max(
+                    (float(value) for value in self._speed_history["dynamic"]),
+                    default=0.0,
+                ),
+                "min_dynamic_height": min(
+                    (float(value) for value in self._height_history["dynamic"]),
+                    default=float(dynamic["height"]),
+                ),
+                "max_static_drift": max(
+                    (float(value) for value in self._static_drift_history),
+                    default=0.0,
+                ),
+                "max_kinematic_error": max(
+                    (float(value) for value in self._kinematic_error_history),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.solver_index = max(
@@ -515,6 +573,7 @@ def build() -> SceneSetup:
             "replay_capture_state": modes.capture_replay_state,
             "replay_restore_state": modes.restore_replay_state,
             "replay_sync": modes.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: modes.capture_metrics,
         },
     )
 

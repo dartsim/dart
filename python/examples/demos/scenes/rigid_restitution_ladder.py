@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _BALL_RADIUS = 0.08
 _GROUND_HALF = np.array([0.32, 0.28, 0.04])
@@ -321,6 +321,68 @@ class _RigidRestitutionLadder:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {
+            lane.key: dict(self._last_metrics.get(lane.key) or self._sample(lane, 0))
+            for lane in self.lanes
+        }
+        dead = metrics["dead"]
+        middle = metrics["middle"]
+        high = metrics["high"]
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_restitution_ladder",
+            "solver": _SOLVERS[int(self.solver_index)][0],
+            "solver_enum": self._solver().name,
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "matched_restitution_bounce_ladder",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "launch_height": float(self.launch_height),
+            "restitution_scale": float(self.restitution_scale),
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "solver_index": float(self.solver_index),
+                "executor_index": float(self.executor_index),
+                "launch_height": float(self.launch_height),
+                "restitution_scale": float(self.restitution_scale),
+            },
+            "dead_rebound_height": float(dead["max_rebound_height"]),
+            "middle_rebound_height": float(middle["max_rebound_height"]),
+            "high_rebound_height": float(high["max_rebound_height"]),
+            "high_upward_velocity": float(high["max_upward_velocity"]),
+            "dead_contact_count": float(dead["contact_count"]),
+            "middle_contact_count": float(middle["contact_count"]),
+            "high_contact_count": float(high["contact_count"]),
+            "step_ms": float(step_values[-1]) if step_values else 0.0,
+            "history": {
+                "samples": float(len(step_values)),
+                "max_dead_rebound_height": max(
+                    (float(value) for value in self._height_history["dead"]),
+                    default=float(dead["height"]),
+                ),
+                "max_middle_rebound_height": float(
+                    self._max_rebound_height.get("middle", 0.0)
+                ),
+                "max_high_rebound_height": float(
+                    self._max_rebound_height.get("high", 0.0)
+                ),
+                "max_high_upward_velocity": float(
+                    self._max_upward_velocity.get("high", 0.0)
+                ),
+                "max_contact_count": max(
+                    (
+                        float(value)
+                        for history in self._contact_history.values()
+                        for value in history
+                    ),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.solver_index = max(
@@ -466,6 +528,7 @@ def build() -> SceneSetup:
             "replay_capture_state": ladder.capture_replay_state,
             "replay_restore_state": ladder.restore_replay_state,
             "replay_sync": ladder.bridge.sync,
+            CAPTURE_METRICS_INFO_KEY: ladder.capture_metrics,
         },
     )
 

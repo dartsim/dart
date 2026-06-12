@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.004
 _HISTORY = 180
@@ -455,6 +455,61 @@ class _RigidLinkPointLoads:
             },
         }
 
+    def capture_metrics(self) -> dict[str, Any]:
+        metrics = {key: dict(value) for key, value in self._last_metrics.items()}
+        step_values = list(self._step_ms_history)
+        center = metrics.get("center", {})
+        offcenter = metrics.get("offcenter", {})
+        pulse = metrics.get("pulse", {})
+        double = metrics.get("double", {})
+        local_frame = metrics.get("local_frame", {})
+        return {
+            "row": "rigid_link_point_loads",
+            "solver": "sequential_impulse",
+            "executor": self._executors[int(self.executor_index)][0],
+            "scope": "link_apply_force_point_and_frame_semantics",
+            "time_step_ms": float(_TIME_STEP * 1000.0),
+            "world_time": float(self.world.time),
+            "force_magnitude": float(self.force_magnitude),
+            "point_offset": float(self.point_offset),
+            "yaw_degrees": float(self.yaw_degrees),
+            "lane_order": [lane.key for lane in self.lanes],
+            "lanes": metrics,
+            "controls": {
+                "executor_index": float(self.executor_index),
+                "force_magnitude": float(self.force_magnitude),
+                "point_offset": float(self.point_offset),
+                "yaw_degrees": float(self.yaw_degrees),
+                "pulse_frames_remaining": float(self._pulse_frames_remaining),
+            },
+            "center_world_accel_x": float(center.get("world_accel_x", 0.0)),
+            "offcenter_yaw_accel": float(offcenter.get("yaw_accel", 0.0)),
+            "pulse_applied_count": float(pulse.get("applied_count", 0.0)),
+            "double_world_accel_x": float(double.get("world_accel_x", 0.0)),
+            "local_frame_world_accel_y": float(local_frame.get("world_accel_y", 0.0)),
+            "step_ms": float(step_values[-1]) if step_values else 0.0,
+            "history": {
+                "samples": float(len(step_values)),
+                "max_center_speed": max(
+                    (float(value) for value in self._speed_history["center"]),
+                    default=0.0,
+                ),
+                "max_double_speed": max(
+                    (float(value) for value in self._speed_history["double"]),
+                    default=0.0,
+                ),
+                "max_offcenter_yaw_rate": max(
+                    (abs(float(value)) for value in self._yaw_rate_history["offcenter"]),
+                    default=0.0,
+                ),
+                "max_pulse_accel": max(
+                    (abs(float(value)) for value in self._accel_history["pulse"]),
+                    default=0.0,
+                ),
+                "max_step_ms": max((float(value) for value in step_values), default=0.0),
+            },
+        }
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -606,6 +661,7 @@ def build() -> SceneSetup:
             "replay_capture_state": point_loads.capture_replay_state,
             "replay_restore_state": point_loads.restore_replay_state,
             "replay_sync": point_loads._sync,
+            CAPTURE_METRICS_INFO_KEY: point_loads.capture_metrics,
         },
     )
 
