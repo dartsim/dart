@@ -1,5 +1,38 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Fresh-Session Entry - 2026-06-12 Root Workflow Link And Capture
+
+Local checkpoint `f6fc7ec7f43` (`Route source checkout to Python rigid demos`)
+completed the root README front-door alignment. A read-only explorer audit then
+found the remaining small discoverability gap that the root source-checkout path
+opened `py-demos` but did not link to the full 36-row workflow docs or show a
+capture evidence command.
+
+Current local slice:
+
+- `README.md` source checkout now includes a docked
+  `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui`
+  command before the optional C++ smoke.
+- `README.md` links to
+  `python/examples/demos/README.md#rigid-body-visual-verification-workflow` and
+  names the `Rigid Workflow` search terms/capture-command source.
+- `python/tests/integration/test_demos_cycle.py` extends the root README drift
+  guard for that link, search wording, and capture command.
+- `docs/plans/103-examples-strategy.md`, `CHANGELOG.md`, and this dev-task
+  folder record the update.
+
+Immediate next step:
+
+1. Run `git diff --check` and inspect the diff.
+2. Commit locally if clean. Do not push, open a PR, comment, re-trigger CI, or
+   otherwise mutate GitHub state without explicit approval.
+
+Validation collected for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+
 ## Current Fresh-Session Entry - 2026-06-12 Root README Front Door
 
 Local checkpoint `7caa0f6ab6e` (`Clarify rigid comparison axes and capture

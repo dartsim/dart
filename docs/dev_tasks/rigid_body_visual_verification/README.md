@@ -1,5 +1,37 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 Root README Workflow Link And Capture
+
+Local checkpoint `f6fc7ec7f43` (`Route source checkout to Python rigid demos`)
+completed the root README front-door alignment. A read-only explorer audit then
+found one remaining small discoverability gap: the root README opened
+`py-demos` but did not link to the full 36-row workflow docs or show a capture
+evidence command. The current local slice adds that root README link and a
+docked `py-demo-capture` example for `rigid_solver_compare`, and extends the
+README drift guard to keep those visible.
+
+Current local slice touches:
+
+- `README.md`
+- `CHANGELOG.md`
+- `docs/plans/103-examples-strategy.md`
+- `python/tests/integration/test_demos_cycle.py`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+Immediate next step:
+
+1. Run `git diff --check` and inspect the diff.
+2. Commit locally if clean. Do not push, open a PR, comment, re-trigger CI, or
+   otherwise mutate GitHub state without explicit user approval.
+
+Validation collected for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+  reported `1 passed`.
+- `pixi run lint` passed.
+
 ## Current Active Snapshot - 2026-06-12 Root README Front Door
 
 Local checkpoint `7caa0f6ab6e` (`Clarify rigid comparison axes and capture
@@ -459,6 +491,11 @@ jobs: 1`). No push or GitHub mutation was performed.
       Python-first `py-demos` rigid-body GUI verifier and keeps the smaller C++
       companion smoke as optional. Focused README drift test reported
       `1 passed`, `pixi run lint` passed, and `git diff --check` passed.
+- [ ] Root workflow link and capture command: the root README now links to the
+      full 36-row rigid-body verifier docs and shows a docked
+      `py-demo-capture` solver-comparison command before the optional C++ demo
+      smoke. Focused README drift test reported `1 passed`, and
+      `pixi run lint` passed. Diff-check is pending for this slice.
 - [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
       `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
       capture metrics with the missing related-source or row identity fields,

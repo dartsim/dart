@@ -239,6 +239,7 @@ with temporary implementation state in
 `docs/dev_tasks/rigid_body_visual_verification/`. It grows the first
 user-facing World rigid-body rows in `py-demos`, their scene panels, replay and
 capture coverage, and focused tests. The root README source-checkout path now
-points first to this Python-first rigid-body GUI verifier before the frozen C++
-companion smoke. When that packet completes, durable evidence stays in the
-sidecar and the dev-task folder should be removed in the same completing PR.
+points first to this Python-first rigid-body GUI verifier, its 36-row workflow
+docs, and a docked capture command before the frozen C++ companion smoke. When
+that packet completes, durable evidence stays in the sidecar and the dev-task
+folder should be removed in the same completing PR.

@@ -54,8 +54,8 @@ hardening rather than new GUI rows:
   docs test when the helper exposes those flags.
 - The root README source-checkout path now points first to the Python-first
   `py-demos` rigid-body GUI verifier, including the baseline smoke and
-  `rigid_solver_compare` interactive route, before the smaller C++ companion
-  smoke.
+  `rigid_solver_compare` interactive route, a docked capture command, and the
+  full 36-row workflow docs before the smaller C++ companion smoke.
 - A PR-readiness audit found no obvious next implementation row in the curated
   36-row workflow; remaining publication work is final validation, dev-task
   cleanup decision, and explicit maintainer/user approval before any GitHub
@@ -277,6 +277,21 @@ hardening rather than new GUI rows:
     - passed
   - `git diff --check`
     - passed
+- Latest root README workflow-link/capture follow-up:
+  - `README.md` source checkout now also shows
+    `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui`
+    and links to
+    `python/examples/demos/README.md#rigid-body-visual-verification-workflow`
+    for the full 36-row workflow, `Rigid Workflow` search terms, and capture
+    commands.
+  - `test_root_readme_source_checkout_points_to_py_demos_rigid_front_door`
+    now guards the link, wording, capture command, and C++-after-Python order.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_root_readme_source_checkout_points_to_py_demos_rigid_front_door -q`
+    - `1 passed`
+  - `pixi run lint`
+    - passed
+  - `git diff --check`
+    - pending
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,

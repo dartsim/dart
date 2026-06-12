@@ -1749,12 +1749,23 @@ def test_root_readme_source_checkout_points_to_py_demos_rigid_front_door() -> No
     )[0]
 
     python_smoke = "pixi run py-demos -- --scene rigid_body --headless --frames 1"
+    capture_command = (
+        "pixi run py-demo-capture -- --scene rigid_solver_compare"
+        " --frames 24 --width 960 --height 540 --show-ui"
+    )
     cxx_smoke = "pixi run demos -- --scene rigid_body --headless --frames 1"
     assert python_smoke in source_checkout
     assert "pixi run py-demos" in source_checkout
     assert "pixi run py-demos -- --scene rigid_solver_compare" in source_checkout
+    assert capture_command in source_checkout
+    assert "Rigid Workflow" in source_checkout
+    assert (
+        "python/examples/demos/README.md#rigid-body-visual-verification-workflow"
+        in source_checkout
+    )
     assert cxx_smoke in source_checkout
     assert source_checkout.index(python_smoke) < source_checkout.index(cxx_smoke)
+    assert source_checkout.index(capture_command) < source_checkout.index(cxx_smoke)
 
 
 def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None:
