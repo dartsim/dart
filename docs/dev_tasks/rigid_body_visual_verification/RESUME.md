@@ -9,14 +9,24 @@ non-numbered Rigid IPC shelf and only enter workflow capture packets through
 the opt-in `--include-packets` group. The default 36-row World Rigid Body
 workflow remains unchanged.
 
+Final stop-only hand-off note: the user explicitly requested no further
+implementation and no further verification after ensuring these hand-off docs.
+This note is documentation-only; a future session should inspect branch state
+before acting and should not infer any new validation from this stop update.
+
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Local `HEAD` before this implementation work:
-  `249cde7a36b Audit rigid visual workflow retirement readiness`, ahead of
-  origin commit `91f53e5ae8e Record rigid workflow handoff evidence`.
+- Implementation commit being handed off:
+  `72bad39e123 Add heavy rigid IPC stack packet`, built on
+  `249cde7a36b Audit rigid visual workflow retirement readiness`.
+- Origin tip observed before the stop-only hand-off was
+  `91f53e5ae8e Record rigid workflow handoff evidence`; the local branch was
+  ahead by two implementation/audit commits before this docs-only update.
 - There is no PR associated with this branch.
-- No push was performed for this slice; push still requires explicit approval.
+- Push status may differ depending on whether the stop-only hand-off push has
+  already run; always verify with `git status -sb` and `git log -5 --oneline`
+  before resuming.
 - The local implementation adds/updates
   `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
   `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
@@ -496,9 +506,10 @@ recorded below.
 
 Current snapshot:
 
-- Local `HEAD` before this implementation work was
+- Latest implementation commit being handed off is
+  `72bad39e123 Add heavy rigid IPC stack packet`, built on
   `249cde7a36b Audit rigid visual workflow retirement readiness`.
-- The origin tip before this slice was
+- The origin tip before the stop-only hand-off was
   `91f53e5ae8e Record rigid workflow handoff evidence`.
 - The latest local slice adds the verified
   `rigid_ipc_heavy_stack_packet` capture-first packet and was verified with
@@ -510,13 +521,14 @@ Current snapshot:
 
 ## Immediate Next Step
 
-Inspect `git status -sb` and `git log -5 --oneline` first. If the heavy packet
-commit is present and the tree is clean, the next decision returns to the
-completion/retirement readiness audit: either get maintainer acceptance and
-prepare the completion cleanup PR, or choose the next bounded slice from
-durable PLAN-103 follow-ups. If this slice is still uncommitted, rerun or
-inspect the final lint/diff gates before committing. Do not push without
-explicit approval in that session.
+Stop after this hand-off unless the user explicitly resumes work. A future
+session should inspect `git status -sb` and `git log -5 --oneline` first. If
+the heavy packet commit is present and the tree is clean, the next decision
+returns to the completion/retirement readiness audit: either get maintainer
+acceptance and prepare the completion cleanup PR, or choose the next bounded
+slice from durable PLAN-103 follow-ups. Do not infer fresh validation from this
+stop-only hand-off update, and do not push without explicit approval in the
+session that performs the push.
 
 Replay capture-metadata checks for this slice:
 

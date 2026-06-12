@@ -9,14 +9,24 @@ non-numbered Rigid IPC shelf and only enter workflow capture packets through
 the opt-in `--include-packets` group. The default 36-row World Rigid Body
 workflow remains unchanged.
 
+Final stop-only hand-off note: the user explicitly requested no further
+implementation and no further verification after ensuring these hand-off docs.
+This note is documentation-only; a future session should inspect branch state
+before acting and should not infer any new validation from this stop update.
+
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Local `HEAD` before this implementation work:
-  `249cde7a36b Audit rigid visual workflow retirement readiness`, ahead of
-  origin commit `91f53e5ae8e Record rigid workflow handoff evidence`.
+- Implementation commit being handed off:
+  `72bad39e123 Add heavy rigid IPC stack packet`, built on
+  `249cde7a36b Audit rigid visual workflow retirement readiness`.
+- Origin tip observed before the stop-only hand-off was
+  `91f53e5ae8e Record rigid workflow handoff evidence`; the local branch was
+  ahead by two implementation/audit commits before this docs-only update.
 - There is no PR associated with this branch.
-- No push was performed for this slice; push still requires explicit approval.
+- Push status may differ depending on whether the stop-only hand-off push has
+  already run; always verify with `git status -sb` and `git log -5 --oneline`
+  before resuming.
 - The local implementation adds/updates
   `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
   `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
@@ -438,6 +448,11 @@ Remaining before retirement:
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
+- Latest implementation commit at this hand-off:
+  `72bad39e123 Add heavy rigid IPC stack packet`; previous local checkpoint:
+  `249cde7a36b Audit rigid visual workflow retirement readiness`; origin tip
+  observed before the final stop-only hand-off was
+  `91f53e5ae8e Record rigid workflow handoff evidence`.
 - Local `HEAD` before the loop-closure implementation work was
   `1add2036097 Add multibody solver family replay timeline`, which is local
   until explicitly pushed in a future approved session. `git status -sb` before
