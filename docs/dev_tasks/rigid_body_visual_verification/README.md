@@ -467,9 +467,10 @@ removes this working folder in the same change.
 
 Evidence supporting readiness:
 
-- The branch was observed clean and pushed at
-  `91f53e5ae8e Record rigid workflow handoff evidence`; `gh pr status` reported
-  no pull request for this branch.
+- Current local branch state is clean at
+  `30bedef795c Add rigid workflow failed-row reruns`, four commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`; `gh pr status` reported
+  no pull request for this branch during the latest recon.
 - The durable sidecar
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
   curated 36-row workflow, optional related/IPC-shelf/packet rows, public
@@ -486,12 +487,22 @@ Evidence supporting readiness:
   capture-first heavy packet expands the full optional packet shape to 52 rows;
   a targeted dry-run verified rows 51-52 / 52 and a real row-52 capture verified
   the heavy packet.
+- Long optional packets now have an explicit failure-recovery path:
+  `--continue-on-failure` records `failed_rows`, review-index Failed Rows
+  summaries, and workflow row-range rerun commands that preserve
+  `--include-related`, `--include-ipc-shelf`, `--include-packets`, and absolute
+  row numbering.
 - Drift guards in `python/tests/integration/test_demos_cycle.py`,
   `python/tests/unit/test_capture_py_demo.py`, and
   `python/tests/unit/test_py_demo_panels.py` cover sidecar/README ordering,
   capture-command sync, deferred public API gaps, workflow guidance, optional
   packet guidance completeness, Replay timeline metadata, and review-index
   manifest fields.
+- A current API-gap audit still finds direct rigid-body impulse, sleep/wake,
+  island activation, and loop-closure compliance rows blocked by missing public
+  `dartpy` surfaces; point-force, joint-space impulse response, energy/momentum,
+  breakage, and spring/compliance-like rows are already covered or intentionally
+  scoped by existing rows.
 
 Remaining before retirement:
 
@@ -507,6 +518,18 @@ Remaining before retirement:
   scoped GUI workflow.
 - Run the repository-mandated `pixi run lint` before the cleanup commit, then
   run the strongest relevant docs/Python gates for the final PR.
+
+Acceptance decision packet:
+
+- Accept current scope if the maintainer agrees that the durable sidecar,
+  Python README, workflow panel, review index, capture helper, and drift guards
+  are the completed rigid-body visual verification surface for this cycle.
+- Do not accept by default if a maintainer wants a new public API first; record
+  that as a new durable PLAN-103 or API-promotion follow-up rather than keeping
+  this working folder open indefinitely.
+- Once accepted, the completing change should be small: update the durable
+  owner docs only if the final close-out note is missing, delete this dev-task
+  folder, run the docs/Python gates, and request approval before pushing.
 
 ## Branch Snapshot
 

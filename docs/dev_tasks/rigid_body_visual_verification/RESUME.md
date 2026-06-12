@@ -32,6 +32,9 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
+- Current local branch state is clean at
+  `30bedef795c Add rigid workflow failed-row reruns`, four commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`.
 - Resume check: verify whether the latest failed-row rerun-command slice is in
   history as `Add rigid workflow failed-row reruns` with `git status -sb` and
   `git log -5 --oneline` before resuming. If it is not committed yet, inspect
@@ -58,6 +61,12 @@ Observed repository state at this hand-off:
 - There is no PR associated with this branch.
 - Do not push without explicit approval; always verify with `git status -sb`
   and `git log -5 --oneline` before resuming.
+- The latest acceptance-readiness audit found no newly unblocked rigid visual
+  row to implement before maintainer review. Public `dartpy` still lacks direct
+  rigid-body impulse, sleep/wake, island activation, and loop-closure
+  compliance surfaces; the point-force, joint-space impulse, energy/momentum,
+  breakage, and spring/compliance-like questions are already represented by
+  existing rows or durable follow-up language.
 - The local implementation adds/updates
   `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
   `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
@@ -594,12 +603,15 @@ Current snapshot:
 A future session should inspect `git status -sb` and `git log -5 --oneline`
 first. If the row-range guidance, failure-resilience, failed-row triage, and
 failed-row rerun-command commits are present and the tree is clean, the next
-decision returns to the completion/retirement readiness audit: either get
-maintainer acceptance and prepare the completion cleanup PR, or choose the next
-bounded slice from durable PLAN-103 follow-ups. If the failed-row rerun-command
-follow-up is not in history, review the uncommitted diff and either commit or
-intentionally discard it according to the user's latest instruction. Do not
-push without explicit approval in the session that performs the push.
+decision returns to maintainer acceptance for the current scoped rigid visual
+workflow. If accepted, prepare the completion cleanup PR by moving any final
+durable close-out note out of this folder and deleting
+`docs/dev_tasks/rigid_body_visual_verification`; if not accepted, choose a new
+bounded slice from durable PLAN-103 follow-ups and record why it is not blocked
+by the public API gaps. If the failed-row rerun-command follow-up is not in
+history, review the uncommitted diff and either commit or intentionally discard
+it according to the user's latest instruction. Do not push without explicit
+approval in the session that performs the push.
 
 Replay capture-metadata checks for this slice:
 
