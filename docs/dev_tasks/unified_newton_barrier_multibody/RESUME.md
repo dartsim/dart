@@ -2,6 +2,44 @@
 
 ## Current Reality (2026-06-09)
 
+Resumed continuation handoff (2026-06-12): work resumed after the prior
+stop-only handoff. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083
+follow-up consolidated there, and read `HANDOFF.md` first. Do not push,
+PR-comment, resolve review threads, trigger CI, open another PLAN-083 PR, or
+delete branches without explicit maintainer approval.
+
+Validated sweep broad-phase checkpoint (2026-06-12): continue from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). This checkpoint
+adds private CUDA swept-AABB sweep-and-prune packets for point-triangle and
+edge-edge candidate construction. The packet device-builds swept primitive
+AABBs, device-sorts them by the CPU sweep key, and deterministically
+counts/scatters compact overlap candidates in CPU sweep order.
+
+Fresh local packet evidence records `candidate_pair_count=393216`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.03107190750809115x` (`meets_speedup_gate=false`). The
+point-triangle sweep broad-phase row covers 65,536 pair capacity over 256
+points and 256 triangles, emits 256 compact candidates, and records
+`speedup=0.03107190750809115x`; the edge-edge sweep broad-phase row covers
+65,536 pair capacity over 256 edges, emits 128 compact candidates, and records
+`speedup=0.03286696141763437x`. This is private reduced broad-phase evidence
+only: scene-owned GPU candidate buffers, runtime scene filtering, and the
+speedup gate remain future work.
+
+Validation passed: `pixi run lint`; `git diff --check`; focused
+contact-candidate/GPU-parity/audit pytest trio (18 passed);
+`pixi run -e cuda build-cuda Release`; focused
+`test_contact_candidate_filter_cuda` CTest; `pixi run -e cuda test-cuda`
+(8/8, with the LCP CUDA test taking 231.80s);
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`; PLAN-083 GPU
+parity/completion-audit checkers; `pixi run build`; and
+`pixi run test-unit` (161/161). Before any future push, merge latest
+`origin/main` into this published branch, rerun the required gates, and get
+explicit maintainer approval. Keep all remaining PLAN-083 work consolidated on
+PR #2978.
+
 Validated runtime sweep-buffer checkpoint (2026-06-12): continue from
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). This validated

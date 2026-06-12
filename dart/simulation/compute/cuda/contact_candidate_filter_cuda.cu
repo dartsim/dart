@@ -120,6 +120,52 @@ struct CandidateAabb
   Vec3 max;
 };
 
+__device__ CandidateAabb itemAabb(const ContactCandidateSweepAabbItem item)
+{
+  return CandidateAabb{
+      Vec3{item.minX, item.minY, item.minZ},
+      Vec3{item.maxX, item.maxY, item.maxZ}};
+}
+
+__device__ ContactCandidateSweepAabbItem
+makeSweepItem(const CandidateAabb aabb, const std::uint32_t id)
+{
+  return ContactCandidateSweepAabbItem{
+      aabb.min.x,
+      aabb.min.y,
+      aabb.min.z,
+      aabb.max.x,
+      aabb.max.y,
+      aabb.max.z,
+      id};
+}
+
+__device__ ContactCandidateSweepAabbItem sentinelSweepItem()
+{
+  constexpr double kSentinel = 1.0e300;
+  return ContactCandidateSweepAabbItem{
+      kSentinel,
+      kSentinel,
+      kSentinel,
+      kSentinel,
+      kSentinel,
+      kSentinel,
+      0xffffffffu};
+}
+
+__device__ bool lessSweepItem(
+    const ContactCandidateSweepAabbItem lhs,
+    const ContactCandidateSweepAabbItem rhs)
+{
+  if (lhs.minX != rhs.minX) {
+    return lhs.minX < rhs.minX;
+  }
+  if (lhs.maxX != rhs.maxX) {
+    return lhs.maxX < rhs.maxX;
+  }
+  return lhs.id < rhs.id;
+}
+
 __device__ CandidateAabb expandAabb(CandidateAabb aabb, const double margin)
 {
   const double nonnegativeMargin = fmax(0.0, margin);
@@ -733,6 +779,344 @@ __global__ void buildSweptEdgeEdgeContactCandidateMaskKernel(
   accepted[index] = 1u;
 }
 
+__global__ void buildSweptPointSweepItemsKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* pointIndices,
+    const double activationDistance,
+    ContactCandidateSweepAabbItem* pointItems,
+    const std::size_t pointCount,
+    const std::size_t paddedPointCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= paddedPointCount) {
+    return;
+  }
+  if (index >= pointCount) {
+    pointItems[index] = sentinelSweepItem();
+    return;
+  }
+
+  const std::uint32_t point = pointIndices[index];
+  pointItems[index] = makeSweepItem(
+      makeSweptPointAabb(
+          loadPoint(startPositions, point),
+          loadPoint(endPositions, point),
+          0.5 * activationDistance),
+      point);
+}
+
+__global__ void buildSweptTriangleSweepItemsKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* triangleIndices,
+    const double activationDistance,
+    ContactCandidateSweepAabbItem* triangleItems,
+    const std::size_t triangleCount,
+    const std::size_t paddedTriangleCount)
+{
+  const auto triangle
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (triangle >= paddedTriangleCount) {
+    return;
+  }
+  if (triangle >= triangleCount) {
+    triangleItems[triangle] = sentinelSweepItem();
+    return;
+  }
+
+  const std::size_t triangleBase = 3u * triangle;
+  const std::uint32_t aIndex = triangleIndices[triangleBase];
+  const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+  const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+  triangleItems[triangle] = makeSweepItem(
+      makeSweptTriangleAabb(
+          loadPoint(startPositions, aIndex),
+          loadPoint(endPositions, aIndex),
+          loadPoint(startPositions, bIndex),
+          loadPoint(endPositions, bIndex),
+          loadPoint(startPositions, cIndex),
+          loadPoint(endPositions, cIndex),
+          0.5 * activationDistance),
+      static_cast<std::uint32_t>(triangle));
+}
+
+__global__ void buildSweptEdgeSweepItemsKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    const double activationDistance,
+    ContactCandidateSweepAabbItem* edgeItems,
+    const std::size_t edgeCount,
+    const std::size_t paddedEdgeCount)
+{
+  const auto edge
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (edge >= paddedEdgeCount) {
+    return;
+  }
+  if (edge >= edgeCount) {
+    edgeItems[edge] = sentinelSweepItem();
+    return;
+  }
+
+  const std::uint32_t a0 = edgeIndices[2u * edge];
+  const std::uint32_t a1 = edgeIndices[2u * edge + 1u];
+  edgeItems[edge] = makeSweepItem(
+      makeSweptSegmentAabb(
+          loadPoint(startPositions, a0),
+          loadPoint(endPositions, a0),
+          loadPoint(startPositions, a1),
+          loadPoint(endPositions, a1),
+          0.5 * activationDistance),
+      static_cast<std::uint32_t>(edge));
+}
+
+__global__ void bitonicSortSweepItemsKernel(
+    ContactCandidateSweepAabbItem* items,
+    const std::size_t count,
+    const std::size_t stride,
+    const std::size_t stage)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= count) {
+    return;
+  }
+
+  const std::size_t other = index ^ stride;
+  if (other <= index || other >= count) {
+    return;
+  }
+
+  const bool ascending = (index & stage) == 0u;
+  const ContactCandidateSweepAabbItem lhs = items[index];
+  const ContactCandidateSweepAabbItem rhs = items[other];
+  const bool swap
+      = ascending ? lessSweepItem(rhs, lhs) : lessSweepItem(lhs, rhs);
+  if (swap) {
+    items[index] = rhs;
+    items[other] = lhs;
+  }
+}
+
+__global__ void countSweptPointTriangleSweepPairsKernel(
+    const ContactCandidateSweepAabbItem* pointItems,
+    const ContactCandidateSweepAabbItem* triangleItems,
+    const std::uint32_t* triangleIndices,
+    std::uint32_t* pairCounts,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  const auto pointSlot
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (pointSlot >= pointCount) {
+    return;
+  }
+
+  const ContactCandidateSweepAabbItem pointItem = pointItems[pointSlot];
+  const CandidateAabb pointAabb = itemAabb(pointItem);
+  std::uint32_t count = 0u;
+  for (std::size_t triangleSlot = 0; triangleSlot < triangleCount;
+       ++triangleSlot) {
+    const ContactCandidateSweepAabbItem triangleItem
+        = triangleItems[triangleSlot];
+    if (triangleItem.minX > pointItem.maxX) {
+      break;
+    }
+    if (triangleItem.maxX < pointItem.minX) {
+      continue;
+    }
+    const std::size_t triangleBase
+        = 3u * static_cast<std::size_t>(triangleItem.id);
+    const std::uint32_t aIndex = triangleIndices[triangleBase];
+    const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+    const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+    if (pointItem.id == aIndex || pointItem.id == bIndex
+        || pointItem.id == cIndex) {
+      continue;
+    }
+    if (overlaps(pointAabb, itemAabb(triangleItem))) {
+      ++count;
+    }
+  }
+  pairCounts[pointSlot] = count;
+}
+
+__global__ void prefixSweepPairCountsKernel(
+    const std::uint32_t* pairCounts,
+    std::uint32_t* pairOffsets,
+    std::uint32_t* compactedCount,
+    const std::size_t count)
+{
+  if (blockIdx.x != 0u || threadIdx.x != 0u) {
+    return;
+  }
+
+  std::uint32_t offset = 0u;
+  for (std::size_t i = 0; i < count; ++i) {
+    pairOffsets[i] = offset;
+    offset += pairCounts[i];
+  }
+  *compactedCount = offset;
+}
+
+__global__ void scatterSweptPointTriangleSweepPairsKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const ContactCandidateSweepAabbItem* pointItems,
+    const ContactCandidateSweepAabbItem* triangleItems,
+    const std::uint32_t* triangleIndices,
+    const std::uint32_t* pairOffsets,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    double* acceptedEndpointSquaredDistances,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  const auto pointSlot
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (pointSlot >= pointCount) {
+    return;
+  }
+
+  const ContactCandidateSweepAabbItem pointItem = pointItems[pointSlot];
+  const CandidateAabb pointAabb = itemAabb(pointItem);
+  std::uint32_t local = 0u;
+  for (std::size_t triangleSlot = 0; triangleSlot < triangleCount;
+       ++triangleSlot) {
+    const ContactCandidateSweepAabbItem triangleItem
+        = triangleItems[triangleSlot];
+    if (triangleItem.minX > pointItem.maxX) {
+      break;
+    }
+    if (triangleItem.maxX < pointItem.minX) {
+      continue;
+    }
+    const std::size_t triangleBase
+        = 3u * static_cast<std::size_t>(triangleItem.id);
+    const std::uint32_t aIndex = triangleIndices[triangleBase];
+    const std::uint32_t bIndex = triangleIndices[triangleBase + 1u];
+    const std::uint32_t cIndex = triangleIndices[triangleBase + 2u];
+    if (pointItem.id == aIndex || pointItem.id == bIndex
+        || pointItem.id == cIndex) {
+      continue;
+    }
+    if (!overlaps(pointAabb, itemAabb(triangleItem))) {
+      continue;
+    }
+
+    const std::uint32_t output = pairOffsets[pointSlot] + local;
+    const double startSquaredDistance = pointTriangleSquaredDistance(
+        loadPoint(startPositions, pointItem.id),
+        loadPoint(startPositions, aIndex),
+        loadPoint(startPositions, bIndex),
+        loadPoint(startPositions, cIndex));
+    const double endSquaredDistance = pointTriangleSquaredDistance(
+        loadPoint(endPositions, pointItem.id),
+        loadPoint(endPositions, aIndex),
+        loadPoint(endPositions, bIndex),
+        loadPoint(endPositions, cIndex));
+    acceptedPointIndices[output] = pointItem.id;
+    acceptedTriangleIndices[output] = triangleItem.id;
+    acceptedEndpointSquaredDistances[output]
+        = fmin(startSquaredDistance, endSquaredDistance);
+    ++local;
+  }
+}
+
+__global__ void countSweptEdgeEdgeSweepPairsKernel(
+    const ContactCandidateSweepAabbItem* edgeItems,
+    const std::uint32_t* edgeIndices,
+    std::uint32_t* pairCounts,
+    const std::size_t edgeCount)
+{
+  const auto edgeSlot
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (edgeSlot >= edgeCount) {
+    return;
+  }
+
+  const ContactCandidateSweepAabbItem edgeItem = edgeItems[edgeSlot];
+  const CandidateAabb edgeAabb = itemAabb(edgeItem);
+  const std::uint32_t a0 = edgeIndices[2u * edgeItem.id];
+  const std::uint32_t a1 = edgeIndices[2u * edgeItem.id + 1u];
+  std::uint32_t count = 0u;
+  for (std::size_t otherSlot = edgeSlot + 1u; otherSlot < edgeCount;
+       ++otherSlot) {
+    const ContactCandidateSweepAabbItem otherItem = edgeItems[otherSlot];
+    if (otherItem.minX > edgeItem.maxX) {
+      break;
+    }
+    const std::uint32_t b0 = edgeIndices[2u * otherItem.id];
+    const std::uint32_t b1 = edgeIndices[2u * otherItem.id + 1u];
+    if (edgesShareVertex(a0, a1, b0, b1)) {
+      continue;
+    }
+    if (overlaps(edgeAabb, itemAabb(otherItem))) {
+      ++count;
+    }
+  }
+  pairCounts[edgeSlot] = count;
+}
+
+__global__ void scatterSweptEdgeEdgeSweepPairsKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const ContactCandidateSweepAabbItem* edgeItems,
+    const std::uint32_t* edgeIndices,
+    const std::uint32_t* pairOffsets,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedEndpointSquaredDistances,
+    const std::size_t edgeCount)
+{
+  const auto edgeSlot
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (edgeSlot >= edgeCount) {
+    return;
+  }
+
+  const ContactCandidateSweepAabbItem edgeItem = edgeItems[edgeSlot];
+  const CandidateAabb edgeAabb = itemAabb(edgeItem);
+  const std::uint32_t a0 = edgeIndices[2u * edgeItem.id];
+  const std::uint32_t a1 = edgeIndices[2u * edgeItem.id + 1u];
+  std::uint32_t local = 0u;
+  for (std::size_t otherSlot = edgeSlot + 1u; otherSlot < edgeCount;
+       ++otherSlot) {
+    const ContactCandidateSweepAabbItem otherItem = edgeItems[otherSlot];
+    if (otherItem.minX > edgeItem.maxX) {
+      break;
+    }
+    const std::uint32_t b0 = edgeIndices[2u * otherItem.id];
+    const std::uint32_t b1 = edgeIndices[2u * otherItem.id + 1u];
+    if (edgesShareVertex(a0, a1, b0, b1)) {
+      continue;
+    }
+    if (!overlaps(edgeAabb, itemAabb(otherItem))) {
+      continue;
+    }
+
+    const std::uint32_t output = pairOffsets[edgeSlot] + local;
+    const double startSquaredDistance = edgeEdgeSquaredDistance(
+        loadPoint(startPositions, a0),
+        loadPoint(startPositions, a1),
+        loadPoint(startPositions, b0),
+        loadPoint(startPositions, b1));
+    const double endSquaredDistance = edgeEdgeSquaredDistance(
+        loadPoint(endPositions, a0),
+        loadPoint(endPositions, a1),
+        loadPoint(endPositions, b0),
+        loadPoint(endPositions, b1));
+    acceptedEdgeAIndices[output] = edgeItem.id;
+    acceptedEdgeBIndices[output] = otherItem.id;
+    acceptedEndpointSquaredDistances[output]
+        = fmin(startSquaredDistance, endSquaredDistance);
+    ++local;
+  }
+}
+
 __global__ void evaluateSweptPointTriangleCandidateBufferKernel(
     const double* startPositions,
     const double* endPositions,
@@ -1133,6 +1517,197 @@ cudaError_t launchSweptEdgeEdgeContactCandidateMaskKernel(
       endpointSquaredDistances,
       accepted,
       acceptedBlockOffsets,
+      acceptedEdgeAIndices,
+      acceptedEdgeBIndices,
+      acceptedEndpointSquaredDistances,
+      edgeCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t sortSweepItemsOnDevice(
+    ContactCandidateSweepAabbItem* items, const std::size_t count)
+{
+  if (count <= 1u) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(count, blockSize);
+  for (std::size_t stage = 2u; stage <= count; stage <<= 1u) {
+    for (std::size_t stride = stage >> 1u; stride > 0u; stride >>= 1u) {
+      bitonicSortSweepItemsKernel<<<gridSize, blockSize>>>(
+          items, count, stride, stage);
+      cudaError_t error = cudaGetLastError();
+      if (error != cudaSuccess) {
+        return error;
+      }
+    }
+  }
+
+  return cudaSuccess;
+}
+
+//==============================================================================
+cudaError_t launchSweptPointTriangleSweepKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* pointIndices,
+    const std::uint32_t* triangleIndices,
+    double activationDistance,
+    ContactCandidateSweepAabbItem* pointItems,
+    ContactCandidateSweepAabbItem* triangleItems,
+    std::uint32_t* pairCounts,
+    std::uint32_t* pairOffsets,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    double* acceptedEndpointSquaredDistances,
+    std::size_t pointCount,
+    std::size_t triangleCount,
+    std::size_t paddedPointCount,
+    std::size_t paddedTriangleCount)
+{
+  if (pointCount == 0 || triangleCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  unsigned int gridSize = launchGrid1D(paddedPointCount, blockSize);
+  buildSweptPointSweepItemsKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      pointIndices,
+      activationDistance,
+      pointItems,
+      pointCount,
+      paddedPointCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  gridSize = launchGrid1D(paddedTriangleCount, blockSize);
+  buildSweptTriangleSweepItemsKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      triangleIndices,
+      activationDistance,
+      triangleItems,
+      triangleCount,
+      paddedTriangleCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  error = sortSweepItemsOnDevice(pointItems, paddedPointCount);
+  if (error != cudaSuccess) {
+    return error;
+  }
+  error = sortSweepItemsOnDevice(triangleItems, paddedTriangleCount);
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  gridSize = launchGrid1D(pointCount, blockSize);
+  countSweptPointTriangleSweepPairsKernel<<<gridSize, blockSize>>>(
+      pointItems,
+      triangleItems,
+      triangleIndices,
+      pairCounts,
+      pointCount,
+      triangleCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixSweepPairCountsKernel<<<1u, 1u>>>(
+      pairCounts, pairOffsets, compactedCount, pointCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  scatterSweptPointTriangleSweepPairsKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      pointItems,
+      triangleItems,
+      triangleIndices,
+      pairOffsets,
+      acceptedPointIndices,
+      acceptedTriangleIndices,
+      acceptedEndpointSquaredDistances,
+      pointCount,
+      triangleCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchSweptEdgeEdgeSweepKernel(
+    const double* startPositions,
+    const double* endPositions,
+    const std::uint32_t* edgeIndices,
+    double activationDistance,
+    ContactCandidateSweepAabbItem* edgeItems,
+    std::uint32_t* pairCounts,
+    std::uint32_t* pairOffsets,
+    std::uint32_t* compactedCount,
+    std::uint32_t* acceptedEdgeAIndices,
+    std::uint32_t* acceptedEdgeBIndices,
+    double* acceptedEndpointSquaredDistances,
+    std::size_t edgeCount,
+    std::size_t paddedEdgeCount)
+{
+  if (edgeCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  unsigned int gridSize = launchGrid1D(paddedEdgeCount, blockSize);
+  buildSweptEdgeSweepItemsKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      edgeIndices,
+      activationDistance,
+      edgeItems,
+      edgeCount,
+      paddedEdgeCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  error = sortSweepItemsOnDevice(edgeItems, paddedEdgeCount);
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  gridSize = launchGrid1D(edgeCount, blockSize);
+  countSweptEdgeEdgeSweepPairsKernel<<<gridSize, blockSize>>>(
+      edgeItems, edgeIndices, pairCounts, edgeCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixSweepPairCountsKernel<<<1u, 1u>>>(
+      pairCounts, pairOffsets, compactedCount, edgeCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  scatterSweptEdgeEdgeSweepPairsKernel<<<gridSize, blockSize>>>(
+      startPositions,
+      endPositions,
+      edgeItems,
+      edgeIndices,
+      pairOffsets,
       acceptedEdgeAIndices,
       acceptedEdgeBIndices,
       acceptedEndpointSquaredDistances,

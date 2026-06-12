@@ -61,10 +61,11 @@ moves entirely into durable plan sidecars.
   parity exists for preassembled point-triangle and edge-edge stencils plus
   brute-force all-pairs point-triangle and edge-edge candidate masks with
   device-side compacted candidate ids and distance metadata, motion-aware
-  swept-AABB point-triangle/edge-edge candidate-list packets, and compact
-  runtime sweep-buffer endpoint-distance packets that consume CPU sweep
-  candidate keys, but GPU sweep-and-prune broad-phase sorting, scene-owned GPU
-  candidate buffers, runtime scene filtering, and speedup remain unproven.
+  swept-AABB point-triangle/edge-edge candidate-list packets, device-sorted
+  sweep-and-prune broad-phase packets, and compact runtime sweep-buffer
+  endpoint-distance packets that consume CPU sweep candidate keys, but
+  scene-owned GPU candidate buffers, runtime scene filtering, and speedup
+  remain unproven.
   The
   endpoint-linear point-triangle and edge-edge CCD/line-search packet is
   in-progress because parity exists for reduced endpoint-linear fixtures but

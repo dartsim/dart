@@ -181,6 +181,61 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    sweep_point_cpu = _row(
+        "BM_Plan083SweptPointTriangleSweepCpu/1024",
+        pair_capacity=1024,
+        points=32,
+        triangles=32,
+        accepted_count=32,
+        max_result_abs_error=0.0,
+    )
+    sweep_point_gpu = _row(
+        "BM_Plan083SweptPointTriangleSweepCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        pair_capacity=1024,
+        points=32,
+        triangles=32,
+        accepted_count=32,
+        gpu_pair_capacity=1024,
+        gpu_points=32,
+        gpu_triangles=32,
+        gpu_accepted_count=32,
+        gpu_compacted_count=32,
+        gpu_compacted_triangle_count=32,
+        gpu_compacted_distance_count=32,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    sweep_edge_cpu = _row(
+        "BM_Plan083SweptEdgeEdgeSweepCpu/1024",
+        pair_capacity=1024,
+        edges=32,
+        accepted_count=16,
+        max_result_abs_error=0.0,
+    )
+    sweep_edge_gpu = _row(
+        "BM_Plan083SweptEdgeEdgeSweepCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        pair_capacity=1024,
+        edges=32,
+        accepted_count=16,
+        gpu_pair_capacity=1024,
+        gpu_edges=32,
+        gpu_accepted_count=16,
+        gpu_compacted_edge_a_count=16,
+        gpu_compacted_edge_b_count=16,
+        gpu_compacted_distance_count=16,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     runtime_point_cpu = _row(
         "BM_Plan083RuntimePointTriangleCandidateBufferCpu/1024",
         candidates=32,
@@ -239,6 +294,10 @@ def _benchmark_data(**overrides):
             swept_mask_gpu,
             swept_edge_mask_cpu,
             swept_edge_mask_gpu,
+            sweep_point_cpu,
+            sweep_point_gpu,
+            sweep_edge_cpu,
+            sweep_edge_gpu,
             runtime_point_cpu,
             runtime_point_gpu,
             runtime_edge_cpu,
@@ -261,7 +320,7 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert row["row_id"] == "contact-stencils-candidate-filtering"
     assert row["same_scene_cpu_gpu"] is True
     assert row["accepted_count"] == 1536
-    assert row["candidate_pair_count"] == 4096
+    assert row["candidate_pair_count"] == 6144
     assert row["max_result_abs_error"] == 1e-14
     assert row["meets_speedup_gate"] is True
     assert set(row["primitive_families"]) == {"point_triangle", "edge_edge"}
@@ -270,6 +329,8 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         "edge_edge_all_pairs_mask",
         "point_triangle_swept_aabb_candidates",
         "edge_edge_swept_aabb_candidates",
+        "point_triangle_sweep_broad_phase",
+        "edge_edge_sweep_broad_phase",
         "point_triangle_runtime_sweep_buffer",
         "edge_edge_runtime_sweep_buffer",
     }
@@ -327,6 +388,16 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         row["candidate_construction"]["edge_edge_swept_aabb_candidates"][
             "compacted_distance_count"
         ]
+        == 16
+    )
+    assert (
+        row["candidate_construction"]["point_triangle_sweep_broad_phase"][
+            "pair_capacity"
+        ]
+        == 1024
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_sweep_broad_phase"]["accepted_count"]
         == 16
     )
     assert (
@@ -456,7 +527,7 @@ def test_plan083_gpu_contact_candidate_packet_rejects_distance_compaction_mismat
 def test_plan083_gpu_contact_candidate_packet_rejects_runtime_buffer_mismatch() -> None:
     module = _load_module()
     data = _benchmark_data()
-    data["benchmarks"][13]["gpu_candidates"] = 31
+    data["benchmarks"][17]["gpu_candidates"] = 31
 
     try:
         module.make_packet(

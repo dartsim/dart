@@ -1,5 +1,57 @@
 # Unified Newton-Barrier Handoff
 
+## Resumed Continuation Handoff (2026-06-12)
+
+Work resumed after the prior stop-only handoff. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978 (`Advance unified
+Newton-barrier runtime and parity evidence`). Keep all remaining PLAN-083 work
+on this single branch/PR. Do not push, PR-comment, resolve review threads,
+trigger CI, open another PLAN-083 PR, or delete branches without explicit
+maintainer approval.
+
+The current local checkpoint is the validated swept broad-phase packet below.
+The workspace still has uncommitted CUDA/contact-candidate packet code, tests,
+benchmarks, generated packet docs, and handoff docs; inspect `git status -sb`
+before continuing.
+
+## Validated Sweep Broad-Phase Checkpoint (2026-06-12)
+
+Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this single branch/PR. Do not push, PR-comment,
+resolve review threads, trigger CI, open another PLAN-083 PR, or delete
+branches without explicit maintainer approval. Before any future push, merge
+latest `origin/main` into this published branch, rerun the required gates, and
+push only with explicit approval.
+
+This validated checkpoint adds private CUDA swept-AABB sweep-and-prune packets
+for point-triangle and edge-edge candidate construction. The packet device-
+builds swept primitive AABBs, device-sorts them by the CPU sweep key, and
+deterministically counts/scatters compact overlap candidates in CPU sweep
+order.
+
+Fresh local packet evidence records `candidate_pair_count=393216`,
+`max_result_abs_error=5.551115123125783e-17`, and
+`speedup=0.03107190750809115x` (`meets_speedup_gate=false`). The
+point-triangle sweep broad-phase row covers 65,536 pair capacity over 256
+points and 256 triangles, emits 256 compact candidates, and records
+`speedup=0.03107190750809115x`; the edge-edge sweep broad-phase row covers
+65,536 pair capacity over 256 edges, emits 128 compact candidates, and records
+`speedup=0.03286696141763437x`.
+
+This is private reduced broad-phase evidence only. It does not claim
+scene-owned GPU candidate buffers, runtime scene filtering, or
+contact-candidate speedup-gate completion.
+
+Validation passed: `pixi run lint`; `git diff --check`; focused
+contact-candidate/GPU-parity/audit pytest trio (18 passed);
+`pixi run -e cuda build-cuda Release`; focused
+`test_contact_candidate_filter_cuda` CTest; `pixi run -e cuda test-cuda`
+(8/8, with the LCP CUDA test taking 231.80s);
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`; PLAN-083 GPU
+parity/completion-audit checkers; `pixi run build`; and
+`pixi run test-unit` (161/161).
+
 ## Validated Runtime Sweep-Buffer Checkpoint (2026-06-12)
 
 Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978

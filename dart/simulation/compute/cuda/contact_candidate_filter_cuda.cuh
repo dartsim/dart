@@ -38,6 +38,21 @@
 
 namespace dart::simulation::compute::cuda {
 
+namespace detail {
+
+struct ContactCandidateSweepAabbItem
+{
+  double minX = 0.0;
+  double minY = 0.0;
+  double minZ = 0.0;
+  double maxX = 0.0;
+  double maxY = 0.0;
+  double maxZ = 0.0;
+  std::uint32_t id = 0;
+};
+
+} // namespace detail
+
 struct PointTriangleContactStencil
 {
   std::uint32_t point = 0;
@@ -131,6 +146,31 @@ struct SweptEdgeEdgeCandidateBuildResult
   std::vector<double> acceptedEndpointSquaredDistances;
   std::size_t edgeCount = 0;
   std::size_t pairCount = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
+struct SweptPointTriangleSweepResult
+{
+  std::vector<std::uint32_t> acceptedPointIndices;
+  std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
+  std::size_t pointCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t pairCapacity = 0;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedEndpointSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
+struct SweptEdgeEdgeSweepResult
+{
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
+  std::size_t edgeCount = 0;
+  std::size_t pairCapacity = 0;
   std::size_t acceptedCount = 0;
   double maxAcceptedEndpointSquaredDistance = 0.0;
   ContactCandidateFilterTiming timing;
@@ -236,6 +276,32 @@ void buildSweptEdgeEdgeContactCandidateMaskCuda(
     const std::vector<std::uint32_t>& edgeIndices,
     double activationDistance,
     SweptEdgeEdgeCandidateBuildResult& result);
+
+/// Build a private motion-aware point-triangle sweep-and-prune list on CUDA.
+///
+/// This packet constructs swept primitive AABBs, sorts them on the device by
+/// the CPU sweep key, and scatters compact overlap candidates in deterministic
+/// sweep order. It remains private packet evidence: it does not own scene
+/// buffers, runtime solver integration, or a public GPU backend.
+void buildSweptPointTriangleSweepCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& pointIndices,
+    const std::vector<std::uint32_t>& triangleIndices,
+    double activationDistance,
+    SweptPointTriangleSweepResult& result);
+
+/// Build a private motion-aware edge-edge sweep-and-prune list on CUDA.
+///
+/// This packet mirrors the CPU self-sweep ordering for compact surface-edge
+/// slots after device-side swept-AABB construction and sorting. It is still a
+/// benchmark packet, not a runtime GPU candidate-buffer owner.
+void buildSweptEdgeEdgeSweepCuda(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    double activationDistance,
+    SweptEdgeEdgeSweepResult& result);
 
 /// Evaluate a compact runtime point-triangle candidate buffer on CUDA.
 ///

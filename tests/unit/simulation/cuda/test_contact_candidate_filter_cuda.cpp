@@ -336,6 +336,22 @@ struct SweptEdgeEdgeCandidateMaskExpectation
   std::size_t acceptedCount = 0;
 };
 
+struct SweptCandidateSweepExpectation
+{
+  std::vector<std::uint32_t> acceptedPointIndices;
+  std::vector<std::uint32_t> acceptedTriangleIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
+  std::size_t acceptedCount = 0;
+};
+
+struct SweptEdgeEdgeSweepExpectation
+{
+  std::vector<std::uint32_t> acceptedEdgeAIndices;
+  std::vector<std::uint32_t> acceptedEdgeBIndices;
+  std::vector<double> acceptedEndpointSquaredDistances;
+  std::size_t acceptedCount = 0;
+};
+
 CandidateMaskExpectation cpuCandidateMask(
     const Fixture& fixture,
     const std::vector<std::uint32_t>& pointIndices,
@@ -552,6 +568,135 @@ SweptEdgeEdgeCandidateMaskExpectation cpuSweptEdgeEdgeCandidateMask(
       }
     }
   }
+
+  return expected;
+}
+
+SweptCandidateSweepExpectation cpuSweptPointTriangleSweep(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& pointIndices,
+    const std::vector<std::uint32_t>& triangles,
+    const double activationDistance)
+{
+  SweptCandidateSweepExpectation expected;
+  std::vector<dc::detail::SweepItem> pointItems;
+  std::vector<dc::detail::SweepItem> triangleItems;
+  pointItems.reserve(pointIndices.size());
+  const std::size_t triangleCount = triangles.size() / 3u;
+  triangleItems.reserve(triangleCount);
+
+  const double margin = 0.5 * std::max(0.0, activationDistance);
+  for (const std::uint32_t point : pointIndices) {
+    pointItems.push_back(
+        dc::detail::SweepItem{
+            point,
+            dc::detail::makeSweptPointAabb(
+                pointAt(startPositions, point),
+                pointAt(endPositions, point),
+                margin)});
+  }
+  for (std::size_t triangle = 0; triangle < triangleCount; ++triangle) {
+    const std::size_t tri = 3u * triangle;
+    triangleItems.push_back(
+        dc::detail::SweepItem{
+            triangle,
+            dc::detail::makeSweptTriangleAabb(
+                pointAt(startPositions, triangles[tri]),
+                pointAt(endPositions, triangles[tri]),
+                pointAt(startPositions, triangles[tri + 1u]),
+                pointAt(endPositions, triangles[tri + 1u]),
+                pointAt(startPositions, triangles[tri + 2u]),
+                pointAt(endPositions, triangles[tri + 2u]),
+                margin)});
+  }
+
+  dc::detail::visitSweepPairs(
+      pointItems,
+      triangleItems,
+      [&](const std::size_t point, const std::size_t triangle) {
+        if (isIncidentPointTriangle(
+                static_cast<std::uint32_t>(point), triangles, triangle)) {
+          return;
+        }
+        const std::size_t tri = 3u * triangle;
+        const auto startDistance = dc::pointTriangleSquaredDistance(
+            pointAt(startPositions, point),
+            pointAt(startPositions, triangles[tri]),
+            pointAt(startPositions, triangles[tri + 1u]),
+            pointAt(startPositions, triangles[tri + 2u]));
+        const auto endDistance = dc::pointTriangleSquaredDistance(
+            pointAt(endPositions, point),
+            pointAt(endPositions, triangles[tri]),
+            pointAt(endPositions, triangles[tri + 1u]),
+            pointAt(endPositions, triangles[tri + 2u]));
+        ++expected.acceptedCount;
+        expected.acceptedPointIndices.push_back(
+            static_cast<std::uint32_t>(point));
+        expected.acceptedTriangleIndices.push_back(
+            static_cast<std::uint32_t>(triangle));
+        expected.acceptedEndpointSquaredDistances.push_back(
+            std::min(
+                startDistance.squaredDistance, endDistance.squaredDistance));
+      });
+
+  return expected;
+}
+
+SweptEdgeEdgeSweepExpectation cpuSweptEdgeEdgeSweep(
+    const std::vector<double>& startPositions,
+    const std::vector<double>& endPositions,
+    const std::vector<std::uint32_t>& edgeIndices,
+    const double activationDistance)
+{
+  SweptEdgeEdgeSweepExpectation expected;
+  const std::size_t edgeCount = edgeIndices.size() / 2u;
+  std::vector<dc::detail::SweepItem> edgeItems;
+  edgeItems.reserve(edgeCount);
+
+  const double margin = 0.5 * std::max(0.0, activationDistance);
+  for (std::size_t edge = 0; edge < edgeCount; ++edge) {
+    const std::uint32_t a0 = edgeIndices[2u * edge];
+    const std::uint32_t a1 = edgeIndices[2u * edge + 1u];
+    edgeItems.push_back(
+        dc::detail::SweepItem{
+            edge,
+            dc::detail::makeSweptSegmentAabb(
+                pointAt(startPositions, a0),
+                pointAt(endPositions, a0),
+                pointAt(startPositions, a1),
+                pointAt(endPositions, a1),
+                margin)});
+  }
+
+  dc::detail::visitSelfSweepPairs(
+      edgeItems, [&](const std::size_t edgeA, const std::size_t edgeB) {
+        const std::uint32_t a0 = edgeIndices[2u * edgeA];
+        const std::uint32_t a1 = edgeIndices[2u * edgeA + 1u];
+        const std::uint32_t b0 = edgeIndices[2u * edgeB];
+        const std::uint32_t b1 = edgeIndices[2u * edgeB + 1u];
+        if (edgesShareVertex(a0, a1, b0, b1)) {
+          return;
+        }
+        const auto startDistance = dc::edgeEdgeSquaredDistance(
+            pointAt(startPositions, a0),
+            pointAt(startPositions, a1),
+            pointAt(startPositions, b0),
+            pointAt(startPositions, b1));
+        const auto endDistance = dc::edgeEdgeSquaredDistance(
+            pointAt(endPositions, a0),
+            pointAt(endPositions, a1),
+            pointAt(endPositions, b0),
+            pointAt(endPositions, b1));
+        ++expected.acceptedCount;
+        expected.acceptedEdgeAIndices.push_back(
+            static_cast<std::uint32_t>(edgeA));
+        expected.acceptedEdgeBIndices.push_back(
+            static_cast<std::uint32_t>(edgeB));
+        expected.acceptedEndpointSquaredDistances.push_back(
+            std::min(
+                startDistance.squaredDistance, endDistance.squaredDistance));
+      });
 
   return expected;
 }
@@ -843,6 +988,81 @@ TEST(ContactCandidateFilterCuda, MatchesCpuSweptEdgeEdgeCandidateMask)
 }
 
 //==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuSweptPointTriangleSweep)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const RuntimeSweepCandidateBufferFixture fixture
+      = makeRuntimeSweepCandidateBufferFixture();
+  std::vector<std::uint32_t> pointIndices;
+  pointIndices.reserve(fixture.start.size());
+  for (std::size_t point = 0; point < fixture.start.size(); ++point) {
+    pointIndices.push_back(static_cast<std::uint32_t>(point));
+  }
+  const SweptCandidateSweepExpectation expected = cpuSweptPointTriangleSweep(
+      fixture.packedStart,
+      fixture.packedEnd,
+      pointIndices,
+      fixture.packedTriangles,
+      0.05);
+
+  cuda::SweptPointTriangleSweepResult result;
+  cuda::buildSweptPointTriangleSweepCuda(
+      fixture.packedStart,
+      fixture.packedEnd,
+      pointIndices,
+      fixture.packedTriangles,
+      0.05,
+      result);
+
+  EXPECT_EQ(result.pointCount, pointIndices.size());
+  EXPECT_EQ(result.triangleCount, fixture.packedTriangles.size() / 3u);
+  EXPECT_EQ(result.pairCapacity, pointIndices.size() * result.triangleCount);
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedPointIndices, expected.acceptedPointIndices);
+  EXPECT_EQ(result.acceptedTriangleIndices, expected.acceptedTriangleIndices);
+  expectNearVector(
+      result.acceptedEndpointSquaredDistances,
+      expected.acceptedEndpointSquaredDistances,
+      1e-14);
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuSweptEdgeEdgeSweep)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const RuntimeSweepCandidateBufferFixture fixture
+      = makeRuntimeSweepCandidateBufferFixture();
+  const SweptEdgeEdgeSweepExpectation expected = cpuSweptEdgeEdgeSweep(
+      fixture.packedStart, fixture.packedEnd, fixture.packedEdges, 0.05);
+
+  cuda::SweptEdgeEdgeSweepResult result;
+  cuda::buildSweptEdgeEdgeSweepCuda(
+      fixture.packedStart,
+      fixture.packedEnd,
+      fixture.packedEdges,
+      0.05,
+      result);
+
+  EXPECT_EQ(result.edgeCount, fixture.packedEdges.size() / 2u);
+  EXPECT_EQ(result.pairCapacity, result.edgeCount * result.edgeCount);
+  EXPECT_EQ(result.acceptedCount, expected.acceptedCount);
+  EXPECT_EQ(result.acceptedEdgeAIndices, expected.acceptedEdgeAIndices);
+  EXPECT_EQ(result.acceptedEdgeBIndices, expected.acceptedEdgeBIndices);
+  expectNearVector(
+      result.acceptedEndpointSquaredDistances,
+      expected.acceptedEndpointSquaredDistances,
+      1e-14);
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
 TEST(
     ContactCandidateFilterCuda, MatchesRuntimeSweptPointTriangleCandidateBuffer)
 {
@@ -1051,6 +1271,27 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidSweptCandidateMaskInputs)
           fixture.edges,
           0.05,
           edgeEdgeResult),
+      dart::simulation::InvalidArgumentException);
+
+  cuda::SweptPointTriangleSweepResult pointTriangleSweepResult;
+  EXPECT_THROW(
+      cuda::buildSweptPointTriangleSweepCuda(
+          fixture.startPositions,
+          fixture.endPositions,
+          std::vector<std::uint32_t>{3u},
+          fixture.triangles,
+          0.05,
+          pointTriangleSweepResult),
+      dart::simulation::InvalidArgumentException);
+
+  cuda::SweptEdgeEdgeSweepResult edgeEdgeSweepResult;
+  EXPECT_THROW(
+      cuda::buildSweptEdgeEdgeSweepCuda(
+          fixture.startPositions,
+          fixture.endPositions,
+          fixture.edges,
+          0.05,
+          edgeEdgeSweepResult),
       dart::simulation::InvalidArgumentException);
 }
 
