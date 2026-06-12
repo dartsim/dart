@@ -130,6 +130,7 @@ def build() -> SceneSetup:
         contact_values = list(contact_history)
         return {
             "row": "rigid_ipc_tunnel",
+            "related_source_row": "rigid_solver_compare",
             "solver": "rigid_ipc",
             "scope": "focused_no_tunneling_capability",
             "time_step_ms": float(world.time_step) * 1000.0,

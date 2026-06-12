@@ -1,5 +1,21 @@
 # PR Draft: Rigid-Body Visual Verification Workflow
 
+## Current Local Continuation - 2026-06-12
+
+After the pushed full-stop handoff, the active goal was explicitly continued.
+The latest local slice hardens capture metric ownership for the rigid visual
+verification packet:
+
+- `rigid_ipc_tunnel` now records
+  `related_source_row: rigid_solver_compare`.
+- `avbd_rigid_breakable_joint` now records
+  `related_source_row: rigid_joint_breakage`; the numbered
+  `rigid_joint_breakage` wrapper keeps only its direct row identity.
+- `rigid_ipc_stack_packet` now records `row: rigid_ipc_stack_packet`.
+- A registry-level invariant now verifies every sidecar-defined numbered row,
+  related-evidence route, and capture-first IPC packet has a self-identifying
+  capture metrics payload.
+
 ## Current Stop Handoff - 2026-06-12
 
 The latest local state is a handoff-only docs stop. The user explicitly
@@ -119,6 +135,22 @@ GitHub mutation were performed after this stop-handoff docs edit.
   - full `pixi run test-py`
     - passed with `950 passed, 10 skipped` using `DART safe jobs: 1`
   - No push or GitHub mutation has been performed for this refresh.
+- Latest capture metric ownership follow-up:
+  - `rigid_ipc_tunnel`, `avbd_rigid_breakable_joint`, and
+    `rigid_ipc_stack_packet` now publish self-identifying capture metrics for
+    their related-route or capture-first roles.
+  - Focused route ownership guard:
+    `test_rigid_visual_routes_publish_self_describing_capture_metrics`,
+    `test_rigid_visual_workflow_related_evidence_routes_are_valid`,
+    `test_rigid_ipc_tunnel_reports_no_tunneling_metrics`,
+    `test_rigid_ipc_stack_packet_reports_capture_first_metrics`,
+    `test_rigid_joint_breakage_marks_and_resets_breakage`, and
+    `test_avbd_breakable_joint_demo_marks_and_resets_joint`
+    - `6 passed` before and after lint
+  - `pixi run lint`
+    - passed
+  - `git diff --check`
+    - passed
 - Latest shared Replay follow-up:
   - `python/examples/demos/scenes/articulated.py`,
     `floating_base.py`, `avbd_rigid_revolute_motor.py`,

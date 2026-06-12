@@ -59,6 +59,7 @@ def build_breakable_joint_scene(
     panel_title: str = "AVBD Breakable Joint",
     *,
     row_id: str = "avbd_rigid_breakable_joint",
+    related_source_row: str | None = "rigid_joint_breakage",
 ) -> SceneSetup:
     world = sx.World(time_step=_TIME_STEP, gravity=(0.0, 0.0, -9.81))
 
@@ -174,7 +175,7 @@ def build_breakable_joint_scene(
         offset_values = list(offset_history)
         speed_values = list(speed_history)
         broken_values = list(broken_history)
-        return {
+        payload: dict[str, object] = {
             "row": row_id,
             "solver": "avbd_rigid_joints",
             "constraint": "fixed_break_force_lifecycle",
@@ -205,6 +206,9 @@ def build_breakable_joint_scene(
                 "saw_broken": max(broken_values, default=0.0),
             },
         }
+        if related_source_row is not None:
+            payload["related_source_row"] = related_source_row
+        return payload
 
     def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
         payload.linear_velocity = (0.0, 0.0, 0.0)

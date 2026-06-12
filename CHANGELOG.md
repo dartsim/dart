@@ -228,6 +228,10 @@
     non-numbered World shelf routes linked from `rigid_free_flight` and
     `rigid_multibody_dynamics_terms` carry SE(3) drift/spin and two-link arm
     speed/height/damping evidence in `py-demo-capture` manifests.
+  - Hardened rigid visual-verification capture metrics so every numbered row,
+    related-evidence route, and capture-first IPC packet reports a
+    self-identifying row; related shelf routes now also report the numbered
+    source row that owns the route.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
     clearance, contact-count, drift, height-error, speed, and benchmark-owner

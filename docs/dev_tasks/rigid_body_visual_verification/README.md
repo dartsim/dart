@@ -1,5 +1,60 @@
 # Rigid-Body Visual Verification - Dev Task
 
+## Current Active Snapshot - 2026-06-12 Capture Metric Ownership
+
+The latest continuation resumed from pushed full-stop handoff
+`c552ce83e2b` and hardened the capture-evidence contract for the rigid visual
+workflow. A live audit showed all 36 numbered rows already exposed capture
+hooks, but two related routes did not identify their owning numbered source row
+and the capture-first IPC stack packet did not identify its own row in the
+metrics payload.
+
+Current local slice: self-describing capture metrics for every numbered,
+related, and capture-first rigid visual route. The checkpoint touches:
+
+- `python/examples/demos/scenes/rigid_ipc_tunnel.py`
+- `python/examples/demos/scenes/rigid_ipc_stack_packet.py`
+- `python/examples/demos/scenes/avbd_rigid_breakable_joint.py`
+- `python/examples/demos/scenes/rigid_joint_breakage.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed:
+
+- `rigid_ipc_tunnel` capture metrics now include
+  `related_source_row: rigid_solver_compare`.
+- `avbd_rigid_breakable_joint` capture metrics now include
+  `related_source_row: rigid_joint_breakage`, while the numbered
+  `rigid_joint_breakage` wrapper suppresses that field so its row identity
+  remains direct.
+- `rigid_ipc_stack_packet` capture metrics now include
+  `row: rigid_ipc_stack_packet`.
+- `test_rigid_visual_routes_publish_self_describing_capture_metrics` now
+  guards that every numbered workflow row has a callable capture hook and row
+  identity, every related route records its source row, and every capture-first
+  IPC packet records row identity plus `capture_first`.
+
+Validation collected so far:
+
+- Focused route ownership guard:
+  `test_rigid_visual_routes_publish_self_describing_capture_metrics`,
+  `test_rigid_visual_workflow_related_evidence_routes_are_valid`,
+  `test_rigid_ipc_tunnel_reports_no_tunneling_metrics`,
+  `test_rigid_ipc_stack_packet_reports_capture_first_metrics`,
+  `test_rigid_joint_breakage_marks_and_resets_breakage`, and
+  `test_avbd_breakable_joint_demo_marks_and_resets_joint` reported
+  `6 passed` before and after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Commit locally. Do not push, open a PR, comment, or mutate GitHub state
+   unless the user explicitly approves it.
+
 ## Critical Stop Handoff - 2026-06-12 Full Stop
 
 The user explicitly stopped all further work and requested handoff docs only,
@@ -89,7 +144,14 @@ continue implementation unless the user explicitly resumes it.
       already merged, confirmed no PR is associated with the branch, ran
       bounded `pixi run build` (`DART safe jobs: 2`, `ninja: no work to do`),
       and ran full `pixi run test-py` (`950 passed, 10 skipped`, `DART safe
-    jobs: 1`). No push or GitHub mutation was performed.
+  jobs: 1`). No push or GitHub mutation was performed.
+- [x] Capture metric ownership hardening: `rigid_ipc_tunnel`,
+      `avbd_rigid_breakable_joint`, and `rigid_ipc_stack_packet` now publish
+      capture metrics with the missing related-source or row identity fields,
+      and a registry-level invariant keeps every numbered rigid row,
+      related-evidence route, and capture-first IPC packet self-identifying.
+      The focused six-test route ownership guard reported `6 passed` before
+      and after lint; `pixi run lint` and `git diff --check` passed.
 - [x] Shared Replay panel follow-up: `articulated`, `floating_base`,
       `avbd_rigid_revolute_motor`, `avbd_rigid_prismatic_motor`, and
       `rigid_ipc_tunnel` now publish `replay_sync` plus

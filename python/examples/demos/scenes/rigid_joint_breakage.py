@@ -10,6 +10,7 @@ def build() -> SceneSetup:
     return build_breakable_joint_scene(
         panel_title="Rigid Joint Breakage",
         row_id="rigid_joint_breakage",
+        related_source_row=None,
     )
 
 

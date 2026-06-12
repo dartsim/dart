@@ -206,6 +206,7 @@ class _RigidIpcStackPacket:
                 "capture_first": True,
                 "frame_budget_ms": float(self.frame_budget_ms),
                 "friction": float(self.friction),
+                "row": "rigid_ipc_stack_packet",
                 "solver": "ipc",
                 "world_time": float(self.world.time),
             }

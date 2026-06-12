@@ -1208,6 +1208,41 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
         )
 
 
+def test_rigid_visual_routes_publish_self_describing_capture_metrics() -> None:
+    scenes = make_demo_scenes()
+    by_id = {scene.id: scene for scene in scenes}
+    workflow_ids = [scene_id for _order, scene_id in _read_rigid_visual_workflow_rows()]
+    related_rows = _read_rigid_visual_related_evidence_rows()
+    capture_first_rows = _read_rigid_visual_capture_first_ipc_rows()
+
+    for scene_id in workflow_ids:
+        setup = by_id[scene_id].build()
+        capture_metrics = setup.info.get(CAPTURE_METRICS_INFO_KEY)
+        assert callable(capture_metrics), scene_id
+        metrics = capture_metrics()
+        assert metrics["row"] == scene_id
+        assert len(metrics) > 1
+
+    for source_scene_id, target_scene_id, shelf, _label, _scope in related_rows:
+        setup = by_id[target_scene_id].build()
+        capture_metrics = setup.info.get(CAPTURE_METRICS_INFO_KEY)
+        assert callable(capture_metrics), target_scene_id
+        metrics = capture_metrics()
+        assert metrics["row"] == target_scene_id
+        assert metrics["related_source_row"] == source_scene_id
+        assert by_id[target_scene_id].category == shelf
+        assert target_scene_id not in workflow_ids
+
+    for scene_id, _question, _signals, _command, _scope in capture_first_rows:
+        setup = by_id[scene_id].build()
+        capture_metrics = setup.info.get(CAPTURE_METRICS_INFO_KEY)
+        assert callable(capture_metrics), scene_id
+        metrics = capture_metrics()
+        assert metrics["row"] == scene_id
+        assert metrics["capture_first"] is True
+        assert scene_id not in workflow_ids
+
+
 def test_world_related_evidence_routes_report_capture_metrics() -> None:
     import numpy as np
 
@@ -1312,6 +1347,7 @@ def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
 
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_ipc_tunnel"
+    assert capture_metrics["related_source_row"] == "rigid_solver_compare"
     assert capture_metrics["solver"] == "rigid_ipc"
     assert capture_metrics["scope"] == "focused_no_tunneling_capability"
     assert capture_metrics["status"] in {
@@ -1450,6 +1486,7 @@ def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
     assert float(metrics["top_drift"]) >= 0.0
     assert float(metrics["step_ms"]) >= 0.0
     assert str(metrics["status"]) in {"capture-first", "settling", "standing"}
+    assert capture_metrics["row"] == "rigid_ipc_stack_packet"
     assert capture_metrics["capture_first"] is True
     assert capture_metrics["benchmark"] == "bm_rigid_ipc_solver"
     assert capture_metrics["solver"] == "ipc"
@@ -9531,6 +9568,7 @@ def test_avbd_breakable_joint_demo_marks_and_resets_joint() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "avbd_rigid_breakable_joint"
+    assert capture_metrics["related_source_row"] == "rigid_joint_breakage"
     assert capture_metrics["metrics"]["status"] == "broken"
     assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
 

@@ -1,5 +1,40 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Checkpoint Snapshot - 2026-06-12 Capture Metric Ownership
+
+The latest continuation resumed after the pushed full-stop handoff
+`c552ce83e2b` because the active goal was explicitly continued. It does not
+push or mutate GitHub state.
+
+Current local slice: self-describing capture metrics for rigid visual
+verification routes. The continuation fixed three payload gaps:
+
+- `rigid_ipc_tunnel` now records
+  `related_source_row: rigid_solver_compare`.
+- `avbd_rigid_breakable_joint` now records
+  `related_source_row: rigid_joint_breakage`; the numbered
+  `rigid_joint_breakage` wrapper passes `related_source_row=None` so the
+  numbered row remains directly identified by `row: rigid_joint_breakage`.
+- `rigid_ipc_stack_packet` now records `row: rigid_ipc_stack_packet`.
+
+The new
+`test_rigid_visual_routes_publish_self_describing_capture_metrics` invariant
+builds the current sidecar-defined numbered workflow rows, related routes, and
+capture-first IPC packets from `make_demo_scenes()` and verifies that capture
+metrics remain self-identifying.
+
+Validation collected so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_ipc_tunnel_reports_no_tunneling_metrics python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/integration/test_demos_cycle.py::test_avbd_breakable_joint_demo_marks_and_resets_joint -q`
+- reported `6 passed` before and after lint.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Commit the local slice. Do not push, open a PR, comment, or mutate GitHub
+   state unless the user explicitly approves it.
+
 ## Critical Stop Handoff - 2026-06-12 Full Stop
 
 The user explicitly stopped all further work and requested handoff docs only,
