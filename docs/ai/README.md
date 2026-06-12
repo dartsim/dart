@@ -22,6 +22,9 @@ For multi-session work, also read `docs/ai/sessions.md` and
 For project planning, also read `docs/plans/README.md`,
 `docs/plans/dashboard.md`, and `docs/plans/north-star-roadmap.md`.
 
+For authoring or executing orchestrator-defined work packets, also read
+`docs/ai/orchestration.md`.
+
 For AI component maintenance or durable AI-infra self-improvement, read
 `docs/ai/components.md`, `docs/ai/verification.md`, and
 `docs/onboarding/ai-tools.md`.
@@ -51,6 +54,7 @@ still require explicit maintainer/user approval.
 | `docs/ai/principles.md`       | AI-infra axioms and manual audit checklist                                            |
 | `docs/ai/`                    | Durable AI-native mission, workflow map, session rules, and verification expectations |
 | `docs/ai/capabilities.json`   | Machine-readable capability status, category, and gate profile                        |
+| `docs/ai/orchestration.md`    | Orchestrator/executor roles and the work-packet contract                              |
 | `docs/onboarding/ai-tools.md` | Tool compatibility and adapter maintenance details                                    |
 | `.claude/commands/`           | Temporary editable source for DART workflow command bodies                            |
 | `.claude/skills/`             | Editable source for DART domain skills                                                |
@@ -63,12 +67,17 @@ surface, then run `pixi run sync-ai-commands`.
 
 ## Model Routing
 
-Codex is the primary implementation model for DART's first AI-native rollout.
-Claude Code and OpenCode remain supported compatibility surfaces, and Claude is
-still useful for fallback and independent review. This routing affects agent
-workflow design, not human contributor requirements: every AI workflow must map
-back to public docs and `pixi run ...` commands that a contributor can run
-without any AI tool.
+DART uses the two-role operating model in `docs/ai/orchestration.md`: an
+orchestrator session owns understanding, decomposition, sequencing, and
+review, while executor sessions implement one well-defined work packet at a
+time. The current default routing is Claude Code as the orchestrator and
+Codex — via the generated `$dart-*` skills, especially
+`$dart-execute-packet` — as the executor for orchestrator-sized chunks of
+work. Either role may be filled by any capable agent, and independent review
+should use a different session than the one that authored the change. This
+routing affects agent workflow design, not human contributor requirements:
+every AI workflow must map back to public docs and `pixi run ...` commands
+that a contributor can run without any AI tool.
 
 ## Safety Boundary
 

@@ -27,6 +27,12 @@
       "gate_profile": "state-check"
     },
     {
+      "name": "dart-execute-packet",
+      "category": "task-lifecycle",
+      "status": "active",
+      "gate_profile": "task-specific"
+    },
+    {
       "name": "dart-fix-issue",
       "category": "issue-work",
       "status": "active",
