@@ -292,9 +292,11 @@ solver.solve(problem, x, options);
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
 > Strictly interior standard LCPs without a warm start first try the shared
-> validated linear-solve fast path. Default-option solves can take that path
-> before block/layer construction, while custom block/layer options are still
-> validated before the fast path is accepted.
+> validated linear-solve fast path. Default-option solves take that path before
+> block/layer construction; custom block/layer options first run a lightweight
+> structure validation so invalid custom layers still fail before the fast path
+> is accepted. SPD rows prefer an LLT exact solve before falling back to the
+> shared linear-solve helper.
 > Small uncoupled fixed-bound blocks first try a local direct linear solve when
 > the unconstrained candidate is already feasible; active-bound, singular,
 > non-finite, larger, and local `findex` blocks still use the existing

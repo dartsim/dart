@@ -1,5 +1,83 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior ShockPropagation Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path strict-interior ShockPropagation LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 49 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ShockPropagationSolver` now tries its strict-interior standard-LCP fast path
+  before block/layer matrix construction, after lightweight validation of any
+  custom block sizes or layer lists.
+- The shortcut prefers an `Eigen::LLT` exact solve for SPD rows and falls back
+  to the shared strict-interior helper if that candidate does not validate.
+- Invalid custom block sizes and layers still fail with `InvalidProblem` before
+  an exact solve is accepted.
+- Warm-started, active-bound, non-standard, boxed, and friction-index rows stay
+  on the existing block/iterative paths.
+- Unit coverage now expects `SolvesWithCustomLayers` to use the zero-iteration
+  exact solve on the strict-interior standard packet.
+- The Python LCP demo profile summary now moves `ShockPropagation` into
+  Standard leaders while keeping `Apgd` and `MPRGP` as moderate Standard
+  laggards.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/ShockPropagation/` wrote
+  `build/shockprop_strict_interior_after.json` and reported zero iterations
+  with `contract_ok=1.0` for 12, 24, 48, and 96 row packets.
+- Cached full-profile replay reports Standard `ShockPropagation` average ratio
+  `1.21`.
+- CSV shape check reports 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/shockprop_strict_interior_after.json`.
+- Cached full-profile replay wrote `build/lcp_profile_full_check`.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: moderate `Apgd`, `FischerBurmeisterNewton`,
+  `MinimumMapNewton`, `InteriorPoint`, `Lemke`, `MPRGP`, and
+  `SubspaceMinimization` rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `NNCG`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`,
+  `NNCG`, and `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior Projection Iterator Fast Paths
 
 This section is the latest state; older sections below are historical

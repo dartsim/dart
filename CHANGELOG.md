@@ -1514,6 +1514,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel standard comparison
     rows, with profile-shaped size guards so larger packets stay on their
     cheaper iterative paths when dense linear solves are not profitable.
+  - Moved `ShockPropagationSolver`'s strict-interior standard-LCP fast path
+    ahead of block/layer matrix construction after lightweight custom
+    block/layer validation, preferring an LLT exact solve before falling back to
+    the shared linear-solve helper.
   - Extended the validated strict-interior standard-LCP fast path to BGS for
     small and medium standard comparison rows, while preserving explicit custom
     block validation and leaving larger rows on the existing Gauss-Seidel block

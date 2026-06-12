@@ -36,6 +36,7 @@
 #include "dart/math/lcp/pivoting/dantzig_solver.hpp"
 #include "dart/math/lcp/pivoting/direct_solver.hpp"
 
+#include <Eigen/Cholesky>
 #include <Eigen/LU>
 
 #include <algorithm>
@@ -341,6 +342,74 @@ bool buildLayerOrder(
   return true;
 }
 
+bool validateBlockLayerStructure(
+    const int problemSize,
+    const ShockPropagationSolver::Parameters& params,
+    std::string* message)
+{
+  int numBlocks = problemSize;
+  if (!params.blockSizes.empty()) {
+    int total = 0;
+    numBlocks = static_cast<int>(std::ssize(params.blockSizes));
+    for (const int size : params.blockSizes) {
+      if (size <= 0) {
+        if (message) {
+          *message = "Block sizes must be positive";
+        }
+        return false;
+      }
+      total += size;
+    }
+
+    if (total != problemSize) {
+      if (message) {
+        *message = "Block sizes must sum to problem dimension";
+      }
+      return false;
+    }
+  }
+
+  if (params.layers.empty()) {
+    return true;
+  }
+
+  std::vector<int> used(static_cast<std::size_t>(numBlocks), 0);
+  for (const auto& layer : params.layers) {
+    if (layer.empty()) {
+      if (message) {
+        *message = "Layer must include at least one block";
+      }
+      return false;
+    }
+
+    for (const int blockIndex : layer) {
+      if (blockIndex < 0 || blockIndex >= numBlocks) {
+        if (message) {
+          *message = "Layer block index out of range";
+        }
+        return false;
+      }
+      if (used[static_cast<std::size_t>(blockIndex)]++) {
+        if (message) {
+          *message = "Block index appears in multiple layers";
+        }
+        return false;
+      }
+    }
+  }
+
+  for (const int count : used) {
+    if (count == 0) {
+      if (message) {
+        *message = "Layers must cover all blocks";
+      }
+      return false;
+    }
+  }
+
+  return true;
+}
+
 } // namespace
 
 //==============================================================================
@@ -422,9 +491,30 @@ LcpResult ShockPropagationSolver::solve(
 
   auto tryStrictInteriorFastPath = [&]() -> bool {
     Eigen::VectorXd fastW;
-    if (options.warmStart
-        || !detail::trySolveStrictInteriorStandardLcp(
-            problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+    if (options.warmStart || !problem.isStandardLcp(absTol)) {
+      return false;
+    }
+
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    const double strictInteriorTolerance = std::max(0.0, absTol);
+    bool strictInteriorFastPath = false;
+    Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+    if (exactFactorization.info() == Eigen::Success) {
+      Eigen::VectorXd candidate = exactFactorization.solve(b);
+      if (candidate.allFinite()
+          && candidate.minCoeff() > strictInteriorTolerance) {
+        fastW = A * candidate - b;
+        if (detail::validateSolution(
+                candidate, fastW, lo, hi, validationTolerance)) {
+          x = std::move(candidate);
+          strictInteriorFastPath = true;
+        }
+      }
+    }
+
+    if (!strictInteriorFastPath
+        && !detail::trySolveStrictInteriorStandardLcp(
+            problem, absTol, validationTolerance, x, &fastW)) {
       return false;
     }
 
@@ -448,7 +538,15 @@ LcpResult ShockPropagationSolver::solve(
     return true;
   };
 
-  if (options.customOptions == nullptr && tryStrictInteriorFastPath()) {
+  if (!options.warmStart && problem.isStandardLcp(absTol)
+      && !validateBlockLayerStructure(
+          static_cast<int>(n), *params, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (tryStrictInteriorFastPath()) {
     return result;
   }
 
@@ -467,10 +565,6 @@ LcpResult ShockPropagationSolver::solve(
           &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
-    return result;
-  }
-
-  if (tryStrictInteriorFastPath()) {
     return result;
   }
 

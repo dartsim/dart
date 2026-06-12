@@ -1,5 +1,100 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior ShockPropagation Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint:
+  `Fast path strict-interior ShockPropagation LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 49 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ShockPropagationSolver` now moves the strict-interior standard-LCP fast path
+  ahead of block/layer matrix construction after lightweight custom block/layer
+  structure validation.
+- The shortcut prefers an `Eigen::LLT` exact solve for SPD rows and falls back
+  to the shared strict-interior linear-solve helper if the LLT candidate does
+  not validate.
+- Invalid custom block sizes and layers still return `InvalidProblem` before a
+  strict-interior exact solve is accepted.
+- Active-bound, non-standard, warm-started, boxed, and friction-index
+  ShockPropagation paths stay on the existing iterative/block paths.
+- `ShockPropagationSolverCoverage.SolvesWithCustomLayers` now expects the
+  custom-layer strict-interior standard problem to solve in zero iterations.
+- The checked LCP performance profile CSVs, Python demo metadata, Other-methods
+  background docs, changelog, Python metadata test, and this dev-task hand-off
+  were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/ShockPropagation/`.
+- `build/shockprop_strict_interior_after.json` reported:
+  - 12 rows: `825.964ns`
+  - 24 rows: `2188.264ns`
+  - 48 rows: `9848.529ns`
+  - 96 rows: `43487.181ns`
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `ShockPropagation` average ratio `1.21`.
+- Current Standard follow-up targets are moderate iterative rows such as
+  `Apgd`, `FischerBurmeisterNewton`, `MinimumMapNewton`, `InteriorPoint`,
+  `Lemke`, `MPRGP`, and `SubspaceMinimization`.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `NNCG`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, `NNCG`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/ShockPropagation/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/shockprop_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run build
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The next natural work is reducing the
+   remaining moderate Standard rows or switching to the larger Boxed/Friction
+   high-ratio rows.
+2. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Projection Iterator Fast Paths
 
 Current branch state:

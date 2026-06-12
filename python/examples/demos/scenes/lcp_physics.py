@@ -224,18 +224,18 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Admm/Tgs/Pgs and strict-interior pivot/barrier/Newton/projection/block rows"
+            "Admm/Tgs/Pgs/ShockPropagation and strict-interior pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "ShockPropagation/RedBlackGaussSeidel, "
-            "FischerBurmeisterNewton/NNCG/Lemke/SymmetricPsor"
+            "Apgd/FischerBurmeisterNewton/MinimumMapNewton, "
+            "InteriorPoint/SubspaceMinimization/MPRGP"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
             "Dantzig, Newton-family including boxed semi-smooth, projection, "
-            "MPRGP, ADMM, APGD/Jacobi, and small/medium block hot rows; "
-            "remaining standard targets are layered/two-color and "
-            "moderate-ratio iterative rows."
+            "MPRGP, ADMM, APGD/Jacobi, ShockPropagation, and small/medium "
+            "block hot rows; remaining standard targets are moderate-ratio "
+            "iterative rows."
         ),
     },
     {

@@ -2437,8 +2437,9 @@ TEST(ShockPropagationSolverCoverage, SolvesWithCustomLayers)
   auto problem = makeStandardProblem(3);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
   const auto result = solver.solve(problem, x, options);
-  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
-  EXPECT_TRUE(x.array().isFinite().all());
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(Eigen::VectorXd::Constant(3, 0.25), 1e-8));
 }
 
 TEST(ShockPropagationSolverCoverage, SolvesFeasibleBoxedBlockDirectly)
