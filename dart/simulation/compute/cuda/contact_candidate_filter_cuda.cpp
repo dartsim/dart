@@ -64,6 +64,8 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     std::uint32_t* acceptedPointIndices,
     std::uint32_t* acceptedTriangleIndices,
     std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
     std::size_t pointCount,
     std::size_t triangleCount);
 
@@ -79,6 +81,8 @@ cudaError_t launchEdgeEdgeContactStencilFilterKernel(
 namespace {
 
 using Clock = std::chrono::steady_clock;
+
+constexpr std::size_t kContactCandidateMaskBlockSize = 256u;
 
 double elapsedNs(const Clock::time_point start, const Clock::time_point end)
 {
@@ -322,6 +326,11 @@ void buildPointTriangleContactCandidateMaskCuda(
   DeviceBuffer<std::uint32_t> deviceAcceptedPointIndices(result.pairCount);
   DeviceBuffer<std::uint32_t> deviceAcceptedTriangleIndices(result.pairCount);
   DeviceBuffer<std::uint32_t> deviceCompactedCount(1u);
+  const std::size_t compactBlockCount
+      = (result.pairCount + kContactCandidateMaskBlockSize - 1u)
+        / kContactCandidateMaskBlockSize;
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockCounts(compactBlockCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedBlockOffsets(compactBlockCount);
   const auto setupEnd = Clock::now();
 
   const auto h2dStart = Clock::now();
@@ -344,6 +353,8 @@ void buildPointTriangleContactCandidateMaskCuda(
           deviceAcceptedPointIndices.data(),
           deviceAcceptedTriangleIndices.data(),
           deviceCompactedCount.data(),
+          deviceAcceptedBlockCounts.data(),
+          deviceAcceptedBlockOffsets.data(),
           result.pointCount,
           result.triangleCount),
       "point-triangle contact candidate mask kernel");

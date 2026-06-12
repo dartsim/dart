@@ -2,30 +2,33 @@
 
 ## Current Status
 
-Latest continuation checkpoint (2026-06-11): implementation resumed on
+Latest continuation checkpoint (2026-06-12): implementation resumed on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). Keep all
 remaining PLAN-083 work on this consolidated branch/PR. Do not push,
 PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
 without explicit maintainer approval.
 
-The latest checkpoint moves point-triangle candidate-mask compaction from
-host-side scanning after GPU readback into a deterministic device-side
-compaction kernel. The contact-candidate CUDA result still records accepted
-point/triangle index lists, the benchmark now emits both `gpu_compacted_count`
-and `gpu_compacted_triangle_count`, and the packet writer/test reject either
-compaction-count mismatch. This is reduced private packet evidence only: it
-does not claim sweep broad-phase construction, runtime candidate-list
-construction, or a contact-candidate speedup-gate completion.
+The latest checkpoint replaces the committed serial device compaction kernel
+with deterministic block-prefix CUDA compaction for the private point-triangle
+all-pairs candidate-mask packet. It uses block-local accepted counts, a small
+block-offset prefix pass, and a stable block-local scatter so compacted
+point/triangle lists stay in deterministic pair order. This is reduced private
+packet evidence only: it does not claim sweep broad-phase construction,
+runtime candidate-list construction, or a top-level contact-candidate
+speedup-gate completion.
 
-Validation for this checkpoint passed focused contact-candidate packet pytest
-(6 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+Validation for this checkpoint passed `pixi run lint`, `pixi run build`,
+`pixi run test-unit` (161/161), `pixi run build-simulation-tests`,
+`pixi run test-simulation` (65/65), `pixi run check-api-boundaries`, the
+PLAN-083 GPU parity/completion-audit checker pair, the focused
+contact-candidate/GPU-parity/completion-audit pytest trio (15 passed),
 `pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
 `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
 packet records `accepted_count=192`, `compacted_count=192`,
 `compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
-`speedup=0.23745924076090597x`, and top-level contact-candidate packet
-`speedup=0.23745924076090597x` (`meets_speedup_gate=false`). Before any future
+`speedup=0.9911014836006811x`, and top-level contact-candidate packet
+`speedup=0.4065799369175524x` (`meets_speedup_gate=false`). Before any future
 push, merge latest `origin/main` into this published branch, rerun required
 gates, and push only with explicit maintainer approval.
 

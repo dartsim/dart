@@ -1,31 +1,34 @@
 # Unified Newton-Barrier Handoff
 
-## Latest Continuation Handoff (2026-06-11)
+## Latest Continuation Handoff (2026-06-12)
 
-Implementation resumed on the consolidated PLAN-083 branch after the stop-only
-handoff. Continue locally on
-`simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
-PLAN-083 work on this consolidated branch/PR. Do not push, PR-comment, resolve
-review threads, or trigger CI without explicit maintainer approval.
+Implementation resumed from the stop-only handoff on the consolidated PLAN-083
+branch. Continue locally on `simx/plan083-gpu-contact-candidate-packet` / PR
+#2978, and keep all remaining PLAN-083 work on this consolidated branch/PR. Do
+not push, PR-comment, resolve review threads, trigger CI, or open another
+PLAN-083 PR without explicit maintainer approval.
 
 Current branch state:
 
 - Branch: `simx/plan083-gpu-contact-candidate-packet`
 - PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
 - Base: `main`
-- Current checkpoint: deterministic device-side compaction for the private
-  point-triangle all-pairs candidate-mask packet.
+- Current checkpoint: deterministic block-prefix device compaction for the
+  private point-triangle all-pairs candidate-mask packet.
 - Last observed pushed origin head:
   `6746b63973d Record point-point barrier Hessian packet evidence`
-- Local branch is ahead of origin by seven committed checkpoints. Keep all
-  remaining PLAN-083 work on this consolidated branch/PR; do not open another
-  PLAN-083 PR.
+- The branch has unpublished local checkpoints beyond origin. Inspect
+  `git status -sb` and `git log --oneline --decorate -10` for the exact current
+  local head before editing or pushing.
 
-This checkpoint moves compacted accepted point/triangle metadata production from
-host-side scanning after mask readback to a deterministic single-thread CUDA
-compaction kernel launched after the parallel mask kernel. It extends the
-packet writer/test to track `gpu_compacted_triangle_count` and reject
-point/triangle compaction-count mismatches.
+The committed checkpoint at `78fd7061732` moves compacted accepted
+point/triangle metadata production from host-side scanning after mask readback
+to deterministic CUDA-side compaction. This checkpoint replaces the serial
+compaction kernel with block-local accepted counts, a small block-offset prefix
+pass, and a stable block-local scatter. It preserves deterministic pair order
+and keeps the packet writer/test requirement that
+`gpu_compacted_count` and `gpu_compacted_triangle_count` match the accepted
+count.
 
 Touched surfaces:
 
@@ -41,21 +44,22 @@ broad-phase construction, runtime scene candidate-list construction, or
 contact-candidate speedup-gate completion. The regenerated packet reports
 `pair_count=65536`, `accepted_count=192`, `compacted_count=192`,
 `compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
-`speedup=0.23745924076090597x`, and top-level contact-candidate packet
-`speedup=0.23745924076090597x` (`meets_speedup_gate=false`).
+`speedup=0.9911014836006811x`, and top-level contact-candidate packet
+`speedup=0.4065799369175524x` (`meets_speedup_gate=false`).
 
-Validation for this checkpoint passed focused contact-candidate packet pytest
-(6 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
-`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8),
-and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+Validation for this checkpoint passed `pixi run lint`, `pixi run build`,
+`pixi run test-unit` (161/161), `pixi run build-simulation-tests`,
+`pixi run test-simulation` (65/65), `pixi run check-api-boundaries`,
+`pixi run python scripts/check_plan083_gpu_parity_packet.py`,
+`pixi run python scripts/check_plan083_completion_audit.py`,
+`pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+(15 passed), `pixi run -e cuda build-cuda Release`,
+`pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
 
 Before any future push to #2978, merge latest `origin/main` into this published
 branch, rerun the required gates for all accumulated changes, and push only
 with explicit maintainer approval.
-
-Historical note: the preceding handoff was stop-only and intentionally left
-this device-side compaction WIP unverified. That stop state has now been
-resumed and validated locally.
 
 ## Previous Readback-Compaction Handoff (2026-06-11)
 

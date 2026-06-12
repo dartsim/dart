@@ -306,32 +306,88 @@ __global__ void buildPointTriangleContactCandidateMaskKernel(
   accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
 }
 
-__global__ void compactPointTriangleContactCandidateMaskKernel(
-    const std::uint32_t* pointIndices,
+__global__ void countPointTriangleAcceptedBlocksKernel(
     const std::uint8_t* accepted,
-    std::uint32_t* acceptedPointIndices,
-    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* acceptedBlockCounts,
+    const std::size_t pairCount)
+{
+  extern __shared__ std::uint32_t counts[];
+
+  const auto local = static_cast<unsigned int>(threadIdx.x);
+  const auto index = static_cast<std::size_t>(blockIdx.x * blockDim.x + local);
+  counts[local] = index < pairCount && accepted[index] != 0u ? 1u : 0u;
+  __syncthreads();
+
+  for (unsigned int stride = blockDim.x / 2u; stride > 0u; stride >>= 1u) {
+    if (local < stride) {
+      counts[local] += counts[local + stride];
+    }
+    __syncthreads();
+  }
+
+  if (local == 0u) {
+    acceptedBlockCounts[blockIdx.x] = counts[0];
+  }
+}
+
+__global__ void prefixPointTriangleAcceptedBlockCountsKernel(
+    const std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
     std::uint32_t* compactedCount,
-    const std::size_t pointCount,
-    const std::size_t triangleCount)
+    const std::size_t blockCount)
 {
   if (blockIdx.x != 0u || threadIdx.x != 0u) {
     return;
   }
 
   std::uint32_t count = 0u;
-  const std::size_t pairCount = pointCount * triangleCount;
-  for (std::size_t index = 0; index < pairCount; ++index) {
-    if (accepted[index] == 0u) {
-      continue;
-    }
-    const std::size_t pointSlot = index / triangleCount;
-    const std::size_t triangle = index - pointSlot * triangleCount;
-    acceptedPointIndices[count] = pointIndices[pointSlot];
-    acceptedTriangleIndices[count] = static_cast<std::uint32_t>(triangle);
-    ++count;
+  for (std::size_t block = 0; block < blockCount; ++block) {
+    acceptedBlockOffsets[block] = count;
+    count += acceptedBlockCounts[block];
   }
   *compactedCount = count;
+}
+
+__global__ void compactPointTriangleContactCandidateMaskKernel(
+    const std::uint32_t* pointIndices,
+    const std::uint8_t* accepted,
+    const std::uint32_t* acceptedBlockOffsets,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  extern __shared__ std::uint32_t localRanks[];
+
+  const auto local = static_cast<unsigned int>(threadIdx.x);
+  const auto index = static_cast<std::size_t>(blockIdx.x * blockDim.x + local);
+  const std::size_t pairCount = pointCount * triangleCount;
+  const std::uint32_t acceptedFlag
+      = index < pairCount && accepted[index] != 0u ? 1u : 0u;
+  localRanks[local] = acceptedFlag;
+  __syncthreads();
+
+  for (unsigned int offset = 1u; offset < blockDim.x; offset <<= 1u) {
+    std::uint32_t previous = 0u;
+    if (local >= offset) {
+      previous = localRanks[local - offset];
+    }
+    __syncthreads();
+    localRanks[local] += previous;
+    __syncthreads();
+  }
+
+  if (acceptedFlag == 0u) {
+    return;
+  }
+
+  const std::size_t pointSlot = index / triangleCount;
+  const std::size_t triangle = index - pointSlot * triangleCount;
+  const std::uint32_t compactedIndex
+      = acceptedBlockOffsets[blockIdx.x] + localRanks[local] - 1u;
+  acceptedPointIndices[compactedIndex] = pointIndices[pointSlot];
+  acceptedTriangleIndices[compactedIndex]
+      = static_cast<std::uint32_t>(triangle);
 }
 
 __global__ void filterEdgeEdgeContactStencilKernel(
@@ -403,6 +459,8 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     std::uint32_t* acceptedPointIndices,
     std::uint32_t* acceptedTriangleIndices,
     std::uint32_t* compactedCount,
+    std::uint32_t* acceptedBlockCounts,
+    std::uint32_t* acceptedBlockOffsets,
     std::size_t pointCount,
     std::size_t triangleCount)
 {
@@ -427,12 +485,32 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     return error;
   }
 
-  compactPointTriangleContactCandidateMaskKernel<<<1u, 1u>>>(
+  countPointTriangleAcceptedBlocksKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
+      accepted, acceptedBlockCounts, pairCount);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  prefixPointTriangleAcceptedBlockCountsKernel<<<1u, 1u>>>(
+      acceptedBlockCounts, acceptedBlockOffsets, compactedCount, gridSize);
+  error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  compactPointTriangleContactCandidateMaskKernel<<<
+      gridSize,
+      blockSize,
+      blockSize * sizeof(std::uint32_t)>>>(
       pointIndices,
       accepted,
+      acceptedBlockOffsets,
       acceptedPointIndices,
       acceptedTriangleIndices,
-      compactedCount,
       pointCount,
       triangleCount);
 
