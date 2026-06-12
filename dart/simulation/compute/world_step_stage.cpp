@@ -584,6 +584,13 @@ const comps::RigidAvbdContactConfig* enabledRigidAvbdContactConfig(
 }
 
 //==============================================================================
+bool mayHaveRigidAvbdContactConfigs(const detail::WorldRegistry& registry)
+{
+  const auto* configStorage = registry.storage<comps::RigidAvbdContactConfig>();
+  return configStorage != nullptr && configStorage->size() != 0u;
+}
+
+//==============================================================================
 std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
     const detail::WorldRegistry& registry, std::span<const Contact> contacts)
 {
@@ -9449,28 +9456,45 @@ void RigidBodyContactStage::prepare(World& world)
     constraints.reserve(contactCapacity);
   }
 
-  if (m_avbdScratch == nullptr) {
-    m_avbdScratch = std::make_unique<AvbdScratch>();
-  }
+  const bool mayHavePointJointConfigs
+      = dvbd::mayHaveAvbdRigidWorldPointJointConfigs(registry);
   const std::size_t jointCapacity
-      = registry.view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
-            .size_hint();
+      = mayHavePointJointConfigs
+            ? registry
+                  .view<comps::Joint, dvbd::AvbdRigidWorldPointJointConfig>()
+                  .size_hint()
+            : 0u;
   const auto* distanceSpringStorage
       = registry.storage<dvbd::AvbdRigidWorldDistanceSpringConfig>();
   const std::size_t distanceSpringCapacity
       = distanceSpringStorage != nullptr ? distanceSpringStorage->size() : 0u;
+  const std::size_t avbdContactCapacity
+      = contactCapacity != 0u && mayHaveRigidAvbdContactConfigs(registry)
+            ? contactCapacity
+            : 0u;
+  if (avbdContactCapacity == 0u && jointCapacity == 0u
+      && distanceSpringCapacity == 0u) {
+    if (m_avbdScratch != nullptr) {
+      m_avbdScratch->clear();
+    }
+    return;
+  }
+
+  if (m_avbdScratch == nullptr) {
+    m_avbdScratch = std::make_unique<AvbdScratch>();
+  }
   const std::size_t maxSize = std::numeric_limits<std::size_t>::max();
   const std::size_t rowEndpointCapacity
-      = contactCapacity <= maxSize - jointCapacity
-                && contactCapacity + jointCapacity
+      = avbdContactCapacity <= maxSize - jointCapacity
+                && avbdContactCapacity + jointCapacity
                        <= maxSize - distanceSpringCapacity
-            ? contactCapacity + jointCapacity + distanceSpringCapacity
+            ? avbdContactCapacity + jointCapacity + distanceSpringCapacity
             : maxSize;
   const std::size_t bodyCapacity = rowEndpointCapacity <= maxSize / 2u
                                        ? 2u * rowEndpointCapacity
                                        : maxSize;
   m_avbdScratch->reserve(
-      bodyCapacity, contactCapacity, jointCapacity, distanceSpringCapacity);
+      bodyCapacity, avbdContactCapacity, jointCapacity, distanceSpringCapacity);
 }
 
 //==============================================================================

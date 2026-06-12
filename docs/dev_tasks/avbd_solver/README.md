@@ -25,6 +25,14 @@ Corpus matrix:
   lint/build/test evidence; use the previously recorded validation in
   `RESUME.md`, refresh PR #2977 status in a fresh session, and resume from the
   consolidated branch above.
+- Latest resumed follow-up: `RigidBodyContactStage::prepare()` now reserves
+  AVBD scratch only when contacts could use a contact-config storage path or
+  when point-joint/distance-spring AVBD pair constraints exist. Contact solver
+  scratch still reserves for ordinary contacts, but worlds with no possible
+  AVBD rows avoid the AVBD snapshot/inventory/solve-scratch reserve path. The
+  focused no-heap/contact-stage and rigid source-row tests pass. This is only
+  source-row prepare-overhead cleanup; it does not close any source CPU-win,
+  GPU, or paper-number gate.
 - Latest local follow-up: rigid contact snapshot row assignment now avoids the
   duplicate per-contact row-counter claim during snapshot collection and fills
   contact row indices in one linear pass after canonical contact-row ordering,
