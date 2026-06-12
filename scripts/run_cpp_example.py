@@ -85,7 +85,6 @@ _DEMOS_SCENE_IDS = (
     "planned_simbicon_walking",
     "planned_operational_space_control",
     "planned_robot_puppets",
-    "planned_collision_sandbox",
     "planned_mobile_manipulation",
     "deformable_body",
     "vbd_deformable",
@@ -95,15 +94,24 @@ _DART6_DEMO_PLACEHOLDER_SCENE_IDS = {
     "atlas_puppet": "planned_robot_puppets",
     "atlas_simbicon": "planned_simbicon_walking",
     "biped_stand": "planned_simbicon_walking",
-    "collision_sandbox": "planned_collision_sandbox",
     "fetch": "planned_mobile_manipulation",
     "g1_puppet": "planned_robot_puppets",
     "hubo_puppet": "planned_robot_puppets",
     "operational_space_control": "planned_operational_space_control",
-    "point_cloud": "planned_collision_sandbox",
-    "polyhedron_visual": "planned_collision_sandbox",
     "vehicle": "planned_mobile_manipulation",
     "wam_ikfast": "planned_inverse_kinematics",
+}
+
+_COLLISION_DEBUG_PY_DEMO_SCENE_IDS = (
+    "rigid_contact_inspector",
+    "rigid_collision_query_options",
+    "rigid_collision_casts",
+)
+
+_DART6_DEMO_PY_DEMO_REPLACEMENT_SCENE_IDS = {
+    "collision_sandbox": _COLLISION_DEBUG_PY_DEMO_SCENE_IDS,
+    "point_cloud": _COLLISION_DEBUG_PY_DEMO_SCENE_IDS,
+    "polyhedron_visual": _COLLISION_DEBUG_PY_DEMO_SCENE_IDS,
 }
 
 _REMOVED_DART6_DEMOS_SCENE_IDS = (
@@ -255,6 +263,18 @@ def _normalize_target(target: str) -> str:
             "dart-demos. A planned World-native placeholder is available:\n"
             f"  pixi run demos -- --scene {placeholder_scene}\n"
             "Run `pixi run demos -- --list` for the current World demo catalog."
+        )
+    py_demo_scenes = _DART6_DEMO_PY_DEMO_REPLACEMENT_SCENE_IDS.get(canonical)
+    if py_demo_scenes is not None:
+        scene_commands = "\n".join(
+            f"  pixi run py-demos -- --scene {scene_id}" for scene_id in py_demo_scenes
+        )
+        raise SystemExit(
+            f"The '{target}' DART 6 demo scene has been removed from "
+            "dart-demos. Use maintained Python GUI rows for the concrete "
+            f"collision-debugging workflows:\n{scene_commands}\n"
+            "Run `pixi run py-demos -- --list` for the current Python demo "
+            "catalog."
         )
     if canonical in _REMOVED_DART6_DEMOS_SCENE_IDS:
         raise SystemExit(

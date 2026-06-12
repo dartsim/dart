@@ -2,11 +2,18 @@
 
 ## Current Handoff (2026-06-12)
 
-The latest continuation retires the `planned_collision_sandbox` placeholder
-from the py-demos catalog because concrete collision-debugging GUI rows already
-cover that route: `rigid_contact_inspector`,
-`rigid_collision_query_options`, and `rigid_collision_casts`. PLAN-103 and the
-Python demo README now name that replacement path.
+Latest local slice: the C++ companion is brought back into sync with the
+completed py-demos collision-sandbox retirement. The stale
+`planned_collision_sandbox` row is removed from `examples/demos/registry.cpp`,
+and legacy C++ runner requests for `collision_sandbox`, `point_cloud`, and
+`polyhedron_visual` now route users to the concrete Python collision-debugging
+GUI rows: `rigid_contact_inspector`, `rigid_collision_query_options`, and
+`rigid_collision_casts`.
+
+Previous checkpoint: commit `18c3750a7af Retire planned collision sandbox row`
+retires the `planned_collision_sandbox` placeholder from the py-demos catalog
+because the concrete collision-debugging GUI rows already cover that route.
+PLAN-103 and the Python demo README name the replacement path.
 
 Previous checkpoint: PLAN-103's remaining planned World-port GUI
 rows after the rigid verifier reached maintainer-acceptance readiness. The
@@ -45,14 +52,29 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Current local branch state before this slice was clean at
-  `826d161930e Refresh rigid visual verification acceptance packet`, five
-  commits ahead of `origin/feature/rigid-body-gui-visual-verification`.
-- Resume check: verify whether the latest collision-sandbox placeholder
-  retirement slice is in history as `Retire planned collision sandbox row` with
-  `git status -sb` and `git log -5 --oneline` before resuming. If it is not
-  committed yet, inspect the uncommitted diff for the same slice before
-  continuing. Do not push it without explicit approval.
+- Current continuation started with the branch clean at
+  `18c3750a7af Retire planned collision sandbox row`, seven commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`, plus an uncommitted
+  docs-only stop hand-off that is superseded by this implementation slice.
+- Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
+  resumed work. Expect the latest completed implementation commit to be
+  the C++ companion collision-sandbox cleanup if it has already been committed;
+  otherwise inspect the uncommitted diff for the files named in this section.
+- Do not push without explicit approval in the session that performs the push.
+- Latest local slice updates `examples/demos/registry.cpp`,
+  `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
+  `examples/README.md`, PLAN-102 dashboard text, and this handoff so the C++
+  companion no longer advertises the retired collision-sandbox placeholder.
+- Verification for the latest C++ companion cleanup: focused
+  `python/tests/unit/test_run_cpp_example.py` reported `66 passed` before and
+  after `pixi run lint`; `pixi run ex collision_sandbox` exits nonzero with
+  the expected `pixi run py-demos -- --scene rigid_contact_inspector`,
+  `rigid_collision_query_options`, and `rigid_collision_casts` guidance and no
+  `planned_collision_sandbox` text; `pixi run demos -- --list` compiled the
+  touched C++ registry and linked `dart-demos`, but the runtime list command
+  hung after Mesa/GLX driver errors on this host and was interrupted. Final
+  lint, docs-policy, spell, Markdown-format, and `git diff --check` gates
+  passed.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -626,16 +648,16 @@ Current snapshot:
 ## Immediate Next Step
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
-first. If the row-range guidance, failure-resilience, failed-row triage, and
-failed-row rerun-command commits are present and the tree is clean, the next
-decision returns to maintainer acceptance for the current scoped rigid visual
-workflow. If accepted, prepare the completion cleanup PR by moving any final
-durable close-out note out of this folder and deleting
-`docs/dev_tasks/rigid_body_visual_verification`; if not accepted, choose a new
-bounded slice from durable PLAN-103 follow-ups and record why it is not blocked
-by the public API gaps. If the failed-row rerun-command follow-up is not in
-history, review the uncommitted diff and either commit or intentionally discard
-it according to the user's latest instruction. Do not push without explicit
+first. Expect the latest completed local implementation commit to be
+`Retire C++ collision sandbox placeholder` if this slice has been committed;
+otherwise inspect the uncommitted diff for the same C++ companion cleanup.
+
+If the tree is clean with that slice present, return to maintainer acceptance
+for the current scoped rigid visual workflow. If accepted, prepare the
+completion cleanup PR by moving any final durable close-out note out of this
+folder and deleting `docs/dev_tasks/rigid_body_visual_verification`; if not
+accepted, choose a new bounded slice from durable PLAN-103 follow-ups and record
+why it is not blocked by the public API gaps. Do not push without explicit
 approval in the session that performs the push.
 
 Replay capture-metadata checks for this slice:

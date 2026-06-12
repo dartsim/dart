@@ -140,18 +140,6 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
              "asset-loaded humanoid puppets with World-friendly pose controls");
        }});
   scenes.push_back(
-      {"planned_collision_sandbox",
-       "Collision Sandbox",
-       "Planned World Ports",
-       "Placeholder for collision-pair inspection on the World demos path.",
-       []() {
-         return makePlannedWorldPortScene(
-             "planned_collision_sandbox",
-             "Collision Sandbox",
-             "collision_sandbox, point_cloud, polyhedron_visual",
-             "interactive collision/debug visualization for World bodies");
-       }});
-  scenes.push_back(
       {"planned_mobile_manipulation",
        "Mobile Manipulation",
        "Planned World Ports",

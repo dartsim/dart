@@ -2,11 +2,18 @@
 
 ## Current Handoff (2026-06-12)
 
-The latest continuation retires the `planned_collision_sandbox` placeholder
-from the py-demos catalog because concrete collision-debugging GUI rows already
-cover that route: `rigid_contact_inspector`,
-`rigid_collision_query_options`, and `rigid_collision_casts`. PLAN-103 and the
-Python demo README now name that replacement path.
+Latest local slice: the C++ companion is brought back into sync with the
+completed py-demos collision-sandbox retirement. The stale
+`planned_collision_sandbox` row is removed from `examples/demos/registry.cpp`,
+and legacy C++ runner requests for `collision_sandbox`, `point_cloud`, and
+`polyhedron_visual` now route users to the concrete Python collision-debugging
+GUI rows: `rigid_contact_inspector`, `rigid_collision_query_options`, and
+`rigid_collision_casts`.
+
+Previous checkpoint: commit `18c3750a7af Retire planned collision sandbox row`
+retires the `planned_collision_sandbox` placeholder from the py-demos catalog
+because the concrete collision-debugging GUI rows already cover that route.
+PLAN-103 and the Python demo README name the replacement path.
 
 Previous checkpoint: PLAN-103's remaining planned World-port GUI
 rows after the rigid verifier reached maintainer-acceptance readiness. The
@@ -45,11 +52,29 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Resume check: verify whether the latest collision-sandbox placeholder
-  retirement slice is in history as `Retire planned collision sandbox row` with
-  `git status -sb` and `git log -5 --oneline` before resuming. If it is not
-  committed yet, inspect the uncommitted diff for the same slice before
-  continuing. Do not push it without explicit approval.
+- Current continuation started with the branch clean at
+  `18c3750a7af Retire planned collision sandbox row`, seven commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`, plus an uncommitted
+  docs-only stop hand-off that is superseded by this implementation slice.
+- Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
+  resumed work. Expect the latest completed implementation commit to be
+  the C++ companion collision-sandbox cleanup if it has already been committed;
+  otherwise inspect the uncommitted diff for the files named in this section.
+- Do not push without explicit approval in the session that performs the push.
+- Latest local slice updates `examples/demos/registry.cpp`,
+  `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
+  `examples/README.md`, PLAN-102 dashboard text, and this handoff so the C++
+  companion no longer advertises the retired collision-sandbox placeholder.
+- Verification for the latest C++ companion cleanup: focused
+  `python/tests/unit/test_run_cpp_example.py` reported `66 passed` before and
+  after `pixi run lint`; `pixi run ex collision_sandbox` exits nonzero with
+  the expected `pixi run py-demos -- --scene rigid_contact_inspector`,
+  `rigid_collision_query_options`, and `rigid_collision_casts` guidance and no
+  `planned_collision_sandbox` text; `pixi run demos -- --list` compiled the
+  touched C++ registry and linked `dart-demos`, but the runtime list command
+  hung after Mesa/GLX driver errors on this host and was interrupted. Final
+  lint, docs-policy, spell, Markdown-format, and `git diff --check` gates
+  passed.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -1953,12 +1978,10 @@ passed and `git diff --check` was clean.
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the row-range guidance, `--continue-on-failure`, failed-row
-   triage-summary, and failed-row rerun-command slices to be present locally on
-   top of
-   `bdf757db2c9 Refresh rigid handoff stop state`; verify the exact commit
-   hashes with `git log`.
-3. If the tree is clean with those slices present, return to the
+2. Expect the latest completed local implementation commit to be
+   `Retire C++ collision sandbox placeholder` if this slice has been committed;
+   otherwise inspect the uncommitted diff for the same C++ companion cleanup.
+3. If the tree is clean with that slice present, return to the
    completion/retirement readiness audit: maintainer acceptance is the next
    decision before deleting this dev-task folder, or choose another bounded
    PLAN-103 follow-up if the maintainer wants more GUI evidence first.
