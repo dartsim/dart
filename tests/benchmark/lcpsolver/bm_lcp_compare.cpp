@@ -11249,6 +11249,28 @@ void AddBatchBenchmarkArgs(
   }
 }
 
+std::vector<int> GetConcreteGroupedBatchBenchmarkArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    BenchmarkProblemFamily family)
+{
+  std::vector<int> args;
+  for (const int variantsPerProblemArg : std::array<int, 2>{2, 3}) {
+    std::string errorMessage;
+    const auto batch = MakeGroupedBenchmarkBatch(
+        family, variantsPerProblemArg, errorMessage);
+    if (!batch.has_value()) {
+      continue;
+    }
+
+    if (SolverSupportsConcreteProblemBatch(
+            solver, FlattenGroupedBenchmarkBatch(*batch))) {
+      args.push_back(variantsPerProblemArg);
+    }
+  }
+
+  return args;
+}
+
 std::string MakeBenchmarkName(
     BenchmarkProblemFamily family,
     const dart::test::LcpSolverManifestEntry& solver)
@@ -12934,19 +12956,21 @@ void RegisterGroupedBatchBenchmarks()
 
   for (const auto family : families) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if ((solver.name != "Jacobi" && solver.name != "Pgs")
-          || !dart::test::supportsProblem(solver, getProblemSupport(family))) {
+      if (solver.name != "Jacobi" && solver.name != "Pgs") {
+        continue;
+      }
+
+      const auto args = GetConcreteGroupedBatchBenchmarkArgs(solver, family);
+      if (args.empty()) {
         continue;
       }
 
       const auto name = MakeGroupedBatchSerialBenchmarkName(family, solver);
-      benchmark::RegisterBenchmark(
-          name.c_str(),
-          [solver, family](benchmark::State& state) {
+      auto* registeredBenchmark = benchmark::RegisterBenchmark(
+          name.c_str(), [solver, family](benchmark::State& state) {
             RunGroupedBatchSerialBenchmark(state, solver, family);
-          })
-          ->Arg(2)
-          ->Arg(3);
+          });
+      AddBenchmarkArgs(registeredBenchmark, args);
     }
   }
 }
@@ -12989,19 +13013,21 @@ void RegisterGroupedParallelBatchBenchmarks()
 
   for (const auto family : families) {
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if ((solver.name != "Jacobi" && solver.name != "Pgs")
-          || !dart::test::supportsProblem(solver, getProblemSupport(family))) {
+      if (solver.name != "Jacobi" && solver.name != "Pgs") {
+        continue;
+      }
+
+      const auto args = GetConcreteGroupedBatchBenchmarkArgs(solver, family);
+      if (args.empty()) {
         continue;
       }
 
       const auto name = MakeGroupedBatchParallelBenchmarkName(family, solver);
-      benchmark::RegisterBenchmark(
-          name.c_str(),
-          [solver, family](benchmark::State& state) {
+      auto* registeredBenchmark = benchmark::RegisterBenchmark(
+          name.c_str(), [solver, family](benchmark::State& state) {
             RunGroupedBatchParallelBenchmark(state, solver, family);
-          })
-          ->Arg(2)
-          ->Arg(3);
+          });
+      AddBenchmarkArgs(registeredBenchmark, args);
     }
   }
 }

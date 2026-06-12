@@ -29,15 +29,13 @@ No lint, build, tests, benchmark listing, solver execution, or additional
 implementation work was run after the critical stop instruction. Historical
 verification notes below belong to their named implementation checkpoints only.
 
-Current continuation note: the previously strongest benchmark-routing gap was
-closed by adding concrete support gates to dense world-box contact,
-articulated unified-contact, mixed world-contact batch, and dense world-box
-batch registrations. Generated LCP correctness coverage was then aligned with
-each solver's concrete `supportsProblem(testCase.problem)` predicate. Resume
-from the next bounded gap in the broader LCP interface/demo audit rather than
-repeating either slice.
+Current continuation note: the grouped serial/parallel benchmark rows now use
+exact generated grouped-batch support checks for their published two- and
+three-variant rows, after the previous dense-contact and generated-coverage
+support-routing slices. Resume from the next bounded gap in the broader LCP
+interface/demo audit rather than repeating those slices.
 
-Current first-parent stack before this docs-only checkpoint:
+Base first-parent stack before this grouped batch checkpoint commit:
 
 ```text
 fe5b70b32cc Route generated LCP coverage by concrete support
@@ -180,13 +178,15 @@ plus a Direct-only size special case.
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the heavyweight contact benchmark and generated coverage
-support-routing slices, before this docs-only hand-off checkpoint:
+Current reality after the grouped batch benchmark, heavyweight contact
+benchmark, and generated coverage support-routing slices:
 
-- The latest implementation slice changed `CHANGELOG.md`,
+- The grouped batch implementation slice changed `CHANGELOG.md`,
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
+- The generated coverage implementation slice changed `CHANGELOG.md`,
   `tests/unit/math/lcp/test_lcp_generated_coverage.cpp`, and these dev-task
   docs.
-- The previous implementation slice changed `CHANGELOG.md`,
+- The heavyweight contact benchmark implementation slice changed `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
 - Local implementation HEAD before this docs-only hand-off checkpoint was
   `fe5b70b32cc Route generated LCP coverage by concrete support`.
@@ -198,22 +198,23 @@ support-routing slices, before this docs-only hand-off checkpoint:
   `git merge --no-edit FETCH_HEAD` reported `Already up to date.`
 - No PR was associated with the branch when checked earlier in the session.
 
-After this docs-only hand-off checkpoint is committed and pushed, the single
-consolidated branch should be the source of truth for a fresh session. Merge
-latest `main` before any later push.
+After the current grouped batch checkpoint is committed, the single
+consolidated branch should remain the source of truth for a fresh session.
+Merge latest `main` before any later push.
 
 ## Immediate Next Step
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
-starting points after the generated coverage support-routing slice are any
-remaining manifest-level benchmark or test gates that still publish or execute
-native rows without a generated problem or representative contact-family
-support probe. The grouped batch registrations in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp` are a reasonable first place to
-inspect. Also audit any solver whose documented native mathematical domain is
-still broader than its concrete `supportsProblem(problem)` predicate, and
-GUI/demo packets that still lack clear apples-to-apples benchmark coverage.
-Do not treat the broad LCP objective as complete.
+starting points after the grouped batch support-routing slice are any remaining
+manifest-level benchmark or test gates that still publish or execute native
+rows without a generated problem or representative contact-family support
+probe. Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp` carefully before
+changing it because some manifest-level checks may intentionally verify the
+manifest categories rather than concrete native routing. Also audit any solver
+whose documented native mathematical domain is still broader than its concrete
+`supportsProblem(problem)` predicate, and GUI/demo packets that still lack clear
+apples-to-apples benchmark coverage. Do not treat the broad LCP objective as
+complete.
 
 ## Context That Would Be Lost
 

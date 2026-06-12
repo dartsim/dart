@@ -80,6 +80,9 @@
 - [x] Captured the final no-verification hand-off after the latest two local
       implementation commits, refreshed against `main`, so a fresh session can
       resume from the single consolidated branch.
+- [x] Filtered grouped serial/parallel batch benchmark registrations through
+      concrete generated grouped-batch support for their exact published
+      variants.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -119,12 +122,43 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the generated coverage support-routing
-slice, following the heavyweight contact benchmark support-gating slice.
+The latest implementation checkpoint is the grouped batch support-routing
+slice, following the generated coverage support-routing and heavyweight contact
+benchmark support-gating slices.
 
-The current task checkpoint is hand-off only. After the user's critical stop
-instruction, no lint, build, tests, benchmark listing, solver execution, or
-additional implementation work was run.
+## Grouped Batch Benchmark Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns grouped batch benchmark
+registration with concrete solver support:
+
+- `BM_LcpGroupedBatchSerial` and `BM_LcpGroupedBatchParallel` now build the
+  exact generated grouped batches for the published two- and three-variant rows
+  and register only rows whose concrete problem list is accepted by the solver's
+  `supportsProblem(problem)` predicate.
+- The benchmark remains scoped to Jacobi and PGS to preserve the existing
+  CPU/CUDA-comparable surface, but the published row set is no longer gated by
+  only the manifest-level problem family.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpGroupedBatch(Serial|Parallel)/(Standard|Boxed|FrictionIndex)/(Jacobi|Pgs)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpGroupedBatchSerial/Standard/Jacobi/2|BM_LcpGroupedBatchParallel/FrictionIndex/Pgs/2' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check rebuilt `BM_LCP_COMPARE` and listed 24 grouped
+  serial/parallel rows: Jacobi and PGS for standard, boxed, and friction-index
+  families, with two- and three-variant grouped rows for each.
+- The short benchmark execution reported `contract_ok=1` for
+  `BM_LcpGroupedBatchSerial/Standard/Jacobi/2` and
+  `BM_LcpGroupedBatchParallel/FrictionIndex/Pgs/2`.
+- `pixi run lint`: passed.
 
 ## 2026-06-11 Final No-Verification Hand-Off Snapshot
 
@@ -178,10 +212,6 @@ Important hand-off constraints:
 
 Likely next bounded continuations:
 
-- Inspect the remaining grouped batch benchmark registrations in
-  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` and route them through
-  concrete generated batch support if they still publish native rows using only
-  manifest-level family checks.
 - Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp` before changing it:
   some manifest-level checks there may intentionally test solver manifest
   categories rather than concrete native routing.

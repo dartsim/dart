@@ -1452,6 +1452,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     generated problem support, so solver rows and problem sizes stay tied to
     each solver's native `supportsProblem(problem)` route instead of only the
     manifest-level problem family.
+  - Filtered grouped serial/parallel `BM_LcpGroupedBatch` registrations through
+    concrete generated grouped-batch support, keeping the Jacobi and PGS rows
+    tied to exact generated problem batches instead of manifest-level family
+    checks.
   - Filtered separated world-contact, world stack-contact, and contact-solver
     comparison benchmark registrations through concrete contact packets, keeping
     representative DART 7 contact rows aligned with solver native support while
