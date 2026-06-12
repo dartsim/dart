@@ -87,6 +87,7 @@
 #include <map>
 #include <new>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -3117,6 +3118,61 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     EXPECT_EQ(heapCounter.allocationCount(), 0u)
         << "joint replay restore should not allocate dynamic payloads from "
            "the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
+  sx::World liveJointStorageWorld;
+  auto liveJointRobot = liveJointStorageWorld.addMultibody("j");
+  auto liveJointBase = liveJointRobot.addLink("b");
+  sx::JointSpec liveJointSpec;
+  liveJointSpec.name = "f";
+  liveJointSpec.type = sx::JointType::Floating;
+  std::optional<sx::Link> liveJointLink;
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    liveJointLink.emplace(
+        liveJointRobot.addLink("l", liveJointBase, liveJointSpec));
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "live 6-DOF joint component creation should not allocate dynamic "
+           "vector payloads from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  auto liveJoint = liveJointLink->getParentJoint();
+  auto& liveJointRegistry = sx::detail::registryOf(liveJointStorageWorld);
+  const entt::entity liveJointEntity
+      = sx::detail::toRegistryEntity(liveJoint.getEntity());
+  auto& liveJointComponent
+      = liveJointRegistry.get<sx::comps::Joint>(liveJointEntity);
+  const Eigen::VectorXd livePosition = Eigen::VectorXd::LinSpaced(6, 0.1, 0.6);
+  const Eigen::VectorXd liveVelocity = Eigen::VectorXd::LinSpaced(6, 0.7, 1.2);
+  const Eigen::VectorXd liveAcceleration
+      = Eigen::VectorXd::LinSpaced(6, 1.3, 1.8);
+  const Eigen::VectorXd liveTorque = Eigen::VectorXd::LinSpaced(6, 1.9, 2.4);
+  const Eigen::VectorXd liveLower = Eigen::VectorXd::Constant(6, -10.0);
+  const Eigen::VectorXd liveUpper = Eigen::VectorXd::Constant(6, 10.0);
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    liveJointComponent.position = livePosition;
+    liveJointComponent.velocity = liveVelocity;
+    liveJointComponent.acceleration = liveAcceleration;
+    liveJointComponent.torque = liveTorque;
+    liveJointComponent.springStiffness = liveUpper;
+    liveJointComponent.dampingCoefficient = liveUpper;
+    liveJointComponent.restPosition = livePosition;
+    liveJointComponent.armature = liveUpper;
+    liveJointComponent.coulombFriction = liveUpper;
+    liveJointComponent.commandVelocity = liveVelocity;
+    liveJointComponent.limits.lower = liveLower;
+    liveJointComponent.limits.upper = liveUpper;
+    liveJointComponent.limits.velocityLower = liveLower;
+    liveJointComponent.limits.velocityUpper = liveUpper;
+    liveJointComponent.limits.effortLower = liveLower;
+    liveJointComponent.limits.effortUpper = liveUpper;
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "live 6-DOF joint component payload storage should be bounded and "
+           "not allocate dynamic vector payloads from the global heap";
     EXPECT_EQ(heapCounter.allocationBytes(), 0u);
   }
 
@@ -20348,7 +20404,7 @@ TEST(World, ReplayRecordingRejectsJointRuntimeVectorSizeChanges)
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(joint.getEntity());
   auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
-  jointComponent.position = Eigen::VectorXd::Zero(1);
+  jointComponent.position = sx::comps::makeJointVector(1, 0.0);
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
 }

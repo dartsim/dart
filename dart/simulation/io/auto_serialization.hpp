@@ -84,6 +84,28 @@ struct IsVector3iListHelper<std::vector<Eigen::Vector3i, Allocator>>
 template <typename T>
 inline constexpr bool IsVector3iList = IsVector3iListHelper<T>::value;
 
+template <typename T, typename = void>
+struct IsDynamicDoubleColumnVectorHelper : std::false_type
+{
+};
+
+template <typename T>
+struct IsDynamicDoubleColumnVectorHelper<
+    T,
+    std::void_t<
+        typename T::Scalar,
+        decltype(T::RowsAtCompileTime),
+        decltype(T::ColsAtCompileTime)>>
+  : std::bool_constant<
+        std::is_same_v<typename T::Scalar, double>
+        && T::RowsAtCompileTime == Eigen::Dynamic && T::ColsAtCompileTime == 1>
+{
+};
+
+template <typename T>
+inline constexpr bool IsDynamicDoubleColumnVector
+    = IsDynamicDoubleColumnVectorHelper<T>::value;
+
 template <typename T>
 struct IsIsometry3dListHelper : std::false_type
 {
@@ -330,7 +352,7 @@ void autoSerialize(
       writePOD(out, field.x());
       writePOD(out, field.y());
       writePOD(out, field.z());
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       writeVectorXd(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       // Write 3x3 matrix (symmetric, so store 6 unique values)
@@ -376,7 +398,7 @@ void autoDeserialize(std::istream& in, T& component)
       readPOD(in, y);
       readPOD(in, z);
       field = Eigen::Quaterniond(w, x, y, z);
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       readVectorXd(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       // Read 3x3 symmetric matrix
@@ -443,7 +465,7 @@ void autoSerialize(
       detail::writeTrivialList(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Isometry3d>) {
       writeIsometry3d(out, field);
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       writeVectorXd(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
@@ -517,7 +539,7 @@ void autoDeserialize(std::istream& in, T& component)
       readPOD(in, y);
       readPOD(in, z);
       field = Eigen::Quaterniond(w, x, y, z);
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       readVectorXd(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Matrix3d>) {
       for (int i = 0; i < 3; ++i) {
@@ -561,7 +583,7 @@ void autoSerialize(
 
     if constexpr (std::same_as<FieldType, std::string>) {
       writeString(out, field);
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       writeVectorXd(out, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       writeVector3d(out, field);
@@ -599,7 +621,7 @@ void autoDeserialize(std::istream& in, T& value)
 
     if constexpr (std::same_as<FieldType, std::string>) {
       readString(in, field);
-    } else if constexpr (std::same_as<FieldType, Eigen::VectorXd>) {
+    } else if constexpr (detail::IsDynamicDoubleColumnVector<FieldType>) {
       readVectorXd(in, field);
     } else if constexpr (std::same_as<FieldType, Eigen::Vector3d>) {
       readVector3d(in, field);

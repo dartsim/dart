@@ -34,6 +34,8 @@
 
 #include <dart/simulation/comps/component_category.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <entt/entt.hpp>
 
 #include <vector>
@@ -58,8 +60,11 @@ struct MultibodyStructure
 {
   DART_SIMULATION_STATE_COMPONENT(MultibodyStructure);
 
-  std::vector<entt::entity> links;
-  std::vector<entt::entity> joints;
+  using EntityVector
+      = std::vector<entt::entity, dart::common::StlAllocator<entt::entity>>;
+
+  EntityVector links;
+  EntityVector joints;
 
   /// Declare which fields need entity remapping during serialization
   static constexpr auto entityFields()

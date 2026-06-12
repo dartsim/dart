@@ -35,6 +35,8 @@
 #include <dart/simulation/comps/component_category.hpp>
 #include <dart/simulation/comps/dynamics.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -51,6 +53,9 @@ struct Link
 {
   DART_SIMULATION_STATE_COMPONENT(Link);
 
+  using EntityVector
+      = std::vector<entt::entity, dart::common::StlAllocator<entt::entity>>;
+
   std::string name;
 
   MassProperties mass;
@@ -62,7 +67,7 @@ struct Link
   Eigen::Isometry3d transformFromParentJoint = Eigen::Isometry3d::Identity();
 
   entt::entity parentJoint = entt::null;
-  std::vector<entt::entity> childJoints;
+  EntityVector childJoints;
 
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 

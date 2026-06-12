@@ -216,35 +216,38 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
 
   const auto dof = static_cast<Eigen::Index>(joint.getDOF());
   joint.actuatorType = comps::ActuatorType::Force;
-  joint.springStiffness = Eigen::VectorXd::Zero(dof);
-  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
-  joint.restPosition = Eigen::VectorXd::Zero(dof);
-  joint.armature = Eigen::VectorXd::Zero(dof);
-  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
-  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+  joint.springStiffness = comps::makeJointVector(dof, 0.0);
+  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  joint.restPosition = comps::makeJointVector(dof, 0.0);
+  joint.armature = comps::makeJointVector(dof, 0.0);
+  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
+  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
   joint.breakForce = 0.0;
   joint.broken = false;
   resetJointAvbdStiffnessState(joint);
 
   const double infinity = std::numeric_limits<double>::infinity();
   if (joint.limits.lower.size() != dof) {
-    joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+    joint.limits.lower = comps::makeJointVector(dof, -infinity);
   }
   if (joint.limits.upper.size() != dof) {
-    joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+    joint.limits.upper = comps::makeJointVector(dof, infinity);
   }
-  joint.limits.velocityLower = legacyVelocityLimit.size() == dof
-                                   ? symmetricLowerBound(legacyVelocityLimit)
-                                   : Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.velocityUpper = legacyVelocityLimit.size() == dof
-                                   ? symmetricUpperBound(legacyVelocityLimit)
-                                   : Eigen::VectorXd::Constant(dof, infinity);
-  joint.limits.effortLower = legacyEffortLimit.size() == dof
-                                 ? symmetricLowerBound(legacyEffortLimit)
-                                 : Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.effortUpper = legacyEffortLimit.size() == dof
-                                 ? symmetricUpperBound(legacyEffortLimit)
-                                 : Eigen::VectorXd::Constant(dof, infinity);
+  if (legacyVelocityLimit.size() == dof) {
+    joint.limits.velocityLower = symmetricLowerBound(legacyVelocityLimit);
+    joint.limits.velocityUpper = symmetricUpperBound(legacyVelocityLimit);
+  } else {
+    joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+    joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  }
+
+  if (legacyEffortLimit.size() == dof) {
+    joint.limits.effortLower = symmetricLowerBound(legacyEffortLimit);
+    joint.limits.effortUpper = symmetricUpperBound(legacyEffortLimit);
+  } else {
+    joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
+    joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
+  }
 }
 
 void deserializeJointV2ToV13(

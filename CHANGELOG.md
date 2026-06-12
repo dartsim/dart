@@ -552,6 +552,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added a read-only Memory panel to the standalone `dartsim` editor for
     frame-scratch counters, `MemoryManager` debug counters, and ECS storage
     capacity diagnostics.
+  - Routed experimental `World` live joint payload storage through bounded
+    inline joint vectors for supported 0-6 DOF joints, and routed multibody
+    link/joint adjacency vectors through the World free allocator during normal
+    multibody creation. The persistent-storage allocator gate now covers
+    6-DOF floating-joint creation and live joint payload/limit assignment under
+    the global heap counter.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory

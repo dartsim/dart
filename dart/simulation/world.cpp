@@ -504,8 +504,8 @@ std::size_t countReplayView(const View& view)
   return count;
 }
 
-template <typename ReplayVector>
-void captureReplayVector(const Eigen::VectorXd& source, ReplayVector& target)
+template <typename SourceVector, typename ReplayVector>
+void captureReplayVector(const SourceVector& source, ReplayVector& target)
 {
   target.values.clear();
   target.values.reserve(static_cast<std::size_t>(source.size()));
@@ -514,8 +514,8 @@ void captureReplayVector(const Eigen::VectorXd& source, ReplayVector& target)
   }
 }
 
-template <typename ReplayVector>
-void restoreReplayVector(const ReplayVector& source, Eigen::VectorXd& target)
+template <typename ReplayVector, typename TargetVector>
+void restoreReplayVector(const ReplayVector& source, TargetVector& target)
 {
   DART_SIMULATION_THROW_T_IF(
       target.size() != static_cast<Eigen::Index>(source.values.size()),
@@ -526,8 +526,8 @@ void restoreReplayVector(const ReplayVector& source, Eigen::VectorXd& target)
   }
 }
 
-template <typename ReplayVector>
-bool sameReplayVector(const Eigen::VectorXd& lhs, const ReplayVector& rhs)
+template <typename LhsVector, typename ReplayVector>
+bool sameReplayVector(const LhsVector& lhs, const ReplayVector& rhs)
 {
   if (lhs.size() != static_cast<Eigen::Index>(rhs.values.size())) {
     return false;
@@ -3551,7 +3551,14 @@ Multibody World::addMultibody(std::string_view name)
   auto entity = m_storage->registry.create();
   m_storage->registry.emplace<comps::Name>(entity, candidateName);
   m_storage->registry.emplace<comps::MultibodyTag>(entity);
-  m_storage->registry.emplace<comps::MultibodyStructure>(entity);
+  auto& structure
+      = m_storage->registry.emplace<comps::MultibodyStructure>(entity);
+  structure.links = comps::MultibodyStructure::EntityVector{
+      common::StlAllocator<entt::entity>{
+          getMemoryManager().getFreeAllocator()}};
+  structure.joints = comps::MultibodyStructure::EntityVector{
+      common::StlAllocator<entt::entity>{
+          getMemoryManager().getFreeAllocator()}};
 
   return Multibody(detail::fromRegistryEntity(entity), this);
 }
@@ -3885,24 +3892,24 @@ Joint World::addArticulatedJoint(
   }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
-  joint.position = Eigen::VectorXd::Zero(dof);
-  joint.velocity = Eigen::VectorXd::Zero(dof);
-  joint.acceleration = Eigen::VectorXd::Zero(dof);
-  joint.torque = Eigen::VectorXd::Zero(dof);
-  joint.springStiffness = Eigen::VectorXd::Zero(dof);
-  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
-  joint.restPosition = Eigen::VectorXd::Zero(dof);
-  joint.armature = Eigen::VectorXd::Zero(dof);
-  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
-  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+  joint.position = comps::makeJointVector(dof, 0.0);
+  joint.velocity = comps::makeJointVector(dof, 0.0);
+  joint.acceleration = comps::makeJointVector(dof, 0.0);
+  joint.torque = comps::makeJointVector(dof, 0.0);
+  joint.springStiffness = comps::makeJointVector(dof, 0.0);
+  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  joint.restPosition = comps::makeJointVector(dof, 0.0);
+  joint.armature = comps::makeJointVector(dof, 0.0);
+  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
+  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
-  joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
-  joint.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
-  joint.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.lower = comps::makeJointVector(dof, -infinity);
+  joint.limits.upper = comps::makeJointVector(dof, infinity);
+  joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   if (parentAnchor.has_value()) {
     Eigen::Matrix3d parentRotation = Eigen::Matrix3d::Identity();
@@ -4439,24 +4446,24 @@ Joint World::addRigidBodyJoint(
   }
 
   const Eigen::Index dof = static_cast<Eigen::Index>(joint.getDOF());
-  joint.position = Eigen::VectorXd::Zero(dof);
-  joint.velocity = Eigen::VectorXd::Zero(dof);
-  joint.acceleration = Eigen::VectorXd::Zero(dof);
-  joint.torque = Eigen::VectorXd::Zero(dof);
-  joint.springStiffness = Eigen::VectorXd::Zero(dof);
-  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
-  joint.restPosition = Eigen::VectorXd::Zero(dof);
-  joint.armature = Eigen::VectorXd::Zero(dof);
-  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
-  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+  joint.position = comps::makeJointVector(dof, 0.0);
+  joint.velocity = comps::makeJointVector(dof, 0.0);
+  joint.acceleration = comps::makeJointVector(dof, 0.0);
+  joint.torque = comps::makeJointVector(dof, 0.0);
+  joint.springStiffness = comps::makeJointVector(dof, 0.0);
+  joint.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  joint.restPosition = comps::makeJointVector(dof, 0.0);
+  joint.armature = comps::makeJointVector(dof, 0.0);
+  joint.coulombFriction = comps::makeJointVector(dof, 0.0);
+  joint.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   const double infinity = std::numeric_limits<double>::infinity();
-  joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
-  joint.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
-  joint.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
-  joint.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.lower = comps::makeJointVector(dof, -infinity);
+  joint.limits.upper = comps::makeJointVector(dof, infinity);
+  joint.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  joint.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  joint.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  joint.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   const comps::RigidAvbdContactConfig defaultAvbdConfig;
   joint.hasAvbdStiffnessState = true;

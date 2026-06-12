@@ -104,18 +104,16 @@ bool hasOtherEntityWithName(
   return false;
 }
 
-bool containsEntity(
-    const std::vector<entt::entity>& entities, entt::entity candidate)
+template <typename EntityList>
+bool containsEntity(const EntityList& entities, entt::entity candidate)
 {
   return std::find(entities.begin(), entities.end(), candidate)
          != entities.end();
 }
 
-template <typename Registry>
+template <typename Registry, typename EntityList>
 bool containsName(
-    const Registry& registry,
-    const std::vector<entt::entity>& entities,
-    std::string_view name)
+    const Registry& registry, const EntityList& entities, std::string_view name)
 {
   for (const auto& entity : entities) {
     if (safeGet<comps::Name>(registry, entity).name == name) {
@@ -394,6 +392,9 @@ Link Multibody::addLink(std::string_view name)
       = Eigen::Isometry3d::Identity();
 
   auto& linkComp = registry.emplace<comps::Link>(linkEntity);
+  linkComp.childJoints
+      = comps::Link::EntityVector{dart::common::StlAllocator<entt::entity>{
+          m_world->getMemoryManager().getFreeAllocator()}};
   linkComp.name = std::move(actualName);
   linkComp.parentJoint = entt::null;
 
@@ -486,6 +487,9 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
 
   // Add link component
   auto& linkComp = registry.emplace<comps::Link>(linkEntity);
+  linkComp.childJoints
+      = comps::Link::EntityVector{dart::common::StlAllocator<entt::entity>{
+          m_world->getMemoryManager().getFreeAllocator()}};
   linkComp.name = std::move(actualLinkName);
 
   DART_SIMULATION_THROW_T_IF(
@@ -549,26 +553,26 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.childLink = linkEntity;
 
   // Initialize state based on joint type
-  auto dof = jointComp.getDOF();
-  jointComp.position = Eigen::VectorXd::Zero(dof);
-  jointComp.velocity = Eigen::VectorXd::Zero(dof);
-  jointComp.acceleration = Eigen::VectorXd::Zero(dof);
-  jointComp.torque = Eigen::VectorXd::Zero(dof);
-  jointComp.springStiffness = Eigen::VectorXd::Zero(dof);
-  jointComp.dampingCoefficient = Eigen::VectorXd::Zero(dof);
-  jointComp.restPosition = Eigen::VectorXd::Zero(dof);
-  jointComp.armature = Eigen::VectorXd::Zero(dof);
-  jointComp.coulombFriction = Eigen::VectorXd::Zero(dof);
-  jointComp.commandVelocity = Eigen::VectorXd::Zero(dof);
+  const auto dof = static_cast<Eigen::Index>(jointComp.getDOF());
+  jointComp.position = comps::makeJointVector(dof, 0.0);
+  jointComp.velocity = comps::makeJointVector(dof, 0.0);
+  jointComp.acceleration = comps::makeJointVector(dof, 0.0);
+  jointComp.torque = comps::makeJointVector(dof, 0.0);
+  jointComp.springStiffness = comps::makeJointVector(dof, 0.0);
+  jointComp.dampingCoefficient = comps::makeJointVector(dof, 0.0);
+  jointComp.restPosition = comps::makeJointVector(dof, 0.0);
+  jointComp.armature = comps::makeJointVector(dof, 0.0);
+  jointComp.coulombFriction = comps::makeJointVector(dof, 0.0);
+  jointComp.commandVelocity = comps::makeJointVector(dof, 0.0);
 
   // Position, velocity, and effort limits default to unbounded.
   const double infinity = std::numeric_limits<double>::infinity();
-  jointComp.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
-  jointComp.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
-  jointComp.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
-  jointComp.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
-  jointComp.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
-  jointComp.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
+  jointComp.limits.lower = comps::makeJointVector(dof, -infinity);
+  jointComp.limits.upper = comps::makeJointVector(dof, infinity);
+  jointComp.limits.velocityLower = comps::makeJointVector(dof, -infinity);
+  jointComp.limits.velocityUpper = comps::makeJointVector(dof, infinity);
+  jointComp.limits.effortLower = comps::makeJointVector(dof, -infinity);
+  jointComp.limits.effortUpper = comps::makeJointVector(dof, infinity);
 
   // Link the parent link to this joint
   auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);
