@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import struct
 import sys
+import zlib
 from pathlib import Path
 
 import pytest
@@ -123,6 +125,72 @@ def _write_reference_sweep_jsons(tmp_path: Path) -> list[Path]:
     ]
 
 
+def _png_chunk(kind: bytes, payload: bytes) -> bytes:
+    checksum = zlib.crc32(kind + payload) & 0xFFFFFFFF
+    return (
+        struct.pack(">I", len(payload))
+        + kind
+        + payload
+        + struct.pack(">I", checksum)
+    )
+
+
+def _write_png(path: Path, width: int = 2, height: int = 1) -> None:
+    pixels = b"\xff\x00\x00\x00\xff\x00" * width * height
+    rows = [b"\x00" + pixels[y * width * 3 : (y + 1) * width * 3] for y in range(height)]
+    raw = b"".join(rows)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + _png_chunk(b"IDAT", zlib.compress(raw, 6))
+        + _png_chunk(b"IEND", b"")
+    )
+
+
+def _write_capture_manifest(
+    tmp_path: Path,
+    max_friction: float,
+    *,
+    wrong_scene: bool = False,
+) -> Path:
+    arg = int(round(max_friction * 10.0))
+    capture_dir = tmp_path / f"capture-{arg}"
+    frames = capture_dir / "png_frames"
+    screenshot = capture_dir / "avbd_demo2d_dynamic_friction.png"
+    _write_png(screenshot)
+    _write_png(frames / "frame_000001.png")
+    _write_png(frames / "frame_000002.png")
+    manifest = {
+        "artifacts": {
+            "events": None,
+            "frames": str(frames),
+            "screenshot": str(screenshot),
+        },
+        "force_drag": None,
+        "metadata": {"max_friction": f"{max_friction:g}"},
+        "scene": "wrong" if wrong_scene else "avbd_demo2d_dynamic_friction",
+        "scene_environment": {
+            "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION": f"{max_friction:g}"
+        },
+        "schema_version": 1,
+        "show_ui": False,
+        "switch_frame": None,
+        "switch_scene": None,
+        "ui_ready": {"dropped_warmup_frames": 0, "required": False},
+    }
+    path = capture_dir / "manifest.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    return path
+
+
+def _write_capture_manifests(tmp_path: Path) -> list[Path]:
+    return [
+        _write_capture_manifest(tmp_path, max_friction)
+        for max_friction in (0.0, 0.5, 1.0, 2.5, 5.0)
+    ]
+
+
 def test_avbd_friction_coefficient_sweep_packet_records_rows(
     tmp_path: Path,
 ) -> None:
@@ -164,6 +232,37 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
         row["max_friction"] for row in packet["benchmark"]["plot_data"]
     ] == [0.0, 0.5, 1.0, 2.5, 5.0]
     assert "rendered friction-sweep plot" in packet["remaining_gates"]
+
+
+def test_avbd_friction_coefficient_sweep_packet_records_visual_sweep(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(PACKET_SCRIPT, "write_avbd_friction_sweep_packet_visual")
+    benchmark_json = _write_benchmark_json(tmp_path)
+    output = tmp_path / "packet.json"
+    args = [
+        "--benchmark-json",
+        str(benchmark_json),
+        "--output",
+        str(output),
+    ]
+    for manifest in _write_capture_manifests(tmp_path):
+        args.extend(["--capture-manifest", str(manifest)])
+
+    assert module.main(args) == 0
+
+    packet = json.loads(output.read_text(encoding="utf-8"))
+    assert [row["max_friction"] for row in packet["visual_sweep"]["captures"]] == [
+        0.0,
+        0.5,
+        1.0,
+        2.5,
+        5.0,
+    ]
+    assert packet["visual_sweep"]["captures"][0]["screenshot"]["width"] == 2
+    assert "per-coefficient visual capture or video evidence" not in packet[
+        "remaining_gates"
+    ]
 
 
 def test_avbd_friction_coefficient_sweep_packet_records_reference_sweep(
@@ -256,6 +355,46 @@ def test_avbd_friction_coefficient_sweep_packet_rejects_reference_counts(
         args.extend(["--reference-timing-json", str(reference_json)])
 
     with pytest.raises(SystemExit, match="expected 11 dynamic bodies"):
+        module.main(args)
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_missing_capture_value(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT, "write_avbd_friction_sweep_packet_missing_capture"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    manifests = [
+        _write_capture_manifest(tmp_path, max_friction)
+        for max_friction in (0.0, 0.5, 1.0, 5.0)
+    ]
+    args = ["--benchmark-json", str(benchmark_json)]
+    for manifest in manifests:
+        args.extend(["--capture-manifest", str(manifest)])
+
+    with pytest.raises(
+        SystemExit, match="capture manifests missing max_friction values: 2.5"
+    ):
+        module.main(args)
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_capture_scene(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT, "write_avbd_friction_sweep_packet_wrong_capture"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    manifests = _write_capture_manifests(tmp_path)
+    manifests[2] = _write_capture_manifest(tmp_path, 1.0, wrong_scene=True)
+    args = ["--benchmark-json", str(benchmark_json)]
+    for manifest in manifests:
+        args.extend(["--capture-manifest", str(manifest)])
+
+    with pytest.raises(
+        SystemExit, match="capture scene must be avbd_demo2d_dynamic_friction"
+    ):
         module.main(args)
 
 

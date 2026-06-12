@@ -879,6 +879,34 @@ def test_avbd_demo2d_dynamic_friction_scene_matches_source_row() -> None:
     assert len(sx_world.collide()) >= 11
 
 
+def test_avbd_demo2d_dynamic_friction_scene_max_friction_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import numpy as np
+
+    _require_simulation_experimental_symbols("World")
+
+    from examples.demos.scenes.avbd_demo2d_dynamic_friction import build
+
+    monkeypatch.setenv(
+        "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION",
+        "2.5",
+    )
+    setup = build()
+    boxes = setup.info["boxes"]
+    source = setup.info["source_demo_reference"]
+
+    assert setup.info["max_dynamic_box_friction"] == pytest.approx(2.5)
+    assert source["source_shapes"]["boxes"]["friction_range"] == (2.5, 0.0)
+    assert source["parameters"]["max_dynamic_box_friction"] == pytest.approx(2.5)
+    assert [box.friction for box in boxes] == pytest.approx(
+        [2.5 - float(index) / 10.0 * 2.5 for index in range(11)]
+    )
+    assert np.asarray(boxes[0].linear_velocity, dtype=float).tolist() == pytest.approx(
+        [10.0, 0.0, 0.0]
+    )
+
+
 def test_avbd_demo2d_static_friction_scene_matches_source_row() -> None:
     import numpy as np
 

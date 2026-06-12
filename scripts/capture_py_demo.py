@@ -237,6 +237,29 @@ def _write_json(path: pathlib.Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
+def _assignment_dict(values: list[str], option_name: str) -> dict[str, str]:
+    assignments: dict[str, str] = {}
+    for value in values:
+        key, separator, text = value.partition("=")
+        if not separator or not key:
+            raise SystemExit(f"{option_name} expects KEY=VALUE")
+        assignments[key] = text
+    return assignments
+
+
+def _run_demo_with_env(demo_args: list[str], scene_env: dict[str, str]) -> int:
+    previous: dict[str, str | None] = {key: os.environ.get(key) for key in scene_env}
+    try:
+        os.environ.update(scene_env)
+        return _run_demo(demo_args)
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 def _append_event(
     path: pathlib.Path, start_time: float, event: str, **fields: object
 ) -> None:
@@ -385,6 +408,20 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--output-dir", type=pathlib.Path)
     parser.add_argument(
+        "--env",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Set a process environment variable while building/running the scene.",
+    )
+    parser.add_argument(
+        "--metadata",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Record caller-owned capture metadata in manifest.json.",
+    )
+    parser.add_argument(
         "--switch-scene",
         default="",
         help="Request a demo switch during capture and record switch events.",
@@ -462,6 +499,8 @@ def main(argv: list[str] | None = None) -> int:
 
     output_dir = args.output_dir or _default_output_dir(args.scene)
     output_dir.mkdir(parents=True, exist_ok=True)
+    scene_env = _assignment_dict(args.env, "--env")
+    metadata = _assignment_dict(args.metadata, "--metadata")
     capture_stem = _capture_stem(args)
     screenshot_ppm = output_dir / f"{capture_stem}.ppm"
     screenshot_png = output_dir / f"{capture_stem}.png"
@@ -511,10 +550,12 @@ def main(argv: list[str] | None = None) -> int:
             "screenshot": str(screenshot_png),
         },
         "show_ui": args.show_ui,
+        "metadata": metadata,
+        "scene_environment": scene_env,
         "ui_ready": None,
     }
     _write_json(manifest, manifest_payload)
-    rc = _run_demo(demo_args)
+    rc = _run_demo_with_env(demo_args, scene_env)
     if needs_event_log:
         _append_event(events, start_time, "capture_run_finished", return_code=rc)
     if rc != 0:

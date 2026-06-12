@@ -1,5 +1,110 @@
 # Resume: AVBD Solver
 
+## Current Resume Handoff (2026-06-12)
+
+The user resumed after the previous literal-stop checkpoint by saying
+`continue`. This section is the current handoff snapshot and supersedes the
+stop-only snapshot lower in this file.
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Keep
+claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
+breakable-wall/fracture corpus, same-hardware paper-number match, or
+all-coefficient friction win unless the tracked artifacts directly prove it.
+
+Current checkout snapshot before any push/PR work:
+
+- Branch: `avbd/source-row-extraction-precheck`.
+- Upstream: `origin/avbd/source-row-extraction-precheck`.
+- Pre-slice committed local HEAD: `10935ce8c61 Add AVBD friction sweep source timing`.
+- The visual-capture slice lives in this same local change; if it has since
+  been committed, use the latest local HEAD as the resume point.
+- Current branch had no associated GitHub PR in the latest read-only
+  `gh pr list --head "$(git branch --show-current)"` snapshot.
+- No hosted CI rerun, PR mutation, push, merge, stash operation, or branch
+  cleanup was performed for this resumed checkpoint before this handoff update.
+  External mutations still require explicit maintainer/user approval.
+
+Current local validation for the resumed visual-capture slice:
+
+- `pixi run -- pytest python/tests/unit/test_capture_py_demo.py python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py -q`
+  passed, 22 tests, after lint.
+- `pixi run -- bash -lc 'PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env -q'`
+  passed, 2 tests, after lint.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py`
+  with the existing `/tmp/avbd-friction-coefficient-*` benchmark,
+  native-reference, plot, and five capture-manifest artifacts passed and
+  regenerated the tracked packet.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `git diff --check` passed.
+
+Current local branch inventory:
+
+| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                   |
+| -------------------------------------- | --------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `10935ce8c61`         | Current consolidated continuation branch; ahead of origin by 24 commits before committing this visual-capture slice. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch in earlier work; do not mutate without explicit approval and refresh first.                          |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.                              |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired.                |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                                            |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local main matched the last checked origin/main snapshot; refresh before using it as a base.                         |
+
+Current local stash inventory. Do not apply or drop these by default:
+
+- `stash@{0}` on `avbd/source-row-extraction-precheck`:
+  `codex-pr2977-switch-preserve-extraction-precheck-wip`.
+- `stash@{1}` on `avbd/source-row-extraction-precheck`:
+  `codex-avbd-normalize-fastpath-wip`.
+- `stash@{2}` through `stash@{7}` are older
+  `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
+
+Local-only commits above `origin/avbd/source-row-extraction-precheck`, newest
+first:
+
+- `10935ce8c61 Add AVBD friction sweep source timing`
+- `4608dfeb1bc Add AVBD friction coefficient sweep packet`
+- `8003dac1038 Record AVBD resumed handoff checkpoint`
+- `0952636627d Add AVBD breakable motor scale packet`
+- `95251eec1c3 Add AVBD breakable joint scale packet`
+- `1c2059c4c08 Add AVBD current-pose tiny motor persistence coverage`
+- `8c59eb9f203 Record AVBD final stop handoff`
+- `ba56bd46517 Add AVBD high-ratio sweep stability plot`
+- `87a7825b1dc Add AVBD high-ratio iteration sweep packet`
+- `702e6021676 Record AVBD final handoff state`
+- `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`
+- `3732c21233d Record AVBD current-state gap audit`
+- `30c7e8f6239 Add AVBD direct fixed movable reset coverage`
+- `33247979e31 Add AVBD direct spherical movable reset coverage`
+- `3aa6d5ab3f4 Add AVBD direct prismatic movable reset coverage`
+- `42088402003 Record AVBD critical handoff state`
+- `456b931a57b Broaden AVBD articulated reset axis coverage`
+- `6e1492826c7 Broaden AVBD private motor persistence axis coverage`
+- `68af00b8817 Record AVBD stop handoff snapshot`
+- `533dc490d87 Reuse AVBD rigid motor row scratch`
+- `77404f63496 Avoid contact-manifold row builder heap scratch for small AVBD inputs`
+- `04a369222a7 Record AVBD literal stop handoff`
+- `13604d8b8b5 Reuse AVBD distance spring row scratch`
+- `51eb9b48e08 Record AVBD angular motor validation evidence`
+
+Next preferred local gaps: CPU optimization for the slower friction
+coefficients and GPU parity remain open for the friction coefficient
+comparison. Broader PLAN-104 gaps also remain: source-demo CPU wins for the
+slower rows, broader visual breakable-wall/fracture corpus coverage, rigid
+contact persistence completeness, and source-demo CPU/GPU parity. Do not spend
+more work on source-row overhead cleanup unless a new audit identifies a
+specific blocker.
+
+Fresh-session recovery commands:
+
+```bash
+git switch avbd/source-row-extraction-precheck
+git status --short --branch
+git log --oneline --decorate origin/avbd/source-row-extraction-precheck..HEAD
+git branch -vv
+git stash list
+```
+
 ## Latest Resumed Checkpoint (2026-06-12)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
@@ -8,19 +113,24 @@ paper/source-demo, CPU/GPU, and paper-number claims narrow unless the artifacts
 directly prove them.
 
 Current resumed slice: the paper/source-corpus friction coefficient comparison
-now has same-source reference timing evidence. `BM_AvbdDemo2dFrictionCoefficientSweep`
-reuses the source-shaped `avbd-demo2d` Dynamic Friction scene and sweeps maximum
-dynamic-box Coulomb friction values 0, 0.5, 1, 2.5, and 5 over the 11-box
-setup. `scripts/run_avbd_demo2d_reference_timing.py` now accepts
+now has same-source reference timing and per-coefficient visual-capture
+evidence. `BM_AvbdDemo2dFrictionCoefficientSweep` reuses the source-shaped
+`avbd-demo2d` Dynamic Friction scene and sweeps maximum dynamic-box Coulomb
+friction values 0, 0.5, 1, 2.5, and 5 over the 11-box setup.
+`scripts/run_avbd_demo2d_reference_timing.py` now accepts
 `--dynamic-friction-max-friction` for `--scene dynamic_friction`, so the native
-source runner can time the same coefficient ladder. The tracked
-`avbd-friction-coefficient-sweep-packet.json` validates the real DART
-benchmark rows plus five same-source timing rows, and
+source runner can time the same coefficient ladder. The py-demo scene also
+reads `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION`, and
+`scripts/capture_py_demo.py` can now record caller-supplied env/metadata in
+`manifest.json`, so each coefficient has a traceable visual capture. The
+tracked `avbd-friction-coefficient-sweep-packet.json` validates the real DART
+benchmark rows, five same-source timing rows, and five visual capture
+manifests, and
 `avbd-friction-coefficient-sweep-plot.svg` plots both DART and native CPU step
 time against maximum friction. On this host DART is faster at max friction 0.5
 and 5.0, but slower at 0, 1.0, and 2.5. This closes only the source/reference
-timing-evidence gap for the coefficient sweep; it is not a full-coefficient
-CPU-win, per-coefficient visual capture, GPU parity, or paper-number claim.
+timing-evidence and per-coefficient visual-capture gaps for the coefficient
+sweep; it is not a full-coefficient CPU-win, GPU parity, or paper-number claim.
 
 Validation for this slice:
 
@@ -39,6 +149,14 @@ Validation for this slice:
   passed and wrote the rendered DART/native plot.
 - `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-1.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-2_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-5.json --plot-svg docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg`
   passed and relinked the rendered plot into the tracked packet.
+- `pixi run -- pytest python/tests/unit/test_capture_py_demo.py python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py -q`
+  passed, 22 tests.
+- `pixi run -- bash -lc 'PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env -q'`
+  passed, 2 tests.
+- Five `LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe python scripts/capture_py_demo.py --scene avbd_demo2d_dynamic_friction --frames 24 --width 640 --height 360 --env DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<value> --metadata max_friction=<value> --output-dir /tmp/avbd-friction-coefficient-capture-<value>`
+  captures passed for `<value>` 0, 0.5, 1, 2.5, and 5.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py --benchmark-json /tmp/avbd-friction-coefficient-sweep.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-0_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-1.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-2_5.json --reference-timing-json /tmp/avbd-demo2d-dynamic-friction-reference-sweep-5.json --capture-manifest /tmp/avbd-friction-coefficient-capture-0/manifest.json --capture-manifest /tmp/avbd-friction-coefficient-capture-0_5/manifest.json --capture-manifest /tmp/avbd-friction-coefficient-capture-1/manifest.json --capture-manifest /tmp/avbd-friction-coefficient-capture-2_5/manifest.json --capture-manifest /tmp/avbd-friction-coefficient-capture-5/manifest.json --plot-svg docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg`
+  passed and embedded the visual sweep hashes in the tracked packet.
 - `pixi run -- pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py python/tests/unit/test_benchmark_display_names.py python/tests/unit/test_run_performance_dashboard_benchmarks.py -q`
   passed, 20 tests, after lint.
 - `pixi run lint` passed.
@@ -52,12 +170,11 @@ use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
 mutate PRs, or clean/delete branches without explicit user approval.
 
 Next preferred local gaps: CPU optimization for the slower friction
-coefficients, per-coefficient visual capture, and GPU parity remain open for
-the friction coefficient comparison. Broader PLAN-104 gaps also remain:
-source-demo CPU wins for the slower rows, broader visual
-breakable-wall/fracture corpus coverage, rigid contact persistence
-completeness, and source-demo CPU/GPU parity. Do not count this packet as full
-paper/source-demo completion.
+coefficients and GPU parity remain open for the friction coefficient
+comparison. Broader PLAN-104 gaps also remain: source-demo CPU wins for the
+slower rows, broader visual breakable-wall/fracture corpus coverage, rigid
+contact persistence completeness, and source-demo CPU/GPU parity. Do not count
+this packet as full paper/source-demo completion.
 
 ## Previous Explicit Hand-Off Stop (2026-06-12)
 

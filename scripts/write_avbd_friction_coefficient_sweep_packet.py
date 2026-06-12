@@ -7,6 +7,7 @@ import argparse
 import json
 import math
 import re
+import struct
 import sys
 from hashlib import sha256
 from pathlib import Path
@@ -46,6 +47,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help=(
             "JSON from scripts/run_avbd_demo2d_reference_timing.py. Pass one "
             "file per expected friction value to embed a native source sweep."
+        ),
+    )
+    parser.add_argument(
+        "--capture-manifest",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "manifest.json from scripts/capture_py_demo.py. Pass one "
+            "metadata-tagged manifest per expected friction value."
         ),
     )
     parser.add_argument("--plot-svg", type=Path)
@@ -101,6 +112,37 @@ def _validate_plot(plot_svg: Path) -> dict[str, Any]:
         "width": float(match.group(1)),
         "height": float(match.group(2)),
     }
+
+
+def _png_dimensions(path: Path) -> tuple[int, int]:
+    with path.open("rb") as file:
+        header = file.read(24)
+    if (
+        len(header) != 24
+        or header[:8] != b"\x89PNG\r\n\x1a\n"
+        or header[12:16] != b"IHDR"
+    ):
+        raise AvbdFrictionCoefficientSweepPacketError(f"{path}: expected a PNG image")
+    width, height = struct.unpack(">II", header[16:24])
+    if width < 1 or height < 1:
+        raise AvbdFrictionCoefficientSweepPacketError(f"{path}: invalid PNG dimensions")
+    return width, height
+
+
+def _artifact_path(manifest_dir: Path, value: object, key: str) -> Path:
+    if not isinstance(value, str) or not value:
+        raise AvbdFrictionCoefficientSweepPacketError(f"capture manifest missing {key}")
+    path = Path(value)
+    if not path.is_absolute():
+        path = manifest_dir / path
+    return path
+
+
+def _artifact_label(manifest_dir: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(manifest_dir.resolve()).as_posix()
+    except ValueError:
+        return path.name
 
 
 def _row_name(row: dict[str, Any]) -> str:
@@ -499,9 +541,177 @@ def _validate_reference_sweep(
     }
 
 
+def _manifest_max_friction(manifest: dict[str, Any]) -> float:
+    metadata = manifest.get("metadata")
+    if not isinstance(metadata, dict):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing metadata"
+        )
+    value = metadata.get("max_friction")
+    if not isinstance(value, str):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest metadata missing max_friction"
+        )
+    try:
+        max_friction = float(value)
+    except ValueError as exc:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest max_friction must be numeric"
+        ) from exc
+    if not math.isfinite(max_friction):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest max_friction must be finite"
+        )
+    return max_friction
+
+
+def _validate_capture_manifest(
+    manifest_path: Path,
+    expected_max_friction: float,
+) -> dict[str, Any]:
+    manifest = _load_json(manifest_path)
+    if manifest.get("schema_version") != 1:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest schema_version must be 1"
+        )
+    if manifest.get("scene") != SCENE_ID:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"capture scene must be {SCENE_ID}"
+        )
+    if manifest.get("switch_scene") is not None:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "friction sweep capture must not switch scenes"
+        )
+    if manifest.get("force_drag") is not None:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "friction sweep capture must not force-drag"
+        )
+    max_friction = _manifest_max_friction(manifest)
+    if not math.isclose(
+        max_friction,
+        expected_max_friction,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest max_friction does not match expected value"
+        )
+
+    scene_env = manifest.get("scene_environment")
+    if not isinstance(scene_env, dict):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing scene_environment"
+        )
+    env_value = scene_env.get("DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION")
+    if env_value != f"{expected_max_friction:g}":
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing matching Dynamic Friction scene env"
+        )
+
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, dict):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing artifacts"
+        )
+    manifest_dir = manifest_path.parent
+    screenshot = _artifact_path(manifest_dir, artifacts.get("screenshot"), "screenshot")
+    frames_dir = _artifact_path(manifest_dir, artifacts.get("frames"), "frames")
+    if not screenshot.is_file():
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"{screenshot}: screenshot not found"
+        )
+    if not frames_dir.is_dir():
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"{frames_dir}: frame directory not found"
+        )
+    frame_paths = sorted(frames_dir.glob("frame_*.png"))
+    if not frame_paths:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"{frames_dir}: no PNG frames found"
+        )
+    width, height = _png_dimensions(screenshot)
+    if _png_dimensions(frame_paths[0]) != (width, height):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "first frame dimensions do not match screenshot"
+        )
+    if _png_dimensions(frame_paths[-1]) != (width, height):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "last frame dimensions do not match screenshot"
+        )
+    ui_ready = manifest.get("ui_ready")
+    if not isinstance(ui_ready, dict):
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing ui_ready"
+        )
+
+    return {
+        "manifest_sha256": _sha256(manifest_path),
+        "max_friction": expected_max_friction,
+        "scene": SCENE_ID,
+        "show_ui": bool(manifest.get("show_ui")),
+        "ui_ready": ui_ready,
+        "screenshot": {
+            "file": _artifact_label(manifest_dir, screenshot),
+            "sha256": _sha256(screenshot),
+            "width": width,
+            "height": height,
+        },
+        "frames": {
+            "directory": _artifact_label(manifest_dir, frames_dir),
+            "count": len(frame_paths),
+            "first_frame": {
+                "file": _artifact_label(manifest_dir, frame_paths[0]),
+                "sha256": _sha256(frame_paths[0]),
+            },
+            "last_frame": {
+                "file": _artifact_label(manifest_dir, frame_paths[-1]),
+                "sha256": _sha256(frame_paths[-1]),
+            },
+        },
+    }
+
+
+def _validate_visual_sweep(capture_manifests: list[Path]) -> dict[str, Any] | None:
+    if not capture_manifests:
+        return None
+
+    expected_by_key = _expected_friction_by_key()
+    captures_by_key: dict[int, dict[str, Any]] = {}
+    for manifest_path in capture_manifests:
+        manifest = _load_json(manifest_path)
+        max_friction = _manifest_max_friction(manifest)
+        friction_key = _friction_key(max_friction)
+        if friction_key not in expected_by_key:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"capture manifest unexpected max_friction={max_friction:g}"
+            )
+        if friction_key in captures_by_key:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"capture manifest duplicate max_friction={max_friction:g}"
+            )
+        captures_by_key[friction_key] = _validate_capture_manifest(
+            manifest_path,
+            expected_by_key[friction_key],
+        )
+
+    missing = [
+        expected_by_key[key] for key in expected_by_key if key not in captures_by_key
+    ]
+    if missing:
+        missing_text = ", ".join(f"{value:g}" for value in missing)
+        raise AvbdFrictionCoefficientSweepPacketError(
+            f"capture manifests missing max_friction values: {missing_text}"
+        )
+    return {
+        "scene": SCENE_ID,
+        "captures": [captures_by_key[key] for key in sorted(captures_by_key)],
+    }
+
+
 def make_packet(
     benchmark_json: Path,
     reference_timing_jsons: list[Path] | None = None,
+    capture_manifests: list[Path] | None = None,
     plot_svg: Path | None = None,
 ) -> dict[str, Any]:
     benchmark = _validate_benchmark(benchmark_json)
@@ -509,6 +719,7 @@ def make_packet(
         reference_timing_jsons or [],
         benchmark,
     )
+    visual_sweep = _validate_visual_sweep(capture_manifests or [])
     packet = {
         "schema_version": 1,
         "packet": "avbd_friction_coefficient_sweep",
@@ -535,8 +746,9 @@ def make_packet(
             "scene": SCENE_ID,
             "existing_packet": "avbd-demo2d-dynamic-friction-packet.json",
             "note": (
-                "This sweep reuses the source-shaped Dynamic Friction visual "
-                "scene; the new artifact is benchmark/plot evidence only."
+                "This sweep reuses the source-shaped Dynamic Friction visual scene. "
+                "When visual_sweep is present, each coefficient has its own capture "
+                "manifest hash."
             ),
         },
         "benchmark": benchmark,
@@ -553,14 +765,23 @@ def make_packet(
                 "--dynamic-friction-max-friction <max-friction> "
                 "--output <reference-timing-json>"
             ),
+            "visual_capture_command": (
+                "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> "
+                "python scripts/capture_py_demo.py "
+                "--scene avbd_demo2d_dynamic_friction "
+                "--metadata max_friction=<max-friction> "
+                "--env DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> "
+                "--frames 24 --width 640 --height 360 --output-dir <capture-dir>"
+            ),
         },
     }
     if reference_sweep is not None:
         packet["reference_sweep"] = reference_sweep
+    if visual_sweep is not None:
+        packet["visual_sweep"] = visual_sweep
     if plot_svg is not None:
         packet["rendered_plot"] = _validate_plot(plot_svg)
     remaining_gates = [
-        "per-coefficient visual capture or video evidence",
         "same-hardware paper/site friction comparison",
         "GPU AVBD row parity and benchmark packets",
     ]
@@ -571,6 +792,8 @@ def make_packet(
             0,
             "DART CPU performance must beat the native source sweep before a CPU win is claimed for every friction coefficient",
         )
+    if visual_sweep is None:
+        remaining_gates.insert(0, "per-coefficient visual capture or video evidence")
     if plot_svg is None:
         remaining_gates.insert(0, "rendered friction-sweep plot")
     packet["remaining_gates"] = remaining_gates
@@ -588,6 +811,7 @@ def main(argv: list[str]) -> int:
         packet = make_packet(
             args.benchmark_json,
             args.reference_timing_json,
+            args.capture_manifest,
             args.plot_svg,
         )
     except AvbdFrictionCoefficientSweepPacketError as exc:

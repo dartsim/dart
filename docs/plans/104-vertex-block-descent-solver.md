@@ -410,13 +410,14 @@ same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
 and 5. The tracked
 [`avbd-friction-coefficient-sweep-packet.json`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
 validates the sweep rows, embeds same-source native timing for each coefficient,
-and records that DART is faster for max friction 0.5 and 5.0 but still slower
-for 0, 1.0, and 2.5 on this host. The rendered
+embeds per-coefficient visual capture hashes, and records that DART is faster
+for max friction 0.5 and 5.0 but still slower for 0, 1.0, and 2.5 on this host.
+The rendered
 [`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
 plots DART and native source CPU step time versus maximum friction. This closes
-only the source/reference timing-evidence gap for this friction-coefficient
-comparison; it is not a full CPU-win, per-coefficient visual capture, GPU, or
-paper-number claim.
+only the source/reference timing-evidence and per-coefficient visual-capture
+gaps for this friction-coefficient comparison; it is not a full CPU-win, GPU,
+or paper-number claim.
 The `avbd_demo2d_static_friction` py-demo now ports the `avbd-demo2d` Static
 Friction source row with source revision/scene metadata, one rotated static
 ground slab, 11 rotated dynamic boxes, uniform source friction 1.0, focused

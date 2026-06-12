@@ -1155,7 +1155,6 @@
   },
   "remaining_gates": [
     "DART CPU performance must beat the native source sweep before a CPU win is claimed for every friction coefficient",
-    "per-coefficient visual capture or video evidence",
     "same-hardware paper/site friction comparison",
     "GPU AVBD row parity and benchmark packets"
   ],
@@ -1167,7 +1166,8 @@
   },
   "reproduction": {
     "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
-    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene dynamic_friction --dynamic-friction-max-friction <max-friction> --output <reference-timing-json>"
+    "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene dynamic_friction --dynamic-friction-max-friction <max-friction> --output <reference-timing-json>",
+    "visual_capture_command": "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> python scripts/capture_py_demo.py --scene avbd_demo2d_dynamic_friction --metadata max_friction=<max-friction> --env DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> --frames 24 --width 640 --height 360 --output-dir <capture-dir>"
   },
   "scene": "avbd_demo2d_dynamic_friction",
   "scene_invariants": {
@@ -1198,7 +1198,152 @@
   },
   "visual_anchor": {
     "existing_packet": "avbd-demo2d-dynamic-friction-packet.json",
-    "note": "This sweep reuses the source-shaped Dynamic Friction visual scene; the new artifact is benchmark/plot evidence only.",
+    "note": "This sweep reuses the source-shaped Dynamic Friction visual scene. When visual_sweep is present, each coefficient has its own capture manifest hash.",
+    "scene": "avbd_demo2d_dynamic_friction"
+  },
+  "visual_sweep": {
+    "captures": [
+      {
+        "frames": {
+          "count": 24,
+          "directory": "png_frames",
+          "first_frame": {
+            "file": "png_frames/frame_000001.png",
+            "sha256": "a161872760e3712716225b7d86e5de082f670bf44848ac8b441c138da25d1a2a"
+          },
+          "last_frame": {
+            "file": "png_frames/frame_000024.png",
+            "sha256": "93285fe59099e43c32fd2bf5f1e337e59602e9c9869b7a8e7485e0467e12047a"
+          }
+        },
+        "manifest_sha256": "03ace2ce92574bc0182795d5240b79628d2d0b3e9b3342446cfe2645a6062767",
+        "max_friction": 0.0,
+        "scene": "avbd_demo2d_dynamic_friction",
+        "screenshot": {
+          "file": "avbd_demo2d_dynamic_friction.png",
+          "height": 360,
+          "sha256": "93285fe59099e43c32fd2bf5f1e337e59602e9c9869b7a8e7485e0467e12047a",
+          "width": 640
+        },
+        "show_ui": false,
+        "ui_ready": {
+          "dropped_warmup_frames": 0,
+          "required": false
+        }
+      },
+      {
+        "frames": {
+          "count": 24,
+          "directory": "png_frames",
+          "first_frame": {
+            "file": "png_frames/frame_000001.png",
+            "sha256": "e8bb6ca952b02b0ffc936e91f4fa515dd646d41492655d46b9099ee2c18d6cd8"
+          },
+          "last_frame": {
+            "file": "png_frames/frame_000024.png",
+            "sha256": "fe49c7bece2e67eb66c5d0f0bc025c3641065ab15e11a3e6a7f3574f18369a70"
+          }
+        },
+        "manifest_sha256": "855a6c51bcf62ec086cb92ec88839d032aae2ed5b42ee11bd5975232fa7f3f29",
+        "max_friction": 0.5,
+        "scene": "avbd_demo2d_dynamic_friction",
+        "screenshot": {
+          "file": "avbd_demo2d_dynamic_friction.png",
+          "height": 360,
+          "sha256": "fe49c7bece2e67eb66c5d0f0bc025c3641065ab15e11a3e6a7f3574f18369a70",
+          "width": 640
+        },
+        "show_ui": false,
+        "ui_ready": {
+          "dropped_warmup_frames": 0,
+          "required": false
+        }
+      },
+      {
+        "frames": {
+          "count": 24,
+          "directory": "png_frames",
+          "first_frame": {
+            "file": "png_frames/frame_000001.png",
+            "sha256": "c1fbbe82eb0360f67f31dd48e77a0c97d60e934649dfab918e477f3a882f1e03"
+          },
+          "last_frame": {
+            "file": "png_frames/frame_000024.png",
+            "sha256": "4fe6bd188b44c5ed844d77d4d5e70cc4cc987ed3b1e547dfb53cf360371ecbe0"
+          }
+        },
+        "manifest_sha256": "4340a47ce806e1c9b8a44b74b31df841010db10dc838bf3707b6ebed2d58f940",
+        "max_friction": 1.0,
+        "scene": "avbd_demo2d_dynamic_friction",
+        "screenshot": {
+          "file": "avbd_demo2d_dynamic_friction.png",
+          "height": 360,
+          "sha256": "4fe6bd188b44c5ed844d77d4d5e70cc4cc987ed3b1e547dfb53cf360371ecbe0",
+          "width": 640
+        },
+        "show_ui": false,
+        "ui_ready": {
+          "dropped_warmup_frames": 0,
+          "required": false
+        }
+      },
+      {
+        "frames": {
+          "count": 24,
+          "directory": "png_frames",
+          "first_frame": {
+            "file": "png_frames/frame_000001.png",
+            "sha256": "03d156080d0162980ace01d22d8e832bea7f971fc1c43e766534d4f0fc546b20"
+          },
+          "last_frame": {
+            "file": "png_frames/frame_000024.png",
+            "sha256": "6dc8ce04607ce8705399a8c585fce279b80acc5affe21ca1cd00865a5a595e96"
+          }
+        },
+        "manifest_sha256": "f64d19c0c8f7216f42f413c255f8da85c017feddebadc223385ee5af3035fcfe",
+        "max_friction": 2.5,
+        "scene": "avbd_demo2d_dynamic_friction",
+        "screenshot": {
+          "file": "avbd_demo2d_dynamic_friction.png",
+          "height": 360,
+          "sha256": "6dc8ce04607ce8705399a8c585fce279b80acc5affe21ca1cd00865a5a595e96",
+          "width": 640
+        },
+        "show_ui": false,
+        "ui_ready": {
+          "dropped_warmup_frames": 0,
+          "required": false
+        }
+      },
+      {
+        "frames": {
+          "count": 24,
+          "directory": "png_frames",
+          "first_frame": {
+            "file": "png_frames/frame_000001.png",
+            "sha256": "f2bd59a5e229d7181826395723404569267f5852534ce77dd6bc9da331f16c6b"
+          },
+          "last_frame": {
+            "file": "png_frames/frame_000024.png",
+            "sha256": "ab47e24cf6aa929ee067a2228a318ff0ef0f4410f4537673abf1b30347c90fc8"
+          }
+        },
+        "manifest_sha256": "f93454bdea37e0dac3b59f68a2e7a3ee162a2726f8f21c1b73d1e03450cce026",
+        "max_friction": 5.0,
+        "scene": "avbd_demo2d_dynamic_friction",
+        "screenshot": {
+          "file": "avbd_demo2d_dynamic_friction.png",
+          "height": 360,
+          "sha256": "ab47e24cf6aa929ee067a2228a318ff0ef0f4410f4537673abf1b30347c90fc8",
+          "width": 640
+        },
+        "show_ui": false,
+        "ui_ready": {
+          "dropped_warmup_frames": 0,
+          "required": false
+        }
+      }
+    ],
     "scene": "avbd_demo2d_dynamic_friction"
   }
 }
