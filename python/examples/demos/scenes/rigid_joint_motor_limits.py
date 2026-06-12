@@ -11,7 +11,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -78,6 +78,7 @@ class _RigidJointMotorLimitVerifier:
         self._limited_acceleration_history: deque[float] = deque(maxlen=_HISTORY)
         self._open_acceleration_history: deque[float] = deque(maxlen=_HISTORY)
         self._force_position_gap_history: deque[float] = deque(maxlen=_HISTORY)
+        self._step_ms_history: deque[float] = deque(maxlen=_HISTORY)
         self._last_metrics: dict[str, float | str] = {}
         self.reset(clear_replay=True)
 
@@ -252,11 +253,21 @@ class _RigidJointMotorLimitVerifier:
             self._limited_acceleration_history,
             self._open_acceleration_history,
             self._force_position_gap_history,
+            self._step_ms_history,
         ):
             history.clear()
         self._last_metrics.clear()
         self._record_metrics()
         self._sync()
+
+    def _step_profile_ms(self) -> float:
+        try:
+            profile = self.world.last_step_profile
+            if profile.is_empty():
+                return 0.0
+            return float(profile.wall_time_ms)
+        except Exception:  # noqa: BLE001
+            return 0.0
 
     def _sample(self) -> dict[str, float | str]:
         motor_position = _joint_scalar(self.motor_joint.position)
@@ -290,12 +301,14 @@ class _RigidJointMotorLimitVerifier:
             "limited_force_position": limited_position,
             "open_force_position": open_position,
             "force_position_gap": open_position - limited_position,
+            "force_acceleration_gap": open_acceleration - limited_acceleration,
             "limited_force_acceleration": limited_acceleration,
             "open_force_acceleration": open_acceleration,
             "limited_force_velocity": limited_velocity,
             "open_force_velocity": open_velocity,
             "requested_force": float(self.force_command),
             "effort_limit": float(self.effort_limit),
+            "step_ms": self._step_profile_ms(),
             "world_time": float(self.world.time),
         }
 
@@ -318,6 +331,7 @@ class _RigidJointMotorLimitVerifier:
         self._force_position_gap_history.append(
             float(self._last_metrics["force_position_gap"])
         )
+        self._step_ms_history.append(float(self._last_metrics["step_ms"]))
 
     def _sync(self) -> None:
         self.limit_stop_frame.set_transform(_translation(self._limit_stop_position()))
@@ -328,6 +342,88 @@ class _RigidJointMotorLimitVerifier:
         self.world.step()
         self._record_metrics()
         self._sync()
+
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        metrics = dict(self._last_metrics)
+        acceleration_gaps = [
+            open_accel - limited_accel
+            for limited_accel, open_accel in zip(
+                self._limited_acceleration_history,
+                self._open_acceleration_history,
+                strict=False,
+            )
+        ]
+
+        def metric_value(key: str) -> float:
+            return float(metrics[key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        return {
+            "row": "rigid_joint_motor_limits",
+            "solver": "world_multibody_joint_actuators",
+            "constraint": "velocity_motor_position_limit_effort_cap",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": metric_value("world_time"),
+            "controls": {
+                "command_speed": float(self.command_speed),
+                "velocity_limit": float(self.velocity_limit),
+                "position_limit": float(self.position_limit),
+                "force_command": float(self.force_command),
+                "effort_limit": float(self.effort_limit),
+            },
+            "joints": {
+                "velocity_motor": self.motor_joint.name,
+                "position_limit": self.limit_joint.name,
+                "limited_force": self.limited_force_joint.name,
+                "open_force": self.open_force_joint.name,
+            },
+            "motor_position": metric_value("motor_position"),
+            "motor_speed": metric_value("motor_speed"),
+            "motor_expected_speed": metric_value("motor_expected_speed"),
+            "motor_speed_error": metric_value("motor_speed_error"),
+            "motor_velocity_limit": metric_value("motor_velocity_limit"),
+            "motor_command_speed": metric_value("motor_command_speed"),
+            "position_limit_angle": metric_value("position_limit_angle"),
+            "position_limit_upper": metric_value("position_limit_upper"),
+            "position_limit_error": metric_value("position_limit_error"),
+            "position_limit_speed": metric_value("position_limit_speed"),
+            "limited_force_position": metric_value("limited_force_position"),
+            "open_force_position": metric_value("open_force_position"),
+            "force_position_gap": metric_value("force_position_gap"),
+            "force_acceleration_gap": metric_value("force_acceleration_gap"),
+            "limited_force_acceleration": metric_value("limited_force_acceleration"),
+            "open_force_acceleration": metric_value("open_force_acceleration"),
+            "limited_force_velocity": metric_value("limited_force_velocity"),
+            "open_force_velocity": metric_value("open_force_velocity"),
+            "requested_force": metric_value("requested_force"),
+            "effort_limit": metric_value("effort_limit"),
+            "step_ms": metric_value("step_ms"),
+            "metrics": metrics,
+            "history": {
+                "samples": float(len(self._motor_speed_history)),
+                "max_motor_speed": max(self._motor_speed_history, default=0.0),
+                "max_motor_position": max(
+                    self._motor_position_history, default=0.0
+                ),
+                "max_abs_limit_error": max_abs(self._limit_error_history),
+                "max_limit_angle": max(self._limit_angle_history, default=0.0),
+                "max_limited_force_acceleration": max(
+                    self._limited_acceleration_history, default=0.0
+                ),
+                "max_open_force_acceleration": max(
+                    self._open_acceleration_history, default=0.0
+                ),
+                "max_force_acceleration_gap": max(acceleration_gaps, default=0.0),
+                "max_force_position_gap": max(
+                    self._force_position_gap_history, default=0.0
+                ),
+                "max_step_ms": max(self._step_ms_history, default=0.0),
+            },
+        }
 
     def capture_replay_state(self) -> dict[str, Any]:
         return {
@@ -345,6 +441,7 @@ class _RigidJointMotorLimitVerifier:
             "limited_acceleration_history": list(self._limited_acceleration_history),
             "open_acceleration_history": list(self._open_acceleration_history),
             "force_position_gap_history": list(self._force_position_gap_history),
+            "step_ms_history": list(self._step_ms_history),
             "last_metrics": dict(self._last_metrics),
         }
 
@@ -383,6 +480,10 @@ class _RigidJointMotorLimitVerifier:
         self._restore_history(
             self._force_position_gap_history,
             state.get("force_position_gap_history", []),
+        )
+        self._restore_history(
+            self._step_ms_history,
+            state.get("step_ms_history", []),
         )
         self._last_metrics = {
             str(key): float(value) if isinstance(value, (int, float)) else str(value)
@@ -470,6 +571,7 @@ class _RigidJointMotorLimitVerifier:
         )
         builder.text(
             f"force travel gap {float(metrics.get('force_position_gap', 0.0)):.3f} m | "
+            f"step {float(metrics.get('step_ms', 0.0)):.3f} ms | "
             f"time {float(metrics.get('world_time', 0.0)):.3f} s"
         )
         builder.plot_lines("Motor speed", list(self._motor_speed_history))
@@ -502,6 +604,7 @@ def build() -> SceneSetup:
             "limited_force_joint": verifier.limited_force_joint,
             "open_force_joint": verifier.open_force_joint,
             "rigid_joint_motor_limit_controller": verifier,
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,

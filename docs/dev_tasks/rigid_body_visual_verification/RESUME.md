@@ -2,21 +2,20 @@
 
 ## Current Handoff Snapshot
 
-Critical handoff state as of 2026-06-11: the user explicitly requested stopping
-implementation work and focusing only on handoff, with no further verification.
-No additional test, capture, lint, build, or diff-check commands should be
-assumed after that instruction.
+Latest continuation resumed from the pushed handoff commit `30d65d4229c` and
+continued the interrupted row-29 capture-metrics slice for
+`rigid_joint_motor_limits`. The branch had no associated GitHub PR, and the
+only dirty implementation/test files were
+`python/examples/demos/scenes/rigid_joint_motor_limits.py` and
+`python/tests/integration/test_demos_cycle.py`.
 
-Expected branch/worktree state after the handoff-docs push:
+Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch content should include the verified kinematic-driver checkpoint
-  and this docs/dev-task handoff update.
-- The same workspace may still have uncommitted implementation/test edits in
-  `python/examples/demos/scenes/rigid_joint_motor_limits.py` and
-  `python/tests/integration/test_demos_cycle.py`. Those edits are intentionally
-  called out here as interrupted current work; do not assume a fresh clone from
-  the pushed branch contains them unless they were explicitly committed later.
+- Pushed branch head remains `30d65d4229c` unless a maintainer/user explicitly
+  approves another push.
+- The completed local checkpoint should include row-29 motor-limit capture
+  metrics, tests, docs, and refreshed handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations still require explicit maintainer/user approval.
 
@@ -30,9 +29,10 @@ Recent checkpoints:
 - `dfef5306aac` (`Expose rigid stack stability capture metrics`)
 - `b68f216ebe9` (`Expose rigid contact manipulation capture metrics`)
 - `9947ab1285a` (`Expose rigid kinematic driver capture metrics`)
-- the handoff-docs checkpoint containing this file
+- `30d65d4229c` (`Document rigid visual verification handoff`)
+- the local checkpoint containing this file (`Expose rigid joint motor limit capture metrics`)
 
-Completed local checkpoint: `rigid_kinematic_driver` row capture metrics. The
+Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
 checkpoint touches:
 
 - `python/examples/demos/scenes/rigid_kinematic_driver.py`
@@ -95,9 +95,19 @@ Validation collected for the kinematic-driver slice:
   scene-metrics events; `pixi run lint`, bounded build, and `git diff --check`
   passed.
 
-Interrupted current slice: `rigid_joint_motor_limits` row capture metrics.
-Implementation/test edits were made but handoff was requested before the normal
-docs/validation/commit path could finish. The dirty patch adds:
+Current local slice: `rigid_joint_motor_limits` row capture metrics. The local
+checkpoint touches:
+
+- `python/examples/demos/scenes/rigid_joint_motor_limits.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
 
 - `CAPTURE_METRICS_INFO_KEY` wiring in
   `python/examples/demos/scenes/rigid_joint_motor_limits.py`.
@@ -114,16 +124,15 @@ docs/validation/commit path could finish. The dirty patch adds:
   `python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort`
   that the capture hook mirrors the controller state and exposes history maxima.
 
-Evidence collected for the interrupted motor-limit slice before the critical
-stop instruction:
+Validation collected for the motor-limit slice so far:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
   reported `1 passed` after fixing the assertions to compare latest top-level
   fields against latest metrics and history fields against max histories.
-- `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234018`
+- `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234533`
   wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
   screenshot
-  `/tmp/dart_capture_joint_motor_limits_metrics_1781234018/rigid_joint_motor_limits.png`,
+  `/tmp/dart_capture_joint_motor_limits_metrics_1781234533/rigid_joint_motor_limits.png`,
   and manifest ranges for motor speed/position/error, position-limit angle and
   error, capped/open force acceleration, acceleration gap, force-position gap,
   step timing, time step, and world time.
@@ -134,26 +143,18 @@ stop instruction:
   `4.0`, motor speed `0.3`, motor speed error `0`, latest position-limit angle
   about `0.2633`, latest force-position gap about `0.3942`, latest
   limited/open force acceleration about `2.0/8.0`, acceleration gap about `6.0`,
-  latest step time about `0.1055 ms`, and history sample count `73`.
-
-Not run after the critical stop instruction: broader workflow/doc drift guard,
-`pixi run lint`, bounded `pixi run build`, `git diff --check`, CHANGELOG update,
-README update, PLAN-103 sidecar update, or final commit of the motor-limit
-implementation/test patch.
+  latest step time about `0.0720 ms`, and history sample count `73`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `11 passed`.
+- `pixi run lint` passed.
+- Bounded `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
 
 Immediate next step for a fresh session:
 
-1. Run `git status -sb` and inspect whether the motor-limit implementation/test
-   files are still dirty in this workspace.
-2. If resuming the interrupted slice, review that diff first, then finish the
-   normal docs updates in `CHANGELOG.md`, `python/examples/demos/README.md`,
-   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`, and
-   this dev-task packet.
-3. Re-run validation explicitly before committing the motor-limit code/test
-   patch. The previously intended guard included the motor-limit focused test,
-   the rigid workflow/doc drift tests, `pixi run lint`, bounded
-   `pixi run build`, and `git diff --check`.
-4. After row 29 is finished, the likely next missing capture-metrics row is
+1. Verify `git status -sb` and `git log --oneline --decorate -5`.
+2. Continue the capture-metrics hardening pass. The likely next missing row is
    `rigid_joint_passive_parameters`.
 
 ## Last Session Summary
@@ -581,10 +582,8 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 ## Immediate Next Step
 
 Use the current handoff snapshot at the top of this file for live branch state.
-Resume by inspecting the interrupted `rigid_joint_motor_limits` implementation
-and test diff if those files are still dirty in this workspace. Finish its
-normal docs updates and validation before committing that code/test patch.
-After row 29 is complete, continue the capture-metrics hardening pass with
+After the local row-29 checkpoint is committed, continue the capture-metrics
+hardening pass with
 `rigid_joint_passive_parameters` unless a fresh audit finds a higher-priority
 missing rigid-body GUI evidence gap.
 
@@ -664,9 +663,13 @@ missing rigid-body GUI evidence gap.
 - Latest restitution follow-up validation passed: the 14-test focused rigid
   workflow refresh, `rigid_restitution_ladder` visual capture, `pixi run lint`,
   `pixi run build`, and `git diff --check`.
-- Latest joint motor/limit follow-up validation passed so far:
-  `pixi run test-py` reported `594 passed, 9 skipped`, and
-  `rigid_joint_motor_limits` visual capture wrote nonblank 960x540 PNG frames.
+- Latest joint motor/limit capture-metrics follow-up validation passed:
+  focused motor-limit guard reported `1 passed`, the broader workflow/doc drift
+  guard reported `11 passed`, the docked capture under
+  `/tmp/dart_capture_joint_motor_limits_metrics_1781234533` wrote nonblank
+  960x540 PNG frames plus 72 scene-metrics events, `pixi run lint` passed,
+  bounded `pixi run build` passed with `DART safe jobs: 5`, and
+  `git diff --check` passed.
 - Latest loop-closure follow-up validation passed: the focused
   category/order/behavior/replay/panel command reported `5 passed`;
   `rigid_loop_closure` visual capture wrote a nonblank 960x540 screenshot and

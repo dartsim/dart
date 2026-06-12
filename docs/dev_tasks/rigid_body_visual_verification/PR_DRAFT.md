@@ -83,15 +83,16 @@
 
 ## Testing
 
-- Interrupted joint motor/limit capture-metrics follow-up:
-  - Local implementation/test edits in
-    `python/examples/demos/scenes/rigid_joint_motor_limits.py` and
-    `python/tests/integration/test_demos_cycle.py` add a scene-owned capture
-    hook for the row 29 multibody actuator verifier, but the normal
-    docs/validation/commit path was stopped by explicit user instruction.
+- Latest joint motor/limit capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_joint_motor_limits.py` now publishes a
+    scene-owned capture hook for the row 29 multibody actuator verifier:
+    controls, joint names, motor clamp, position stop, force/effort cap,
+    acceleration gap, step timing, latest metrics, and compact histories.
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
-    - `1 passed` before the critical stop instruction
-  - `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234018`
+    - `1 passed`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+    - `11 passed`
+  - `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234533`
     - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
       `rigid_joint_motor_limits`, solver `world_multibody_joint_actuators`,
       constraint `velocity_motor_position_limit_effort_cap`, command speed
@@ -101,10 +102,12 @@
       acceleration about `2.0/8.0`, acceleration gap about `6.0`, and manifest
       ranges for motor, limit, force-gap, step-timing, time-step, and world-time
       fields
-  - Not run after the user's explicit stop/no-further-verification instruction:
-    broader workflow/doc drift guard, `pixi run lint`, bounded
-    `pixi run build`, `git diff --check`, CHANGELOG/README/PLAN-103 updates,
-    or final implementation commit.
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Previous contact-manipulation capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
     - `1 passed`

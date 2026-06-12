@@ -226,7 +226,7 @@
   - Added `rigid_joint_motor_limits` to Python `py-demos`, showing World
     multibody velocity motors, position stops, and effort caps for rigid links
     with command/limit controls, speed tracking, limit-error, and acceleration
-    diagnostics.
+    diagnostics that are exported through the capture-metrics manifest path.
   - Added `rigid_joint_passive_parameters` to Python `py-demos`, showing
     contact-free World multibody spring/rest, damping, Coulomb friction, and
     armature behavior for rigid links with acceleration and energy diagnostics.

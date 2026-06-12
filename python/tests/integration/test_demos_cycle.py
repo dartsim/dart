@@ -4014,6 +4014,7 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
 
     limited_accel = max(controller._limited_acceleration_history)
     open_accel = max(controller._open_acceleration_history)
+    acceleration_gap = open_accel - limited_accel
     assert limited_accel == pytest.approx(
         controller.effort_limit / 2.0,
         abs=1.0e-9,
@@ -4024,7 +4025,63 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
     assert controller._motor_speed_history
     assert controller._limit_angle_history
     assert controller._force_position_gap_history
+    assert controller._step_ms_history
     assert np.isfinite(float(metrics["world_time"]))
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_joint_motor_limits"
+    assert capture_metrics["solver"] == "world_multibody_joint_actuators"
+    assert (
+        capture_metrics["constraint"]
+        == "velocity_motor_position_limit_effort_cap"
+    )
+    assert capture_metrics["controls"]["command_speed"] == pytest.approx(
+        controller.command_speed
+    )
+    assert capture_metrics["controls"]["velocity_limit"] == pytest.approx(
+        controller.velocity_limit
+    )
+    assert capture_metrics["controls"]["position_limit"] == pytest.approx(
+        controller.position_limit
+    )
+    assert capture_metrics["controls"]["force_command"] == pytest.approx(
+        controller.force_command
+    )
+    assert capture_metrics["controls"]["effort_limit"] == pytest.approx(
+        controller.effort_limit
+    )
+    assert capture_metrics["joints"]["velocity_motor"] == controller.motor_joint.name
+    assert capture_metrics["joints"]["position_limit"] == controller.limit_joint.name
+    assert capture_metrics["motor_speed"] == pytest.approx(float(metrics["motor_speed"]))
+    assert capture_metrics["motor_expected_speed"] == pytest.approx(
+        float(metrics["motor_expected_speed"])
+    )
+    assert capture_metrics["position_limit_error"] == pytest.approx(
+        float(metrics["position_limit_error"])
+    )
+    assert capture_metrics["force_position_gap"] == pytest.approx(
+        float(metrics["force_position_gap"])
+    )
+    assert capture_metrics["limited_force_acceleration"] == pytest.approx(
+        float(metrics["limited_force_acceleration"])
+    )
+    assert capture_metrics["open_force_acceleration"] == pytest.approx(
+        float(metrics["open_force_acceleration"])
+    )
+    assert capture_metrics["force_acceleration_gap"] == pytest.approx(
+        float(metrics["force_acceleration_gap"])
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._motor_speed_history)
+    )
+    assert capture_metrics["history"]["max_open_force_acceleration"] == pytest.approx(
+        open_accel
+    )
+    assert capture_metrics["history"]["max_force_acceleration_gap"] == pytest.approx(
+        acceleration_gap
+    )
+    assert capture_metrics["history"]["max_force_position_gap"] > 0.20
 
 
 def test_rigid_joint_passive_parameters_order_passive_response() -> None:

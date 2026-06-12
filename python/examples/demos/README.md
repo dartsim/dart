@@ -166,7 +166,7 @@ infer.
 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset          |
 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time              |
 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion          |
-| `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap                  |
+| `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics         |
 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration          |
 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error        |
 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response             |
@@ -509,6 +509,9 @@ a gravity-driven revolute link settling at a position stop, and capped versus
 reference force sliders showing the acceleration gap created by an effort
 limit. The panel exposes the command and limit values directly, then plots
 motor speed, position-limit error, and force-response histories.
+`py-demo-capture` records the same row identity, actuator scope, control values,
+joint names, motor clamp, position-stop, force/effort-cap, acceleration-gap,
+step-timing, and compact history metrics into the manifest sidecar.
 
 The **`rigid_joint_passive_parameters`** scene covers the public passive
 multibody joint parameters for rigid links without contacts or gravity. Matched
