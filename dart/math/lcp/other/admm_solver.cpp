@@ -150,8 +150,9 @@ LcpResult AdmmSolver::solve(
 
   Eigen::VectorXd z = x;
   Eigen::VectorXd y = Eigen::VectorXd::Zero(n);
-  Eigen::VectorXd xPrev = x;
   Eigen::VectorXd zPrev = z;
+  Eigen::VectorXd rhs(n);
+  Eigen::VectorXd xTilde(n);
 
   Eigen::MatrixXd M = A;
   M.diagonal().array() += rho + muProx;
@@ -168,15 +169,14 @@ LcpResult AdmmSolver::solve(
 
   for (int iter = 0; iter < maxIterations; ++iter) {
     ++iterationsUsed;
-    xPrev = x;
     zPrev = z;
 
     // x-update: x = (A + (rho + muProx)*I)^{-1} * (rho*z - y + b)
-    Eigen::VectorXd rhs = rho * z - y + b;
+    rhs.noalias() = rho * z - y + b;
     x = llt.solve(rhs);
 
     // z-update: z = clamp(x + y/rho, lo, hi) with findex handling
-    Eigen::VectorXd xTilde = x + y / rho;
+    xTilde.noalias() = x + y / rho;
     for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
       double loVal = lo[i];
       double hiVal = hi[i];

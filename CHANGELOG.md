@@ -1490,6 +1490,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Tuned `AdmmSolver`'s default initial penalty to `rhoInit = 4.0`, reducing
     active-box iteration counts in current adaptive-rho profile rows while
     preserving the same projection and adaptive residual-balancing algorithm.
+    ADMM now also reuses per-iteration RHS/projection workspace during the
+    split update to reduce allocation overhead in active-box profile rows.
   - Tuned SAP benchmark-profile options so boxed comparison rows use the
     solver's default compliance regularization while standard and
     friction-index rows retain stricter regularization; boxed SAP profile rows

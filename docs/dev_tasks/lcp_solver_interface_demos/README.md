@@ -1,5 +1,99 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ADMM Workspace Reuse
+
+Current branch state for this slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Latest local checkpoint: `Reuse ADMM iteration workspace`.
+- Parent checkpoint:
+  `e8e569ca5af Warm start boxed semi-smooth Newton profiles`.
+- At this checkpoint and before pushing, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 39 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation; pushes still require
+  explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `AdmmSolver` now reuses its right-hand-side and projected-step vectors across
+  ADMM iterations.
+- The unused per-iteration `xPrev` copy was removed.
+- The operator-splitting updates, adaptive-rho behavior, projection behavior,
+  convergence tests, and public parameter surface are unchanged.
+- The checked LCP performance profile CSV artifacts were regenerated.
+- The Python demo profile summary, panel metadata test, ADMM background docs,
+  and `CHANGELOG.md` were updated for the refreshed profile and workspace
+  reuse note.
+
+Focused ADMM evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Admm/`.
+- Compared to the prior full profile cache:
+  - Standard row runtime ratios: `0.643`, `0.757`, `0.789`, `0.691`.
+  - Boxed row runtime ratios: `0.688`, `0.626`, `0.679`.
+  - FrictionIndex row runtime ratios: `0.492`, `0.532`, `0.486`.
+  - Mean focused ratio was `0.638`; best `0.486`; worst `0.789`.
+  - All focused after rows reported `contract_ok=1.0`.
+- The focused validation CTest
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` passed.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `Admm` average ratio is now `2.61`.
+- Boxed: `Admm` average ratio is now `14.90`, with
+  `ShockPropagation`, `Dantzig`, and `Nncg` also current high-ratio targets.
+- FrictionIndex: `Admm` average ratio is now `2.55`; current high-ratio
+  targets remain `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Admm/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/admm_workspace_after.json
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j "$JOBS"
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The clearest next targets are Standard
+   `Lemke`, `InteriorPoint`, and `Baraff`; Boxed `Admm`,
+   `ShockPropagation`, `Dantzig`, and `Nncg`; and FrictionIndex
+   `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+   `SubspaceMinimization`.
+2. Push only after explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Boxed SSN Warm-Start Verified
 
 Current branch state for this checkpoint:

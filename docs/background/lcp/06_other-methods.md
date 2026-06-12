@@ -395,6 +395,9 @@ current normal impulse.
 The default initial penalty is $\rho=4$, chosen from current DART-owned
 adaptive-rho sweep evidence to reduce active-box iteration counts while keeping
 the same adaptive residual-balancing path.
+The ADMM loop reuses its linear-solve right-hand side and projected-step
+workspace across iterations, avoiding repeated per-iteration vector allocation
+without changing the operator-splitting updates or convergence tests.
 Focused `BM_LcpAdmmRhoSweep` rows compare fixed and adaptive $\rho$ settings
 on identical standard, boxed, and friction-index benchmark fixtures; these rows
 are CPU solver rows even when emitted by a CUDA-enabled build. Additional

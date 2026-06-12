@@ -236,11 +236,11 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Pgs/Tgs/Jacobi; SymmetricPsor next",
-        "current_laggards": "Admm, ShockPropagation, Nncg, BGS",
+        "current_leaders": "Pgs/Tgs/Jacobi; RedBlackGaussSeidel next",
+        "current_laggards": "Admm, ShockPropagation, Dantzig, Nncg",
         "takeaway": (
             "Projection methods lead active-bound rows; ADMM, layered rows, "
-            "and second-order projection routes remain tuning targets."
+            "and boxed pivot routes remain tuning targets."
         ),
     },
     {
@@ -249,9 +249,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Pgs/Tgs/Sap; SymmetricPsor and Jacobi next",
+        "current_leaders": "Pgs/Tgs/Sap; Jacobi and SymmetricPsor next",
         "current_laggards": (
-            "BlockedJacobi, Staggering, BGS, ShockPropagation, "
+            "BlockedJacobi, BGS, ShockPropagation, Staggering, "
             "SubspaceMinimization"
         ),
         "takeaway": (

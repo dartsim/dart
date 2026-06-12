@@ -1,5 +1,82 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ADMM Workspace Reuse
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Latest local checkpoint: `Reuse ADMM iteration workspace`.
+- Parent checkpoint:
+  `e8e569ca5af Warm start boxed semi-smooth Newton profiles`
+- At this checkpoint and before pushing, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 39 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation; pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `AdmmSolver` reuses its right-hand-side and projected-step vectors across
+  iterations.
+- The unused per-iteration `xPrev` copy was removed.
+- The ADMM math, adaptive-rho path, convergence checks, and public parameter
+  surface are unchanged.
+- The checked performance profile CSVs were regenerated.
+- The Python demo profile summary, panel metadata test, ADMM docs, changelog,
+  and task docs were updated.
+
+Evidence:
+
+- Focused `BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Admm/` after-run
+  compared to the previous full profile cache:
+  - Standard ratios: `0.643`, `0.757`, `0.789`, `0.691`.
+  - Boxed ratios: `0.688`, `0.626`, `0.679`.
+  - FrictionIndex ratios: `0.492`, `0.532`, `0.486`.
+  - Mean focused ratio `0.638`; best `0.486`; worst `0.789`.
+  - All focused rows reported `contract_ok=1.0`.
+- Full regenerated profile snapshot:
+  - Standard `Admm` average ratio `2.61`.
+  - Boxed `Admm` average ratio `14.90`.
+  - FrictionIndex `Admm` average ratio `2.55`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused ADMM compare JSON written to `build/admm_workspace_after.json`.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.80s`.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets:
+
+- Standard: `Lemke`, `InteriorPoint`, and `Baraff`.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, and `Nncg`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Boxed SSN Warm-Start Verified
 
 This section is the latest state; older sections below are historical
