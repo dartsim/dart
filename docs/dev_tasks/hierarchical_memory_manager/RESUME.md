@@ -1,6 +1,33 @@
 # Resume: Hierarchical Memory Manager
 
-## Critical Stop Handoff (2026-06-11)
+## Current Continuation Handoff (2026-06-11)
+
+Work resumed after the prior critical stop handoff on the same authoritative
+branch, `pr/hmm-phase45-follow-up-clean`. The current slice adds baked
+World-base no-growth and global-heap no-allocation coverage for a dynamic rigid
+IPC mixed rigid/deformable surface-obstacle solve. It mirrors the existing
+`RigidIpcContactStageUsesDeformableSurfaceObstacle` behavior shape but runs
+through the built-in `World` IPC solver after bake.
+
+No implementation scratch change was needed for this shape. The focused gate
+pair passed with the new subcase:
+
+- `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`
+- `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`
+
+This closes that specific mixed rigid/deformable IPC coverage gap. Continue
+remaining rigid IPC follow-up only from newly measured larger mesh/contact-set,
+articulated-contact-stack, or other shapes that expose real allocator traffic.
+
+Verification completed for this slice:
+
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+- `pixi run test-unit` passed all 161 tests.
+
+## Prior Critical Stop Handoff (2026-06-11)
 
 Maintainer requested: stop all implementation/optimization work and produce a
 handoff only, with no further verification. Do not run build, test, lint, or
@@ -33,7 +60,8 @@ What `e9b2014f3db` closed:
   scratch before counted steps.
 - The baked dynamic rigid IPC no-heap gate now covers contact-free dynamics,
   active static/dynamic mesh barrier, fixed-joint and revolute-joint IPC
-  constraints, and the two-box stack.
+  constraints, the two-box stack, and a mixed rigid/deformable
+  surface-obstacle barrier solve.
 
 Fresh-session start:
 
@@ -109,8 +137,9 @@ constructed through the World free-list allocator and covered by
 
 Measured open gap after the current slice: broader rigid IPC projected-Newton
 contact shapes remain evidence-first follow-up work beyond the current
-contact-free one-body and active two-mesh-barrier gates. Start from a measured
-failing shape before adding larger contact scenes.
+contact-free one-body, active two-mesh-barrier, stack/articulation, and mixed
+rigid/deformable surface-obstacle gates. Start from a measured failing shape
+before adding larger contact scenes.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether

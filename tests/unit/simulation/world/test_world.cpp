@@ -2367,6 +2367,37 @@ void configureRigidIpcTwoBoxStackScene(dart::simulation::World& world)
   upper.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
 }
 
+void configureRigidIpcDeformableSurfaceObstacleScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.02);
+
+  sx::DeformableBodyOptions sheetOptions;
+  sheetOptions.positions
+      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
+         Eigen::Vector3d(0.5, -0.5, 0.0),
+         Eigen::Vector3d(-0.5, 0.5, 0.0),
+         Eigen::Vector3d(0.5, 0.5, 0.0)};
+  sheetOptions.masses = {1.0, 1.0, 1.0, 1.0};
+  sheetOptions.fixedNodes = {0, 1, 2, 3};
+  sheetOptions.surfaceTriangles
+      = {sx::DeformableSurfaceTriangle{0, 1, 2},
+         sx::DeformableSurfaceTriangle{1, 3, 2}};
+  sheetOptions.material.frictionCoefficient = 0.0;
+  world.addDeformableBody("ipc_deformable_surface", sheetOptions);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.055);
+  boxOptions.linearVelocity = Eigen::Vector3d(0.0, 0.0, -1.0);
+  auto box = world.addRigidBody("ipc_deformable_surface_box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.05, 0.05, 0.05}));
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -5212,6 +5243,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC deformable surface obstacle",
+      configureRigidIpcDeformableSurfaceObstacleScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid body resting contact",
@@ -6496,6 +6530,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
       configureRigidIpcRevoluteJointConstraintScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC deformable surface obstacle",
+      configureRigidIpcDeformableSurfaceObstacleScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

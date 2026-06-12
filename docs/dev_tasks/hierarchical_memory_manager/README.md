@@ -1,6 +1,31 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Critical Stop Handoff
+## Current Continuation Handoff
+
+Work resumed after the prior critical stop handoff on the same authoritative
+branch, `pr/hmm-phase45-follow-up-clean`. The current slice adds baked
+World-base no-growth and global-heap no-allocation coverage for a dynamic rigid
+IPC mixed rigid/deformable surface-obstacle solve. The scene mirrors the
+existing `RigidIpcContactStageUsesDeformableSurfaceObstacle` behavior coverage
+but runs through the built-in `World` IPC solver after bake.
+
+No implementation scratch change was needed for this shape: both
+`World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
+`World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` pass with the new
+mixed rigid/deformable IPC subcase. This closes that specific documented
+coverage gap; remaining rigid IPC follow-up should start from newly measured
+larger mesh/contact-set, articulated-contact-stack, or other shapes that expose
+real allocator traffic.
+
+Verification completed for this slice:
+
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+- `pixi run test-unit` passed all 161 tests.
+
+## Prior Critical Stop Handoff
 
 Maintainer requested on 2026-06-11: stop implementation work and focus only on
 handoff, with no further verification. This docs-only handoff must not be read
@@ -27,7 +52,8 @@ Current completed Phase 4/5 slice:
   buffers, articulation rows, active constraint rows, and assembly scratch.
 - The dynamic rigid IPC no-heap gate now covers contact-free dynamics, active
   static/dynamic mesh barrier, fixed-joint and revolute-joint IPC constraints,
-  and the two-box stack.
+  the two-box stack, and a mixed rigid/deformable surface-obstacle barrier
+  solve.
 - The measured two-box stack gap was 1 global allocation / 96 bytes over four
   baked steps from free-list growth during objective assembly; that gap is now
   closed at the latest validated source checkpoint.
@@ -1255,8 +1281,10 @@ Follow-up progress after PR #2956:
   own persistent assembly/line-search buffers from the World allocator, and the
   focused baked gate now covers the contact-free IPC update, active
   static/dynamic mesh barrier, fixed/revolute articulated constraints, and a
-  two-box stack with zero global heap allocation after bake. Broader rigid IPC
-  contact shapes remain evidence-first follow-up work.
+  two-box stack with zero global heap allocation after bake. The follow-up gate
+  also covers a mixed rigid/deformable surface-obstacle barrier solve through
+  both baked World-base no-growth and global-heap no-allocation guards. Broader
+  rigid IPC contact shapes remain evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
@@ -1270,11 +1298,12 @@ Remaining Phase 4/5 follow-up items for the next PR:
   represented by the current gates.
 - Continue broader rigid IPC projected-Newton scratch reuse only from measured
   failing shapes beyond the current contact-free and active two-mesh-barrier
-  gates, such as larger mesh contact sets, articulated IPC constraints, or
-  mixed rigid/deformable barrier solves that expose new per-step allocator
-  growth. The dynamic rigid IPC two-box stack gap is now covered by the baked
-  no-heap gate, so the next rigid IPC expansion should start from a newly
-  measured failing shape rather than reusing that stack case as open work.
+  gates, such as larger mesh contact sets or articulated contact-stack shapes
+  that expose new per-step allocator growth. The dynamic rigid IPC two-box
+  stack and mixed rigid/deformable surface-obstacle shapes are now covered by
+  baked no-growth/no-heap gates, so the next rigid IPC expansion should start
+  from a newly measured failing shape rather than reusing those cases as open
+  work.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production
