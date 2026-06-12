@@ -2,7 +2,44 @@
 
 ## Current Reality — 2026-06-11 Active Continuation
 
-The current continuation resumes from
+The current continuation builds on
+`29ece871105 Filter pivoting LCP sweeps concretely` on
+`feature/lcp-solver-interface-demos`.
+
+The latest implementation slice routes the generated all-solvers smoke-test
+skip helper through concrete per-problem support:
+
+- `tests/unit/math/lcp/test_all_solvers_smoke.cpp` removes the local
+  `ProblemCategory` to `LcpProblemSupport` manifest-family mapping.
+- `canSolve(...)` now constructs the solver instance and calls
+  `instance->supportsProblem(problem.problem)`, returning false when solver
+  creation fails.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run test-lcpsolver
+pixi run lint
+```
+
+Observed results:
+
+- The focused LCP test task rebuilt as needed and reported
+  `100% tests passed, 0 tests failed out of 17`.
+- `UNIT_math_lcp_math_lcp_all_solvers_smoke` passed.
+- `pixi run lint` passed, including the LCP solver roster check.
+
+Resume status:
+
+- The broader LCP solver/interface/demo objective is not complete. Resume from
+  the next concrete support-routing, solver-domain, demo, benchmark, or
+  performance gap after this slice lands.
+
+## Previous Reality — 2026-06-11 Pivoting Checkpoint
+
+That continuation resumed from
 `e86dbf2efa5 Filter singular LCP batches concretely` on
 `feature/lcp-solver-interface-demos`.
 

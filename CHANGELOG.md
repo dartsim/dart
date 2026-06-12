@@ -1454,6 +1454,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Filtered pivoting scale sweep benchmark registration and runtime guards
     through each exact generated packet's concrete solver support predicate,
     removing the last unused manifest-family helper from `lcp_compare`.
+  - Routed the generated all-solvers LCP smoke-test skip helper through each
+    solver's concrete `supportsProblem(problem)` predicate instead of a
+    manifest-family support mapping, keeping smoke coverage aligned with
+    solver-specific native-route limits.
   - Filtered the manifest-generated `BM_LcpCompare` and
     serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
     generated problem support, so solver rows and problem sizes stay tied to

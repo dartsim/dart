@@ -105,6 +105,9 @@
 - [x] Captured the latest 2026-06-11 critical hand-off after the conditioning
       benchmark-routing checkpoint, refreshed the branch against current
       `main`, and stopped without running further verification.
+- [x] Routed the all-solvers LCP smoke-test skip helper through concrete
+      `supportsProblem(problem)` predicates and verified the focused LCP test
+      suite.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -144,11 +147,41 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is pivoting scale sweep concrete
-support-routing, following the singular-degenerate batch, conditioning, active
-set scale, Python demo concrete native-case profile, benchmark concrete-gate
-cleanup, grouped batch support-routing, generated coverage support-routing, and
-heavyweight contact benchmark support-gating slices.
+The latest implementation checkpoint is all-solvers smoke-test concrete
+support-routing, following pivoting scale sweep concrete support-routing,
+singular-degenerate batch, conditioning, active set scale, Python demo concrete
+native-case profile, benchmark concrete-gate cleanup, grouped batch
+support-routing, generated coverage support-routing, and heavyweight contact
+benchmark support-gating slices.
+
+## All-Solvers Smoke Test Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns all-solvers smoke-test skip logic
+with concrete solver support:
+
+- `tests/unit/math/lcp/test_all_solvers_smoke.cpp` no longer maps
+  `ProblemCategory` to manifest-family `LcpProblemSupport` for the local
+  `canSolve(...)` helper.
+- `canSolve(...)` now constructs the solver and asks its concrete
+  `supportsProblem(problem.problem)` predicate whether the exact factory
+  problem is native-supported.
+- This keeps generated smoke coverage aligned with solver-specific native-route
+  predicates such as Direct's small standard-LCP window and MPRGP/Baraff
+  matrix-domain limits.
+
+Verification for this checkpoint:
+
+```bash
+pixi run test-lcpsolver
+pixi run lint
+```
+
+Observed results:
+
+- The focused LCP test task rebuilt as needed and reported
+  `100% tests passed, 0 tests failed out of 17`.
+- `UNIT_math_lcp_math_lcp_all_solvers_smoke` passed.
+- `pixi run lint` passed, including the LCP solver roster check.
 
 ## Pivoting Scale Sweep Support-Routing Checkpoint
 

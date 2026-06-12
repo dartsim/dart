@@ -49,25 +49,11 @@ using namespace dart::test;
 
 namespace {
 
-LcpProblemSupport supportFor(const ProblemCategory category)
-{
-  using enum ProblemCategory;
-
-  switch (category) {
-    case Standard:
-      return LcpProblemSupport::Standard;
-    case Boxed:
-      return LcpProblemSupport::Boxed;
-    case BoxedFriction:
-      return LcpProblemSupport::FrictionIndex;
-  }
-  return LcpProblemSupport::Standard;
-}
-
 bool canSolve(
     const LcpSolverManifestEntry& solver, const FactoryProblem& problem)
 {
-  return supportsProblem(solver, supportFor(problem.category));
+  const auto instance = solver.create();
+  return instance != nullptr && instance->supportsProblem(problem.problem);
 }
 
 bool producedIterate(const LcpResult& result)
