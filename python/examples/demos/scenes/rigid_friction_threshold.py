@@ -212,6 +212,11 @@ class _RigidFrictionThreshold:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _step_profile_ms(self) -> float:
         try:
             profile = self.world.last_step_profile
@@ -277,13 +282,20 @@ class _RigidFrictionThreshold:
         clearance_history = {
             lane.key: list(self._clearance_history[lane.key]) for lane in self.lanes
         }
+        executor_label = self._executor_label()
         return {
             "row": "rigid_friction_threshold",
+            "comparison_axis": "friction_threshold_lane",
             "solver": "ipc",
             "solver_enum": sx.RigidBodySolver.IPC.name,
-            "executor": self._executors[int(self.executor_index)][0],
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
+            "held_fixed": {
+                "solver": "IPC",
+                "executor": executor_label,
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "angle_deg": float(self.angle_deg),
                 "controlled_mu": float(self.controlled_mu),
@@ -450,6 +462,11 @@ class _RigidFrictionThreshold:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: friction relative to static threshold")
+        builder.text(
+            f"held fixed: solver IPC | executor {self._executor_label()} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: rigid IPC")
         builder.text(f"ramp angle: {self.angle_deg:.1f} deg")
         builder.text(f"stick/slip threshold mu = tan(angle): {self._threshold():.3f}")

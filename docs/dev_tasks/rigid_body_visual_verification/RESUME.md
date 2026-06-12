@@ -2,7 +2,40 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: workflow `review_index.html` row cards now surface actual
+Latest local slice: rows 19-21 are now a verified contact-failure comparison
+mini-packet. `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
+`rigid_stack_stability` expose comparison axes and held-fixed values in both
+their panels and scene-owned capture metrics, and `scripts/capture_py_demo.py`
+surfaces the decisive row 19-21 latest-signal values in `review_index.html`.
+
+Resume from this state:
+
+- Start with `git status -sb` and `git log -5 --oneline`.
+- Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
+  Before this slice was committed, it was 13 commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification` at
+  `3e4ea8ea75f Surface workflow review latest signals`; after commit, expect
+  one additional local commit for the row 19-21 contact-failure packet.
+- Do not push without explicit approval in the session that performs the push.
+- Immediate next step after this slice: either request maintainer acceptance for
+  the rigid workflow direction or continue with the next evidence packet only
+  if a fresh audit identifies a concrete user-facing rigid GUI gap that is not
+  blocked by the public dartpy API.
+
+Rows 19-21 evidence:
+
+- Focused row/panel/review-index pytest subset reported `5 passed`.
+- Real workflow capture completed under
+  `/tmp/dart_capture_rigid_contact_failure_rows_19_21_1781296166` with
+  `status=complete`, `capture_count=3`, `completed_count=3`, `failed_count=0`,
+  and `guidance_complete=true`.
+- The review index showed `axis`, `held fixed`, `controls`, and
+  `latest signals` for rows 19-21: `friction_threshold_lane` with IPC fixed,
+  `spin_roll_initial_condition` with sequential impulse fixed, and
+  `rigid_body_solver_family` with SI-vs-IPC solver pair plus top-x divergence
+  and clearance signals.
+
+Previous checkpoint: workflow `review_index.html` row cards now surface actual
 decision values from scene-owned metrics, not only metric keys. Captured rows
 show held-fixed values when present, control settings, and compact latest
 signals such as solver pair, executor pair, contact-policy pair, divergence,

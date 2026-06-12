@@ -1183,6 +1183,28 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_friction_threshold,
+            (
+                "text:comparison axis: friction relative to static threshold",
+                "text:held fixed: solver IPC | executor Sequential | time step 5.0 ms",
+            ),
+        ),
+        (
+            rigid_spin_roll_coupling,
+            (
+                "text:comparison axis: spin/roll initial condition",
+                "text:held fixed: solver Sequential impulse | executor Sequential | time step 4.0 ms",
+            ),
+        ),
+        (
+            rigid_stack_stability,
+            (
+                "text:comparison axis: rigid-body solver family under stack load",
+                "text:held fixed: executor Sequential | top mass ratio 20.0 | friction 0.80 | time step 6.0 ms",
+                "text:solver pair: Sequential impulse vs IPC barrier",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

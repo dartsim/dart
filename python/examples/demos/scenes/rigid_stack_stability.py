@@ -215,6 +215,11 @@ class _RigidStackStability:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _step_profile_ms(self, world: Any) -> float:
         try:
             profile = world.last_step_profile
@@ -297,8 +302,6 @@ class _RigidStackStability:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
-        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
-        self.executor_index = executor_index
         cases = {
             case.label: {
                 "rigid_body_solver": case.solver.name,
@@ -330,17 +333,26 @@ class _RigidStackStability:
         def case_metric(label: str, metric_key: str) -> float:
             return float(self._last_metrics[label][metric_key])
 
+        executor_label = self._executor_label()
         return {
             "row": "rigid_stack_stability",
+            "comparison_axis": "rigid_body_solver_family",
             "solver": "sequential_impulse_vs_ipc",
-            "executor": self._executors[executor_index][0],
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
+            "held_fixed": {
+                "executor": executor_label,
+                "friction": float(self.friction),
+                "time_step_ms": _TIME_STEP * 1000.0,
+                "top_mass_ratio": float(self.top_mass_ratio),
+            },
             "controls": {
                 "friction": float(self.friction),
                 "top_mass_ratio": float(self.top_mass_ratio),
             },
             "case_pair": [case.label for case in self.cases],
+            "solver_pair": [case.solver.name for case in self.cases],
             "sequential_impulse_solver_enum": self.cases[0].solver.name,
             "sequential_impulse_max_speed": case_metric(si_label, "max_speed"),
             "sequential_impulse_top_drift": case_metric(si_label, "top_drift"),
@@ -565,6 +577,13 @@ class _RigidStackStability:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: rigid-body solver family under stack load")
+        builder.text(
+            f"held fixed: executor {self._executor_label()} | "
+            f"top mass ratio {self.top_mass_ratio:.1f} | "
+            f"friction {self.friction:.2f} | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
+        builder.text("solver pair: Sequential impulse vs IPC barrier")
         builder.text("two-block mass-ratio stack")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text(f"time step: {_TIME_STEP:.4f} s")

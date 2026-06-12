@@ -196,9 +196,9 @@ plus a warning block if any selected row is missing those fields.
 | 16/36 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics    |
 | 17/36 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence             |
 | 18/36 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel            |
-| 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance, metrics                    |
-| 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | Executor, friction, speed, backspin                   | Slip speed, roll ratio, spin change, energy, metrics           |
-| 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error, metrics         |
+| 19/36 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | IPC fixed, executor, ramp angle, controlled friction  | Friction-threshold axis, drift, speed, clearance, metrics      |
+| 20/36 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | SI fixed, executor, friction, speed, backspin         | Spin/roll axis, slip speed, roll ratio, spin change, metrics   |
+| 21/36 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | SI vs IPC, executor, top mass ratio, friction         | Solver-family axis, top drift, clearance, divergence, metrics  |
 | 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity, metrics          |
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                       |
@@ -479,6 +479,19 @@ scene-owned metric keys, held-fixed/control values, and the latest decision
 signals such as solver pair, executor pair, contact-policy pair, divergence,
 and step/contact counters.
 
+Capture rows 19-21 together when reviewing the common contact-failure path:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 19 \
+    --workflow-end-row 21 --output-dir /tmp/dart_capture_rigid_contact_failures
+```
+
+That packet keeps the friction-threshold, spin/roll, and stack-stability rows
+adjacent. Their row cards show the comparison axis, held-fixed solver/executor
+or solver-family controls, user-editable controls, and latest signals such as
+threshold-lane drift, contact slip/spin change, solver pair, top-x divergence,
+and solver clearance.
+
 ## Rigid link contact
 
 The **`contact`** scene is the articulated-link contact row in the numbered
@@ -497,23 +510,27 @@ into a three-lane visual verifier. The upper lane uses friction below
 `tan(angle)` and should slide, the lower lane uses friction above that threshold
 and should stick, and the middle lane is user-controlled. The panel keeps the
 threshold calculation visible, resets the run when the controlled friction or
-ramp angle changes, and plots down-slope drift and speed so users can debug
-stick/slip behavior without relying on exact-at-threshold claims. Capture
-metrics record the threshold, controlled-friction delta, per-lane friction,
-drift, speed, clearance, status, step timing, and compact history ranges.
+ramp angle changes, names friction relative to the static threshold as the
+comparison axis, and lists IPC/executor/time step as held fixed. It plots
+down-slope drift and speed so users can debug stick/slip behavior without
+relying on exact-at-threshold claims. Capture metrics record the threshold,
+controlled-friction delta, per-lane friction, drift, speed, clearance, status,
+held-fixed values, step timing, and compact history ranges.
 
 ## Rigid spin/roll coupling
 
 The **`rigid_spin_roll_coupling`** scene shows the rotational side of contact
 friction after the stick/slip threshold row: matched rolling, no-spin sliding,
 backspin scrub, and a low-friction slip baseline move on the same surface. The
-panel exposes contact friction, launch speed, and backspin ratio, then plots
-contact slip, roll ratio, travel, kinetic energy, contact count, and step timing.
-It is a sequential-impulse visual diagnostic for linear/angular coupling, not a
+panel names spin/roll initial condition as the comparison axis, keeps the
+sequential-impulse solver, executor, and time step held fixed, then exposes
+contact friction, launch speed, and backspin ratio. It plots contact slip, roll
+ratio, travel, kinetic energy, contact count, and step timing. It is a
+sequential-impulse visual diagnostic for linear/angular coupling, not a
 rolling-resistance or torsional-friction parameter surface. Capture metrics
-record the solver/executor, controls, contact count, per-lane slip, roll ratio,
-spin delta, travel, energy, friction, status, step timing, and compact history
-ranges.
+record the solver/executor, controls, held-fixed values, contact count,
+per-lane slip, roll ratio, spin delta, travel, energy, friction, status, step
+timing, and compact history ranges.
 
 ## Rigid stack stability
 
@@ -522,13 +539,15 @@ sequential impulse and rigid IPC solve the same two-block top-heavy stack side
 by side. The stack is intentionally small so it remains usable in the live GUI
 while still showing the mass-ratio failure mode users care about: residual
 jitter, lateral drift, clearance/overlap, and per-step solve cost. The panel
-lets users tune the top mass ratio and friction, reset the stack, and compare
-max speed, top-block drift, minimum analytic clearance, and solver divergence.
-Capture metrics record the solver pair, executor, controls, per-solver speed,
-drift, clearance, height error, step timing, top-x divergence, and compact
-history ranges. The shared Replay panel uses top-x divergence as its value
-track and marks frames where overlap, low clearance, visible top-block drift,
-or solver-family divergence make the stack worth scrubbing.
+names the rigid-body solver family as the comparison axis, lists executor, top
+mass ratio, friction, and time step as held fixed, lets users tune the top mass
+ratio and friction, resets the stack, and compares max speed, top-block drift,
+minimum analytic clearance, and solver divergence. Capture metrics record the
+solver pair, executor, controls, held-fixed values, per-solver speed, drift,
+clearance, height error, step timing, top-x divergence, and compact history
+ranges. The shared Replay panel uses top-x divergence as its value track and
+marks frames where overlap, low clearance, visible top-block drift, or
+solver-family divergence make the stack worth scrubbing.
 
 ## Rigid contact manipulation
 

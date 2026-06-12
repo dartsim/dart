@@ -4653,8 +4653,11 @@ def test_rigid_friction_threshold_separates_stick_and_slip_lanes() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_friction_threshold"
+    assert capture_metrics["comparison_axis"] == "friction_threshold_lane"
     assert capture_metrics["solver"] == "ipc"
     assert capture_metrics["solver_enum"] == "IPC"
+    assert capture_metrics["held_fixed"]["solver"] == "IPC"
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
     assert capture_metrics["controls"]["angle_deg"] == pytest.approx(
         controller.angle_deg
     )
@@ -4726,8 +4729,11 @@ def test_rigid_spin_roll_coupling_converts_slip_to_roll() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_spin_roll_coupling"
+    assert capture_metrics["comparison_axis"] == "spin_roll_initial_condition"
     assert capture_metrics["solver"] == "sequential_impulse"
     assert capture_metrics["solver_enum"] == "SEQUENTIAL_IMPULSE"
+    assert capture_metrics["held_fixed"]["solver"] == "Sequential impulse"
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
     assert capture_metrics["controls"]["friction"] == pytest.approx(
         controller.friction
     )
@@ -4927,8 +4933,16 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_stack_stability"
+    assert capture_metrics["comparison_axis"] == "rigid_body_solver_family"
     assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["held_fixed"]["executor"] == controller._executor_label()
+    assert capture_metrics["held_fixed"]["top_mass_ratio"] == pytest.approx(
+        controller.top_mass_ratio
+    )
+    assert capture_metrics["held_fixed"]["time_step_ms"] == pytest.approx(
+        capture_metrics["time_step_ms"]
+    )
     assert capture_metrics["controls"]["friction"] == pytest.approx(
         controller.friction
     )
@@ -4936,6 +4950,9 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
         controller.top_mass_ratio
     )
     assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["solver_pair"] == [
+        case.solver.name for case in controller.cases
+    ]
     assert set(capture_metrics["cases"]) == {"Sequential impulse", "IPC barrier"}
     assert (
         capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]

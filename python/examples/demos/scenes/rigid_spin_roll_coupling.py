@@ -188,6 +188,11 @@ class _RigidSpinRollCoupling:
         self.executor_index = index
         return self._executors[index][1]
 
+    def _executor_label(self) -> str:
+        index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = index
+        return self._executors[index][0]
+
     def _lane_initial_spin_ratio(self, lane: _SpinRollLane) -> float:
         if lane.key == "backspin_scrub":
             return float(self.backspin_ratio)
@@ -317,8 +322,6 @@ class _RigidSpinRollCoupling:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
-        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
-        self.executor_index = executor_index
         lanes = {
             lane.key: {
                 "label": lane.label,
@@ -343,13 +346,20 @@ class _RigidSpinRollCoupling:
         def lane_metric(lane_key: str, metric_key: str) -> float:
             return float(self._last_metrics[lane_key][metric_key])
 
+        executor_label = self._executor_label()
         return {
             "row": "rigid_spin_roll_coupling",
+            "comparison_axis": "spin_roll_initial_condition",
             "solver": "sequential_impulse",
             "solver_enum": sx.RigidBodySolver.SEQUENTIAL_IMPULSE.name,
-            "executor": self._executors[executor_index][0],
+            "executor": executor_label,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
+            "held_fixed": {
+                "solver": "Sequential impulse",
+                "executor": executor_label,
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "backspin_ratio": float(self.backspin_ratio),
                 "friction": float(self.friction),
@@ -543,6 +553,11 @@ class _RigidSpinRollCoupling:
             self.reset()
 
         builder.separator()
+        builder.text("comparison axis: spin/roll initial condition")
+        builder.text(
+            f"held fixed: solver Sequential impulse | "
+            f"executor {self._executor_label()} | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: sequential impulse")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(

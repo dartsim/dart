@@ -2,7 +2,32 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: workflow `review_index.html` row cards now surface actual
+Latest local slice: rows 19-21 now form a contact-failure comparison
+mini-packet with explicit user-facing comparison axes and held-fixed controls.
+`rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
+`rigid_stack_stability` label their comparison axis in the panel and
+scene-owned capture metrics, export held-fixed values, and feed the workflow
+review index latest-signal summaries for threshold drift, contact slip/spin
+change, solver pair, top-x divergence, and clearance.
+
+Evidence for this slice:
+
+- Focused row/panel/review-index pytest subset reported `5 passed`.
+- Real workflow capture completed under
+  `/tmp/dart_capture_rigid_contact_failure_rows_19_21_1781296166` with
+  `status=complete`, `capture_count=3`, `completed_count=3`, `failed_count=0`,
+  and `guidance_complete=true`.
+- `review_index.html` showed `axis`, `held fixed`, `controls`, and
+  `latest signals` for rows 19-21. The latest row cards reported
+  `friction_threshold_lane`, `spin_roll_initial_condition`, and
+  `rigid_body_solver_family` as the three comparison axes.
+- Branch `feature/rigid-body-gui-visual-verification` had no PR and was
+  13 commits ahead of `origin/feature/rigid-body-gui-visual-verification`
+  before this local slice; after committing this slice, expect one more local
+  commit on top of `3e4ea8ea75f Surface workflow review latest signals`.
+- Do not push without explicit approval in the session that performs the push.
+
+Previous checkpoint: workflow `review_index.html` row cards now surface actual
 decision values from scene-owned metrics, not only metric keys. Captured rows
 show held-fixed values when present, control settings, and compact latest
 signals such as solver pair, executor pair, contact-policy pair, divergence,

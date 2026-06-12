@@ -1294,6 +1294,17 @@ _WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
     "parallel_contact_count",
     "sequential_step_ms",
     "parallel_step_ms",
+    "below_distance",
+    "above_distance",
+    "controlled_threshold_delta",
+    "contact_count",
+    "matched_roll_contact_slip",
+    "slide_to_roll_spin_delta",
+    "low_friction_slip_contact_slip",
+    "top_x_divergence",
+    "sequential_impulse_min_clearance",
+    "ipc_min_clearance",
+    "ipc_top_drift",
 )
 
 _WORKFLOW_NESTED_METRIC_HIGHLIGHT_KEYS = {
