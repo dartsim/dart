@@ -1,5 +1,81 @@
 # Resume: Hierarchical Memory Manager
 
+## Critical Handoff Stop (2026-06-11, Authoritative)
+
+Maintainer request: stop all optimization, scene expansion, and verification
+work immediately. This is the entry point for the next fresh Claude/Codex
+session.
+
+Use exactly one continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly redirects the work.
+
+Current branch-head contents to preserve:
+
+- All post-PR #2956 follow-up commits already on
+  `pr/hmm-phase45-follow-up-clean`.
+- The latest in-progress default-solver deformable iterative sparse-solver
+  allocation slice:
+  - `world_step_stage.cpp` uses a DART-owned sparse Jacobi-CG loop over the
+    assembled projected-Newton Hessian instead of Eigen IC-CG temporaries.
+  - `test_world.cpp` adds
+    `configureDeformableIterativeFemGroundFrictionBlockScene()`, gates it in
+    both baked allocator guards, and adds
+    `World.DeformableIterativeFemGroundFrictionBlockIsActive`.
+  - The measured pre-fix global-heap failure was 25,064 allocations /
+    651,456 bytes over four baked steps for the iterative FEM ground-friction
+    subcase.
+
+Verification boundary:
+
+- No lint, build, test, benchmark, allocator probe, or CI verification was run
+  after the latest stop request.
+- Before the stop request, the iterative FEM slice passed focused `test_world`
+  checks and `pixi run lint`; a broader `pixi run build` had been started but
+  must not be treated as handoff validation.
+- The next agent should verify the live branch head before any additional code
+  changes or PR work.
+
+Fresh-session start:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `README.md` in this directory, especially the remaining Phase 4/5
+follow-up items. Continue evidence-first only after reproducing a real
+allocator/no-heap gap.
+
+## Current Continuation (2026-06-11)
+
+Work resumed from the prior handoff on the same single continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`.
+
+The latest slice closes a default-solver deformable projected-Newton iterative
+sparse-solver gap. The new iterative FEM ground-friction subcase failed the
+baked global-heap gate before the fix with 25,064 global heap allocations /
+651,456 bytes over four baked steps while the World-base no-growth gate passed.
+The iterative sparse path now uses DART-owned sparse Jacobi-CG scratch over the
+assembled Hessian instead of Eigen's local IC-CG solver temporaries.
+
+New coverage:
+
+- `configureDeformableIterativeFemGroundFrictionBlockScene()`
+- `World.DeformableIterativeFemGroundFrictionBlockIsActive`
+- `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`
+- `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`
+
+Immediate next step after this slice: continue evidence-first from the
+remaining Phase 4/5 follow-up list in `README.md`; do not reuse the iterative
+FEM ground-friction shape as an open gap.
+
 ## Final Stop Handoff (2026-06-11, No Further Verification)
 
 Maintainer stop request: stop implementation and verification immediately,

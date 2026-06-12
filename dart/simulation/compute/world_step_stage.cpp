@@ -1957,6 +1957,7 @@ struct DeformableContactSolverScratch
   Eigen::VectorXd projectedNewtonMatrixFreePreconditionedResidual;
   Eigen::VectorXd projectedNewtonMatrixFreeDirection;
   Eigen::VectorXd projectedNewtonMatrixFreeHessianDirection;
+  Eigen::VectorXd projectedNewtonIterativeInverseDiagonal;
 
   ProjectedNewtonScalarVector groundFrictionNormalForce;
   ProjectedNewtonVector3Vector groundFrictionNormalDirection;
@@ -2098,6 +2099,106 @@ bool solveMatrixFreeConjugateGradient(
     }
 
     hessian.applyPreconditionerInto(residual, z);
+    const double nextRz = residual.dot(z);
+    if (!std::isfinite(nextRz) || nextRz <= 0.0 || !z.allFinite()) {
+      return false;
+    }
+    const double beta = nextRz / rz;
+    direction *= beta;
+    direction += z;
+    if (!direction.allFinite()) {
+      return false;
+    }
+    rz = nextRz;
+  }
+
+  return false;
+}
+
+//==============================================================================
+bool solveSparseJacobiConjugateGradient(
+    const Eigen::SparseMatrix<double>& hessian,
+    const Eigen::VectorXd& rhs,
+    Eigen::VectorXd& solution,
+    Eigen::VectorXd& residual,
+    Eigen::VectorXd& z,
+    Eigen::VectorXd& direction,
+    Eigen::VectorXd& hessianDirection,
+    Eigen::VectorXd& inverseDiagonal,
+    std::size_t& iterations,
+    double& relativeResidual)
+{
+  constexpr double kTolerance = 1e-8;
+  const Eigen::Index dim = rhs.size();
+  const Eigen::Index maxIterations = 2 * dim;
+  solution.resize(dim);
+  solution.setZero();
+  residual.resize(dim);
+  z.resize(dim);
+  direction.resize(dim);
+  hessianDirection.resize(dim);
+  inverseDiagonal.resize(dim);
+  inverseDiagonal.setZero();
+  iterations = 0;
+  relativeResidual = 0.0;
+
+  for (Eigen::Index outer = 0; outer < hessian.outerSize(); ++outer) {
+    for (Eigen::SparseMatrix<double>::InnerIterator it(hessian, outer); it;
+         ++it) {
+      if (it.row() == it.col()) {
+        inverseDiagonal[it.row()] = it.value();
+      }
+    }
+  }
+  for (Eigen::Index i = 0; i < dim; ++i) {
+    const double diagonal = inverseDiagonal[i];
+    if (!std::isfinite(diagonal) || diagonal <= 0.0) {
+      return false;
+    }
+    inverseDiagonal[i] = 1.0 / diagonal;
+  }
+
+  const double rhsNorm = rhs.norm();
+  if (rhsNorm == 0.0) {
+    return true;
+  }
+
+  residual = rhs;
+  z = residual.cwiseProduct(inverseDiagonal);
+  direction = z;
+  double rz = residual.dot(z);
+  if (!std::isfinite(rz) || rz <= 0.0 || !direction.allFinite()) {
+    return false;
+  }
+
+  for (Eigen::Index iter = 0; iter < maxIterations; ++iter) {
+    hessianDirection.setZero();
+    for (Eigen::Index outer = 0; outer < hessian.outerSize(); ++outer) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(hessian, outer); it;
+           ++it) {
+        hessianDirection[it.row()] += it.value() * direction[it.col()];
+      }
+    }
+
+    const double curvature = direction.dot(hessianDirection);
+    if (!std::isfinite(curvature) || curvature <= 0.0) {
+      return false;
+    }
+
+    const double alpha = rz / curvature;
+    solution += alpha * direction;
+    residual -= alpha * hessianDirection;
+    if (!solution.allFinite() || !residual.allFinite()) {
+      return false;
+    }
+
+    relativeResidual = residual.norm() / rhsNorm;
+    iterations = static_cast<std::size_t>(iter + 1);
+    if (relativeResidual <= kTolerance) {
+      return true;
+    }
+
+    z = residual.cwiseProduct(inverseDiagonal);
     const double nextRz = residual.dot(z);
     if (!std::isfinite(nextRz) || nextRz <= 0.0 || !z.allFinite()) {
       return false;
@@ -5622,6 +5723,7 @@ void reserveProjectedNewtonScratch(
   scratch.projectedNewtonMatrixFreePreconditionedResidual.resize(dim);
   scratch.projectedNewtonMatrixFreeDirection.resize(dim);
   scratch.projectedNewtonMatrixFreeHessianDirection.resize(dim);
+  scratch.projectedNewtonIterativeInverseDiagonal.resize(dim);
 }
 
 //==============================================================================
@@ -7497,45 +7599,33 @@ bool computeProjectedNewtonDirection(
     }
     solverCache.newtonPatternValid = false;
   } else if (solveIteratively) {
-    // Iterative path: an incomplete-Cholesky preconditioned conjugate-gradient
-    // solve. The inertia term (m/dt^2 on every free DOF) plus the PSD-projected
-    // spring/barrier blocks make the Hessian symmetric positive definite, so CG
-    // is guaranteed to converge; it only ever factorizes *incompletely* (a
-    // sparse approximate Cholesky that drops fill), so time and memory stay
-    // near O(nnz) and the solve scales to meshes well past the direct cap. The
-    // incomplete-Cholesky preconditioner is far stronger than a diagonal
-    // (Jacobi) one on the ill-conditioned Hessians that stiff barrier contact
-    // produces -- it collapses the CG iteration count there, so the iterative
-    // path converges within the cap (and thus matches the direct solve) on
-    // contact scenes where plain Jacobi-CG would stall and fall back. Reading
-    // only the lower triangle matches the direct solver's symmetric assumption.
-    // A non-converged or non-finite solve (including an incomplete-Cholesky
-    // breakdown that Eigen's diagonal shifting cannot repair) falls back to
-    // mass-scaled steepest descent below, exactly as the direct path does on an
-    // indefinite factorization.
-    Eigen::ConjugateGradient<
-        Eigen::SparseMatrix<double>,
-        Eigen::Lower,
-        Eigen::IncompleteCholesky<double>>
-        cg;
-    cg.setTolerance(1e-8);
-    cg.setMaxIterations(static_cast<Eigen::Index>(2) * dim);
-    cg.compute(hessian);
-    if (cg.info() != Eigen::Success) {
-      solverCache.newtonPatternValid = false;
-      return false;
-    }
-    solution = cg.solve(rhs);
-    if (cg.info() != Eigen::Success || !solution.allFinite()) {
+    // Iterative sparse path: use a Jacobi-preconditioned CG loop over the
+    // assembled Hessian while reusing the projected-Newton scratch vectors.
+    // This keeps the opt-in sparse iterative solver inside the World allocator
+    // boundary; non-convergence falls back to mass-scaled steepest descent just
+    // as direct factorization failures do below.
+    std::size_t cgIterations = 0;
+    double cgError = 0.0;
+    if (!solveSparseJacobiConjugateGradient(
+            hessian,
+            rhs,
+            solution,
+            solverCache.projectedNewtonMatrixFreeResidual,
+            solverCache.projectedNewtonMatrixFreePreconditionedResidual,
+            solverCache.projectedNewtonMatrixFreeDirection,
+            solverCache.projectedNewtonMatrixFreeHessianDirection,
+            solverCache.projectedNewtonIterativeInverseDiagonal,
+            cgIterations,
+            cgError)
+        || !solution.allFinite()) {
       solverCache.newtonPatternValid = false;
       return false;
     }
     ++stats.projectedNewtonIterativeSolves;
-    stats.projectedNewtonIterativeIterations
-        += static_cast<std::size_t>(std::max<Eigen::Index>(0, cg.iterations()));
-    if (std::isfinite(cg.error())) {
+    stats.projectedNewtonIterativeIterations += cgIterations;
+    if (std::isfinite(cgError)) {
       stats.projectedNewtonIterativeMaxError
-          = std::max(stats.projectedNewtonIterativeMaxError, cg.error());
+          = std::max(stats.projectedNewtonIterativeMaxError, cgError);
     }
     // The cached direct-solver symbolic pattern was not refreshed this step, so
     // invalidate it: a later step that drops back to the direct path must

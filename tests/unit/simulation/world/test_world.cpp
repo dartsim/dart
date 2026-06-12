@@ -1393,7 +1393,8 @@ void addDeformableFemGroundFrictionBlock(
     std::string_view bodyName,
     const Eigen::Vector3d& offset,
     std::size_t cells,
-    bool useMatrixFreeLinearSolver)
+    bool useMatrixFreeLinearSolver,
+    bool useIterativeLinearSolver = false)
 {
   namespace sx = dart::simulation;
 
@@ -1465,6 +1466,7 @@ void addDeformableFemGroundFrictionBlock(
   options.material.youngsModulus = 5.0e4;
   options.material.poissonRatio = 0.3;
   options.material.frictionCoefficient = 0.8;
+  options.material.useIterativeLinearSolver = useIterativeLinearSolver;
   options.material.useMatrixFreeLinearSolver = useMatrixFreeLinearSolver;
 
   world.addDeformableBody(bodyName, options);
@@ -1488,6 +1490,31 @@ void configureDeformableFemGroundFrictionBlockScene(
 
   addDeformableFemGroundFrictionBlock(
       world, "fem_ground_friction_block", Eigen::Vector3d::Zero(), 2, false);
+}
+
+void configureDeformableIterativeFemGroundFrictionBlockScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.002);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("iterative_fem_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  addDeformableFemGroundFrictionBlock(
+      world,
+      "iterative_fem_ground_friction_block",
+      Eigen::Vector3d::Zero(),
+      2,
+      false,
+      true);
 }
 
 void configureMixedDefaultDeformableFemProductionStorageScene(
@@ -5412,6 +5439,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable FEM ground friction block",
       configureDeformableFemGroundFrictionBlockScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable iterative FEM ground friction block",
+      configureDeformableIterativeFemGroundFrictionBlockScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable self-contact friction patch",
@@ -5578,6 +5608,36 @@ TEST(World, DeformableFemGroundFrictionBlockIsActive)
   EXPECT_EQ(diagnostics.nodeCount, 27u);
   EXPECT_GT(projectedNewtonSteps, 0u);
   EXPECT_GT(maxHessianNonZeros, 0u);
+  EXPECT_GT(frictionDissipation, 0.0);
+}
+
+TEST(World, DeformableIterativeFemGroundFrictionBlockIsActive)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureDeformableIterativeFemGroundFrictionBlockScene(world);
+  world.enterSimulationMode();
+
+  std::size_t projectedNewtonSteps = 0;
+  std::size_t iterativeSolves = 0;
+  std::size_t iterativeIterations = 0;
+  double frictionDissipation = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    world.step();
+    const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+    projectedNewtonSteps += diagnostics.projectedNewtonSteps;
+    iterativeSolves += diagnostics.projectedNewtonIterativeSolves;
+    iterativeIterations += diagnostics.projectedNewtonIterativeIterations;
+    frictionDissipation += diagnostics.frictionDissipation;
+  }
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.nodeCount, 27u);
+  EXPECT_GT(projectedNewtonSteps, 0u);
+  EXPECT_GT(iterativeSolves, 0u);
+  EXPECT_GT(iterativeIterations, 0u);
   EXPECT_GT(frictionDissipation, 0.0);
 }
 
@@ -6800,6 +6860,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable FEM ground friction block",
       configureDeformableFemGroundFrictionBlockScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable iterative FEM ground friction block",
+      configureDeformableIterativeFemGroundFrictionBlockScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable self-contact projected Newton scratch", [](sx::World& world) {

@@ -1,5 +1,93 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Critical Handoff Stop (2026-06-11, Authoritative)
+
+Maintainer request: stop all optimization, scene expansion, and verification
+work immediately. This section is the authoritative handoff for a fresh
+Claude/Codex session.
+
+Use exactly one continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly redirects the work.
+
+Current branch-head intent:
+
+- Preserve the post-PR #2956 follow-up work already on
+  `pr/hmm-phase45-follow-up-clean`.
+- Preserve the latest in-progress Phase 4/5 slice for the default-solver
+  deformable projected-Newton iterative sparse path.
+- Do not add more scenes, scratch-reuse work, benchmarks, or allocator probes
+  in this handoff.
+
+Latest code slice captured by this handoff:
+
+- `dart/simulation/compute/world_step_stage.cpp` replaces the opt-in Eigen
+  incomplete-Cholesky CG branch for assembled projected-Newton Hessians with a
+  DART-owned sparse Jacobi-CG loop that reuses the existing
+  projected-Newton scratch vectors plus a pre-sized inverse-diagonal vector.
+- `tests/unit/simulation/world/test_world.cpp` adds
+  `configureDeformableIterativeFemGroundFrictionBlockScene()`, gates that shape
+  in both baked World-base and global-heap guards, and adds
+  `World.DeformableIterativeFemGroundFrictionBlockIsActive` so the case must
+  exercise iterative projected-Newton solves.
+- This was motivated by a measured pre-fix failure in
+  `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`: the
+  iterative FEM ground-friction subcase made 25,064 global heap allocations /
+  651,456 bytes over four baked steps while the World-base no-growth gate
+  passed.
+
+Verification boundary:
+
+- No lint, build, test, benchmark, allocator probe, or CI verification was run
+  after this stop request.
+- Before the stop request, focused `test_world` coverage for the iterative FEM
+  slice had passed locally, and `pixi run lint` had passed. A broader
+  `pixi run build` command had been started before the stop request; do not use
+  any post-stop output from that command as validation for this handoff.
+- A fresh agent must verify the branch head before additional code changes or
+  before opening a PR.
+
+Fresh-session entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then read `RESUME.md` and the remaining Phase 4/5 follow-up list below.
+Continue evidence-first only after reproducing a real allocator/no-heap gap.
+
+## Current Continuation (2026-06-11)
+
+Work resumed from the prior handoff on the same single continuation branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`.
+
+The latest Phase 4/5 slice closes a default-solver deformable projected-Newton
+iterative sparse-solver gap. A new FEM ground-friction subcase with
+`useIterativeLinearSolver=true` did not grow the World base allocator after
+bake, but failed the baked global-heap gate before the fix with 25,064 global
+heap allocations / 651,456 bytes over four baked steps. The allocation source
+was Eigen's local incomplete-Cholesky CG path in the opt-in iterative sparse
+projected-Newton solve. That path now uses a DART-owned sparse Jacobi-CG loop
+over the assembled Hessian, reusing the existing projected-Newton scratch
+vectors and a pre-sized inverse-diagonal vector from the World allocator.
+
+The current branch now gates that iterative sparse FEM ground-friction shape in
+both:
+
+- `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`
+- `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`
+
+`World.DeformableIterativeFemGroundFrictionBlockIsActive` verifies the subcase
+actually exercises iterative projected-Newton solves and iterations rather than
+falling back silently.
+
 ## Final Stop Handoff (2026-06-11, No Further Verification)
 
 Maintainer stop request: stop implementation and verification immediately,
@@ -661,8 +749,12 @@ PR is already merged.
       simultaneous obstacle and self-contact scratch without shared-root growth;
       a complementary mixed gate pairs matrix-free static-obstacle friction
       with a direct-sparse irregular self-contact grid to cover the opposite
-      solver pairing in one root. A complementary contact-family production
-      gate now combines that matrix-free obstacle/direct-irregular
+      solver pairing in one root. The iterative sparse FEM ground-friction path
+      now uses DART-owned Jacobi-CG scratch instead of Eigen's local IC-CG
+      temporaries, and the baked no-growth/no-heap gates cover that
+      `useIterativeLinearSolver=true` path separately from the direct-sparse
+      and matrix-free projected-Newton paths. A complementary contact-family
+      production gate now combines that matrix-free obstacle/direct-irregular
       self-contact pairing with inter-body surface CCD in one baked root.
       The moving rigid-surface CCD path now has baked
       swept-box point-crossing gates for both free predicted motion and
@@ -1290,11 +1382,14 @@ Follow-up progress after PR #2956:
   World free allocator for sparse-pattern arrays, triplet assembly, PSD
   edge/tet/barrier block batches, and matrix-free block/diagonal storage. The
   FEM rest-shape cache and lagged friction normal/contact arrays now use the
-  same allocator-backed scratch component. The existing deformable stage
-  allocator test now expects projected-Newton vectors to reserve from the
-  provided allocator, and existing friction behavior plus baked
-  World-base/global-heap gates still pass without adding scene coverage to this
-  follow-up.
+  same allocator-backed scratch component. The iterative sparse solver path
+  now reuses DART-owned residual, preconditioned-residual, direction,
+  Hessian-direction, and inverse-diagonal vectors instead of Eigen IC-CG
+  temporaries, closing the measured iterative FEM ground-friction heap gap.
+  The existing deformable stage allocator test now expects projected-Newton
+  vectors to reserve from the provided allocator, and the baked
+  World-base/global-heap gates now include the iterative FEM ground-friction
+  coverage in addition to the existing direct-sparse and matrix-free scenes.
 - The kinematics cache follow-up routes `WorldKinematicsGraph`'s entity-node
   lookup vector through the World free allocator when the graph is constructed
   by the built-in kinematics stage. A focused stack-constructed graph test
@@ -1356,9 +1451,11 @@ Remaining Phase 4/5 follow-up items for the next PR:
 - Continue projected-Newton deformable scratch reuse only where profiling or a
   no-growth gate exposes a real allocation path, especially solver-private
   storage that still cannot borrow the World allocator directly
-  (`Eigen::SparseMatrix`/`VectorXd` internals), and differently shaped
-  frictional self-contact, static-obstacle, or inter-body CCD mixes not
-  represented by the current gates.
+  (`Eigen::SparseMatrix`/`VectorXd` internals). The iterative sparse FEM
+  ground-friction path is now covered; remaining work should target newly
+  measured Eigen/storage allocations or differently shaped frictional
+  self-contact, static-obstacle, or inter-body CCD mixes not represented by the
+  current gates.
 - Continue broader rigid IPC projected-Newton scratch reuse only from measured
   failing shapes beyond the current contact-free and active two-mesh-barrier
   gates, such as larger mesh contact sets or articulated contact-stack shapes
