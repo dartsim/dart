@@ -425,10 +425,29 @@ class _RigidMultibodySolverFamily:
             case_value("variational_residual", "residual"),
         )
         solved_residual = max(case_value("variational_solved", "residual"), 1.0e-12)
+        residual_solve_ratio = residual_only / solved_residual
+        solver_family_lanes = [case.key for case in self.cases]
+        max_step_ms = max(
+            (max_history(history) for history in self._step_ms_history.values()),
+            default=0.0,
+        )
         payload: dict[str, Any] = {
             "row": "rigid_multibody_solver_family",
+            "comparison_axis": "multibody_integration_solve_policy_family",
             "solver": "world_multibody_integration_family",
             "scope": "multibody_closure_solve_routing",
+            "held_fixed": {
+                "solver": "world_multibody_integration_family",
+                "contacts": "off",
+                "closure_family": "point",
+                "joint_family": "three_revolute_links",
+                "chain_links": _NUM_LINKS,
+                "link_length": _LINK_LENGTH,
+                "link_mass": _LINK_MASS,
+                "initial_bend": _INITIAL_BEND,
+                "gravity_scale": float(self.gravity_scale),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "executor": self._executors[executor_index][0],
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
@@ -437,19 +456,30 @@ class _RigidMultibodySolverFamily:
                 "executor_index": float(executor_index),
                 "gravity_scale": float(self.gravity_scale),
             },
-            "case_order": [case.key for case in self.cases],
+            "case_order": solver_family_lanes,
+            "solver_family_lanes": solver_family_lanes,
             "case_count": float(len(self.cases)),
             "cases": cases,
             "residual_only_residual": residual_only,
             "solved_residual": solved_residual,
-            "residual_solve_ratio": residual_only / solved_residual,
+            "residual_solve_ratio": residual_solve_ratio,
+            "multibody_solver_residual_only_residual": residual_only,
+            "multibody_solver_solved_residual": solved_residual,
+            "multibody_solver_residual_solve_ratio": residual_solve_ratio,
+            "multibody_solver_semi_residual": case_value(
+                "semi_residual", "residual"
+            ),
+            "multibody_solver_variational_residual": case_value(
+                "variational_residual", "residual"
+            ),
+            "multibody_solver_solved_tip_error": case_value(
+                "variational_solved", "tip_error"
+            ),
+            "multibody_solver_max_step_ms": max_step_ms,
             "history": {
                 "samples": float(len(self._solve_ratio_history)),
                 "max_residual_solve_ratio": max_history(self._solve_ratio_history),
-                "max_step_ms": max(
-                    (max_history(history) for history in self._step_ms_history.values()),
-                    default=0.0,
-                ),
+                "max_step_ms": max_step_ms,
                 "cases": {
                     case.key: {
                         "samples": float(len(self._residual_history[case.key])),
@@ -741,6 +771,13 @@ class _RigidMultibodySolverFamily:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: multibody integration solve-policy family")
+        builder.text(
+            "held fixed: World multibody point closure | contacts off | "
+            f"three revolute links | link length {_LINK_LENGTH:.2f} | "
+            f"gravity scale {self.gravity_scale:.1f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text(f"executor: {self._executor_label()}")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text("semi-implicit dynamic closure solve is intentionally not requested")

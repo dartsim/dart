@@ -1298,6 +1298,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World multibody link Jacobian | contacts off | gravity off | two revolute links | link length 0.55 | time step 4.0 ms",
             ),
         ),
+        (
+            rigid_multibody_solver_family,
+            (
+                "text:comparison axis: multibody integration solve-policy family",
+                "text:held fixed: World multibody point closure | contacts off | three revolute links | link length 0.55 | gravity scale 1.0 | time step 5.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:

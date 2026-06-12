@@ -7544,8 +7544,24 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_multibody_solver_family"
+    assert (
+        capture_metrics["comparison_axis"]
+        == "multibody_integration_solve_policy_family"
+    )
     assert capture_metrics["solver"] == "world_multibody_integration_family"
     assert capture_metrics["scope"] == "multibody_closure_solve_routing"
+    assert capture_metrics["held_fixed"] == {
+        "solver": "world_multibody_integration_family",
+        "contacts": "off",
+        "closure_family": "point",
+        "joint_family": "three_revolute_links",
+        "chain_links": 3,
+        "link_length": pytest.approx(0.55),
+        "link_mass": pytest.approx(0.55),
+        "initial_bend": pytest.approx(0.28),
+        "gravity_scale": pytest.approx(controller.gravity_scale),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert capture_metrics["executor"] == controller._executor_label()
     assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
     assert capture_metrics["world_time"] == pytest.approx(
@@ -7561,6 +7577,9 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
         controller.gravity_scale
     )
     assert capture_metrics["case_order"] == [case.key for case in controller.cases]
+    assert capture_metrics["solver_family_lanes"] == [
+        case.key for case in controller.cases
+    ]
     assert capture_metrics["case_count"] == pytest.approx(len(controller.cases))
     assert set(capture_metrics["cases"]) == set(metrics)
     for case in controller.cases:
@@ -7592,6 +7611,27 @@ def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     )
     assert capture_metrics["residual_solve_ratio"] == pytest.approx(
         controller._solve_ratio_history[-1]
+    )
+    assert capture_metrics["multibody_solver_residual_only_residual"] == pytest.approx(
+        max(float(semi["residual"]), float(variational_residual["residual"]))
+    )
+    assert capture_metrics["multibody_solver_solved_residual"] == pytest.approx(
+        max(float(variational_solved["residual"]), 1.0e-12)
+    )
+    assert capture_metrics["multibody_solver_residual_solve_ratio"] == pytest.approx(
+        controller._solve_ratio_history[-1]
+    )
+    assert capture_metrics["multibody_solver_semi_residual"] == pytest.approx(
+        float(semi["residual"])
+    )
+    assert capture_metrics["multibody_solver_variational_residual"] == pytest.approx(
+        float(variational_residual["residual"])
+    )
+    assert capture_metrics["multibody_solver_solved_tip_error"] == pytest.approx(
+        float(variational_solved["tip_error"])
+    )
+    assert capture_metrics["multibody_solver_max_step_ms"] == pytest.approx(
+        capture_metrics["history"]["max_step_ms"]
     )
     assert capture_metrics["history"]["samples"] == pytest.approx(
         len(controller._solve_ratio_history)

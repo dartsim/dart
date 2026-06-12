@@ -1419,6 +1419,32 @@ def test_rigid_workflow_latest_signals_prioritize_link_jacobian_values() -> None
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_multibody_solver_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "multibody_solver_max_step_ms": 0.03,
+            "multibody_solver_residual_only_residual": 0.62,
+            "multibody_solver_residual_solve_ratio": 31.0,
+            "multibody_solver_semi_residual": 0.35,
+            "multibody_solver_solved_residual": 0.02,
+            "multibody_solver_solved_tip_error": 0.0,
+            "multibody_solver_variational_residual": 0.62,
+            "solver": "world_multibody_integration_family",
+        }
+    )
+
+    assert highlights[:8] == [
+        "multibody solver residual only residual: 0.62",
+        "multibody solver solved residual: 0.02",
+        "multibody solver residual solve ratio: 31",
+        "multibody solver semi residual: 0.35",
+        "multibody solver variational residual: 0.62",
+        "multibody solver solved tip error: 0",
+        "multibody solver max step ms: 0.03",
+        "solver: world_multibody_integration_family",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

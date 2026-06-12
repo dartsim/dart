@@ -2,15 +2,15 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 34 now gives the World multibody link Jacobian row the
-same reviewable comparison shape as the surrounding rigid workflow rows while
-continuing to follow the DART 7 architecture/work-packet harness from PR
-#2986. `rigid_link_jacobian` names
-`link_origin_jacobian_mapping_family` as its comparison axis in the panel and
-capture metrics, records held-fixed contact-free World
-two-revolute-link/time-step/finite-difference context, exports top-level link
-linear/angular speed, world/body Jacobian gap, finite-difference residual,
-transpose-mapped torque, and power-residual metrics, and feeds decisive latest
+Latest local slice: row 35 now gives the World multibody solver-family routing
+row the same reviewable comparison shape as the surrounding rigid workflow rows
+while continuing to follow the DART 7 architecture/work-packet harness from PR
+#2986. `rigid_multibody_solver_family` names
+`multibody_integration_solve_policy_family` as its comparison axis in the panel
+and capture metrics, records held-fixed contact-free World
+point-closure/three-link-chain/gravity/time-step context, exports top-level
+residual-only residual, solved residual, residual solve ratio, lane residuals,
+solved tip error, and maximum step-time metrics, and feeds decisive latest
 signals into the workflow review index.
 
 Resume from this state:
@@ -18,18 +18,18 @@ Resume from this state:
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed implementation commit before this slice was
-  `593e7fafa84 Surface link center of mass workflow signals`; if this slice has
-  been committed, expect one additional local commit for link Jacobian workflow
-  signals.
+  `a585d05f23d Surface link Jacobian workflow signals`; if this slice has been
+  committed, expect one additional local commit for multibody solver-family
+  workflow signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-34 diff first. If it is
+- If this slice is still uncommitted, inspect the row-35 diff first. If it is
   committed, continue from a fresh audit for the next concrete rigid
   GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-34 evidence direction before broadening further.
+  row-15-through-row-35 evidence direction before broadening further.
 
-Files touched by this row-34 slice:
+Files touched by this row-35 slice:
 
-- `python/examples/demos/scenes/rigid_link_jacobian.py`
+- `python/examples/demos/scenes/rigid_multibody_solver_family.py`
 - `scripts/capture_py_demo.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/tests/unit/test_capture_py_demo.py`
@@ -39,55 +39,72 @@ Files touched by this row-34 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 
-Row-34 link Jacobian slice:
+Row-35 multibody solver-family slice:
 
-- `rigid_link_jacobian` now exports
-  `comparison_axis=link_origin_jacobian_mapping_family`, held-fixed
-  contact-free World two-revolute-link/time-step/finite-difference context,
-  controls, Jacobian term names, and top-level capture metrics for link
-  linear/angular speed, world/body Jacobian gap, finite-difference residual,
-  transpose-mapped torques, and power residual.
-- The link Jacobian panel labels the comparison axis and held-fixed context
-  before the existing mapping diagnostics.
-- `scripts/capture_py_demo.py` prioritizes row-34 latest-signal keys so the
-  review card orders speed, Jacobian gap, finite-difference residual, torques,
-  power residual, and solver signals before generic metrics.
+- `rigid_multibody_solver_family` now exports
+  `comparison_axis=multibody_integration_solve_policy_family`, held-fixed
+  contact-free World point-closure/three-link-chain/gravity/time-step context,
+  controls, solver-family lane names, and top-level capture metrics for
+  residual-only residual, solved residual, residual solve ratio, lane residuals,
+  solved tip error, and max step time.
+- The multibody solver-family panel labels the comparison axis and held-fixed
+  context before the existing residual diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-35 latest-signal keys so the
+  review card orders residual-only residual, solved residual, solve ratio, lane
+  residuals, solved tip error, maximum step time, and solver signals before
+  generic metrics.
 - `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
-  document the link-origin Jacobian mapping axis and held-fixed context.
+  document the multibody integration solve-policy axis and held-fixed context.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-34 latest signals prioritize link
-  speed, world/body Jacobian gap, finite-difference residual, torques, power
-  residual, and solver.
-- Real row-34 workflow capture completed under
-  `build/captures/rigid_link_jacobian_row_34_1781304169` with
+  sync check, and the unit guard that row-35 latest signals prioritize
+  residual-only residual, solved residual, solve ratio, lane residuals, solved
+  tip error, maximum step time, and solver.
+- Real row-35 workflow capture completed under
+  `build/captures/rigid_multibody_solver_family_row_35_1781304535` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 34 reported `comparison_axis=link_origin_jacobian_mapping_family`,
-  held-fixed `contacts=off`, `gravity=off`,
-  `joint_family=two_revolute_links`, `link_length=0.55`,
-  `finite_difference_eps=1e-6`, `solver=world_multibody_link_jacobian`,
-  `time_step_ms=4.0`, controls `motion_speed=0.85`, `elbow_phase=0.72`,
-  `wrench_force=1.35`, `wrench_angle_deg=28.0`, `wrench_moment=0.12`,
-  `jacobian_terms=[world_jacobian_twist, finite_difference_velocity, jacobian_transpose_wrench, world_body_jacobian_gap]`,
-  latest linear/angular speed about `0.5652/0.6190`,
-  finite-difference error about `1.52e-7`, power error `0`, world/body
-  Jacobian gap about `0.1272`, torques about `-0.8650/-0.2949`,
-  historical max link speed about `0.6677`, and historical max world/body gap
-  about `0.2055`.
-- `review_index.html` showed the row-34 card with `axis`, `held fixed`,
+- Row 35 reported
+  `comparison_axis=multibody_integration_solve_policy_family`, held-fixed
+  `contacts=off`, `closure_family=point`,
+  `joint_family=three_revolute_links`, `chain_links=3`, `link_length=0.55`,
+  `link_mass=0.55`, `initial_bend=0.28`, `gravity_scale=1.0`,
+  `solver=world_multibody_integration_family`, `time_step_ms=5.0`, controls
+  `executor_index=0.0`, `gravity_scale=1.0`,
+  `solver_family_lanes=[semi_residual, variational_residual, variational_solved]`,
+  residual-only residual about `0.7642`, solved residual clamped at `1e-12`,
+  residual solve ratio about `7.642e11`, semi-implicit residual about
+  `0.7631`, variational residual about `0.7642`, solved tip error about
+  `6.66e-16`, and max step time about `0.0982 ms`.
+- `review_index.html` showed the row-35 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for link linear/angular speed, world/body Jacobian gap,
-  finite-difference residual, torques, power residual, and solver. The
-  per-scene capture wrote a nonblank docked screenshot with 2138 unique colors
-  and 95 PNG frames from the 96-frame workflow row capture under
+  ordering for residual-only residual, solved residual, solve ratio, lane
+  residuals, solved tip error, maximum step time, and solver. The per-scene
+  capture wrote a nonblank docked screenshot with 3410 unique colors and
+  71 PNG frames from the 72-frame workflow row capture under
   `build/captures/`.
+
+Previous completed and verified slice: row 34 gives the World multibody link
+Jacobian row the same reviewable comparison shape as the surrounding rigid
+workflow rows. `rigid_link_jacobian` names
+`link_origin_jacobian_mapping_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World
+two-revolute-link/time-step/finite-difference context, exports top-level link
+linear/angular speed, world/body Jacobian gap, finite-difference residual,
+transpose-mapped torque, and power-residual metrics, and feeds decisive latest
+signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-34 workflow capture completed under
+`build/captures/rigid_link_jacobian_row_34_1781304169` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 95 PNG frames.
 
 Previous completed and verified slice: row 33 gives the World multibody link
 center-of-mass offset row the same reviewable comparison shape as the

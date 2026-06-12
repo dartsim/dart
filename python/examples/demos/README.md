@@ -212,7 +212,7 @@ plus a warning block if any selected row is missing those fields.
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | World dynamics, acceleration, impulse, gravity        | Dynamics axis, coupling, torque gap, response ratio           |
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | World links, COM offset, mass, gravity                | COM axis, torque sign, mirror sum, inertia lag                |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | World Jacobian motion, elbow phase, wrench controls   | Jacobian axis, link speed, gap, torque, residual              |
-| 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual solve ratio, residual drift, Replay marks            |
+| 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Multibody solve policy, gravity, executor             | Solver-family axis, residual ratio, lane errors               |
 | 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks            |
 
 For the focused IPC no-tunneling capability view, use
@@ -793,6 +793,12 @@ path.
 family and closure policy labels, residuals, tip errors/heights, joint speeds,
 step timing, residual solve ratio, and compact history metrics into the
 manifest sidecar.
+The panel and capture metrics label the multibody integration solve-policy
+comparison axis, held-fixed contact-free World point-closure/three-link-chain/
+gravity/time-step context, solver-family lane names, and top-level review
+signals for residual-only residual, solved residual, residual solve ratio,
+semi-implicit and variational residuals, solved tip error, and maximum step
+profile time.
 The shared Replay panel uses residual solve ratio as its value track and marks
 solve-advantage, residual-only drift, and solved-tight frames while residual
 rows remain loose.
