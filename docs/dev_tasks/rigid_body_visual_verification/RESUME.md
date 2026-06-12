@@ -2,12 +2,12 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_multibody_dynamics_terms` Replay timeline
-slice after the screw-joint pitch checkpoint. The World multibody generalized
-dynamics row now uses coupled-versus-heavy response gap as its Replay value
-track and marks response separation, off-diagonal coupling, or heavy-load
-torque frames so saved-state scrubbing can jump to the joint-space dynamics
-behavior users need to inspect.
+This checkpoint completes the `rigid_link_center_of_mass` Replay timeline
+slice after the multibody dynamics-terms checkpoint. The World multibody
+inertial-offset row now uses mirrored COM angle spread as its Replay value
+track and marks mirrored-angle, centered-still, or high-inertia-lag frames so
+saved-state scrubbing can jump to the center-of-mass behavior users need to
+inspect.
 
 Expected repository state after this hand-off:
 
@@ -25,10 +25,16 @@ Expected repository state after this hand-off:
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
-  passive-parameters Replay timeline, screw-joint pitch Replay timeline, and
-  multibody dynamics-terms Replay timeline checkpoint.
+  passive-parameters Replay timeline, screw-joint pitch Replay timeline,
+  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
+- Local `HEAD` before the link center-of-mass implementation commit was
+  `7438e13cca9 Add multibody dynamics replay timeline`; the branch was
+  observed clean and ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by eleven commits before
+  this slice.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ahead of `origin/feature/rigid-body-gui-visual-verification` by ten
@@ -87,9 +93,14 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Response norm gap`, with markers for response separation, off-diagonal
   coupling, or heavy-load torque frames.
+- The current link center-of-mass Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Mirrored COM angle spread`, with markers for mirrored-angle,
+  centered-still, or high-inertia-lag frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
-  `rigid_link_center_of_mass`, but a future session should inspect the
+  `rigid_link_jacobian`, but a future session should inspect the
   sidecar and scene/test internals before implementing it. No thresholds or
   marker semantics have been finalized.
 - The current continuation resumed implementation from the active persistent
@@ -142,6 +153,10 @@ Expected repository state after this hand-off:
   `replay_timeline` metadata to `rigid_multibody_dynamics_terms`, updated tests
   and docs, and ran focused tests, drift guards, a real docked capture,
   `pixi run lint`, and `git diff --check`.
+- The link center-of-mass Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_link_center_of_mass`, updated tests and docs, and ran
+  focused tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
 - Do not push these local commits without explicit approval in a future
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -388,10 +403,15 @@ Current snapshot:
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
-  passive-parameters Replay timeline, screw-joint pitch Replay timeline, and
-  multibody dynamics-terms Replay timeline checkpoint.
+  passive-parameters Replay timeline, screw-joint pitch Replay timeline,
+  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
+- Local `HEAD` before the link center-of-mass implementation commit was
+  `7438e13cca9 Add multibody dynamics replay timeline`; the branch was
+  observed clean and eleven commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification` before this slice.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ten commits ahead of
@@ -401,8 +421,9 @@ Current snapshot:
   of `origin/feature/rigid-body-gui-visual-verification` before that slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
-  passive-parameters, screw-joint pitch, and multibody dynamics-terms Replay
-  timeline checkpoints are local and unpushed until explicit future approval.
+  passive-parameters, screw-joint pitch, multibody dynamics-terms, and link
+  center-of-mass Replay timeline checkpoints are local and unpushed until
+  explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
@@ -411,10 +432,10 @@ Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
 motor-limits, passive-parameters, screw-joint pitch, and multibody
-dynamics-terms Replay timeline slices after the pushed docs-only handoff.
-Re-evaluate the durable sidecar before selecting the next bounded rigid
-visual-verification slice; the next adjacent constraints row is likely
-`rigid_link_center_of_mass`. Do not push without explicit approval in that
+dynamics-terms, and link center-of-mass Replay timeline slices after the pushed
+docs-only handoff. Re-evaluate the durable sidecar before selecting the next
+bounded rigid visual-verification slice; the next adjacent constraints row is
+likely `rigid_link_jacobian`. Do not push without explicit approval in that
 session.
 
 Passive-parameters checks for this slice:
@@ -469,6 +490,22 @@ response norm about `8.63`, heavy/coupled response ratio about `0.558`,
 heavy-minus-coupled torque norm about `18.14`, coupled/heavy off-diagonal
 coupling about `0.357`/`1.427`, max impulse residual about `2.7e-14`, and
 historical max coupling about `0.373`.
+
+Link center-of-mass checks for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_center_of_mass_timeline_1781279455
+```
+
+The focused Replay/link-center-of-mass pytest plus drift guards reported
+`6 passed`; the real docked capture wrote a nonblank 960x540 screenshot with
+docked UI, 71 PNG frames, and 72 scene-metric events. The manifest recorded row
+`rigid_link_center_of_mass`, mirrored positive/negative angles about
+`+/-0.449`, high-inertia angle about `0.153`, centered angle `0.0`, mirrored
+torques about `+/-3.182`, high/positive acceleration ratio about `0.370`,
+high/positive mass-matrix ratio about `2.948`, and historical max
+positive/high-inertia angles about `0.449`/`0.153`.
 
 ## Context That Would Be Lost
 

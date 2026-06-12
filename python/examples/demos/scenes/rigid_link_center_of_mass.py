@@ -38,6 +38,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _ComLane:
     key: str
@@ -571,6 +580,90 @@ class _RigidLinkCenterOfMass:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        angles = snapshot.get("angle_history", {})
+        if isinstance(angles, dict):
+            positive = _last_float(angles.get("positive", []))
+            negative = _last_float(angles.get("negative", []))
+            if positive is not None and negative is not None:
+                return abs(positive - negative)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            positive_metrics = metrics.get("positive", {})
+            negative_metrics = metrics.get("negative", {})
+            if isinstance(positive_metrics, dict) and isinstance(
+                negative_metrics, dict
+            ):
+                try:
+                    return abs(
+                        float(positive_metrics.get("angle", 0.0))
+                        - float(negative_metrics.get("angle", 0.0))
+                    )
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.15:
+            return 1.0
+
+        angles = snapshot.get("angle_history", {})
+        if isinstance(angles, dict):
+            centered = _last_float(angles.get("centered", []))
+            positive = _last_float(angles.get("positive", []))
+            high = _last_float(angles.get("high_inertia", []))
+            if centered is not None and positive is not None:
+                if abs(centered) <= 0.01 and abs(positive) >= 0.08:
+                    return 1.0
+            if positive is not None and high is not None:
+                if abs(positive) - abs(high) >= 0.05:
+                    return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                centered_metrics = metrics.get("centered", {})
+                positive_metrics = metrics.get("positive", {})
+                negative_metrics = metrics.get("negative", {})
+                high_metrics = metrics.get("high_inertia", {})
+                if isinstance(positive_metrics, dict) and isinstance(
+                    negative_metrics, dict
+                ):
+                    if (
+                        abs(
+                            float(positive_metrics.get("angle", 0.0))
+                            - float(negative_metrics.get("angle", 0.0))
+                        )
+                        >= 0.15
+                    ):
+                        return 1.0
+                if isinstance(centered_metrics, dict) and isinstance(
+                    positive_metrics, dict
+                ):
+                    if (
+                        abs(float(centered_metrics.get("angle", 0.0))) <= 0.01
+                        and abs(float(positive_metrics.get("angle", 0.0))) >= 0.08
+                    ):
+                        return 1.0
+                if isinstance(positive_metrics, dict) and isinstance(
+                    high_metrics, dict
+                ):
+                    if (
+                        abs(float(positive_metrics.get("angle", 0.0)))
+                        - abs(float(high_metrics.get("angle", 0.0)))
+                        >= 0.05
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = int(controls.get("executor_index", self.executor_index))
@@ -700,6 +793,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Mirrored COM angle spread",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
             "replay_sync": controller._sync,
         },
     )

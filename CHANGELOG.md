@@ -99,6 +99,9 @@
     Add scene-owned Replay timeline metadata to the multibody dynamics-terms
     row so saved-state scrubbing can track coupled-versus-heavy response gap
     and jump to off-diagonal-coupling or heavy-load torque frames.
+    Add scene-owned Replay timeline metadata to the link center-of-mass row so
+    saved-state scrubbing can track mirrored COM angle spread and jump to
+    centered-still or high-inertia-lag frames.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

@@ -6317,6 +6317,66 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
         assert capture_metrics["history"][
             f"{lane_key}_max_abs_energy"
         ] == pytest.approx(max(abs(value) for value in controller._energy_history[lane_key]))
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_angle_spread = abs(
+        controller._angle_history["positive"][-1]
+        - controller._angle_history["negative"][-1]
+    )
+    assert timeline["signal_label"] == "Mirrored COM angle spread"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_angle_spread)
+    assert (
+        timeline["markers"](
+            {
+                "angle_history": {
+                    "positive": [0.10],
+                    "negative": [-0.09],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "angle_history": {
+                    "centered": [0.0],
+                    "positive": [0.09],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "angle_history": {
+                    "positive": [0.18],
+                    "high_inertia": [0.10],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "angle_history": {
+                    "centered": [0.002],
+                    "positive": [0.04],
+                    "negative": [-0.03],
+                    "high_inertia": [0.035],
+                },
+                "last_metrics": {
+                    "centered": {"angle": 0.002},
+                    "positive": {"angle": 0.04},
+                    "negative": {"angle": -0.03},
+                    "high_inertia": {"angle": 0.035},
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
