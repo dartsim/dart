@@ -1441,6 +1441,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added solve-time validation for ADMM, SAP, and boxed semi-smooth Newton
     LCP parameter structs so invalid Python or C++ tuning values are rejected
     with `InvalidProblem` before numerical iteration begins.
+  - Extended solve-time validation to the remaining exposed LCP parameter
+    structs for PGS, APGD, TGS, the standard Newton-family solvers, and
+    interior point, replacing silent clamps and invalid numerical branches with
+    explicit `InvalidProblem` diagnostics for invalid Python or C++ tuning
+    values.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

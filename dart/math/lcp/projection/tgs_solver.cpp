@@ -38,11 +38,28 @@
 #include <algorithm>
 #include <limits>
 #include <span>
+#include <string>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::math {
+namespace {
+
+bool validateParameters(
+    const TgsSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.epsilonForDivision)
+      || params.epsilonForDivision <= 0.0) {
+    if (message) {
+      *message = "TGS epsilon_for_division must be positive";
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
 
 TgsSolver::TgsSolver()
 {
@@ -100,6 +117,12 @@ LcpResult TgsSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int nSkip = padding(n);
   const int maxIterations = std::max(

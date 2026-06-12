@@ -42,6 +42,7 @@
 
 #include <limits>
 #include <ranges>
+#include <string>
 
 #include <cmath>
 
@@ -597,7 +598,7 @@ TEST(MinimumMapNewtonSolver, ConvergenceFailureWithLowIterations)
 }
 
 //==============================================================================
-TEST(MinimumMapNewtonSolver, LineSearchFailureWithZeroSteps)
+TEST(MinimumMapNewtonSolver, RejectsInvalidLineSearchStepCount)
 {
   MinimumMapNewtonSolver solver;
   MinimumMapNewtonSolver::Parameters params;
@@ -611,8 +612,8 @@ TEST(MinimumMapNewtonSolver, LineSearchFailureWithZeroSteps)
   options.maxIterations = 2;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
-  EXPECT_FALSE(result.message.empty());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(result.message.find("max_line_search_steps"), std::string::npos);
 }
 
 //==============================================================================
@@ -620,7 +621,6 @@ TEST(MinimumMapNewtonSolver, GradientDescentWarmStartReducesMerit)
 {
   MinimumMapNewtonSolver solver;
   MinimumMapNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxGradientDescentWarmStartSteps = 1;
   params.maxGradientDescentLineSearchSteps = 16;
   solver.setParameters(params);
@@ -634,7 +634,7 @@ TEST(MinimumMapNewtonSolver, GradientDescentWarmStartReducesMerit)
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(minimumMapMerit(problem, x), minimumMapMerit(problem, initial));
 }
@@ -644,7 +644,6 @@ TEST(MinimumMapNewtonSolver, PgsWarmStartReducesMerit)
 {
   MinimumMapNewtonSolver solver;
   MinimumMapNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxPgsWarmStartIterations = 1;
   solver.setParameters(params);
 
@@ -657,13 +656,13 @@ TEST(MinimumMapNewtonSolver, PgsWarmStartReducesMerit)
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(minimumMapMerit(problem, x), minimumMapMerit(problem, initial));
 }
 
 //==============================================================================
-TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
+TEST(FischerBurmeisterNewtonSolver, RejectsInvalidLineSearchStepCount)
 {
   FischerBurmeisterNewtonSolver solver;
   FischerBurmeisterNewtonSolver::Parameters params;
@@ -677,8 +676,8 @@ TEST(FischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
   options.maxIterations = 2;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
-  EXPECT_FALSE(result.message.empty());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(result.message.find("max_line_search_steps"), std::string::npos);
 }
 
 //==============================================================================
@@ -686,7 +685,6 @@ TEST(FischerBurmeisterNewtonSolver, GradientDescentWarmStartReducesMerit)
 {
   FischerBurmeisterNewtonSolver solver;
   FischerBurmeisterNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxGradientDescentWarmStartSteps = 1;
   params.maxGradientDescentLineSearchSteps = 16;
   solver.setParameters(params);
@@ -700,7 +698,7 @@ TEST(FischerBurmeisterNewtonSolver, GradientDescentWarmStartReducesMerit)
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(
       fischerBurmeisterMerit(problem, x, params.smoothingEpsilon),
@@ -712,7 +710,6 @@ TEST(FischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
 {
   FischerBurmeisterNewtonSolver solver;
   FischerBurmeisterNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxPgsWarmStartIterations = 1;
   solver.setParameters(params);
 
@@ -725,7 +722,7 @@ TEST(FischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(
       fischerBurmeisterMerit(problem, x, params.smoothingEpsilon),
@@ -733,7 +730,7 @@ TEST(FischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
 }
 
 //==============================================================================
-TEST(PenalizedFischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
+TEST(PenalizedFischerBurmeisterNewtonSolver, RejectsInvalidLineSearchStepCount)
 {
   PenalizedFischerBurmeisterNewtonSolver solver;
   PenalizedFischerBurmeisterNewtonSolver::Parameters params;
@@ -747,8 +744,8 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, LineSearchFailureWithZeroSteps)
   options.maxIterations = 2;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
-  EXPECT_FALSE(result.message.empty());
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(result.message.find("max_line_search_steps"), std::string::npos);
 }
 
 //==============================================================================
@@ -758,7 +755,6 @@ TEST(
 {
   PenalizedFischerBurmeisterNewtonSolver solver;
   PenalizedFischerBurmeisterNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxGradientDescentWarmStartSteps = 1;
   params.maxGradientDescentLineSearchSteps = 16;
   solver.setParameters(params);
@@ -772,7 +768,7 @@ TEST(
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(
       penalizedFischerBurmeisterMerit(
@@ -786,7 +782,6 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
 {
   PenalizedFischerBurmeisterNewtonSolver solver;
   PenalizedFischerBurmeisterNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
   params.maxPgsWarmStartIterations = 1;
   solver.setParameters(params);
 
@@ -799,7 +794,7 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, PgsWarmStartReducesMerit)
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
+  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
   EXPECT_TRUE(x.array().isFinite().all());
   EXPECT_LT(
       penalizedFischerBurmeisterMerit(
@@ -824,7 +819,7 @@ TEST(PenalizedFischerBurmeisterNewtonSolver, RejectsInvalidLambda)
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
-  EXPECT_FALSE(result.message.empty());
+  EXPECT_NE(result.message.find("lambda"), std::string::npos);
 }
 
 //==============================================================================

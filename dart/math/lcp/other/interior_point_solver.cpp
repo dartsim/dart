@@ -77,9 +77,24 @@ double computeStepSize(
   return alpha;
 }
 
-double clampValue(double value, double lo, double hi)
+bool validateParameters(
+    const InteriorPointSolver::Parameters& params, std::string* message)
 {
-  return std::clamp(value, lo, hi);
+  if (!std::isfinite(params.sigma) || params.sigma <= 0.0
+      || params.sigma >= 1.0) {
+    if (message) {
+      *message = "Interior-point sigma must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepScale) || params.stepScale <= 0.0
+      || params.stepScale > 1.0) {
+    if (message) {
+      *message = "Interior-point step_scale must be in (0, 1]";
+    }
+    return false;
+  }
+  return true;
 }
 
 } // namespace
@@ -160,8 +175,14 @@ LcpResult InteriorPointSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
-  const double sigma = clampValue(params->sigma, 1e-6, 0.999);
-  const double stepScale = clampValue(params->stepScale, 1e-3, 1.0);
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
+  const double sigma = params->sigma;
+  const double stepScale = params->stepScale;
 
   const double initScale = std::max(1.0, vectorInfinityNorm(b));
   const double minVal = std::clamp(1e-6 * initScale, 1e-8, 1.0);

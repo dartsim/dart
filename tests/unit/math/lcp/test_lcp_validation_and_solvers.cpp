@@ -441,6 +441,12 @@ void expectRowMajorDataNear(
   }
 }
 
+void expectInvalidParameter(const LcpResult& result, const char* token)
+{
+  EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(result.message.find(token), std::string::npos) << result.message;
+}
+
 } // namespace
 
 TEST(LcpValidationCoverage, DetectsDimensionMismatch)
@@ -2006,6 +2012,21 @@ TEST(PgsSolverCoverage, RejectsInvalidRelaxation)
   EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
 }
 
+TEST(PgsSolverCoverage, RejectsInvalidDivisionEpsilon)
+{
+  PgsSolver solver;
+  PgsSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+
+  LcpOptions options;
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  expectInvalidParameter(result, "epsilon_for_division");
+}
+
 TEST(PgsSolverCoverage, SolvesWarmStartWithRandomOrder)
 {
   PgsSolver solver;
@@ -2374,23 +2395,25 @@ TEST(MprgpSolverCoverage, ReportsProjectedGradientStallWithFiniteMetrics)
   EXPECT_FALSE(result.message.empty());
 }
 
-TEST(InteriorPointSolverCoverage, SolvesWithClampedParameters)
+TEST(InteriorPointSolverCoverage, RejectsInvalidParameters)
 {
-  InteriorPointSolver solver;
-  auto problem = makeStandardProblem(6);
-  Eigen::VectorXd x = Eigen::VectorXd::Constant(6, 0.2);
+  auto solve = [](InteriorPointSolver::Parameters params) {
+    InteriorPointSolver solver;
+    LcpOptions options;
+    options.customOptions = &params;
+
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
 
   InteriorPointSolver::Parameters params;
   params.sigma = 1.5;
-  params.stepScale = 1.5;
+  expectInvalidParameter(solve(params), "sigma");
 
-  LcpOptions options;
-  options.customOptions = &params;
-  options.maxIterations = 3;
-  options.warmStart = true;
-  const auto result = solver.solve(problem, x, options);
-  EXPECT_NE(result.status, LcpSolverStatus::InvalidProblem);
-  EXPECT_TRUE(x.array().isFinite().all());
+  params = {};
+  params.stepScale = 1.5;
+  expectInvalidParameter(solve(params), "step_scale");
 }
 
 TEST(InteriorPointSolverCoverage, SolvesSimpleThreeByThreeProblem)
@@ -3347,6 +3370,26 @@ TEST(ApgdSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
+TEST(ApgdSolverCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](ApgdSolver::Parameters params) {
+    ApgdSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  ApgdSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+  expectInvalidParameter(solve(params), "epsilon_for_division");
+
+  params = {};
+  params.restartCheckInterval = -1;
+  expectInvalidParameter(solve(params), "restart_check_interval");
+}
+
 TEST(TgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
 {
   TgsSolver defaultSolver;
@@ -3392,6 +3435,21 @@ TEST(TgsSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
+TEST(TgsSolverCoverage, RejectsInvalidDivisionEpsilon)
+{
+  TgsSolver solver;
+  TgsSolver::Parameters params;
+  params.epsilonForDivision = 0.0;
+
+  LcpOptions options = solver.getDefaultOptions();
+  options.customOptions = &params;
+
+  auto problem = makeStandardProblem(2);
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+  const auto result = solver.solve(problem, x, options);
+  expectInvalidParameter(result, "epsilon_for_division");
+}
+
 TEST(SubspaceMinimizationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
 {
   SubspaceMinimizationSolver defaultSolver;
@@ -3433,6 +3491,105 @@ TEST(SubspaceMinimizationSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
   EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
   EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(MinimumMapNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](MinimumMapNewtonSolver::Parameters params) {
+    MinimumMapNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  MinimumMapNewtonSolver::Parameters params;
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
+}
+
+TEST(FischerBurmeisterNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](FischerBurmeisterNewtonSolver::Parameters params) {
+    FischerBurmeisterNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  FischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 0.0;
+  expectInvalidParameter(solve(params), "smoothing_epsilon");
+  params = {};
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
 }
 
 TEST(FischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
@@ -3531,6 +3688,60 @@ TEST(MinimumMapNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)
   auto emptyResult = customSolver.solve(emptyProblem, xEmpty, options);
   EXPECT_EQ(emptyResult.status, LcpSolverStatus::Success);
   EXPECT_EQ(xEmpty.size(), 0);
+}
+
+TEST(PenalizedFischerBurmeisterNewtonCoverage, RejectsInvalidParameters)
+{
+  auto solve = [](PenalizedFischerBurmeisterNewtonSolver::Parameters params) {
+    PenalizedFischerBurmeisterNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.customOptions = &params;
+    auto problem = makeStandardProblem(2);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    return solver.solve(problem, x, options);
+  };
+
+  PenalizedFischerBurmeisterNewtonSolver::Parameters params;
+  params.smoothingEpsilon = 0.0;
+  expectInvalidParameter(solve(params), "smoothing_epsilon");
+  params = {};
+  params.lambda = 1.5;
+  expectInvalidParameter(solve(params), "lambda");
+  params = {};
+  params.maxLineSearchSteps = 0;
+  expectInvalidParameter(solve(params), "max_line_search_steps");
+  params = {};
+  params.stepReduction = 1.0;
+  expectInvalidParameter(solve(params), "step_reduction");
+  params = {};
+  params.sufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "sufficient_decrease");
+  params = {};
+  params.minStep = 0.0;
+  expectInvalidParameter(solve(params), "min_step");
+  params = {};
+  params.maxGradientDescentWarmStartSteps = -1;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_warm_start_steps");
+  params = {};
+  params.maxGradientDescentLineSearchSteps = 0;
+  expectInvalidParameter(
+      solve(params), "max_gradient_descent_line_search_steps");
+  params = {};
+  params.gradientDescentStepReduction = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_step_reduction");
+  params = {};
+  params.gradientDescentSufficientDecrease = 1.0;
+  expectInvalidParameter(solve(params), "gradient_descent_sufficient_decrease");
+  params = {};
+  params.gradientDescentMinStep = 0.0;
+  expectInvalidParameter(solve(params), "gradient_descent_min_step");
+  params = {};
+  params.maxPgsWarmStartIterations = -1;
+  expectInvalidParameter(solve(params), "max_pgs_warm_start_iterations");
+  params = {};
+  params.pgsWarmStartRelaxation = 0.0;
+  expectInvalidParameter(solve(params), "pgs_warm_start_relaxation");
 }
 
 TEST(PenalizedFischerBurmeisterNewtonCoverage, DefaultCustomZeroRhsAndEdgeCases)

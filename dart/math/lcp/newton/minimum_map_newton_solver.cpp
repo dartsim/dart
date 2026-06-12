@@ -42,7 +42,10 @@
 #include <iterator>
 #include <limits>
 #include <ranges>
+#include <string>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::math {
 namespace {
@@ -90,6 +93,99 @@ double minimumMapMerit(
   Eigen::VectorXd grad(x.size());
   computeMinimumMapResidualAndGradient(A, b, x, H, grad);
   return 0.5 * H.squaredNorm();
+}
+
+bool validateParameters(
+    const MinimumMapNewtonSolver::Parameters& params, std::string* message)
+{
+  if (params.maxLineSearchSteps <= 0) {
+    if (message) {
+      *message = "Minimum-map Newton max_line_search_steps must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepReduction) || params.stepReduction <= 0.0
+      || params.stepReduction >= 1.0) {
+    if (message) {
+      *message = "Minimum-map Newton step_reduction must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.sufficientDecrease)
+      || params.sufficientDecrease < 0.0 || params.sufficientDecrease >= 1.0) {
+    if (message) {
+      *message = "Minimum-map Newton sufficient_decrease must be in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.minStep) || params.minStep <= 0.0) {
+    if (message) {
+      *message = "Minimum-map Newton min_step must be positive";
+    }
+    return false;
+  }
+  if (params.maxGradientDescentWarmStartSteps < 0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton max_gradient_descent_warm_start_steps must "
+            "be non-negative";
+    }
+    return false;
+  }
+  if (params.maxGradientDescentLineSearchSteps <= 0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton max_gradient_descent_line_search_steps must "
+            "be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentStepReduction)
+      || params.gradientDescentStepReduction <= 0.0
+      || params.gradientDescentStepReduction >= 1.0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton gradient_descent_step_reduction must be in "
+            "(0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentSufficientDecrease)
+      || params.gradientDescentSufficientDecrease < 0.0
+      || params.gradientDescentSufficientDecrease >= 1.0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton gradient_descent_sufficient_decrease must be "
+            "in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.gradientDescentMinStep)
+      || params.gradientDescentMinStep <= 0.0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton gradient_descent_min_step must be positive";
+    }
+    return false;
+  }
+  if (params.maxPgsWarmStartIterations < 0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton max_pgs_warm_start_iterations must be "
+            "non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.pgsWarmStartRelaxation)
+      || params.pgsWarmStartRelaxation <= 0.0
+      || params.pgsWarmStartRelaxation > 2.0) {
+    if (message) {
+      *message
+          = "Minimum-map Newton pgs_warm_start_relaxation must be in (0, 2]";
+    }
+    return false;
+  }
+  return true;
 }
 
 void runPgsWarmStart(
@@ -266,6 +362,12 @@ LcpResult MinimumMapNewtonSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   runPgsWarmStart(problem, x, options, *params);
   runGradientDescentWarmStart(A, b, x, *params, absTol, relTol);

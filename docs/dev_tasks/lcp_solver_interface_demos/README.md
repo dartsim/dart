@@ -1,5 +1,142 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation — Remaining Parameter Validation
+
+The user resumed the broad LCP solver/interface/demo goal after the stop-only
+hand-off. This slice turns the remaining parameter-validation audit into
+implementation and focused coverage.
+
+Current slice:
+
+- `PgsSolver`, `ApgdSolver`, and `TgsSolver` now reject invalid
+  `epsilonForDivision` before iteration. `ApgdSolver` also rejects negative
+  `restartCheckInterval` while preserving `0` as the documented
+  every-iteration restart-check mode.
+- `MinimumMapNewtonSolver`, `FischerBurmeisterNewtonSolver`, and
+  `PenalizedFischerBurmeisterNewtonSolver` now validate their exposed
+  line-search, gradient-descent warm-start, PGS warm-start, smoothing, and
+  penalty parameters before numerical iteration.
+- `InteriorPointSolver` now rejects invalid `sigma` and `stepScale` instead of
+  silently clamping user-facing values.
+- C++ validation coverage exercises invalid custom parameter structs across the
+  affected projection, Newton, and interior-point solvers.
+- dartpy LCP tests exercise invalid Python parameter objects routed through the
+  solver `parameters` properties.
+- Existing Newton warm-start tests were updated so invalid line-search counts
+  are no longer used as a control-flow device.
+- `CHANGELOG.md` records the new validation behavior.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+           UNIT_math_lcp_math_lcp_lcp_newton_solvers \
+           dartpy \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --gtest_filter='PgsSolverCoverage.RejectsInvalidDivisionEpsilon:ApgdSolverCoverage.RejectsInvalidParameters:TgsSolverCoverage.RejectsInvalidDivisionEpsilon:MinimumMapNewtonCoverage.RejectsInvalidParameters:FischerBurmeisterNewtonCoverage.RejectsInvalidParameters:PenalizedFischerBurmeisterNewtonCoverage.RejectsInvalidParameters:InteriorPointSolverCoverage.RejectsInvalidParameters'
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_newton_solvers \
+  --gtest_filter='MinimumMapNewtonSolver.RejectsInvalidLineSearchStepCount:MinimumMapNewtonSolver.GradientDescentWarmStartReducesMerit:MinimumMapNewtonSolver.PgsWarmStartReducesMerit:FischerBurmeisterNewtonSolver.RejectsInvalidLineSearchStepCount:FischerBurmeisterNewtonSolver.GradientDescentWarmStartReducesMerit:FischerBurmeisterNewtonSolver.PgsWarmStartReducesMerit:PenalizedFischerBurmeisterNewtonSolver.RejectsInvalidLineSearchStepCount:PenalizedFischerBurmeisterNewtonSolver.GradientDescentWarmStartReducesMerit:PenalizedFischerBurmeisterNewtonSolver.PgsWarmStartReducesMerit:PenalizedFischerBurmeisterNewtonSolver.RejectsInvalidLambda'
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+pixi run lint
+```
+
+Observed results:
+
+- Focused C++ validation executable: 7/7 tests passed.
+- Focused C++ Newton executable: 10/10 tests passed.
+- `python/tests/unit/math/test_lcp.py`: 77 passed.
+- `pixi run test-lcpsolver`: 17/17 C++ LCP tests passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+
+Immediate next step after this checkpoint:
+
+- Continue the broad objective with the next concrete DART 7 LCP gap, likely a
+  solver/interface audit pass that looks for remaining silent fallbacks,
+  incomplete support claims, or demo/benchmark coverage gaps beyond parameter
+  validation.
+
+## 2026-06-12 Stop-Only Hand-Off — Remaining Parameter Validation Audit
+
+The user explicitly stopped further implementation and requested only hand-off
+docs, with no further verification. After that instruction, the only intended
+edits are this file and `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`;
+do not run lint, build, tests, benchmark listing, solver execution, commit, or
+push as part of this stop-only hand-off.
+
+Repository state observed before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `e3535141c5d Show all LCP solver parameters in py demo`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 22]`.
+- Worktree: clean before this docs-only hand-off edit.
+- Stash list: empty.
+- No PR was associated with this branch when checked earlier in the session.
+
+Recent completed checkpoints on this branch:
+
+- `e3535141c5d Show all LCP solver parameters in py demo`
+- `b60e20a8dc8 Expose LCP solver parameters in dartpy`
+- `748cef40ea0 Validate advanced LCP solver parameters`
+- `06ac009b27c Show LCP solver parameters in py demo`
+- `8cd98e2e553 Expose advanced LCP parameters in dartpy`
+
+Current interrupted slice:
+
+- No implementation files were edited in this slice before the stop request.
+- The work was in audit/planning only: identify remaining solve-time validation
+  gaps in parameterized LCP solvers now that their C++/dartpy parameter
+  surfaces are visible.
+- Do not treat this as a completed checkpoint. This is a stop-only hand-off
+  snapshot.
+
+Remaining audit findings to resume from, if the user explicitly resumes
+implementation:
+
+- `PgsSolver`: validate `epsilonForDivision` before iteration; reject
+  non-finite or non-positive values.
+- `ApgdSolver`: validate `epsilonForDivision > 0` and
+  `restartCheckInterval >= 0`. A value of `0` should remain valid because it
+  means the restart check runs every iteration.
+- `TgsSolver`: validate `epsilonForDivision` before iteration; reject
+  non-finite or non-positive values.
+- `MinimumMapNewtonSolver`: validate line-search and warm-start parameters
+  before iteration, including positive step counts, finite factors in their
+  documented ranges, non-negative warm-start iteration counts, and valid PGS
+  warm-start relaxation.
+- `FischerBurmeisterNewtonSolver`: same Newton line-search and warm-start
+  validation as minimum-map Newton, plus positive finite `smoothingEpsilon`.
+- `PenalizedFischerBurmeisterNewtonSolver`: keep the existing `lambda` range
+  validation and add the same Newton line-search, warm-start, and
+  `smoothingEpsilon` validation.
+- `InteriorPointSolver`: replace silent clamping of user-facing `sigma` and
+  `stepScale` with explicit validation; suggested ranges are finite
+  `sigma` in `(0, 1)` and finite `stepScale` in `(0, 1]`.
+
+Relevant cautions for the next session:
+
+- Existing Newton solver tests may intentionally set invalid line-search
+  counts, such as `maxLineSearchSteps = 0`, to force failure paths. If
+  validation is added, update those expectations to `InvalidProblem` instead
+  of preserving numerical-iteration failure behavior.
+- Existing validation tests include interior-point cases with `sigma = 1.5`
+  and `stepScale = 1.5`; those likely reflect the current silent-clamping
+  behavior and should be updated if explicit validation is implemented.
+- Existing APGD coverage uses `restartCheckInterval = 0`; keep that valid.
+
+Immediate next step for a fresh session:
+
+1. Do nothing unless the user explicitly resumes implementation.
+2. If resumed, confirm current state with `git status --short --branch` and
+   `git log --oneline --decorate --max-count=15`.
+3. Inspect the solver files listed in `RESUME.md` and implement one bounded
+   validation slice with focused C++ and dartpy coverage.
+
 ## 2026-06-11 Current Continuation — Full Parameter Metadata In Py-Demo
 
 After checkpoint `b60e20a8dc8 Expose LCP solver parameters in dartpy`, the

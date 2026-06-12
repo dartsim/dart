@@ -576,6 +576,29 @@ def test_customized_advanced_boxed_solvers_solve_boxed_problem(
     (
         (dart.AdmmSolver(), dart.AdmmSolverParameters(), "rho_init"),
         (dart.SapSolver(), dart.SapSolverParameters(), "regularization"),
+        (dart.PgsSolver(), dart.PgsSolverParameters(), "epsilon_for_division"),
+        (dart.ApgdSolver(), dart.ApgdSolverParameters(), "restart_check_interval"),
+        (dart.TgsSolver(), dart.TgsSolverParameters(), "epsilon_for_division"),
+        (
+            dart.MinimumMapNewtonSolver(),
+            dart.MinimumMapNewtonSolverParameters(),
+            "max_line_search_steps",
+        ),
+        (
+            dart.FischerBurmeisterNewtonSolver(),
+            dart.FischerBurmeisterNewtonSolverParameters(),
+            "smoothing_epsilon",
+        ),
+        (
+            dart.PenalizedFischerBurmeisterNewtonSolver(),
+            dart.PenalizedFischerBurmeisterNewtonSolverParameters(),
+            "lambda",
+        ),
+        (
+            dart.InteriorPointSolver(),
+            dart.InteriorPointSolverParameters(),
+            "step_scale",
+        ),
         (
             dart.BoxedSemiSmoothNewtonSolver(),
             dart.BoxedSemiSmoothNewtonSolverParameters(),
@@ -590,13 +613,25 @@ def test_advanced_boxed_solvers_reject_invalid_parameters_from_dartpy_math(
         params.rho_init = 0.0
     elif isinstance(params, dart.SapSolverParameters):
         params.regularization = 0.0
+    elif isinstance(params, dart.PgsSolverParameters):
+        params.epsilon_for_division = 0.0
+    elif isinstance(params, dart.ApgdSolverParameters):
+        params.restart_check_interval = -1
+    elif isinstance(params, dart.TgsSolverParameters):
+        params.epsilon_for_division = 0.0
+    elif isinstance(params, dart.MinimumMapNewtonSolverParameters):
+        params.max_line_search_steps = 0
+    elif isinstance(params, dart.FischerBurmeisterNewtonSolverParameters):
+        params.smoothing_epsilon = 0.0
+    elif isinstance(params, dart.PenalizedFischerBurmeisterNewtonSolverParameters):
+        params.lambda_ = 0.0
+    elif isinstance(params, dart.InteriorPointSolverParameters):
+        params.step_scale = 0.0
     elif isinstance(params, dart.BoxedSemiSmoothNewtonSolverParameters):
         params.max_line_search_steps = 0
     solver.parameters = params
 
-    problem = dart.LcpProblem(
-        np.eye(2), np.array([0.25, 0.75]), np.zeros(2), np.ones(2)
-    )
+    problem = dart.LcpProblem(np.eye(2), np.array([0.25, 0.75]))
     result, _ = solver.solve(problem)
 
     assert result.status == dart.LcpSolverStatus.INVALID_PROBLEM

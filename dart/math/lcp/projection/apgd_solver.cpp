@@ -38,11 +38,34 @@
 #include <algorithm>
 #include <limits>
 #include <span>
+#include <string>
 #include <vector>
 
 #include <cmath>
 
 namespace dart::math {
+namespace {
+
+bool validateParameters(
+    const ApgdSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.epsilonForDivision)
+      || params.epsilonForDivision <= 0.0) {
+    if (message) {
+      *message = "APGD epsilon_for_division must be positive";
+    }
+    return false;
+  }
+  if (params.restartCheckInterval < 0) {
+    if (message) {
+      *message = "APGD restart_check_interval must be non-negative";
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
 
 ApgdSolver::ApgdSolver()
 {
@@ -100,6 +123,12 @@ LcpResult ApgdSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int nSkip = padding(n);
   const int maxIterations = std::max(
