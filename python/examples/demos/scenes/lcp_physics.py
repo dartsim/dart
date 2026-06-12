@@ -83,6 +83,21 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "coupled two-contact active tangent bounds",
     },
     {
+        "packet": "contact_solver_comparison_sweep",
+        "surface": "findex contact",
+        "benchmark_filter": (
+            "BM_LcpContactSolverComparisonSweep|"
+            "BM_LcpStaggeringContactPipelineSweep"
+        ),
+        "coverage": "DART 7 contact-pipeline solver families",
+    },
+    {
+        "packet": "contact_normal_standard_sweep",
+        "surface": "standard contact",
+        "benchmark_filter": "BM_LcpContactNormalStandardSweep",
+        "coverage": "normal-only contact subproblems",
+    },
+    {
         "packet": "singular_degenerate",
         "surface": "standard/boxed/findex",
         "benchmark_filter": "BM_LcpSingularDegenerate",

@@ -18,6 +18,8 @@
       Dantzig.
 - [x] Captured the current hand-off state after the user explicitly requested
       no further verification or implementation work.
+- [x] Exposed the DART 7 contact-pipeline comparison sweeps in py-demo LCP
+      benchmark metadata.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -162,6 +164,40 @@ Interrupted next-slice reconnaissance, with no code changes made:
   `python/tests/unit/test_py_demo_panels.py` expectations to use the broader
   manifest-driven benchmark, if source inspection confirms that is the intended
   comparison surface.
+
+## Contact-Pipeline Metadata Checkpoint
+
+The continuation after the hand-off snapshot kept the exact
+`active_friction_index_contact` row pointed at its two-solver regression
+benchmark, then added separate py-demo benchmark packet rows for the broader
+DART 7 contact-pipeline comparisons registered in `bm_lcp_compare.cpp`:
+
+- `contact_solver_comparison_sweep`:
+  `BM_LcpContactSolverComparisonSweep|BM_LcpStaggeringContactPipelineSweep`
+  for Staggering, ADMM, SAP, and BoxedSemiSmoothNewton contact-pipeline
+  fixtures.
+- `contact_normal_standard_sweep`: `BM_LcpContactNormalStandardSweep` for
+  normal-only standard contact subproblems across standard-capable solvers.
+
+Verification for this checkpoint:
+
+```bash
+git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main
+git merge-base --is-ancestor origin/main HEAD
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run bm lcp_compare -- --benchmark_list_tests \
+  --benchmark_filter='BM_LcpContactSolverComparisonSweep|BM_LcpStaggeringContactPipelineSweep|BM_LcpContactNormalStandardSweep'
+pixi run lint
+```
+
+Observed results:
+
+- `origin/main` fetched successfully over HTTPS and is an ancestor of `HEAD`.
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- Benchmark listing built `BM_LCP_COMPARE` and listed the referenced sweep
+  benchmarks.
+- `pixi run lint`: passed.
 
 ## Verification Snapshot
 

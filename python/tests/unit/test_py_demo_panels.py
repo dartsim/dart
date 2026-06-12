@@ -931,6 +931,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
         "active_set_transition",
         "active_friction_index_contact",
+        "contact_solver_comparison_sweep",
+        "contact_normal_standard_sweep",
         "singular_degenerate",
         "near_singular",
         "world_stack",
@@ -958,6 +960,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_DantzigSolver_ActiveFrictionIndexContact|"
         "BM_PgsSolver_ActiveFrictionIndexContact"
     )
+    assert benchmark_by_packet["contact_solver_comparison_sweep"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpContactSolverComparisonSweep|"
+        "BM_LcpStaggeringContactPipelineSweep"
+    )
+    assert benchmark_by_packet["contact_normal_standard_sweep"][
+        "benchmark_filter"
+    ] == "BM_LcpContactNormalStandardSweep"
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())
     assert (

@@ -10,9 +10,10 @@ validation diagnostics in C++ and dartpy. The latest checkpoint tightens
 py-demos, starting with `DirectSolver` treating only n <= 3 standard packets as
 native and marking larger standard packets as delegated.
 
-This session then stopped for hand-off only after the user explicitly requested
-no further verification or implementation work. The only intended follow-up
-change is this dev-task hand-off update.
+The latest continuation exposed the broader DART 7 contact-pipeline benchmark
+comparison sweeps in the LCP py-demo metadata while keeping the exact
+`active_friction_index_contact` row pointed at its two-solver regression
+benchmark.
 
 ## Current Branch
 
@@ -21,18 +22,17 @@ HEAD was `80a31ddb2b5 Report Direct LCP native support precisely` and the
 tracking branch was `origin/feature/lcp-solver-interface-demos` at
 `b2f5632b277 Expose LCP problem validation diagnostics`.
 
-`git fetch origin main` failed during hand-off with
-`ssh: connect to host github.com port 22: Network is unreachable`, so remote
-`main` could not be refreshed in this environment. If push also failed, expect
-local commits to be ahead of origin.
+The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
+succeeded. `origin/main` was confirmed to be an ancestor of `HEAD` before the
+contact-pipeline metadata checkpoint.
 
 ## Immediate Next Step
 
 Resume by inspecting branch state. If local commits are not on
 `origin/feature/lcp-solver-interface-demos`, fetch `origin/main`, merge it if it
 moved, then push the consolidated branch once network access is available and
-maintainer/user approval is still in force. Do not continue implementation
-until the user asks to resume work.
+maintainer/user approval is still in force. Continue with one bounded LCP
+solver/interface/demo gap at a time.
 
 ## Context That Would Be Lost
 
@@ -80,6 +80,14 @@ until the user asks to resume work.
 - `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` appears to be a narrower
   older benchmark surface; confirm whether it is secondary before wiring demos
   to it.
+- The contact-pipeline metadata checkpoint resolved the immediate missing
+  py-demo rows for `BM_LcpContactSolverComparisonSweep`,
+  `BM_LcpStaggeringContactPipelineSweep`, and
+  `BM_LcpContactNormalStandardSweep`.
+- Verification for that checkpoint passed:
+  `python/tests/unit/test_py_demo_panels.py` passed 43 tests;
+  `pixi run bm lcp_compare -- --benchmark_list_tests` listed the referenced
+  sweep benchmarks; and `pixi run lint` passed.
 
 ## How to Resume
 
