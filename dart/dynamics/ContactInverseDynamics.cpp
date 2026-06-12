@@ -312,8 +312,22 @@ ContactInverseDynamics::Result ContactInverseDynamics::compute(
   mRhs.setZero(numRows + numColumns);
   mRhs.head(numRows) = target;
 
-  const bool converged
-      = math::solveNonNegativeLeastSquares(mSystem, mRhs, mCoefficients);
+  // First pass with a dual tolerance matched to the feasibility tolerance:
+  // near-redundant friction-cone directions otherwise keep the active-set
+  // loop busy chasing improvements far below the requested accuracy. Fall
+  // back to the solver's strict automatic tolerance when the loose pass does
+  // not reach the requested residual.
+  const double looseTolerance = 0.1 * mResidualTolerance * feasibilityScale;
+  bool converged = math::solveNonNegativeLeastSquares(
+      mSystem, mRhs, mCoefficients, looseTolerance);
+  const auto residualNormOf = [&]() {
+    return (mSystem.topRows(numRows) * mCoefficients - target)
+        .lpNorm<Eigen::Infinity>();
+  };
+  if (!converged || residualNormOf() > mResidualTolerance * feasibilityScale) {
+    converged
+        = math::solveNonNegativeLeastSquares(mSystem, mRhs, mCoefficients);
+  }
 
   // Recover per-contact forces and the corrected joint forces.
   result.contactForces.resize(mContacts.size());
