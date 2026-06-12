@@ -250,10 +250,48 @@ struct World::ReplayState
   using DifferentiableParameterSnapshot
       = std::pair<entt::entity, PhysicalParameter>;
 
+  struct VectorState
+  {
+    explicit VectorState(common::MemoryAllocator& allocator)
+      : values(SnapshotAllocator<double>{allocator})
+    {
+      // Empty.
+    }
+
+    SnapshotVector<double> values;
+  };
+
+  struct JointLimitsState
+  {
+    explicit JointLimitsState(common::MemoryAllocator& allocator)
+      : lower(allocator),
+        upper(allocator),
+        velocityLower(allocator),
+        velocityUpper(allocator),
+        effortLower(allocator),
+        effortUpper(allocator)
+    {
+      // Empty.
+    }
+
+    VectorState lower;
+    VectorState upper;
+    VectorState velocityLower;
+    VectorState velocityUpper;
+    VectorState effortLower;
+    VectorState effortUpper;
+  };
+
   struct JointLayoutState
   {
     explicit JointLayoutState(common::MemoryAllocator& allocator)
-      : name(SnapshotAllocator<char>{allocator})
+      : name(SnapshotAllocator<char>{allocator}),
+        springStiffness(allocator),
+        dampingCoefficient(allocator),
+        restPosition(allocator),
+        armature(allocator),
+        coulombFriction(allocator),
+        limits(allocator)
     {
       // Empty.
     }
@@ -261,18 +299,18 @@ struct World::ReplayState
     comps::JointType type = comps::JointType::Revolute;
     comps::ActuatorType actuatorType = comps::ActuatorType::Force;
     SnapshotString name;
-    Eigen::VectorXd springStiffness;
-    Eigen::VectorXd dampingCoefficient;
-    Eigen::VectorXd restPosition;
-    Eigen::VectorXd armature;
-    Eigen::VectorXd coulombFriction;
+    VectorState springStiffness;
+    VectorState dampingCoefficient;
+    VectorState restPosition;
+    VectorState armature;
+    VectorState coulombFriction;
     double breakForce = 0.0;
     bool hasAvbdStiffnessState = true;
     double avbdStartStiffness = 1.0;
     double avbdLinearStiffness = std::numeric_limits<double>::infinity();
     double avbdAngularStiffness = std::numeric_limits<double>::infinity();
     double avbdMaxStiffness = std::numeric_limits<double>::infinity();
-    comps::JointLimits limits;
+    JointLimitsState limits;
     Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
     Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
     double pitch = 0.0;
@@ -289,18 +327,24 @@ struct World::ReplayState
 
   struct JointState
   {
-    explicit JointState(common::MemoryAllocator& allocator) : layout(allocator)
+    explicit JointState(common::MemoryAllocator& allocator)
+      : layout(allocator),
+        position(allocator),
+        velocity(allocator),
+        acceleration(allocator),
+        torque(allocator),
+        commandVelocity(allocator)
     {
       // Empty.
     }
 
     entt::entity entity = entt::null;
     JointLayoutState layout;
-    Eigen::VectorXd position;
-    Eigen::VectorXd velocity;
-    Eigen::VectorXd acceleration;
-    Eigen::VectorXd torque;
-    Eigen::VectorXd commandVelocity;
+    VectorState position;
+    VectorState velocity;
+    VectorState acceleration;
+    VectorState torque;
+    VectorState commandVelocity;
     bool broken = false;
   };
 
@@ -440,13 +484,55 @@ std::size_t countReplayView(const View& view)
   return count;
 }
 
-bool sameReplayVector(const Eigen::VectorXd& lhs, const Eigen::VectorXd& rhs)
+template <typename ReplayVector>
+void captureReplayVector(const Eigen::VectorXd& source, ReplayVector& target)
 {
-  return lhs.size() == rhs.size() && (lhs.array() == rhs.array()).all();
+  target.values.clear();
+  target.values.reserve(static_cast<std::size_t>(source.size()));
+  for (Eigen::Index i = 0; i < source.size(); ++i) {
+    target.values.push_back(source[i]);
+  }
 }
 
+template <typename ReplayVector>
+void restoreReplayVector(const ReplayVector& source, Eigen::VectorXd& target)
+{
+  target.resize(static_cast<Eigen::Index>(source.values.size()));
+  for (Eigen::Index i = 0; i < target.size(); ++i) {
+    target[i] = source.values[static_cast<std::size_t>(i)];
+  }
+}
+
+template <typename ReplayVector>
+bool sameReplayVector(const Eigen::VectorXd& lhs, const ReplayVector& rhs)
+{
+  if (lhs.size() != static_cast<Eigen::Index>(rhs.values.size())) {
+    return false;
+  }
+
+  for (Eigen::Index i = 0; i < lhs.size(); ++i) {
+    if (lhs[i] != rhs.values[static_cast<std::size_t>(i)]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename ReplayJointLimits>
+void captureReplayJointLimits(
+    const comps::JointLimits& source, ReplayJointLimits& target)
+{
+  captureReplayVector(source.lower, target.lower);
+  captureReplayVector(source.upper, target.upper);
+  captureReplayVector(source.velocityLower, target.velocityLower);
+  captureReplayVector(source.velocityUpper, target.velocityUpper);
+  captureReplayVector(source.effortLower, target.effortLower);
+  captureReplayVector(source.effortUpper, target.effortUpper);
+}
+
+template <typename ReplayJointLimits>
 bool sameReplayJointLimits(
-    const comps::JointLimits& lhs, const comps::JointLimits& rhs)
+    const comps::JointLimits& lhs, const ReplayJointLimits& rhs)
 {
   return sameReplayVector(lhs.lower, rhs.lower)
          && sameReplayVector(lhs.upper, rhs.upper)
@@ -5604,11 +5690,11 @@ void World::restoreReplayFrame(std::size_t index)
 
   for (const auto& state : replayFrame.joints) {
     auto& joint = m_storage->registry.get<comps::Joint>(state.entity);
-    joint.position = state.position;
-    joint.velocity = state.velocity;
-    joint.acceleration = state.acceleration;
-    joint.torque = state.torque;
-    joint.commandVelocity = state.commandVelocity;
+    restoreReplayVector(state.position, joint.position);
+    restoreReplayVector(state.velocity, joint.velocity);
+    restoreReplayVector(state.acceleration, joint.acceleration);
+    restoreReplayVector(state.torque, joint.torque);
+    restoreReplayVector(state.commandVelocity, joint.commandVelocity);
     joint.broken = state.broken;
   }
 
@@ -5742,18 +5828,19 @@ void World::recordReplayFrame()
     state.layout.type = joint.type;
     state.layout.actuatorType = joint.actuatorType;
     state.layout.name.assign(joint.name.begin(), joint.name.end());
-    state.layout.springStiffness = joint.springStiffness;
-    state.layout.dampingCoefficient = joint.dampingCoefficient;
-    state.layout.restPosition = joint.restPosition;
-    state.layout.armature = joint.armature;
-    state.layout.coulombFriction = joint.coulombFriction;
+    captureReplayVector(joint.springStiffness, state.layout.springStiffness);
+    captureReplayVector(
+        joint.dampingCoefficient, state.layout.dampingCoefficient);
+    captureReplayVector(joint.restPosition, state.layout.restPosition);
+    captureReplayVector(joint.armature, state.layout.armature);
+    captureReplayVector(joint.coulombFriction, state.layout.coulombFriction);
     state.layout.breakForce = joint.breakForce;
     state.layout.hasAvbdStiffnessState = joint.hasAvbdStiffnessState;
     state.layout.avbdStartStiffness = joint.avbdStartStiffness;
     state.layout.avbdLinearStiffness = joint.avbdLinearStiffness;
     state.layout.avbdAngularStiffness = joint.avbdAngularStiffness;
     state.layout.avbdMaxStiffness = joint.avbdMaxStiffness;
-    state.layout.limits = joint.limits;
+    captureReplayJointLimits(joint.limits, state.layout.limits);
     state.layout.axis = joint.axis;
     state.layout.axis2 = joint.axis2;
     state.layout.pitch = joint.pitch;
@@ -5767,11 +5854,11 @@ void World::recordReplayFrame()
         = joint.rigidBodyFixedJointLocalAnchorChild;
     state.layout.rigidBodyFixedJointTargetRelativeOrientation
         = joint.rigidBodyFixedJointTargetRelativeOrientation;
-    state.position = joint.position;
-    state.velocity = joint.velocity;
-    state.acceleration = joint.acceleration;
-    state.torque = joint.torque;
-    state.commandVelocity = joint.commandVelocity;
+    captureReplayVector(joint.position, state.position);
+    captureReplayVector(joint.velocity, state.velocity);
+    captureReplayVector(joint.acceleration, state.acceleration);
+    captureReplayVector(joint.torque, state.torque);
+    captureReplayVector(joint.commandVelocity, state.commandVelocity);
     state.broken = joint.broken;
     replayFrame.joints.push_back(std::move(state));
   }

@@ -1,6 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Current Continuation (2026-06-12, Replay Snapshot Name Allocators)
+## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
 Work resumed from the single pushed handoff branch on a fresh local follow-up
 branch: `pr/hmm-phase45-replay-snapshot-allocators`, based on
@@ -13,10 +13,11 @@ Current branch state:
 allocator`).
 - Committed locally: `f5e7625a6e0` (`Route replay restore scratch through
 World allocator`).
-- Latest local checkpoint in this continuation: replay joint-layout and
-  loop-closure names use World-allocated replay snapshot strings, with
-  long-name record/restore ownership probes in
-  `World.WorldPersistentStorageUsesWorldFreeAllocator`.
+- Committed locally: `6568764f1f8` (`Route replay names through World
+allocator`).
+- Latest local checkpoint in this continuation: replay dynamic joint payloads
+  use World-allocated replay snapshot vectors, with 6-DOF floating-joint
+  record/restore coverage.
 
 The committed replay slices close the next replay ownership gaps. A new
 non-empty replay ownership assertion first reproduced one global heap
@@ -40,7 +41,15 @@ one global heap allocation / 81 bytes during `setReplayRecordingEnabled(true)`.
 The ownership gate now covers long joint-name and long loop-closure-name replay
 record/restore paths.
 
-Focused validation for the replay-name slice:
+The replay-payload slice removes replay-owned `Eigen::VectorXd` storage from
+joint snapshots. Joint runtime vectors, joint layout vectors, and joint limit
+vectors are captured as World-allocated scalar snapshot vectors and restored
+back into the live joint component vectors. The ownership gate and replay
+runtime restore test now exercise a 6-DOF floating joint so the snapshot code
+copies multi-coordinate dynamic payloads rather than only scalar revolute
+payloads.
+
+Focused validation for the replay-name and replay-payload slices:
 
 ```bash
 pixi run lint
@@ -53,12 +62,11 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Dynamic `Eigen::VectorXd` payloads inside richer replay joint snapshots remain
-native heap-owning/unproven; the current one-DOF replay-name probe does not
-prove that larger dynamic Eigen payloads are allocator-clean. Richer replay
-restores may also allocate if they insert missing transient components or copy
-native payloads. Treat those as separate evidence-first slices; do not claim
-complete replay zero-heap coverage from the current rigid-body and name probes.
+Live joint component storage still uses `Eigen::VectorXd`; the replay change
+only changes replay-owned snapshot payloads. Richer replay restores may still
+allocate if they have to resize live vectors or insert missing transient
+components. Treat those as separate evidence-first slices; do not claim full
+World replay zero-heap coverage from the current snapshot-payload gates.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -79,12 +87,12 @@ git log --oneline --decorate -8
 git diff --stat
 ```
 
-Next implementation slice should be evidence-first: either prove/fix dynamic
-`Eigen::VectorXd` payload ownership in richer replay snapshots, or return to
-the EnTT storage-layout investigation for the allocator comparative matrix.
-Before publishing or opening a PR, run `pixi run lint` plus the selected
-focused test/build gate for the final changed scope. Do not push/open a PR
-without explicit maintainer approval.
+Next implementation slice should be evidence-first: either stress richer replay
+restore paths that resize live vectors or insert transient components, or
+return to the EnTT storage-layout investigation for the allocator comparative
+matrix. Before publishing or opening a PR, run `pixi run lint` plus the
+selected focused test/build gate for the final changed scope. Do not push/open
+a PR without explicit maintainer approval.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 

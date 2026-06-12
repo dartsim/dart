@@ -1,6 +1,6 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Replay Snapshot Name Allocators)
+## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
 Current local branch: `pr/hmm-phase45-replay-snapshot-allocators`, created from
 `pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. It has no remote tracking
@@ -12,10 +12,11 @@ Current local state:
 allocator`).
 - Committed locally: `f5e7625a6e0` (`Route replay restore scratch through
 World allocator`).
-- Latest local checkpoint in this continuation: replay joint-layout and
-  loop-closure names use World-allocated replay snapshot strings, with
-  long-name record/restore ownership probes in
-  `World.WorldPersistentStorageUsesWorldFreeAllocator`.
+- Committed locally: `6568764f1f8` (`Route replay names through World
+allocator`).
+- Latest local checkpoint in this continuation: replay dynamic joint payloads
+  use World-allocated replay snapshot vectors, with 6-DOF floating-joint
+  record/restore coverage.
 
 Committed replay slice:
 
@@ -50,7 +51,17 @@ Current replay-name slice:
 - The long joint-name probe reproduced one global heap allocation / 81 bytes
   during `setReplayRecordingEnabled(true)` before the local fix.
 
-Focused validation for the replay-name slice:
+Current replay-payload slice:
+
+- Replay-owned joint runtime vectors, joint layout vectors, and joint limit
+  vectors are stored as World-allocated scalar snapshot vectors instead of
+  `Eigen::VectorXd`.
+- Replay restore copies snapshot payloads back into the live joint component
+  vectors.
+- The ownership gate and replay runtime restore test now exercise a 6-DOF
+  floating joint to cover multi-coordinate dynamic payloads.
+
+Focused validation for the replay-name and replay-payload slices:
 
 ```bash
 pixi run lint
@@ -64,14 +75,16 @@ build/default/cpp/Release/bin/test_world \
 ```
 
 Immediate next step: choose the next evidence-first HMM slice. Good candidates
-are dynamic `Eigen::VectorXd` payload ownership in richer replay snapshots or
-the EnTT storage-layout investigation for the allocator comparative matrix. Do
-not push or open a PR without explicit maintainer approval.
+are richer replay restore paths that resize live vectors or insert transient
+components, or the EnTT storage-layout investigation for the allocator
+comparative matrix. Do not push or open a PR without explicit maintainer
+approval.
 
-Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` fields inside
-richer replay snapshots remain native heap-owning/unproven. Richer replay
-restores may also allocate if they insert missing transient components or copy
-native payloads. Treat those as separate evidence-first slices.
+Remaining replay-specific follow-up: live joint component storage still uses
+`Eigen::VectorXd`; the latest replay change only changes replay-owned snapshot
+payloads. Richer replay restores may still allocate if they have to resize live
+vectors or insert missing transient components. Treat those as separate
+evidence-first slices.
 
 Fresh-session start:
 

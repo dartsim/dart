@@ -3088,13 +3088,13 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   auto base = robot.addLink("allocator_replay_base");
   sx::JointSpec jointSpec;
   jointSpec.name = std::string(80, 'j');
-  jointSpec.type = sx::JointType::Revolute;
+  jointSpec.type = sx::JointType::Floating;
   auto link = robot.addLink("allocator_replay_link", base, jointSpec);
   auto joint = link.getParentJoint();
-  joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
-  joint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
-  joint.setForce(Eigen::VectorXd::Constant(1, 1.5));
-  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -0.75));
+  joint.setPosition(Eigen::VectorXd::LinSpaced(6, 0.25, 0.75));
+  joint.setVelocity(Eigen::VectorXd::LinSpaced(6, 0.5, 1.0));
+  joint.setForce(Eigen::VectorXd::LinSpaced(6, 1.5, 2.0));
+  joint.setCommandVelocity(Eigen::VectorXd::LinSpaced(6, -0.75, -0.25));
   auto& jointReplayFreeList
       = jointReplayWorld.getMemoryManager().getFreeListAllocator();
   const auto allocationsBeforeJointReplay
@@ -20216,15 +20216,17 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
 
   sx::JointSpec spec;
   spec.name = "joint";
-  spec.type = sx::JointType::Revolute;
+  spec.type = sx::JointType::Floating;
   auto link = robot.addLink("link", base, spec);
   auto joint = link.getParentJoint();
 
-  const Eigen::VectorXd initialPosition = Eigen::VectorXd::Constant(1, 0.25);
-  const Eigen::VectorXd initialVelocity = Eigen::VectorXd::Constant(1, 0.5);
-  const Eigen::VectorXd initialTorque = Eigen::VectorXd::Constant(1, 1.5);
+  const Eigen::VectorXd initialPosition
+      = Eigen::VectorXd::LinSpaced(6, 0.25, 0.75);
+  const Eigen::VectorXd initialVelocity
+      = Eigen::VectorXd::LinSpaced(6, 0.5, 1.0);
+  const Eigen::VectorXd initialTorque = Eigen::VectorXd::LinSpaced(6, 1.5, 2.0);
   const Eigen::VectorXd initialCommandVelocity
-      = Eigen::VectorXd::Constant(1, -0.75);
+      = Eigen::VectorXd::LinSpaced(6, -0.75, -0.25);
   const double initialBreakForce = 100.0;
   joint.setPosition(initialPosition);
   joint.setVelocity(initialVelocity);
@@ -20248,10 +20250,10 @@ TEST(World, ReplayRecordingRestoresMultibodyRuntimeState)
   world.setReplayRecordingEnabled(true);
   ASSERT_EQ(world.getReplayFrameCount(), 1u);
 
-  joint.setPosition(Eigen::VectorXd::Constant(1, -1.0));
-  joint.setVelocity(Eigen::VectorXd::Constant(1, -2.0));
-  joint.setForce(Eigen::VectorXd::Constant(1, -3.0));
-  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -4.0));
+  joint.setPosition(Eigen::VectorXd::Constant(6, -1.0));
+  joint.setVelocity(Eigen::VectorXd::Constant(6, -2.0));
+  joint.setForce(Eigen::VectorXd::Constant(6, -3.0));
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(6, -4.0));
   jointComponent.broken = true;
   linkComponent.externalForce.setZero();
 
