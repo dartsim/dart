@@ -61,7 +61,7 @@ predicate. The generated standard packets are symmetric PSD but rank-deficient,
 so Baraff remains listed as native while MPRGP's default positive-definite
 native gate removes its fallback rows from the native benchmark list.
 
-The current continuation completed the next benchmark-routing slice:
+The next continuation completed the following benchmark-routing slice:
 contact-normal standard sweep registration now builds each concrete normal-only
 contact packet once and registers only solvers whose `supportsProblem(problem)`
 accepts that packet. Current MPRGP and Baraff contact-normal rows remain
@@ -69,29 +69,58 @@ registered because the generated packets satisfy their native predicates, and
 Direct remains limited to concrete 1-, 2-, and 3-row normal packets through the
 same support predicate rather than a size special case.
 
+The latest user instruction on 2026-06-11 was critical: stop implementation
+and focus on hand-off only with no further verification. No code, lint, build,
+test, benchmark-list, or solver-execution work was performed after that
+instruction. This resume document and the dev-task README are the only intended
+changes in the final hand-off checkpoint.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-At the start of the contact-normal benchmark-routing slice:
+State before this docs-only hand-off checkpoint:
 
-- Local HEAD was `fdc9a0c13fd Filter singular LCP benchmark native rows`.
+- Local HEAD was `7ef5b79e602 Filter contact normal benchmark native rows`.
 - `origin/feature/lcp-solver-interface-demos` was
   `f86a095ce9a Document final LCP handoff state`.
-- The local branch was clean and one commit ahead of the tracking branch.
+- The local branch was clean and two commits ahead of the tracking branch:
+  `fdc9a0c13fd Filter singular LCP benchmark native rows` and
+  `7ef5b79e602 Filter contact normal benchmark native rows`.
+- `origin/main` was fetched over HTTPS to `7d05d7b9ea72`; merging it with
+  `git merge --no-edit origin/main` reported `Already up to date.`
+- No PR was associated with the branch when checked earlier in the session.
 
-After this slice is committed, the expected local state is one additive commit
-on top of `fdc9a0c13fd`; do not push without explicit maintainer/user
-approval.
+After this docs-only hand-off checkpoint is committed and pushed, the expected
+remote state is one consolidated branch,
+`origin/feature/lcp-solver-interface-demos`, containing the two benchmark
+routing commits plus the final hand-off docs commit.
 
 ## Immediate Next Step
 
-Continue the LCP interface/demo audit from the next concrete gap. Good starting
-points are remaining manifest-level benchmark gates in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, the older
-`active_friction_index_contact` demo benchmark filter, and any solver whose
-native mathematical domain is still broader in docs than in
-`supportsProblem(problem)`.
+Resume from the interrupted active-friction-index benchmark audit, or pick the
+next concrete LCP interface/demo gap if that audit has been superseded. Do not
+treat the broad LCP objective as complete.
+
+Known active-friction-index audit context:
+
+- `python/examples/demos/scenes/lcp_physics.py` still points
+  `active_friction_index_contact` at
+  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
+- `python/tests/unit/test_py_demo_panels.py` still expects that two-solver
+  filter.
+- Those two rows are registered in
+  `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp`, using
+  `LcpProblemFactory::activeFrictionIndexContact().problem`.
+- The representative py-demo command runs `pixi run bm lcp_compare`, and
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` does not yet expose a matching
+  manifest-driven active-friction-index row.
+- A likely next bounded patch is to register
+  `BM_LcpActiveFrictionIndexContact/<solver>` rows in `bm_lcp_compare.cpp`,
+  gate each concrete row with `supportsProblem(problem)`, then update the
+  py-demo metadata and panel test to use that row. Re-inspect solver options
+  and generated packet behavior before implementing; this was not verified
+  after the stop instruction.
 
 ## Context That Would Be Lost
 
@@ -146,6 +175,9 @@ native mathematical domain is still broader in docs than in
   for `BM_LcpContactNormalStandardSweep/(MPRGP|Baraff|Direct)` keeps all
   Baraff/MPRGP rows and Direct only on concrete 1-, 2-, and 3-row normal
   packets.
+- Final hand-off note: after the 2026-06-11 stop instruction, no additional
+  verification was run, including `pixi run lint`. This intentionally follows
+  the user's "without any further verification" instruction.
 - Generic standard rows that come from `MakeBenchmarkProblem(Standard, size)`,
   `MakeStandardSpdProblem`, MPRGP SPD-check sweeps, interior-point path sweeps,
   and mild/near-singular SPD builders may already be fine. Do not refactor all

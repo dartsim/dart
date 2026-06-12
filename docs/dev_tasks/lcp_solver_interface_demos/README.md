@@ -47,6 +47,9 @@
 - [x] Filtered contact-normal standard benchmark registrations through
       concrete normal-only contact packets, preserving MPRGP/Baraff native rows
       and replacing Direct's size special case with concrete support checks.
+- [x] Captured the 2026-06-11 critical hand-off after the contact-normal
+      checkpoint with no further lint, tests, benchmark listing, solver
+      execution, or implementation work.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -86,7 +89,45 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The current latest checkpoint is the contact-normal benchmark routing slice.
+The latest implementation checkpoint is the contact-normal benchmark routing
+slice, commit `7ef5b79e602 Filter contact normal benchmark native rows`.
+
+## 2026-06-11 Critical Hand-Off Snapshot
+
+The user explicitly stopped implementation work and requested hand-off only
+with no further verification. No lint, build, tests, benchmark listing, or
+solver execution was run after that instruction.
+
+Branch state before this docs-only hand-off update:
+
+- Current branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `7ef5b79e602 Filter contact normal benchmark native rows`.
+- Remote tracking branch: `origin/feature/lcp-solver-interface-demos` at
+  `f86a095ce9a Document final LCP handoff state`.
+- Local branch was two commits ahead of the tracking branch:
+  - `fdc9a0c13fd Filter singular LCP benchmark native rows`
+  - `7ef5b79e602 Filter contact normal benchmark native rows`
+- `origin/main` was refreshed over HTTPS to `7d05d7b9ea72`, then
+  `git merge --no-edit origin/main` reported `Already up to date.`
+- No PR was associated with the branch when checked earlier in the session.
+
+Interrupted next-slice audit, with no code changes made after the stop:
+
+- `python/examples/demos/scenes/lcp_physics.py` still points the
+  `active_friction_index_contact` benchmark packet at the older two-solver
+  filter:
+  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
+- Those rows live in `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp`,
+  while the representative command runs `pixi run bm lcp_compare`.
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` does not yet expose an
+  equivalent manifest-driven `BM_LcpActiveFrictionIndexContact` row.
+- A likely next bounded continuation is to add a concrete
+  `LcpProblemFactory::activeFrictionIndexContact()` registration to
+  `bm_lcp_compare.cpp`, gate participating solvers with
+  `supportsProblem(problem)`, then update the py-demo metadata and panel test
+  so the representative command points at the `lcp_compare` row.
+- Re-inspect the generated problem and solver options before implementing; the
+  note above is hand-off reconnaissance, not verified design.
 
 ## Contact-Normal Benchmark Routing Checkpoint
 
