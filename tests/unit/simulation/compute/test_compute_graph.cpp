@@ -49,17 +49,248 @@
 #include <atomic>
 #include <chrono>
 #include <limits>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 namespace compute = dart::simulation::compute;
 namespace sx = dart::simulation;
 
 namespace common = dart::common;
+
+namespace {
+
+std::atomic<bool> g_heapAllocationTrackingEnabled{false};
+std::atomic<std::size_t> g_heapAllocationCount{0};
+std::atomic<std::size_t> g_heapAllocationBytes{0};
+
+void recordHeapAllocation(std::size_t bytes) noexcept
+{
+  if (g_heapAllocationTrackingEnabled.load(std::memory_order_relaxed)) {
+    g_heapAllocationCount.fetch_add(1, std::memory_order_relaxed);
+    g_heapAllocationBytes.fetch_add(bytes, std::memory_order_relaxed);
+  }
+}
+
+[[nodiscard]] void* allocateRaw(std::size_t bytes) noexcept
+{
+  return std::malloc(bytes == 0 ? 1 : bytes);
+}
+
+[[nodiscard]] void* allocateAlignedRaw(
+    std::size_t bytes, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    return allocateRaw(bytes);
+  }
+
+#if defined(_WIN32)
+  return _aligned_malloc(bytes == 0 ? 1 : bytes, alignment);
+#else
+  const auto requested = bytes == 0 ? 1 : bytes;
+  if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
+    return nullptr;
+  }
+  if (alignment < alignof(void*)) {
+    alignment = alignof(void*);
+  }
+  void* pointer = nullptr;
+  return posix_memalign(&pointer, alignment, requested) == 0 ? pointer
+                                                             : nullptr;
+#endif
+}
+
+void deallocateAlignedRaw(void* pointer, std::size_t alignment) noexcept
+{
+  if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    std::free(pointer);
+    return;
+  }
+
+#if defined(_WIN32)
+  _aligned_free(pointer);
+#else
+  std::free(pointer);
+#endif
+}
+
+} // namespace
+
+void* operator new(std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr = allocateRaw(bytes)) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new[](std::size_t bytes, const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateRaw(bytes);
+}
+
+void* operator new(std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new[](std::size_t bytes, std::align_val_t alignment)
+{
+  recordHeapAllocation(bytes);
+  if (auto* ptr
+      = allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment))) {
+    return ptr;
+  }
+  throw std::bad_alloc();
+}
+
+void* operator new(
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void* operator new[](
+    std::size_t bytes,
+    std::align_val_t alignment,
+    const std::nothrow_t&) noexcept
+{
+  recordHeapAllocation(bytes);
+  return allocateAlignedRaw(bytes, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, std::size_t) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete[](void* pointer, const std::nothrow_t&) noexcept
+{
+  std::free(pointer);
+}
+
+void operator delete(void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](void* pointer, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::size_t, std::align_val_t alignment) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete(
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+void operator delete[](
+    void* pointer, std::align_val_t alignment, const std::nothrow_t&) noexcept
+{
+  deallocateAlignedRaw(pointer, static_cast<std::size_t>(alignment));
+}
+
+namespace {
+
+class ScopedHeapAllocationCounter final
+{
+public:
+  ScopedHeapAllocationCounter()
+  {
+    g_heapAllocationCount.store(0, std::memory_order_relaxed);
+    g_heapAllocationBytes.store(0, std::memory_order_relaxed);
+    g_heapAllocationTrackingEnabled.store(true, std::memory_order_relaxed);
+  }
+
+  ~ScopedHeapAllocationCounter()
+  {
+    stop();
+  }
+
+  ScopedHeapAllocationCounter(const ScopedHeapAllocationCounter&) = delete;
+  ScopedHeapAllocationCounter& operator=(const ScopedHeapAllocationCounter&)
+      = delete;
+
+  void stop() noexcept
+  {
+    g_heapAllocationTrackingEnabled.store(false, std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationCount() const noexcept
+  {
+    return g_heapAllocationCount.load(std::memory_order_relaxed);
+  }
+
+  [[nodiscard]] std::size_t allocationBytes() const noexcept
+  {
+    return g_heapAllocationBytes.load(std::memory_order_relaxed);
+  }
+};
+
+} // namespace
 
 //==============================================================================
 TEST(SimulationComputeNode, ExecutesCallable)
@@ -176,6 +407,30 @@ TEST(SimulationComputeGraph, AllocatorAwareGraphUsesProvidedAllocator)
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeGraph);
+}
+
+//==============================================================================
+TEST(SimulationComputeGraph, AllocatorAwareTraversalAvoidsGlobalHeap)
+{
+  common::MemoryManager memoryManager;
+  compute::ComputeGraph graph(memoryManager.getFreeAllocator());
+  auto& start = graph.addNode("heap_start", []() {});
+  auto& middle = graph.addNode("heap_middle", []() {});
+  auto& end = graph.addNode("heap_end", []() {});
+
+  ScopedHeapAllocationCounter heapCounter;
+  graph.addDependency(start, middle);
+  graph.addDependency(middle, end);
+  const auto order = graph.getTopologicalOrderView();
+  ASSERT_EQ(order.size(), 3u);
+  EXPECT_TRUE(graph.validate());
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated during allocator-aware graph traversal: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
 //==============================================================================

@@ -698,6 +698,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `ComputeGraph` construction can now borrow a DART allocator for owned
     nodes, the node-name lookup table, dependency-edge storage, and the
     topological-order cache while exposing read-only edge/order spans.
+    Allocator-aware graph traversal now also keeps cycle-detection,
+    topological-order rebuild, and resource-hazard scratch on that supplied
+    allocator instead of falling back to the global heap.
     Convenience return-by-value unified problem wrappers remain a separate
     allocation target.
   - Reused `DeformableDynamicsStage` scratch for deformable surface snapshots,

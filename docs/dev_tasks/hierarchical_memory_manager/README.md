@@ -6,9 +6,8 @@ Use one branch for resume/handoff: `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean` and based on `origin/main` after PR
 #2956 landed. Other similarly named HMM follow-up branches are historical and
 should not be used by fresh sessions unless a maintainer explicitly redirects
-the work. The last pushed code checkpoint before the current continuation was
-`13c4757e7b3` (`Skip empty multibody contact queries`), followed by the
-handoff-doc commit `9a351697b5b` (`Refresh HMM handoff docs`).
+the work. The last pushed checkpoint before the current compute-graph
+continuation was `5efbab2f62d` (`Skip empty rigid contact queries`).
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -20,7 +19,15 @@ git status -sb
 git log --oneline --decorate -5
 ```
 
-The most recent proven Phase 4/5 slice keeps the semi-implicit external-force
+The latest allocator-root slice after `5efbab2f62d` closes a compute-graph
+scratch gap: allocator-aware `ComputeGraph` traversal used to allocate from the
+global heap while checking cycles, rebuilding topological order, validating,
+and scanning resource hazards. The focused regression failed before the fix
+with 38 global allocations / 880 bytes during allocator-aware traversal and now
+passes with zero global heap allocation. This is pipeline scratch cleanup, not
+a new deformable production-scene coverage claim.
+
+The previous proven Phase 4/5 slice keeps the semi-implicit external-force
 multibody path inside both World-base no-growth and global-heap no-allocation
 gates after bake. The body-Jacobian container now reuses
 `MultibodyDynamicsScratch::bodyJacobian`, and the remaining pure
@@ -29,9 +36,7 @@ semi-implicit contact/unified collision queries when no relevant collision
 shapes exist. A follow-up query-pruning slice makes the rigid contact stage
 treat empty `CollisionGeometry` components like no collision geometry when
 deciding whether prepare/execute needs a contact query; this is a scoped
-performance guard, not a new claimed heap-gap closure. This latest slice was
-stopped for handoff by maintainer request before a fresh full unit-test pass;
-do not treat it as broader Phase 4/5 closure.
+performance guard, not a new claimed heap-gap closure.
 
 The last full local validation for the code checkpoint was:
 
@@ -55,6 +60,21 @@ the rigid empty-geometry query-pruning slice:
 
 No additional verification was run after the stop request; in particular,
 `pixi run test-unit` was not re-run for the latest rigid empty-geometry slice.
+
+Additional checks completed for the compute-graph traversal slice:
+
+- Before the fix:
+  `SimulationComputeGraph.AllocatorAwareTraversalAvoidsGlobalHeap` failed with
+  38 global allocations / 880 bytes.
+- After the fix:
+  `build/default/cpp/Release/bin/test_compute_graph --gtest_filter='SimulationComputeGraph.AllocatorAwareTraversalAvoidsGlobalHeap' --gtest_color=no`
+  passed.
+- Full `build/default/cpp/Release/bin/test_compute_graph --gtest_color=no`
+  passed.
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit` passed all 161 tests.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
@@ -1030,7 +1050,10 @@ Follow-up progress after PR #2956:
   allocator-backed containers stay private while existing range-iteration call
   sites remain source-compatible. A focused compute-graph test verifies node,
   lookup, edge, and order storage use the provided World free allocator and
-  release it on graph destruction.
+  release it on graph destruction. The current continuation extends that
+  allocator contract to traversal scratch: cycle detection, topological-order
+  rebuild, validation, and no-hazard resource scans no longer allocate from the
+  global heap for allocator-aware graphs.
 - The unified constraint stage now constructs its private multibody entity,
   link-contact bucket, required-block marker, staged-contact, dynamics-scratch
   pointer, and staged-velocity vectors with the borrowed World free allocator.

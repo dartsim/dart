@@ -6,9 +6,9 @@ Last session summary: use exactly one branch for the post-#2956 HMM handoff:
 `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean`. Other similarly named HMM follow-up
 branches are historical/no-resume targets unless a maintainer explicitly
-redirects the work. The last pushed code checkpoint before the current
-continuation was `13c4757e7b3` (`Skip empty multibody contact queries`),
-followed by the handoff-doc commit `9a351697b5b` (`Refresh HMM handoff docs`).
+redirects the work. The last pushed checkpoint before the current
+compute-graph continuation was `5efbab2f62d` (`Skip empty rigid contact
+queries`).
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
@@ -17,6 +17,14 @@ regression covers a pre-existing empty collision-geometry component, but this
 slice is query-pruning rather than a newly closed failing heap gate. The
 session was then stopped for handoff by maintainer request before any fresh
 full `pixi run test-unit` pass for this slice.
+
+Current allocator-root continuation after `5efbab2f62d`: allocator-aware
+`ComputeGraph` traversal now keeps cycle-detection, topological-order rebuild,
+validation, and resource-hazard scratch on the supplied allocator. The focused
+gate failed before the fix with 38 global heap allocations / 880 bytes during
+allocator-aware traversal and passes after the fix with zero global heap
+allocation. This is pipeline scratch cleanup, not a new deformable production
+scene.
 
 Current branch state to expect:
 
@@ -64,15 +72,31 @@ empty-geometry query-pruning continuation:
 Not run after this continuation: `pixi run test-unit`. Do not infer a broader
 Phase 4/5 allocation closure from the rigid empty-geometry slice.
 
+Verification run for the compute-graph traversal continuation:
+
+- Before the fix:
+  `SimulationComputeGraph.AllocatorAwareTraversalAvoidsGlobalHeap` failed with
+  38 global allocations / 880 bytes.
+- After the fix:
+  `build/default/cpp/Release/bin/test_compute_graph --gtest_filter='SimulationComputeGraph.AllocatorAwareTraversalAvoidsGlobalHeap' --gtest_color=no`
+  passed.
+- Full `build/default/cpp/Release/bin/test_compute_graph --gtest_color=no`
+  passed.
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit` passed all 161 tests.
+
 Fresh-session reading order:
 
 1. This handoff block.
 2. `README.md` Current Handoff plus Remaining Phase 4/5 follow-up items.
 3. The latest code around
+   `dart/simulation/compute/compute_graph.cpp`,
    `dart/simulation/compute/multibody_dynamics.cpp`,
    `dart/simulation/compute/world_step_stage.cpp`, and
-   `tests/unit/simulation/world/test_world.cpp` only if continuing nearby
-   allocation work.
+   `tests/unit/simulation/compute/test_compute_graph.cpp` only if continuing
+   nearby allocation work.
 
 Historical notes below are retained for archaeology and evidence. Prefer the
 handoff block above when older sections use phrases such as "latest" or
