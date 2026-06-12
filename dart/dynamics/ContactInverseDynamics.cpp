@@ -210,6 +210,14 @@ ContactInverseDynamics::Result ContactInverseDynamics::compute(
             << "].\n";
       return result;
     }
+    if (!contact.localOffset.allFinite() || !contact.normal.allFinite()
+        || !std::isfinite(contact.frictionCoeff)) {
+      dterr << "[ContactInverseDynamics::compute] Contact on BodyNode ["
+            << contact.bodyNode->getName()
+            << "] has non-finite values; localOffset, normal, and "
+            << "frictionCoeff must all be finite.\n";
+      return result;
+    }
     if (contact.normal.norm() < 1e-12) {
       dterr << "[ContactInverseDynamics::compute] Contact on BodyNode ["
             << contact.bodyNode->getName() << "] has a zero normal.\n";

@@ -90,15 +90,17 @@ public:
     /// Body in contact. Must belong to the solver's Skeleton.
     BodyNode* bodyNode = nullptr;
 
-    /// Contact point expressed in the coordinates of bodyNode.
+    /// Contact point expressed in the coordinates of bodyNode. Must be
+    /// finite.
     Eigen::Vector3d localOffset = Eigen::Vector3d::Zero();
 
     /// Contact normal in world coordinates, pointing from the environment
-    /// into the body. Does not need to be unit length, but must be nonzero.
+    /// into the body. Does not need to be unit length, but must be finite
+    /// and nonzero.
     Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
 
-    /// Coulomb friction coefficient. Must be non-negative. Zero restricts the
-    /// contact force to the normal direction.
+    /// Coulomb friction coefficient. Must be finite and non-negative. Zero
+    /// restricts the contact force to the normal direction.
     double frictionCoeff = 1.0;
 
     /// Number of edge directions of the linearized friction cone. Must be at

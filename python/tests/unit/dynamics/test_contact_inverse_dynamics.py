@@ -86,6 +86,17 @@ def test_round_trip_with_forward_dynamics():
     np.testing.assert_allclose(recovered, np.zeros(6), atol=1e-6)
 
 
+def test_rejects_non_finite_contact_specs():
+    skel, body = _create_floating_box()
+    solver = dart.dynamics.ContactInverseDynamics(skel)
+
+    contact = dart.dynamics.ContactInverseDynamics.Contact()
+    contact.bodyNode = body
+    contact.frictionCoeff = float("nan")
+    solver.setContacts([contact])
+    assert not solver.compute().feasible
+
+
 def test_rejects_invalid_contacts():
     skel, body = _create_floating_box()
     other_skel, other_body = _create_floating_box()

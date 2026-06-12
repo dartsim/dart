@@ -42,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -612,6 +613,41 @@ TEST(ContactInverseDynamics, RejectsDegenerateContactSpecs)
     ContactInverseDynamics::Contact contact;
     contact.bodyNode = box->getBodyNode(0);
     contact.numBasis = 2;
+    solver.setContacts({contact});
+    EXPECT_FALSE(solver.compute().feasible);
+  }
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, RejectsNonFiniteContactSpecs)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  auto box = createFloatingBox();
+  ContactInverseDynamics solver(box);
+
+  {
+    // A NaN friction coefficient must be rejected cleanly: it would
+    // otherwise be counted as frictionless when sizing the system but take
+    // the frictional generator path, writing out of bounds.
+    ContactInverseDynamics::Contact contact;
+    contact.bodyNode = box->getBodyNode(0);
+    contact.frictionCoeff = nan;
+    solver.setContacts({contact});
+    EXPECT_FALSE(solver.compute().feasible);
+  }
+
+  {
+    ContactInverseDynamics::Contact contact;
+    contact.bodyNode = box->getBodyNode(0);
+    contact.normal = Eigen::Vector3d(0.0, nan, 1.0);
+    solver.setContacts({contact});
+    EXPECT_FALSE(solver.compute().feasible);
+  }
+
+  {
+    ContactInverseDynamics::Contact contact;
+    contact.bodyNode = box->getBodyNode(0);
+    contact.localOffset = Eigen::Vector3d(nan, 0.0, 0.0);
     solver.setContacts({contact});
     EXPECT_FALSE(solver.compute().feasible);
   }
