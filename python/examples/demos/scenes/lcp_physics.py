@@ -228,9 +228,10 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "RedBlackGaussSeidel/MinimumMapNewton/Lemke/Baraff remain the "
-            "largest averages; PenalizedFischerBurmeisterNewton/"
-            "FischerBurmeisterNewton/InteriorPoint/NNCG rows are next"
+            "FischerBurmeisterNewton/InteriorPoint/NNCG/"
+            "PenalizedFischerBurmeisterNewton and MinimumMapNewton remain "
+            "the largest averages; Apgd/BoxedSemiSmoothNewton/Lemke/Baraff "
+            "are next"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -246,12 +247,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
             "Tgs/Pgs/Jacobi; RedBlack/SymmetricPsor/BlockedJacobi/Dantzig/"
-            "Nncg/SubspaceMinimization/Admm/BoxedSemiSmoothNewton stay below "
-            "about 1.6x"
+            "Nncg/BlockedJacobi/BGS/SubspaceMinimization/Admm stay below "
+            "about 1.55x"
         ),
         "current_laggards": (
-            "No Boxed solver average is above 2x; BGS, Sap, and "
-            "ShockPropagation are the largest remaining rows"
+            "No Boxed solver average is above 2x; ShockPropagation, "
+            "BoxedSemiSmoothNewton, Sap, and Apgd are the largest remaining "
+            "rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -266,20 +268,20 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs; Sap/BGS/Admm/Staggering/Jacobi/Dantzig/"
-            "RedBlackGaussSeidel/NNCG stay near the leading packet"
+            "Tgs/Pgs; Sap/Apgd/BGS/Admm/Staggering/Jacobi/"
+            "RedBlackGaussSeidel/Dantzig stay near the leading packet"
         ),
         "current_laggards": (
-            "Apgd is the only FrictionIndex average above 2x; "
-            "ShockPropagation, SymmetricPsor, SubspaceMinimization, "
-            "BoxedSemiSmoothNewton, BlockedJacobi, and NNCG are next"
+            "No FrictionIndex solver average is above 2x; ShockPropagation, "
+            "SubspaceMinimization, BoxedSemiSmoothNewton, SymmetricPsor, "
+            "BlockedJacobi, and NNCG are next"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, and subspace hot rows, and the boxed semi-smooth "
             "line-search shortcut plus configurable exact shortcut trim Newton "
-            "iterations; the remaining FrictionIndex work now centers on the "
-            "Apgd above-2x average and the near-boundary rows behind it."
+            "iterations; the APGD boxed/findex exact shortcut removed the "
+            "last above-2x FrictionIndex average, leaving near-boundary rows."
         ),
     },
 )

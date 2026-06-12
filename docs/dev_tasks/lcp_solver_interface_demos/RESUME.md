@@ -1,5 +1,95 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 APGD Boxed/Friction Exact Path
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `19a2250232c Delay ShockPropagation reset after exact path`.
+- Current checkpoint target:
+  `Extend APGD exact paths to boxed and friction rows`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 64 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push or mutate
+  GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ApgdSolver` uses the shared validated exact helpers for non-warm-started
+  boxed active-set rows and medium friction-index rows when no custom APGD
+  options are supplied.
+- The existing 48-variable size gate keeps larger or rejected rows on iterative
+  APGD.
+- APGD restart-policy sweep rows keep their custom parameters and therefore
+  still exercise iterative restart behavior.
+- Unit coverage, profile CSVs, Python demo profile summaries, metadata
+  assertions, projection-method docs, changelog, and hand-off docs were
+  refreshed.
+
+Evidence:
+
+- Focused after-run:
+  `build/friction_index_apgd_exact_after.json`.
+- Focused FrictionIndex APGD timings moved approximately:
+  - contacts 4: `1966.2ns -> 1188.1ns`.
+  - contacts 16: `19687.3ns -> 14199.9ns`.
+  - contacts 64: `350014.2ns -> 296428.5ns`.
+- Regenerated `build/lcp_profile_full.json` reports FrictionIndex `Apgd 1.49`;
+  no refreshed profile surface has a solver average above `2x`.
+
+Verification completed:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(Apgd|Pgs|Tgs|BGS|Sap)/' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_apgd_exact_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Then continue with the refreshed profile: FrictionIndex `ShockPropagation 1.87`
+is now the highest average, followed by FrictionIndex
+`SubspaceMinimization`, `BoxedSemiSmoothNewton`, `SymmetricPsor`,
+`BlockedJacobi`, and `NNCG`. Do not push or mutate GitHub state without
+explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 ShockPropagation Delayed Reset
 
 This is the latest state. Older sections below are historical checkpoints and

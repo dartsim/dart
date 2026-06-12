@@ -157,14 +157,23 @@ LcpResult ApgdSolver::solve(
   }
 
   Eigen::VectorXd fastW;
+  bool exactFastPath = false;
   if (options.customOptions == nullptr && !options.warmStart
-      && n <= kMaxStrictInteriorFastPathSize
-      && detail::trySolveStrictInteriorStandardLcp(
-          problem,
-          absTolerance,
-          std::max(absTolerance, compTolerance),
-          x,
-          &fastW)) {
+      && n <= kMaxStrictInteriorFastPathSize) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    if (problem.isStandardLcp(absTolerance)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;
     std::string boundsMessage;

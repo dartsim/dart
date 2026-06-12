@@ -51,7 +51,10 @@ BGS, Blocked Jacobi, NNCG, Subspace Minimization, and Shock Propagation when
 the unconstrained candidate is strictly positive and passes solution
 validation. Dense exact solves are only used on packet sizes where current
 profile evidence shows they are profitable; larger rows stay on the iterative
-projection path.
+projection path. APGD also uses the shared projected-active-set boxed exact
+helper and the medium friction-index exact helper on non-warm-started solves
+without per-call custom options, while restart-policy comparison rows keep the
+iterative APGD path.
 
 ## 1. Jacobi Method ✅ (Implemented)
 
@@ -608,10 +611,13 @@ correctness grid, and apples-to-apples benchmark registration.
 
 - **APGD**: applies Nesterov-style extrapolation before a projected
   Gauss-Seidel sweep. Its parameters include adaptive restart controls so a bad
-  momentum direction can be discarded. Focused `BM_LcpApgdRestartSweep` rows
-  compare adaptive restart every iteration, adaptive restart every 5
-  iterations, and no restart on identical standard, boxed, and friction-index
-  benchmark fixtures; these rows are CPU solver rows even when emitted by a
+  momentum direction can be discarded. Default non-warm-started standard,
+  boxed, and medium friction-index rows first try the shared validated exact
+  helpers when no per-call custom options are present. Focused
+  `BM_LcpApgdRestartSweep` rows compare adaptive restart every iteration,
+  adaptive restart every 5 iterations, and no restart on identical standard,
+  boxed, and friction-index benchmark fixtures; these custom-option rows remain
+  on the iterative APGD path and are CPU solver rows even when emitted by a
   CUDA-enabled build.
 - **TGS**: provides a Temporal Gauss-Seidel labelled boxed-LCP sweep. In a full
   simulation, TGS stability usually comes from substepping; the standalone DART

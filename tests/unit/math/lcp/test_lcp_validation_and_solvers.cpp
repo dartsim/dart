@@ -1934,6 +1934,22 @@ TEST(BoxedProjectedActiveSetFastPath, DantzigUsesLinearSolve)
   EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
+TEST(BoxedProjectedActiveSetFastPath, ApgdUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  ApgdSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
 TEST(BoxedProjectedActiveSetFastPath, ShockPropagationUsesLinearSolve)
 {
   Eigen::VectorXd expected;
@@ -2096,9 +2112,29 @@ TEST(FrictionIndexInteriorFastPath, HighOverheadSolversUseLinearSolve)
     expectFastPath(solver);
   }
   {
+    ApgdSolver solver;
+    expectFastPath(solver);
+  }
+  {
     BoxedSemiSmoothNewtonSolver solver;
     expectFastPath(solver);
   }
+}
+
+TEST(FrictionIndexInteriorFastPath, ApgdUsesMediumLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(16, &expected);
+  ApgdSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
 TEST(FrictionIndexInteriorFastPath, BoxedSemiSmoothNewtonUsesMediumLinearSolve)
