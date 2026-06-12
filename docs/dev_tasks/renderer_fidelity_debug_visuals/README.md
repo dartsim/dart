@@ -25,6 +25,8 @@
         `VisualAspect` PBR values through `MaterialDescriptor`
   - [x] Address Codex P2 finding: exported the lit-material override helper
         that `UNIT_gui_DebugVisuals` links under strict symbol visibility
+  - [x] Address Codex P2 finding: dartpy now exposes the joint-axis/velocity
+        debug options and helper functions
   - [ ] Watch remaining CI matrix; mark ready for review when green per
         `docs/onboarding/ai-tools.md` draft-ready fast path
 - [ ] Phase 6 (post-merge follow-ups, tracked in the design doc): A2 IBL
@@ -84,6 +86,9 @@ all renderer-neutral (backend-hidden rule).
   internal GUI detail helper, but it is exported because
   `UNIT_gui_DebugVisuals` intentionally links against it without including the
   Filament-private detail header.
+- **dartpy debug parity**: dartpy exposes the B3 `DebugDrawOptions` fields plus
+  `make_joint_axis_debug_lines` and `make_velocity_debug_lines`, keeping the
+  Python GUI helper surface aligned with C++.
 
 ## Immediate Next Steps
 

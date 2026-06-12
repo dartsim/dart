@@ -17,7 +17,10 @@ optional `MaterialDescriptor` PBR fields in dartpy and copies non-negative
 `VisualAspect` values through `_world_render_bridge.py`. The next Codex review
 flagged strict-symbol-visibility linkage for
 `shapeUsesLitMaterialOverride`; the local follow-up exports the helper and
-marks the test's local declaration with `DART_GUI_API`.
+marks the test's local declaration with `DART_GUI_API`. A fourth Codex review
+flagged dartpy parity for the new B3 debug helpers; the local follow-up exposes
+the new `DebugDrawOptions` fields plus `make_joint_axis_debug_lines` and
+`make_velocity_debug_lines`.
 
 ## Current Branch
 
@@ -51,6 +54,10 @@ current local and remote state with `git status --short --branch` and
   `UNIT_gui_DebugVisuals` can link under DLL / strict-symbol-visibility builds.
   Do NOT reply to the bot; fix silently, resolve the thread via GraphQL only
   after the fix is pushed.
+- **Codex P2** (review `4489608235`, `dart/gui/debug.hpp:108`) has a local
+  fix: dartpy exposes the joint-axis/velocity debug option fields and helper
+  functions. Do NOT reply to the bot; fix silently, resolve the thread via
+  GraphQL only after the fix is pushed.
 
 ## CI State (snapshot, verify fresh)
 

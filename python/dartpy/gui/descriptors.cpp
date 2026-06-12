@@ -317,6 +317,13 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw(
           "draw_contact_normals", &gui::DebugDrawOptions::drawContactNormals)
       .def_rw("draw_contact_forces", &gui::DebugDrawOptions::drawContactForces)
+      .def_rw("draw_joint_axes", &gui::DebugDrawOptions::drawJointAxes)
+      .def_rw(
+          "draw_linear_velocities",
+          &gui::DebugDrawOptions::drawLinearVelocities)
+      .def_rw(
+          "draw_angular_velocities",
+          &gui::DebugDrawOptions::drawAngularVelocities)
       .def_rw("grid_half_extent", &gui::DebugDrawOptions::gridHalfExtent)
       .def_rw("grid_spacing", &gui::DebugDrawOptions::gridSpacing)
       .def_rw("grid_z", &gui::DebugDrawOptions::gridZ)
@@ -349,7 +356,15 @@ void defGuiDescriptors(nb::module_& m)
           &gui::DebugDrawOptions::contactForceMinLength)
       .def_rw(
           "contact_force_max_length",
-          &gui::DebugDrawOptions::contactForceMaxLength);
+          &gui::DebugDrawOptions::contactForceMaxLength)
+      .def_rw("joint_axis_length", &gui::DebugDrawOptions::jointAxisLength)
+      .def_rw(
+          "linear_velocity_scale", &gui::DebugDrawOptions::linearVelocityScale)
+      .def_rw(
+          "angular_velocity_scale",
+          &gui::DebugDrawOptions::angularVelocityScale)
+      .def_rw("velocity_min_length", &gui::DebugDrawOptions::velocityMinLength)
+      .def_rw("velocity_max_length", &gui::DebugDrawOptions::velocityMaxLength);
 
   m.def("describe_shape", &gui::describeShape, nb::arg("shape"));
   m.def(
@@ -579,6 +594,18 @@ void defGuiDescriptors(nb::module_& m)
       "make_support_polygon_debug_lines",
       &gui::makeSupportPolygonDebugLines,
       nb::arg("skeleton"),
+      nb::arg("options") = gui::DebugDrawOptions{},
+      nb::arg("label_prefix") = std::string{});
+  m.def(
+      "make_joint_axis_debug_lines",
+      &gui::makeJointAxisDebugLines,
+      nb::arg("body_node"),
+      nb::arg("options") = gui::DebugDrawOptions{},
+      nb::arg("label_prefix") = std::string{});
+  m.def(
+      "make_velocity_debug_lines",
+      &gui::makeVelocityDebugLines,
+      nb::arg("body_node"),
       nb::arg("options") = gui::DebugDrawOptions{},
       nb::arg("label_prefix") = std::string{});
   m.def(

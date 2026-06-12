@@ -674,6 +674,49 @@ def test_gui_support_polygon_debug_options():
 
 
 @requires_gui_bindings
+def test_gui_joint_axis_and_velocity_debug_lines():
+    skeleton = dart.Skeleton("debug_helpers")
+    joint, body = skeleton.create_revolute_joint_and_body_node_pair()
+    joint.set_axis(np.array([0.0, 0.0, 1.0]))
+
+    options = dart.gui.DebugDrawOptions()
+    options.draw_joint_axes = True
+    options.joint_axis_length = 0.4
+    assert options.draw_joint_axes is True
+    assert np.isclose(options.joint_axis_length, 0.4)
+
+    axis_lines = dart.gui.make_joint_axis_debug_lines(body, options, "debug")
+    assert len(axis_lines) == 1
+    assert axis_lines[0].label == "debug.joint_axis"
+    assert np.isclose(
+        np.linalg.norm(axis_lines[0].to_point - axis_lines[0].from_point), 0.8
+    )
+
+    options.draw_joint_axes = False
+    assert dart.gui.make_joint_axis_debug_lines(body, options) == []
+
+    joint.set_velocities(np.array([2.0]))
+    options.draw_angular_velocities = True
+    options.angular_velocity_scale = 0.25
+    options.velocity_min_length = 0.02
+    options.velocity_max_length = 1.0
+    angular_lines = dart.gui.make_velocity_debug_lines(body, options, "debug")
+    assert len(angular_lines) > 0
+    assert angular_lines[0].label == "debug.vel_angular"
+
+    free_joint, free_body = skeleton.create_free_joint_and_body_node_pair()
+    velocities = np.zeros(6)
+    velocities[3] = 2.0
+    free_joint.set_velocities(velocities)
+    options.draw_angular_velocities = False
+    options.draw_linear_velocities = True
+    options.linear_velocity_scale = 0.5
+    linear_lines = dart.gui.make_velocity_debug_lines(free_body, options, "debug")
+    assert len(linear_lines) > 0
+    assert linear_lines[0].label == "debug.vel_linear"
+
+
+@requires_gui_bindings
 def test_gui_camera_and_run_helpers():
     options = dart.gui.RunOptions()
     options.width = 0
