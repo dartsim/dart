@@ -1497,6 +1497,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     include active-set scale/production rows and larger/stress/extreme
     singular-degenerate rows, so the generated representative command reaches
     the current scalability and hard-degeneracy benchmark surfaces.
+  - Added the LCP solver-specific tuning sweeps to the Python demo's
+    representative benchmark metadata, covering relaxation, line-search,
+    pivoting scale, block partition, restart, iteration-budget, layer, SPD,
+    path-following, ADMM rho, and SAP regularization comparisons.
   - Updated the Python LCP demo solver profile to report native case coverage
     from the concrete representative problem suite, so partial native support
     such as Direct's small standard-LCP window is visible in the apples-to-apples

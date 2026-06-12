@@ -141,6 +141,28 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "parallel scalability and grouped batches",
     },
     {
+        "packet": "solver_parameter_sweeps",
+        "surface": "standard/boxed/findex",
+        "benchmark_filter": (
+            "BM_LcpPgsRelaxationSweep|"
+            "BM_LcpSymmetricPsorRelaxationSweep|"
+            "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+            "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep|"
+            "BM_LcpPivotingScaleSweep|"
+            "BM_LcpBlockPartitionSweep|"
+            "BM_LcpApgdRestartSweep|"
+            "BM_LcpTgsIterationBudgetSweep|"
+            "BM_LcpNncgPgsIterationsSweep|"
+            "BM_LcpSubspaceMinimizationPgsIterationsSweep|"
+            "BM_LcpShockPropagationLayerSweep|"
+            "BM_LcpMprgpSpdCheckSweep|"
+            "BM_LcpInteriorPointPathSweep|"
+            "BM_LcpAdmmRhoSweep|"
+            "BM_LcpSapRegularizationSweep"
+        ),
+        "coverage": "solver-specific tuning and robustness sweeps",
+    },
+    {
         "packet": "world_contact",
         "surface": "findex contact",
         "benchmark_filter": "BM_LcpWorldContact|BM_LcpWorldBoxContact",

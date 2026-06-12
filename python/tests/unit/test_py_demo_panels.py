@@ -943,6 +943,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "world_billiards",
         "world_card_pile",
         "batch_scale",
+        "solver_parameter_sweeps",
     }
     assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
     representative_tokens: list[str] = []
@@ -1000,6 +1001,25 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_LcpSingularDegenerateFrictionIndexBatchParallel|"
         "BM_LcpSingularDegenerateStandardBoxedBatchSerial|"
         "BM_LcpSingularDegenerateStandardBoxedBatchParallel"
+    )
+    assert benchmark_by_packet["solver_parameter_sweeps"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpPgsRelaxationSweep|"
+        "BM_LcpSymmetricPsorRelaxationSweep|"
+        "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+        "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep|"
+        "BM_LcpPivotingScaleSweep|"
+        "BM_LcpBlockPartitionSweep|"
+        "BM_LcpApgdRestartSweep|"
+        "BM_LcpTgsIterationBudgetSweep|"
+        "BM_LcpNncgPgsIterationsSweep|"
+        "BM_LcpSubspaceMinimizationPgsIterationsSweep|"
+        "BM_LcpShockPropagationLayerSweep|"
+        "BM_LcpMprgpSpdCheckSweep|"
+        "BM_LcpInteriorPointPathSweep|"
+        "BM_LcpAdmmRhoSweep|"
+        "BM_LcpSapRegularizationSweep"
     )
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())

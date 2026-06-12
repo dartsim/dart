@@ -120,6 +120,8 @@
 - [x] Extended the LCP py-demo representative benchmark metadata to expose
       active-set scale/production rows and larger/stress/extreme
       singular-degenerate rows in the generated representative command.
+- [x] Exposed solver-specific tuning and robustness sweep benchmarks through
+      the LCP py-demo representative metadata.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -162,8 +164,9 @@ rediscovering the current branch state.
 The latest implementation checkpoint extends the Python LCP demo's
 representative benchmark packet metadata so the generated representative
 command now reaches the active-set scale/production benchmark surfaces and the
-larger/stress/extreme singular-degenerate benchmark surfaces, in addition to
-the existing live contact, solver-profile, concrete support-routing, generated
+larger/stress/extreme singular-degenerate benchmark surfaces, plus the
+solver-specific tuning and robustness sweep surfaces, in addition to the
+existing live contact, solver-profile, concrete support-routing, generated
 coverage, and benchmark registration cleanup slices.
 
 Previous hand-off note: after the local implementation checkpoint
@@ -177,8 +180,8 @@ commit, and push it.
 
 ## Py-Demo Representative Scale Metadata Checkpoint
 
-The latest Python-demo metadata checkpoint adds two representative benchmark
-packet rows:
+The latest Python-demo metadata checkpoint adds representative benchmark packet
+rows for scale and solver-tuning coverage:
 
 - `active_set_scale` points at `BM_LcpLargerActiveSetTransition`,
   `BM_LcpStressActiveSetTransition`, `BM_LcpExtremeActiveSetTransition`,
@@ -187,6 +190,10 @@ packet rows:
 - `singular_degenerate_scale` points at the larger/stress/extreme
   singular-degenerate rows and the serial/parallel singular-degenerate batch
   rows.
+- `solver_parameter_sweeps` points at solver-specific relaxation, line-search,
+  pivoting-scale, block-partition, restart-policy, iteration-budget,
+  shock-layer, SPD-check, path-following, ADMM rho, and SAP regularization
+  benchmark sweeps.
 
 This keeps `representative_benchmark_filter` and
 `representative_benchmark_command` aligned with the current hard-case and
@@ -200,6 +207,8 @@ PYTHONPATH=build/default/cpp/Release/python:python \
   pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
 pixi run bm lcp_compare -- --benchmark_list_tests=true \
   --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition|BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)|BM_Lcp(Larger|Stress|Extreme)SingularDegenerate|BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(PgsRelaxationSweep|SymmetricPsorRelaxationSweep|RedBlackGaussSeidelRelaxationSweep|BoxedSemiSmoothNewtonLineSearchSweep|PivotingScaleSweep|BlockPartitionSweep|ApgdRestartSweep|TgsIterationBudgetSweep|NncgPgsIterationsSweep|SubspaceMinimizationPgsIterationsSweep|ShockPropagationLayerSweep|MprgpSpdCheckSweep|InteriorPointPathSweep|AdmmRhoSweep|SapRegularizationSweep)'
 pixi run lint
 ```
 
@@ -209,6 +218,8 @@ Observed results:
 - The benchmark-list check rebuilt/linked `BM_LCP_COMPARE` and listed the
   newly exposed active-set scale/production and singular-degenerate
   scale/batch benchmark rows.
+- A second benchmark-list check listed the newly exposed solver-specific
+  tuning and robustness sweep rows.
 - `pixi run lint` passed.
 
 ## Contact Benchmark Registration Cleanup Checkpoint

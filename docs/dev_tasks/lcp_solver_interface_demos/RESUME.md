@@ -15,6 +15,10 @@ benchmark packet metadata:
   and production-batch active-set transition benchmark rows.
 - `singular_degenerate_scale` now points at larger, stress, extreme, and
   serial/parallel batch singular-degenerate benchmark rows.
+- `solver_parameter_sweeps` now points at solver-specific relaxation,
+  line-search, pivoting-scale, block-partition, restart-policy,
+  iteration-budget, shock-layer, SPD-check, path-following, ADMM rho, and SAP
+  regularization benchmark sweeps.
 - The existing representative filter union continues to derive
   `representative_benchmark_filter` and `representative_benchmark_command`
   from every packet row, so the demo now exposes the current scalability and
@@ -30,6 +34,8 @@ PYTHONPATH=build/default/cpp/Release/python:python \
   pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
 pixi run bm lcp_compare -- --benchmark_list_tests=true \
   --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition|BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)|BM_Lcp(Larger|Stress|Extreme)SingularDegenerate|BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(PgsRelaxationSweep|SymmetricPsorRelaxationSweep|RedBlackGaussSeidelRelaxationSweep|BoxedSemiSmoothNewtonLineSearchSweep|PivotingScaleSweep|BlockPartitionSweep|ApgdRestartSweep|TgsIterationBudgetSweep|NncgPgsIterationsSweep|SubspaceMinimizationPgsIterationsSweep|ShockPropagationLayerSweep|MprgpSpdCheckSweep|InteriorPointPathSweep|AdmmRhoSweep|SapRegularizationSweep)'
 pixi run lint
 ```
 
@@ -39,6 +45,8 @@ Observed results:
 - The benchmark-list check rebuilt/linked `BM_LCP_COMPARE` and listed the
   newly exposed active-set scale/production and singular-degenerate
   scale/batch benchmark rows.
+- A second benchmark-list check listed the newly exposed solver-specific
+  tuning and robustness sweep rows.
 - `pixi run lint` passed.
 
 Fresh-session resume sequence:
