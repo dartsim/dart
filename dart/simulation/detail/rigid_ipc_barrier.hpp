@@ -569,6 +569,7 @@ struct RigidIpcProjectedNewtonSolveScratch
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> candidateSurfaces;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> acceptedSurfaces;
   std::vector<RigidIpcBarrierSurface, SurfaceAllocator> bestDecreasingSurfaces;
+  RigidIpcProjectedNewtonStep step;
 };
 
 /// Evaluates the IPC point-triangle barrier after rigid pose interpolation.

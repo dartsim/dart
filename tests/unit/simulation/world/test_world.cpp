@@ -2258,6 +2258,34 @@ void configureDynamicRigidIpcMeshSolveScene(dart::simulation::World& world)
   body.setForce(Eigen::Vector3d(4.0, 0.0, 0.0));
 }
 
+void configureActiveRigidIpcMeshBarrierScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.05);
+
+  const std::vector<Eigen::Vector3d> triangleVertices{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+  const std::vector<Eigen::Vector3i> triangleFaces{Eigen::Vector3i(0, 1, 2)};
+
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  auto ground = world.addRigidBody("static_ipc_triangle", staticOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.mass = 1.0;
+  dynamicOptions.position = Eigen::Vector3d(0.0, 0.0, 0.005);
+  auto body = world.addRigidBody("dynamic_ipc_triangle", dynamicOptions);
+  body.setCollisionShape(
+      sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -6376,6 +6404,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
 {
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC solve graph", configureDynamicRigidIpcMeshSolveScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC active barrier",
+      configureActiveRigidIpcMeshBarrierScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

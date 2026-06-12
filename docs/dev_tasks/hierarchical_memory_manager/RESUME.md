@@ -9,23 +9,28 @@ continuation,
 branches are historical/no-resume targets unless a maintainer explicitly
 redirects the work.
 
-The latest completed code checkpoint before the critical 2026-06-11 handoff
-request was `57cb751eef9` (`Avoid heap allocation in dynamic rigid IPC
-no-contact steps`). Earlier docs-only handoff commit `fb89fd3ef3c`
-intentionally skipped verification, and this final handoff-only docs update
-also skips verification by explicit maintainer instruction. The current
-continuation closes a dynamic rigid IPC dynamics-only heap gap by keeping
-`RigidIpcContactStage`'s one-node solve graph in prewarmed stage scratch and
-using the exact diagonal inertial quadratic minimizer for a single supported
-dynamic body with no possible contact/articulation pairs. The new baked gate
-failed before the fix with 156 global allocations / 7920 bytes over four steps
-and now passes with zero global heap allocation.
+The pushed branch head after this handoff is the authoritative snapshot. It
+includes the active dynamic rigid IPC barrier cleanup plus this handoff text,
+but it was committed without any fresh lint/build/test run after the critical
+2026-06-11 "handoff only, no further verification" request. Earlier docs-only
+handoff commit `fb89fd3ef3c` also intentionally skipped verification. The
+previous fully validated code checkpoint was `57cb751eef9` (`Avoid heap
+allocation in dynamic rigid IPC no-contact steps`). Work later resumed on
+dynamic rigid IPC heap gates: the contact-free one-body path uses the exact
+diagonal inertial quadratic minimizer, and the active static/dynamic mesh
+barrier path now calls the projected-Newton solve directly instead of
+rebuilding a one-node internal solve graph each step while prewarming reusable
+step/result row storage during `prepare()`. The contact-free subcase failed
+before its fix with 156 global allocations / 7920 bytes over four steps; the
+active barrier subcase failed before its fix with 157 global allocations / 7968
+bytes over four steps. The focused baked dynamic rigid IPC gate now covers both
+with zero global heap allocation.
 
 The maintainer then issued a critical stop request for handoff only, with no
-further verification. A `pixi run build` was in progress and was interrupted;
-do not treat full build or full `pixi run test-unit` validation as complete for
-the dynamic rigid IPC slice. Resume from the pushed branch head, not from this
-session.
+further verification. A `pixi run test-unit` job was in progress and was
+terminated to honor that request; do not treat full `pixi run test-unit`
+validation as complete for the active dynamic rigid IPC barrier slice. Resume
+from the pushed branch head, not from this session.
 
 Important status correction after the handoff-only stop: the docs-only stop
 commit `91c3d83dd35` incorrectly described the `WorldStorage` root-routing
@@ -36,10 +41,10 @@ lazy collision query cache, and the optional replay controller object are
 constructed through the World free-list allocator and covered by
 `WorldPersistentStorageUsesWorldFreeAllocator`.
 
-Measured open gap: a temporary active rigid IPC contact-heavy no-heap probe was
-added locally, failed with 157 global heap allocations / 7968 bytes, and was
-removed before handoff. Do not commit that failing probe without fixing the
-corresponding contact-heavy projected-Newton allocation path.
+Measured open gap after the current slice: broader rigid IPC projected-Newton
+contact shapes remain evidence-first follow-up work beyond the current
+contact-free one-body and active two-mesh-barrier gates. Start from a measured
+failing shape before adding larger contact scenes.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
@@ -145,6 +150,26 @@ Verification run for the persistent-World root-routing status correction:
 && build/default/cpp/Release/bin/test_world --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' --gtest_color=no`
   passed, confirming the allocator-root test that already exists on this branch.
 
+Verification run for the active dynamic rigid IPC barrier continuation:
+
+- Before the fix:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failed for the
+  active static/dynamic mesh barrier subcase with 157 global allocations / 7968
+  bytes over four baked steps.
+- After the fix:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+&& build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+  passed.
+- A broader focused rigid IPC `test_world` filter passed:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`,
+  `World.RigidIpcContactStageSeparatesActivatedMeshBarrier`,
+  `World.RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics`,
+  `World.RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics`, and
+  `World.RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration`.
+- `git diff --check`, `pixi run lint`, and `pixi run build` passed before the
+  critical final handoff request.
+- Not completed because of the stop request: full `pixi run test-unit`.
+
 Fresh-session reading order:
 
 1. This handoff block.
@@ -152,9 +177,12 @@ Fresh-session reading order:
 3. The latest code around
    `dart/simulation/compute/compute_graph.cpp`,
    `dart/simulation/compute/multibody_dynamics.cpp`,
-   `dart/simulation/compute/world_step_stage.cpp`, and
-   `tests/unit/simulation/compute/test_compute_graph.cpp` only if continuing
-   nearby allocation work.
+   `dart/simulation/compute/world_step_stage.cpp`,
+   `dart/simulation/detail/rigid_ipc_barrier.cpp`,
+   `dart/simulation/detail/rigid_ipc_barrier.hpp`,
+   `tests/unit/simulation/compute/test_compute_graph.cpp`, and
+   `tests/unit/simulation/world/test_world.cpp` only if continuing nearby
+   allocation work.
 
 Historical notes below are retained for archaeology and evidence. Prefer the
 handoff block above when older sections use phrases such as "latest" or

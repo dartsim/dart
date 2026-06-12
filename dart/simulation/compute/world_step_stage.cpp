@@ -221,8 +221,7 @@ struct RigidIpcContactStage::Scratch
           common::StlAllocator<std::uint8_t>{allocator}),
       stationaryContactBody(common::StlAllocator<std::uint8_t>{allocator}),
       solveResult(allocator),
-      solveScratch(allocator),
-      solveGraph(allocator)
+      solveScratch(allocator)
   {
   }
 
@@ -268,7 +267,6 @@ struct RigidIpcContactStage::Scratch
       stationaryContactBody;
   sxdetail::RigidIpcProjectedNewtonSolveResult solveResult;
   sxdetail::RigidIpcProjectedNewtonSolveScratch solveScratch;
-  ComputeGraph solveGraph;
 };
 
 struct RigidBodyNode
@@ -10735,15 +10733,41 @@ void RigidIpcContactStage::prepare(World& world)
       m_scratch->surfaces,
       m_scratch->dynamicsTerms,
       m_scratch->payloadAllocator);
-
-  m_scratch->solveGraph.clear();
-  m_scratch->solveGraph.addNode("ipc_solve", []() {}, getMetadata());
-  static_cast<void>(m_scratch->solveGraph.getTopologicalOrderView());
-  m_scratch->solveGraph.clear();
+  std::size_t dynamicDofCount = 0u;
+  for (const auto& surface : m_scratch->surfaces) {
+    if (surface.dynamic) {
+      dynamicDofCount += 6u;
+    }
+  }
+  m_scratch->solveResult.lastStep.delta.resize(
+      static_cast<Eigen::Index>(dynamicDofCount));
+  m_scratch->solveScratch.step.delta.resize(
+      static_cast<Eigen::Index>(dynamicDofCount));
+  auto& assembly = m_scratch->solveResult.assembly;
+  assembly.bodyDofOffsets.reserve(m_scratch->surfaces.size());
+  assembly.activeArticulationConstraints.reserve(
+      m_scratch->articulationConstraints.size());
+  std::size_t primitiveCapacity = 0u;
+  for (std::size_t i = 0; i < m_scratch->surfaces.size(); ++i) {
+    const auto& a = m_scratch->surfaces[i];
+    const std::size_t edgeCountA = 3u * a.triangles.size();
+    for (std::size_t j = i + 1; j < m_scratch->surfaces.size(); ++j) {
+      const auto& b = m_scratch->surfaces[j];
+      const std::size_t edgeCountB = 3u * b.triangles.size();
+      primitiveCapacity += a.vertices.size() * b.vertices.size();
+      primitiveCapacity += a.vertices.size() * edgeCountB;
+      primitiveCapacity += b.vertices.size() * edgeCountA;
+      primitiveCapacity += a.vertices.size() * b.triangles.size();
+      primitiveCapacity += b.vertices.size() * a.triangles.size();
+      primitiveCapacity += edgeCountA * edgeCountB;
+    }
+  }
+  assembly.activeConstraints.reserve(primitiveCapacity);
+  assembly.activeFrictionConstraints.reserve(primitiveCapacity);
 }
 
 //==============================================================================
-void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
+void RigidIpcContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 {
   m_lastStats.reset();
   auto& scratch = *m_scratch;
@@ -10951,30 +10975,8 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& executor)
     }
   }
 
-  struct SolveGraphContext
-  {
-    std::vector<
-        sxdetail::RigidIpcBarrierSurface,
-        common::StlAllocator<sxdetail::RigidIpcBarrierSurface>>* surfaces;
-    sxdetail::RigidIpcProjectedNewtonSolveOptions* options;
-    sxdetail::RigidIpcProjectedNewtonSolveResult* result;
-    sxdetail::RigidIpcProjectedNewtonSolveScratch* scratch;
-  } context{&surfaces, &options, &result, &scratch.solveScratch};
-
-  auto& graph = scratch.solveGraph;
-  graph.clear();
-  graph.addNode(
-      "ipc_solve",
-      [&context]() {
-        sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
-            *context.surfaces,
-            *context.options,
-            *context.result,
-            *context.scratch);
-      },
-      getMetadata());
-  executor.execute(graph);
-  graph.clear();
+  sxdetail::solveRigidIpcProjectedNewtonBarrierSystem(
+      surfaces, options, result, scratch.solveScratch);
   solveDynamicsTerms = std::move(options.dynamicsTerms);
 
   const bool lineSearchBlocked

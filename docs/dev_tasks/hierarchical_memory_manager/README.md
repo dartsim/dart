@@ -9,9 +9,13 @@ Stop state for fresh handoff: use exactly one branch,
 should not be used by fresh sessions unless a maintainer explicitly redirects
 the work.
 
-The last code checkpoint before the critical handoff request was
-`57cb751eef9` (`Avoid heap allocation in dynamic rigid IPC no-contact steps`).
-The docs-only stop commit `91c3d83dd35` incorrectly described the
+The final 2026-06-11 handoff snapshot is the pushed branch head after the
+critical "handoff only, no further verification" request. It includes the
+active dynamic rigid IPC barrier cleanup plus these handoff notes, but it was
+committed without any fresh lint/build/test run after the stop request. The
+previous fully validated code checkpoint was `57cb751eef9` (`Avoid heap
+allocation in dynamic rigid IPC no-contact steps`). The docs-only stop commit
+`91c3d83dd35` incorrectly described the
 `WorldStorage` allocator-root slice as unapplied. Current source inspection
 shows the branch already contains the equivalent, broader persistent-World
 root-routing work: `WorldStorage`, the private built-in step-pipeline cache,
@@ -20,11 +24,6 @@ the optional replay controller object are all constructed through the World
 free-list allocator. Treat `git log` on `pr/hmm-phase45-follow-up-clean` as the
 source of truth for the exact pushed branch head, and resume only from a fresh
 session after reading this task state.
-
-Another measured non-closure: a temporary active rigid IPC contact-heavy
-no-heap probe failed before removal with 157 global heap allocations / 7968
-bytes. That failing probe was not committed. Treat contact-heavy rigid IPC
-projected-Newton Eigen/storage paths as open Phase 4/5 follow-up work.
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -44,14 +43,17 @@ with 38 global allocations / 880 bytes during allocator-aware traversal and now
 passes with zero global heap allocation. This is pipeline scratch cleanup, not
 a new deformable production-scene coverage claim.
 
-The current continuation closes a narrow dynamic rigid IPC no-heap gap without
-claiming contact-heavy IPC coverage: `RigidIpcContactStage` now owns a
-prewarmed allocator-backed solve graph, and the single supported dynamic body
-with no possible contact/articulation pairs takes the exact diagonal inertial
-quadratic minimizer instead of constructing the full projected-Newton Eigen
-system. The new baked dynamic rigid IPC gate failed before this slice with 156
-global allocations / 7920 bytes over four steps and now passes with zero global
-heap allocation.
+The current continuation extends dynamic rigid IPC no-heap coverage in two
+bounded steps. First, the single supported dynamic body with no possible
+contact/articulation pairs takes the exact diagonal inertial quadratic
+minimizer instead of constructing the full projected-Newton system; that baked
+gate failed before the slice with 156 global allocations / 7920 bytes over four
+steps. Second, an active static/dynamic mesh barrier shape no longer rebuilds a
+single-node internal solve graph per step, prewarms the reusable projected
+Newton step/result row storage during `prepare()`, and reuses those buffers
+through the counted solve; that shape failed before the slice with 157 global
+allocations / 7968 bytes over four baked steps. Both covered dynamic rigid IPC
+shapes now pass with zero global heap allocation.
 
 The previous proven Phase 4/5 slice keeps the semi-implicit external-force
 multibody path inside both World-base no-growth and global-heap no-allocation
@@ -124,13 +126,31 @@ correction:
   built-in-cache, collision-cache, replay-controller, and `World::clear()`
   allocator-root coverage.
 
-The docs-only handoff commits intentionally skipped `pixi run lint`, build, and
-tests per the maintainer's 2026-06-11 stop requests. A subsequent
-`pixi run build` was in progress and was interrupted, and no full
-`pixi run build` or `pixi run test-unit` result should be inferred for the
-dynamic rigid IPC slice after the listed focused checks. Later continuation
-slices should list their own verification here, as the dynamic rigid IPC slice
-does above.
+Additional checks completed for the active dynamic rigid IPC barrier slice:
+
+- Before the fix:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap` failed for the
+  active static/dynamic mesh barrier subcase with 157 global allocations / 7968
+  bytes over four baked steps.
+- After the fix:
+  `cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+&& build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+  passed.
+- A broader focused rigid IPC `test_world` filter passed:
+  `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`,
+  `World.RigidIpcContactStageSeparatesActivatedMeshBarrier`,
+  `World.RigidIpcContactStageAdvancesMeshBodyFromRuntimeDynamics`,
+  `World.RigidIpcContactStageAdvancesSphereBodyFromRuntimeDynamics`, and
+  `World.RigidIpcContactStageTwoBoxStackSettlesWithoutPenetration`.
+- `git diff --check`, `pixi run lint`, and `pixi run build` passed before the
+  critical final handoff request.
+
+The final handoff edits after the critical stop request intentionally skipped
+`pixi run lint`, build, and tests. A `pixi run test-unit` job was in progress
+and was terminated to honor the stop request, so no full `pixi run test-unit`
+result should be inferred for the active dynamic rigid IPC barrier slice after
+the listed focused checks. Later continuation slices should list their own
+verification here, as the dynamic rigid IPC slice does above.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
@@ -1130,12 +1150,15 @@ Follow-up progress after PR #2956:
   only rigid/link collision-geometry components are empty. A baked global-heap
   regression covers that loaded/pre-existing ECS-storage shape without changing
   the existing shape-backed rigid, link, AVBD, and boxed-LCP contact gates.
-- The dynamic rigid IPC dynamics-only path now keeps its one-node solve graph in
-  prewarmed stage scratch and bypasses the full projected-Newton assembly for
-  the exact single supported dynamic body with no possible contact or
-  articulation pairs. The focused baked gate covers this contact-free IPC
-  update with zero global heap allocation after bake; contact-heavy rigid IPC
-  projected-Newton Eigen storage remains evidence-first follow-up work.
+- The dynamic rigid IPC dynamics-only path bypasses the full projected-Newton
+  assembly for the exact single supported dynamic body with no possible contact
+  or articulation pairs. The active rigid IPC mesh-barrier path also executes
+  the one-node projected-Newton solve directly instead of rebuilding an
+  internal `ComputeGraph` each step, and `prepare()` prewarms reusable
+  projected-Newton step/result row storage from the current surface topology.
+  The focused baked gate covers both the contact-free IPC update and the
+  active static/dynamic mesh barrier with zero global heap allocation after
+  bake; broader rigid IPC contact shapes remain evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
@@ -1147,11 +1170,11 @@ Remaining Phase 4/5 follow-up items for the next PR:
   (`Eigen::SparseMatrix`/`VectorXd` internals), and differently shaped
   frictional self-contact, static-obstacle, or inter-body CCD mixes not
   represented by the current gates.
-- Continue contact-heavy rigid IPC projected-Newton scratch reuse only from a
-  measured failing shape. The last temporary probe for an active rigid IPC
-  barrier scene failed with 157 global heap allocations / 7968 bytes and was
-  removed before handoff; port or redesign that probe only when the
-  corresponding solver-private allocation path is being fixed.
+- Continue broader rigid IPC projected-Newton scratch reuse only from measured
+  failing shapes beyond the current contact-free and active two-mesh-barrier
+  gates, such as larger mesh contact sets, articulated IPC constraints, or
+  mixed rigid/deformable barrier solves that expose new per-step allocator
+  growth.
 - Add any remaining default-solver deformable storage/no-heap gates for
   solver-private paths not exercised by the current direct-sparse,
   matrix-free, FEM, obstacle, surface-CCD, and compact/production

@@ -1128,10 +1128,11 @@ void recordLineSearchCandidate(
   }
 }
 
-RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
+RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
     const RigidIpcBarrierAssembly& assembly,
     const RigidIpcLineSearchResult* lineSearch,
     const RigidIpcProjectedNewtonOptions& options,
+    RigidIpcProjectedNewtonStep& result,
     dart::common::MemoryAllocator* allocator = nullptr)
 {
   assert(assembly.hessian.rows() == assembly.gradient.size());
@@ -1139,11 +1140,17 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
   assert(assembly.equalityJacobian.cols() == assembly.gradient.size());
   assert(assembly.equalityJacobian.rows() == assembly.equalityResidual.size());
 
-  RigidIpcProjectedNewtonStep result;
+  result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+  result.success = false;
+  result.converged = false;
+  result.lineSearchBlocked = false;
+  result.stats = RigidIpcProjectedNewtonStats{};
+
   const Eigen::Index dofs = assembly.gradient.size();
   const Eigen::Index equalityRows = assembly.equalityResidual.size();
   const bool hasEqualityRows = equalityRows > 0;
-  result.delta = Eigen::VectorXd::Zero(dofs);
+  result.delta.resize(dofs);
+  result.delta.setZero();
   result.stats.dofs = static_cast<std::size_t>(dofs);
   result.stats.gradientNorm = assembly.gradient.norm();
 
@@ -1264,6 +1271,18 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
 
   result.status = RigidIpcProjectedNewtonStatus::DescentStep;
   result.success = true;
+  return result;
+}
+
+RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
+    const RigidIpcBarrierAssembly& assembly,
+    const RigidIpcLineSearchResult* lineSearch,
+    const RigidIpcProjectedNewtonOptions& options,
+    dart::common::MemoryAllocator* allocator = nullptr)
+{
+  RigidIpcProjectedNewtonStep result;
+  computeRigidIpcProjectedNewtonStepInto(
+      assembly, lineSearch, options, result, allocator);
   return result;
 }
 
@@ -2625,7 +2644,11 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
   result.failed = false;
   result.assembly = RigidIpcBarrierAssembly{};
   result.lineSearch = RigidIpcLineSearchResult{};
-  result.lastStep = RigidIpcProjectedNewtonStep{};
+  result.lastStep.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+  result.lastStep.success = false;
+  result.lastStep.converged = false;
+  result.lastStep.lineSearchBlocked = false;
+  result.lastStep.stats = RigidIpcProjectedNewtonStats{};
   result.stats = RigidIpcProjectedNewtonSolveStats{};
   result.surfaces.assign(surfaces.begin(), surfaces.end());
 
@@ -2856,8 +2879,13 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
                 result.stats.initialGradientNorm);
       }
 
-      RigidIpcProjectedNewtonStep step = computeRigidIpcProjectedNewtonStepImpl(
-          result.assembly, nullptr, newtonOptions, scratch.memoryAllocator);
+      RigidIpcProjectedNewtonStep& step
+          = computeRigidIpcProjectedNewtonStepInto(
+              result.assembly,
+              nullptr,
+              newtonOptions,
+              scratch.step,
+              scratch.memoryAllocator);
       result.lastStep = step;
 
       if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
@@ -2920,10 +2948,11 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           result.failed = true;
           return;
         }
-        step = computeRigidIpcProjectedNewtonStepImpl(
+        computeRigidIpcProjectedNewtonStepInto(
             result.assembly,
             &result.lineSearch,
             newtonOptions,
+            step,
             scratch.memoryAllocator);
         result.lastStep = step;
         if (step.lineSearchBlocked) {
