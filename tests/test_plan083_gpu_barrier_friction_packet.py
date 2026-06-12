@@ -121,6 +121,44 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    point_edge_tangent_cpu = _row(
+        "BM_Plan083PointEdgeTangentStencilCpu/1024",
+        samples=1024,
+        fallback_bases=0,
+        max_result_abs_error=0.0,
+    )
+    point_edge_tangent_gpu = _row(
+        "BM_Plan083PointEdgeTangentStencilCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        fallback_bases=0,
+        gpu_fallback_bases=0,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    point_point_tangent_cpu = _row(
+        "BM_Plan083PointPointTangentStencilCpu/1024",
+        samples=1024,
+        fallback_bases=0,
+        max_result_abs_error=0.0,
+    )
+    point_point_tangent_gpu = _row(
+        "BM_Plan083PointPointTangentStencilCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        samples=1024,
+        fallback_bases=0,
+        gpu_fallback_bases=0,
+        max_result_abs_error=1e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     gpu.update(overrides)
     return {
         "benchmarks": [
@@ -132,6 +170,10 @@ def _benchmark_data(**overrides):
             point_triangle_tangent_gpu,
             edge_edge_tangent_cpu,
             edge_edge_tangent_gpu,
+            point_edge_tangent_cpu,
+            point_edge_tangent_gpu,
+            point_point_tangent_cpu,
+            point_point_tangent_gpu,
         ]
     }
 
@@ -161,6 +203,10 @@ def test_plan083_gpu_barrier_friction_packet_accepts_parity_rows() -> None:
     assert row["point_triangle_tangent_stencil"]["max_result_abs_error"] == 1e-12
     assert row["edge_edge_tangent_stencil"]["fallback_basis_count"] == 0
     assert row["edge_edge_tangent_stencil"]["max_result_abs_error"] == 1e-12
+    assert row["point_edge_tangent_stencil"]["fallback_basis_count"] == 0
+    assert row["point_edge_tangent_stencil"]["max_result_abs_error"] == 1e-12
+    assert row["point_point_tangent_stencil"]["fallback_basis_count"] == 0
+    assert row["point_point_tangent_stencil"]["max_result_abs_error"] == 1e-12
 
 
 def test_plan083_gpu_barrier_friction_packet_rejects_accuracy_failure() -> None:

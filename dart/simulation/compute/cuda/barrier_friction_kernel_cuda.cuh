@@ -74,6 +74,19 @@ struct EdgeEdgeTangentInput
   double edgeB1[3] = {0.0, 0.0, 0.0};
 };
 
+struct PointEdgeTangentInput
+{
+  double point[3] = {0.0, 0.0, 0.0};
+  double edgeA[3] = {0.0, 0.0, 0.0};
+  double edgeB[3] = {0.0, 0.0, 0.0};
+};
+
+struct PointPointTangentInput
+{
+  double pointA[3] = {0.0, 0.0, 0.0};
+  double pointB[3] = {0.0, 0.0, 0.0};
+};
+
 struct BarrierFrictionLocalTiming
 {
   double setupNs = 0.0;
@@ -133,6 +146,25 @@ struct EdgeEdgeTangentStencilResult
   BarrierFrictionLocalTiming timing;
 };
 
+struct PointEdgeTangentStencilResult
+{
+  std::vector<double> basisValues;
+  std::vector<double> coordinates;
+  std::vector<double> projectionValues;
+  std::vector<std::uint8_t> fallbackBases;
+  std::size_t fallbackBasisCount = 0;
+  BarrierFrictionLocalTiming timing;
+};
+
+struct PointPointTangentStencilResult
+{
+  std::vector<double> basisValues;
+  std::vector<double> projectionValues;
+  std::vector<std::uint8_t> fallbackBases;
+  std::size_t fallbackBasisCount = 0;
+  BarrierFrictionLocalTiming timing;
+};
+
 /// Evaluate private local barrier and friction scalar kernels on CUDA.
 ///
 /// This packet covers the clamped-log scalar barrier and smoothed Coulomb
@@ -169,5 +201,15 @@ void evaluatePointTriangleTangentStencilsCuda(
 void evaluateEdgeEdgeTangentStencilsCuda(
     const std::vector<EdgeEdgeTangentInput>& inputs,
     EdgeEdgeTangentStencilResult& result);
+
+/// Evaluate private point-edge tangent stencils on CUDA.
+void evaluatePointEdgeTangentStencilsCuda(
+    const std::vector<PointEdgeTangentInput>& inputs,
+    PointEdgeTangentStencilResult& result);
+
+/// Evaluate private point-point tangent stencils on CUDA.
+void evaluatePointPointTangentStencilsCuda(
+    const std::vector<PointPointTangentInput>& inputs,
+    PointPointTangentStencilResult& result);
 
 } // namespace dart::simulation::compute::cuda

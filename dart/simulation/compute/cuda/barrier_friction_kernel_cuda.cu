@@ -459,6 +459,19 @@ __device__ void edgeEdgeCoordinatesDevice(
   gamma2 = distance.edgeBCoordinate;
 }
 
+__device__ double pointEdgeCoordinateDevice(
+    const Vec3 p, const Vec3 a, const Vec3 b)
+{
+  constexpr double kTangentBasisEpsilon = 64.0 * 2.2204460492503131e-16;
+  const Vec3 ab = subtract(b, a);
+  const double squaredLength = squaredNorm(ab);
+  if (isfinite(squaredLength) && squaredLength > kTangentBasisEpsilon) {
+    return dot(subtract(p, a), ab) / squaredLength;
+  }
+
+  return 0.0;
+}
+
 __device__ void writePointTriangleDistanceGradient(
     const PointTriangleDistanceDevice& distance, const Vec3 p, double* gradient)
 {
@@ -510,6 +523,86 @@ __device__ void writePointTriangleTangentStencil(
 
   const double coefficients[4] = {1.0, -1.0 + beta1 + beta2, -beta1, -beta2};
   for (int block = 0; block < 4; ++block) {
+    const double coefficient = coefficients[block];
+    const int offset = 6 * block;
+    projectionValues[offset] = coefficient * basis0.x;
+    projectionValues[offset + 1] = coefficient * basis0.y;
+    projectionValues[offset + 2] = coefficient * basis0.z;
+    projectionValues[offset + 3] = coefficient * basis1.x;
+    projectionValues[offset + 4] = coefficient * basis1.y;
+    projectionValues[offset + 5] = coefficient * basis1.z;
+  }
+}
+
+__device__ void writePointEdgeTangentStencil(
+    const PointEdgeTangentInput& input,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t& fallbackBasis)
+{
+  const Vec3 p = makeVec3(input.point);
+  const Vec3 a = makeVec3(input.edgeA);
+  const Vec3 b = makeVec3(input.edgeB);
+  const Vec3 ab = subtract(b, a);
+  const Vec3 pa = subtract(p, a);
+
+  Vec3 basis0;
+  Vec3 basis1;
+  fallbackBasis = basisFromFirstTangentAndSecondHint(
+      ab, cross(ab, pa), pa, basis0, basis1);
+  basisValues[0] = basis0.x;
+  basisValues[1] = basis0.y;
+  basisValues[2] = basis0.z;
+  basisValues[3] = basis1.x;
+  basisValues[4] = basis1.y;
+  basisValues[5] = basis1.z;
+
+  const double eta = pointEdgeCoordinateDevice(p, a, b);
+  coordinates[0] = eta;
+
+  const double coefficients[3] = {1.0, eta - 1.0, -eta};
+  for (int block = 0; block < 3; ++block) {
+    const double coefficient = coefficients[block];
+    const int offset = 6 * block;
+    projectionValues[offset] = coefficient * basis0.x;
+    projectionValues[offset + 1] = coefficient * basis0.y;
+    projectionValues[offset + 2] = coefficient * basis0.z;
+    projectionValues[offset + 3] = coefficient * basis1.x;
+    projectionValues[offset + 4] = coefficient * basis1.y;
+    projectionValues[offset + 5] = coefficient * basis1.z;
+  }
+}
+
+__device__ void writePointPointTangentStencil(
+    const PointPointTangentInput& input,
+    double* basisValues,
+    double* projectionValues,
+    std::uint8_t& fallbackBasis)
+{
+  const Vec3 a = makeVec3(input.pointA);
+  const Vec3 b = makeVec3(input.pointB);
+  const Vec3 ab = subtract(b, a);
+  const Vec3 unitX{1.0, 0.0, 0.0};
+  const Vec3 unitY{0.0, 1.0, 0.0};
+  const Vec3 xCross = cross(unitX, ab);
+  const Vec3 yCross = cross(unitY, ab);
+  const Vec3 firstTangent
+      = squaredNorm(xCross) > squaredNorm(yCross) ? xCross : yCross;
+
+  Vec3 basis0;
+  Vec3 basis1;
+  fallbackBasis = basisFromFirstTangentAndSecondHint(
+      firstTangent, cross(ab, firstTangent), ab, basis0, basis1);
+  basisValues[0] = basis0.x;
+  basisValues[1] = basis0.y;
+  basisValues[2] = basis0.z;
+  basisValues[3] = basis1.x;
+  basisValues[4] = basis1.y;
+  basisValues[5] = basis1.z;
+
+  const double coefficients[2] = {1.0, -1.0};
+  for (int block = 0; block < 2; ++block) {
     const double coefficient = coefficients[block];
     const int offset = 6 * block;
     projectionValues[offset] = coefficient * basis0.x;
@@ -814,6 +907,69 @@ __global__ void edgeEdgeTangentStencilKernel(
       fallbackBases[index]);
 }
 
+__global__ void pointEdgeTangentStencilKernel(
+    const PointEdgeTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  const std::size_t basisOffset = 6 * index;
+  const std::size_t projectionOffset = 18 * index;
+  for (int entry = 0; entry < 6; ++entry) {
+    basisValues[basisOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  coordinates[index] = 0.0;
+  for (int entry = 0; entry < 18; ++entry) {
+    projectionValues[projectionOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  fallbackBases[index] = 0u;
+
+  writePointEdgeTangentStencil(
+      inputs[index],
+      basisValues + basisOffset,
+      coordinates + index,
+      projectionValues + projectionOffset,
+      fallbackBases[index]);
+}
+
+__global__ void pointPointTangentStencilKernel(
+    const PointPointTangentInput* inputs,
+    double* basisValues,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    const std::size_t inputCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= inputCount) {
+    return;
+  }
+
+  const std::size_t basisOffset = 6 * index;
+  const std::size_t projectionOffset = 12 * index;
+  for (int entry = 0; entry < 6; ++entry) {
+    basisValues[basisOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  for (int entry = 0; entry < 12; ++entry) {
+    projectionValues[projectionOffset + static_cast<std::size_t>(entry)] = 0.0;
+  }
+  fallbackBases[index] = 0u;
+
+  writePointPointTangentStencil(
+      inputs[index],
+      basisValues + basisOffset,
+      projectionValues + projectionOffset,
+      fallbackBases[index]);
+}
+
 } // namespace
 
 //==============================================================================
@@ -928,6 +1084,52 @@ cudaError_t launchEdgeEdgeTangentStencilKernel(
       projectionValues,
       fallbackBases,
       inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointEdgeTangentStencilKernel(
+    const PointEdgeTangentInput* inputs,
+    double* basisValues,
+    double* coordinates,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointEdgeTangentStencilKernel<<<gridSize, blockSize>>>(
+      inputs,
+      basisValues,
+      coordinates,
+      projectionValues,
+      fallbackBases,
+      inputCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchPointPointTangentStencilKernel(
+    const PointPointTangentInput* inputs,
+    double* basisValues,
+    double* projectionValues,
+    std::uint8_t* fallbackBases,
+    std::size_t inputCount)
+{
+  if (inputCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(inputCount, blockSize);
+  pointPointTangentStencilKernel<<<gridSize, blockSize>>>(
+      inputs, basisValues, projectionValues, fallbackBases, inputCount);
 
   return cudaGetLastError();
 }

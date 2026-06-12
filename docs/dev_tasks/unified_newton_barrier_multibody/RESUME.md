@@ -87,6 +87,21 @@ because the scalar local-kernel subrow missed the speedup gate in that run
 bases, Hessian assembly, PSD coupling, and runtime contact rows remain future
 evidence.
 
+Critical stop hand-off (2026-06-11): maintainer explicitly instructed the agent
+to stop implementation and focus only on hand-off with no further verification.
+The active branch and PR remain
+`simx/plan083-gpu-contact-candidate-packet` / #2978. This hand-off preserves
+unverified work-in-progress point-edge and point-point tangent-stencil parity
+on that same branch so a fresh session can resume without reconstructing local
+edits. The WIP touches private CUDA evaluator declarations, host wrappers,
+kernels, CUDA unit tests, benchmark rows, the barrier/friction packet writer,
+and its Python packet tests. It has not been linted, built, benchmarked, or
+tested after the critical stop request. Treat it as unvalidated code: do not
+mark point-edge/point-point tangent rows measured and do not update durable
+packet JSON, audit counts, manifest rows, or dashboard completion claims until
+fresh validation passes. See `HANDOFF.md` in this folder for the resume
+checklist and exact file-level context.
+
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
 is historical handoff context, not current checkout state. Treat IPC as the
@@ -424,18 +439,18 @@ paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
-Keep all remaining PLAN-083 follow-up work on
-`simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
-small PRs. A fresh session should first resume the current branch/PR context,
-check hosted #2978 CI/review for actionable failures, and then continue with
-the next blocker from the completion audit on this same branch. The next
-barrier/friction packet gap is point-edge and point-point tangent-stencil parity
-or the downstream Hessian/PSD/runtime contact rows; do not mark the row
-measured until the top-level speed gate and runtime evidence are proven. Keep
-the dev-task folder active because PLAN-083 acceptance criteria are still
-unmet. If the task later moves out of this folder, get maintainer direction
-before deleting it and keep the remaining planned manifest plus in-progress
-CPU/GPU/scene limitations in durable sidecars.
+Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Start
+by reading `HANDOFF.md` in this folder and validating the saved point-edge and
+point-point tangent-stencil WIP that was intentionally pushed without further
+verification. After it is proven, keep remaining PLAN-083 follow-up work on the
+same consolidated branch/PR instead of reviving former stacked branches. The
+next barrier/friction packet gaps are downstream Hessian assembly, PSD coupling,
+runtime contact rows, and speedup-gate work. Do not mark the row measured until
+the top-level speed gate and runtime evidence are proven. Keep the dev-task
+folder active because PLAN-083 acceptance criteria are still unmet. If the task
+later moves out of this folder, get maintainer direction before deleting it and
+keep the remaining planned manifest plus in-progress CPU/GPU/scene limitations
+in durable sidecars.
 
 ## Context That Would Be Lost
 
