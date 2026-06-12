@@ -51,6 +51,33 @@ Immediate follow-up candidates:
 Before publishing or opening any PR from this branch, rerun the relevant gates
 from a clean source state and get explicit maintainer approval before pushing.
 
+EnTT comparative evidence update:
+
+- Source-policy run:
+  `.benchmark_results/allocator_entt_public_setter_continuation_cpuauto.json`
+  from
+  `pixi run bm-allocator-comparative-check --only-entt-registry --baseline foonathan --baseline std --verbose --cpu-affinity auto --benchmark-random-interleaving`.
+  It performed all 12 EnTT foonathan/std comparisons: 8 passed and 4 failed.
+  The DART no-growth rows still reported zero allocator allocations and
+  deallocations after prewarm. The current misses were
+  `BM_EnttRegistry/256` vs std (ratio 1.002),
+  `BM_EnttRegistry/2048` vs std (ratio 1.024),
+  `BM_EnttRegistryBuild/256` vs foonathan (ratio 1.010), and
+  `BM_EnttRegistryBuild/512` vs foonathan (ratio 1.012).
+- Rejected probe:
+  `.benchmark_results/allocator_entt_frame_large_align_probe_cpuauto.json`.
+  Cache-aligning all large frame-backed STL blocks regressed the no-growth
+  rows and produced 8 failed/noisy comparisons, so that code change was
+  reverted.
+- Rejected probe:
+  `.benchmark_results/allocator_entt_frame_reset_probe_cpuauto.json`.
+  Avoiding the redundant frame color reset store did not clear the matrix and
+  still failed 4 comparisons, so that code change was reverted.
+
+Next EnTT work should inspect storage layout/cache placement or run on a
+quieter host before changing allocator policy. Keep the strict 12-row focused
+checker green against both foonathan and std before retaining an optimization.
+
 ## Current Continuation (2026-06-12, Live Joint and Loaded Component Allocators)
 
 Resume from exactly one branch:
