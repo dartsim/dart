@@ -51,6 +51,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
+constexpr int kMaxStrictInteriorFastPathSize = 48;
 
 struct BlockData
 {
@@ -344,10 +345,46 @@ LcpResult BgsSolver::solve(
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
 
+  auto tryStrictInteriorFastPath = [&]() -> bool {
+    Eigen::VectorXd fastW;
+    if (options.warmStart || n > kMaxStrictInteriorFastPathSize
+        || !detail::trySolveStrictInteriorStandardLcp(
+            problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+      return false;
+    }
+
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return true;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return true;
+  };
+
+  if (options.customOptions == nullptr && tryStrictInteriorFastPath()) {
+    return result;
+  }
+
   std::vector<BlockData> blocks;
   if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
+    return result;
+  }
+
+  if (tryStrictInteriorFastPath()) {
     return result;
   }
 

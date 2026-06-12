@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior BGS Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current `HEAD`: `f97ce3b9bf6 Fast path strict-interior projection LCPs`.
+- This section records the local checkpoint titled
+  `Fast path strict-interior BGS LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 43 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BgsSolver` now tries the shared validated strict-interior standard-LCP fast
+  path for small and medium standard rows when the caller is not warm-starting.
+- The fast path is capped at 48 rows because the dense strict-interior linear
+  solve regressed the 96-row BGS comparison row relative to the existing scalar
+  block sweep.
+- Default-option solves can take the fast path before block construction.
+  Explicit custom block partitions are still validated before the fast path is
+  accepted.
+- Unit coverage was extended so
+  `StandardStrictInteriorFastPath.ProjectionAndBlockSolversUseLinearSolve`
+  includes `BgsSolver`.
+- The Python LCP demo profile summary now removes `BGS` from Standard laggards
+  and points remaining Standard tuning at boxed semi-smooth Newton, ADMM,
+  Dantzig, MPRGP, and moderate iterative rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/BGS/` after-run compared to the previous full
+  profile cache:
+  - 12 rows: `0.257`
+  - 24 rows: `0.341`
+  - 48 rows: `0.493`
+  - 96 rows: `0.827`
+  - Mean focused ratio `0.480`; best `0.257`; worst `0.827`.
+  - All focused rows reported `contract_ok=1.0`; fast-path rows reported
+    `iterations=0`, and the capped 96-row fallback reported `iterations=5`.
+- Full regenerated Standard profile now reports `BGS` average ratio `1.39`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to `build/bgs_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.44s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `BoxedSemiSmoothNewton`, `Admm`, `Dantzig`, `MPRGP`, plus moderate
+  `Jacobi`, `Apgd`, and `SymmetricPsor` rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior Projection/Block Fast Path
 
 This section is the latest state; older sections below are historical

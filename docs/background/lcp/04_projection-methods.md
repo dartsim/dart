@@ -336,6 +336,10 @@ solver.solve(problem, x, options);
 > with fixed bounds and no local `findex` coupling use the scalar projected
 > update directly, preserving the Gauss-Seidel sweep while avoiding one-row
 > subproblem setup overhead.
+> Small and medium strictly interior standard LCPs without a warm start first
+> try the shared validated linear-solve fast path. Larger standard rows stay on
+> the existing BGS sweep when the dense linear solve would be slower than the
+> block iteration path.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
 on standard, boxed, and friction-index fixtures with full-block, 3-row block,

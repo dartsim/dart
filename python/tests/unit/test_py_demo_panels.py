@@ -1043,8 +1043,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Newton" in profile_by_surface["Standard"]["current_leaders"]
     assert "projection" in profile_by_surface["Standard"]["current_leaders"]
     assert "block" in profile_by_surface["Standard"]["current_leaders"]
-    assert "BGS" in profile_by_surface["Standard"]["current_laggards"]
     assert "Admm" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Dantzig" in profile_by_surface["Standard"]["current_laggards"]
+    assert "MPRGP" in profile_by_surface["Standard"]["current_laggards"]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["Standard"][
         "current_laggards"
     ]

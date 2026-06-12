@@ -1,5 +1,102 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior BGS Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current `HEAD`: `f97ce3b9bf6 Fast path strict-interior projection LCPs`.
+- This section records the local checkpoint titled
+  `Fast path strict-interior BGS LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 43 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BgsSolver` now tries the shared validated strict-interior standard-LCP fast
+  path for small and medium standard rows when the caller is not warm-starting.
+- The fast path is size-capped at 48 rows because focused evidence showed the
+  dense linear solve regressed the 96-row BGS profile row relative to the
+  existing scalar block sweep.
+- Default-option solves can take the fast path before block construction, while
+  explicit custom block partitions are still validated before the fast path is
+  accepted.
+- The strict-interior projection/block unit coverage now includes `BgsSolver`.
+- The checked LCP performance profile CSVs, Python demo metadata, background
+  docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/BGS/`.
+- Compared to the previous full profile cache:
+  - 12 rows: `0.257`
+  - 24 rows: `0.341`
+  - 48 rows: `0.493`
+  - 96 rows: `0.827`
+  - Mean focused ratio `0.480`; best `0.257`; worst `0.827`.
+  - All focused rows reported `contract_ok=1.0`; the fast-path rows reported
+    `iterations=0`, while the 96-row capped fallback reported `iterations=5`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `BGS` average ratio `1.39`; it is no longer a Standard profile
+  laggard.
+- Current Standard high-ratio targets are `BoxedSemiSmoothNewton`, `Admm`,
+  `Dantzig`, `MPRGP`, plus moderate `Jacobi`, `Apgd`, and `SymmetricPsor`
+  rows.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel 1
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/BGS/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/bgs_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run build
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target the remaining boxed and
+   friction-index high-ratio rows. Do not push without explicit maintainer/user
+   approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Projection/Block Fast Path
 
 Current branch state:

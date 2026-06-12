@@ -1510,6 +1510,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     projection/block comparison rows skip iterative setup when the
     unconstrained linear solve is already a valid positive solution, while
     preserving warm-start and custom block/layer validation paths.
+  - Extended the validated strict-interior standard-LCP fast path to BGS for
+    small and medium standard comparison rows, while preserving explicit custom
+    block validation and leaving larger rows on the existing Gauss-Seidel block
+    sweep when that path is faster than a dense linear solve.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

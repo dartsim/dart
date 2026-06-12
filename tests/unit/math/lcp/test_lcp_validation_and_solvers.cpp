@@ -1726,6 +1726,15 @@ TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
   const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
 
   {
+    BgsSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
     BlockedJacobiSolver solver;
     Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
     const auto result = solver.solve(problem, x, solver.getDefaultOptions());
