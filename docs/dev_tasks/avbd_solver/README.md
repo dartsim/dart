@@ -9,6 +9,13 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed validation (2026-06-11): the angular-motor source-row cleanup
+  checkpoint `ada568afa85` has now been validated after the earlier
+  no-verification handoff. The focused rigid-block target, the focused
+  angular-motor filter (2 tests), the full `test_avbd_rigid_block` binary (95
+  tests), `pixi run build`, `pixi run lint`, and `git diff --check` passed.
+  This validates only the narrow standalone angular-motor source-row scratch
+  cleanup; it is still not a source CPU-win, GPU, or paper-number claim.
 - Latest critical handoff stop (2026-06-11): the user explicitly redirected
   this session to stop implementation and focus only on hand-off for all
   current work, with no further verification. The active checkout remains the
@@ -27,8 +34,8 @@ Corpus matrix:
   for small inputs and keeps pointers to source `AvbdRigidAngularMotor`
   configs instead of copying full motor configs into scratch. This is a narrow
   motor source-row extraction cleanup on top of the point-joint cleanup below,
-  not a source CPU-win, GPU, or paper-number claim. Validation is partial as
-  recorded above; do not claim full build/diff-check evidence for this slice.
+  not a source CPU-win, GPU, or paper-number claim. Validation has now passed
+  as recorded above.
 - Latest resumed follow-up (2026-06-12): rigid point-joint linear and angular
   source-row builders now use stack-backed active row/descriptor storage for
   small inputs and keep only pointers to source joint configs instead of

@@ -21,6 +21,14 @@ Validation listed below is evidence that existed before the stop instruction.
 Do not apply local stashes by default; the branch itself is the consolidated
 resume surface.
 
+Current resumed validation note: work resumed after the no-verification
+handoff, and the angular-motor source-row cleanup checkpoint
+`ada568afa85 Checkpoint AVBD angular motor handoff state` has now passed the
+focused rigid-block target, the focused angular-motor filter, full
+`test_avbd_rigid_block` binary, `pixi run build`, `pixi run lint`, and
+`git diff --check`. This validates only the narrow source-row scratch cleanup;
+it does not close a source CPU-win, GPU, or paper-number gate.
+
 Current resumed note: after the pushed handoff checkpoint at `7a9e24b487b`,
 implementation resumed on `avbd/source-row-extraction-precheck` for small
 source-row overhead slices. One committed local follow-up,
@@ -49,13 +57,10 @@ Before the critical stop, focused rigid-block checks, the full
 `test_avbd_rigid_block` binary, `pixi run lint`, and `pixi run build` had
 passed for earlier resumed source-row slices; the point-joint cleanup also
 passed `pixi run build` and `git diff --check`. The angular-motor cleanup
-passed the focused rigid-block target, the focused angular-motor filter, full
-`test_avbd_rigid_block`, and `pixi run lint`, but full `pixi run build` and
-`git diff --check` were not rerun for that slice before the user forbade
-further verification. `pixi run test-unit` had been started during an older
-point-attachment handoff but no final result is claimed for that attempt. No
-post-stop verification was run after the user explicitly forbade further
-verification.
+has now passed the focused rigid-block target, the focused angular-motor
+filter, full `test_avbd_rigid_block`, `pixi run build`, `pixi run lint`, and
+`git diff --check`. `pixi run test-unit` had been started during an older
+point-attachment handoff but no final result is claimed for that attempt.
 
 Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
@@ -123,9 +128,9 @@ Current continuation state:
   `63e3a1d44a1 Record AVBD source-row helper validation`,
   `8fc57deb9d6 Checkpoint AVBD handoff state`,
   `bf4a2cc8582 Record AVBD critical handoff state`, `ae19e3b0822`,
-  `f380bf9bc04 Checkpoint AVBD contact local-anchor handoff`,
-  `5a56acb0c4c Avoid point-joint row builder heap scratch for small AVBD
-  inputs`, and this angular-motor/handoff checkpoint once committed.
+  `f380bf9bc04 Checkpoint AVBD contact local-anchor handoff`, `5a56acb0c4c`
+  (point-joint small-row scratch cleanup), and `ada568afa85` (angular-motor
+  small-row scratch cleanup).
 - The earlier no-verification stop applied only to the previous handoff
   checkpoint. Work resumed afterward; the origin-anchor follow-ups have fresh
   local validation recorded below. No hosted CI rerun, PR comment, PR update,
@@ -144,13 +149,12 @@ Latest resumed local follow-up:
 - `AvbdRigidAngularMotorRowScratch::activeRows` now stores pointers to input
   motors instead of copying full `AvbdRigidAngularMotor` configs into scratch.
   The active rows are consumed within the builder call.
-- Partial local validation completed before the critical stop:
+- Local validation now completed for this slice:
   `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`,
   the focused angular-motor filter
   `AvbdRigidBlock.RigidAngularMotorBuilderCreatesBoundedRows:AvbdRigidBlock.RigidAngularMotorRowsDriveTargetAngularStep`
-  (2 tests), full `test_avbd_rigid_block` (95 tests), and `pixi run lint`.
-  Full `pixi run build` and `git diff --check` were not rerun for this slice
-  before the user explicitly forbade further verification.
+  (2 tests), full `test_avbd_rigid_block` (95 tests), `pixi run build`,
+  `pixi run lint`, and `git diff --check`.
 - This is only a narrow source-row extraction cleanup; it does not close any
   source CPU-win, GPU, or paper-number gate.
 
@@ -538,14 +542,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff                                  | State and handling                                                                                                  |
-| -------------------------------------- | --------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `5a56acb0c4c` plus this handoff/angular-motor cleanup  | Current checkout and single resume branch. Latest slice has partial validation only; no verification after stop.    |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                          | Active #2977 branch; pushed, latest known state was waiting on hosted Linux Debug Tests.                            |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                          | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                  |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                          | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                  |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                          | Unrelated local branch; do not touch during AVBD handoff.                                                           |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                                          | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session. |
+| Branch                                 | Upstream                                      | Local head at handoff                         | State and handling                                                                                                   |
+| -------------------------------------- | --------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `ada568afa85` plus this validation-doc update | Current checkout and single resume branch. Latest angular-motor slice is locally validated; push only with approval. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                 | Active #2977 branch; pushed, latest known state was waiting on hosted Linux Debug Tests.                             |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                 | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                   |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                 | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                   |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                 | Unrelated local branch; do not touch during AVBD handoff.                                                            |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                                 | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.  |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest critical handoff-only stop. The branches above are intentionally left in
@@ -594,11 +598,11 @@ Fresh-session plan after this progress checkpoint:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-3. The newest angular-motor source-row cleanup has only partial local
-   validation recorded above. Before reviewer-facing PR work, refresh against
-   the intended base and rerun the appropriate lint/build/test checks,
-   especially full `pixi run build` and `git diff --check`. Keep source-row
-   overhead claims separate from CPU-win, GPU, and paper-number gates.
+3. The newest angular-motor source-row cleanup now has local validation
+   recorded above. Before reviewer-facing PR work, refresh against the intended
+   base and rerun the appropriate lint/build/test checks if new source changes
+   are added. Keep source-row overhead claims separate from CPU-win, GPU, and
+   paper-number gates.
 4. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
    issue. Run `pixi run lint` before committing.
