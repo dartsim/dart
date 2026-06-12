@@ -3576,4 +3576,44 @@ static void BM_AvbdPaperScaleHighRatioChainStep(benchmark::State& state)
 }
 BENCHMARK(BM_AvbdPaperScaleHighRatioChainStep);
 
+//==============================================================================
+static void BM_AvbdPaperScaleHighRatioChainIterationSweep(
+    benchmark::State& state)
+{
+  const auto maxIterations = static_cast<std::size_t>(state.range(0));
+  auto fixture = makeArticulatedHighRatioChainWorld(
+      kPaperScaleHighRatioChainLinks,
+      kPaperScaleHighRatioTipMass,
+      maxIterations,
+      kPaperScaleHighRatioTolerance);
+  fixture.world->enterSimulationMode();
+  fixture.world->setReplayRecordingEnabled(true);
+  std::size_t stepsSinceReset = 0;
+
+  for (auto _ : state) {
+    if (stepsSinceReset >= kPaperScaleHighRatioReplaySteps) {
+      state.PauseTiming();
+      fixture.world->restoreReplayFrame(0);
+      stepsSinceReset = 0;
+      state.ResumeTiming();
+    }
+    fixture.world->step();
+    ++stepsSinceReset;
+    benchmark::ClobberMemory();
+  }
+  state.counters["links"] = static_cast<double>(kPaperScaleHighRatioChainLinks);
+  state.counters["mass_ratio"]
+      = kPaperScaleHighRatioTipMass / kArticulatedHighRatioLightMass;
+  state.counters["max_iterations"] = static_cast<double>(maxIterations);
+  state.counters["tolerance"] = kPaperScaleHighRatioTolerance;
+  state.counters["replay_seconds"] = kPaperScaleHighRatioReplaySeconds;
+  state.counters["replay_steps"]
+      = static_cast<double>(kPaperScaleHighRatioReplaySteps);
+}
+BENCHMARK(BM_AvbdPaperScaleHighRatioChainIterationSweep)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100)
+    ->Arg(200);
+
 BENCHMARK_MAIN();

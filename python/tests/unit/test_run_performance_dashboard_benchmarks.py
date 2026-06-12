@@ -94,6 +94,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_AvbdDemo3dBreakableStep$" in result.stdout
     assert "BM_AvbdArticulatedHighRatioChainStep$" in result.stdout
     assert "BM_AvbdPaperScaleHighRatioChainStep$" in result.stdout
+    assert "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*" in result.stdout
     assert (
         "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
         "|SphericalBreakableJoint)"

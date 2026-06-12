@@ -213,6 +213,11 @@ SURFACES: dict[str, Surface] = {
     "BM_AvbdPaperScaleHighRatioChainStep": Surface(
         "AVBD paper-scale high-ratio chain step", FAMILY_AVBD
     ),
+    "BM_AvbdPaperScaleHighRatioChainIterationSweep": Surface(
+        "AVBD paper-scale high-ratio chain iteration sweep",
+        FAMILY_AVBD,
+        ("max iterations",),
+    ),
 }
 
 

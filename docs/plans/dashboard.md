@@ -592,8 +592,11 @@ its own line so status updates remain git-history friendly.
   and visual/CPU benchmark smoke through configured `World::step()` solve-budget
   fields with
   [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-  visual/benchmark evidence, while keeping the same-hardware comparison and GPU
-  gates open. Public
+  visual/benchmark evidence, while
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` adds dashboard-selected
+  25/50/100/200 max-iteration sweep coverage for that same paper-scale fixture.
+  The same-hardware comparison, tracked sweep plot, and GPU gates remain open.
+  Public
   empty-scene corpus baseline coverage is now visible through
   `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
   default source parameters, and the `sceneEmpty` zero-count invariant, and
@@ -970,8 +973,9 @@ its own line so status updates remain git-history friendly.
   articulated-chain smoke py-demo plus dashboard row, a focused 50-link/50,000:1
   finite/reset stability smoke and matching
   `BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
-  through configured `World::step()` solve-budget fields, world-anchor
-  coverage, and a
+  through configured `World::step()` solve-budget fields, the new
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep` dashboard-selected
+  25/50/100/200 max-iteration sweep row, world-anchor coverage, and a
   per-multibody link-index cache in the
   articulated point-joint extractor so same-multibody/world-link AVBD private
   rows no longer rescan structure membership for every point-joint config.

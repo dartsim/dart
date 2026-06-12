@@ -9,6 +9,31 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the paper-scale high-ratio
+  articulated-chain benchmark now includes
+  `BM_AvbdPaperScaleHighRatioChainIterationSweep`, a dashboard-selected
+  iteration-count sweep over 25, 50, 100, and 200 max iterations using the
+  existing 50-link/50,000:1 fixture and replay-reset path. The display-name
+  mapping and dashboard runner know about the row. This is only first
+  parameter-sweep infrastructure; it does not provide a tracked packet, plot,
+  same-hardware paper-number comparison, or GPU parity claim. Local validation
+  passed the focused benchmark target build, benchmark registration list for
+  `/25`, `/50`, `/100`, and `/200`, the focused Python dashboard tests,
+  `pixi run lint`, `pixi run build`, and `git diff --check`.
+- Final stop handoff (2026-06-12): the user explicitly directed the session to
+  stop working further, only ensure the hand-off docs, and then literally stop.
+  The active checkout before this docs-only handoff edit was
+  `avbd/source-row-extraction-precheck` at local HEAD `3732c21233d`
+  (`Record AVBD current-state gap audit`), tracking
+  `origin/avbd/source-row-extraction-precheck` and ahead by 13 local commits.
+  A short-lived `BM_AvbdPaperScaleHighRatioChainIterationSweep` prototype was
+  removed before this handoff; no iteration-sweep benchmark, packet, plot,
+  paper-number parity, or GPU claim should be assumed. No lint/build/test/CI,
+  `git diff --check`, PR refresh, push, PR mutation, branch cleanup, merge, or
+  stash operation was performed for this stop-only handoff by explicit user
+  direction. `RESUME.md` is the source of truth for the current branch
+  inventory, stash inventory, local-only commits, PR #2977 caveats, and future
+  recovery commands.
 - Latest current-state audit (2026-06-12): the next-gap wording was refreshed
   against the current C++/dartpy tests and benchmark rows. The evidence now
   shows that narrow breakable benchmark rows, public world-fixed reset,

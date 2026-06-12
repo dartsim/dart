@@ -312,7 +312,10 @@ yet. `PaperScaleHighRatioChainStaysFiniteAndResets` now adds a focused
 dashboard row with tracked
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
 visual/benchmark evidence, without closing same-hardware paper-number or GPU
-parity gates.
+parity gates. `BM_AvbdPaperScaleHighRatioChainIterationSweep` now adds the
+first dashboard-selected max-iteration sweep for that same fixture over
+25/50/100/200 iterations, but it still needs tracked packet/plot evidence
+before counting as a completed parameter sweep.
 Public free-rigid-body revolute/prismatic velocity actuators now also extract
 to private AVBD angular/linear motor rows. Both paths have categorized
 `avbd_rigid_revolute_motor` / `avbd_rigid_prismatic_motor` py-demos,
@@ -795,6 +798,9 @@ solve-budget fields, and `BM_AvbdPaperScaleHighRatioChainStep` adds the
 matching paper-scale CPU dashboard row with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
 visual/benchmark evidence but no same-hardware paper-number claim.
+`BM_AvbdPaperScaleHighRatioChainIterationSweep` is now selected by the
+dashboard runner over 25/50/100/200 max-iteration budgets for the same
+paper-scale fixture; packet/plot and GPU evidence remain open.
 The private
 endpoint classifier now separates free rigid-body endpoints from multibody
 links, with
@@ -1003,7 +1009,10 @@ implementation work should prefer one of these gaps, in order:
    `World::step()` solve-budget fields, and
    `BM_AvbdPaperScaleHighRatioChainStep` exposes the matching paper-scale CPU
    dashboard row with a visual/benchmark packet, but this is still not a
-   same-hardware comparison.
+   same-hardware comparison. The companion
+   `BM_AvbdPaperScaleHighRatioChainIterationSweep` row adds first
+   dashboard-selected iteration-budget coverage over 25/50/100/200 max
+   iterations, still without tracked plot data or GPU parity.
    Direct private movable-pair fixed/revolute/prismatic and current-pose
    movable-pair fixed/revolute/prismatic break/reset regressions now verify
    broken rows stay skipped under opposing endpoint forces and re-enter with an

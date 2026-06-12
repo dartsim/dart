@@ -699,8 +699,11 @@ plus a focused C++ 50-link/50,000:1 finite/reset smoke and
 `BM_AvbdPaperScaleHighRatioChainStep` dashboard row through configured
 `World::step()` solve-budget fields with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence, but it still cannot reproduce the paper's full
-hard-constrained articulated chains, same-hardware numbers, or
+visual/benchmark evidence. `BM_AvbdPaperScaleHighRatioChainIterationSweep`
+now adds dashboard-selected 25/50/100/200 max-iteration coverage for that same
+fixture, but no tracked sweep packet, convergence/stability plot, same-hardware
+paper-number comparison, or GPU parity exists yet. DART still cannot reproduce
+the paper's full hard-constrained articulated chains, same-hardware numbers, or
 cloth-plus-articulated-rigid coupling scenes.
 The next implementation slice should either optimize the measured
 `avbd_demo2d_ground`, `avbd_demo2d_motor`,
