@@ -373,10 +373,18 @@ class _RigidJointMotorLimitVerifier:
 
         return {
             "row": "rigid_joint_motor_limits",
+            "comparison_axis": "world_multibody_actuator_limit_family",
             "solver": "world_multibody_joint_actuators",
             "constraint": "velocity_motor_position_limit_effort_cap",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": metric_value("world_time"),
+            "held_fixed": {
+                "solver": "World multibody joint actuators",
+                "joint_axes": "x-axis prismatic rails and y-axis revolute stop",
+                "carriage_mass": _CARRIAGE_MASS,
+                "limit_link_mass": 1.0,
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "command_speed": float(self.command_speed),
                 "velocity_limit": float(self.velocity_limit),
@@ -384,12 +392,27 @@ class _RigidJointMotorLimitVerifier:
                 "force_command": float(self.force_command),
                 "effort_limit": float(self.effort_limit),
             },
+            "joint_lanes": [
+                "velocity_motor",
+                "position_limit",
+                "effort_limited",
+                "effort_reference",
+            ],
             "joints": {
                 "velocity_motor": self.motor_joint.name,
                 "position_limit": self.limit_joint.name,
                 "limited_force": self.limited_force_joint.name,
                 "open_force": self.open_force_joint.name,
             },
+            "joint_motor_speed": metric_value("motor_speed"),
+            "joint_motor_expected_speed": metric_value("motor_expected_speed"),
+            "joint_motor_speed_error": metric_value("motor_speed_error"),
+            "joint_motor_position_limit_angle": metric_value("position_limit_angle"),
+            "joint_motor_position_limit_error": metric_value("position_limit_error"),
+            "joint_motor_force_position_gap": metric_value("force_position_gap"),
+            "joint_motor_force_acceleration_gap": metric_value(
+                "force_acceleration_gap"
+            ),
             "motor_position": metric_value("motor_position"),
             "motor_speed": metric_value("motor_speed"),
             "motor_expected_speed": metric_value("motor_expected_speed"),
@@ -650,6 +673,12 @@ class _RigidJointMotorLimitVerifier:
 
         metrics = self._last_metrics or {}
         builder.separator()
+        builder.text("comparison axis: World multibody actuator/limit family")
+        builder.text(
+            "held fixed: World multibody joints | x-axis prismatic rails + "
+            "y-axis revolute stop | carriage mass 2.0 | time step "
+            f"{_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("velocity actuator: command is clamped by joint velocity limits")
         builder.text(
             f"speed {float(metrics.get('motor_speed', 0.0)):.3f} m/s | "

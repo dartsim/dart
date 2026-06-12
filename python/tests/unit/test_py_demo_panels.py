@@ -1257,6 +1257,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_joint_motor_limits,
+            (
+                "text:comparison axis: World multibody actuator/limit family",
+                "text:held fixed: World multibody joints | x-axis prismatic rails + y-axis revolute stop | carriage mass 2.0 | time step 5.0 ms",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

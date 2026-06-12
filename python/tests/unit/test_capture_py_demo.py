@@ -1259,6 +1259,33 @@ def test_rigid_workflow_latest_signals_prioritize_one_dof_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_joint_motor_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "comparison_axis": "world_multibody_actuator_limit_family",
+            "joint_motor_expected_speed": 0.3,
+            "joint_motor_force_acceleration_gap": 6.0,
+            "joint_motor_force_position_gap": 0.6984,
+            "joint_motor_position_limit_angle": 0.35,
+            "joint_motor_position_limit_error": 0.0,
+            "joint_motor_speed": 0.3,
+            "joint_motor_speed_error": 0.0,
+            "solver": "world_multibody_joint_actuators",
+        }
+    )
+
+    assert highlights[:8] == [
+        "joint motor speed: 0.3",
+        "joint motor expected speed: 0.3",
+        "joint motor speed error: 0",
+        "joint motor position limit angle: 0.35",
+        "joint motor position limit error: 0",
+        "joint motor force position gap: 0.6984",
+        "joint motor force acceleration gap: 6",
+        "solver: world_multibody_joint_actuators",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -206,7 +206,7 @@ plus a warning block if any selected row is missing those fields.
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | AVBD joints, weak break force, static base            | Break-force axis, broken state, release distance, reset       |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, rest length, initial stretch, gravity       | Distance-spring axis, lane stretch, offset spin               |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Sequential joints, static bases, z axis               | One-DOF axis, locked errors, free-axis motion                 |
-| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks             |
+| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | World joints, velocity/position/effort limits         | Actuator axis, motor clamp, force gap                         |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks       |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks           |
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Response gap, coupling, torque load, Replay marks             |
@@ -679,8 +679,12 @@ limit. The panel exposes the command and limit values directly, then plots
 motor speed, position-limit error, and force-response histories.
 `py-demo-capture` records the same row identity, actuator scope, control values,
 joint names, motor clamp, position-stop, force/effort-cap, acceleration-gap,
-step-timing, and compact history metrics into the manifest sidecar.
-The shared Replay panel uses force travel gap as its value track and marks
+step-timing, and compact history metrics into the manifest sidecar. The panel
+and capture metrics label the World multibody actuator/limit comparison axis,
+held-fixed x-axis prismatic rail and y-axis revolute-stop context, lane names,
+and top-level review signals for motor speed, expected speed, speed error,
+position-limit angle/error, force travel gap, and force acceleration gap. The
+shared Replay panel uses force travel gap as its value track and marks
 velocity-clamp, position-stop, and effort-cap frames.
 
 The **`rigid_joint_passive_parameters`** scene covers the public passive

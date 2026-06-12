@@ -2,48 +2,66 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: after merging `origin/main` at
-`c3d219c3b41`, row 28 now gives the rigid-body one-DOF joint row the same
-reviewable comparison shape as the surrounding rigid workflow rows while
-following the DART 7 architecture harness from PR #2986. `rigid_limited_joints`
-names `one_dof_joint_constraint_family` as its comparison axis in the panel and
-capture metrics, records held-fixed sequential-joint/static-base/z-axis
-context, exports top-level locked-axis and free-axis motion metrics, and feeds
-decisive latest signals into the workflow review index.
+Latest local slice: row 29 now gives the World multibody joint motor/limit row
+the same reviewable comparison shape as the surrounding rigid workflow rows
+while continuing to follow the DART 7 architecture harness from PR #2986.
+`rigid_joint_motor_limits` names `world_multibody_actuator_limit_family` as its
+comparison axis in the panel and capture metrics, records held-fixed
+World-joint/axis/mass/time-step context, exports top-level motor clamp,
+position-limit, and force-gap metrics, and feeds decisive latest signals into
+the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_one_dof_joint_verifier_preserves_locked_directions`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-28 latest signals prioritize hinge
-  radius/z error, slider orthogonal error, hinge yaw, slider travel, free-axis
-  speeds, and solver.
-- Real row-28 workflow capture completed under
-  `/tmp/dart_capture_rigid_limited_joints_row_28_1781301510` with
+  sync check, and the unit guard that row-29 latest signals prioritize motor
+  speed, expected speed, speed error, limit angle/error, force travel gap, force
+  acceleration gap, and solver.
+- Real row-29 workflow capture completed under
+  `build/captures/rigid_joint_motor_limits_row_29_1781301981` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 28 reported `comparison_axis=one_dof_joint_constraint_family`,
-  held-fixed `base=static`,
-  `joint_axes=z-axis revolute and prismatic`, `payload_mass=1.0`,
-  `solver=Sequential rigid joints`, `time_step_ms=5.0`, controls
-  `perturbation=0.18`, `joint_count=2.0`, `joint_lanes=[hinge, slider]`,
-  `one_dof_hinge_radius_error=0.0`, `one_dof_hinge_z_error=0.0`,
-  `one_dof_slider_orthogonal_error=0.0`,
-  `one_dof_hinge_yaw=0.16800000000000043`,
-  `one_dof_slider_axis_travel=0.6040000000000021`,
-  `one_dof_hinge_angular_speed=1.4000000000000012`,
-  `one_dof_slider_axis_speed=0.45000000000001705`, and history maxima
-  `max_abs_hinge_yaw=0.16800000000000043`,
-  `max_slider_axis_travel=0.6040000000000021`.
-- `review_index.html` showed the row-28 card with `axis`, `held fixed`,
-  `controls`, Replay signal/markers, metric-key summary, and visible latest
-  signals for hinge radius/z error, slider orthogonal error, hinge yaw, slider
-  travel, hinge angular speed, slider axis speed, and solver.
-- The per-scene capture wrote a nonblank docked screenshot and 23 PNG frames
-  for `rigid_limited_joints` from the 24-frame workflow row capture.
+- Row 29 reported `comparison_axis=world_multibody_actuator_limit_family`,
+  held-fixed
+  `joint_axes=x-axis prismatic rails and y-axis revolute stop`,
+  `carriage_mass=2.0`, `limit_link_mass=1.0`,
+  `solver=World multibody joint actuators`, `time_step_ms=5.0`, controls
+  `command_speed=0.55`, `velocity_limit=0.3`, `position_limit=0.35`,
+  `force_command=16.0`, `effort_limit=4.0`,
+  `joint_lanes=[velocity_motor, position_limit, effort_limited, effort_reference]`,
+  `joint_motor_speed=0.3`, `joint_motor_expected_speed=0.3`,
+  `joint_motor_speed_error=0.0`,
+  `joint_motor_position_limit_angle=0.35`,
+  `joint_motor_position_limit_error=0.0`,
+  `joint_motor_force_position_gap=0.6984000000000006`,
+  `joint_motor_force_acceleration_gap=6.000000000000005`, and matching history
+  maxima for force position/acceleration gap.
+- `review_index.html` showed the row-29 card with `axis`, `held fixed`,
+  `controls`, Replay signal/markers, metric-key summary, and latest-signal
+  ordering for motor speed, expected speed, speed error, limit angle/error,
+  force travel gap, force acceleration gap, and solver.
+- The per-scene capture wrote a nonblank docked screenshot and 95 PNG frames
+  for `rigid_joint_motor_limits` from the 96-frame workflow row capture. The
+  successful capture was written under `build/captures/` after a previous
+  `/tmp` attempt hit the host tmpfs quota.
+
+Previous completed and verified slice: row 28 gives the rigid-body one-DOF
+joint row the same reviewable comparison shape as the surrounding rigid
+workflow rows. `rigid_limited_joints` names
+`one_dof_joint_constraint_family` as its comparison axis in the panel and
+capture metrics, records held-fixed sequential-joint/static-base/z-axis
+context, exports top-level locked-axis and free-axis motion metrics, and feeds
+decisive latest signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-28 workflow capture completed under
+`/tmp/dart_capture_rigid_limited_joints_row_28_1781301510` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 23 PNG frames.
 
 Previous completed and verified slice: row 27 gives the rigid-body
 distance-spring row the same reviewable comparison shape as the surrounding
@@ -104,17 +122,16 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `c3d219c3b41 Merge remote-tracking branch 'origin/main' into
-feature/rigid-body-gui-visual-verification`.
+  `b28a0d38c5f Surface one-DOF joint workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  one-DOF joint workflow signals; otherwise inspect the uncommitted diff for
-  the row-28 follow-up.
+  joint motor/limit workflow signals; otherwise inspect the uncommitted diff for
+  the row-29 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-28 review-index/evidence direction before broadening
+current row-15-through-row-29 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
