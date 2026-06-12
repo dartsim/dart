@@ -764,6 +764,24 @@ HeapAllocationSnapshot countGlobalHeapAllocationsDuringSimulationBake(
   return {heapCounter.allocationCount(), heapCounter.allocationBytes()};
 }
 
+void configureSemiImplicitExternalForceMultibodyScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  auto robot = world.addMultibody("forced_slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(2.0);
+  carriage.applyForce(
+      Eigen::Vector3d(0.0, 0.0, 4.0), Eigen::Vector3d::Zero(), false, false);
+  world.setTimeStep(0.01);
+}
+
 void configureCrossMultibodyDifferentDofFallbackScene(
     dart::simulation::World& world)
 {
@@ -5105,6 +5123,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
         world.setMultibodyOptions({"variational integrator"});
         world.setTimeStep(0.01);
       });
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "semi-implicit external-force body Jacobian scratch",
+      configureSemiImplicitExternalForceMultibodyScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "articulated link resting contact",
@@ -6444,7 +6465,6 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         world.setMultibodyOptions({"variational integrator"});
         world.setTimeStep(0.01);
       });
-
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "multibody variational compliant contact scratch",
       configureCompliantVariationalContactSliderScene);

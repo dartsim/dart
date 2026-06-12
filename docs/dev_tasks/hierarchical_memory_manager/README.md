@@ -211,7 +211,9 @@
       root.
       The default rigid-body velocity/contact stages and semi-implicit
       multibody velocity/contact path now reuse baked scratch for the covered
-      rigid and articulated resting-contact scenes. The
+      rigid and articulated resting-contact scenes, and the semi-implicit
+      external-force branch now reuses baked body-Jacobian scratch instead of
+      building a step-local Jacobian vector. The
       variational multibody stage now owns cache-only reusable contact/constraint
       scratch, bakes loop-closure and hard AVBD point-joint constraint capacity,
       evaluates pure compliant ground contact from baked ground-contact scratch,
@@ -376,8 +378,9 @@
       during the step loop" on representative rigid, multibody, contact, and
       deformable scenes. World base-allocator no-growth guards now cover baked
       kinematic IPC rigid-body, multibody variational, deformable ECS,
-      rigid-body resting-contact, non-cross articulated resting-contact, and
-      same-DOF cross-articulated link-contact paths after contact prewarm; a
+      rigid-body resting-contact, semi-implicit external-force multibody,
+      non-cross articulated resting-contact, and same-DOF cross-articulated
+      link-contact paths after contact prewarm; a
       global heap guard covers the same baked kinematic IPC, rigid-body,
       multibody variational, compliant variational contact, deformable,
       rigid-body resting-contact,
@@ -806,8 +809,15 @@ Follow-up progress after PR #2956:
   DART-owned dynamics-tree, link-index, RNEA, link-contact, constrained-DOF,
   constrained-target, contact-row, and body-Jacobian containers from the World
   free allocator when the component is bake-created or first needed by a World
-  stage. Eigen-owned matrices/vectors remain tracked as the solver-private
-  storage limitation called out below.
+  stage. Its external-force body-Jacobian branch now fills the baked
+  body-Jacobian scratch instead of constructing a default-allocated local
+  Jacobian vector during `world.step()`, and a focused semi-implicit
+  external-force multibody gate covers World-base no-growth after bake. A
+  candidate global-heap gate for the same forced-slider shape still reported
+  four allocations / 312 bytes in the counted baked steps; keep that as the
+  next narrow Eigen-expression/scratch follow-up instead of treating the
+  external-force path as fully no-heap. Eigen-owned matrices/vectors remain
+  tracked as the solver-private storage limitation called out below.
 - `MemoryAllocatorDebugger` now records the requested alignment alongside live
   byte counts for aligned allocations and rejects mismatched aligned
   deallocations without forwarding them to the wrapped allocator, closing one

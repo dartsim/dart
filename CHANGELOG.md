@@ -594,8 +594,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     first baked-step global-heap no-allocation by priming unified constraint
     scratch during `enterSimulationMode()`. Semi-implicit multibody dynamics
     scratch now constructs its DART-owned tree, contact, row, constrained-DOF,
-    RNEA, and body-Jacobian containers from the World allocator. Public
-    multibody link-contact
+    RNEA, and body-Jacobian containers from the World allocator, and the
+    external-force body-Jacobian path now reuses that baked scratch instead of
+    allocating a step-local Jacobian vector. Public multibody link-contact
     assembly now has reusable scratch storage that can be borrowed by the
     in-place unified assembler without same-shape heap growth, and the
     boxed-LCP fallback gates include larger five- and eight-multibody stacked

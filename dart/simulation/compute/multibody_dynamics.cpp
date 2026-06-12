@@ -966,14 +966,13 @@ bool computeUnconstrainedMultibodyVelocityInto(
       }
     }
     if (anyExternalForce) {
-      const std::vector<Eigen::MatrixXd> bodyJacobian
-          = linkBodyJacobians(scratch.tree);
+      linkBodyJacobiansInto(scratch.tree, scratch.bodyJacobian);
       for (std::size_t i = 0; i < scratch.tree.links.size(); ++i) {
         const Vector6 wrench
             = registry.get<comps::Link>(structure.links[i]).externalForce;
         if (!wrench.isZero()) {
           scratch.appliedForce.noalias()
-              += bodyJacobian[i].transpose() * wrench;
+              += scratch.bodyJacobian[i].transpose() * wrench;
         }
       }
     }
