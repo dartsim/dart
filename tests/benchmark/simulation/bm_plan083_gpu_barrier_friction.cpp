@@ -29,9 +29,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/body/deformable_body.hpp>
+#include <dart/simulation/body/deformable_body_options.hpp>
+#include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/newton_barrier/barrier_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/friction_kernel.hpp>
 #include <dart/simulation/detail/newton_barrier/tangent_stencil.hpp>
+#include <dart/simulation/world.hpp>
 
 #include <benchmark/benchmark.h>
 #include <dart/simulation/compute/cuda/barrier_friction_kernel_cuda.cuh>
@@ -46,11 +50,17 @@
 #include <cstdint>
 
 namespace cuda = dart::simulation::compute::cuda;
+namespace dc = dart::simulation::detail::deformable_contact;
 namespace nb = dart::simulation::detail::newton_barrier;
+namespace sx = dart::simulation;
 
 namespace {
 
 using Clock = std::chrono::steady_clock;
+
+constexpr double kSceneRuntimeCandidateActivationDistance = 0.05;
+constexpr double kSceneRuntimeBarrierActivationDistance = 0.5;
+constexpr double kSceneRuntimeBarrierTimeStep = 1.0;
 
 double elapsedNs(const Clock::time_point start, const Clock::time_point end)
 {
@@ -183,6 +193,15 @@ struct PointPointTangentFixture
 {
   std::vector<cuda::PointPointTangentInput> inputs;
   CpuPointPointTangentResult cpu;
+};
+
+struct ScenePointTriangleBarrierFixture
+{
+  std::vector<cuda::PointTriangleBarrierInput> inputs;
+  CpuPointTriangleResult cpu;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
 };
 
 cuda::BarrierFrictionLocalInput makeInput(const int i)
@@ -397,6 +416,49 @@ cuda::PointPointTangentInput makePointPointTangentInput(const int i)
   writeVec3(input.pointA, a);
   writeVec3(input.pointB, b);
   return input;
+}
+
+sx::DeformableBodyOptions makeSceneRuntimeBarrierBodyOptions(
+    const int sampleCount)
+{
+  const int groupCount = std::max(1, static_cast<int>(std::sqrt(sampleCount)));
+  sx::DeformableBodyOptions options;
+  options.positions.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.velocities.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.masses.reserve(static_cast<std::size_t>(10 * groupCount));
+  options.surfaceTriangles.reserve(static_cast<std::size_t>(3 * groupCount));
+
+  const auto appendSceneNode
+      = [&options](const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+          options.positions.push_back(start);
+          options.velocities.push_back(
+              (end - start) / kSceneRuntimeBarrierTimeStep);
+          options.masses.push_back(1.0);
+        };
+
+  for (int i = 0; i < groupCount; ++i) {
+    const double x = static_cast<double>(i % 64) * 4.0;
+    const double y = static_cast<double>(i / 64) * 4.0;
+    const std::size_t base = options.positions.size();
+
+    appendSceneNode({x, y, 0.0}, {x, y, 0.0});
+    appendSceneNode({x + 1.0, y, 0.0}, {x + 1.0, y, 0.0});
+    appendSceneNode({x, y + 1.0, 0.0}, {x, y + 1.0, 0.0});
+    appendSceneNode({x + 0.25, y + 0.25, 0.20}, {x + 0.25, y + 0.25, -0.20});
+    options.surfaceTriangles.push_back({base, base + 1u, base + 2u});
+
+    appendSceneNode({x + 2.0, y, 0.0}, {x + 2.0, y, 0.0});
+    appendSceneNode({x + 3.0, y, 0.0}, {x + 3.0, y, 0.0});
+    appendSceneNode({x + 2.0, y + 1.0, 0.0}, {x + 2.0, y + 1.0, 0.0});
+    options.surfaceTriangles.push_back({base + 4u, base + 5u, base + 6u});
+
+    appendSceneNode({x + 2.25, y + 0.20, -0.5}, {x + 2.25, y - 0.20, -0.5});
+    appendSceneNode({x + 2.25, y + 0.20, 0.5}, {x + 2.25, y - 0.20, 0.5});
+    appendSceneNode({x + 3.25, y + 1.25, 0.0}, {x + 3.25, y + 1.25, 0.0});
+    options.surfaceTriangles.push_back({base + 7u, base + 8u, base + 9u});
+  }
+
+  return options;
 }
 
 void resizeCpuResult(CpuLocalResult& result, const std::size_t count)
@@ -896,6 +958,61 @@ PointPointTangentFixture makePointPointTangentFixture(const int sampleCount)
   return fixture;
 }
 
+ScenePointTriangleBarrierFixture makeSceneRuntimePointTriangleBarrierFixture(
+    const int sampleCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeBarrierTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_barrier",
+      makeSceneRuntimeBarrierBodyOptions(sampleCount));
+
+  std::vector<Eigen::Vector3d> start;
+  std::vector<Eigen::Vector3d> end;
+  std::vector<sx::DeformableSurfaceTriangle> triangles;
+  start.reserve(body.getNodeCount());
+  end.reserve(body.getNodeCount());
+  triangles.reserve(body.getSurfaceTriangleCount());
+
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    start.push_back(body.getPosition(node));
+    end.push_back(start.back() + world.getTimeStep() * body.getVelocity(node));
+  }
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    triangles.push_back(body.getSurfaceTriangle(triangle));
+  }
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = kSceneRuntimeCandidateActivationDistance;
+  const dc::ContactCandidateSet candidates
+      = dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options);
+
+  ScenePointTriangleBarrierFixture fixture;
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.sceneNodeCount = body.getNodeCount();
+  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
+  fixture.inputs.reserve(candidates.pointTriangleCandidates.size());
+
+  for (std::size_t i = 0; i < candidates.pointTriangleCandidates.size(); ++i) {
+    const auto& candidate = candidates.pointTriangleCandidates[i];
+    const auto& triangle = triangles[candidate.triangle];
+    cuda::PointTriangleBarrierInput input;
+    writeVec3(input.point, end[candidate.point]);
+    writeVec3(input.triangleA, end[triangle.nodeA]);
+    writeVec3(input.triangleB, end[triangle.nodeB]);
+    writeVec3(input.triangleC, end[triangle.nodeC]);
+    input.squaredActivationDistance = kSceneRuntimeBarrierActivationDistance
+                                      * kSceneRuntimeBarrierActivationDistance;
+    input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
+    fixture.inputs.push_back(input);
+  }
+
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
 template <typename Lhs, typename Rhs>
 double maxAbsDifference(const Lhs& lhs, const Rhs& rhs)
 {
@@ -1210,6 +1327,26 @@ void recordCounters(
       static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
 }
 
+void recordCounters(
+    benchmark::State& state,
+    const ScenePointTriangleBarrierFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["runtime_point_triangle_candidates"]
+      = static_cast<double>(fixture.inputs.size());
+  state.counters["active_barriers"]
+      = static_cast<double>(fixture.cpu.activeBarrierCount);
+  state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
 } // namespace
 
 //==============================================================================
@@ -1364,6 +1501,57 @@ static void BM_Plan083PointTriangleBarrierHessianCuda(benchmark::State& state)
 }
 BENCHMARK(BM_Plan083PointTriangleBarrierHessianCuda)
     ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointTriangleBarrierHessianCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimePointTriangleBarrierFixture(
+      static_cast<int>(state.range(0)));
+  CpuPointTriangleResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimePointTriangleBarrierHessianCpu)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointTriangleBarrierHessianCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimePointTriangleBarrierFixture(
+      static_cast<int>(state.range(0)));
+  cuda::PointTriangleBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimePointTriangleBarrierHessianCuda)
     ->Arg(65536)
     ->UseRealTime();
 

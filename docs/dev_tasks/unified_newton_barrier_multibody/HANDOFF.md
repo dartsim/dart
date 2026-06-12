@@ -1,5 +1,76 @@
 # Unified Newton-Barrier Handoff
 
+## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)
+
+The maintainer gave a fresh `continue` instruction after the stop-only
+handoff. Work may resume locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, while keeping all
+remaining PLAN-083 work consolidated on this single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or clean branches without explicit maintainer approval.
+
+This resume validated the uncommitted scene-owned point-triangle
+barrier-Hessian packet checkpoint and refreshed the packet evidence. The
+latest generated packet records 512 scene-owned point-triangle candidates from
+one deformable scene body with 2,560 nodes and 768 surface triangles. CPU/GPU
+barrier-Hessian parity holds within `1.7763568394002505e-15` for the runtime
+row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2013161527429088x` (`meets_speedup_gate=false`).
+
+## Stop-Only Handoff (2026-06-12)
+
+The maintainer explicitly stopped further implementation and verification here.
+Do not continue work, run validation, push, PR-comment, resolve review threads,
+trigger CI, open or close PRs, delete branches, or clean branches unless the
+maintainer gives a new resume instruction.
+
+Resume context: branch `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). The working
+tree intentionally contains uncommitted handoff/state changes plus the latest
+scene-owned point-triangle barrier-Hessian packet work. Treat those local
+changes as intentional in-progress state, not cleanup candidates.
+
+Current local status at handoff: branch is ahead of
+`origin/simx/plan083-gpu-contact-candidate-packet` by 16 commits, with
+modified dev-task docs, PLAN-083 status docs, packet writer/test files, and the
+GPU barrier/friction benchmark. Verification was not continued after this
+stop-only handoff request.
+
+## Scene-Owned Runtime Barrier-Hessian Checkpoint (2026-06-12)
+
+Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on this single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval. Before any
+future push, merge latest `origin/main` into this published branch, rerun the
+required gates, and push only with explicit approval.
+
+This checkpoint adds a reduced scene-owned point-triangle barrier-Hessian
+runtime row to the private GPU barrier/friction packet. The benchmark builds
+one DART `World` deformable surface, extracts motion-aware point-triangle
+contact candidates from the runtime scene surface, evaluates the candidate
+barrier Hessians on CPU and CUDA, and records scene body/node/triangle counts.
+
+Fresh packet evidence records 512 scene-owned point-triangle candidates from
+one deformable scene body with 2,560 nodes and 768 surface triangles. CPU/GPU
+barrier-Hessian parity holds within `1.7763568394002505e-15` for the runtime
+row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2013161527429088x` (`meets_speedup_gate=false`).
+
+This is reduced scene-owned point-triangle barrier-Hessian evidence only. It
+does not claim broader sparse Hessian assembly, additional runtime contact
+rows, full GPU `World::step`, or barrier/friction speedup-gate completion.
+
+Latest local gates:
+
+- focused barrier/friction packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
 ## Scene-Owned Runtime Sweep Checkpoint (2026-06-12)
 
 Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
@@ -804,15 +875,16 @@ barrier/friction benchmark packet. It measured
 ## Resume Guidance
 
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
-2. Inspect local status before editing, committing, or pushing. The point-edge
-   and point-triangle barrier-Hessian checkpoints plus the point-triangle
-   Hessian PSD-projection checkpoint are locally committed ahead of origin, and
-   the current checkpoint completes point-point/point-edge Hessian
-   PSD-projection packet parity locally.
+2. Inspect local status before editing, committing, or pushing. The current
+   branch is the single consolidated #2978 branch and now includes the reduced
+   scene-owned point-triangle barrier-Hessian runtime row on top of the earlier
+   contact-candidate, CCD/line-search, barrier/friction, assembly/solve, and
+   scene-parity packet checkpoints.
 3. Check hosted CI and new review comments before editing. Do not reply to bot
    comments.
 4. Continue on the same PR with the remaining runtime/parity gaps: broader
-   sparse Hessian assembly, runtime contact rows, and packet speedup gates.
+   sparse Hessian assembly, additional runtime contact rows, equality-reduced
+   assembly/solve rows, and packet speedup gates.
 5. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

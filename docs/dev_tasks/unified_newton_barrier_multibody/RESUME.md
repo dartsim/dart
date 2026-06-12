@@ -2,6 +2,68 @@
 
 ## Current Reality (2026-06-09)
 
+Resumed barrier-Hessian packet checkpoint (2026-06-12): the maintainer gave a
+fresh `continue` instruction after the stop-only handoff. Work may resume
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, while
+keeping all remaining PLAN-083 work consolidated on this single branch/PR. Do
+not push, PR-comment, resolve review threads, trigger CI, open or close PRs,
+delete branches, or clean branches without explicit maintainer approval.
+
+This resume validated the uncommitted scene-owned point-triangle
+barrier-Hessian packet checkpoint and refreshed the packet evidence. The
+latest generated packet records 512 scene-owned point-triangle candidates from
+one deformable scene body with 2,560 nodes and 768 surface triangles. CPU/GPU
+barrier-Hessian parity holds within `1.7763568394002505e-15` for the runtime
+row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2013161527429088x` (`meets_speedup_gate=false`).
+
+Stop-only handoff (2026-06-12): the maintainer explicitly stopped further
+implementation and verification here. Do not continue work, run validation,
+push, PR-comment, resolve review threads, trigger CI, open or close PRs,
+delete branches, or clean branches unless the maintainer gives a new resume
+instruction.
+
+Resume context remains `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). The working
+tree intentionally contains uncommitted handoff/state changes plus the latest
+scene-owned point-triangle barrier-Hessian packet work. Treat those local
+changes as intentional in-progress state, not cleanup candidates. At handoff,
+the branch was ahead of `origin/simx/plan083-gpu-contact-candidate-packet` by
+16 commits, with modified dev-task docs, PLAN-083 status docs, packet
+writer/test files, and the GPU barrier/friction benchmark. Verification was
+not continued after the stop-only request.
+
+Scene-owned runtime barrier-Hessian checkpoint (2026-06-12): continue from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on that single branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, close PRs, delete
+branches, or clean up branches without explicit maintainer approval.
+
+This checkpoint adds a reduced scene-owned point-triangle barrier-Hessian
+runtime row to the private GPU barrier/friction packet. The benchmark builds
+one DART `World` deformable surface, extracts motion-aware point-triangle
+contact candidates from the runtime scene surface, evaluates the candidate
+barrier Hessians on CPU and CUDA, and records scene body/node/triangle counts.
+
+Fresh packet evidence records 512 scene-owned point-triangle candidates from
+one deformable scene body with 2,560 nodes and 768 surface triangles. CPU/GPU
+barrier-Hessian parity holds within `1.7763568394002505e-15` for the runtime
+row. The top-level barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.2013161527429088x` (`meets_speedup_gate=false`). This is reduced
+scene-owned point-triangle barrier-Hessian evidence only: broader sparse
+Hessian assembly, additional runtime contact rows, full GPU `World::step`, and
+speedup-gate completion remain future work.
+
+Latest local gates:
+
+- focused barrier/friction packet pytest
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
+
 Scene-owned runtime sweep checkpoint (2026-06-12): continue from
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). Keep all
@@ -949,13 +1011,14 @@ point-triangle/edge-edge tangent stencils plus point-edge/point-point tangent
 stencils, point-triangle, point-point, and point-edge primitive
 barrier-Hessian parity,
 point-triangle/point-point/point-edge primitive barrier-Hessian PSD-projection
-parity, reduced assembly/solve parity, reduced scene state-batch parity, and
-reduced ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress`
-unless their full row policy is satisfied: GPU sweep-and-prune broad-phase
-construction, rigid curved trajectories, full runtime scene filtering/line
-search, GPU `World::step` contact candidate construction,
-equality-reduced/global sparse assembly and solving, paper-scale assets, and
-accepted reference timings remain future evidence.
+parity, a reduced scene-owned point-triangle barrier-Hessian runtime row,
+reduced assembly/solve parity, reduced scene state-batch parity, and reduced
+ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless
+their full row policy is satisfied: additional runtime contact rows, GPU
+sweep-and-prune broad-phase construction, rigid curved trajectories, full
+runtime scene filtering/line search, GPU `World::step` contact candidate
+construction, equality-reduced/global sparse assembly and solving, paper-scale
+assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
@@ -963,14 +1026,15 @@ Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
 runtime scene filtering and speedup-gate work; the next barrier/friction packet
-gaps are runtime contact rows and speedup-gate work; the next assembly/solve
-gaps are equality reduction, global sparse factorization, runtime scene rows,
-and speedup-gate work. Do not mark these rows measured until the top-level
-speed gate and runtime evidence are proven. Keep the dev-task folder active
-because PLAN-083 acceptance criteria are still unmet. If the task later moves
-out of this folder, get maintainer direction before deleting it and keep the
-remaining planned manifest plus in-progress CPU/GPU/scene limitations in
-durable sidecars.
+gaps are additional primitive-family/runtime contact rows, broader sparse
+Hessian assembly, and speedup-gate work; the next assembly/solve gaps are
+equality reduction, global sparse factorization, runtime scene rows, and
+speedup-gate work. Do not mark these rows measured until the top-level speed
+gate and runtime evidence are proven. Keep the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet. If the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned manifest plus in-progress CPU/GPU/scene limitations in durable
+sidecars.
 
 ## Context That Would Be Lost
 
