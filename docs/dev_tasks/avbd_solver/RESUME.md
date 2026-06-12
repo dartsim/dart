@@ -1,5 +1,40 @@
 # Resume: AVBD Solver
 
+## Latest Current-State Audit (2026-06-12)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
+count source-row overhead cleanup or focused articulated lifecycle tests as
+CPU-win, GPU, or paper-number gates; those gates require dedicated corpus and
+benchmark evidence.
+
+Current resumed slice: audited the current task docs against the checked-in C++
+and dartpy evidence before adding more coverage. The current tree already has
+narrow breakable benchmark rows, public world-fixed reset, dartpy
+fixed/spherical break/skip/reset endpoint-shape checks, and non-cardinal dartpy
+same-multibody/world-link one-DOF reset checks. Those items should not be used
+as fresh implementation targets unless a future audit finds a concrete missing
+case.
+
+Fresh-session state for this audit: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. The branch was clean before this
+docs-only audit edit and was ahead of origin by twelve local commits. Do not
+push, rerun hosted CI, mutate PRs, or clean/delete branches without explicit
+user approval.
+
+PR #2977 read-only CI refresh: the visible failure is Linux `Debug Tests`
+cancelled at the job timeout during the Debug Python phase after Debug C++ tests
+passed. The log reached the `dartpy` debug build/link step before cancellation
+and did not show a Python assertion or test failure. Treat this as an open PR CI
+status that needs maintainer-approved rerun or a fresh failure-specific audit;
+no hosted CI rerun was performed from this branch.
+
+Next preferred local gap after this audit remains broader private articulated
+motor/fracture lifecycle/corpus coverage, then rigid contact persistence
+completeness, then source-demo CPU/GPU evidence. More source-row overhead
+cleanup should not be treated as a CPU-win, GPU, or paper-number gate.
+
 ## Latest Direct Private Movable-Pair Reset Checkpoint (2026-06-12)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and

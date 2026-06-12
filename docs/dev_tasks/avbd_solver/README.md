@@ -9,6 +9,18 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest current-state audit (2026-06-12): the next-gap wording was refreshed
+  against the current C++/dartpy tests and benchmark rows. The evidence now
+  shows that narrow breakable benchmark rows, public world-fixed reset,
+  dartpy fixed/spherical break/skip/reset endpoint-shape checks, and
+  non-cardinal dartpy same-multibody/world-link one-DOF reset checks are already
+  covered. Keep the next local implementation work focused on genuinely open
+  broader private articulated motor/fracture lifecycle/corpus coverage, rigid
+  contact persistence completeness, or source-demo CPU/GPU parity. PR #2977's
+  latest read-only CI refresh showed one failing visible check: Linux
+  `Debug Tests` was cancelled at the job timeout while building/running Debug
+  Python tests, after Debug C++ tests passed. No PR mutation or hosted CI rerun
+  was performed.
 - Latest resumed checkpoint (2026-06-12): direct private same-multibody
   fixed, prismatic, and spherical point-joint reset coverage now matches the
   neighboring direct private revolute movable-pair reset path. The new C++
@@ -2326,17 +2338,11 @@ numbers.
    one-DOF off-origin plus same-multibody movable-pair non-cardinal finite-limit
    regressions,
    broaden articulated fracture coverage beyond the narrow hard point-joint
-   projection threshold, fixed-row reset, movable link-pair reset,
-   same-multibody/world-anchored one-DOF motor-row break/skip and
-   reset/re-engagement beyond the selected non-cardinal C++ basis checks and
-   the focused dartpy same-multibody/world-link revolute/prismatic stepping
-   regressions with endpoint/axis-shape assertions, including the non-cardinal
-   same-multibody pair and world-link revolute/prismatic reset regressions,
-   world-fixed reset
-   coverage, the now-covered fixed point-joint and spherical linear-row Python
-   stepping regressions with endpoint-shape assertions, and source/demo
-   fracture cases beyond the now-covered 2D Fracture and 3D Breakable
-   break/reset rows,
+   projection threshold and movable link-pair reset, with the fixed-row,
+   world-fixed, same-multibody/world-anchored one-DOF motor-row, fixed
+   point-joint, and spherical linear-row reset evidence now treated as covered
+   by the current C++/dartpy regression set. Continue source/demo fracture
+   cases beyond the now-covered 2D Fracture and 3D Breakable break/reset rows,
    and expand public articulated World facade coverage beyond the current
    same-multibody link-link/world-link entrypoints, explicit anchors,
    same-multibody/world-anchor fixed/revolute/prismatic off-origin cases,

@@ -997,15 +997,10 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link one-DOF and public movable-pair finite-limit plus
   broken-state save/load/reset coverage with non-cardinal axis-basis checks,
   private generated current-pose movable-pair fixed, one-DOF, and spherical
-  broken-state save/load/reset coverage,
-  narrow breakable benchmark rows, world-fixed reset,
-  same-multibody/world-anchored one-DOF motor break/skip and
-  reset/re-engagement, including the focused dartpy same-multibody/world-link
-  revolute/prismatic explicit-anchor stepping regressions with post-reset
-  endpoint/axis-shape assertions including non-cardinal same-multibody pair and
-  world-link reset cases,
-  spherical linear-row break/skip and reset including the focused dartpy
-  spherical stepping regression,
+  broken-state save/load/reset coverage, with narrow breakable benchmark rows,
+  world-fixed reset, non-cardinal dartpy same-multibody/world-link one-DOF
+  reset endpoint/axis-shape checks, and dartpy fixed/spherical reset
+  endpoint-shape checks now treated as covered current evidence,
   matched-metadata empty-scene baseline smoke, the 2D Fracture/3D Breakable
   source-demo fixed-joint break/reset coverage, the first non-empty
   `avbd-demo2d` Ground, Motor, Hanging Rope, Fracture, Dynamic Friction, Static
@@ -1034,15 +1029,11 @@ its own line so status updates remain git-history friendly.
   same-multibody/world-link endpoint-shape assertions, and
   same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
   save/load/reset persistence including explicit-anchor fixed and selected
-  non-cardinal one-DOF motor rows with restored effort-limit state plus
+  non-cardinal one-DOF motor rows with restored effort-limit state, with the
   dartpy same-multibody/world-link fixed/spherical and one-DOF binary
-  round-trips and direct break/skip/reset non-cardinal basis checks, plus
-  dartpy fixed point-joint break/skip/reset
-  stepping for same-multibody and world-link explicit all-axis anchor rows
-  with endpoint-shape assertions, dartpy same-multibody/world-link spherical
-  linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
-  one-DOF motor break/skip/reset endpoint/axis-shape assertions and
-  re-engagement,
+  round-trips, direct break/skip/reset non-cardinal basis checks, fixed and
+  spherical reset endpoint-shape assertions, and explicit-anchor one-DOF motor
+  reset endpoint/axis-shape assertions now treated as current evidence,
   broaden rigid-contact feature persistence beyond the current
   box/sphere/cylinder/capsule/plane/mesh known/unknown shape-frame feature
   identity tests, endpoint-A/B explicit-shape local-point evidence, actual

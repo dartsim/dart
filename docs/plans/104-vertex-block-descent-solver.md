@@ -1052,8 +1052,8 @@ implementation work should prefer one of these gaps, in order:
    movable link-pair, tiny-limit, one-DOF break/reset, spherical reset, and
    movable-pair plus direct world-link save/load/reset checks remains open.
    Extend that bridge to those row families, then broaden fracture
-   lifecycle/corpus coverage beyond the narrow hard point-joint threshold,
-   private fixed-row/world-fixed reset, and the now-covered 2D Fracture/3D
+   lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
+   the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
    Breakable source-demo fixed-joint break/reset rows, and public articulated
    World facade coverage
    beyond the new same-multibody link-link, world-link, explicit-anchor, and
@@ -1066,15 +1066,13 @@ implementation work should prefer one of these gaps, in order:
    same-multibody/world-link endpoint-shape assertions plus
    same-multibody/world-link fixed/spherical/revolute/prismatic broken-state
    save/load/reset persistence including explicit-anchor fixed and selected
-   non-cardinal one-DOF motor rows with restored effort-limit state plus
-   dartpy same-multibody/world-link fixed/spherical and one-DOF binary
-   round-trips and direct break/skip/reset non-cardinal basis checks, plus
-   dartpy fixed point-joint break/skip/reset
-   stepping for same-multibody and world-link explicit all-axis anchor rows
-   with endpoint-shape assertions, dartpy same-multibody/world-link spherical
-   linear-row break/skip/reset endpoint-shape assertions, and explicit-anchor
-   one-DOF motor break/skip/reset endpoint/axis-shape assertions and
-   re-engagement.
+   non-cardinal one-DOF motor rows with restored effort-limit state. The dartpy
+   same-multibody/world-link fixed/spherical and one-DOF binary round-trips,
+   direct break/skip/reset non-cardinal basis checks, fixed point-joint
+   break/skip/reset endpoint-shape assertions, spherical linear-row
+   break/skip/reset endpoint-shape assertions, and explicit-anchor one-DOF
+   motor reset endpoint/axis-shape assertions are current evidence rather than
+   fresh next targets.
 2. **Rigid contact persistence completeness** — broaden narrow-phase endpoint
    feature extraction and row identity so box/sphere/cylinder/capsule/plane/mesh
    contact manifolds persist across realistic rigid stacks and piles, building
