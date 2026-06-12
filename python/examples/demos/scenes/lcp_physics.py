@@ -228,8 +228,8 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "strict-interior pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "Lemke/Baraff/InteriorPoint/FischerBurmeisterNewton, with "
-            "SubspaceMinimization/BGS/NNCG still moderate"
+            "Dantzig/Lemke/Baraff remain the largest averages; "
+            "MinimumMapNewton/FischerBurmeisterNewton are next"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -246,17 +246,16 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "current_leaders": (
             "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
             "BlockedJacobi/BGS/Dantzig/Admm/Nncg/"
-            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization/"
-            "ShockPropagation close"
+            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization close"
         ),
         "current_laggards": (
-            "No boxed solver is above 2x; Sap, Apgd, and ShockPropagation "
-            "remain the largest moderate rows"
+            "ShockPropagation is back above 2x; Apgd, Sap, and "
+            "BoxedSemiSmoothNewton remain the largest moderate rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
-            "trail active-bound rows; remaining boxed work is below the 2x "
-            "threshold."
+            "trail active-bound rows; remaining boxed work centers on the "
+            "ShockPropagation row."
         ),
     },
     {
@@ -270,16 +269,16 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "BGS/Jacobi/Staggering/Admm/SubspaceMinimization close"
         ),
         "current_laggards": (
-            "BoxedSemiSmoothNewton remains above 2x; Dantzig, "
-            "ShockPropagation, BlockedJacobi, Apgd, and NNCG are "
+            "No FrictionIndex solver average is above 2x; ShockPropagation, "
+            "Apgd, NNCG, SubspaceMinimization, and BlockedJacobi are "
             "near-boundary or high-max rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, and subspace hot rows, and the boxed semi-smooth "
-            "line-search shortcut plus medium exact shortcut trim Newton "
-            "iterations; the remaining dominant target is the large "
-            "BoxedSemiSmoothNewton row."
+            "line-search shortcut plus configurable exact shortcut trim Newton "
+            "iterations; the remaining FrictionIndex work is near-boundary "
+            "and high-max rather than a single above-2x average."
         ),
     },
 )
@@ -1582,6 +1581,7 @@ def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
                 "jacobian_regularization",
                 "max_pgs_warm_start_iterations",
                 "pgs_warm_start_relaxation",
+                "max_friction_index_exact_solve_dimension",
             ],
             "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep",
         ),

@@ -545,6 +545,7 @@ def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     assert newton_params.jacobian_regularization == pytest.approx(1e-10)
     assert newton_params.max_pgs_warm_start_iterations == 0
     assert newton_params.pgs_warm_start_relaxation == pytest.approx(1.0)
+    assert newton_params.max_friction_index_exact_solve_dimension == 48
 
     newton_params.max_line_search_steps = 12
     newton_params.step_reduction = 0.35
@@ -553,6 +554,7 @@ def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     newton_params.jacobian_regularization = 1e-8
     newton_params.max_pgs_warm_start_iterations = 5
     newton_params.pgs_warm_start_relaxation = 0.9
+    newton_params.max_friction_index_exact_solve_dimension = 192
     newton.parameters = newton_params
     assert newton.parameters.max_line_search_steps == 12
     assert newton.parameters.step_reduction == pytest.approx(0.35)
@@ -561,6 +563,7 @@ def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     assert newton.parameters.jacobian_regularization == pytest.approx(1e-8)
     assert newton.parameters.max_pgs_warm_start_iterations == 5
     assert newton.parameters.pgs_warm_start_relaxation == pytest.approx(0.9)
+    assert newton.parameters.max_friction_index_exact_solve_dimension == 192
 
 
 @pytest.mark.parametrize(
@@ -588,6 +591,7 @@ def test_customized_advanced_boxed_solvers_solve_boxed_problem(
         params.max_line_search_steps = 16
         params.jacobian_regularization = 1e-8
         params.max_pgs_warm_start_iterations = 5
+        params.max_friction_index_exact_solve_dimension = 192
     solver.parameters = params
 
     problem = dart.LcpProblem(

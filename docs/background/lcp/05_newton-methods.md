@@ -402,18 +402,26 @@ Strictly interior standard LCPs without a warm start first try the shared
 validated linear-solve fast path after parameter validation. Boxed LCPs without
 friction-index coupling use the shared projected-active-set exact solve, and
 small and medium strictly interior friction-index rows use the shared validated
-friction-index exact solve up to the 48-variable comparison packet.
-Warm-started boxed/findex rows, larger findex rows, active friction bounds, and
-validator-rejected rows stay on the semi-smooth Newton path so the
-residual-reducing PGS warm start and moving-bound Jacobian remain active. When
-the accepted line-search step already reaches the natural residual tolerance,
-the solver now returns immediately instead of spending one extra Newton loop
-only to observe convergence.
+friction-index exact solve up to the default 48-variable gate. The optional
+`maxFrictionIndexExactSolveDimension` parameter raises or lowers that gate; the
+comparison harness raises it to cover the 192-variable strict-interior
+friction-index packet while keeping the solver default conservative for active
+or validator-rejected contact rows that would pay for a failed dense solve.
+Warm-started boxed/findex rows, active friction bounds, and validator-rejected
+rows stay on the semi-smooth Newton path so the residual-reducing PGS warm start
+and moving-bound Jacobian remain active. When the accepted line-search step
+already reaches the natural residual tolerance, the solver now returns
+immediately instead of spending one extra Newton loop only to observe
+convergence.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>
 
 dart::math::BoxedSemiSmoothNewtonSolver solver;
+dart::math::BoxedSemiSmoothNewtonSolver::Parameters params;
+params.maxFrictionIndexExactSolveDimension = 192; // optional; default is 48
+solver.setParameters(params);
+
 dart::math::LcpOptions options = solver.getDefaultOptions();
 options.maxIterations = 50;
 
@@ -435,8 +443,9 @@ friction-index `contact_count=8`, observed solver iterations `2/7/8/9`, and
 backend build-state counters. The CUDA-enabled rows are CPU
 BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
 execution. The main `BM_LcpCompare/*/BoxedSemiSmoothNewton` profile records
-`boxed_ssn_pgs_warm_start_iterations` so the tuned bounded/findex rows remain
-self-describing in cached benchmark JSON. Additional
+`boxed_ssn_pgs_warm_start_iterations` and
+`boxed_ssn_friction_index_exact_solve_dimension` so the tuned bounded/findex
+rows remain self-describing in cached benchmark JSON. Additional
 `BM_LcpContactSolverComparisonSweep` rows run
 BoxedSemiSmoothNewton on DART 7 separated sphere-ground, coupled vertical-stack,
 and articulated unified-contact friction-index fixtures, so contact-derived

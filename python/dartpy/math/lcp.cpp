@@ -441,7 +441,11 @@ void defLcp(nb::module_& m)
           &BoxedSemiSmoothNewtonSolver::Parameters::maxPgsWarmStartIterations)
       .def_rw(
           "pgs_warm_start_relaxation",
-          &BoxedSemiSmoothNewtonSolver::Parameters::pgsWarmStartRelaxation);
+          &BoxedSemiSmoothNewtonSolver::Parameters::pgsWarmStartRelaxation)
+      .def_rw(
+          "max_friction_index_exact_solve_dimension",
+          &BoxedSemiSmoothNewtonSolver::Parameters::
+              maxFrictionIndexExactSolveDimension);
 
   nb::class_<InteriorPointSolver::Parameters>(
       m, "InteriorPointSolverParameters")

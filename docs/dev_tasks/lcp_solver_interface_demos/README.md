@@ -1,5 +1,113 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Configurable Boxed SSN Friction Exact Gate
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint target:
+  `Tune boxed SSN friction exact gate`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 62 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `BoxedSemiSmoothNewtonSolver::Parameters` now exposes
+  `maxFrictionIndexExactSolveDimension`, defaulting to the previous
+  conservative 48-variable strict-interior friction-index exact-solve gate.
+- The canonical `BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton` rows raise
+  that gate to 192 variables so the 64-contact strict-interior comparison packet
+  can use the validated exact solve.
+- Other shared benchmark paths keep the default gate unless they explicitly opt
+  in, avoiding a failed dense 192x192 solve on active/contact-derived
+  friction-index rows.
+- dartpy bindings, Python LCP demo metadata, benchmark counters, Newton-method
+  background docs, changelog, and tests were updated for the parameter.
+
+Focused benchmark evidence:
+
+- Baseline:
+  `build/friction_index_bssn64_probe_baseline.json`.
+- After-run:
+  `build/friction_index_bssn64_exact_gate_param_after.json`.
+- `BoxedSemiSmoothNewton/64`: about `653075.1ns`, `iterations=1`, exact
+  residual, no gate counter -> about `447664.5ns`, `iterations=0`, exact
+  residual, `boxed_ssn_friction_index_exact_solve_dimension=192`.
+- Scope check:
+  `build/friction_index_bssn_exact_gate_scope_check.json`.
+- Scope check result:
+  - `BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton/64` kept
+    `exact_gate=192`, `iterations=0`, `contract_ok=1.0`.
+  - `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep/FrictionIndex/DefaultSearch`
+    kept the default `exact_gate=48`, `iterations=0`, `contract_ok=1.0`.
+
+Final regenerated profile snapshot for this slice:
+
+- FrictionIndex average ratios: `ShockPropagation 1.98`, `Apgd 1.91`,
+  `NNCG 1.89`, `SubspaceMinimization 1.85`, `BlockedJacobi 1.79`,
+  `Dantzig 1.76`, `BoxedSemiSmoothNewton 1.75`, `Jacobi 1.71`,
+  `Staggering 1.71`, `RedBlackGaussSeidel 1.70`, `SymmetricPsor 1.68`,
+  `Admm 1.64`, `BGS 1.61`, `Sap 1.46`, `Tgs 1.07`, and `Pgs 1.00`.
+- Boxed average ratios: `ShockPropagation 2.10`, `Apgd 1.67`, `Sap 1.66`,
+  `BoxedSemiSmoothNewton 1.63`, `SubspaceMinimization 1.59`, `Admm 1.59`,
+  `BGS 1.56`, `NNCG 1.54`, `BlockedJacobi 1.54`, `Dantzig 1.47`,
+  `RedBlackGaussSeidel 1.40`, `SymmetricPsor 1.38`, `Jacobi 1.13`,
+  `Pgs 1.03`, and `Tgs 1.02`.
+- Standard average ratios: `Dantzig 1.66`, `Lemke 1.61`, `Baraff 1.55`,
+  `MinimumMapNewton 1.51`, `FischerBurmeisterNewton 1.49`, and
+  `PenalizedFischerBurmeisterNewton 1.45` are the largest current rows.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers dartpy \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/math/test_lcp.py::test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math \
+  python/tests/unit/math/test_lcp.py::test_customized_advanced_boxed_solvers_solve_boxed_problem \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/64' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_bssn64_exact_gate_param_after.json
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton/64|BM_LcpBoxedSemiSmoothNewtonLineSearchSweep/FrictionIndex/DefaultSearch' \
+  --benchmark_min_time=0.03s \
+  --benchmark_format=json > build/friction_index_bssn_exact_gate_scope_check.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Optimize boxed `ShockPropagation`, now the clearest above-`2x` profile row.
+2. Run `pixi run lint` before committing any further slice.
+3. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Stop-Work Hand-Off
 
 The user explicitly requested stopping implementation work and preserving

@@ -48,6 +48,7 @@ public:
     double jacobianRegularization{1e-10};
     int maxPgsWarmStartIterations{0};
     double pgsWarmStartRelaxation{1.0};
+    int maxFrictionIndexExactSolveDimension{48};
   };
 
   BoxedSemiSmoothNewtonSolver();

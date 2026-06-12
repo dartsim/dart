@@ -2118,6 +2118,28 @@ TEST(FrictionIndexInteriorFastPath, BoxedSemiSmoothNewtonUsesMediumLinearSolve)
 }
 
 TEST(
+    FrictionIndexInteriorFastPath,
+    BoxedSemiSmoothNewtonUsesConfiguredLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  BoxedSemiSmoothNewtonSolver solver;
+  BoxedSemiSmoothNewtonSolver::Parameters params;
+  params.maxFrictionIndexExactSolveDimension = static_cast<int>(problem.size());
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.customOptions = &params;
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
+TEST(
     BoxedSemiSmoothNewtonSolverCoverage,
     WarmStartAcceptsConvergedLineSearchStep)
 {
@@ -4361,6 +4383,7 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   params.jacobianRegularization = 1e-7;
   params.maxPgsWarmStartIterations = 3;
   params.pgsWarmStartRelaxation = 0.9;
+  params.maxFrictionIndexExactSolveDimension = 96;
   customSolver.setParameters(params);
   EXPECT_EQ(
       customSolver.getParameters().maxLineSearchSteps,
@@ -4380,6 +4403,9 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_DOUBLE_EQ(
       customSolver.getParameters().pgsWarmStartRelaxation,
       params.pgsWarmStartRelaxation);
+  EXPECT_EQ(
+      customSolver.getParameters().maxFrictionIndexExactSolveDimension,
+      params.maxFrictionIndexExactSolveDimension);
 
   LcpOptions options = customSolver.getDefaultOptions();
   options.customOptions = &params;
@@ -4452,6 +4478,16 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, ParameterAndValidationBranches)
   EXPECT_EQ(invalidWarmStartRelaxation.status, LcpSolverStatus::InvalidProblem);
   EXPECT_NE(
       invalidWarmStartRelaxation.message.find("pgs_warm_start_relaxation"),
+      std::string::npos);
+
+  invalidParams = {};
+  invalidParams.maxFrictionIndexExactSolveDimension = -1;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidExactSolveDimension = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidExactSolveDimension.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidExactSolveDimension.message.find(
+          "max_friction_index_exact_solve_dimension"),
       std::string::npos);
 
   LcpOptions validationOptions = solver.getDefaultOptions();

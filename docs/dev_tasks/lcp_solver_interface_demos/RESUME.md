@@ -1,5 +1,98 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Configurable Boxed SSN Friction Exact Gate
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint target:
+  `Tune boxed SSN friction exact gate`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 62 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BoxedSemiSmoothNewtonSolver::Parameters` now exposes
+  `maxFrictionIndexExactSolveDimension`, defaulting to the previous
+  conservative 48-variable strict-interior friction-index exact-solve gate.
+- The canonical `BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton` rows raise
+  that gate to 192 variables so the 64-contact strict-interior comparison packet
+  can use the already-validated exact solve.
+- Other shared benchmark paths keep the default gate unless they explicitly opt
+  in; this avoids adding a failed dense 192x192 solve to active/contact-derived
+  friction-index rows.
+- The new parameter is surfaced in dartpy, Python LCP demo metadata, benchmark
+  counters, Newton-method background docs, changelog, and focused C++/Python
+  tests.
+
+Evidence:
+
+- Focused baseline:
+  `build/friction_index_bssn64_probe_baseline.json`.
+- Focused after-run:
+  `build/friction_index_bssn64_exact_gate_param_after.json`.
+- `BoxedSemiSmoothNewton/64` improved from about `653075.1ns`,
+  `iterations=1`, exact residual, no gate counter, to about `447664.5ns`,
+  `iterations=0`, exact residual, `boxed_ssn_friction_index_exact_solve_dimension=192`.
+- Scope check `build/friction_index_bssn_exact_gate_scope_check.json` showed:
+  - `BM_LcpCompare/FrictionIndex/BoxedSemiSmoothNewton/64`:
+    `exact_gate=192`, `iterations=0`, `contract_ok=1.0`.
+  - `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep/FrictionIndex/DefaultSearch`:
+    `exact_gate=48`, `iterations=0`, `contract_ok=1.0`.
+- Regenerated full profile reports FrictionIndex averages:
+  `ShockPropagation 1.98`, `Apgd 1.91`, `NNCG 1.89`,
+  `SubspaceMinimization 1.85`, `BlockedJacobi 1.79`, `Dantzig 1.76`,
+  `BoxedSemiSmoothNewton 1.75`, `Jacobi 1.71`, `Staggering 1.71`,
+  `RedBlackGaussSeidel 1.70`, `SymmetricPsor 1.68`, `Admm 1.64`,
+  `BGS 1.61`, `Sap 1.46`, `Tgs 1.07`, and `Pgs 1.00`.
+- Regenerated full profile reports Boxed `ShockPropagation 2.10`; that row is
+  now the clearest above-`2x` target.
+- Regenerated full profile reports Standard `Dantzig 1.66`, `Lemke 1.61`, and
+  `Baraff 1.55` as the largest averages.
+
+Verification completed:
+
+- `BM_LCP_COMPARE`, `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`, and
+  `dartpy` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused dartpy/demo metadata tests passed:
+  `5 passed`.
+- Focused benchmark after-run and scope-check JSONs were written under
+  `build/`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Final Python demo metadata test passed after summary assertion refresh.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push or mutate GitHub state without
+explicit maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `ShockPropagation` is above `2x` and is the main current target.
+- FrictionIndex: no solver average is above `2x`; `ShockPropagation`, `Apgd`,
+  `NNCG`, `SubspaceMinimization`, and `BlockedJacobi` are near-boundary or
+  high-max rows.
+- Standard: `Dantzig`, `Lemke`, and `Baraff` are the largest averages.
+
 ## Current Reality - 2026-06-12 Stop-Work Hand-Off
 
 This section is the latest state; older sections below are historical

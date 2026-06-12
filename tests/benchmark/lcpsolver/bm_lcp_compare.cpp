@@ -2917,6 +2917,8 @@ void AddBoxedSsnCounters(
       = params.maxPgsWarmStartIterations;
   state.counters["boxed_ssn_pgs_warm_start_relaxation"]
       = params.pgsWarmStartRelaxation;
+  state.counters["boxed_ssn_friction_index_exact_solve_dimension"]
+      = params.maxFrictionIndexExactSolveDimension;
 }
 
 void AddSapCounters(
@@ -7118,6 +7120,11 @@ void RunManifestBenchmark(
   const auto problem = MakeBenchmarkProblem(family, problemArg);
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, solverEntry, problem);
+  if (solverEntry.name == "BoxedSemiSmoothNewton"
+      && family == BenchmarkProblemFamily::FrictionIndex
+      && storage.hasBoxedSsnParams) {
+    storage.boxedSsnParams.maxFrictionIndexExactSolveDimension = 192;
+  }
 
   const auto solver = solverEntry.create();
   if (solver == nullptr) {
@@ -7363,6 +7370,8 @@ void RunBoxedSsnLineSearchSweepBenchmark(
       = params.maxPgsWarmStartIterations;
   state.counters["boxed_ssn_pgs_warm_start_relaxation"]
       = params.pgsWarmStartRelaxation;
+  state.counters["boxed_ssn_friction_index_exact_solve_dimension"]
+      = params.maxFrictionIndexExactSolveDimension;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }
