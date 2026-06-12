@@ -432,12 +432,12 @@ Dantzig, Lemke, Baraff, and Direct on contact-normal subproblems; Direct rows
 are limited to 1-, 2-, and 3-row subproblems so they measure enumeration rather
 than Dantzig fallback. This is contact-normal evidence, not full friction-index
 contact support for Lemke, Baraff, or Direct.
-For strictly interior standard LCPs, Dantzig, Lemke, and Baraff first try a
-shared validated linear-solve fast path. Dantzig uses the LLT-first variant on
-SPD rows before falling back to LU; Lemke and Baraff use the LU-based helper.
-The fast path is accepted only when the candidate is strictly positive and
-passes the standard LCP solution validator; otherwise the solver continues
-through its pivoting implementation or existing fallback path.
+For strictly interior standard LCPs, Dantzig, Lemke, and Baraff first try the
+shared validated LLT-first linear-solve fast path. The helper falls back to LU
+when the LLT candidate is unavailable or fails validation. The fast path is
+accepted only when the candidate is strictly positive and passes the standard
+LCP solution validator; otherwise the solver continues through its pivoting
+implementation or existing fallback path.
 
 ## When to Use Pivoting Methods
 

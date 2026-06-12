@@ -399,6 +399,7 @@ TEST(BgsSolver, LargeProblemHitsMaxIterations)
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
   options.validateSolution = false;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
@@ -1054,6 +1055,7 @@ TEST(ShockPropagationSolver, MaxIterationsStatus)
 
   LcpOptions options;
   options.maxIterations = 1;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
@@ -1182,6 +1184,7 @@ TEST(StaggeringSolver, MaxIterationsOnFrictionProblem)
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
   options.validateSolution = false;
+  options.warmStart = true;
   const auto result = solver.solve(problem, x, options);
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);

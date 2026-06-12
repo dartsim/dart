@@ -185,7 +185,7 @@ LcpResult BaraffSolver::solve(
 
   Eigen::VectorXd fastW;
   if (!options.warmStart
-      && detail::trySolveStrictInteriorStandardLcp(
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, std::max(absTol, compTol), x, &fastW)) {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;

@@ -1,5 +1,153 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Lemke/Baraff Standard LLT Paths
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 75]`
+- Last committed checkpoint:
+  `e60b8563366 Use LLT for SubspaceMinimization standard exact path`.
+- Checkpoint target:
+  `Use LLT for Lemke and Baraff standard exact paths`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 76 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+- Latest continuation resumed after the hand-off-only stop request and is
+  closing this checkpoint locally.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/pivoting/baraff_solver.cpp`
+- `dart/math/lcp/pivoting/lemke_solver.cpp`
+- `docs/background/lcp/03_pivoting-methods.md`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `tests/unit/math/lcp/test_additional_solvers.cpp`
+- `tests/unit/math/lcp/test_lcp_generated_coverage.cpp`
+
+What this slice changes:
+
+- `LemkeSolver` and `BaraffSolver` route their Standard strict-interior exact
+  paths through `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- Existing pivot/barrier exact-path unit coverage exercises the same accepted
+  strict-interior solve route.
+- The regenerated full profile moves Standard `Baraff` to `1.15x` and Standard
+  `Lemke` to `1.25x`.
+
+Evidence:
+
+- Baseline:
+  `build/standard_lemke_baraff_baseline.json`.
+- Accepted focused probe:
+  `build/standard_lemke_baraff_llt_probe.json`.
+- Focused Standard Baraff timings:
+  - `Baraff/12`: `893.58ns -> 855.07ns`.
+  - `Baraff/24`: `3105.49ns -> 2351.73ns`.
+  - `Baraff/48`: `12212.39ns -> 9582.00ns`.
+  - `Baraff/96`: `63965.92ns -> 42414.44ns`.
+- Focused Standard Lemke timings:
+  - `Lemke/12`: `908.48ns -> 724.84ns`.
+  - `Lemke/24`: `3315.46ns -> 2169.25ns`.
+  - `Lemke/48`: `12320.24ns -> 9214.86ns`.
+  - `Lemke/96`: `64622.48ns -> 43291.53ns`.
+- Latest regenerated profile highlights:
+  - Standard: `Baraff 1.15`, `Lemke 1.25`; highest rows are
+    `Jacobi 1.64`, `BlockedJacobi 1.62`, `Apgd 1.59`,
+    `RedBlackGaussSeidel 1.57`, and `Sap 1.57`.
+  - Boxed: highest rows are `NNCG 1.71`, `RedBlackGaussSeidel 1.66`,
+    `SymmetricPsor 1.63`, `ShockPropagation 1.59`,
+    `BoxedSemiSmoothNewton 1.55`, and `SubspaceMinimization 1.51`.
+  - FrictionIndex: highest rows are `ShockPropagation 1.71`, `Admm 1.59`,
+    `NNCG 1.58`, `Sap 1.56`, and `Apgd 1.53`.
+
+Rejected probes from this continuation:
+
+- Boxed `SymmetricPsor` projected-active-set exact helper:
+  `build/boxed_symmetric_psor_baseline.json` vs
+  `build/boxed_symmetric_psor_exact_probe.json`; it was slightly faster at 12
+  rows but slower at 24 and 48 rows.
+- Boxed `SymmetricPsor` relaxation sweep:
+  `build/boxed_symmetric_psor_relaxation_sweep.json`; the existing
+  `relaxation=1.0` row remained the best tracked boxed sweep point.
+- Boxed `RedBlackGaussSeidel` projected-active-set exact helper:
+  `build/boxed_redblack_baseline.json`,
+  `build/boxed_redblack_exact_probe.json`, and
+  `build/boxed_redblack_gate24_probe.json`; focused 12/24-row gains did not
+  survive the aggregate profile, so the probe was reverted.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and LLT probe for
+    `BM_LcpCompare/Standard/(Lemke|Baraff)/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Fixed stale Python demo profile metadata and assertions:
+    removed `MPRGP` from the Standard `current_laggards` text, aligned Boxed
+    `SubspaceMinimization` with the laggard text, and aligned FrictionIndex
+    `Admm` with the refreshed next-largest-row text.
+  - Focused Python demo metadata test:
+    `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+    passed.
+  - CSV shape check: `Boxed 15/200`, `FrictionIndex 16/200`,
+    `Standard 23/200`.
+  - `pixi run build` passed with `JOBS=5`.
+  - Focused rebuild and CTest for
+    `UNIT_math_lcp_math_lcp_additional_solvers` and
+    `UNIT_math_lcp_math_lcp_lcp_generated_coverage` passed after aligning
+    tests with exact-fast-path behavior.
+  - `pixi run test-unit` passed: `161/161` tests.
+  - `pixi run lint` passed with `JOBS=5`.
+  - `git diff --check` passed.
+- Resolved failures seen during this continuation:
+  - `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+  - Initial failure: the Standard demo metadata still said `MPRGP` is a
+    next-largest row, while the test asserted `MPRGP` should not appear in that
+    text.
+  - `pixi run test-unit` initially failed in
+    `UNIT_math_lcp_math_lcp_additional_solvers` and
+    `UNIT_math_lcp_math_lcp_lcp_generated_coverage`; the max-iteration tests
+    now warm-start the iterative path to avoid the cold exact fast paths, and
+    the near-singular boxed generated case now treats residual and
+    complementarity as the contract instead of over-constraining the expected
+    vector.
+- Still required before commit:
+  - Create the local checkpoint commit.
+- No push has been performed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, commit with
+`Use LLT for Lemke and Baraff standard exact paths`. If this checkpoint is
+already committed, investigate Standard `Jacobi 1.64` and Standard
+`BlockedJacobi 1.62`, or Boxed `NNCG 1.71`. Do not push without explicit
+maintainer/user approval.
+
 ## Current Reality - 2026-06-12 SubspaceMinimization Standard LLT Path
 
 This is the latest hand-off. Older sections below are historical checkpoints

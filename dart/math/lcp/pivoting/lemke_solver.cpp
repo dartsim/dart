@@ -347,7 +347,7 @@ LcpResult LemkeSolver::solve(
 
   Eigen::VectorXd w;
   if (!options.warmStart
-      && detail::trySolveStrictInteriorStandardLcp(
+      && detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, std::max(absTol, compTol), x, &w)) {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;
