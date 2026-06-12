@@ -2,12 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Current branch: `feature/rigid-body-gui-visual-verification`. This handoff
-captures the validated link-contact capture-metrics slice after the pushed
-baseline capture-metrics commit. If `git status -sb` shows a clean branch ahead
-of origin, the local commit contains this slice and is intentionally unpushed.
-If it shows these files modified, commit them only after rechecking the recorded
-validation. Do not push unless the maintainer explicitly approves a push.
+Expected branch after the handoff push:
+`feature/rigid-body-gui-visual-verification` tracks
+`origin/feature/rigid-body-gui-visual-verification` cleanly. The latest
+runtime-code slice is commit `ee884fe6f27` (`Expose rigid link contact capture
+metrics`); the commit after it is docs-only handoff context. A fresh
+Claude/Codex session should start by running `git status -sb` and
+`git log --oneline --decorate -5` to confirm that state before continuing.
+
+As of the handoff refresh on 2026-06-11, `gh pr list --repo dartsim/dart
+--head feature/rigid-body-gui-visual-verification --json
+number,title,state,baseRefName,isDraft,url` returned `[]`, so this branch did
+not have a published PR. Pushes and future PR/comment mutations still require
+explicit maintainer/user approval.
 
 Current slice: `contact` row capture metrics. The code changes are limited to:
 
@@ -26,7 +33,7 @@ pusher-target, and step timing. The public docked capture command for this row
 is now 144 frames so the drop, slide, and pusher lanes all reach their contact
 events in the manifest.
 
-Validation already run for this slice:
+Validation already run for this code slice:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_contact_exercises_multibody_contact_response -q`
   reported `1 passed`.
@@ -44,12 +51,23 @@ Validation already run for this slice:
   `ninja: no work to do`.
 - `git diff --check` was clean.
 
-Immediate next step for a fresh session: verify `git status -sb`. If this slice
-is already committed locally, do not push without approval; continue the
-capture-metrics hardening pass on the next high-value rigid row, likely
-`rigid_contact_inspector` unless newer evidence points elsewhere. If the slice
-is still uncommitted, review the diff, rerun any stale gate, and commit it
-locally before continuing.
+The handoff-docs-only follow-up changed only
+`docs/dev_tasks/rigid_body_visual_verification/README.md` and this file. It was
+intended to make the branch resumable after pushing; it does not change runtime
+behavior, tests, public docs, or PR scope. Validation for this docs-only
+handoff: `pixi run lint` passed and `git diff --check` was clean.
+
+Immediate next step for a fresh session: verify the pushed branch state, then
+continue the capture-metrics hardening pass on the next high-value rigid row,
+likely `rigid_contact_inspector` unless newer evidence points elsewhere. The
+minimal next slice should add a compact `SceneSetup.info["capture_metrics"]`
+payload for the row 12 contact-inspection query evidence and extend
+`test_rigid_contact_inspector_reports_contact_manifolds` with focused manifest
+assertions. Keep the payload to capture summary fields, not raw replay dumps:
+row id, query scope, selected shape-pair lane, penetration control, total and
+selected contacts, selected point/normal/depth/local points/shape indices, lane
+contact/depth summaries, and any compact history ranges needed to detect
+dropouts.
 
 ## Last Session Summary
 

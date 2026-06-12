@@ -351,10 +351,12 @@
       branch to origin, and refreshed validation. The conflict-resolution
       `pixi run test-py` command ran the full Python suite and reported
       `942 passed, 9 skipped`; `pixi run lint` also passed.
-- [x] Current handoff refresh: after merging latest `origin/main` and pushing
-      the joint capture-metrics stack, the active branch adds solver-comparison
-      and contact-policy capture metrics, focused tests, real docked captures,
-      and this updated handoff context for a fresh session.
+- [x] Current handoff refresh: after the validated link-contact
+      capture-metrics slice, the branch records fresh resume context for
+      `feature/rigid-body-gui-visual-verification`, notes that no published PR
+      was found for the branch on 2026-06-11, and points the next fresh session
+      toward a bounded `rigid_contact_inspector` capture-metrics follow-up. The
+      docs-only handoff refresh passed `pixi run lint` and `git diff --check`.
 
 ## Goal
 
@@ -534,17 +536,23 @@ and the no-tunneling scope decision.
 
 ## Immediate Next Steps
 
-1. Refresh validation as needed, then use the local
+1. Confirm `git status -sb` is clean on the pushed
+   `feature/rigid-body-gui-visual-verification` branch, then continue with a
+   bounded capture-metrics follow-up for `rigid_contact_inspector` unless newer
+   evidence identifies a higher-value row.
+2. For that next slice, expose compact `SceneSetup.info["capture_metrics"]`
+   fields for the row 12 query evidence and extend
+   `test_rigid_contact_inspector_reports_contact_manifolds`; keep the payload to
+   summary fields, not raw replay dumps.
+3. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
-   pushed `feature/rigid-body-gui-visual-verification` branch.
-2. Keep the broader rigid-body visual-verification goal open and pick the next
-   bounded rigid-body gap from another fresh audit before adding another row.
-3. Keep related-evidence routes synchronized between the runner-owned
+   pushed branch.
+4. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-4. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+5. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-5. Keep fuller articulated arm/gripper manipulation deferred until the public
+6. Keep fuller articulated arm/gripper manipulation deferred until the public
    API/runtime can support it as an interactive verifier. The current audit
    found rigid-body joints are not IPC-supported, multibody link contacts lack
    material/friction controls, and scripted IPC two-jaw pinch settings that
