@@ -6,13 +6,18 @@ Work resumed from the single pushed handoff branch on a fresh local follow-up
 branch: `pr/hmm-phase45-replay-snapshot-allocators`, based on
 `pr/hmm-phase45-follow-up-clean` at `31e0daa6877`.
 
-This slice closes the next replay ownership gap. A new non-empty replay
-ownership assertion first reproduced the gap with one global heap allocation /
-368 bytes when enabling replay recording for a World with one rigid body. The
-fix routes `ReplayState::Frame` snapshot vectors through the World free
-allocator and adds an allocator-aware AVBD warm-start replay capture overload
-so World-owned replay recording can also allocate AVBD row snapshots from the
-same allocator root.
+This slice closes the next replay ownership gaps. A new non-empty replay
+ownership assertion first reproduced one global heap allocation / 368 bytes
+when enabling replay recording for a World with one rigid body. The fix routes
+`ReplayState::Frame` snapshot vectors through the World free allocator and adds
+an allocator-aware AVBD warm-start replay capture overload so World-owned
+replay recording can also allocate AVBD row snapshots from the same allocator
+root. Extending the same test to restore that recorded frame then reproduced
+three global heap allocations / 16 bytes from replay restore scratch. The
+restore path now uses World-allocated rigid-body ordering and transient
+component cleanup scratch, and writes restored rigid-body transform components
+directly so it does not enter the generic subtree-dirty helper that allocated
+the final default 4-byte stack node.
 
 Focused validation run so far:
 
@@ -29,10 +34,10 @@ build/default/cpp/Release/bin/test_world \
 
 Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` payloads and
 `std::string` names inside replay joint/loop-closure snapshots still use their
-native heap-owning storage. Restore-side scratch in replay validation/order
-helpers also still uses local default vectors. Treat those as separate
-evidence-first slices; do not claim complete replay zero-heap coverage from
-the current rigid-body ownership gate.
+native heap-owning storage. Richer replay restores may also allocate if they
+insert missing transient components or copy those native payloads. Treat those
+as separate evidence-first slices; do not claim complete replay zero-heap
+coverage from the current rigid-body ownership gate.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -1384,11 +1389,13 @@ Follow-up progress after PR #2956:
   storage can be baked, stepped without World-base allocator growth or ECS
   capacity changes, cleared to zero registry capacity, and rebuilt with the
   same storage capacities under the World free-list allocator.
-- Replay recording now follows the World free allocator root for the replay
-  controller, top-level frame buffer, `ReplayState::Frame` snapshot vectors,
-  and AVBD warm-start replay row snapshots captured by a World. Enabling replay
-  recording for an empty World and for a one-rigid-body World allocates those
-  structures without global heap allocation. Dynamic `Eigen::VectorXd` and
+- Replay recording and one-rigid-body replay restore now follow the World free
+  allocator root for the replay controller, top-level frame buffer,
+  `ReplayState::Frame` snapshot vectors, AVBD warm-start replay row snapshots
+  captured by a World, rigid-body restore ordering, and transient-component
+  cleanup scratch. Enabling replay recording for an empty World and for a
+  one-rigid-body World, then restoring that rigid-body replay frame, now
+  completes without global heap allocation. Dynamic `Eigen::VectorXd` and
   `std::string` payloads inside richer replay snapshots remain follow-up work.
 - Persistent ignored-collision-pair storage now follows the same World free
   allocator root as the registry and differentiable-parameter storage. The

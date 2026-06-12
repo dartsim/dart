@@ -3073,6 +3073,16 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   }
   EXPECT_GT(replayFreeList.getAllocationCount(), allocationsBeforeRigidReplay);
 
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    replayWorld.restoreReplayFrame(0);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "replay restore scratch should allocate through the World free "
+           "allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
   auto& freeList = memoryManager.getFreeListAllocator();

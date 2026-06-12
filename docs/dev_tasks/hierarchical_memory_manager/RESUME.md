@@ -20,6 +20,11 @@ Current slice:
 - The same ownership test now verifies that enabling replay recording for a
   non-empty rigid-body World makes zero global heap allocations while the World
   free-list allocation count grows.
+- Extending that test to `restoreReplayFrame(0)` reproduced three global heap
+  allocations / 16 bytes from replay restore scratch. The restore path now uses
+  World-allocated rigid-body ordering and transient-component cleanup scratch,
+  and avoids the generic subtree-dirty helper allocation by restoring rigid-body
+  transform components directly after the replay layout checks.
 
 Focused validation run so far:
 
@@ -39,8 +44,9 @@ Do not push or open a PR without explicit maintainer approval.
 
 Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` fields and
 `std::string` names inside richer replay snapshots still use their native
-heap-owning storage. Restore-side replay helper scratch also still uses local
-default vectors. Treat those as separate evidence-first slices.
+heap-owning storage. Richer replay restores may also allocate if they insert
+missing transient components or copy those native payloads. Treat those as
+separate evidence-first slices.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 

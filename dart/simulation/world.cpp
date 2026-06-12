@@ -633,13 +633,17 @@ entt::entity findNearestReplayRigidBodyAncestor(
   return entt::null;
 }
 
-template <typename RigidBodyStates, typename PublicFrameStates>
+template <
+    typename RigidBodyStates,
+    typename PublicFrameStates,
+    typename VisitStateVector,
+    typename OrderedVector>
 void appendReplayRigidBodyParentBeforeChild(
     const detail::WorldRegistry& registry,
     const RigidBodyStates& states,
     const PublicFrameStates& publicFrameStates,
-    std::vector<int>& visitState,
-    std::vector<std::size_t>& ordered,
+    VisitStateVector& visitState,
+    OrderedVector& ordered,
     std::size_t index)
 {
   if (visitState[index] == 2) {
@@ -673,15 +677,18 @@ void appendReplayRigidBodyParentBeforeChild(
 }
 
 template <typename RigidBodyStates, typename PublicFrameStates>
-std::vector<std::size_t> orderReplayRigidBodiesParentBeforeChild(
+auto orderReplayRigidBodiesParentBeforeChild(
     const detail::WorldRegistry& registry,
     const RigidBodyStates& states,
-    const PublicFrameStates& publicFrameStates)
+    const PublicFrameStates& publicFrameStates,
+    common::MemoryAllocator& allocator)
 {
-  std::vector<std::size_t> ordered;
+  std::vector<std::size_t, common::StlAllocator<std::size_t>> ordered(
+      common::StlAllocator<std::size_t>{allocator});
   ordered.reserve(states.size());
 
-  std::vector<int> visitState(states.size(), 0);
+  std::vector<int, common::StlAllocator<int>> visitState(
+      states.size(), 0, common::StlAllocator<int>{allocator});
   for (std::size_t i = 0; i < states.size(); ++i) {
     appendReplayRigidBodyParentBeforeChild(
         registry, states, publicFrameStates, visitState, ordered, i);
@@ -780,12 +787,14 @@ void restoreReplayTransientComponents(
     detail::WorldRegistry& registry,
     const Snapshot& snapshot,
     std::string_view componentName,
+    common::MemoryAllocator& allocator,
     EntityPredicate&& entityPredicate)
 {
   validateReplayTransientComponents<Component>(
       registry, snapshot, componentName, entityPredicate);
 
-  std::vector<std::uint32_t> snapshotEntities;
+  std::vector<std::uint32_t, common::StlAllocator<std::uint32_t>>
+      snapshotEntities(common::StlAllocator<std::uint32_t>{allocator});
   snapshotEntities.reserve(snapshot.size());
   for (const auto& [entity, component] : snapshot) {
     static_cast<void>(component);
@@ -793,7 +802,8 @@ void restoreReplayTransientComponents(
   }
   std::ranges::sort(snapshotEntities);
 
-  std::vector<entt::entity> staleEntities;
+  std::vector<entt::entity, common::StlAllocator<entt::entity>> staleEntities(
+      common::StlAllocator<entt::entity>{allocator});
   auto view = registry.view<Component>();
   for (auto entity : view) {
     if (!std::ranges::binary_search(
@@ -5535,8 +5545,12 @@ void World::restoreReplayFrame(std::size_t index)
         "Cannot restore replay frame: RigidBody entity mode changed");
   }
 
+  auto& replayAllocator = m_memoryManager.getFreeAllocator();
   const auto rigidBodyRestoreOrder = orderReplayRigidBodiesParentBeforeChild(
-      m_storage->registry, replayFrame.rigidBodies, replayFrame.publicFrames);
+      m_storage->registry,
+      replayFrame.rigidBodies,
+      replayFrame.publicFrames,
+      replayAllocator);
 
   compute::avbd_replay::restoreDeformableAvbdWarmStartReplayState(
       m_storage->registry, replayFrame.deformableAvbdWarmStartStates);
@@ -5549,6 +5563,7 @@ void World::restoreReplayFrame(std::size_t index)
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
       "MultibodyVariationalState",
+      replayAllocator,
       [](const detail::WorldRegistry& registry, entt::entity entity) {
         return registry.all_of<comps::MultibodyStructure>(entity);
       });
@@ -5556,6 +5571,7 @@ void World::restoreReplayFrame(std::size_t index)
       m_storage->registry,
       replayFrame.variationalContactDualStates,
       "VariationalContactDualState",
+      replayAllocator,
       [](const detail::WorldRegistry& registry, entt::entity entity) {
         return registry
             .all_of<comps::MultibodyStructure, comps::VariationalContact>(
@@ -5594,9 +5610,18 @@ void World::restoreReplayFrame(std::size_t index)
 
   for (const auto stateIndex : rigidBodyRestoreOrder) {
     const auto& state = replayFrame.rigidBodies[stateIndex];
-    RigidBody(detail::fromRegistryEntity(state.entity), this)
-        .setTransform(
-            toIsometry(state.transform.position, state.transform.orientation));
+    const auto worldTransform
+        = toIsometry(state.transform.position, state.transform.orientation);
+    if (auto* freeFrame
+        = m_storage->registry.try_get<comps::FreeFrameProperties>(
+            state.entity)) {
+      const Frame parentFrame(
+          detail::fromRegistryEntity(state.parentFrame), this);
+      freeFrame->localTransform
+          = parentFrame.getTransform().inverse() * worldTransform;
+    }
+    m_storage->registry.replace<comps::Transform>(
+        state.entity, state.transform);
     m_storage->registry.replace<comps::Velocity>(state.entity, state.velocity);
     m_storage->registry.replace<comps::Force>(state.entity, state.force);
   }
