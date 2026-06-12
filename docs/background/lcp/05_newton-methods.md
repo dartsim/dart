@@ -405,7 +405,9 @@ small strictly interior friction-index rows use the shared validated
 friction-index exact solve. Warm-started boxed/findex rows, larger findex rows,
 active friction bounds, and validator-rejected rows stay on the semi-smooth
 Newton path so the residual-reducing PGS warm start and moving-bound Jacobian
-remain active.
+remain active. When the accepted line-search step already reaches the natural
+residual tolerance, the solver now returns immediately instead of spending one
+extra Newton loop only to observe convergence.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>

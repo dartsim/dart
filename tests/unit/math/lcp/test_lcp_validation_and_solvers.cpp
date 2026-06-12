@@ -2094,6 +2094,24 @@ TEST(FrictionIndexInteriorFastPath, HighOverheadSolversUseLinearSolve)
   }
 }
 
+TEST(
+    BoxedSemiSmoothNewtonSolverCoverage,
+    WarmStartAcceptsConvergedLineSearchStep)
+{
+  auto problem = makeStandardProblem(3);
+  BoxedSemiSmoothNewtonSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = true;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 1);
+  EXPECT_TRUE(
+      x.isApprox(Eigen::VectorXd::Constant(problem.size(), 0.25), 1e-8));
+}
+
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
 {
   LemkeSolver solver;

@@ -262,17 +262,18 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
             "Tgs/Pgs; Admm/SymmetricPsor/BGS/SubspaceMinimization/"
-            "Dantzig/NNCG/Staggering/Jacobi close; Sap/Apgd just under 2x"
+            "Dantzig/NNCG/Staggering/Jacobi close; Sap close; Apgd just under 2x"
         ),
         "current_laggards": (
             "BoxedSemiSmoothNewton and ShockPropagation remain above 2x; "
-            "BlockedJacobi is near 2x"
+            "BlockedJacobi is just above 2x"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
-            "staggering, NNCG, Dantzig, and subspace hot rows; remaining "
-            "targets are boxed semi-smooth Newton and large-contact "
-            "ShockPropagation."
+            "staggering, NNCG, Dantzig, and subspace hot rows, and the boxed "
+            "semi-smooth line-search shortcut trims Newton iterations; remaining "
+            "targets are ShockPropagation, BlockedJacobi, and larger "
+            "BoxedSemiSmoothNewton rows."
         ),
     },
 )

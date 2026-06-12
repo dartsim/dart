@@ -428,6 +428,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
       dx.setZero();
     }
 
+    double acceptedResidual = std::numeric_limits<double>::infinity();
     auto acceptLineSearchStep = [&](const Eigen::VectorXd& step) {
       double alpha = 1.0;
 
@@ -458,6 +459,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
           x = xTrial;
           loEff = loTrial;
           hiEff = hiTrial;
+          acceptedResidual = HnewNorm;
           return true;
         }
 
@@ -490,6 +492,11 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
 
     if (!accepted) {
       lineSearchFailed = true;
+      break;
+    }
+
+    if (acceptedResidual <= absTol) {
+      converged = true;
       break;
     }
   }

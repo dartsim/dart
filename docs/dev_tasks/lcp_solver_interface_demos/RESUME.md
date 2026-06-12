@@ -1,5 +1,81 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Boxed SSN Line-Search Early Acceptance
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint target:
+  `Accept converged boxed SSN line-search steps`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 57 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BoxedSemiSmoothNewtonSolver` now accepts a line-search step that already
+  reaches the natural residual tolerance instead of spending one extra Newton
+  loop only to observe convergence at the next iteration header.
+- Unit coverage now exercises the Newton path directly with a warm-started
+  standard row and `maxIterations=1`.
+- The Python LCP demo profile summary, checked performance profile CSVs,
+  Newton-method background docs, changelog, and this hand-off were refreshed.
+
+Evidence:
+
+- Focused
+  `BM_LcpCompare/FrictionIndex/(BoxedSemiSmoothNewton|Pgs|Tgs)/`
+  wrote `build/friction_index_bssn_line_search_after.json`.
+- Compared with `build/friction_index_bssn_shock_baseline.json`, focused
+  `BoxedSemiSmoothNewton` iterations dropped from `2` to `1` on 16- and
+  64-contact FrictionIndex packets.
+- Focused `BoxedSemiSmoothNewton` absolute times improved from `33270.0ns` to
+  `26775.6ns` on 16 contacts and from `829245.2ns` to `754288.4ns` on 64
+  contacts. The 4-contact row remains on the zero-iteration exact path.
+- Regenerated full profile reports FrictionIndex averages:
+  `BoxedSemiSmoothNewton 2.44`, `ShockPropagation 2.24`,
+  `BlockedJacobi 2.02`, `Apgd 1.89`, `RedBlackGaussSeidel 1.89`,
+  `SymmetricPsor 1.79`, `SubspaceMinimization 1.75`, `BGS 1.74`,
+  `NNCG 1.73`, `Jacobi 1.72`, `Staggering 1.71`, `Admm 1.63`,
+  `Dantzig 1.62`, `Sap 1.37`, `Tgs 1.10`, and `Pgs 1.00`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/friction_index_bssn_line_search_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- FrictionIndex: `ShockPropagation`, `BlockedJacobi`, and larger
+  `BoxedSemiSmoothNewton` rows.
+- Boxed: no solver above `2x` in the refreshed profile.
+- Standard: moderate spread only; this slice does not claim Standard
+  completion.
+
 ## Current Reality - 2026-06-12 Strict-Interior Friction-Index Fast Paths
 
 This section is the latest state; older sections below are historical

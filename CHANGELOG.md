@@ -1525,6 +1525,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     also try the helper before Dantzig fallback, while active-bound,
     warm-started, large size-sensitive, and validator-rejected rows stay on
     their original iterative or Newton paths.
+  - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
+    already reaches the natural residual tolerance, avoiding an extra Newton
+    loop on warm-started or larger friction-index rows that converge directly
+    after the accepted step.
   - Extended `BoxedSemiSmoothNewtonSolver`, `SapSolver`, and
     `SubspaceMinimizationSolver` validated exact fast paths to boxed LCPs
     without friction-index coupling through the shared projected-active-set
