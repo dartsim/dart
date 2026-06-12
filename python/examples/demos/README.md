@@ -149,7 +149,7 @@ infer.
 | `rigid_contact_scale_budget`     | How much contact fits in my frame budget?          | Solver, executor, frame budget, friction              | Contact count, wall ms, per-contact cost, scratch       |
 | `rigid_restitution_ladder`       | How does restitution change bounce height?         | Solver, executor, launch height, restitution scale    | Height, vertical speed, contact, energy trend           |
 | `rigid_material_mixing`          | Which material owns bounce or friction response?   | Impact/tangent speed, low/high e and mu, executor     | Effective max restitution, sqrt friction, swap deltas   |
-| `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape indices      |
+| `rigid_contact_inspector`        | Which contact pairs and manifold fields exist?     | Shape pair, penetration                               | Contact count, point, normal, depth, shape ids, metrics |
 | `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids    |
 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins      |
 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time     |
@@ -325,7 +325,8 @@ public shape families: sphere/box, box/ground, plane/sphere, capsule/sphere,
 cylinder/sphere, mesh/sphere, and compound/sphere. The panel shows selected
 pair count, total contact count, representative point, normal, depth, local
 points, and shape indices, including the compound-child index path, while a
-marker highlights the selected contact point in the scene.
+marker highlights the selected contact point in the scene. Docked captures now
+carry the same selected-pair manifold fields through scene-owned capture metrics.
 
 ## Rigid collision query options
 

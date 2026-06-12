@@ -91,7 +91,8 @@
     `World.collide()` contact pairs, points, normals, depths, local points,
     shape indices, and selected-pair histories for rigid-body visual debugging
     across sphere/box, box/ground, capsule/sphere, cylinder/sphere,
-    mesh/sphere, and compound/sphere lanes.
+    mesh/sphere, and compound/sphere lanes, with scene-owned capture metrics
+    for the selected pair and manifold fields.
   - Added `rigid_collision_query_options` to Python `py-demos`, exposing
     `World.collide(options)` body-kind filtering across rigid/rigid,
     rigid/link, same-multibody link/link, and cross-multibody link/link lanes
@@ -191,10 +192,10 @@
   - Added scene-owned capture metrics to `py-demo-capture` manifests for
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
-    manifest. The baseline, solver-comparison, contact-policy, multibody
-    link-contact, step-diagnostics, contact-scale budget, and rigid IPC stack
-    packet rows use it to make capture artifacts carry scene-owned
-    physics/runtime evidence.
+    manifest. The baseline, contact-inspection, solver-comparison,
+    contact-policy, multibody link-contact, step-diagnostics, contact-scale
+    budget, and rigid IPC stack packet rows use it to make capture artifacts
+    carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`

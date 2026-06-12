@@ -48,6 +48,16 @@
       hook. The focused link-contact guard reported `1 passed`; the real docked
       144-frame capture wrote 144 scene-metrics events and covered all three
       lane histories.
+- [x] Contact-inspector capture-metrics follow-up:
+      `rigid_contact_inspector` now publishes selected-pair `World.collide()`
+      manifold fields through the capture hook: row, collision-query scope,
+      pair/penetration controls, total/selected contact counts, depth ranges,
+      representative point/normal/local points, shape indices, and compact
+      history ranges. The focused manifold guard reported `1 passed`; the real
+      docked 24-frame capture wrote 24 scene-metrics events and top-level
+      numeric ranges for contact counts, depths, world time, and shape indices.
+      The focused workflow/doc drift guard reported `4 passed`; `pixi run lint`,
+      bounded default `pixi run build`, and `git diff --check` all passed.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
       same capture hook so manifests preserve method-family/contact-policy case
@@ -260,7 +270,7 @@
 - [x] Visual smoke: `rigid_kinematic_normal_push` capture writes nonblank PNGs
       with the docked ImGui workspace and 72 scene-metrics events.
 - [x] Visual smoke: `rigid_contact_inspector` capture writes nonblank PNGs with
-      the docked ImGui workspace.
+      the docked ImGui workspace and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_collision_query_options` capture writes nonblank
       PNGs with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_collision_casts` capture writes nonblank PNGs with
@@ -536,14 +546,15 @@ and the no-tunneling scope decision.
 
 ## Immediate Next Steps
 
-1. Confirm `git status -sb` is clean on the pushed
-   `feature/rigid-body-gui-visual-verification` branch, then continue with a
-   bounded capture-metrics follow-up for `rigid_contact_inspector` unless newer
-   evidence identifies a higher-value row.
-2. For that next slice, expose compact `SceneSetup.info["capture_metrics"]`
-   fields for the row 12 query evidence and extend
-   `test_rigid_contact_inspector_reports_contact_manifolds`; keep the payload to
-   summary fields, not raw replay dumps.
+1. Confirm `git status -sb` on
+   `feature/rigid-body-gui-visual-verification`, then continue with the next
+   bounded capture-metrics hardening slice unless newer evidence identifies a
+   higher-value rigid workflow gap. A likely next row is
+   `rigid_collision_casts`, because it is the neighboring query row and its
+   panel already owns compact ray/sweep histories but not capture metrics.
+2. For that next slice, keep payloads to summary fields that users need in
+   docked capture manifests; avoid raw replay dumps and preserve the selected
+   row's scope caveat in the PLAN-103 sidecar.
 3. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.

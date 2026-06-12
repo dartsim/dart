@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -106,6 +106,7 @@ class _RigidContactInspector:
         self._contact_count_history: deque[float] = deque(maxlen=_HISTORY)
         self._max_depth_history: deque[float] = deque(maxlen=_HISTORY)
         self._selected_depth_history: deque[float] = deque(maxlen=_HISTORY)
+        self._step_ms_history: deque[float] = deque(maxlen=_HISTORY)
         self._last_metrics: dict[str, Any] = {}
         self._reset()
 
@@ -369,6 +370,7 @@ class _RigidContactInspector:
         self._contact_count_history.clear()
         self._max_depth_history.clear()
         self._selected_depth_history.clear()
+        self._step_ms_history.clear()
         self._last_metrics.clear()
         self._record_metrics()
         self._sync()
@@ -454,6 +456,7 @@ class _RigidContactInspector:
         self._contact_count_history.append(float(metrics["total_contact_count"]))
         self._max_depth_history.append(float(metrics["max_depth"]))
         self._selected_depth_history.append(float(metrics["selected_max_depth"]))
+        self._step_ms_history.append(float(metrics["step_ms"]))
         self._update_marker(metrics)
 
     def _update_marker(self, metrics: dict[str, Any] | None = None) -> None:
@@ -483,6 +486,7 @@ class _RigidContactInspector:
             "contact_count_history": list(self._contact_count_history),
             "max_depth_history": list(self._max_depth_history),
             "selected_depth_history": list(self._selected_depth_history),
+            "step_ms_history": list(self._step_ms_history),
             "last_metrics": self._serialize_metrics(self._last_metrics),
         }
 
@@ -508,6 +512,10 @@ class _RigidContactInspector:
         self._selected_depth_history.extend(
             float(value) for value in state.get("selected_depth_history", [])
         )
+        self._step_ms_history.clear()
+        self._step_ms_history.extend(
+            float(value) for value in state.get("step_ms_history", [])
+        )
         self._last_metrics = self._deserialize_metrics(state.get("last_metrics", {}))
         self._sync()
 
@@ -528,6 +536,56 @@ class _RigidContactInspector:
         indices = metrics.get("first_shape_indices", (-1, -1))
         deserialized["first_shape_indices"] = (int(indices[0]), int(indices[1]))
         return deserialized
+
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        selected_lane = self._selected_lane()
+        contact_values = list(self._contact_count_history)
+        depth_values = list(self._max_depth_history)
+        selected_depth_values = list(self._selected_depth_history)
+        step_values = list(self._step_ms_history)
+        metrics = self._serialize_metrics(self._last_metrics)
+        shape_indices = metrics.get("first_shape_indices", [-1, -1])
+        return {
+            "row": "rigid_contact_inspector",
+            "solver": "collision_query",
+            "contact_scope": "shape_pair_manifold_fields",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "lane_count": int(len(self.lanes)),
+            "selected_lane": {
+                "key": selected_lane.key,
+                "label": selected_lane.label,
+                "target": selected_lane.target.name,
+                "probe": selected_lane.probe.name,
+            },
+            "controls": {
+                "pair_index": int(self.pair_index),
+                "penetration": float(self.penetration),
+            },
+            "total_contact_count": int(metrics["total_contact_count"]),
+            "selected_contact_count": int(metrics["selected_contact_count"]),
+            "max_depth": float(metrics["max_depth"]),
+            "selected_max_depth": float(metrics["selected_max_depth"]),
+            "first_depth": float(metrics["first_depth"]),
+            "first_pair": str(metrics["first_pair"]),
+            "first_point": metrics["first_point"],
+            "first_normal": metrics["first_normal"],
+            "first_local_a": metrics["first_local_a"],
+            "first_local_b": metrics["first_local_b"],
+            "first_shape_indices": [int(shape_indices[0]), int(shape_indices[1])],
+            "first_shape_index_a": int(shape_indices[0]),
+            "first_shape_index_b": int(shape_indices[1]),
+            "metrics": metrics,
+            "history": {
+                "samples": float(len(contact_values)),
+                "max_total_contact_count": max(contact_values, default=0.0),
+                "max_depth": max(depth_values, default=0.0),
+                "max_selected_depth": max(selected_depth_values, default=0.0),
+                "max_step_ms": max(step_values, default=0.0),
+            },
+        }
 
     def _format_vec(self, value: Any) -> str:
         vector = np.asarray(value, dtype=float).reshape(3)
@@ -595,6 +653,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": inspector.world,
             "rigid_contact_inspector_controller": inspector,
+            CAPTURE_METRICS_INFO_KEY: inspector.capture_metrics,
             "replay_capture_state": inspector.capture_replay_state,
             "replay_restore_state": inspector.restore_replay_state,
             "replay_sync": inspector._sync,

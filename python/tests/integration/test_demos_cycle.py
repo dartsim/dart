@@ -1493,6 +1493,53 @@ def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
     assert controller._contact_count_history
     assert controller._max_depth_history
     assert controller._selected_depth_history
+    assert controller._step_ms_history
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_contact_inspector"
+    assert capture_metrics["solver"] == "collision_query"
+    assert capture_metrics["contact_scope"] == "shape_pair_manifold_fields"
+    assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
+    assert capture_metrics["world_time"] > 0.0
+    assert capture_metrics["lane_count"] == len(controller.lanes)
+    assert capture_metrics["selected_lane"]["key"] == controller._selected_lane().key
+    assert capture_metrics["selected_lane"]["label"] == controller._selected_lane().label
+    assert capture_metrics["controls"]["pair_index"] == controller.pair_index
+    assert capture_metrics["controls"]["penetration"] == pytest.approx(
+        controller.penetration
+    )
+    assert capture_metrics["total_contact_count"] == metrics["total_contact_count"]
+    assert capture_metrics["selected_contact_count"] == metrics["selected_contact_count"]
+    assert capture_metrics["max_depth"] == pytest.approx(metrics["max_depth"])
+    assert capture_metrics["selected_max_depth"] == pytest.approx(
+        metrics["selected_max_depth"]
+    )
+    assert capture_metrics["first_depth"] == pytest.approx(metrics["first_depth"])
+    assert capture_metrics["first_pair"] == metrics["first_pair"]
+    assert np.isfinite(capture_metrics["first_point"]).all()
+    assert np.isfinite(capture_metrics["first_normal"]).all()
+    assert np.linalg.norm(capture_metrics["first_normal"]) == pytest.approx(
+        1.0,
+        abs=1.0e-6,
+    )
+    assert np.isfinite(capture_metrics["first_local_a"]).all()
+    assert np.isfinite(capture_metrics["first_local_b"]).all()
+    assert capture_metrics["first_shape_indices"][0] >= 0
+    assert capture_metrics["first_shape_indices"][1] >= 0
+    assert capture_metrics["first_shape_index_a"] >= 0
+    assert capture_metrics["first_shape_index_b"] >= 0
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._contact_count_history))
+    )
+    assert capture_metrics["history"]["max_total_contact_count"] >= len(
+        controller.lanes
+    )
+    assert capture_metrics["history"]["max_selected_depth"] == pytest.approx(
+        controller.penetration
+    )
+    assert capture_metrics["metrics"]["first_shape_indices"] == list(
+        metrics["first_shape_indices"]
+    )
 
     for index, lane in enumerate(controller.lanes):
         controller.pair_index = index
