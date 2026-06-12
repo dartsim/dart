@@ -8,10 +8,11 @@ related-evidence bundle as local work.
 Expected repository state after this checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is two local commits ahead of origin unless a future session has
+- The branch is three local commits ahead of origin unless a future session has
   pushed it:
   - `1e3fd63bc04 Route rigid related search directly`.
   - `Capture rigid related evidence bundle`.
+  - `Capture rigid IPC packet bundle`.
 - There is no PR associated with this branch at checkpoint time.
 - The latest checkpoint has not been pushed; do not push without explicit
   maintainer/user approval in that session.
@@ -48,6 +49,9 @@ Expected repository state after this checkpoint:
 - [x] `py-demo-capture -- --rigid-workflow --include-related` now appends the
       non-numbered related-evidence shelf routes to the same workflow manifest
       and review index.
+- [x] `py-demo-capture -- --rigid-workflow --include-packets` now appends the
+      capture-first rigid IPC stack packet to the same workflow manifest and
+      review index without changing the default 36-row workflow.
 
 ## Goal
 
@@ -74,9 +78,9 @@ are easy to inspect, cycle, capture, and regression-test.
 - The latest pushed commits are:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current branch is expected to be two local commits ahead of origin after this
+- Current branch is expected to be three local commits ahead of origin after this
   checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
-  `Capture rigid related evidence bundle`.
+  `Capture rigid related evidence bundle` and `Capture rigid IPC packet bundle`.
 - The latest checkpoint is local only and should not be pushed without explicit
   maintainer/user approval.
 
@@ -333,6 +337,28 @@ Observed results:
   `review_index.html` path.
 - The generated review index contained related-evidence cards and the final
   `45/45 avbd_rigid_prismatic_motor` row.
+
+## Verified In The Capture-First Packet Bundle Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_packets_dry_run
+jq -r '.include_related, .include_packets, .capture_count, .captures[45].workflow_group, .captures[45].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_packets_dry_run/manifest.json
+rg -n "capture_first_packet|rigid_ipc_stack_packet|46/46" /tmp/dart_capture_rigid_workflow_packets_dry_run/review_index.html
+```
+
+Observed results:
+
+- Focused pytest reported `8 passed`.
+- The public dry-run completed with exit code 0 and printed all 46 planned
+  capture commands: 36 numbered rows, 9 related-evidence routes, and the
+  capture-first rigid IPC stack packet.
+- The dry-run manifest reported `include_related=true`,
+  `include_packets=true`, `capture_count=46`,
+  `captures[45].workflow_group=capture_first_packet`, final scene
+  `rigid_ipc_stack_packet`, and a `review_index.html` path.
+- The generated review index contained the final
+  `46/46 rigid_ipc_stack_packet` packet row.
 
 ## Key Context
 

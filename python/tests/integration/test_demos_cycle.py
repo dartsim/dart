@@ -1844,6 +1844,25 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
     assert list(capture_py_demo.rigid_workflow_related_capture_specs()) == expected_specs
 
 
+def test_rigid_visual_capture_first_packets_are_documented() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    readme = root / "python" / "examples" / "demos" / "README.md"
+    expected_specs = [("rigid_ipc_stack_packet", 24, 960, 540, True)]
+
+    packet_rows = _read_rigid_visual_capture_first_ipc_rows()
+    assert [
+        _capture_spec_from_command(command)
+        for _scene_id, _question, _signals, command, _scope in packet_rows
+    ] == expected_specs
+
+    marker = "Capture the heavier Rigid IPC stack packet when the question is what happens"
+    readme_specs = _read_capture_command_specs(readme, marker)
+    assert readme_specs == expected_specs
+
+    capture_py_demo = _capture_py_demo_module()
+    assert list(capture_py_demo.rigid_workflow_packet_capture_specs()) == expected_specs
+
+
 def test_rigid_contact_inspector_reports_contact_manifolds() -> None:
     import numpy as np
 

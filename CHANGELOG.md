@@ -63,8 +63,9 @@
     `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and
     backend/executor aliases. Adjacent comparison/parameter rows now label
     their comparison axis and held-fixed controls in both the panel and capture
-    metrics. Add `--include-related` to append the non-numbered related
-    evidence shelf routes to the same rigid workflow capture/review packet.
+    metrics. Add `--include-related` and `--include-packets` to append
+    non-numbered related evidence routes and capture-first rigid IPC packets
+    to the same rigid workflow capture/review packet.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

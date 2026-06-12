@@ -8,10 +8,11 @@ related-evidence bundle as local work.
 Expected repository state after this checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is two local commits ahead of origin unless a future session has
+- The branch is three local commits ahead of origin unless a future session has
   pushed it:
   - `1e3fd63bc04 Route rigid related search directly`.
   - `Capture rigid related evidence bundle`.
+  - `Capture rigid IPC packet bundle`.
 - There is no PR associated with this branch at checkpoint time.
 - The latest checkpoint has not been pushed; do not push without explicit
   maintainer/user approval in that session.
@@ -75,6 +76,11 @@ The newest continuation adds an opt-in related-evidence capture bundle:
 non-numbered related shelf routes after the 36 numbered rows and records them
 in the same manifest/review index with `workflow_group=related_evidence`.
 
+The latest continuation adds a second opt-in bundle:
+`py-demo-capture -- --rigid-workflow --include-packets` appends the
+capture-first `rigid_ipc_stack_packet` after the numbered rows and optional
+related-evidence routes with `workflow_group=capture_first_packet`.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -86,9 +92,9 @@ Current snapshot:
 - Latest pushed commits:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current branch is expected to be two local commits ahead of origin after this
+- Current branch is expected to be three local commits ahead of origin after this
   checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
-  `Capture rigid related evidence bundle`.
+  `Capture rigid related evidence bundle` and `Capture rigid IPC packet bundle`.
 - The latest checkpoint is local only and should not be pushed without explicit
   maintainer/user approval.
 
@@ -140,6 +146,9 @@ that session, and rerun `pixi run lint` before committing further changes.
   `--rigid-workflow` still captures exactly the 36 numbered rows. The
   `--include-related` variant appends the related routes as rows 37-45 in the
   generated review packet.
+- The capture-first packet bundle is also opt-in. `--include-packets` appends
+  `rigid_ipc_stack_packet` after the numbered rows and, when present, after the
+  related-evidence rows.
 
 ## How To Resume
 
@@ -244,3 +253,17 @@ The focused pytest reported `5 passed`. The public dry-run completed with
 45 planned capture commands, the manifest reported `include_related=true` and
 `capture_count=45`, and the generated review index contained the final
 `45/45 avbd_rigid_prismatic_motor` related-evidence row.
+
+Current capture-first packet bundle validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_packets_dry_run
+jq -r '.include_related, .include_packets, .capture_count, .captures[45].workflow_group, .captures[45].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_packets_dry_run/manifest.json
+rg -n "capture_first_packet|rigid_ipc_stack_packet|46/46" /tmp/dart_capture_rigid_workflow_packets_dry_run/review_index.html
+```
+
+The focused pytest reported `8 passed`. The public dry-run completed with
+46 planned capture commands, the manifest reported `include_related=true`,
+`include_packets=true`, `capture_count=46`, and the generated review index
+contained the final `46/46 rigid_ipc_stack_packet` capture-first packet row.

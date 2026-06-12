@@ -308,6 +308,11 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...
 )
 
 
+RIGID_WORKFLOW_PACKET_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+    ("rigid_ipc_stack_packet", 24, 960, 540, True),
+)
+
+
 def rigid_workflow_capture_specs() -> tuple[tuple[str, int, int, int, bool], ...]:
     return RIGID_WORKFLOW_CAPTURE_SPECS
 
@@ -316,6 +321,12 @@ def rigid_workflow_related_capture_specs() -> (
     tuple[tuple[str, int, int, int, bool], ...]
 ):
     return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
+
+
+def rigid_workflow_packet_capture_specs() -> (
+    tuple[tuple[str, int, int, int, bool], ...]
+):
+    return RIGID_WORKFLOW_PACKET_CAPTURE_SPECS
 
 
 def _safe_stem(value: str) -> str:
@@ -582,6 +593,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--include-packets",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, also capture non-numbered capture-first "
+            "rigid evidence packets."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Write the rigid workflow capture plan without rendering.",
@@ -660,6 +679,8 @@ def _workflow_capture_specs(
     specs = list(rigid_workflow_capture_specs())
     if getattr(args, "include_related", False):
         specs.extend(rigid_workflow_related_capture_specs())
+    if getattr(args, "include_packets", False):
+        specs.extend(rigid_workflow_packet_capture_specs())
     return tuple(specs)
 
 
@@ -702,12 +723,22 @@ def _workflow_plan_entries(
     entries: list[dict[str, object]] = []
     specs = _workflow_capture_specs(args)
     numbered_count = len(rigid_workflow_capture_specs())
+    related_count = (
+        len(rigid_workflow_related_capture_specs())
+        if getattr(args, "include_related", False)
+        else 0
+    )
     count = len(specs)
     for order, spec in enumerate(specs, start=1):
         scene, frames, width, height, show_ui = spec
         scene_output = _workflow_scene_output_dir(output_dir, order, scene)
         argv = _workflow_scene_argv(args, order, spec, output_dir)
-        workflow_group = "numbered" if order <= numbered_count else "related_evidence"
+        if order <= numbered_count:
+            workflow_group = "numbered"
+        elif order <= numbered_count + related_count:
+            workflow_group = "related_evidence"
+        else:
+            workflow_group = "capture_first_packet"
         entries.append(
             {
                 "order": order,
@@ -1110,12 +1141,16 @@ def _write_workflow_manifest(
     include_related = any(
         capture.get("workflow_group") == "related_evidence" for capture in captures
     )
+    include_packets = any(
+        capture.get("workflow_group") == "capture_first_packet" for capture in captures
+    )
     _write_json(
         manifest,
         {
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
             "include_related": include_related,
+            "include_packets": include_packets,
             "dry_run": dry_run,
             "status": status,
             "capture_count": len(captures),
@@ -1219,6 +1254,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     if args.include_related and not args.rigid_workflow:
         raise SystemExit("--include-related requires --rigid-workflow")
+    if args.include_packets and not args.rigid_workflow:
+        raise SystemExit("--include-packets requires --rigid-workflow")
     if args.rigid_workflow:
         return _run_rigid_workflow(args)
     if args.dry_run:

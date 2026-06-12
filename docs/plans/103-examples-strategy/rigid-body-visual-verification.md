@@ -207,6 +207,10 @@ solver-performance parity claims.
 | ------------------------ | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `rigid_ipc_stack_packet` | Can a four-box IPC stack stay separated, ordered, and finite beyond the live demo budget? | Friction, box count, frame-budget threshold, min clearance, contact count, top drift, height error, max speed, wall time, and benchmark pointer. | pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 --width 960 --height 540 --show-ui | Capture-first stress packet; not a numbered workflow row and not a solver-performance parity claim. |
 
+Capture-first rigid IPC packets are also included after the numbered workflow
+and optional related-evidence routes by
+`py-demo-capture -- --rigid-workflow --include-packets`.
+
 The matching benchmark owner remains `bm_rigid_ipc_solver`; use its
 `BM_RigidWorldStep_SequentialImpulse` and `BM_RigidWorldStep_Ipc` rows for
 same-scene per-step throughput tracking before promoting any heavier IPC stack
@@ -253,6 +257,14 @@ non-numbered related evidence routes after the 36-row workflow:
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related --output-dir /tmp/dart_capture_rigid_workflow_with_related
+```
+
+Add `--include-packets` when the packet should also include capture-first
+rigid IPC evidence that is intentionally outside the live 36-row workflow:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
 ```
 
 For motion evidence, add `--video --fps 24` to the same docked capture path.
@@ -308,6 +320,15 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest capture-first packet bundle follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_capture_first_packets_are_documented -q`
+  reported `8 passed`. The public dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_packets_dry_run`
+  wrote a workflow manifest with `include_related=true`,
+  `include_packets=true`, `capture_count=46`, and the final row as
+  `rigid_ipc_stack_packet` with `workflow_group=capture_first_packet`. The
+  generated `review_index.html` contained the final
+  `46/46 rigid_ipc_stack_packet` row.
 - Latest related-evidence capture-bundle follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q`
   reported `5 passed`. The public dry-run

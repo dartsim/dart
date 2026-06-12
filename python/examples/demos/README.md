@@ -661,6 +661,15 @@ pixi run py-demo-capture -- --rigid-workflow --include-related \
     --output-dir /tmp/dart_capture_rigid_workflow_with_related
 ```
 
+Add `--include-packets` when the packet should also include capture-first
+rigid IPC evidence that is intentionally outside the live 36-row workflow:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-packets --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related \
+    --include-packets --output-dir /tmp/dart_capture_rigid_workflow_with_packets
+```
+
 Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash
@@ -756,6 +765,9 @@ count, top drift, height error, max speed, wall time, and the
 pixi run py-demo-capture -- --scene rigid_ipc_stack_packet --frames 24 \
     --width 960 --height 540 --show-ui
 ```
+
+The same packet is included after the numbered rows and optional related
+evidence routes by `py-demo-capture -- --rigid-workflow --include-packets`.
 
 For scenes that expose `SceneSetup.info["capture_metrics"]`,
 `py-demo-capture` also writes `scene_metrics.jsonl` and summarizes the full
