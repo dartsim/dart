@@ -1,5 +1,42 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-12, Live Joint WIP Unverified)
+
+Stop point for a fresh agent:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`, remains the only branch to
+resume from unless a maintainer explicitly redirects the work. The branch has
+no open PR at this handoff.
+
+Latest completed implementation commit:
+`9e36753e090` (`Route deformable creation scratch through World allocator`).
+That commit is the last validated implementation slice. It routes deformable
+creation validation and derived-topology scratch through the World free
+allocator and extends `World.WorldPersistentStorageUsesWorldFreeAllocator` to
+cover richer deformable creation inputs.
+
+Important local stop-state note: this session was stopped while an
+experimental live-joint storage slice was dirty in the worktree. These edits
+were not completed, not verified, and must not be treated as a passing state:
+
+- `dart/simulation/comps/joint.hpp`
+- `dart/simulation/io/auto_serialization.hpp`
+- `dart/simulation/io/binary_io.hpp`
+
+The intended direction of that unfinished slice was to replace live joint
+`Eigen::VectorXd` payload fields with a bounded inline dynamic Eigen vector
+for DART's supported joint DOF range, then teach serializer helpers to accept
+that vector type. The work stopped before the required initialization and
+compile fallout was handled in `world.cpp`, multibody code, serializer code,
+and replay helper templates. A fresh agent should first inspect the dirty diff
+and make an explicit choice to either continue that bounded live-joint slice or
+discard it; do not assume it compiles.
+
+No verification was run for this handoff update, by explicit maintainer
+instruction. Before publishing, opening a PR, or using any result as current
+evidence, rerun the relevant lint/build/test gates from a clean and intentional
+source state.
+
 ## Current Continuation (2026-06-12, Deformable Creation Scratch Allocators)
 
 Resume from exactly one branch:

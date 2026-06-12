@@ -1,5 +1,43 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-12, Live Joint WIP Unverified)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+fresh-session entry point unless a maintainer explicitly redirects the work.
+The branch has no open PR at this handoff.
+
+Latest completed implementation commit:
+`9e36753e090` (`Route deformable creation scratch through World allocator`).
+That commit is the last validated implementation slice. It routes deformable
+creation validation and derived-topology scratch through the World free
+allocator and extends `World.WorldPersistentStorageUsesWorldFreeAllocator` to
+cover richer deformable creation inputs.
+
+The session was stopped while a live-joint component storage experiment was
+dirty in the worktree. These files were modified locally, but the slice was not
+completed or verified:
+
+- `dart/simulation/comps/joint.hpp`
+- `dart/simulation/io/auto_serialization.hpp`
+- `dart/simulation/io/binary_io.hpp`
+
+The unfinished idea was to remove global-heap ownership from live joint
+payloads by replacing `Eigen::VectorXd` component fields with a bounded inline
+dynamic Eigen vector for DART's supported joint DOF range, then broaden
+serialization helpers so that vector type still serializes like a dynamic
+double column vector. The work stopped before required follow-through in
+`world.cpp`, multibody creation code, serializer initialization paths, replay
+helper templates, and any compile/test cleanup. A fresh agent must not treat
+the dirty worktree as green; inspect the diff and decide explicitly whether to
+finish that slice or discard it.
+
+No verification was run for this handoff update, by explicit maintainer
+instruction. Before publishing, opening a PR, or using any result as current
+evidence, rerun the relevant lint/build/test gates from a clean and intentional
+source state.
+
 ## Current Continuation (2026-06-12, Deformable Creation Scratch Allocators)
 
 Resume from exactly one branch:
