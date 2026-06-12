@@ -9,7 +9,18 @@ Corpus matrix:
 
 ## Current Status
 
-- Latest resumed follow-up (2026-06-11): distance-spring source rows now share
+- Latest resumed follow-up (2026-06-11): generic rigid point-pair and paired
+  friction direction assembly now share `avbdRigidWorldPointDirection()`, the
+  same exact-origin helper used by distance springs. Source rows whose rigid
+  point-joint, motor, or friction anchors sit exactly at a body origin now skip
+  angular-arm cross products during standalone row stamping and the serial
+  rigid row driver, while off-origin rows still take the general path.
+  `AvbdRigidBlock.PointPairOriginAnchorDirectionStaysTranslational` covers the
+  helper behavior. The focused `test_avbd_rigid_block` target and rigid-block
+  binary passed locally; `pixi run build` and `pixi run lint` also passed. This
+  is still only a narrow helper overhead cleanup and does not close any source
+  CPU-win, GPU, or paper-number gate.
+- Previous resumed follow-up: distance-spring source rows now share
   a single exact-origin-anchor helper for both force direction and Hessian
   assembly. Center-anchor Spring rows skip angular-arm cross products and the
   generic world-point Jacobian multiply when the rigid anchor is exactly at the
@@ -32,11 +43,12 @@ lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
   stacked source-row extraction precheck work, the current resume docs, the
   formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
   the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
-  origin-anchor distance-spring Hessian fast path with focused rigid-block
-  coverage. Local stashes may still exist as historical recovery points, but
-  fresh work should not depend on them. The latest pushed parent before this
-  final handoff was `76fb8073421` (`Update AVBD solver handoff state`); the
-  final handoff commit is expected to sit on top of it if pushed. PR #2977
+  origin-anchor distance-spring and generic point-pair direction fast paths
+  with focused rigid-block coverage. Local stashes may still exist as
+  historical recovery points, but fresh work should not depend on them. The
+  latest pushed parent before this local follow-up was `7a9e24b487b`
+  (`Checkpoint AVBD source-row origin-anchor handoff`); the current follow-up
+  commit is expected to sit on top of it if pushed. PR #2977
   (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
   known state and should only receive CI-fix commits if a fresh status refresh
   reveals a concrete failure. `RESUME.md` is the detailed source of truth for

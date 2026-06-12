@@ -302,6 +302,34 @@ TEST(AvbdRigidBlock, PointPairIncludesTorqueDirections)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, PointPairOriginAnchorDirectionStaysTranslational)
+{
+  vbd::AvbdRigidBodyState stateA;
+  stateA.position = Vec3(0.5, -1.0, 2.0);
+  stateA.orientation = rotationZ(0.25 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(-2.0, 1.0, 0.25);
+  stateB.orientation = rotationY(0.5 * vbd::kAvbdRigidPi);
+
+  vbd::AvbdRigidPointPairRow row;
+  row.axis = Vec3(1.0, -2.0, 0.5).normalized();
+
+  const vbd::Vector6d firstDirection
+      = vbd::avbdRigidPointPairDirectionA(stateA, row);
+  const vbd::Vector6d secondDirection
+      = vbd::avbdRigidPointPairDirectionB(stateB, row);
+
+  vbd::Vector6d expectedFirst = vbd::Vector6d::Zero();
+  expectedFirst.head<3>() = row.axis;
+  vbd::Vector6d expectedSecond = vbd::Vector6d::Zero();
+  expectedSecond.head<3>() = -row.axis;
+
+  EXPECT_EQ(firstDirection, expectedFirst);
+  EXPECT_EQ(secondDirection, expectedSecond);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointPairDualUpdateUsesBounds)
 {
   vbd::AvbdRigidBodyState stateA;

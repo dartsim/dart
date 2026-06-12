@@ -1377,29 +1377,44 @@ inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
 }
 
 //==============================================================================
+inline bool avbdRigidWorldPointIsBodyOrigin(
+    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
+{
+  return worldPoint.x() == state.position.x()
+         && worldPoint.y() == state.position.y()
+         && worldPoint.z() == state.position.z();
+}
+
+//==============================================================================
+inline Vector6d avbdRigidWorldPointDirection(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& axis)
+{
+  Vector6d direction = Vector6d::Zero();
+  direction.head<3>() = axis;
+  if (!avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    direction.tail<3>() = (worldPoint - state.position).cross(axis);
+  }
+  return direction;
+}
+
+//==============================================================================
 inline Vector6d avbdRigidPointPairDirectionA(
     const AvbdRigidBodyState& stateA, const AvbdRigidPointPairRow& row)
 {
-  const Eigen::Vector3d arm
-      = avbdRigidBodyWorldPoint(stateA, row.localPointA) - stateA.position;
-
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = row.axis;
-  direction.tail<3>() = arm.cross(row.axis);
-  return direction;
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(stateA, row.localPointA);
+  return avbdRigidWorldPointDirection(stateA, worldPoint, row.axis);
 }
 
 //==============================================================================
 inline Vector6d avbdRigidPointPairDirectionB(
     const AvbdRigidBodyState& stateB, const AvbdRigidPointPairRow& row)
 {
-  const Eigen::Vector3d arm
-      = avbdRigidBodyWorldPoint(stateB, row.localPointB) - stateB.position;
-
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = -row.axis;
-  direction.tail<3>() = arm.cross(-row.axis);
-  return direction;
+  const Eigen::Vector3d worldPoint
+      = avbdRigidBodyWorldPoint(stateB, row.localPointB);
+  return avbdRigidWorldPointDirection(stateB, worldPoint, -row.axis);
 }
 
 //==============================================================================
@@ -1472,26 +1487,12 @@ inline Matrix3x6d avbdRigidWorldPointJacobian(
 }
 
 //==============================================================================
-inline bool avbdRigidWorldPointIsBodyOrigin(
-    const AvbdRigidBodyState& state, const Eigen::Vector3d& worldPoint)
-{
-  return worldPoint.x() == state.position.x()
-         && worldPoint.y() == state.position.y()
-         && worldPoint.z() == state.position.z();
-}
-
-//==============================================================================
 inline Vector6d avbdRigidDistanceSpringDirectionAtWorldPoint(
     const AvbdRigidBodyState& state,
     const Eigen::Vector3d& worldPoint,
     const Eigen::Vector3d& axis)
 {
-  Vector6d direction = Vector6d::Zero();
-  direction.head<3>() = axis;
-  if (!avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
-    direction.tail<3>() = (worldPoint - state.position).cross(axis);
-  }
-  return direction;
+  return avbdRigidWorldPointDirection(state, worldPoint, axis);
 }
 
 //==============================================================================
@@ -1630,12 +1631,10 @@ inline double addAvbdRigidPointPair(
                   rawConstraintValue, row.previousConstraintValue, alpha);
   const double forceMagnitude = avbdRigidScalarRowForce(
       row.state, constraintValue, row.bounds, row.materialStiffness);
-  Vector6d firstDirection = Vector6d::Zero();
-  firstDirection.head<3>() = row.axis;
-  firstDirection.tail<3>() = (worldPointA - stateA.position).cross(row.axis);
-  Vector6d secondDirection = Vector6d::Zero();
-  secondDirection.head<3>() = -row.axis;
-  secondDirection.tail<3>() = (worldPointB - stateB.position).cross(-row.axis);
+  const Vector6d firstDirection
+      = avbdRigidWorldPointDirection(stateA, worldPointA, row.axis);
+  const Vector6d secondDirection
+      = avbdRigidWorldPointDirection(stateB, worldPointB, -row.axis);
 
   // AVBD solves per-body blocks; coupling is carried by the shared scalar dual.
   blockA.force.noalias() += forceMagnitude * firstDirection;
@@ -1761,22 +1760,14 @@ inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
   const Eigen::Vector2d force
       = avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
           constraintValues, first, second, options);
-  Vector6d firstDirectionA = Vector6d::Zero();
-  firstDirectionA.head<3>() = first.axis;
-  firstDirectionA.tail<3>()
-      = (firstWorldPointA - stateA.position).cross(first.axis);
-  Vector6d firstDirectionB = Vector6d::Zero();
-  firstDirectionB.head<3>() = -first.axis;
-  firstDirectionB.tail<3>()
-      = (firstWorldPointB - stateB.position).cross(-first.axis);
-  Vector6d secondDirectionA = Vector6d::Zero();
-  secondDirectionA.head<3>() = second.axis;
-  secondDirectionA.tail<3>()
-      = (secondWorldPointA - stateA.position).cross(second.axis);
-  Vector6d secondDirectionB = Vector6d::Zero();
-  secondDirectionB.head<3>() = -second.axis;
-  secondDirectionB.tail<3>()
-      = (secondWorldPointB - stateB.position).cross(-second.axis);
+  const Vector6d firstDirectionA
+      = avbdRigidWorldPointDirection(stateA, firstWorldPointA, first.axis);
+  const Vector6d firstDirectionB
+      = avbdRigidWorldPointDirection(stateB, firstWorldPointB, -first.axis);
+  const Vector6d secondDirectionA
+      = avbdRigidWorldPointDirection(stateA, secondWorldPointA, second.axis);
+  const Vector6d secondDirectionB
+      = avbdRigidWorldPointDirection(stateB, secondWorldPointB, -second.axis);
 
   blockA.force.noalias()
       += force.x() * firstDirectionA + force.y() * secondDirectionA;
@@ -3256,18 +3247,15 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
         if (indexedRow.bodyA == body) {
-          Vector6d direction = Vector6d::Zero();
-          direction.head<3>() = row.axis;
-          direction.tail<3>() = (worldPointA - stateA.position).cross(row.axis);
+          const Vector6d direction
+              = avbdRigidWorldPointDirection(stateA, worldPointA, row.axis);
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
         }
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
-          Vector6d direction = Vector6d::Zero();
-          direction.head<3>() = -row.axis;
-          direction.tail<3>()
-              = (worldPointB - stateB.position).cross(-row.axis);
+          const Vector6d direction
+              = avbdRigidWorldPointDirection(stateB, worldPointB, -row.axis);
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
@@ -3426,14 +3414,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   indexedRows.second,
                   frictionOptions);
           if (indexedRows.bodyA == body) {
-            Vector6d firstDirection = Vector6d::Zero();
-            firstDirection.head<3>() = indexedRows.first.axis;
-            firstDirection.tail<3>() = (firstWorldPointA - stateA.position)
-                                           .cross(indexedRows.first.axis);
-            Vector6d secondDirection = Vector6d::Zero();
-            secondDirection.head<3>() = indexedRows.second.axis;
-            secondDirection.tail<3>() = (secondWorldPointA - stateA.position)
-                                            .cross(indexedRows.second.axis);
+            const Vector6d firstDirection = avbdRigidWorldPointDirection(
+                stateA, firstWorldPointA, indexedRows.first.axis);
+            const Vector6d secondDirection = avbdRigidWorldPointDirection(
+                stateA, secondWorldPointA, indexedRows.second.axis);
             block.force.noalias()
                 += force.x() * firstDirection + force.y() * secondDirection;
             addAvbdRigidBlockHessianRankOneLowerTriangle(
@@ -3443,14 +3427,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           }
           if (indexedRows.bodyB == body
               && indexedRows.bodyB != indexedRows.bodyA) {
-            Vector6d firstDirection = Vector6d::Zero();
-            firstDirection.head<3>() = -indexedRows.first.axis;
-            firstDirection.tail<3>() = (firstWorldPointB - stateB.position)
-                                           .cross(-indexedRows.first.axis);
-            Vector6d secondDirection = Vector6d::Zero();
-            secondDirection.head<3>() = -indexedRows.second.axis;
-            secondDirection.tail<3>() = (secondWorldPointB - stateB.position)
-                                            .cross(-indexedRows.second.axis);
+            const Vector6d firstDirection = avbdRigidWorldPointDirection(
+                stateB, firstWorldPointB, -indexedRows.first.axis);
+            const Vector6d secondDirection = avbdRigidWorldPointDirection(
+                stateB, secondWorldPointB, -indexedRows.second.axis);
             block.force.noalias()
                 += force.x() * firstDirection + force.y() * secondDirection;
             addAvbdRigidBlockHessianRankOneLowerTriangle(
