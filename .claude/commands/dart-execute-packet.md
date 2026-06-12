@@ -36,8 +36,11 @@ invent work.
 Run the full check from `docs/ai/orchestration.md` before claiming. A packet
 is available only when ALL of these hold:
 
-1. **Dependencies** — every packet named on its Dependencies line is marked
-   `[done — ...]`.
+1. **Dependencies** — its Dependencies line is satisfied in full: every named
+   packet is marked `[done — ...]`, and every non-packet precondition (for
+   example "maintainer direction on ..." or an accepted design note) has
+   recorded evidence in the plan or the named owner doc. Treat any
+   precondition you cannot verify as unmet and skip the packet.
 2. **Local markers** — its heading carries neither `[done — ...]` nor
    `[claimed]` in the local plan file.
 3. **Remote markers** — `git fetch origin` (a read-only sync), then check the

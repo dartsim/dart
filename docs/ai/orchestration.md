@@ -103,8 +103,11 @@ How any session — human or agent — finds work and avoids collisions:
 - **Discovery.** Packets are `#### WP-<plan>.<n>` headings inside numbered
   plan files. Plan priority is `docs/plans/dashboard.md` document order;
   within a plan, packets are taken in document order. A packet's own
-  Dependencies line governs availability. Running `dart-execute-packet` with
-  no arguments performs exactly this walk and reports its selection.
+  Dependencies line governs availability, and it must be satisfied in full —
+  packet IDs marked done plus any non-packet precondition (a maintainer
+  decision, an accepted design note) with recorded evidence; an unverifiable
+  precondition counts as unmet. Running `dart-execute-packet` with no
+  arguments performs exactly this walk and reports its selection.
 - **Claim signals**, checked in this order before claiming (fetch from the
   remote first; fetching and listing are read-only):
   1. Markers in the plan file — `[claimed]` / `[done — ...]` on the packet
