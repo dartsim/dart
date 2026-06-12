@@ -429,6 +429,19 @@ Evidence recorded for this slice:
   frame PNGs; the first row was `rigid_body` and the last row was
   `rigid_loop_closure`.
 
+- Latest optional extended workflow packet evidence: the real workflow packet
+  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` selected rows
+  37-52 from the fully extended 52-row packet with related evidence, direct
+  Rigid IPC shelf, and capture-first packet groups requested and selected. It
+  reported `status=complete`, `capture_count=16`, `completed_count=16`,
+  `failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,
+  `workflow_row_end=52`, `continue_on_failure=true`,
+  `guidance_complete=true`, `guidance_missing_count=0`, and `failed_rows=[]`.
+  The packet wrote `manifest.json`, `review_index.html`, 16 docked row
+  screenshots, and 1004 frame PNGs; the first selected scene was
+  `floating_base` and the last selected scene was
+  `rigid_ipc_heavy_stack_packet`.
+
 - Latest loop-closure family row evidence: the real workflow packet
   `build/captures/rigid_loop_closure_row_36_1781304923` captured row 36 with
   `status=complete`, `capture_count=1`, `completed_count=1`,

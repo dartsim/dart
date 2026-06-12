@@ -8,6 +8,9 @@ one `py-demo-capture -- --rigid-workflow` run. That packet exercises the same
 docked Filament/ImGui capture path, per-row manifests, screenshots, frame
 directories, workflow guidance, and `review_index.html` contact sheet that a
 maintainer would use to review the row-15-through-row-36 DART 7 harness pass.
+The current optional extended packet has also been rechecked for rows 37-52,
+covering related evidence, direct Rigid IPC shelf routes, and capture-first IPC
+stress packets.
 
 Latest implementation slice: row 36 gives the variational rigid multibody
 loop-closure family row the same reviewable comparison shape as the surrounding
@@ -30,6 +33,16 @@ Evidence for this slice:
   `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
   frame PNGs across rows 01-36; the first row was `rigid_body` and the last row
   was `rigid_loop_closure`.
+- Fresh optional extended workflow packet:
+  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` completed with
+  `status=complete`, `capture_count=16`, `completed_count=16`,
+  `failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,
+  `workflow_row_end=52`, `include_related=true`, `include_ipc_shelf=true`,
+  `include_packets=true`, `continue_on_failure=true`,
+  `guidance_complete=true`, `guidance_missing_count=0`, and
+  `failed_rows=[]`. It wrote `manifest.json`, `review_index.html`, 16 docked
+  row screenshots, and 1004 frame PNGs; the first selected scene was
+  `floating_base` and the last was `rigid_ipc_heavy_stack_packet`.
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
   `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`,
@@ -250,10 +263,10 @@ Repository state notes:
   latest implementation commit to describe the loop-closure workflow signals;
   if a docs-only evidence commit exists after it, inspect that diff first.
 
-Recommended next action: use the full row-01-through-row-36 packet as the
-maintainer-review evidence for the current numbered rigid workflow. If more
-local progress is requested before pushing/review, audit optional related rows
-37-52 or API-deferred gaps rather than adding speculative numbered rows.
+Recommended next action: use the full row-01-through-row-36 packet plus the
+optional rows 37-52 packet as maintainer-review evidence for the current rigid
+workflow. If more local progress is requested before pushing/review, audit the
+API-deferred gaps rather than adding speculative numbered rows.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
 comparison shape as the surrounding rigid workflow rows. `rigid_fixed_joint`
