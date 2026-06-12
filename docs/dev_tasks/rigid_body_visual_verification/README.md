@@ -30,6 +30,12 @@ Expected repository state after this hand-off:
   `Max closure residual ratio`, `has_signal=true`, `has_markers=true`, and
   panel `Replay`; the review card showed
   `Max closure residual ratio (signal, markers)`.
+- A full 36-row workflow capture under
+  `/tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053` completed
+  with `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, `guidance_complete=true`, and nineteen
+  Replay-labeled review cards. All per-scene manifests inspected had positive
+  frame counts, docked screenshots, and nontrivial unique-color counts.
 - This checkpoint remains local until explicitly pushed in a future approved
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -351,6 +357,9 @@ Expected repository state for that earlier checkpoint:
 - [x] `py-demo-capture` now records JSON-safe scene-owned Replay timeline
       metadata in per-scene manifests and shows Replay track labels in workflow
       `review_index.html` cards.
+- [x] A fresh full 36-row rigid workflow capture after the Replay metadata
+      change completed successfully and showed nineteen Replay-labeled review
+      cards, matching the sidecar-documented Replay rows.
 
 ## Goal
 
@@ -1668,6 +1677,33 @@ generated `review_index.html` contained `36/36 rigid_loop_closure` and
 `<dt>replay</dt><dd>Max closure residual ratio (signal, markers)</dd>`.
 `pixi run lint` passed and `git diff --check` was clean.
 
+## Verified In The Full Replay Metadata Workflow Capture Refresh
+
+This continuation refreshed the complete numbered workflow packet after
+`scene_metadata.replay_timeline` landed, and tightened the sidecar drift guard
+so every numbered row that publishes Replay metadata must document
+`Replay timeline coverage`.
+
+Commands:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053
+jq -r '.status, .capture_count, .completed_count, .failed_count, .guidance_complete, .guidance_missing_count, .elapsed_s, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/manifest.json
+rg -c 'Replay timeline coverage' docs/plans/103-examples-strategy/rigid-body-visual-verification.md
+find /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select(.scene_metadata.replay_timeline != null) | .scene' | wc -l
+rg -o '<dt>replay</dt>' /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/review_index.html | wc -l
+find /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select((.capture.converted_frames // 0) <= 0 or .visual_evidence.screenshot.docked_workspace != true or (.visual_evidence.screenshot.unique_rgb_count // 0) <= 1) | [.scene, (.capture.converted_frames|tostring), (.visual_evidence.screenshot.docked_workspace|tostring), (.visual_evidence.screenshot.unique_rgb_count|tostring)] | @tsv'
+```
+
+Observed results: the workflow manifest reported `complete`, `36`, `36`, `0`,
+`true`, `0`, elapsed `310.791`, and review index
+`/tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/review_index.html`.
+The sidecar, per-scene manifests, and review index each reported nineteen
+Replay rows. The per-scene manifest anomaly query printed no rows. The review
+index included representative Replay cards such as row 21
+`Top x divergence (signal, markers)` and row 36
+`Max closure residual ratio (signal, markers)`.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
@@ -1680,10 +1716,9 @@ generated `review_index.html` contained `36/36 rigid_loop_closure` and
    Replay timeline checkpoints, plus the Replay capture-metadata checkpoint, to
    be present locally and unpushed.
 3. Re-evaluate the durable sidecar and dashboard before selecting the next
-   bounded rigid visual-verification slice. A useful next evidence step is a
-   full workflow capture refresh so all numbered review cards carry Replay
-   labels, but do not treat that as task retirement without maintainer
-   approval.
+   bounded rigid visual-verification slice. The full workflow capture refresh
+   for Replay review-card labels is complete, but do not treat that as task
+   retirement without maintainer approval.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.

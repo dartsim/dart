@@ -30,6 +30,12 @@ Expected repository state after this hand-off:
   `Max closure residual ratio`, `has_signal=true`, `has_markers=true`, and
   panel `Replay`; the review card showed
   `Max closure residual ratio (signal, markers)`.
+- A full 36-row workflow capture under
+  `/tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053` completed
+  with `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, `guidance_complete=true`, and nineteen
+  Replay-labeled review cards. All per-scene manifests inspected had positive
+  frame counts, docked screenshots, and nontrivial unique-color counts.
 - This checkpoint remains local until explicitly pushed in a future approved
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -549,10 +555,10 @@ motor-limits, passive-parameters, screw-joint pitch, multibody dynamics-terms,
 link center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
 Replay timeline slices, plus the Replay capture-metadata checkpoint, after the
 pushed docs-only handoff. Re-evaluate the durable sidecar and dashboard before
-selecting the next bounded rigid visual-verification slice. A useful next
-evidence step is a full workflow capture refresh so all numbered review cards
-carry Replay labels, but do not retire the task without maintainer approval. Do
-not push without explicit approval in that session.
+selecting the next bounded rigid visual-verification slice. The full workflow
+capture refresh for Replay review-card labels is complete, but do not retire
+the task without maintainer approval. Do not push without explicit approval in
+that session.
 
 Replay capture-metadata checks for this slice:
 
@@ -569,6 +575,23 @@ capture recorded `scene_metadata.replay_timeline.signal_label` as
 `Max closure residual ratio` with both signal and markers enabled; the one-row
 workflow capture completed row 36 and the generated `review_index.html` showed
 `Max closure residual ratio (signal, markers)`.
+
+Full replay-metadata workflow refresh:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053
+jq -r '.status, .capture_count, .completed_count, .failed_count, .guidance_complete, .guidance_missing_count, .elapsed_s, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/manifest.json
+rg -c 'Replay timeline coverage' docs/plans/103-examples-strategy/rigid-body-visual-verification.md
+find /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select(.scene_metadata.replay_timeline != null) | .scene' | wc -l
+rg -o '<dt>replay</dt>' /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/review_index.html | wc -l
+find /tmp/dart_capture_rigid_workflow_replay_metadata_full_1781284053/scenes -name manifest.json -print0 | xargs -0 jq -r 'select((.capture.converted_frames // 0) <= 0 or .visual_evidence.screenshot.docked_workspace != true or (.visual_evidence.screenshot.unique_rgb_count // 0) <= 1) | [.scene, (.capture.converted_frames|tostring), (.visual_evidence.screenshot.docked_workspace|tostring), (.visual_evidence.screenshot.unique_rgb_count|tostring)] | @tsv'
+```
+
+The full refresh reported `status=complete`, `capture_count=36`,
+`completed_count=36`, `failed_count=0`, `guidance_complete=true`,
+`guidance_missing_count=0`, and elapsed `310.791`. The sidecar,
+per-scene manifests, and review index each reported nineteen Replay rows; the
+per-scene manifest anomaly query printed no rows.
 
 Passive-parameters checks for this slice:
 

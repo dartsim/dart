@@ -1101,23 +1101,28 @@ def test_rigid_visual_workflow_guidance_matches_sidecar() -> None:
 def test_rigid_visual_replay_timeline_rows_publish_scene_metadata() -> None:
     _require_simulation_symbols("World")
     sidecar_docs = _read_rigid_visual_workflow_capture_metric_docs()
-    replay_rows = [
+    documented_replay_rows = [
         scene_id
         for scene_id, evidence_text in sidecar_docs.items()
         if "Replay timeline coverage" in evidence_text
     ]
     scene_by_id = {scene.id: scene for scene in make_demo_scenes()}
+    actual_replay_rows: list[str] = []
 
-    assert replay_rows
-    assert replay_rows[-1] == "rigid_loop_closure"
-    for scene_id in replay_rows:
+    for scene_id in sidecar_docs:
         setup = scene_by_id[scene_id].build()
         metadata = setup.info.get(REPLAY_TIMELINE_INFO_KEY)
-        assert isinstance(metadata, dict), scene_id
+        if not isinstance(metadata, dict):
+            continue
+        actual_replay_rows.append(scene_id)
         label = metadata.get("signal_label", metadata.get("label"))
         assert isinstance(label, str) and label.strip(), scene_id
         assert label != "Saved states", scene_id
         assert "signal" in metadata or "value" in metadata, scene_id
+
+    assert documented_replay_rows
+    assert documented_replay_rows == actual_replay_rows
+    assert documented_replay_rows[-1] == "rigid_loop_closure"
 
 
 def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
