@@ -2,22 +2,33 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint resumes after the earlier stop-state hand-off and captures the
-workflow review-index guidance helper as local work.
+This checkpoint is a stop-state hand-off only. The latest user instruction was
+to stop implementation and verification immediately, so this update only records
+the current worktree and where to resume.
 
-Expected repository state after this checkpoint:
+Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is five local commits ahead of origin unless a future session has
-  pushed it:
+- Before this hand-off commit is pushed, the branch is five local commits ahead
+  of origin:
   - `1e3fd63bc04 Route rigid related search directly`.
   - `Capture rigid related evidence bundle`.
   - `Capture rigid IPC packet bundle`.
   - `Resume rigid workflow captures by row`.
   - `Annotate rigid workflow review index`.
+- This hand-off commit is docs-only and may be pushed on top of those five
+  commits; it does not commit the edge-drop implementation work.
+- The current workspace is expected to remain dirty after the hand-off push.
+  Uncommitted edge-drop work is in `CHANGELOG.md`,
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`,
+  `python/examples/demos/README.md`, `python/examples/demos/runner.py`,
+  `python/examples/demos/scenes/rigid_ipc_edge_drop.py`,
+  `python/tests/integration/test_demos_cycle.py`,
+  `python/tests/unit/test_py_demo_panels.py`, and `scripts/capture_py_demo.py`.
 - There is no PR associated with this branch at checkpoint time.
-- The latest checkpoint has not been pushed. Do not push without explicit
-  maintainer/user approval in that session.
+- The user explicitly requested this hand-off and push, but no further
+  verification. Do not claim any lint/test/capture result after that stop
+  request.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -60,6 +71,10 @@ Expected repository state after this checkpoint:
 - [x] Numbered rigid workflow captures now carry the in-viewer row guidance
       into `manifest.json` and `review_index.html`: role label, user question,
       try-first action, inspect signals, healthy signal, and scope note.
+- [ ] In progress, uncommitted: `rigid_ipc_edge_drop` has local edits to become
+      a self-describing related-evidence route from `rigid_solver_compare`,
+      with a panel and capture metrics for degenerate edge-contact clearance,
+      tilt, angular speed, contact count, step timing, and status.
 
 ## Goal
 
@@ -86,13 +101,13 @@ are easy to inspect, cycle, capture, and regression-test.
 - The latest pushed commits are:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current branch is expected to be five local commits ahead of origin after this
-  checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
-  `Capture rigid related evidence bundle`, `Capture rigid IPC packet bundle`,
-  `Resume rigid workflow captures by row`, and
-  `Annotate rigid workflow review index`.
-- The latest checkpoint is local only and should not be pushed without explicit
-  maintainer/user approval in the next active session.
+- At the latest stop-state hand-off, the branch had five unpushed implementation
+  commits after `e8278b6fb53`: `1e3fd63bc04 Route rigid related search directly`
+  plus `Capture rigid related evidence bundle`,
+  `Capture rigid IPC packet bundle`, `Resume rigid workflow captures by row`,
+  and `Annotate rigid workflow review index`.
+- The hand-off docs may be pushed on top of those commits, but the edge-drop
+  implementation remains uncommitted local work.
 
 ## What The Local Commit Changed
 
@@ -332,21 +347,21 @@ Observed results:
 ```bash
 PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q
 pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_dry_run_current
-jq -r '.include_related, .capture_count, .captures[36].workflow_group, .captures[36].scene, .captures[44].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_related_dry_run_current/manifest.json
-rg -n "related_evidence|avbd_rigid_prismatic_motor|45/45" /tmp/dart_capture_rigid_workflow_related_dry_run_current/review_index.html
+jq -r '.include_related, .capture_count, .captures[36].workflow_group, .captures[36].scene, .captures[45].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_related_dry_run_current/manifest.json
+rg -n "related_evidence|avbd_rigid_prismatic_motor|46/46" /tmp/dart_capture_rigid_workflow_related_dry_run_current/review_index.html
 ```
 
 Observed results:
 
 - Focused pytest reported `5 passed`.
-- The public dry-run completed with exit code 0 and printed all 45 planned
-  capture commands: 36 numbered rows plus 9 related-evidence routes.
-- The dry-run manifest reported `include_related=true`, `capture_count=45`,
+- The public dry-run completed with exit code 0 and printed all 46 planned
+  capture commands: 36 numbered rows plus 10 related-evidence routes.
+- The dry-run manifest reported `include_related=true`, `capture_count=46`,
   `captures[36].workflow_group=related_evidence`, first related scene
   `floating_base`, final scene `avbd_rigid_prismatic_motor`, and a
   `review_index.html` path.
 - The generated review index contained related-evidence cards and the final
-  `45/45 avbd_rigid_prismatic_motor` row.
+  `46/46 avbd_rigid_prismatic_motor` row.
 
 ## Verified In The Capture-First Packet Bundle Continuation
 
@@ -409,6 +424,24 @@ Observed results:
   note.
 - The generated review index contained the same solver-family question,
   healthy signal, and scope note beside the row card.
+
+## Verified In The Rigid IPC Edge-Drop Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_ipc_edge_drop_reports_degenerate_contact_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q
+```
+
+Observed results:
+
+- Focused pytest reported `5 passed`.
+- The new edge-drop route reports `row=rigid_ipc_edge_drop`,
+  `related_source_row=rigid_solver_compare`, `solver=rigid_ipc`, and
+  `scope=degenerate_edge_contact_capability`.
+- The related-evidence route table, capture command list, capture-helper specs,
+  and panel coverage all include `rigid_ipc_edge_drop`.
+- Before the final stop instruction, the public `--include-related` dry-run was
+  started and printed a 46-command plan including `rigid_ipc_edge_drop`; the
+  follow-up jq/rg manifest probes and row-47 packet dry-run were still pending.
 
 ## Key Context
 
