@@ -198,7 +198,7 @@ plus a warning block if any selected row is missing those fields.
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                       |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
-| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time                 |
+| 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks              |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion             |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics            |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration, metrics    |
@@ -577,6 +577,8 @@ are AVBD-backed rows in the sequential rigid-body World path, while IPC and
 multibody Worlds reject this API. The panel compares an unsprung baseline,
 soft and stiff center springs, and an off-center anchor lane with stretch,
 payload speed, angular speed, and step timing.
+The shared Replay panel uses maximum spring stretch as its value track and
+marks high-stretch or off-center spin frames.
 
 The **`rigid_limited_joints`** scene verifies the public revolute and prismatic
 rigid-body joint rows without making motor or limit claims. The hinge lane

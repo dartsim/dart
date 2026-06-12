@@ -2,15 +2,16 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_joint_breakage` Replay timeline slice
-after the fixed-joint checkpoint. The shared AVBD break-force lifecycle row now
-uses payload release distance as its Replay value track and marks broken or
-released frames so saved-state scrubbing can jump to the breakage event.
+This checkpoint completes the `rigid_distance_spring` Replay timeline slice
+after the joint-breakage checkpoint. The distance-spring row now uses maximum
+spring stretch as its Replay value track and marks high-stretch or
+off-center-spin frames so saved-state scrubbing can jump to the
+spring-restoring and torque-transfer moments.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Latest implementation commits covered by this hand-off:
+- Latest implementation checkpoints covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
@@ -21,13 +22,14 @@ Expected repository state after this hand-off:
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline checkpoints.
+  joint-breakage Replay timeline, followed by the distance-spring Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `4d2787cf41f Add fixed joint replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by four commits before
-  the joint-breakage slice.
+  `f5bbb2efb8b Add joint breakage replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by five commits before
+  the distance-spring slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -48,6 +50,11 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata through the shared AVBD breakable-joint
   builder. The intended value track label is `Payload release distance`, with
   markers for broken or released frames.
+- The current distance-spring Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Max spring stretch`, with markers for high-stretch or off-center-spin
+  frames.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -74,6 +81,10 @@ Expected repository state after this hand-off:
   metadata to the shared AVBD breakable-joint builder used by
   `rigid_joint_breakage`, updated tests and docs, and ran focused tests plus a
   real docked capture.
+- The distance-spring Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_distance_spring`, updated tests and docs, and ran focused
+  tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
 - Do not push these local commits without explicit approval in a future
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -265,13 +276,20 @@ break-force lifecycle. Focused pytest, sidecar/README drift guards,
 `pixi run lint`, `git diff --check`, and a real docked capture passed before
 the local joint-breakage commit.
 
+The latest continuation completes the next Replay timeline slice for
+`rigid_distance_spring`. The shared Replay panel now uses maximum spring
+stretch as its value track and marks high-stretch or off-center-spin frames.
+Focused pytest, sidecar/README drift guards, `pixi run lint`,
+`git diff --check`, and a real docked capture passed before the local
+distance-spring commit.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
 
 Current snapshot:
 
-- Latest implementation commits covered by this hand-off:
+- Latest implementation checkpoints covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
@@ -282,28 +300,29 @@ Current snapshot:
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline checkpoints.
+  joint-breakage Replay timeline, followed by the distance-spring Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `4d2787cf41f Add fixed joint replay timeline`; it was four commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification` before the
-  joint-breakage Replay timeline slice.
-- The contact-manipulation, kinematic-driver, normal-push, fixed-joint, and
-  joint-breakage Replay timeline checkpoints are local and unpushed until
-  explicit future approval.
+  `f5bbb2efb8b Add joint breakage replay timeline`; it was five commits ahead
+  of `origin/feature/rigid-body-gui-visual-verification` before the
+  distance-spring Replay timeline slice.
+- The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
+  joint-breakage, and distance-spring Replay timeline checkpoints are local and
+  unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
-normal-push, fixed-joint, and joint-breakage Replay timeline slices after the
-pushed docs-only handoff. Re-evaluate the durable sidecar before
-selecting the next bounded rigid visual-verification slice; the next adjacent
-constraints row is likely `rigid_distance_spring`, but do not assume it without
-inspecting current evidence. Do not push without explicit approval in that
-session.
+normal-push, fixed-joint, joint-breakage, and distance-spring Replay timeline
+slices after the pushed docs-only handoff. Re-evaluate the durable sidecar
+before selecting the next bounded rigid visual-verification slice; the next
+adjacent constraints row is likely `rigid_limited_joints`, but do not assume it
+without inspecting current evidence. Do not push without explicit approval in
+that session.
 
 ## Context That Would Be Lost
 
@@ -420,6 +439,13 @@ session.
   `info["replay_timeline"]` metadata to the shared AVBD breakable fixed-joint
   builder used by `rigid_joint_breakage`, with tests and capture evidence for
   the `Payload release distance` value track and broken/released markers.
+- The completed distance-spring Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_distance_spring.py`, with tests for the
+  `Max spring stretch` value track and high-stretch or off-center-spin markers.
+  It has focused pytest, drift-guard, docked-capture, lint, and diff-check
+  evidence.
 
 ## How To Resume
 
@@ -836,3 +862,24 @@ payload release distance about `0.413` m, final payload speed about `1.332`
 m/s, `saw_broken` `1.0`, and historical maximum payload release distance about
 `0.590` m. The sidecar/README/capture-command drift guard reported `4 passed`.
 `pixi run lint` passed and `git diff --check` was clean.
+
+Current distance-spring Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_distance_spring --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_distance_spring_timeline_1781275675
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.lanes.free.stretch, .scene_metrics.latest.metrics.lanes.soft.stretch, .scene_metrics.latest.metrics.lanes.stiff.stretch, .scene_metrics.latest.metrics.lanes.offset.stretch, .scene_metrics.latest.metrics.lanes.offset.angular_speed, .scene_metrics.latest.metrics.history.max_sprung_abs_stretch, .scene_metrics.latest.metrics.history.max_offset_angular_speed' /tmp/dart_capture_distance_spring_timeline_1781275675/manifest.json
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run lint
+git diff --check
+```
+
+The focused Replay/distance-spring pytest reported `2 passed`. The real docked
+capture completed with exit code 0 and wrote a nonblank 960x540 screenshot with
+docked UI detected, 71 PNG frames, and 72 scene-metric events. The manifest
+reported row `rigid_distance_spring`, final unsprung stretch `0.330` m,
+soft/stiff stretch about `-0.113` m and `-0.125` m, offset stretch about
+`-0.001` m, offset angular speed about `1.956` rad/s, historical maximum spring
+stretch about `0.346` m, and historical maximum offset angular speed about
+`21.04` rad/s. The sidecar/README/capture-command drift guard reported
+`4 passed`. `pixi run lint` passed and `git diff --check` was clean.

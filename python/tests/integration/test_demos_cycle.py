@@ -5052,11 +5052,53 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
     assert set(capture_metrics["lanes"]) == set(metrics)
     assert capture_metrics["lanes"]["free"]["has_spring"] == pytest.approx(0.0)
     assert capture_metrics["lanes"]["soft"]["has_spring"] == pytest.approx(1.0)
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["max_sprung_abs_stretch"] >= abs(
+        float(metrics["soft"]["stretch"])
+    )
+    assert capture_metrics["history"]["max_offset_angular_speed"] > 1.0
 
     assert controller._length_history["soft"]
     assert controller._stretch_history["stiff"]
     assert controller._angular_speed_history["offset"]
     assert all(value >= 0.0 for value in controller._step_ms_history)
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_sprung_stretch = max(
+        abs(controller._stretch_history[key][-1])
+        for key in ("soft", "stiff", "offset")
+    )
+    assert timeline["signal_label"] == "Max spring stretch"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_sprung_stretch)
+    assert (
+        timeline["markers"]({"stretch_history": {"soft": [0.0, 0.26]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"angular_speed_history": {"offset": [0.0, 1.1]}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "stretch_history": {
+                    "soft": [0.03],
+                    "stiff": [0.04],
+                    "offset": [0.02],
+                },
+                "angular_speed_history": {"offset": [0.2]},
+                "last_metrics": {
+                    "offset": {
+                        "stretch": 0.02,
+                        "angular_speed": 0.2,
+                    }
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:

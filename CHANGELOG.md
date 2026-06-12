@@ -239,6 +239,9 @@
     rigid-body distance springs with unsprung, soft, stiff, and off-center
     anchor lanes plus replay controls and capture metrics while documenting
     that IPC and multibody worlds reject this public API.
+  - Added Replay timeline metadata to `rigid_distance_spring`, using maximum
+    spring stretch as the value track and marking high-stretch or off-center
+    spin frames.
   - Added scene-owned capture metrics to the `rigid_fixed_joint`,
     `rigid_joint_breakage`, and `rigid_limited_joints` Python `py-demos` rows
     so fixed/revolute/prismatic constraint-error and breakage-lifecycle

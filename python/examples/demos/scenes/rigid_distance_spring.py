@@ -89,6 +89,15 @@ def _serialized_metrics(
     return {key: dict(value) for key, value in metrics.items()}
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _SpringLane:
     key: str
@@ -390,6 +399,15 @@ class _RigidDistanceSpring:
     def capture_metrics(self) -> dict[str, Any]:
         if not self._last_metrics:
             self._record_metrics()
+        sprung_keys = ("soft", "stiff", "offset")
+        max_sprung_abs_stretch = max(
+            (
+                abs(float(value))
+                for key in sprung_keys
+                for value in self._stretch_history[key]
+            ),
+            default=0.0,
+        )
         return {
             "row": "rigid_distance_spring",
             "solver": "sequential_impulse_avbd_distance_spring",
@@ -399,6 +417,13 @@ class _RigidDistanceSpring:
             "gravity_z": float(self.world.gravity[2]),
             "initial_stretch": float(self.initial_stretch),
             "lanes": _serialized_metrics(self._last_metrics),
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_sprung_abs_stretch": max_sprung_abs_stretch,
+                "max_offset_angular_speed": max(
+                    self._angular_speed_history["offset"], default=0.0
+                ),
+            },
         }
 
     def capture_replay_state(self) -> dict[str, Any]:
@@ -426,6 +451,60 @@ class _RigidDistanceSpring:
             "step_ms_history": list(self._step_ms_history),
             "last_metrics": _serialized_metrics(self._last_metrics),
         }
+
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        stretch_histories = snapshot.get("stretch_history", {})
+        if isinstance(stretch_histories, dict):
+            latest_stretches = [
+                abs(value)
+                for key in ("soft", "stiff", "offset")
+                if (value := _last_float(stretch_histories.get(key, []))) is not None
+            ]
+            if latest_stretches:
+                return max(latest_stretches)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            latest_stretches = []
+            for key in ("soft", "stiff", "offset"):
+                lane_metrics = metrics.get(key, {})
+                if not isinstance(lane_metrics, dict):
+                    continue
+                try:
+                    latest_stretches.append(
+                        abs(float(lane_metrics.get("stretch", 0.0)))
+                    )
+                except (TypeError, ValueError):
+                    continue
+            if latest_stretches:
+                return max(latest_stretches)
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.25:
+            return 1.0
+
+        angular_histories = snapshot.get("angular_speed_history", {})
+        if isinstance(angular_histories, dict):
+            offset_spin = _last_float(angular_histories.get("offset", []))
+            if offset_spin is not None and abs(offset_spin) >= 1.0:
+                return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            offset_metrics = metrics.get("offset", {})
+            if isinstance(offset_metrics, dict):
+                try:
+                    if abs(float(offset_metrics.get("angular_speed", 0.0))) >= 1.0:
+                        return 1.0
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
 
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
@@ -535,6 +614,11 @@ def build() -> SceneSetup:
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller._sync_visuals,
+            "replay_timeline": {
+                "signal_label": "Max spring stretch",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
             CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
         },
     )
