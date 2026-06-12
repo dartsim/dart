@@ -3,6 +3,48 @@
 ## Current Reality — 2026-06-11 Active Continuation
 
 The current continuation resumes from
+`e86dbf2efa5 Filter singular LCP batches concretely` on
+`feature/lcp-solver-interface-demos`.
+
+The latest implementation slice filters pivoting scale sweep benchmark
+registration through concrete generated-problem support:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now precomputes the exact
+  generated problem for each `BM_LcpPivotingScaleSweep` row and publishes it
+  only when the selected solver's concrete `supportsProblem(problem)` predicate
+  accepts the packet.
+- Runtime pivoting scale sweep execution now uses the same concrete guard.
+- The now-unused manifest-family `getProblemSupport(...)` helper was removed.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpPivotingScaleSweep/(Standard|Boxed|FrictionIndex)/(Direct|Lemke|Baraff|Dantzig)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpPivotingScaleSweep/Standard/Direct/Rows3|BM_LcpPivotingScaleSweep/Standard/Baraff/Rows8|BM_LcpPivotingScaleSweep/Boxed/Dantzig/Rows12|BM_LcpPivotingScaleSweep/FrictionIndex/Dantzig/Contacts4' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The first benchmark-list attempt caught the now-unused
+  `getProblemSupport(...)` helper under `-Werror`; that helper was removed.
+- The rerun rebuilt `BM_LCP_COMPARE` and listed Direct standard rows 2 and 3,
+  Lemke/Baraff/Dantzig standard rows, Dantzig boxed rows, and Dantzig
+  friction-index rows.
+- The short benchmark execution reported `contract_ok=1` for sampled Direct
+  standard, Baraff standard, Dantzig boxed, and Dantzig friction-index rows.
+
+The broader LCP solver/interface/demo objective is not complete. Resume from
+the next concrete support-routing, solver-domain, demo, benchmark, or
+performance gap after this slice lands.
+
+## Previous Reality — 2026-06-11 Singular Batch Checkpoint
+
+The current continuation resumes from
 `911e9530c41 Document latest LCP handoff checkpoint` on
 `feature/lcp-solver-interface-demos`.
 

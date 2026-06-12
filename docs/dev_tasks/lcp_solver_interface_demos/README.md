@@ -56,6 +56,9 @@
 - [x] Filtered active-set transition benchmark registrations through concrete
       `supportsProblem(problem)` checks, replacing the Direct-only standard
       packet special case with the shared native-route gate.
+- [x] Filtered pivoting scale sweep benchmark registrations through concrete
+      generated problem support and removed the now-unused manifest-family
+      helper from `lcp_compare`.
 - [x] Captured the final 2026-06-11 consolidated hand-off after the latest
       two local benchmark-routing commits. No lint, build, tests, benchmark
       listing, solver execution, or further implementation work was run after
@@ -141,12 +144,45 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is singular-degenerate batch concrete
-support-routing. It follows `9a17ba85aa5 Filter conditioning LCP benchmarks
-concretely`, `559cda91ace Filter active-set scale LCP benchmarks concretely`,
-and the earlier Python demo concrete native-case profile, benchmark
-concrete-gate cleanup, grouped batch support-routing, generated coverage
-support-routing, and heavyweight contact benchmark support-gating slices.
+The latest implementation checkpoint is pivoting scale sweep concrete
+support-routing, following the singular-degenerate batch, conditioning, active
+set scale, Python demo concrete native-case profile, benchmark concrete-gate
+cleanup, grouped batch support-routing, generated coverage support-routing, and
+heavyweight contact benchmark support-gating slices.
+
+## Pivoting Scale Sweep Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns pivoting scale sweep registration
+with concrete solver support:
+
+- `BM_LcpPivotingScaleSweep` registration now builds each exact generated
+  problem once and publishes a row only when the selected solver's concrete
+  `supportsProblem(problem)` predicate accepts it.
+- `RunPivotingScaleSweepBenchmark` now uses the same concrete guard before
+  execution, so future additions cannot silently run fallback/delegated rows as
+  native pivoting comparisons.
+- The now-unused manifest-family `getProblemSupport(...)` helper was removed
+  from `lcp_compare`.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpPivotingScaleSweep/(Standard|Boxed|FrictionIndex)/(Direct|Lemke|Baraff|Dantzig)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpPivotingScaleSweep/Standard/Direct/Rows3|BM_LcpPivotingScaleSweep/Standard/Baraff/Rows8|BM_LcpPivotingScaleSweep/Boxed/Dantzig/Rows12|BM_LcpPivotingScaleSweep/FrictionIndex/Dantzig/Contacts4' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The first benchmark-list attempt caught that `getProblemSupport(...)` had
+  become unused under `-Werror`; the helper was removed.
+- The rerun rebuilt `BM_LCP_COMPARE` and listed the expected concrete pivoting
+  rows: Direct standard rows 2 and 3, Lemke/Baraff/Dantzig standard rows,
+  Dantzig boxed rows, and Dantzig friction-index rows.
+- The short benchmark execution reported `contract_ok=1` for sampled Direct
+  standard, Baraff standard, Dantzig boxed, and Dantzig friction-index rows.
 
 ## Singular-Degenerate Batch Support-Routing Checkpoint
 

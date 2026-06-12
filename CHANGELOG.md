@@ -1451,6 +1451,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     generated packet's concrete solver support predicate, replacing the
     standard-packet Direct special case with the same native-route gate used by
     other representative rows.
+  - Filtered pivoting scale sweep benchmark registration and runtime guards
+    through each exact generated packet's concrete solver support predicate,
+    removing the last unused manifest-family helper from `lcp_compare`.
   - Filtered the manifest-generated `BM_LcpCompare` and
     serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
     generated problem support, so solver rows and problem sizes stay tied to

@@ -4436,20 +4436,6 @@ std::string_view getProblemFamilyName(BenchmarkProblemFamily family)
   return "Unknown";
 }
 
-dart::test::LcpProblemSupport getProblemSupport(BenchmarkProblemFamily family)
-{
-  switch (family) {
-    case BenchmarkProblemFamily::Standard:
-      return dart::test::LcpProblemSupport::Standard;
-    case BenchmarkProblemFamily::Boxed:
-      return dart::test::LcpProblemSupport::Boxed;
-    case BenchmarkProblemFamily::FrictionIndex:
-      return dart::test::LcpProblemSupport::FrictionIndex;
-  }
-
-  return dart::test::LcpProblemSupport::Standard;
-}
-
 LcpProblem MakeBenchmarkProblem(BenchmarkProblemFamily family, int size)
 {
   switch (family) {
@@ -7496,14 +7482,14 @@ void RunPivotingScaleSweepBenchmark(
     return;
   }
 
-  if (!dart::test::supportsProblem(
-          *solverEntry, getProblemSupport(testCase.family))) {
-    state.SkipWithError("pivoting scale sweep case exceeds solver support");
+  const auto problem
+      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+  if (!SolverSupportsConcreteProblem(*solverEntry, problem)) {
+    state.SkipWithError(
+        "pivoting scale sweep case exceeds concrete solver support");
     return;
   }
 
-  const auto problem
-      = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
   SolverBenchmarkOptions storage;
   ConfigureSolverBenchmarkOptions(storage, *solverEntry, problem);
 
@@ -12199,6 +12185,17 @@ void RegisterBoxedSsnLineSearchSweepBenchmarks()
 void RegisterPivotingScaleSweepBenchmarks()
 {
   for (const auto testCase : kPivotingScaleSweepCases) {
+    const auto* solverEntry = FindSolverManifestEntry(testCase.solverName);
+    if (solverEntry == nullptr) {
+      continue;
+    }
+
+    const auto problem
+        = MakeBenchmarkProblem(testCase.family, testCase.problemArg);
+    if (!SolverSupportsConcreteProblem(*solverEntry, problem)) {
+      continue;
+    }
+
     const auto name = MakePivotingScaleSweepBenchmarkName(testCase);
     benchmark::RegisterBenchmark(
         name.c_str(), [testCase](benchmark::State& state) {
