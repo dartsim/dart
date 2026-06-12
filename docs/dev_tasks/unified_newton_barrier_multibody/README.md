@@ -12,26 +12,27 @@ check hosted CI/review state, and keep any remaining PLAN-083 commits on the
 same branch.
 
 Current #2978 checkpoint (2026-06-11): the active branch now carries private
-CUDA point-triangle primitive barrier-gradient parity plus point-triangle and
-edge-edge tangent-stencil parity in the barrier/friction packet. The latest
-packet measured edge-edge tangent-stencil
-`max_result_abs_error=8.881784197001252e-16` and
-`speedup=1.339038677334765x`, but the row remains `in-progress` because
-point-edge/point-point tangent bases, Hessian assembly, PSD coupling, runtime
-contact rows, and the top-level speedup gate remain future evidence.
+CUDA point-triangle primitive barrier-gradient parity plus point-triangle,
+edge-edge, point-edge, and point-point tangent-stencil parity in the
+barrier/friction packet. The latest packet measured point-edge tangent-stencil
+`max_result_abs_error=1.1268763699945339e-14` and
+`speedup=1.623508438779482x`, plus point-point tangent-stencil
+`max_result_abs_error=3.3306690738754696e-16` and
+`speedup=0.9786534468698057x`. The row remains `in-progress` because Hessian
+assembly, PSD coupling, runtime contact rows, and the top-level speedup gate
+remain future evidence.
 
-Critical hand-off checkpoint (2026-06-11): the maintainer instructed the agent
-to stop implementation and focus only on hand-off with no further verification.
-The branch now also contains unverified work-in-progress point-edge and
-point-point tangent-stencil parity plumbing for the same private
-barrier/friction packet. This WIP touches only the consolidated #2978 branch:
-CUDA private API/host wrappers/kernels in
-`barrier_friction_kernel_cuda.{cuh,cpp,cu}`, focused CUDA unit tests, benchmark
-rows, and `scripts/write_plan083_gpu_barrier_friction_packet.py` plus its
-Python test. Do not mark point-edge or point-point tangent-stencil rows
-measured, and do not update durable packet JSON/status counts for them, until a
-fresh session runs lint, CUDA build, focused CUDA CTest, the barrier/friction
-benchmark packet, and the packet/audit checkers.
+Validated hand-off checkpoint (2026-06-11): the formerly unverified
+point-edge/point-point tangent-stencil WIP has now passed lint, CUDA build,
+focused CUDA CTest, the barrier/friction benchmark packet, and packet/audit
+checks. Durable packet docs record it as parity evidence while keeping the row
+`in-progress`.
+
+Critical stop hand-off (2026-06-11): the maintainer then instructed the agent
+to stop implementation and focus only on hand-off, with no further verification.
+Use `HANDOFF.md` plus `RESUME.md` as the fresh-session entry point; this
+hand-off step did not run new lint/build/test/benchmark gates after that
+directive.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
@@ -200,11 +201,10 @@ benchmark packet, and the packet/audit checkers.
         because rigid curved trajectories, runtime candidate sets, and
         scene-level line-search feasibility remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
-        primitive barrier-gradient, and point-triangle/edge-edge tangent-stencil
-        packets with exact CPU/GPU local-output parity; keep the row
-        in-progress because point-edge/point-point tangent bases, Hessian
-        assembly, PSD coupling, runtime contact rows, and runtime speedup
-        remain unproven.
+        primitive barrier-gradient, and point-triangle/edge-edge/point-edge/
+        point-point tangent-stencil packets with exact CPU/GPU local-output
+        parity; keep the row in-progress because Hessian assembly, PSD
+        coupling, runtime contact rows, and runtime speedup remain unproven.
   - [x] Add a private reduced diagonal assembly/solve packet with exact
         CPU/GPU step parity; keep the row in-progress because off-diagonal
         sparse blocks, equality reduction, global factorization, runtime scene
@@ -313,11 +313,9 @@ storage, or backend resources as public API.
   review unit; keep additional packet/runtime slices on that branch instead of
   opening per-packet PRs.
 - Current PR #2978 head includes the CUDA CCD review fix plus the private
-  barrier/friction point-triangle gradient and point-triangle/edge-edge
+  barrier/friction point-triangle gradient and all four primitive-family
   tangent-stencil packet evidence. Continue monitoring CI/review on the same
-  branch and keep further PLAN-083 slices consolidated there. The branch also
-  carries unverified point-edge/point-point tangent-stencil WIP saved only for
-  fresh-session hand-off; validate it before treating it as packet evidence.
+  branch and keep further PLAN-083 slices consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -351,11 +349,8 @@ storage, or backend resources as public API.
 1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
-   first, inspect the critical hand-off WIP for point-edge/point-point
-   tangent-stencil parity, run the validation gates that were intentionally
-   skipped at hand-off, then update durable packet docs only if the evidence
-   passes. After that, continue downstream Hessian/PSD/runtime contact evidence
-   on the same PR.
+   first, check hosted #2978 CI/review state for actionable failures, then
+   continue downstream Hessian/PSD/runtime contact evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

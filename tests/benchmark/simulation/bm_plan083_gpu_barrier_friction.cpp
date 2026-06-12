@@ -285,9 +285,7 @@ cuda::PointPointTangentInput makePointPointTangentInput(const int i)
   const double column = static_cast<double>(i % 257) / 257.0;
   const double row = static_cast<double>((i / 257) % 251) / 251.0;
   const Eigen::Vector3d a(
-      -0.4 + column,
-      -0.3 + row,
-      0.1 + 0.0005 * static_cast<double>(i % 17));
+      -0.4 + column, -0.3 + row, 0.1 + 0.0005 * static_cast<double>(i % 17));
   const Eigen::Vector3d b = a
                             + Eigen::Vector3d(
                                 0.2 + 0.01 * static_cast<double>(i % 23),

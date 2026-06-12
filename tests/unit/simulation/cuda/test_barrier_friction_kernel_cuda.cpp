@@ -245,6 +245,26 @@ std::vector<cuda::PointEdgeTangentInput> makePointEdgeTangentFixture()
   };
 }
 
+cuda::PointEdgeTangentInput makeGeneratedPointEdgeTangentInput(const int i)
+{
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const Eigen::Vector3d a(
+      -0.15 + 0.1 * row,
+      0.05 * static_cast<double>(i % 11),
+      0.02 * static_cast<double>(i % 17));
+  const Eigen::Vector3d b = a
+                            + Eigen::Vector3d(
+                                1.0 + 0.001 * static_cast<double>(i % 13),
+                                0.3 + 0.1 * row,
+                                0.2 + 0.01 * static_cast<double>(i % 7));
+  const Eigen::Vector3d p(
+      0.1 + 0.8 * column,
+      -0.2 + 0.9 * row,
+      0.4 + 0.0005 * static_cast<double>(i % 19));
+  return makePointEdgeTangentInput(p, a, b);
+}
+
 std::vector<cuda::PointPointTangentInput> makePointPointTangentFixture()
 {
   return {
@@ -255,6 +275,20 @@ std::vector<cuda::PointPointTangentInput> makePointPointTangentFixture()
       makePointPointTangentInput(
           Eigen::Vector3d(0.4, -0.5, 0.3), Eigen::Vector3d(-0.2, 0.9, 0.6)),
   };
+}
+
+cuda::PointPointTangentInput makeGeneratedPointPointTangentInput(const int i)
+{
+  const double column = static_cast<double>(i % 257) / 257.0;
+  const double row = static_cast<double>((i / 257) % 251) / 251.0;
+  const Eigen::Vector3d a(
+      -0.4 + column, -0.3 + row, 0.1 + 0.0005 * static_cast<double>(i % 17));
+  const Eigen::Vector3d b = a
+                            + Eigen::Vector3d(
+                                0.2 + 0.01 * static_cast<double>(i % 23),
+                                0.4 + 0.01 * static_cast<double>(i % 19),
+                                1.0 + 0.001 * static_cast<double>(i % 29));
+  return makePointPointTangentInput(a, b);
 }
 
 Eigen::Vector3d readVec3(const double values[3])
@@ -526,7 +560,10 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointEdgeTangentStencils)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  const auto inputs = makePointEdgeTangentFixture();
+  auto inputs = makePointEdgeTangentFixture();
+  for (int i = 0; i < 4096; ++i) {
+    inputs.push_back(makeGeneratedPointEdgeTangentInput(i));
+  }
 
   cuda::PointEdgeTangentStencilResult result;
   cuda::evaluatePointEdgeTangentStencilsCuda(inputs, result);
@@ -591,7 +628,10 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointPointTangentStencils)
     GTEST_SKIP() << "CUDA runtime has no available device";
   }
 
-  const auto inputs = makePointPointTangentFixture();
+  auto inputs = makePointPointTangentFixture();
+  for (int i = 0; i < 65536; ++i) {
+    inputs.push_back(makeGeneratedPointPointTangentInput(i));
+  }
 
   cuda::PointPointTangentStencilResult result;
   cuda::evaluatePointPointTangentStencilsCuda(inputs, result);

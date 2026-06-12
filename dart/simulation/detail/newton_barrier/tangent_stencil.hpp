@@ -368,7 +368,7 @@ inline PointPointTangentStencil pointPointTangentStencil(
   Eigen::Vector3d xCross = Eigen::Vector3d::UnitX().cross(ab);
   Eigen::Vector3d yCross = Eigen::Vector3d::UnitY().cross(ab);
   const Eigen::Vector3d firstTangent
-      = xCross.squaredNorm() > yCross.squaredNorm() ? xCross : yCross;
+      = std::abs(ab.y()) > std::abs(ab.x()) ? xCross : yCross;
   result.basis = detail::basisFromFirstTangentAndSecondHint(
       firstTangent, ab.cross(firstTangent), ab, result.usedFallbackBasis);
 

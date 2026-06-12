@@ -300,14 +300,13 @@ its own line so status updates remain git-history friendly.
   remaining private packet work: it adds point-triangle and edge-edge contact
   stencil parity, endpoint-linear point-triangle and edge-edge CCD/line-search
   parity, scalar barrier/friction local-kernel parity plus point-triangle
-  primitive barrier-gradient and point-triangle/edge-edge tangent-stencil
-  parity, reduced diagonal
-  assembly/solve parity, reduced hanging-bridge scene state-batch CPU/GPU
-  parity and speedup, reduced ABD complex-geometry packets, and an ABD/FEM
-  coupled micro-solve packet. It still keeps broad-phase/runtime GPU candidate
-  construction, rigid curved trajectories, point-edge/point-point tangent
-  bases, Hessian assembly, PSD coupling, off-diagonal sparse assembly, global
-  factorization, GPU `World::step`, paper-scale assets, full runtime
+  primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
+  tangent-stencil parity, reduced diagonal assembly/solve parity, reduced
+  hanging-bridge scene state-batch CPU/GPU parity and speedup, reduced ABD
+  complex-geometry packets, and an ABD/FEM coupled micro-solve packet. It still
+  keeps broad-phase/runtime GPU candidate construction, rigid curved
+  trajectories, Hessian assembly, PSD coupling, off-diagonal sparse assembly,
+  global factorization, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer

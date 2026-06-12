@@ -445,9 +445,7 @@ def make_packet(
         point_triangle_tangent_cpu_ns / point_triangle_tangent_gpu_ns
     )
     edge_edge_tangent_speedup = edge_edge_tangent_cpu_ns / edge_edge_tangent_gpu_ns
-    point_edge_tangent_speedup = (
-        point_edge_tangent_cpu_ns / point_edge_tangent_gpu_ns
-    )
+    point_edge_tangent_speedup = point_edge_tangent_cpu_ns / point_edge_tangent_gpu_ns
     point_point_tangent_speedup = (
         point_point_tangent_cpu_ns / point_point_tangent_gpu_ns
     )

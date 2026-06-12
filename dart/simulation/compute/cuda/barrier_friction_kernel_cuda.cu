@@ -587,8 +587,7 @@ __device__ void writePointPointTangentStencil(
   const Vec3 unitY{0.0, 1.0, 0.0};
   const Vec3 xCross = cross(unitX, ab);
   const Vec3 yCross = cross(unitY, ab);
-  const Vec3 firstTangent
-      = squaredNorm(xCross) > squaredNorm(yCross) ? xCross : yCross;
+  const Vec3 firstTangent = fabs(ab.y) > fabs(ab.x) ? xCross : yCross;
 
   Vec3 basis0;
   Vec3 basis1;
