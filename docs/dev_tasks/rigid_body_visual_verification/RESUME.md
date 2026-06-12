@@ -3,10 +3,14 @@
 ## Current Handoff (2026-06-12)
 
 This checkpoint adds the next workflow evidence usability follow-up after the
-manifest/review-index metadata slices. The in-viewer `Rigid Workflow` panel now
-lists full numbered, current-row rerun, and extended related/IPC-shelf/packet
-commands so users can get from live inspection to `manifest.json` and
-`review_index.html` without leaving the GUI context.
+manifest/review-index metadata slices. `py-demo-capture -- --rigid-workflow`
+now passes `--video --fps` through to selected row captures, records per-scene
+video artifacts in manifests, and links MP4s from `review_index.html` when
+`ffmpeg` is available. The in-viewer `Rigid Workflow` panel lists a current-row
+motion packet command alongside full numbered, current-row rerun, and extended
+related/IPC-shelf/packet commands so users can get from live inspection to
+`manifest.json`, `review_index.html`, and motion evidence without leaving the
+GUI context.
 
 Expected repository state after this hand-off:
 
@@ -16,12 +20,12 @@ Expected repository state after this hand-off:
   committed implementation follow-ups:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
-  `Expose rigid workflow packet commands in the panel` if this handoff commit
-  succeeded.
+  `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
+  by `Enable rigid workflow video packets` if this continuation was committed.
 - There is no PR associated with this branch at checkpoint time.
-- The user explicitly requested hand-off-only work, no further verification,
-  and then a full stop. Do not continue feature work from this checkpoint
-  unless a future user request resumes it.
+- An earlier hand-off-only stop request was superseded by the current
+  continuation request. Keep future work bounded to this task unless the user
+  redirects or stops it again.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -134,6 +138,12 @@ The newest continuation closes the loop back into the live GUI: the
 `Rigid Workflow` panel now lists full numbered packet, current-row range rerun,
 and extended related/IPC-shelf/packet commands under a `Review packet` section.
 
+The current continuation adds workflow-packet motion evidence: `--video --fps`
+is now accepted with `--rigid-workflow`, passed through to each selected row
+capture, recorded in per-scene manifests, and linked from the workflow
+`review_index.html`; the live `Rigid Workflow` panel exposes a current-row
+motion packet command.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -143,20 +153,20 @@ Current snapshot:
 - Latest implementation commits being handed off and pushed:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
-  `Expose rigid workflow packet commands in the panel` if this handoff commit
-  succeeded.
-- The final stop instruction superseded any further local verification.
+  `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
+  by `Enable rigid workflow video packets` if this continuation was committed.
+- Current validation for the workflow-video packet slice is recorded below.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 commits to include the requested/selected manifest metadata slice, the
-review-index group-summary slice, and the workflow-panel review-packet command
-slice if this handoff commit succeeded. Do not continue feature work from this
-checkpoint unless the user resumes the task. Rerun `pixi run lint` before
-committing future changes, and do not push again without explicit approval in
-that session.
+review-index group-summary slice, the workflow-panel review-packet command
+slice, and the workflow-video packet slice if this continuation was committed.
+Do not push without explicit approval in that session. Continue choosing
+bounded rigid visual-verification gaps from the durable sidecar until the
+maintainer accepts the current scope as complete.
 
 ## Context That Would Be Lost
 
@@ -467,3 +477,22 @@ containing the full numbered workflow command, the current-row row-range rerun
 command, and the extended related/IPC-shelf/packet command. `pixi run lint`
 passed. `git diff --check` was not rerun after the final handoff edits because
 the user explicitly requested no further verification.
+
+Current workflow video packet validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_video_artifact python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_request_video_commands python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/integration/test_demos_cycle.py::test_rigid_visual_motion_capture_video_flags_are_documented -q
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --video --fps 24 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_video_dry_run_current
+jq -r '.capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].command' /tmp/dart_capture_rigid_workflow_video_dry_run_current/manifest.json
+rg -n "15/36 rigid_solver_compare|--video --fps 24|selected groups|requested groups" /tmp/dart_capture_rigid_workflow_video_dry_run_current/review_index.html
+pixi run lint
+git diff --check
+```
+
+The focused pytest reported `5 passed`. The public row-15 workflow dry-run
+completed with exit code 0, generated a selected-row command ending in
+`--show-ui --video --fps 24`, and wrote a manifest with `capture_count=1`,
+`workflow_total_count=36`, `workflow_row_start=15`, and `workflow_row_end=15`.
+The generated review index contained row `15/36 rigid_solver_compare`,
+requested/selected group badges, and the `--video --fps 24` command.
+`pixi run lint` passed and `git diff --check` was clean.

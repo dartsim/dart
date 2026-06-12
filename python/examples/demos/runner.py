@@ -613,6 +613,8 @@ def _rigid_workflow_packet_command(
     include_packets: bool = False,
     start_row: int | None = None,
     end_row: int | None = None,
+    video: bool = False,
+    fps: int = 24,
     output_dir: str | None = None,
 ) -> str:
     command = "pixi run py-demo-capture -- --rigid-workflow"
@@ -626,6 +628,8 @@ def _rigid_workflow_packet_command(
         command = f"{command} --workflow-start-row {start_row}"
     if end_row is not None:
         command = f"{command} --workflow-end-row {end_row}"
+    if video:
+        command = f"{command} --video --fps {fps}"
     if output_dir:
         command = f"{command} --output-dir {output_dir}"
     return command
@@ -638,6 +642,19 @@ def _rigid_workflow_row_packet_command(guide: RigidWorkflowGuide) -> str:
         output_dir=(
             "/tmp/"
             f"dart_capture_rigid_workflow_row_{guide.index:02d}_{guide.scene_id}"
+        ),
+    )
+
+
+def _rigid_workflow_row_video_packet_command(guide: RigidWorkflowGuide) -> str:
+    return _rigid_workflow_packet_command(
+        start_row=guide.index,
+        end_row=guide.index,
+        video=True,
+        fps=24,
+        output_dir=(
+            "/tmp/"
+            f"dart_capture_rigid_workflow_row_{guide.index:02d}_{guide.scene_id}_motion"
         ),
     )
 
@@ -1925,6 +1942,10 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.item_tooltip("Capture all numbered rows and write review_index.html.")
         builder.text(_rigid_workflow_row_packet_command(guide))
         builder.item_tooltip("Capture only this workflow row in a review packet.")
+        builder.text(_rigid_workflow_row_video_packet_command(guide))
+        builder.item_tooltip(
+            "Capture this row as a review packet with PNG frames and MP4 motion."
+        )
         builder.text(
             _rigid_workflow_packet_command(
                 include_related=True,

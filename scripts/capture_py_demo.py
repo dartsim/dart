@@ -803,6 +803,8 @@ def _workflow_scene_argv(
         scene_argv.extend(["--backend", args.backend])
     if args.allow_noop:
         scene_argv.append("--allow-noop")
+    if args.video:
+        scene_argv.extend(["--video", "--fps", str(args.fps)])
     return scene_argv
 
 
@@ -912,6 +914,12 @@ def _workflow_scene_manifest_summary(
             if not frames_path.is_absolute():
                 frames_path = manifest_path.parent / frames_path
             summary["frames_href"] = _workflow_href(frames_path, output_dir)
+        video = artifacts.get("video")
+        if isinstance(video, str) and video:
+            video_path = pathlib.Path(video)
+            if not video_path.is_absolute():
+                video_path = manifest_path.parent / video_path
+            summary["video_href"] = _workflow_href(video_path, output_dir)
 
     scene_metrics = payload.get("scene_metrics")
     if isinstance(scene_metrics, dict):
@@ -1023,6 +1031,9 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
         links.append(_workflow_link("frames", frames_href))
     if isinstance(image_href, str):
         links.append(_workflow_link("screenshot", image_href))
+    video_href = summary.get("video_href")
+    if isinstance(video_href, str):
+        links.append(_workflow_link("video", video_href))
     link_html = " | ".join(links) if links else "manifest pending"
 
     details = [
@@ -1402,8 +1413,6 @@ def _validate_rigid_workflow_args(args: argparse.Namespace) -> None:
         raise SystemExit(
             "--rigid-workflow cannot be combined with scripted switch or force drag"
         )
-    if args.video:
-        raise SystemExit("--video is only supported for single-scene captures")
 
 
 def _run_rigid_workflow(args: argparse.Namespace) -> int:
@@ -1487,6 +1496,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--include-ipc-shelf requires --rigid-workflow")
     if args.include_packets and not args.rigid_workflow:
         raise SystemExit("--include-packets requires --rigid-workflow")
+    if args.video and args.fps < 1:
+        raise SystemExit("--fps must be positive")
     if (
         args.workflow_start_row is not None or args.workflow_end_row is not None
     ) and not args.rigid_workflow:
@@ -1591,6 +1602,7 @@ def main(argv: list[str] | None = None) -> int:
             "frames": str(png_frames_dir),
             "scene_metrics_events": None,
             "screenshot": str(screenshot_png),
+            "video": None,
         },
         "capture": capture_metadata,
         "scene_metrics": None,
@@ -1655,6 +1667,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.video:
         video = output_dir / f"{capture_stem}.mp4"
         if _encode_video(frames_dir, video, args.fps):
+            manifest_payload["artifacts"]["video"] = str(video)
+            _write_json(manifest, manifest_payload)
             print(f"video: {video}")
         else:
             print("video: skipped (ffmpeg not found)")

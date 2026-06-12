@@ -81,7 +81,11 @@
     index without changing the default 36-row workflow. Row-range workflow
     manifests now preserve requested optional packet groups separately from the
     optional groups present in the selected slice, and the generated review
-    index mirrors the row span plus requested/selected group summary.
+    index mirrors the row span plus requested/selected group summary. Workflow
+    packets now pass `--video --fps` through to the selected row captures,
+    record video artifacts in per-scene manifests, and link those MP4s from the
+    review index when `ffmpeg` is available; the in-viewer rigid workflow panel
+    lists a current-row motion packet command.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

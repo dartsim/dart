@@ -56,8 +56,9 @@ ranked row filter as scene-switch rows. The panel also shows the exact
 per-row `pixi run py-demo-capture` command, frame count, resolution, and
 docked-UI mode so visual evidence can be regenerated from the viewer context.
 It also lists the full numbered workflow packet command, the current row-range
-rerun command, and the extended related/IPC-shelf/packet command that generate
-`manifest.json` plus `review_index.html`.
+rerun command, a current-row motion packet command with `--video --fps 24`, and
+the extended related/IPC-shelf/packet command that generate `manifest.json`
+plus `review_index.html`.
 Rows that compare solvers, executors, contact policies, time-step
 multipliers, workload sizes, or passive joint parameter families label the
 comparison axis and held-fixed controls directly in both the panel and capture
@@ -66,7 +67,9 @@ The workflow capture helper also writes `review_index.html` beside the
 top-level manifest. That static contact sheet links every numbered row's
 manifest, screenshot, frame directory, command, maintained user question,
 try-first guidance, healthy signal, scope note, and comparison/metrics summary
-so a reviewer can scan all 36 captures without opening each scene folder.
+so a reviewer can scan all 36 captures without opening each scene folder. When
+workflow captures request `--video`, the same review index links each row's MP4
+motion artifact if `ffmpeg` is available.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
@@ -325,6 +328,14 @@ frames as inspectable evidence:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_solver_compare --frames 72 --width 960 --height 540 --show-ui --video --fps 24
+```
+
+The workflow packet path accepts the same motion flags and passes them to every
+selected row. The generated review index links each per-row video artifact
+beside the screenshot and frames directory when encoding succeeds:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --video --fps 24 --output-dir /tmp/dart_capture_rigid_workflow_solver_motion
 ```
 
 For a quick curated refresh:

@@ -158,7 +158,9 @@ parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
 frame directories, commands, and metric summaries can be reviewed from one
-page.
+page. The panel also includes a current-row motion packet command; workflow
+packets pass `--video --fps` through to the selected row captures and the
+review index links MP4 artifacts when `ffmpeg` is available.
 
 | Order | Scene id                         | User question                                      | Primary controls                                      | Visual diagnostics                                             |
 | ----- | -------------------------------- | -------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------- |

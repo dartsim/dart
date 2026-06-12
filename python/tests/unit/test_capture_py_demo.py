@@ -292,6 +292,65 @@ def test_visual_capture_manifest_records_image_evidence(
         assert stats["docked_workspace"] is True
 
 
+def test_visual_capture_manifest_records_video_artifact(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "capture"
+    width, height = 2, 1
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
+        frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
+        scene_metrics = pathlib.Path(
+            demo_args[demo_args.index("--capture-metrics-event-log") + 1]
+        )
+        frames.mkdir(parents=True)
+        _write_ppm(screenshot, bytes([255, 0, 0, 0, 255, 0]), width, height)
+        _write_ppm(
+            frames / "frame_000001.ppm",
+            bytes([255, 0, 0, 0, 255, 0]),
+            width,
+            height,
+        )
+        scene_metrics.write_text("")
+        return 0
+
+    def fake_encode_video(
+        frames: pathlib.Path, video: pathlib.Path, fps: int
+    ) -> bool:
+        assert frames == output / "frames"
+        assert fps == 12
+        video.write_bytes(b"fake-mp4")
+        return True
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+    monkeypatch.setattr(capture_py_demo, "_encode_video", fake_encode_video)
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_body",
+            "--frames",
+            "1",
+            "--width",
+            str(width),
+            "--height",
+            str(height),
+            "--video",
+            "--fps",
+            "12",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    video = pathlib.Path(manifest["artifacts"]["video"])
+    assert video == output / "rigid_body.mp4"
+    assert video.read_bytes() == b"fake-mp4"
+
+
 def test_rigid_workflow_dry_run_writes_capture_plan(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -573,6 +632,41 @@ def test_rigid_workflow_dry_run_can_select_row_range(
     assert "2/3 rigid_solver_compare" in review_html
 
 
+def test_rigid_workflow_dry_run_can_request_video_commands(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("rigid_solver_compare", 24, 960, 540, True),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--video",
+            "--fps",
+            "12",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["capture_count"] == 1
+    assert (
+        manifest["captures"][0]["command"]
+        == "pixi run py-demo-capture -- --scene rigid_solver_compare "
+        "--frames 24 --width 960 --height 540 --output-dir "
+        f"{output}/scenes/01_rigid_solver_compare --show-ui --video --fps 12"
+    )
+
+
 def test_rigid_workflow_row_range_preserves_requested_extra_groups(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -709,6 +803,62 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
     assert "test_axis" in review_html
     assert "comparison_axis, held_fixed" in review_html
+
+
+def test_rigid_workflow_run_links_scene_videos(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("rigid_body", 24, 960, 540, True),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    rendered: list[list[str]] = []
+
+    def fake_run(argv: list[str]) -> int:
+        rendered.append(argv)
+        scene = argv[argv.index("--scene") + 1]
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        screenshot = output_dir / f"{scene}.png"
+        video = output_dir / f"{scene}.mp4"
+        screenshot.write_bytes(b"fake-png")
+        video.write_bytes(b"fake-mp4")
+        (output_dir / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "scene": scene,
+                    "artifacts": {
+                        "frames": str(output_dir / "png_frames"),
+                        "screenshot": str(screenshot),
+                        "video": str(video),
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--video",
+            "--fps",
+            "12",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    assert rendered
+    assert "--video" in rendered[0]
+    assert rendered[0][rendered[0].index("--fps") + 1] == "12"
+    manifest = json.loads((output / "manifest.json").read_text())
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "scenes/01_rigid_body/rigid_body.mp4" in review_html
+    assert ">video</a>" in review_html
 
 
 def test_rigid_workflow_fails_when_scene_manifest_is_missing(

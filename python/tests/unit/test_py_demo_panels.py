@@ -19,6 +19,7 @@ from examples.demos.runner import (
     _make_world_factory,
     _rigid_workflow_packet_command,
     _rigid_workflow_row_packet_command,
+    _rigid_workflow_row_video_packet_command,
     _scene_build_timeout_ms,
     _workflow_matching_guides,
     _validate_scene,
@@ -1219,6 +1220,11 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             "tooltip:Capture only this workflow row in a review packet."
             in events
         )
+        assert f"text:{_rigid_workflow_row_video_packet_command(guide)}" in events
+        assert (
+            "tooltip:Capture this row as a review packet with PNG frames "
+            "and MP4 motion."
+        ) in events
         assert (
             "text:"
             + _rigid_workflow_packet_command(
