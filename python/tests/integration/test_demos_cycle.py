@@ -5132,8 +5132,54 @@ def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:
         float(metrics["slider_orthogonal_error"])
     )
     assert capture_metrics["history"]["samples"] > 1.0
+    assert capture_metrics["history"]["max_abs_hinge_yaw"] >= abs(
+        float(metrics["hinge_yaw"])
+    )
+    assert capture_metrics["history"]["max_slider_axis_travel"] >= float(
+        metrics["slider_axis_travel"]
+    )
     assert controller._hinge_radius_error_history
     assert controller._slider_orthogonal_error_history
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_locked_error = max(
+        abs(controller._hinge_radius_error_history[-1]),
+        abs(controller._hinge_z_error_history[-1]),
+        abs(controller._slider_orthogonal_error_history[-1]),
+    )
+    assert timeline["signal_label"] == "Locked-axis error"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_locked_error)
+    assert (
+        timeline["markers"]({"hinge_radius_error_history": [0.0, 0.02]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"hinge_yaw_history": [0.0, 0.12]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"slider_axis_travel_history": [0.55, 0.62]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "hinge_radius_error_history": [0.001],
+                "hinge_z_error_history": [0.001],
+                "slider_orthogonal_error_history": [0.001],
+                "hinge_yaw_history": [0.02],
+                "slider_axis_travel_history": [0.57],
+                "last_metrics": {
+                    "hinge_radius_error": 0.001,
+                    "hinge_z_error": 0.001,
+                    "slider_orthogonal_error": 0.001,
+                    "hinge_yaw": 0.02,
+                    "slider_axis_travel": 0.57,
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:

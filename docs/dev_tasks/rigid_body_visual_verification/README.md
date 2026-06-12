@@ -2,11 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_distance_spring` Replay timeline slice
-after the joint-breakage checkpoint. The distance-spring row now uses maximum
-spring stretch as its Replay value track and marks high-stretch or
-off-center-spin frames so saved-state scrubbing can jump to the
-spring-restoring and torque-transfer moments.
+This checkpoint completes the `rigid_limited_joints` Replay timeline slice
+after the distance-spring checkpoint. The one-DOF joint row now uses locked-axis
+error as its Replay value track and marks locked-error or free-axis-motion
+frames so saved-state scrubbing can jump to either constraint-correction or
+allowed hinge/slider motion.
 
 Expected repository state after this hand-off:
 
@@ -22,14 +22,14 @@ Expected repository state after this hand-off:
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline, followed by the distance-spring Replay
-  timeline checkpoint.
+  joint-breakage Replay timeline, distance-spring Replay timeline, followed by
+  the limited-joints Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `f5bbb2efb8b Add joint breakage replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by five commits before
-  the distance-spring slice.
+  `d9db27b8ccd Add distance spring replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by six commits before
+  the limited-joints slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -54,6 +54,11 @@ Expected repository state after this hand-off:
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
   `Max spring stretch`, with markers for high-stretch or off-center-spin
+  frames.
+- The current limited-joints Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Locked-axis error`, with markers for locked-error or free-axis-motion
   frames.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
@@ -83,6 +88,10 @@ Expected repository state after this hand-off:
   real docked capture.
 - The distance-spring Replay timeline continuation added `replay_timeline`
   metadata to `rigid_distance_spring`, updated tests and docs, and ran focused
+  tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
+- The limited-joints Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_limited_joints`, updated tests and docs, and ran focused
   tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
 - Do not push these local commits without explicit approval in a future
@@ -177,6 +186,9 @@ Expected repository state after this hand-off:
 - [x] `rigid_distance_spring` now exposes a Replay timeline value track for
       maximum spring stretch and markers for high-stretch or off-center-spin
       frames.
+- [x] `rigid_limited_joints` now exposes a Replay timeline value track for
+      locked-axis error and markers for locked-error or free-axis-motion
+      frames.
 
 ## Goal
 
@@ -208,17 +220,17 @@ are easy to inspect, cycle, capture, and regression-test.
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline, followed by the distance-spring Replay
-  timeline checkpoint.
+  joint-breakage Replay timeline, distance-spring Replay timeline, followed by
+  the limited-joints Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `f5bbb2efb8b Add joint breakage replay timeline`; it was five commits ahead
+  `d9db27b8ccd Add distance spring replay timeline`; it was six commits ahead
   of `origin/feature/rigid-body-gui-visual-verification` before the
-  distance-spring Replay timeline slice.
+  limited-joints Replay timeline slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-  joint-breakage, and distance-spring Replay timeline checkpoints are local and
-  unpushed until explicit future approval.
+  joint-breakage, distance-spring, and limited-joints Replay timeline
+  checkpoints are local and unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -1070,17 +1082,59 @@ Observed results so far:
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Limited-Joints Replay Timeline Continuation
+
+The current continuation makes the `rigid_limited_joints` row easier to debug
+from the shared Replay panel:
+
+- `python/examples/demos/scenes/rigid_limited_joints.py` adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata.
+- `python/tests/integration/test_demos_cycle.py` covers the
+  `Locked-axis error` timeline label, signal, locked-error markers,
+  free-axis-motion markers, and quiet-frame behavior.
+- `CHANGELOG.md`, `python/examples/demos/README.md`, and
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+  describe the limited-joints timeline value track and markers.
+
+Focused validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_one_dof_joint_verifier_preserves_locked_directions python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_limited_joints_timeline_1781276042
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.metrics.hinge_radius_error, .scene_metrics.latest.metrics.metrics.hinge_z_error, .scene_metrics.latest.metrics.metrics.hinge_yaw, .scene_metrics.latest.metrics.metrics.slider_orthogonal_error, .scene_metrics.latest.metrics.metrics.slider_axis_travel, .scene_metrics.latest.metrics.history.max_hinge_radius_error, .scene_metrics.latest.metrics.history.max_hinge_z_error, .scene_metrics.latest.metrics.history.max_slider_orthogonal_error, .scene_metrics.latest.metrics.history.max_abs_hinge_yaw, .scene_metrics.latest.metrics.history.max_slider_axis_travel' /tmp/dart_capture_limited_joints_timeline_1781276042/manifest.json
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run lint
+git diff --check
+```
+
+Observed results so far:
+
+- Focused Replay/limited-joints pytest reported `2 passed`.
+- The real docked capture completed with exit code 0 and wrote a nonblank
+  960x540 screenshot with docked UI detected, 23 PNG frames, and
+  24 scene-metric events.
+- The capture manifest reported row `rigid_limited_joints`, hinge radius error
+  `0.0`, hinge z error `0.0`, hinge yaw about `0.168` rad, slider orthogonal
+  error `0.0`, slider axis travel about `0.604` m, zero historical locked-axis
+  error, historical maximum hinge yaw about `0.168` rad, and historical maximum
+  slider axis travel about `0.604` m.
+- The sidecar/README/capture-command drift guard reported `4 passed`.
+- `pixi run lint` passed.
+- `git diff --check` was clean.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the optional-row metadata, guidance-audit, handoff,
    live-open-command, stack Replay timeline, pushed docs-only hand-off,
    contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-   joint-breakage, and distance-spring Replay timeline checkpoints to be
-   present locally. These timeline commits may still be local and unpushed.
+   joint-breakage, distance-spring, and limited-joints Replay timeline
+   checkpoints to be present locally. These timeline commits may still be local
+   and unpushed.
 3. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice; the next adjacent constraints row is likely
-   `rigid_limited_joints`, but do not assume it without inspecting current
+   `rigid_joint_motor_limits`, but do not assume it without inspecting current
    evidence.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the

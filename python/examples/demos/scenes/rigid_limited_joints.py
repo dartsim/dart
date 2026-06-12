@@ -53,6 +53,15 @@ def _full(half_extents: np.ndarray) -> np.ndarray:
     return 2.0 * np.asarray(half_extents, dtype=float)
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 class _RigidOneDofJointVerifier:
     def __init__(self) -> None:
         self.perturbation = 0.18
@@ -273,7 +282,9 @@ class _RigidOneDofJointVerifier:
             self._record_metrics()
         hinge_radius_history = list(self._hinge_radius_error_history)
         hinge_z_history = list(self._hinge_z_error_history)
+        hinge_yaw_history = list(self._hinge_yaw_history)
         slider_orthogonal_history = list(self._slider_orthogonal_error_history)
+        slider_axis_history = list(self._slider_axis_travel_history)
         return {
             "row": "rigid_limited_joints",
             "solver": "sequential_rigid_joints",
@@ -316,6 +327,10 @@ class _RigidOneDofJointVerifier:
                 "max_slider_orthogonal_error": max(
                     slider_orthogonal_history, default=0.0
                 ),
+                "max_abs_hinge_yaw": max(
+                    (abs(value) for value in hinge_yaw_history), default=0.0
+                ),
+                "max_slider_axis_travel": max(slider_axis_history, default=0.0),
             },
         }
 
@@ -333,6 +348,62 @@ class _RigidOneDofJointVerifier:
             "slider_axis_travel_history": list(self._slider_axis_travel_history),
             "last_metrics": dict(self._last_metrics),
         }
+
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        latest_errors = []
+        for history_key in (
+            "hinge_radius_error_history",
+            "hinge_z_error_history",
+            "slider_orthogonal_error_history",
+        ):
+            value = _last_float(snapshot.get(history_key, []))
+            if value is not None:
+                latest_errors.append(abs(value))
+        if latest_errors:
+            return max(latest_errors)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            for metric_key in (
+                "hinge_radius_error",
+                "hinge_z_error",
+                "slider_orthogonal_error",
+            ):
+                try:
+                    latest_errors.append(abs(float(metrics.get(metric_key, 0.0))))
+                except (TypeError, ValueError):
+                    continue
+        return max(latest_errors, default=0.0)
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.005:
+            return 1.0
+
+        hinge_yaw = _last_float(snapshot.get("hinge_yaw_history", []))
+        if hinge_yaw is not None and abs(hinge_yaw) >= 0.10:
+            return 1.0
+
+        slider_travel = _last_float(snapshot.get("slider_axis_travel_history", []))
+        if slider_travel is not None and slider_travel >= _SLIDER_INITIAL_TRAVEL + 0.05:
+            return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                if abs(float(metrics.get("hinge_yaw", 0.0))) >= 0.10:
+                    return 1.0
+                if (
+                    float(metrics.get("slider_axis_travel", 0.0))
+                    >= _SLIDER_INITIAL_TRAVEL + 0.05
+                ):
+                    return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
 
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
@@ -438,6 +509,11 @@ def build() -> SceneSetup:
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,
+            "replay_timeline": {
+                "signal_label": "Locked-axis error",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
         },
     )
 

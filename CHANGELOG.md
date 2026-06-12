@@ -246,6 +246,9 @@
     `rigid_joint_breakage`, and `rigid_limited_joints` Python `py-demos` rows
     so fixed/revolute/prismatic constraint-error and breakage-lifecycle
     evidence is recorded in `py-demo-capture` artifacts.
+  - Added Replay timeline metadata to `rigid_limited_joints`, using locked-axis
+    error as the value track and marking locked-error or free-axis motion
+    frames.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity
