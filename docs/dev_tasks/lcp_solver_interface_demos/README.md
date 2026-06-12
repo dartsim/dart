@@ -1,5 +1,96 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Symmetric PSOR FrictionIndex Exact Path
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Last committed checkpoint:
+  `c514269d076 Extend APGD exact paths to boxed and friction rows`.
+- Current checkpoint target:
+  `Extend Symmetric PSOR exact path to friction rows`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 65 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation. Pushes and other GitHub
+  mutations require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `SymmetricPsorSolver::solve()` now tries
+  `detail::trySolveInteriorFrictionIndexLcp(...)` for non-warm-started medium
+  friction-index rows when no custom options are supplied.
+- The existing exact-path gate remains conservative:
+  `options.customOptions == nullptr`, `!options.warmStart`, and
+  `n <= kMaxStrictInteriorFastPathSize`.
+- Standard strict-interior exact handling remains on
+  `detail::trySolveStrictInteriorStandardLcp(...)`.
+- Boxed Symmetric PSOR exact handling was intentionally not kept because the
+  focused probe showed slower boxed rows.
+- Unit coverage adds `SymmetricPsorSolver` to the friction-index high-overhead
+  exact-path smoke test and adds a 16-contact medium friction-index exact-path
+  test with `maxIterations = 1`.
+- The profile CSVs in `docs/background/lcp/figures/`, Python demo summary
+  strings, Python metadata assertions, projection-method docs, changelog, and
+  this hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Accepted focused probe:
+  `build/symmetric_psor_findex_exact_probe.json`.
+- FrictionIndex `SymmetricPsor` moved approximately:
+  - contacts 4: `1873.15ns`, `iterations=3` -> `1158.30ns`,
+    `iterations=0`.
+  - contacts 16: `16733.51ns`, `iterations=4` -> `13919.53ns`,
+    `iterations=0`.
+  - contacts 64: `288845.33ns`, `iterations=4` -> `267597.98ns`,
+    `iterations=4`; the large row remains iterative.
+- Focused build and CTest passed for `BM_LCP_COMPARE`,
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`, and the focused
+  validation CTest.
+
+Latest regenerated profile snapshot:
+
+- Standard average ratios: `FischerBurmeisterNewton 1.62`,
+  `MinimumMapNewton 1.59`, `PenalizedFischerBurmeisterNewton 1.58`,
+  `Apgd 1.57`, `InteriorPoint 1.57`, `SubspaceMinimization 1.55`, with the
+  remaining Standard rows below that.
+- Boxed average ratios: `ShockPropagation 1.93` was the largest; no Boxed
+  solver average was above `2x`.
+- FrictionIndex average ratios: `ShockPropagation 2.09`,
+  `BoxedSemiSmoothNewton 1.94`, `SubspaceMinimization 1.94`, `NNCG 1.88`,
+  `Admm 1.80`, `Staggering 1.80`, `Jacobi 1.76`,
+  `BlockedJacobi 1.74`, `SymmetricPsor 1.71`, `Dantzig 1.65`, and
+  `Apgd 1.64`.
+- CSV shape check had already shown 200 rows in each checked profile CSV, with
+  15 Boxed solver columns, 16 FrictionIndex solver columns, and 23 Standard
+  solver columns.
+
+Rejected probes captured before the stop instruction:
+
+- `ShockPropagationSolver` friction-index exact gate `48 -> 64` did not take
+  the exact path for `ShockPropagation/64` and was reverted.
+- `SubspaceMinimizationSolver` friction exact gate `<= 48` regressed
+  `SubspaceMinimization/64` to roughly `1.34ms` and was reverted.
+- Symmetric PSOR boxed exact handling was slower and was not kept.
+
+Immediate resume guidance:
+
+1. Inspect the current uncommitted state with `git status -sb` and
+   `git diff --stat`.
+2. Run the required lint and diff checks before committing if they are not
+   already recorded in the latest session output.
+3. If this checkpoint is already committed, continue with the refreshed
+   profile's highest target: FrictionIndex `ShockPropagation 2.09`, then
+   inspect `SubspaceMinimization`, `BoxedSemiSmoothNewton`, `NNCG`, `Admm`,
+   and `Staggering`.
+4. Suggested checkpoint commit title:
+   `Extend Symmetric PSOR exact path to friction rows`.
+5. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - APGD Boxed/Friction Exact Path
 
 This is the latest hand-off state. Sections below are historical checkpoints

@@ -157,10 +157,20 @@ LcpResult SymmetricPsorSolver::solve(
   }
 
   Eigen::VectorXd fastW;
+  bool exactFastPath = false;
   if (options.customOptions == nullptr && !options.warmStart
-      && n <= kMaxStrictInteriorFastPathSize
-      && detail::trySolveStrictInteriorStandardLcp(
-          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+      && n <= kMaxStrictInteriorFastPathSize) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
     Eigen::VectorXd loEffFast;
     Eigen::VectorXd hiEffFast;
     std::string boundsMessage;

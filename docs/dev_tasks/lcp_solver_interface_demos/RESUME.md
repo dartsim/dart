@@ -1,5 +1,132 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Symmetric PSOR FrictionIndex Exact Path
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `c514269d076 Extend APGD exact paths to boxed and friction rows`.
+- Current checkpoint target:
+  `Extend Symmetric PSOR exact path to friction rows`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 65 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `dart/math/lcp/projection/symmetric_psor_solver.cpp`
+  extends the existing non-warm-started Symmetric PSOR exact fast path from
+  strict-interior standard rows to medium friction-index rows via
+  `detail::trySolveInteriorFrictionIndexLcp(...)`.
+- The Symmetric PSOR fast path remains gated by
+  `options.customOptions == nullptr`, `!options.warmStart`, and
+  `n <= kMaxStrictInteriorFastPathSize`.
+- No boxed Symmetric PSOR exact branch is present. A boxed probe was slower and
+  should not be reintroduced without new evidence.
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp` adds
+  `SymmetricPsorSolver` to the friction-index high-overhead exact-path smoke
+  coverage and adds `SymmetricPsorUsesMediumLinearSolve` for a 16-contact
+  friction-index row with `maxIterations = 1`.
+- The checked profile CSVs, Python demo profile summaries, metadata assertions,
+  projection-method docs, changelog, and hand-off docs were refreshed.
+
+Evidence:
+
+- Accepted focused probe:
+  `build/symmetric_psor_findex_exact_probe.json`.
+- Focused FrictionIndex `SymmetricPsor` timings moved approximately:
+  - contacts 4: `1873.15ns`, `iterations=3` -> `1158.30ns`,
+    `iterations=0`.
+  - contacts 16: `16733.51ns`, `iterations=4` -> `13919.53ns`,
+    `iterations=0`.
+  - contacts 64: `288845.33ns`, `iterations=4` -> `267597.98ns`,
+    `iterations=4`; this row stays iterative and contract-valid.
+- Focused build and CTest passed for `BM_LCP_COMPARE`,
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`, and the focused
+  validation CTest.
+- A full profile regeneration completed. Its latest average-ratio snapshot was:
+  - Standard: largest averages were
+    `FischerBurmeisterNewton 1.62`, `MinimumMapNewton 1.59`,
+    `PenalizedFischerBurmeisterNewton 1.58`, `Apgd 1.57`,
+    `InteriorPoint 1.57`, and `SubspaceMinimization 1.55`.
+  - Boxed: largest average was `ShockPropagation 1.93`; no Boxed solver
+    average was above `2x`.
+  - FrictionIndex: `ShockPropagation 2.09`,
+    `BoxedSemiSmoothNewton 1.94`, `SubspaceMinimization 1.94`,
+    `NNCG 1.88`, `Admm 1.80`, `Staggering 1.80`,
+    `Jacobi 1.76`, `BlockedJacobi 1.74`, `SymmetricPsor 1.71`,
+    `Dantzig 1.65`, and `Apgd 1.64`.
+- CSV shape check showed 200 rows in each checked profile CSV, with
+  15 Boxed solver columns, 16 FrictionIndex solver columns, and 23 Standard
+  solver columns.
+
+Rejected probes before the stop instruction:
+
+- `ShockPropagationSolver` friction-index exact gate `48 -> 64` wrote
+  `build/friction_index_shock_gate64_probe.json` and did not take the exact
+  path for `ShockPropagation/64`; it was reverted.
+- `SubspaceMinimizationSolver` friction exact gate `<= 48` wrote
+  `build/friction_index_subspace_gate48_probe.json` and regressed
+  `SubspaceMinimization/64` to roughly `1.34ms`; it was reverted.
+- Symmetric PSOR boxed exact path was slower in
+  `build/symmetric_psor_exact_probe.json`; only the friction-index exact path
+  was kept.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+```
+
+Still required before commit:
+
+```bash
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git diff --stat
+git diff -- dart/math/lcp/projection/symmetric_psor_solver.cpp \
+  tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp
+```
+
+Then run any missing mandatory checks and commit with a message like:
+
+```text
+Extend Symmetric PSOR exact path to friction rows
+```
+
+Do not push or mutate GitHub state without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 APGD Boxed/Friction Exact Path
 
 This is the latest state. Older sections below are historical checkpoints and

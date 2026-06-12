@@ -53,8 +53,10 @@ validation. Dense exact solves are only used on packet sizes where current
 profile evidence shows they are profitable; larger rows stay on the iterative
 projection path. APGD also uses the shared projected-active-set boxed exact
 helper and the medium friction-index exact helper on non-warm-started solves
-without per-call custom options, while restart-policy comparison rows keep the
-iterative APGD path.
+without per-call custom options. Symmetric PSOR uses the medium friction-index
+exact helper under the same default, non-warm-started gate, but intentionally
+does not use the boxed exact helper because current boxed profile probes were
+slower. Restart-policy comparison rows keep the iterative APGD path.
 
 ## 1. Jacobi Method ✅ (Implemented)
 
@@ -284,6 +286,12 @@ and friction-index 8-contact fixtures at $\lambda=0.5$, $1.0$, and $1.3$.
 Focused default, SIMD-enabled, and CUDA-enabled build-tree runs all reported
 `contract_ok=1`; the CUDA-enabled rows are CPU symmetric PSOR solver rows in a
 CUDA-enabled build, not CUDA LCP kernel execution.
+
+Default non-warm-started Symmetric PSOR solves first try the shared validated
+strict-interior standard exact path, and medium friction-index rows also try
+the shared validated friction-index exact helper before the symmetric sweep.
+Boxed rows stay on the iterative symmetric projection path because the boxed
+exact helper was slower in the current profile-shaped probe.
 
 ### Generic projected iteration
 

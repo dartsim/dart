@@ -1555,6 +1555,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     medium friction-index rows without custom APGD options, trimming the
     refreshed FrictionIndex APGD profile below an above-2x average while
     preserving restart-policy sweep rows on the iterative APGD path.
+  - Extended `SymmetricPsorSolver`'s validated exact fast path to medium
+    friction-index rows without custom options, trimming current small and
+    medium FrictionIndex profile rows while leaving boxed rows on the faster
+    iterative symmetric projection path.
   - Extended the validated strict-interior standard-LCP fast path to APGD,
     Jacobi, Symmetric PSOR, and Red-Black Gauss-Seidel standard comparison
     rows, with profile-shaped size guards so larger packets stay on their
