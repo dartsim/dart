@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from typing import Any
 
 import numpy as np
 
@@ -139,6 +140,7 @@ def build_breakable_joint_scene(
 
     offset_history: deque[float] = deque(maxlen=160)
     speed_history: deque[float] = deque(maxlen=160)
+    release_history: deque[float] = deque(maxlen=160)
     broken_history: deque[float] = deque(maxlen=160)
     _last_metrics: dict[str, float | str] = {}
 
@@ -166,6 +168,7 @@ def build_breakable_joint_scene(
         _last_metrics.update(sample_metrics())
         offset_history.append(float(_last_metrics["captured_offset_error"]))
         speed_history.append(float(_last_metrics["payload_speed"]))
+        release_history.append(float(_last_metrics["payload_release_distance"]))
         broken_history.append(float(_last_metrics["broken"]))
         return _last_metrics
 
@@ -174,6 +177,7 @@ def build_breakable_joint_scene(
             record_metrics()
         offset_values = list(offset_history)
         speed_values = list(speed_history)
+        release_values = list(release_history)
         broken_values = list(broken_history)
         payload: dict[str, object] = {
             "row": row_id,
@@ -203,12 +207,105 @@ def build_breakable_joint_scene(
                 "samples": float(len(offset_values)),
                 "max_captured_offset_error": max(offset_values, default=0.0),
                 "max_payload_speed": max(speed_values, default=0.0),
+                "max_payload_release_distance": max(release_values, default=0.0),
                 "saw_broken": max(broken_values, default=0.0),
             },
         }
         if related_source_row is not None:
             payload["related_source_row"] = related_source_row
         return payload
+
+    def capture_replay_state() -> dict[str, Any]:
+        if not _last_metrics:
+            record_metrics()
+        return {
+            "controls": {
+                "break_force": float(breakable_joint.break_force),
+            },
+            "offset_history": list(offset_history),
+            "speed_history": list(speed_history),
+            "release_history": list(release_history),
+            "broken_history": list(broken_history),
+            "last_metrics": dict(_last_metrics),
+        }
+
+    def latest_history_value(snapshot: dict[str, Any], key: str) -> float | None:
+        history = snapshot.get(key, [])
+        try:
+            if history:
+                return float(history[-1])
+        except (TypeError, ValueError, IndexError):
+            return None
+        return None
+
+    def metric_value(snapshot: dict[str, Any], key: str) -> float | None:
+        metrics = snapshot.get("last_metrics", {})
+        if not isinstance(metrics, dict):
+            return None
+        try:
+            return float(metrics.get(key, 0.0))
+        except (TypeError, ValueError):
+            return None
+
+    def replay_timeline_signal(snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        release = latest_history_value(snapshot, "release_history")
+        if release is not None:
+            return release
+        return metric_value(snapshot, "payload_release_distance") or 0.0
+
+    def replay_timeline_marker(snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        broken = latest_history_value(snapshot, "broken_history")
+        if broken is not None and broken >= 1.0:
+            return 1.0
+        release = latest_history_value(snapshot, "release_history")
+        if release is not None and release >= 0.010:
+            return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            if metrics.get("status") == "broken":
+                return 1.0
+            try:
+                if float(metrics.get("broken", 0.0)) >= 1.0:
+                    return 1.0
+                if float(metrics.get("payload_release_distance", 0.0)) >= 0.010:
+                    return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def restore_history(history: deque[float], values: Any) -> None:
+        history.clear()
+        try:
+            history.extend(float(value) for value in values)
+        except (TypeError, ValueError):
+            return
+
+    def restore_replay_state(state: dict[str, Any]) -> None:
+        controls = state.get("controls", {})
+        try:
+            breakable_joint.break_force = float(
+                controls.get("break_force", breakable_joint.break_force)
+            )
+        except (TypeError, ValueError, AttributeError):
+            pass
+        restore_history(offset_history, state.get("offset_history", []))
+        restore_history(speed_history, state.get("speed_history", []))
+        restore_history(release_history, state.get("release_history", []))
+        restore_history(broken_history, state.get("broken_history", []))
+        _last_metrics.clear()
+        metrics = state.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            for key, value in metrics.items():
+                try:
+                    _last_metrics[str(key)] = float(value)
+                except (TypeError, ValueError):
+                    _last_metrics[str(key)] = str(value)
+        replay_sync()
 
     def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
         payload.linear_velocity = (0.0, 0.0, 0.0)
@@ -245,6 +342,7 @@ def build_breakable_joint_scene(
             pass
         offset_history.clear()
         speed_history.clear()
+        release_history.clear()
         broken_history.clear()
         world.update_kinematics()
         record_metrics()
@@ -275,6 +373,7 @@ def build_breakable_joint_scene(
             rearm_weak_joint()
         builder.plot_lines("Offset error", list(offset_history))
         builder.plot_lines("Payload speed", list(speed_history))
+        builder.plot_lines("Release distance", list(release_history))
         builder.plot_lines("Broken", list(broken_history))
         builder.separator()
         bridge.build_control_panel(builder, context)
@@ -295,8 +394,15 @@ def build_breakable_joint_scene(
             "captured_payload_transform": captured_payload_transform,
             "captured_payload_rotation": captured_payload_rotation,
             CAPTURE_METRICS_INFO_KEY: capture_metrics,
+            "replay_capture_state": capture_replay_state,
+            "replay_restore_state": restore_replay_state,
             "replay_sync": replay_sync,
             "replay_live_step_is_stateless": True,
+            "replay_timeline": {
+                "signal_label": "Payload release distance",
+                "signal": replay_timeline_signal,
+                "markers": replay_timeline_marker,
+            },
             "reset_breakage_lifecycle": reset_breakage_lifecycle,
             "break_force": _BREAK_FORCE,
             "reset_break_force": _RESET_BREAK_FORCE,

@@ -197,7 +197,7 @@ plus a warning block if any selected row is missing those fields.
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                       |
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
-| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset             |
+| 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time                 |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion             |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics            |
@@ -566,7 +566,9 @@ fixed break-force threshold, turns the connector red when `is_broken` becomes
 true, and exposes `reset_breakage()` behavior without claiming
 sequential-impulse or IPC parity. The panel also has a `Reset breakage lifecycle`
 button that clears the broken flag, restores the captured body poses, clears
-loads, and restarts the row timing.
+loads, and restarts the row timing. The shared Replay panel uses payload
+release distance as its value track and marks broken or released frames so
+saved-state scrubbing jumps to the breakage event.
 
 The **`rigid_distance_spring`** scene shows the public
 `World.add_rigid_body_distance_spring()` path on free rigid bodies before users

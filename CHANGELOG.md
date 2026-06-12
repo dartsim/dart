@@ -218,6 +218,9 @@
   - Added Replay timeline metadata to `rigid_fixed_joint`, using fixed-joint
     offset error as the value track and marking pose-error or residual-motion
     frames during recovery.
+  - Added Replay timeline metadata to `rigid_joint_breakage`, using payload
+    release distance as the value track and marking broken or released frames
+    in the shared AVBD break-force lifecycle row.
   - Made `rigid_body` the Python `py-demos` default launch scene and moved the
     curated rigid-body visual-verification workflow to the front of the World
     Rigid Body category, so first-run and cycle behavior match the documented

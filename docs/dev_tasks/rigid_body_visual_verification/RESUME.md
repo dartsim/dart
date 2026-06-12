@@ -2,10 +2,10 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_fixed_joint` Replay timeline slice after
-the normal-push checkpoint. The fixed-joint row now uses fixed-joint offset
-error as its Replay value track and marks pose-error or residual-motion frames
-during recovery.
+This checkpoint completes the `rigid_joint_breakage` Replay timeline slice
+after the fixed-joint checkpoint. The shared AVBD break-force lifecycle row now
+uses payload release distance as its Replay value track and marks broken or
+released frames so saved-state scrubbing can jump to the breakage event.
 
 Expected repository state after this hand-off:
 
@@ -19,15 +19,15 @@ Expected repository state after this hand-off:
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
   live open-command, stack Replay timeline, pushed hand-off, contact
-  manipulation Replay timeline, kinematic-driver Replay timeline, and
-  normal-push Replay timeline checkpoints, followed by the fixed-joint Replay
-  timeline checkpoint.
+  manipulation Replay timeline, kinematic-driver Replay timeline,
+  normal-push Replay timeline, fixed-joint Replay timeline, and
+  joint-breakage Replay timeline checkpoints.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `3ea4d1fcd4e Add normal push replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by three commits before
-  the fixed-joint slice.
+  `4d2787cf41f Add fixed joint replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by four commits before
+  the joint-breakage slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -42,6 +42,12 @@ Expected repository state after this hand-off:
   `replay_timeline_marker(...)`, and `info["replay_timeline"]` metadata. The
   intended value track label is `Fixed-joint offset error`, with markers for
   pose-error and residual-motion recovery frames.
+- The current joint-breakage Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`,
+  `replay_capture_state`, `replay_restore_state`, and
+  `info["replay_timeline"]` metadata through the shared AVBD breakable-joint
+  builder. The intended value track label is `Payload release distance`, with
+  markers for broken or released frames.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -63,6 +69,10 @@ Expected repository state after this hand-off:
   tests plus a real docked capture.
 - The fixed-joint Replay timeline continuation added `replay_timeline` metadata
   to `rigid_fixed_joint`, updated tests and docs, and ran focused tests plus a
+  real docked capture.
+- The joint-breakage Replay timeline continuation added `replay_timeline`
+  metadata to the shared AVBD breakable-joint builder used by
+  `rigid_joint_breakage`, updated tests and docs, and ran focused tests plus a
   real docked capture.
 - Do not push these local commits without explicit approval in a future
   session.
@@ -248,6 +258,13 @@ recovery. Focused pytest, sidecar/README drift guards, `pixi run lint`,
 `git diff --check`, and a real docked capture passed before the local fixed-joint
 commit.
 
+The current continuation completes the next Replay timeline slice for
+`rigid_joint_breakage`. The shared Replay panel now uses payload release
+distance as its value track and marks broken or released frames during the AVBD
+break-force lifecycle. Focused pytest, sidecar/README drift guards,
+`pixi run lint`, `git diff --check`, and a real docked capture passed before
+the local joint-breakage commit.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -263,28 +280,28 @@ Current snapshot:
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
   live open-command, stack Replay timeline, pushed hand-off, contact
-  manipulation Replay timeline, kinematic-driver Replay timeline, and
-  normal-push Replay timeline checkpoints, followed by the fixed-joint Replay
-  timeline checkpoint.
+  manipulation Replay timeline, kinematic-driver Replay timeline,
+  normal-push Replay timeline, fixed-joint Replay timeline, and
+  joint-breakage Replay timeline checkpoints.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `3ea4d1fcd4e Add normal push replay timeline`; it was three commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification` before the fixed-joint
-  Replay timeline slice.
-- The contact-manipulation, kinematic-driver, normal-push, and fixed-joint
-  Replay timeline checkpoints are local and unpushed until explicit future
-  approval.
+  `4d2787cf41f Add fixed joint replay timeline`; it was four commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification` before the
+  joint-breakage Replay timeline slice.
+- The contact-manipulation, kinematic-driver, normal-push, fixed-joint, and
+  joint-breakage Replay timeline checkpoints are local and unpushed until
+  explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
-local checkpoints to include contact-manipulation, kinematic-driver, and
-normal-push Replay timeline slices plus the fixed-joint Replay timeline slice
-after the pushed docs-only handoff. Re-evaluate the durable sidecar before
+local checkpoints to include contact-manipulation, kinematic-driver,
+normal-push, fixed-joint, and joint-breakage Replay timeline slices after the
+pushed docs-only handoff. Re-evaluate the durable sidecar before
 selecting the next bounded rigid visual-verification slice; the next adjacent
-constraints row is likely `rigid_joint_breakage`, but do not assume it without
+constraints row is likely `rigid_distance_spring`, but do not assume it without
 inspecting current evidence. Do not push without explicit approval in that
 session.
 
@@ -397,6 +414,12 @@ session.
   `python/examples/demos/scenes/rigid_fixed_joint.py`, with tests and capture
   evidence for the `Fixed-joint offset error` value track and pose-error or
   residual-motion recovery markers.
+- The completed joint-breakage Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`,
+  `replay_capture_state`, `replay_restore_state`, and
+  `info["replay_timeline"]` metadata to the shared AVBD breakable fixed-joint
+  builder used by `rigid_joint_breakage`, with tests and capture evidence for
+  the `Payload release distance` value track and broken/released markers.
 
 ## How To Resume
 
@@ -796,3 +819,20 @@ final orientation error `0.0` rad, final payload speed `0.0` m/s, historical
 maximum translation error about `1.09e-8` m, and historical maximum orientation
 error about `2.67e-7` rad. The sidecar/README/capture-command drift guard
 reported `4 passed`. `pixi run lint` passed and `git diff --check` was clean.
+
+Current joint-breakage Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_joint_breakage --frames 48 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_breakage_timeline_1781274802
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.metrics.status, .scene_metrics.latest.metrics.metrics.broken, .scene_metrics.latest.metrics.metrics.payload_release_distance, .scene_metrics.latest.metrics.metrics.payload_speed, .scene_metrics.latest.metrics.history.saw_broken, .scene_metrics.latest.metrics.history.max_payload_release_distance' /tmp/dart_capture_joint_breakage_timeline_1781274802/manifest.json
+```
+
+The focused Replay/joint-breakage pytest reported `2 passed`. The real docked
+capture completed with exit code 0 and wrote a nonblank 960x540 screenshot with
+docked UI detected, 47 PNG frames, and 48 scene-metric events. The manifest
+reported row `rigid_joint_breakage`, status `broken`, broken flag `1.0`, final
+payload release distance about `0.413` m, final payload speed about `1.332`
+m/s, `saw_broken` `1.0`, and historical maximum payload release distance about
+`0.590` m. The sidecar/README/capture-command drift guard reported `4 passed`.
+`pixi run lint` passed and `git diff --check` was clean.

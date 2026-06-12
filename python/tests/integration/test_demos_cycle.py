@@ -4968,6 +4968,50 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     assert capture_metrics["metrics"]["status"] == "broken"
     assert capture_metrics["metrics"]["payload_release_distance"] > 1.0e-2
     assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
+    assert capture_metrics["history"]["max_payload_release_distance"] > 1.0e-2
+
+    assert callable(setup.info["replay_capture_state"])
+    assert callable(setup.info["replay_restore_state"])
+    timeline = setup.info["replay_timeline"]
+    snapshot = setup.info["replay_capture_state"]()
+    assert timeline["signal_label"] == "Payload release distance"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        capture_metrics["metrics"]["payload_release_distance"]
+    )
+    assert (
+        timeline["markers"]({"broken_history": [0.0, 1.0]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"release_history": [0.0, 0.011]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "status": "broken",
+                    "payload_release_distance": 0.0,
+                    "broken": 1.0,
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "release_history": [0.002],
+                "broken_history": [0.0],
+                "last_metrics": {
+                    "status": "intact",
+                    "payload_release_distance": 0.002,
+                    "broken": 0.0,
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
     setup.info["reset_breakage_lifecycle"]()
     assert not joint.is_broken
@@ -4977,6 +5021,9 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     reset_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert reset_metrics["metrics"]["status"] == "intact"
     assert reset_metrics["history"]["samples"] == pytest.approx(1.0)
+    reset_snapshot = setup.info["replay_capture_state"]()
+    assert timeline["signal"](reset_snapshot) == pytest.approx(0.0)
+    assert timeline["markers"](reset_snapshot) == pytest.approx(0.0)
 
 
 def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None:
