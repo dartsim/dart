@@ -2,31 +2,41 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the capture-first heavier Rigid IPC stack packet
-slice. The existing four-box `rigid_ipc_stack_packet` now shares a spec-driven
-implementation with a six-box `rigid_ipc_heavy_stack_packet`; both stay in the
-non-numbered Rigid IPC shelf and only enter workflow capture packets through
-the opt-in `--include-packets` group. The default 36-row World Rigid Body
-workflow remains unchanged.
+The latest continuation refreshes the public packet row-range rerun examples
+after the capture-first heavy stack packet expansion. The README and PLAN-103
+sidecar now tell users to rerun rows 47-48 when they request
+`--include-related --include-packets`, so both `rigid_ipc_stack_packet` and
+`rigid_ipc_heavy_stack_packet` are included. The new drift guard scopes the
+public rerun example and prevents it from regressing to the old row-47-only
+packet command.
 
-Final stop-only hand-off note: the user explicitly requested no further
-implementation and no further verification after ensuring these hand-off docs.
-This note is documentation-only; a future session should inspect branch state
-before acting and should not infer any new validation from this stop update.
+Previous checkpoint: the capture-first heavier Rigid IPC stack packet slice
+completed. The existing four-box `rigid_ipc_stack_packet` now shares a
+spec-driven implementation with a six-box `rigid_ipc_heavy_stack_packet`; both
+stay in the non-numbered Rigid IPC shelf and only enter workflow capture
+packets through the opt-in `--include-packets` group. The default 36-row World
+Rigid Body workflow remains unchanged.
+
+Historical stop-only note: after the heavy packet commit, the user requested
+no further implementation and no further verification while hand-off docs were
+ensured. That note was superseded by the later active-goal continuation that
+performed this row-range documentation/test sync.
 
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
+- Latest local slice updates `python/examples/demos/README.md`,
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`, and
+  `python/tests/integration/test_demos_cycle.py` to keep the packet row-range
+  example aligned with the two capture-first packet rows.
 - Implementation commit being handed off:
   `72bad39e123 Add heavy rigid IPC stack packet`, built on
   `249cde7a36b Audit rigid visual workflow retirement readiness`.
-- Origin tip observed before the stop-only hand-off was
-  `91f53e5ae8e Record rigid workflow handoff evidence`; the local branch was
-  ahead by two implementation/audit commits before this docs-only update.
+- Origin tip observed before this row-range sync was
+  `bdf757db2c9 Refresh rigid handoff stop state`.
 - There is no PR associated with this branch.
-- Push status may differ depending on whether the stop-only hand-off push has
-  already run; always verify with `git status -sb` and `git log -5 --oneline`
-  before resuming.
+- Do not push without explicit approval; always verify with `git status -sb`
+  and `git log -5 --oneline` before resuming.
 - The local implementation adds/updates
   `python/examples/demos/scenes/rigid_ipc_stack_packet.py`,
   `python/examples/demos/registry.py`, `scripts/capture_py_demo.py`,
@@ -42,6 +52,14 @@ Observed repository state at this hand-off:
   metric events, `box_count=6.0`, `top_mass=4.25`, and
   `status=capture-first`; `pixi run lint` passed and `git diff --check` was
   clean.
+- Verification for the latest row-range sync: the focused
+  `test_rigid_visual_capture_first_packets_are_documented` pytest passed after
+  the new guard was made whitespace/history scoped; the exact updated dry-run
+  command planned rows `47-48 / 48` with two capture-first packet rows and
+  complete guidance under
+  `/tmp/dart_capture_rigid_workflow_packet_rows_47_48_1781287569`;
+  `pixi run lint` passed; the post-lint focused pytest passed again; and
+  `git diff --check` was clean.
 
 Previous Replay capture-metadata checkpoint context: this checkpoint added
 reviewer-facing Replay timeline metadata to the capture packet after the
@@ -377,6 +395,9 @@ Expected repository state for that earlier checkpoint:
       an extended dry-run planned rows 51-52 / 52 with complete guidance, and a
       real row-52 docked workflow capture completed with finite heavy-stack
       metrics.
+- [x] Public row-range packet rerun examples now target rows 47-48 for the
+      `--include-related --include-packets` packet shape, and a focused guard
+      keeps README/PLAN-103 from drifting back to the old row-47-only command.
 
 ## Goal
 
@@ -449,10 +470,10 @@ Remaining before retirement:
 
 - Branch: `feature/rigid-body-gui-visual-verification`
 - Latest implementation commit at this hand-off:
-  `72bad39e123 Add heavy rigid IPC stack packet`; previous local checkpoint:
-  `249cde7a36b Audit rigid visual workflow retirement readiness`; origin tip
-  observed before the final stop-only hand-off was
-  `91f53e5ae8e Record rigid workflow handoff evidence`.
+  `72bad39e123 Add heavy rigid IPC stack packet`; the latest local slice after
+  that commit is the README/PLAN-103/test row-range sync for capture-first
+  packet rows 47-48. Origin tip observed before this sync was
+  `bdf757db2c9 Refresh rigid handoff stop state`.
 - Local `HEAD` before the loop-closure implementation work was
   `1add2036097 Add multibody solver family replay timeline`, which is local
   until explicitly pushed in a future approved session. `git status -sb` before
