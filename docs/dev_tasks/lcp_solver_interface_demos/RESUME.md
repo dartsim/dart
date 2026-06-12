@@ -1,5 +1,107 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Projection/Block Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current `HEAD`: `2d74356e830 Fast path strict-interior Newton LCPs`.
+- This section records the local checkpoint titled
+  `Fast path strict-interior projection LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 42 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- `NncgSolver` and `SubspaceMinimizationSolver` now try
+  `detail::trySolveStrictInteriorStandardLcp()` after parameter validation and
+  before their PGS setup when the caller is not warm-starting.
+- `BlockedJacobiSolver` and `ShockPropagationSolver` now use a local fast-path
+  helper. With default options, they try the strict-interior standard-LCP fast
+  path before expensive block/layer construction. With custom options, they
+  still validate the custom block/layer inputs first, then can take the fast
+  path.
+- Unit coverage was added as
+  `StandardStrictInteriorFastPath.ProjectionAndBlockSolversUseLinearSolve`.
+- Existing `BlockedJacobiSolverCoverage.ReportsMaxIterationsWhenNotConverged`
+  was adjusted to use a boundary target so it still exercises the iteration
+  path instead of the strict-interior fast path.
+- The Python LCP demo profile summary was updated from the regenerated profile
+  so the Standard leaders mention strict-interior pivot/barrier/Newton,
+  projection, and block rows, with remaining Standard targets centered on
+  `BGS`, `Admm`, `BoxedSemiSmoothNewton`, `Dantzig`, and `MPRGP`.
+- Background docs and `CHANGELOG.md` now record the projection/block
+  strict-interior fast-path behavior and validation boundaries.
+
+Evidence:
+
+- Rebuilt the relevant benchmark/unit targets and reran the focused validation
+  CTest after the boundary-test adjustment; it passed with
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark filter:
+  `BM_LcpCompare/Standard/(BlockedJacobi|NNCG|ShockPropagation|SubspaceMinimization)/`.
+- After moving default `BlockedJacobi` and `ShockPropagation` fast paths before
+  block/layer setup, focused ratios versus the previous full profile cache
+  were:
+  - `BlockedJacobi`: `0.1646`, `0.1742`, `0.4021`, `0.5214`
+  - `NNCG`: `0.1483`, `0.2532`, `0.3607`, `0.5038`
+  - `SubspaceMinimization`: `0.3274`, `0.3717`, `0.3653`, `0.3545`
+  - `ShockPropagation`: `0.2511`, `0.3449`, `0.5894`, `0.8568`
+  - Mean focused ratio `0.3743`; best `0.1483`; worst `0.8568`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full profile regeneration completed and updated the checked CSVs. Standard
+  profile snapshot after regeneration:
+  - `Admm` `2.65`, `Apgd` `1.85`, `BGS` `2.73`, `Baraff` `1.42`,
+    `BlockedJacobi` `1.26`, `BoxedSemiSmoothNewton` `2.63`, `Dantzig` `2.39`,
+    `Direct` `1.00`, `FischerBurmeisterNewton` `1.52`, `InteriorPoint` `1.32`,
+    `Jacobi` `1.92`, `Lemke` `1.36`, `MPRGP` `2.26`,
+    `MinimumMapNewton` `1.41`, `NNCG` `1.48`,
+    `PenalizedFischerBurmeisterNewton` `1.41`, `Pgs` `1.10`,
+    `RedBlackGaussSeidel` `1.83`, `Sap` `1.48`, `ShockPropagation` `1.68`,
+    `SubspaceMinimization` `1.32`, `SymmetricPsor` `1.82`, `Tgs` `1.13`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/projection_block_strict_interior_after.json`; all 16 focused rows
+  reported `contract_ok=1.0` and `iterations=0`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.44s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `BGS`, `Admm`, `BoxedSemiSmoothNewton`, `Dantzig`, and `MPRGP`.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, and `Nncg`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior Newton Fast Path
 
 This section is the latest state; older sections below are historical

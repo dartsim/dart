@@ -1036,17 +1036,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert profile_by_surface["Standard"]["problem_sizes"] == (
         "2, 3, 12, 24, 48, 96"
     )
-    assert "Tgs/Pgs/Sap" in profile_by_surface["Standard"][
-        "current_leaders"
-    ]
+    assert "Tgs/Pgs" in profile_by_surface["Standard"]["current_leaders"]
     assert "strict-interior" in profile_by_surface["Standard"][
         "current_leaders"
     ]
     assert "Newton" in profile_by_surface["Standard"]["current_leaders"]
-    assert "BlockedJacobi" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Nncg" in profile_by_surface["Standard"]["current_laggards"]
-    assert "ShockPropagation" in profile_by_surface["Standard"]["current_laggards"]
-    assert "SubspaceMinimization" in profile_by_surface["Standard"][
+    assert "projection" in profile_by_surface["Standard"]["current_leaders"]
+    assert "block" in profile_by_surface["Standard"]["current_leaders"]
+    assert "BGS" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Admm" in profile_by_surface["Standard"]["current_laggards"]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["Standard"][
         "current_laggards"
     ]
     assert "Tgs/Pgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]

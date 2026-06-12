@@ -1,5 +1,99 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Projection/Block Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current `HEAD`: `2d74356e830 Fast path strict-interior Newton LCPs`.
+- This section records the local checkpoint titled
+  `Fast path strict-interior projection LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 42 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `NncgSolver` and `SubspaceMinimizationSolver` now use
+  `detail::trySolveStrictInteriorStandardLcp()` after parameter validation and
+  before PGS setup when there is no warm start.
+- `BlockedJacobiSolver` and `ShockPropagationSolver` now use local helpers that
+  let default-option strict-interior standard rows skip block/layer setup, while
+  preserving custom block/layer validation before the fast path.
+- Added unit coverage:
+  `StandardStrictInteriorFastPath.ProjectionAndBlockSolversUseLinearSolve`.
+- Adjusted the existing Blocked Jacobi max-iteration coverage to use a boundary
+  target so it still exercises the iterative path.
+- Regenerated the checked LCP performance profile CSVs and refreshed
+  demo/docs/changelog text.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Standard/(BlockedJacobi|NNCG|ShockPropagation|SubspaceMinimization)/`.
+- Compared to the previous full profile cache:
+  - `BlockedJacobi`: `0.1646`, `0.1742`, `0.4021`, `0.5214`
+  - `NNCG`: `0.1483`, `0.2532`, `0.3607`, `0.5038`
+  - `SubspaceMinimization`: `0.3274`, `0.3717`, `0.3653`, `0.3545`
+  - `ShockPropagation`: `0.2511`, `0.3449`, `0.5894`, `0.8568`
+  - Mean focused ratio `0.3743`; best `0.1483`; worst `0.8568`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `BlockedJacobi` average ratio `1.26`, `NNCG` `1.48`,
+  `SubspaceMinimization` `1.32`, and `ShockPropagation` `1.68`; these are no
+  longer Standard profile laggards.
+- Current Standard high-ratio targets are `BGS`, `Admm`,
+  `BoxedSemiSmoothNewton`, `Dantzig`, and `MPRGP`.
+- Boxed/FrictionIndex targets are unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`; FrictionIndex `BlockedJacobi`, `BGS`,
+  `ShockPropagation`, `Staggering`, and `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel 1
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/(BlockedJacobi|NNCG|ShockPropagation|SubspaceMinimization)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/projection_block_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run build
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target the remaining boxed and
+   friction-index high-ratio rows. Do not push without explicit maintainer/user
+   approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Newton Fast Path
 
 Current branch state for this slice:

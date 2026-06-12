@@ -455,6 +455,10 @@ Focused `BM_LcpNncgPgsIterationsSweep` rows compare 1, 2, and 5 PGS
 preconditioner iterations on identical standard, boxed, and friction-index
 benchmark fixtures with restart interval 10 and threshold 1.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
+For strictly interior standard LCPs without a warm start, `NncgSolver` first
+tries the shared validated linear-solve fast path. The candidate is accepted
+only when it is strictly positive and passes normal LCP validation; otherwise
+the PGS-preconditioned NNCG iteration runs normally.
 
 ### Properties
 
@@ -522,6 +526,10 @@ Focused `BM_LcpSubspaceMinimizationPgsIterationsSweep` rows compare 1, 3, and
 5 PGS active-set-estimation iterations on identical standard, boxed, and
 friction-index benchmark fixtures with active-set tolerance 0.0. These rows are
 CPU solver rows even when emitted by a CUDA-enabled build.
+For strictly interior standard LCPs without a warm start,
+`SubspaceMinimizationSolver` first tries the shared validated linear-solve fast
+path. The active-set estimation and subspace refinement path remains the
+fallback for active-bound, boxed, friction-index, and warm-started solves.
 
 ### Properties
 

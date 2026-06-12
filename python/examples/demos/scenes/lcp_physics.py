@@ -224,15 +224,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Tgs/Pgs/Sap and strict-interior pivot/barrier/Newton rows"
+            "Tgs/Pgs and strict-interior pivot/barrier/Newton/projection/block rows"
         ),
-        "current_laggards": (
-            "BlockedJacobi, Nncg, ShockPropagation, SubspaceMinimization"
-        ),
+        "current_laggards": "BGS, Admm, BoxedSemiSmoothNewton, Dantzig, MPRGP",
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
-            "and Newton-family hot rows; block/projection rows remain tuning "
-            "targets for standard packets."
+            "Newton-family, projection, and block hot rows; remaining standard "
+            "targets are moderate-ratio iterative/block rows."
         ),
     },
     {

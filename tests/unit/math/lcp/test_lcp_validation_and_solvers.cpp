@@ -1720,6 +1720,48 @@ TEST(StandardStrictInteriorFastPath, NewtonSolversUseLinearSolve)
   }
 }
 
+TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
+{
+  auto problem = makeStandardProblem(4, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
+
+  {
+    BlockedJacobiSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    NncgSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    ShockPropagationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    SubspaceMinimizationSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    const auto result = solver.solve(problem, x, solver.getDefaultOptions());
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
 {
   LemkeSolver solver;
@@ -1920,7 +1962,7 @@ TEST(BlockedJacobiSolverCoverage, ReportsMaxIterationsWhenNotConverged)
   Eigen::MatrixXd A(2, 2);
   A << 2.0, 1.5, 1.0, 2.5;
   Eigen::VectorXd target(2);
-  target << 0.4, 0.25;
+  target << 0.0, 0.25;
   Eigen::VectorXd b = A * target;
   Eigen::VectorXd lo = Eigen::VectorXd::Zero(2);
   Eigen::VectorXd hi

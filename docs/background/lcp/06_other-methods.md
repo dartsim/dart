@@ -291,6 +291,10 @@ solver.solve(problem, x, options);
 
 > Note: Layers must cover all blocks. If `layers` is empty, DART uses a single
 > layer containing all blocks (equivalent to an ordered block sweep).
+> Strictly interior standard LCPs without a warm start first try the shared
+> validated linear-solve fast path. Default-option solves can take that path
+> before block/layer construction, while custom block/layer options are still
+> validated before the fast path is accepted.
 > Small uncoupled fixed-bound blocks first try a local direct linear solve when
 > the unconstrained candidate is already feasible; active-bound, singular,
 > non-finite, larger, and local `findex` blocks still use the existing
@@ -509,6 +513,10 @@ auto result = solver.solve(problem, x, options);
 > update while avoiding local solver setup overhead. Fixed-bound problems also
 > precompute the Jacobi snapshot product once per iteration so independent
 > blocks do not repeat dense row products.
+> Strictly interior standard LCPs without a warm start first try the shared
+> validated linear-solve fast path. Default-option solves can take that path
+> before block construction, while explicit custom block partitions are still
+> validated before the fast path is accepted.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which compares
 Blocked Jacobi and BGS on standard, boxed, and friction-index fixtures with
