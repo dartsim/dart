@@ -353,7 +353,9 @@
     two-link multibody's link-origin `get_world_jacobian(link) @ qdot`
     velocity mapping, finite-difference velocity check, and
     `get_world_jacobian(link).T @ wrench` power consistency, with scene-owned
-    capture metrics for the manifest path.
+    capture metrics for the manifest path. The scene now also publishes Replay
+    timeline metadata using link-origin speed as the value track and markers for
+    high-twist, wrench-load, world/body Jacobian gap, or residual-alert frames.
   - Added `rigid_multibody_solver_family` to Python `py-demos`, showing
     semi-implicit residual-only, variational residual-only, and variational
     solved loop-closure lanes with residual, tip-error, solve-ratio, and

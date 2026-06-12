@@ -6420,6 +6420,38 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert controller._tau1_history
     assert controller._world_body_gap_history
     assert np.isfinite([float(value) for value in controller._speed_history]).all()
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Link-origin speed"
+    assert timeline["signal"](snapshot) == pytest.approx(controller._speed_history[-1])
+    assert timeline["signal"]({"last_metrics": {"linear_speed": 0.42}}) == pytest.approx(
+        0.42
+    )
+    assert timeline["markers"]({"speed_history": [0.76]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"tau0_history": [-0.51]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"tau1_history": [0.51]}) == pytest.approx(1.0)
+    assert timeline["markers"]({"world_body_gap_history": [0.11]}) == pytest.approx(
+        1.0
+    )
+    assert timeline["markers"]({"fd_error_history": [1.2e-6]}) == pytest.approx(
+        1.0
+    )
+    assert timeline["markers"]({"power_error_history": [1.2e-9]}) == pytest.approx(
+        1.0
+    )
+    assert (
+        timeline["markers"](
+            {
+                "speed_history": [0.20],
+                "tau0_history": [0.10],
+                "tau1_history": [0.10],
+                "world_body_gap_history": [0.04],
+                "fd_error_history": [2.0e-7],
+                "power_error_history": [2.0e-10],
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()

@@ -2,12 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_link_center_of_mass` Replay timeline
-slice after the multibody dynamics-terms checkpoint. The World multibody
-inertial-offset row now uses mirrored COM angle spread as its Replay value
-track and marks mirrored-angle, centered-still, or high-inertia-lag frames so
-saved-state scrubbing can jump to the center-of-mass behavior users need to
-inspect.
+This checkpoint completes the `rigid_link_jacobian` Replay timeline slice after
+the link center-of-mass checkpoint. The World multibody kinematics row now uses
+link-origin speed as its Replay value track and marks high-twist, wrench-load,
+world/body Jacobian-gap, or residual-alert frames so saved-state scrubbing can
+jump to the Jacobian mapping behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -26,8 +25,8 @@ Expected repository state after this hand-off:
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
-  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
-  timeline checkpoint.
+  multibody dynamics-terms Replay timeline, link center-of-mass Replay
+  timeline, and link-Jacobian Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before the link center-of-mass implementation commit was
@@ -35,6 +34,10 @@ Expected repository state after this hand-off:
   observed clean and ahead of
   `origin/feature/rigid-body-gui-visual-verification` by eleven commits before
   this slice.
+- Local `HEAD` before the link-Jacobian implementation work was
+  `c7042091c2b Add link center of mass replay timeline`; the branch was ahead
+  of `origin/feature/rigid-body-gui-visual-verification` by twelve commits and
+  carried docs-only stop-handoff edits that this checkpoint supersedes.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ahead of `origin/feature/rigid-body-gui-visual-verification` by ten
@@ -98,9 +101,14 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Mirrored COM angle spread`, with markers for mirrored-angle,
   centered-still, or high-inertia-lag frames.
+- The current link-Jacobian Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Link-origin speed`, with markers for high-twist, wrench-load, world/body
+  Jacobian gap, or residual-alert frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
-  `rigid_link_jacobian`, but a future session should inspect the
+  `rigid_multibody_solver_family`, but a future session should inspect the
   sidecar and scene/test internals before implementing it. No thresholds or
   marker semantics have been finalized.
 - The current continuation resumed implementation from the active persistent
@@ -267,8 +275,11 @@ Expected repository state after this hand-off:
 - [x] `rigid_link_center_of_mass` now exposes a Replay timeline value track for
       mirrored COM angle spread and markers for mirrored-angle, centered-still,
       or high-inertia-lag frames.
+- [x] `rigid_link_jacobian` now exposes a Replay timeline value track for
+      link-origin speed and markers for high-twist, wrench-load,
+      world/body-gap, or residual-alert frames.
 - [ ] Next bounded Replay timeline slice is likely
-      `rigid_link_jacobian` after a future session re-checks the sidecar and
+      `rigid_multibody_solver_family` after a future session re-checks the sidecar and
       scene/test internals.
 
 ## Goal
@@ -304,14 +315,18 @@ are easy to inspect, cycle, capture, and regression-test.
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
-  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
-  timeline checkpoint.
+  multibody dynamics-terms Replay timeline, link center-of-mass Replay
+  timeline, and link-Jacobian Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before the link center-of-mass implementation commit was
   `7438e13cca9 Add multibody dynamics replay timeline`; the branch was
   observed clean and eleven commits ahead of
   `origin/feature/rigid-body-gui-visual-verification` before this slice.
+- Local `HEAD` before the link-Jacobian implementation work was
+  `c7042091c2b Add link center of mass replay timeline`; the branch was ahead
+  of `origin/feature/rigid-body-gui-visual-verification` by twelve commits and
+  carried docs-only stop-handoff edits that this checkpoint supersedes.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ten commits ahead of
@@ -321,10 +336,11 @@ are easy to inspect, cycle, capture, and regression-test.
   of `origin/feature/rigid-body-gui-visual-verification` before that slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
-  passive-parameters, screw-joint pitch, multibody dynamics-terms, and link
-  center-of-mass Replay timeline checkpoints are local and unpushed until
-  explicit future approval.
+  passive-parameters, screw-joint pitch, multibody dynamics-terms, link
+  center-of-mass, and link-Jacobian Replay timeline checkpoints are local and
+  unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
+- This checkpoint remains local. Do not push without explicit future approval.
 
 ## What The Local Commit Changed
 
@@ -1405,6 +1421,18 @@ Observed results:
   acceleration ratio about `0.370`, high/positive mass-matrix ratio about
   `2.948`, and historical max positive/high-inertia angles about
   `0.449`/`0.153`.
+- The link-Jacobian Replay timeline slice then passed the focused
+  Replay/link-Jacobian pytest plus sidecar/README/capture-command drift guards:
+  `6 passed`.
+- Its real docked capture wrote a nonblank 960x540 screenshot with docked UI,
+  95 PNG frames, and 96 scene-metric events under
+  `/tmp/dart_capture_link_jacobian_timeline_1781280127`.
+- The capture manifest reported row `rigid_link_jacobian`, latest
+  linear/angular speed about `0.5652`/`0.6190`, finite-difference error about
+  `1.52e-7`, power error `0`, world/body Jacobian gap about `0.1272`, torques
+  about `-0.8650`/`-0.2949`, matching joint/wrench power about `-0.4212`,
+  historical max link speed about `0.6677`, historical max world/body gap about
+  `0.2055`, and historical max absolute torques about `0.8650`/`0.2949`.
 
 ## Immediate Next Steps
 
@@ -1413,12 +1441,12 @@ Observed results:
    live-open-command, stack Replay timeline, pushed docs-only hand-off,
    contact-manipulation, kinematic-driver, normal-push, fixed-joint,
    joint-breakage, distance-spring, limited-joints, motor-limits, and
-   passive-parameters, screw-joint pitch, multibody dynamics-terms, and link
-   center-of-mass Replay timeline checkpoints to be present locally and
-   unpushed.
+   passive-parameters, screw-joint pitch, multibody dynamics-terms, link
+   center-of-mass, and link-Jacobian Replay timeline checkpoints to be present
+   locally and unpushed.
 3. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice; the next adjacent constraints row is likely
-   `rigid_link_jacobian`, but do not assume it without inspecting
+   `rigid_multibody_solver_family`, but do not assume it without inspecting
    current evidence.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the

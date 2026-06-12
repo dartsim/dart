@@ -2,12 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_link_center_of_mass` Replay timeline
-slice after the multibody dynamics-terms checkpoint. The World multibody
-inertial-offset row now uses mirrored COM angle spread as its Replay value
-track and marks mirrored-angle, centered-still, or high-inertia-lag frames so
-saved-state scrubbing can jump to the center-of-mass behavior users need to
-inspect.
+This checkpoint completes the `rigid_link_jacobian` Replay timeline slice after
+the link center-of-mass checkpoint. The World multibody kinematics row now uses
+link-origin speed as its Replay value track and marks high-twist, wrench-load,
+world/body Jacobian-gap, or residual-alert frames so saved-state scrubbing can
+jump to the Jacobian mapping behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -26,8 +25,8 @@ Expected repository state after this hand-off:
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
-  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
-  timeline checkpoint.
+  multibody dynamics-terms Replay timeline, link center-of-mass Replay
+  timeline, and link-Jacobian Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before the link center-of-mass implementation commit was
@@ -35,6 +34,10 @@ Expected repository state after this hand-off:
   observed clean and ahead of
   `origin/feature/rigid-body-gui-visual-verification` by eleven commits before
   this slice.
+- Local `HEAD` before the link-Jacobian implementation work was
+  `c7042091c2b Add link center of mass replay timeline`; the branch was ahead
+  of `origin/feature/rigid-body-gui-visual-verification` by twelve commits and
+  carried docs-only stop-handoff edits that this checkpoint supersedes.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ahead of `origin/feature/rigid-body-gui-visual-verification` by ten
@@ -98,9 +101,14 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Mirrored COM angle spread`, with markers for mirrored-angle,
   centered-still, or high-inertia-lag frames.
+- The current link-Jacobian Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Link-origin speed`, with markers for high-twist, wrench-load, world/body
+  Jacobian gap, or residual-alert frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
-  `rigid_link_jacobian`, but a future session should inspect the
+  `rigid_multibody_solver_family`, but a future session should inspect the
   sidecar and scene/test internals before implementing it. No thresholds or
   marker semantics have been finalized.
 - The current continuation resumed implementation from the active persistent
@@ -256,8 +264,9 @@ the workflow manifest and `review_index.html` with
 `workflow_group=rigid_ipc_shelf`, without changing the default 36-row workflow
 or the existing related/packet-only row counts.
 
-The final action in this checkpoint was hand-off documentation only, after the
-user explicitly requested stopping all further work and verification.
+The earlier stop checkpoint was hand-off documentation only. The current
+continuation supersedes it by completing and verifying the link-Jacobian Replay
+timeline slice.
 
 The current continuation fixes a review-packet metadata edge case:
 row-range workflow manifests now keep `include_related`, `include_ipc_shelf`,
@@ -384,6 +393,15 @@ reverse-sign frames. Focused pytest, sidecar/README drift guards,
 `pixi run lint`, `git diff --check`, and a real docked capture passed before
 the local screw-joint pitch commit.
 
+The current continuation completes the next Replay timeline slice for
+`rigid_link_jacobian` after the multibody dynamics-terms and link
+center-of-mass slices. The shared Replay panel now uses link-origin speed as
+its value track and marks high-twist, wrench-load, world/body Jacobian-gap, or
+residual-alert frames. Focused pytest, sidecar/README drift guards, and a real
+docked capture passed. `pixi run lint` passed, the focused pytest plus
+sidecar/README drift guards passed again after lint, and `git diff --check` was
+clean before committing this checkpoint.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -404,14 +422,18 @@ Current snapshot:
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
   passive-parameters Replay timeline, screw-joint pitch Replay timeline,
-  multibody dynamics-terms Replay timeline, and link center-of-mass Replay
-  timeline checkpoint.
+  multibody dynamics-terms Replay timeline, link center-of-mass Replay
+  timeline, and link-Jacobian Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before the link center-of-mass implementation commit was
   `7438e13cca9 Add multibody dynamics replay timeline`; the branch was
   observed clean and eleven commits ahead of
   `origin/feature/rigid-body-gui-visual-verification` before this slice.
+- Local `HEAD` before the link-Jacobian implementation work was
+  `c7042091c2b Add link center of mass replay timeline`; the branch was ahead
+  of `origin/feature/rigid-body-gui-visual-verification` by twelve commits and
+  carried docs-only stop-handoff edits that this checkpoint supersedes.
 - Local `HEAD` before the multibody dynamics-terms implementation commit was
   `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
   and ten commits ahead of
@@ -421,10 +443,11 @@ Current snapshot:
   of `origin/feature/rigid-body-gui-visual-verification` before that slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
-  passive-parameters, screw-joint pitch, multibody dynamics-terms, and link
-  center-of-mass Replay timeline checkpoints are local and unpushed until
-  explicit future approval.
+  passive-parameters, screw-joint pitch, multibody dynamics-terms, link
+  center-of-mass, and link-Jacobian Replay timeline checkpoints are local and
+  unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
+- This checkpoint remains local. Do not push without explicit future approval.
 
 ## Immediate Next Step
 
@@ -432,11 +455,12 @@ Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
 motor-limits, passive-parameters, screw-joint pitch, and multibody
-dynamics-terms, and link center-of-mass Replay timeline slices after the pushed
-docs-only handoff. Re-evaluate the durable sidecar before selecting the next
-bounded rigid visual-verification slice; the next adjacent constraints row is
-likely `rigid_link_jacobian`. Do not push without explicit approval in that
-session.
+dynamics-terms, link center-of-mass, and link-Jacobian Replay timeline slices
+after the pushed docs-only handoff. Re-evaluate the durable sidecar before
+selecting the next bounded rigid visual-verification slice; the next adjacent
+constraints row is likely `rigid_multibody_solver_family`, but do not assume it
+without inspecting current evidence. Do not push without explicit approval in
+that session.
 
 Passive-parameters checks for this slice:
 
@@ -506,6 +530,23 @@ docked UI, 71 PNG frames, and 72 scene-metric events. The manifest recorded row
 torques about `+/-3.182`, high/positive acceleration ratio about `0.370`,
 high/positive mass-matrix ratio about `2.948`, and historical max
 positive/high-inertia angles about `0.449`/`0.153`.
+
+Link-Jacobian checks for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_jacobian_timeline_1781280127
+```
+
+The focused Replay/link-Jacobian pytest plus drift guards reported `6 passed`;
+the real docked capture wrote a nonblank 960x540 screenshot with docked UI,
+95 PNG frames, and 96 scene-metric events. The manifest recorded row
+`rigid_link_jacobian`, latest linear/angular speed about `0.5652`/`0.6190`,
+finite-difference error about `1.52e-7`, power error `0`, world/body Jacobian
+gap about `0.1272`, torques about `-0.8650`/`-0.2949`, matching joint/wrench
+power about `-0.4212`, historical max link speed about `0.6677`, historical
+max world/body gap about `0.2055`, and historical max absolute torques about
+`0.8650`/`0.2949`.
 
 ## Context That Would Be Lost
 
@@ -657,6 +698,12 @@ positive/high-inertia angles about `0.449`/`0.153`.
   `Coarse/fine travel gap` value track and pitch-spread, zero-pitch contrast,
   and reverse-sign markers. It has focused pytest, drift-guard,
   docked-capture, lint, and diff-check evidence.
+- The completed link-Jacobian Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_link_jacobian.py`, with tests for the
+  `Link-origin speed` value track and high-twist, wrench-load, world/body-gap,
+  and residual-alert markers.
 
 ## How To Resume
 

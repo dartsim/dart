@@ -35,6 +35,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 def _x_aligned_transform(start: np.ndarray, vector: np.ndarray) -> np.ndarray:
     vector = np.asarray(vector, dtype=float).reshape(3)
     length = float(np.linalg.norm(vector))
@@ -430,6 +439,68 @@ class _RigidLinkJacobian:
             "last_metrics": dict(self._last_metrics),
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        speed = _last_float(snapshot.get("speed_history", []))
+        if speed is not None:
+            return max(0.0, speed)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                return max(0.0, float(metrics.get("linear_speed", 0.0)))
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.75:
+            return 1.0
+
+        tau0 = _last_float(snapshot.get("tau0_history", []))
+        tau1 = _last_float(snapshot.get("tau1_history", []))
+        if tau0 is not None or tau1 is not None:
+            if max(abs(tau0 or 0.0), abs(tau1 or 0.0)) >= 0.50:
+                return 1.0
+
+        gap = _last_float(snapshot.get("world_body_gap_history", []))
+        if gap is not None and gap >= 0.10:
+            return 1.0
+
+        fd_error = _last_float(snapshot.get("fd_error_history", []))
+        if fd_error is not None and fd_error >= 1.0e-6:
+            return 1.0
+        power_error = _last_float(snapshot.get("power_error_history", []))
+        if power_error is not None and power_error >= 1.0e-9:
+            return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                if float(metrics.get("linear_speed", 0.0)) >= 0.75:
+                    return 1.0
+                if (
+                    max(
+                        abs(float(metrics.get("tau0", 0.0))),
+                        abs(float(metrics.get("tau1", 0.0))),
+                    )
+                    >= 0.50
+                ):
+                    return 1.0
+                if float(metrics.get("world_body_gap", 0.0)) >= 0.10:
+                    return 1.0
+                if float(metrics.get("finite_difference_error", 0.0)) >= 1.0e-6:
+                    return 1.0
+                if float(metrics.get("power_error", 0.0)) >= 1.0e-9:
+                    return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, snapshot: dict[str, Any]) -> None:
         controls = snapshot.get("controls", {})
         self.motion_speed = float(controls.get("motion_speed", self.motion_speed))
@@ -537,6 +608,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Link-origin speed",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
             "replay_sync": controller._sync,
         },
     )
