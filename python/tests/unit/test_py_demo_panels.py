@@ -1270,6 +1270,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World prismatic joints | gravity off | contacts off | link mass 2.0 | time step 4.0 ms",
             ),
         ),
+        (
+            rigid_screw_joint_pitch,
+            (
+                "text:comparison axis: screw pitch coupling family",
+                "text:held fixed: World screw joints | contacts off | z-axis screw | moving mass 2.0 | axial inertia 0.12 | time step 3.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:

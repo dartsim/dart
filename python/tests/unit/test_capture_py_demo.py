@@ -1312,6 +1312,33 @@ def test_rigid_workflow_latest_signals_prioritize_passive_joint_values() -> None
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_screw_joint_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "screw_joint_coarse_fine_travel_gap": 0.14,
+            "screw_joint_coarse_pitch": 0.56,
+            "screw_joint_fine_acceleration_error": 0.0,
+            "screw_joint_fine_pitch": 0.28,
+            "screw_joint_reverse_angle": 0.83,
+            "screw_joint_reverse_pitch": -0.28,
+            "screw_joint_zero_pitch_axial_travel": 0.0,
+            "solver": "world_multibody_screw_joint_pitch",
+        }
+    )
+
+    assert highlights[:8] == [
+        "screw joint zero pitch axial travel: 0",
+        "screw joint fine pitch: 0.28",
+        "screw joint coarse pitch: 0.56",
+        "screw joint reverse pitch: -0.28",
+        "screw joint coarse fine travel gap: 0.14",
+        "screw joint reverse angle: 0.83",
+        "screw joint fine acceleration error: 0",
+        "solver: world_multibody_screw_joint_pitch",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

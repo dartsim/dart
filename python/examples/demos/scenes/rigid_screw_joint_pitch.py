@@ -399,11 +399,23 @@ class _RigidScrewJointPitchVerifier:
         fine_travel = lane_value("fine_pitch", "axial_travel")
         coarse_travel = lane_value("coarse_pitch", "axial_travel")
         reverse_travel = lane_value("reverse_pitch", "axial_travel")
+        coarse_fine_travel_gap = abs(coarse_travel - fine_travel)
+        lane_order = [lane.key for lane in self.lanes]
         payload: dict[str, Any] = {
             "row": "rigid_screw_joint_pitch",
+            "comparison_axis": "screw_pitch_coupling_family",
             "solver": "world_multibody_screw_joint_pitch",
             "scope": "contact_free_screw_pitch_lanes",
             "executor": self._executors[executor_index][0],
+            "held_fixed": {
+                "solver": "world_multibody_screw_joint_pitch",
+                "joint_family": "screw",
+                "axis": "z",
+                "contacts": "off",
+                "moving_mass": float(self.moving_mass),
+                "axial_inertia": float(self.axial_inertia),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "controls": {
@@ -413,9 +425,21 @@ class _RigidScrewJointPitchVerifier:
                 "moving_mass": float(self.moving_mass),
                 "axial_inertia": float(self.axial_inertia),
             },
-            "lane_order": [lane.key for lane in self.lanes],
+            "joint_lanes": lane_order,
+            "lane_order": lane_order,
             "lane_count": float(len(self.lanes)),
             "lanes": lanes,
+            "screw_joint_zero_pitch_axial_travel": lane_value(
+                "zero_pitch", "axial_travel"
+            ),
+            "screw_joint_fine_pitch": fine_pitch,
+            "screw_joint_coarse_pitch": coarse_pitch,
+            "screw_joint_reverse_pitch": reverse_pitch,
+            "screw_joint_coarse_fine_travel_gap": coarse_fine_travel_gap,
+            "screw_joint_reverse_angle": lane_value("reverse_pitch", "angle"),
+            "screw_joint_fine_acceleration_error": lane_value(
+                "fine_pitch", "acceleration_error"
+            ),
             "zero_pitch": lane_value("zero_pitch", "pitch"),
             "zero_pitch_angle": lane_value("zero_pitch", "angle"),
             "zero_pitch_axial_travel": lane_value("zero_pitch", "axial_travel"),
@@ -749,6 +773,12 @@ class _RigidScrewJointPitchVerifier:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: screw pitch coupling family")
+        builder.text(
+            "held fixed: World screw joints | contacts off | z-axis screw | "
+            f"moving mass {self.moving_mass:.1f} | axial inertia {self.axial_inertia:.2f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: World multibody screw joints | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text("pitch is translation per radian; gravity drives the screw axis")

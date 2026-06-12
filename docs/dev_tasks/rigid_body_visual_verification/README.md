@@ -2,51 +2,63 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 30 now gives the World multibody passive joint
-parameter row the same reviewable comparison shape as the surrounding rigid
-workflow rows while continuing to follow the DART 7 architecture harness from
-PR #2986. `rigid_joint_passive_parameters` names
-`passive_joint_parameter_family` as its comparison axis in the panel and capture
-metrics, records held-fixed contact-free World-prismatic/mass/time-step
-context, exports top-level energy, slip, and armature-gap metrics, and feeds
-decisive latest signals into the workflow review index.
+Latest local slice: row 31 now gives the World multibody screw-joint pitch row
+the same reviewable comparison shape as the surrounding rigid workflow rows
+while continuing to follow the DART 7 architecture harness from PR #2986.
+`rigid_screw_joint_pitch` names `screw_pitch_coupling_family` as its comparison
+axis in the panel and capture metrics, records held-fixed contact-free World
+screw-joint/z-axis/mass/inertia/time-step context, exports top-level pitch,
+travel-gap, reverse-sign, and acceleration-residual metrics, and feeds decisive
+latest signals into the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-30 latest signals prioritize spring
-  energy, damped energy, energy ratio, slip speed, armature position gap,
-  armature acceleration gap, solver, and executor.
-- Real row-30 workflow capture completed under
-  `build/captures/rigid_joint_passive_parameters_row_30_1781302360` with
+  sync check, and the unit guard that row-31 latest signals prioritize
+  zero-pitch axial travel, fine/coarse/reverse pitch, coarse/fine travel gap,
+  reverse angle, fine acceleration residual, and solver.
+- Real row-31 workflow capture completed under
+  `build/captures/rigid_screw_joint_pitch_row_31_1781302747` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 30 reported `comparison_axis=passive_joint_parameter_family`, held-fixed
-  `joint_family=prismatic`, `gravity=off`, `contacts=off`, `link_mass=2.0`,
-  `solver=world_multibody_passive_joint_parameters`, `time_step_ms=4.0`,
-  controls `executor_index=0.0`, `spring_stiffness=16.0`,
-  `damping_coefficient=3.0`, `rest_position=0.0`,
-  `coulomb_friction=6.0`, `slip_force=9.0`, `armature=6.0`,
-  `joint_lanes=[spring_only, spring_damper, stiction, slip, armature_reference, armature_heavy]`,
-  `passive_joint_spring_energy=2.1582722857466807`,
-  `passive_joint_damped_energy=1.3403396049698901`,
-  `passive_joint_damped_energy_ratio=0.6210243322038411`,
-  `passive_joint_slip_speed=0.7200000000000005`,
-  `passive_joint_armature_position_gap=0.26136000000000015`,
-  `passive_joint_armature_acceleration_gap=2.2500000000000018`, history
-  `max_damped_energy=2.1632000000000002`, and history
-  `max_armature_position_gap=0.26136000000000015`.
-- `review_index.html` showed the row-30 card with `axis`, `held fixed`,
+- Row 31 reported `comparison_axis=screw_pitch_coupling_family`, held-fixed
+  `joint_family=screw`, `axis=z`, `contacts=off`, `moving_mass=2.0`,
+  `axial_inertia=0.12`, `solver=world_multibody_screw_joint_pitch`,
+  `time_step_ms=3.0`, controls `executor_index=0.0`, `pitch_scale=0.28`,
+  `gravity_scale=1.0`, `moving_mass=2.0`, `axial_inertia=0.12`,
+  `joint_lanes=[zero_pitch, fine_pitch, coarse_pitch, reverse_pitch]`,
+  `screw_joint_zero_pitch_axial_travel=0.0`,
+  `screw_joint_fine_pitch=0.28`, `screw_joint_coarse_pitch=0.56`,
+  `screw_joint_reverse_pitch=-0.28`,
+  `screw_joint_coarse_fine_travel_gap=0.11219412053322755`,
+  `screw_joint_reverse_angle=0.8316611791907523`,
+  `screw_joint_fine_acceleration_error=-1.1723955140041653e-13`, and history
+  `max_abs_coarse_minus_fine_axial_travel=0.11219412053322755`.
+- `review_index.html` showed the row-31 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for spring energy, damped energy, energy ratio, slip speed, armature
-  position gap, armature acceleration gap, solver, and executor.
-- The per-scene capture wrote a nonblank docked screenshot and 119 PNG frames
-  for `rigid_joint_passive_parameters` from the 120-frame workflow row capture
-  under `build/captures/`.
+  ordering for zero-pitch axial travel, fine/coarse/reverse pitch, coarse/fine
+  travel gap, reverse angle, fine acceleration residual, and solver.
+- The per-scene capture wrote a nonblank docked screenshot and 95 PNG frames for
+  `rigid_screw_joint_pitch` from the 96-frame workflow row capture under
+  `build/captures/`.
+
+Previous completed and verified slice: row 30 gives the World multibody
+passive joint parameter row the same reviewable comparison shape as the
+surrounding rigid workflow rows. `rigid_joint_passive_parameters` names
+`passive_joint_parameter_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World-prismatic/mass/time-step
+context, exports top-level energy, slip, and armature-gap metrics, and feeds
+decisive latest signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-30 workflow capture completed under
+`build/captures/rigid_joint_passive_parameters_row_30_1781302360` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 119 PNG frames.
 
 Previous completed and verified slice: row 29 gives the World multibody joint
 motor/limit row the same reviewable comparison shape as the surrounding rigid
@@ -135,16 +147,16 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `ef9545ea8d1 Surface joint motor limit workflow signals`.
+  `403cde40bb3 Surface passive joint workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  passive joint-parameter workflow signals; otherwise inspect the uncommitted
-  diff for the row-30 follow-up.
+  screw-joint pitch workflow signals; otherwise inspect the uncommitted diff
+  for the row-31 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-30 review-index/evidence direction before broadening
+current row-15-through-row-31 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable

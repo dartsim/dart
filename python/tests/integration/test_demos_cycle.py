@@ -6021,9 +6021,19 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_screw_joint_pitch"
+    assert capture_metrics["comparison_axis"] == "screw_pitch_coupling_family"
     assert capture_metrics["solver"] == "world_multibody_screw_joint_pitch"
     assert capture_metrics["scope"] == "contact_free_screw_pitch_lanes"
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["held_fixed"] == {
+        "solver": "world_multibody_screw_joint_pitch",
+        "joint_family": "screw",
+        "axis": "z",
+        "contacts": "off",
+        "moving_mass": pytest.approx(controller.moving_mass),
+        "axial_inertia": pytest.approx(controller.axial_inertia),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert capture_metrics["controls"]["pitch_scale"] == pytest.approx(
         controller.pitch_scale
     )
@@ -6036,7 +6046,9 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert capture_metrics["controls"]["axial_inertia"] == pytest.approx(
         controller.axial_inertia
     )
-    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    expected_lanes = [lane.key for lane in controller.lanes]
+    assert capture_metrics["joint_lanes"] == expected_lanes
+    assert capture_metrics["lane_order"] == expected_lanes
     assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
     assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
     assert capture_metrics["lanes"]["fine_pitch"]["joint"] == (
@@ -6052,9 +6064,21 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert capture_metrics["zero_pitch_angle"] == pytest.approx(
         float(zero["angle"])
     )
+    assert capture_metrics["screw_joint_zero_pitch_axial_travel"] == pytest.approx(
+        float(zero["axial_travel"])
+    )
     assert capture_metrics["fine_pitch"] == pytest.approx(float(fine["pitch"]))
     assert capture_metrics["coarse_pitch"] == pytest.approx(float(coarse["pitch"]))
     assert capture_metrics["reverse_pitch"] == pytest.approx(float(reverse["pitch"]))
+    assert capture_metrics["screw_joint_fine_pitch"] == pytest.approx(
+        float(fine["pitch"])
+    )
+    assert capture_metrics["screw_joint_coarse_pitch"] == pytest.approx(
+        float(coarse["pitch"])
+    )
+    assert capture_metrics["screw_joint_reverse_pitch"] == pytest.approx(
+        float(reverse["pitch"])
+    )
     assert capture_metrics["coarse_to_fine_pitch_ratio"] == pytest.approx(2.0)
     assert capture_metrics["reverse_to_fine_pitch_ratio"] == pytest.approx(-1.0)
     assert capture_metrics["fine_angle"] == pytest.approx(float(fine["angle"]))
@@ -6074,6 +6098,12 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert capture_metrics["coarse_minus_fine_axial_travel"] == pytest.approx(
         float(coarse["axial_travel"]) - float(fine["axial_travel"])
     )
+    assert capture_metrics["screw_joint_coarse_fine_travel_gap"] == pytest.approx(
+        abs(float(coarse["axial_travel"]) - float(fine["axial_travel"]))
+    )
+    assert capture_metrics["screw_joint_reverse_angle"] == pytest.approx(
+        float(reverse["angle"])
+    )
     assert capture_metrics["fine_travel_per_radian"] == pytest.approx(
         float(fine["travel_per_radian"])
     )
@@ -6090,6 +6120,9 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
         float(fine["expected_acceleration"])
     )
     assert capture_metrics["fine_acceleration_error"] == pytest.approx(
+        float(fine["acceleration_error"])
+    )
+    assert capture_metrics["screw_joint_fine_acceleration_error"] == pytest.approx(
         float(fine["acceleration_error"])
     )
     assert capture_metrics["coarse_actual_axial_acceleration"] == pytest.approx(
