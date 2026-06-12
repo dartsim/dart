@@ -1799,6 +1799,17 @@ TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)
   const Eigen::VectorXd expected = Eigen::VectorXd::Constant(4, 0.35);
 
   {
+    AdmmSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
+    LcpOptions options = solver.getDefaultOptions();
+    options.warmStart = false;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
     MprgpSolver solver;
     Eigen::VectorXd x = Eigen::VectorXd::Zero(4);
     const auto result = solver.solve(problem, x, solver.getDefaultOptions());

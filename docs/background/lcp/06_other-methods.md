@@ -407,6 +407,13 @@ current normal impulse.
 The default initial penalty is $\rho=4$, chosen from current DART-owned
 adaptive-rho sweep evidence to reduce active-box iteration counts while keeping
 the same adaptive residual-balancing path.
+For non-warm-started standard LCPs with default per-solve parameters, ADMM first
+tries a validated strict-interior exact solve before allocating iteration
+workspace. The fast path prefers an LLT solve on SPD rows, falls back to the
+shared linear-solve helper when needed, and is accepted only when the candidate
+is strictly positive and passes solution validation. Boxed, friction-index,
+warm-started, and explicit custom-option calls stay on the operator-splitting
+loop.
 The ADMM loop reuses its linear-solve right-hand side and projected-step
 workspace across iterations, avoiding repeated per-iteration vector allocation
 without changing the operator-splitting updates or convergence tests.

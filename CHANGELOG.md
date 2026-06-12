@@ -1526,6 +1526,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `MprgpSolver` calls after the solver's symmetry and positive-definite
     checks, reusing the existing LLT factorization and preserving custom-option
     stress paths.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `AdmmSolver` when callers are not warm-starting or supplying per-solve
+    custom options, preferring an LLT exact solve for SPD rows before falling
+    back to the shared linear-solve helper and leaving boxed/friction-index
+    ADMM iteration behavior unchanged.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

@@ -1,5 +1,77 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior ADMM Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint: `Fast path strict-interior ADMM LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 47 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- Non-warm-started, default-option `AdmmSolver` calls now try a validated
+  strict-interior standard-LCP exact-solve path before allocating ADMM
+  iteration workspace.
+- The fast path prefers an LLT solve for SPD rows and falls back to the shared
+  strict-interior linear-solve helper if the LLT candidate does not validate.
+- Boxed, friction-index, warm-started, and explicit custom-option ADMM calls
+  stay on the existing operator-splitting loop.
+- The strict-interior "Other" unit coverage now includes `AdmmSolver` with
+  `warmStart=false`.
+- The checked LCP performance profile CSVs, Python demo metadata, ADMM
+  background docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/Admm/`.
+- Compared to the previous full profile cache:
+  - 12 rows: `0.216`
+  - 24 rows: `0.367`
+  - 48 rows: `0.597`
+  - 96 rows: `0.744`
+  - Mean focused ratio `0.481`; best `0.216`; worst `0.744`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `Admm` average ratio `1.07`, with 2 wins across 4 solved Standard
+  profile rows.
+- Current Standard follow-up targets are moderate iterative rows:
+  `Apgd`, `Jacobi`, `SymmetricPsor`, `RedBlackGaussSeidel`,
+  `ShockPropagation`, and `Sap`.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, `Nncg`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/Admm/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/admm_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target one of the remaining
+   moderate Standard rows, or start reducing the Boxed/FrictionIndex high-ratio
+   rows. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior MPRGP Fast Path
 
 Current branch state:

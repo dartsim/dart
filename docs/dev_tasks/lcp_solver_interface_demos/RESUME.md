@@ -1,5 +1,77 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior ADMM Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint: `Fast path strict-interior ADMM LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 47 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- Non-warm-started, default-option `AdmmSolver` calls now try a validated
+  strict-interior standard-LCP exact-solve path before allocating ADMM
+  iteration workspace.
+- The fast path prefers an LLT solve for SPD rows and falls back to the shared
+  strict-interior linear-solve helper if the LLT candidate does not validate.
+- Boxed, friction-index, warm-started, and explicit custom-option ADMM calls
+  stay on the existing operator-splitting loop.
+- Unit coverage was extended so
+  `StandardStrictInteriorFastPath.OtherSolversUseLinearSolve` includes
+  `AdmmSolver` with `warmStart=false`.
+- The Python LCP demo profile summary now moves `Admm` from Standard laggards
+  into Standard leaders and points remaining Standard tuning at moderate
+  iterative rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/Admm/` after-run compared to the previous
+  full profile cache:
+  - 12 rows: `0.216`
+  - 24 rows: `0.367`
+  - 48 rows: `0.597`
+  - 96 rows: `0.744`
+  - Mean focused ratio `0.481`; best `0.216`; worst `0.744`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full regenerated Standard profile now reports `Admm` average ratio `1.07`
+  with 2 wins across 4 solved Standard profile rows.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to `build/admm_strict_interior_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: moderate `Apgd`, `Jacobi`, `SymmetricPsor`,
+  `RedBlackGaussSeidel`, `ShockPropagation`, and `Sap` rows.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`,
+  `Nncg`, and `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 Strict-Interior MPRGP Fast Path
 
 This section is the latest state; older sections below are historical

@@ -138,6 +138,56 @@ LcpResult AdmmSolver::solve(
   const double absTolerance = (options.absoluteTolerance > 0)
                                   ? options.absoluteTolerance
                                   : mDefaultOptions.absoluteTolerance;
+  const double compTolerance = (options.complementarityTolerance > 0)
+                                   ? options.complementarityTolerance
+                                   : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  bool strictInteriorFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart
+      && problem.isStandardLcp(absTolerance)) {
+    const double validationTolerance = std::max(absTolerance, compTolerance);
+    const double strictInteriorTolerance = std::max(0.0, absTolerance);
+    Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+    if (exactFactorization.info() == Eigen::Success) {
+      Eigen::VectorXd candidate = exactFactorization.solve(b);
+      if (candidate.allFinite()
+          && candidate.minCoeff() > strictInteriorTolerance) {
+        fastW = A * candidate - b;
+        if (detail::validateSolution(
+                candidate, fastW, lo, hi, validationTolerance)) {
+          x = std::move(candidate);
+          strictInteriorFastPath = true;
+        }
+      }
+    }
+
+    if (!strictInteriorFastPath) {
+      strictInteriorFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTolerance, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (strictInteriorFastPath) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolerance);
+    result.validated = options.validateSolution;
+    return result;
+  }
 
   double rho = params->rhoInit;
   const double muProx = params->muProx;
@@ -246,10 +296,7 @@ LcpResult AdmmSolver::solve(
   }
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
-    const double compTol = (options.complementarityTolerance > 0)
-                               ? options.complementarityTolerance
-                               : mDefaultOptions.complementarityTolerance;
-    const double validationTol = std::max(absTolerance, compTol);
+    const double validationTol = std::max(absTolerance, compTolerance);
 
     std::string validationMessage;
     const bool valid = detail::validateSolution(
