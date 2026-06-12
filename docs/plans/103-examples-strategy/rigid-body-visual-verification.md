@@ -94,7 +94,7 @@ instead of early rows that only say what not to infer.
 | 33    | `rigid_link_center_of_mass`      | How does a link center-of-mass offset change inertia and gravity torque? | World multibody inertial offsets | Executor, COM offset, gravity scale, link mass, high-inertia multiplier, centered/+X/-X/high-inertia lanes, gravity torque, mass matrix, hinge acceleration, expected acceleration, COM marker position, energy, step timing, and capture metrics.                       | `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui`       | `test_rigid_link_center_of_mass_offsets_gravity_torque`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                               | Link inertial-offset row only; not arbitrary-point Jacobians, contact, IK, or operational-space control.   |
 | 34    | `rigid_link_jacobian`            | What does a link Jacobian map?                                           | World multibody kinematics       | Motion speed, elbow phase, wrench force, wrench angle, wrench moment, link-origin world/body Jacobian gap, `J qdot` twist, finite-difference velocity error, `J.T wrench` torque, power error, and capture metrics.                                                      | `pixi run py-demo-capture -- --scene rigid_link_jacobian --frames 96 --width 960 --height 540 --show-ui`             | `test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                          | Link-origin kinematic/wrench map only; not arbitrary point, COM, contact, IK, or OSC.                      |
 | 35    | `rigid_multibody_solver_family`  | Which multibody integration family supports solves?                      | Multibody solver families        | Executor, gravity scale, semi-implicit residual-only, variational residual-only, variational solved lanes, closure residual, tip error, tip height, joint speed, residual solve ratio, step timing, and capture metrics.                                                 | `pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 --width 960 --height 540 --show-ui`   | `test_rigid_multibody_solver_family_routes_solved_closures`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                           | Solver-family routing row; closure family selection remains in the next row.                               |
-| 36    | `rigid_loop_closure`             | Which loop-closure family should I use?                                  | Variational rigid multibody      | Executor, gravity scale, POINT/DISTANCE/RIGID family lanes, residual-only versus solved policies, closure residual, tip error, distance error, orientation residual, residual ratio, joint speed, and step timing.                                                       | `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui`              | `test_rigid_loop_closure_compares_closure_families`, replay-control snapshot coverage, workflow ordering, panel/category coverage, and visual smoke capture.                                                                    | Public-family comparison row; not a compliance, breakage, or distance-family solver sweep.                 |
+| 36    | `rigid_loop_closure`             | Which loop-closure family should I use?                                  | Variational rigid multibody      | Executor, gravity scale, POINT/DISTANCE/RIGID family lanes, residual-only versus solved policies, closure residual, tip error, distance error, orientation residual, residual ratio, joint speed, step timing, and capture metrics.                                      | `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui`              | `test_rigid_loop_closure_compares_closure_families`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                   | Public-family comparison row; not a compliance, breakage, or distance-family solver sweep.                 |
 
 ## No-Tunneling Decision
 
@@ -516,11 +516,21 @@ Evidence recorded for this slice:
   viewer-title numbering, sidecar/README/capture-command drift checks, adjacent
   row coverage, replay snapshot coverage, and high-value panel coverage
   reported `14 passed`.
-- Latest loop-closure family follow-up:
-  `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
-  reported `8 passed`. It keeps one loop-closure workflow row but expands the
-  row from POINT-only endpoint closure into POINT, DISTANCE, and RIGID public
-  families crossed with residual-only and solved policies.
+- Latest loop-closure capture-metrics follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q`
+  reported `1 passed`. It keeps one loop-closure workflow row and now verifies
+  the capture hook mirrors POINT, DISTANCE, and RIGID public families crossed
+  with residual-only and solved policies, per-family residual ratios, controls,
+  case metadata, and compact histories.
+  `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_metrics_1781239815`
+  wrote a nonblank docked screenshot plus 71 PNG frames, 72 scene-metrics
+  events, final contacts at 0, row `rigid_loop_closure`, solver
+  `variational_rigid_multibody_loop_closure`, scope
+  `point_distance_rigid_closure_family_selection`, six cases, executor
+  `Sequential`, gravity scale `1.0`, POINT/DISTANCE/RIGID residual ratios
+  about `7.595e11`/`7.458e11`/`7.740e11`, and manifest numeric ranges for
+  residuals, tip errors/heights, distance errors, orientation errors, joint
+  speeds, step timing, residual ratios, and world time.
 - Latest body-mode follow-up:
   `PYTHONPATH=build/default/cpp/Release/python:python pixi run pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
   reported `8 passed`. It keeps the new early workflow row ordered after
@@ -848,8 +858,9 @@ Evidence recorded for this slice:
   `[2496.525, 2663.351, 2868.943]`, 2869 unique colors), a nonblank
   `rigid_multibody_solver_family` screenshot plus 71 PNG frames with
   72 scene-metrics events and final contacts at 0, a nonblank
-  `rigid_body_modes` screenshot plus 71 frames, a nonblank
-  `rigid_loop_closure` screenshot plus 71 frames, a nonblank
+  `rigid_loop_closure` screenshot plus 71 PNG frames with 72 scene-metrics
+  events and final contacts at 0, a nonblank `rigid_body_modes` screenshot plus
+  71 frames, a nonblank
   `rigid_screw_joint_pitch` screenshot
   plus 95 frames, a nonblank `rigid_contact_inspector` screenshot plus 23
   frames, a nonblank `rigid_material_mixing` screenshot plus 71 frames, and a

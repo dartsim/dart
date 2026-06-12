@@ -2,19 +2,21 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed handoff commit `3864dbf331a`, refreshed
-the previously skipped row-34 `rigid_link_jacobian` final gates, and is now
-carrying the row-35 `rigid_multibody_solver_family` capture-metrics slice with
-focused test plus fresh docked capture evidence. The branch had no associated
+Latest continuation resumed from pushed handoff commit `3864dbf331a`, completed
+the row-35 `rigid_multibody_solver_family` capture-metrics checkpoint, and is
+now carrying the row-36 `rigid_loop_closure` capture-metrics slice with focused
+test plus fresh docked capture evidence. The user then explicitly stopped the
+verification path and requested handoff/push only, so do not assume any
+post-handoff lint/build/diff refresh happened. The branch had no associated
 GitHub PR at resume time.
 
 Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch head remains `3864dbf331a` unless a maintainer/user explicitly
-  approves another push.
-- The local checkpoint should include row-35 multibody solver-family capture
-  metrics, focused assertions, docs, docked capture evidence, and refreshed
+- Before the final handoff push, origin was at `3864dbf331a` and local `HEAD`
+  was `d0532eeb560`.
+- The final handoff checkpoint should include row-36 loop-closure capture
+  metrics, focused assertions, docs, docked capture evidence, and this refreshed
   handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
@@ -38,12 +40,13 @@ Recent checkpoints:
 - `7452a0f22d4` (`Hand off rigid link center of mass metrics`)
 - `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
 - `3864dbf331a` (`Hand off rigid link Jacobian metrics`)
+- `d0532eeb560` (`Expose rigid multibody solver family capture metrics`)
 - the local checkpoint containing this file
 
-Current local slice: `rigid_multibody_solver_family` row capture metrics. The
-checkpoint touches:
+Current local slice: `rigid_loop_closure` row capture metrics. The checkpoint
+touches:
 
-- `python/examples/demos/scenes/rigid_multibody_solver_family.py`
+- `python/examples/demos/scenes/rigid_loop_closure.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -54,54 +57,73 @@ checkpoint touches:
 
 What changed in code/test:
 
-- `python/examples/demos/scenes/rigid_multibody_solver_family.py` now imports
+- `python/examples/demos/scenes/rigid_loop_closure.py` now imports
   `CAPTURE_METRICS_INFO_KEY` and registers
   `SceneSetup.info["capture_metrics"]`.
-- `_RigidMultibodySolverFamily.capture_metrics()` serializes the current
+- `_RigidLoopClosureVerifier.capture_metrics()` serializes the current
   controller state without stepping or resetting. If no latest metrics exist,
   it records the current metrics snapshot once.
 - The payload exports row identity, solver
-  `world_multibody_integration_family`, scope
-  `multibody_closure_solve_routing`, executor, time step, world time,
-  gravity-scale controls, case order/count, per-case integration family,
-  closure policy, closure name, target tip, serialized live metrics, flattened
-  residual/tip/joint-speed/step fields, residual-only versus solved residuals,
-  solve ratio, and compact per-case histories.
-- `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures`
+  `variational_rigid_multibody_loop_closure`, scope
+  `point_distance_rigid_closure_family_selection`, executor, time step, world
+  time, gravity-scale controls, family order, policy order, case order/count,
+  per-case family/policy/closure metadata, target/anchor points, serialized live
+  metrics, flattened residual/tip/distance/orientation/joint-speed/step fields,
+  per-family residual ratios, and compact histories.
+- `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`
   now asserts the capture hook mirrors the live controller metrics, controls,
-  case metadata, residual solve ratio, and history maxima.
+  case metadata, residual ratios, and history maxima.
 
-Validation status for the multibody solver-family checkpoint:
+Validation status for the loop-closure checkpoint:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_multibody_solver_family --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_multibody_solver_family_metrics_1781239036`
+- `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_metrics_1781239815`
   wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
   screenshot
-  `/tmp/dart_capture_multibody_solver_family_metrics_1781239036/rigid_multibody_solver_family.png`,
+  `/tmp/dart_capture_loop_closure_metrics_1781239815/rigid_loop_closure.png`,
   and final contacts `0`.
-- Latest captured payload details: row `rigid_multibody_solver_family`, solver
-  `world_multibody_integration_family`, scope
-  `multibody_closure_solve_routing`, executor `Sequential`, gravity scale
-  `1.0`, three cases, latest semi-implicit residual about `0.7631`,
-  variational residual about `0.7642`, variational solved residual about
-  `6.66e-16`, solved residual clamp `1e-12`, residual solve ratio about
-  `7.642e11`, latest solved tip height about `0.7460`, latest residual tip
-  heights about `0.0187`, history samples `73`, and finite manifest ranges for
-  residuals, tip errors/heights, joint speeds, step timing, solve ratio, and
-  world time.
+- Latest captured payload details: row `rigid_loop_closure`, solver
+  `variational_rigid_multibody_loop_closure`, scope
+  `point_distance_rigid_closure_family_selection`, executor `Sequential`,
+  gravity scale `1.0`, six cases, latest POINT/DISTANCE/RIGID residual ratios
+  about `7.595e11`/`7.458e11`/`7.740e11`, latest POINT residual/solved
+  residual about `0.7595`/`7.03e-13`, DISTANCE residual/solved residual about
+  `0.7458`/`9.44e-15`, RIGID residual/solved residual about
+  `0.7740`/`1.20e-13`, RIGID residual orientation error about `0.1490`,
+  history samples `73`, and finite manifest ranges for residuals, tip
+  errors/heights, distance errors, orientation errors, joint speeds, step
+  timing, residual ratios, and world time.
 - The broader workflow/doc drift guard with row ordering, viewer-title
   numbering, sidecar/README/capture-command drift checks, passive-parameter
   coverage, screw-pitch coverage, dynamics-terms coverage, link center-of-mass
-  coverage, link-Jacobian coverage, replay snapshot coverage, and high-value
-  panel coverage reported `15 passed`.
-- `pixi run lint` passed.
+  coverage, link-Jacobian coverage, solver-family coverage, replay snapshot
+  coverage, and high-value panel coverage reported `16 passed`.
+- A pre-handoff `pixi run lint` had passed before the final handoff edits; a
+  later lint was in flight when the user stopped verification, and its result
+  was not used for this handoff.
 - Bounded
-  `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
-  passed and reported `ninja: no work to do`.
-- `git diff --check` passed.
+  `DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 pixi run build`
+  passed and reported `ninja: no work to do` before the final handoff edits.
+- `git diff --check` passed before the final handoff edits, but was not rerun
+  after the explicit stop request.
 
 Completed local checkpoint immediately before this slice:
+
+- Commit `d0532eeb560` (`Expose rigid multibody solver family capture metrics`)
+  completes row 35, `rigid_multibody_solver_family`.
+- That row publishes solver-family capture metrics for executor/gravity
+  controls, case order, integration family and closure policy labels,
+  residuals, tip errors/heights, joint speeds, step timing, residual solve
+  ratio, and compact histories.
+- Validation collected for row 35: focused test reported `1 passed`; real
+  docked capture under
+  `/tmp/dart_capture_multibody_solver_family_metrics_1781239036` wrote 71 PNG
+  frames and 72 scene-metrics events; broader workflow/doc drift guard reported
+  `15 passed`; `pixi run lint`, bounded default `pixi run build`, and
+  `git diff --check` passed.
+
+Previous completed checkpoint:
 
 - Commit `3864dbf331a` (`Hand off rigid link Jacobian metrics`) completes row
   34, `rigid_link_jacobian`.
@@ -115,8 +137,6 @@ Completed local checkpoint immediately before this slice:
   guard reported `14 passed`. The skipped stop-state gates were refreshed from
   the clean pushed checkpoint: `pixi run lint`, bounded default
   `pixi run build`, and `git diff --check` passed.
-
-Previous completed checkpoint:
 
 - Commit `3c6d5fee5a6` (`Complete rigid link center of mass capture docs`)
   completes row 33, `rigid_link_center_of_mass`.
@@ -367,11 +387,13 @@ Validation collected for the dynamics-terms slice so far:
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. If the current local checkpoint has not been committed yet, commit the row-35
-   checkpoint after confirming the working tree contains only the files listed
-   above and the validation section has final gates recorded.
-3. After row 35 is gated, the next likely capture-metrics pass is
-   `rigid_loop_closure`, unless the user redirects.
+2. If this handoff commit has not reached origin, push it only with explicit
+   maintainer/user approval.
+3. Before any PR or further implementation, decide whether to refresh the
+   skipped post-handoff lint/diff gates. They were intentionally not rerun
+   after the stop request.
+4. After row 36 is gated, audit remaining non-numbered shelf or PR-readiness
+   gaps instead of assuming another numbered workflow row.
 
 ## Last Session Summary
 

@@ -5122,6 +5122,111 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
     assert float(metrics["RIGID residual"]["orientation_error"]) > 0.1
     assert float(rigid_solved["orientation_error"]) < 1.0e-8
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_loop_closure"
+    assert capture_metrics["solver"] == "variational_rigid_multibody_loop_closure"
+    assert (
+        capture_metrics["scope"]
+        == "point_distance_rigid_closure_family_selection"
+    )
+    assert capture_metrics["executor"] == controller._executors[
+        controller.executor_index
+    ][0]
+    assert capture_metrics["time_step_ms"] == pytest.approx(5.0)
+    assert capture_metrics["world_time"] == pytest.approx(
+        controller.primary_world.time
+    )
+    assert capture_metrics["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["family_order"] == ["POINT", "DISTANCE", "RIGID"]
+    assert capture_metrics["policy_order"] == ["residual", "solved"]
+    assert capture_metrics["case_order"] == [case.key for case in controller.cases]
+    assert capture_metrics["case_count"] == pytest.approx(len(controller.cases))
+    assert set(capture_metrics["cases"]) == {case.key for case in controller.cases}
+    assert set(capture_metrics["families"]) == {"POINT", "DISTANCE", "RIGID"}
+    for case in controller.cases:
+        case_payload = capture_metrics["cases"][case.key]
+        assert case_payload["label"] == case.label
+        assert case_payload["family"] == case.family_label
+        assert case_payload["policy"] == case.policy_label
+        assert case_payload["dynamic_solve"] is (
+            case.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+        )
+        assert case_payload["closure"] == case.closure.name
+        assert case_payload["target_point"] == pytest.approx(case.target_point)
+        assert case_payload["anchor_point"] == pytest.approx(case.anchor_point)
+        assert case_payload["target_distance"] == pytest.approx(
+            case.target_distance
+        )
+        for metric_key, metric_value in metrics[case.label].items():
+            serialized = case_payload["metrics"][metric_key]
+            if isinstance(metric_value, bool):
+                assert serialized is bool(metric_value)
+            elif isinstance(metric_value, str):
+                assert serialized == metric_value
+            else:
+                assert serialized == pytest.approx(float(metric_value))
+                assert capture_metrics[f"{case.key}_{metric_key}"] == pytest.approx(
+                    float(metric_value)
+                )
+
+    for family_label in ("POINT", "DISTANCE", "RIGID"):
+        family_payload = capture_metrics["families"][family_label]
+        residual_metric = metrics[f"{family_label} residual"]
+        solved_metric = metrics[f"{family_label} solved"]
+        expected_ratio = float(residual_metric["residual"]) / max(
+            float(solved_metric["residual"]),
+            1.0e-12,
+        )
+        assert family_payload["residual_case"] == f"{family_label} residual"
+        assert family_payload["solved_case"] == f"{family_label} solved"
+        assert family_payload["residual"] == pytest.approx(
+            float(residual_metric["residual"])
+        )
+        assert family_payload["solved_residual"] == pytest.approx(
+            max(float(solved_metric["residual"]), 1.0e-12)
+        )
+        assert family_payload["residual_ratio"] == pytest.approx(expected_ratio)
+        prefix = family_label.lower()
+        assert capture_metrics[f"{prefix}_residual_ratio"] == pytest.approx(
+            expected_ratio
+        )
+        assert capture_metrics["history"]["families"][family_label][
+            "max_residual_ratio"
+        ] == pytest.approx(max(controller._residual_ratio_history[family_label]))
+
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        max(len(history) for history in controller._residual_ratio_history.values())
+    )
+    for case in controller.cases:
+        history = capture_metrics["history"]["cases"][case.key]
+        assert history["samples"] == pytest.approx(
+            len(controller._residual_history[case.label])
+        )
+        assert history["max_residual"] == pytest.approx(
+            max(controller._residual_history[case.label])
+        )
+        assert history["max_distance_error"] == pytest.approx(
+            max(controller._distance_error_history[case.label])
+        )
+        assert history["max_orientation_error"] == pytest.approx(
+            max(controller._orientation_error_history[case.label])
+        )
+        assert history["max_joint_speed"] == pytest.approx(
+            max(controller._joint_speed_history[case.label])
+        )
+        assert history["max_step_ms"] == pytest.approx(
+            max(controller._step_ms_history[case.label])
+        )
+
 
 def test_rigid_multibody_solver_family_routes_solved_closures() -> None:
     import numpy as np

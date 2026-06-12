@@ -281,6 +281,18 @@
       multibody chain, with residual-only versus solved policies plus
       residual, tip-error, distance-error, orientation, and residual-ratio
       diagnostics.
+- [x] Loop-closure capture-metrics follow-up:
+      `rigid_loop_closure` now publishes row identity, loop-closure family
+      scope, executor/gravity controls, family and policy order, per-case
+      family/policy labels, residuals, tip/distance/orientation errors, joint
+      speeds, step timing, solved ratios, and compact histories through the
+      capture hook. The focused row guard reported `1 passed`, and the real
+      docked 72-frame capture wrote 71 PNG frames and 72 scene-metrics events
+      under `/tmp/dart_capture_loop_closure_metrics_1781239815`. The broader
+      workflow/doc drift guard reported `16 passed`. A pre-handoff lint,
+      bounded default build, and `git diff --check` had passed before final
+      handoff edits, but the user explicitly stopped further verification
+      before post-handoff lint/diff refresh.
 - [x] Contact-manipulation slice: `rigid_contact_manipulation` runs matched
       sequential impulse and rigid IPC table-push tasks with executor, launch
       speed, friction, pusher mass, travel, gap, contact/proximity, drift,
@@ -556,6 +568,15 @@
       reported `15 passed`; `pixi run lint`, bounded default
       `pixi run build`, and `git diff --check` passed. The next likely missing
       capture-metrics row is `rigid_loop_closure`.
+- [x] Current continuation checkpoint: after the row-35 local checkpoint, the
+      branch now records row-36 loop-closure capture metrics with focused test
+      and fresh docked capture evidence. This completes the numbered workflow's
+      current capture-metrics pass. The broader workflow/doc drift guard
+      reported `16 passed`. Final handoff edits were made after the last known
+      lint/build/diff evidence, and no further verification was run because the
+      user explicitly requested handoff without additional verification. The
+      next fresh session should audit remaining non-numbered shelf/PR-readiness
+      gaps rather than assume another numbered row.
 
 ## Goal
 
@@ -737,25 +758,28 @@ and the no-tunneling scope decision.
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
    `feature/rigid-body-gui-visual-verification`.
-2. Finish any missing row-35 gates listed in the current continuation
-   checkpoint before moving on.
-3. The next likely missing capture-metrics row after row 35 is
-   `rigid_loop_closure`.
-4. Keep payloads summary-oriented: row identity, solver/contact scope,
+2. Respect the final stop boundary: no post-handoff lint/build/diff refresh was
+   run after the explicit request to stop verification.
+3. Refresh skipped gates only if the next user/session wants to move from
+   handoff into PR-readiness or more implementation.
+4. The numbered workflow capture-metrics pass now reaches the final row. Next,
+   audit remaining non-numbered shelf gaps and PR-readiness rather than adding
+   another numbered row by default.
+5. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-5. The branch was pushed for handoff only because the maintainer/user explicitly
+6. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-6. Refresh validation as needed, then use the local
+7. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-7. Keep related-evidence routes synchronized between the runner-owned
+8. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+9. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-9. Keep fuller articulated arm/gripper manipulation deferred until the public
+10. Keep fuller articulated arm/gripper manipulation deferred until the public
    API/runtime can support it as an interactive verifier. The current audit
    found rigid-body joints are not IPC-supported, multibody link contacts lack
    material/friction controls, and scripted IPC two-jaw pinch settings that

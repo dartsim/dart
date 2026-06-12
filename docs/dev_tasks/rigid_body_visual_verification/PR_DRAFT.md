@@ -72,7 +72,8 @@
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
   passive joint parameters, screw-joint pitch, generalized dynamics terms,
   link center-of-mass offsets, link-origin Jacobian mapping, multibody
-  solver-family routing, and stack-packet physics/runtime fields in
+  solver-family routing, loop-closure family selection, and stack-packet
+  physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -85,6 +86,41 @@
 
 ## Testing
 
+- Latest loop-closure capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_loop_closure.py` now publishes
+    scene-owned capture metrics for the row 36 loop-closure family verifier:
+    row identity, family-selection scope, executor/gravity controls, family and
+    policy order, per-case family/policy labels, residuals, tip/distance/
+    orientation errors, joint speeds, step timing, residual ratios, and compact
+    histories.
+  - `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`
+    now asserts the capture hook mirrors live controller metrics, controls,
+    case metadata, residual ratios, and history maxima.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_metrics_1781239815`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `rigid_loop_closure`, solver
+      `variational_rigid_multibody_loop_closure`, scope
+      `point_distance_rigid_closure_family_selection`, executor `Sequential`,
+      gravity scale `1.0`, six cases, POINT/DISTANCE/RIGID residual ratios
+      about `7.595e11`/`7.458e11`/`7.740e11`, and manifest ranges for
+      residuals, tip errors/heights, distance errors, orientation errors, joint
+      speeds, step timing, residual ratios, and world time
+  - Broad workflow/doc drift guard with row ordering, viewer-title numbering,
+    sidecar/README/capture-command drift checks, passive-parameter coverage,
+    screw-pitch coverage, dynamics-terms coverage, link center-of-mass
+    coverage, link-Jacobian coverage, solver-family coverage, replay snapshot
+    coverage, and high-value panel coverage
+    - `16 passed`
+  - `pixi run lint`
+    - passed before the final handoff edits; a later lint result was not
+      captured because the user explicitly stopped verification
+  - `DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 pixi run build`
+    - passed before the final handoff edits; `ninja: no work to do`
+  - `git diff --check`
+    - passed before the final handoff edits; not rerun after the explicit stop
+      request
 - Latest multibody solver-family capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_multibody_solver_family.py` now
     publishes scene-owned capture metrics for the row 35 solver-family routing

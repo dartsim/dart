@@ -196,9 +196,9 @@
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. The baseline, contact-inspection, solver-comparison,
     contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
-    multibody solver-family, step-diagnostics, contact-scale budget, and rigid
-    IPC stack packet rows use it to make capture artifacts carry scene-owned
-    physics/runtime evidence.
+    multibody solver-family, loop-closure family, step-diagnostics,
+    contact-scale budget, and rigid IPC stack packet rows use it to make
+    capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`
@@ -254,7 +254,7 @@
   - Updated `rigid_loop_closure` in Python `py-demos` to compare POINT,
     DISTANCE, and RIGID loop-closure families with residual-only versus solved
     lanes, gravity-scale controls, closure residuals, tip/distance/orientation
-    diagnostics, and residual-ratio histories.
+    diagnostics, residual-ratio histories, and scene-owned capture metrics.
   - Updated the differentiable `diff_drone_liftoff` Python `py-demos` scene so
     rigid-contact users can inspect contact-gradient mode behavior with thrust,
     loss, thrust-gradient, analytic-loss, and height histories while the rigid

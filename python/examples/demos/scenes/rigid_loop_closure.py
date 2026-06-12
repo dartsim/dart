@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _NUM_LINKS = 4
 _LINK_LENGTH = 0.56
@@ -398,6 +398,138 @@ class _RigidLoopClosureVerifier:
                 open_residual / max(solved_residual, 1e-12)
             )
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(case_label: str) -> dict[str, float | str | bool]:
+            serialized: dict[str, float | str | bool] = {}
+            for key, value in self._last_metrics[case_label].items():
+                if isinstance(value, (bool, np.bool_)):
+                    serialized[key] = bool(value)
+                elif isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def metric_value(case_label: str, metric_key: str) -> float:
+            return float(self._last_metrics[case_label][metric_key])
+
+        def max_history(history: deque[float]) -> float:
+            return max(history, default=0.0)
+
+        cases = {
+            case.key: {
+                "label": case.label,
+                "family": case.family_label,
+                "policy": case.policy_label,
+                "dynamics": "solve"
+                if case.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+                else "residual only",
+                "dynamic_solve": case.dynamics == sx.ClosureDynamicsPolicy.SOLVE,
+                "closure": case.closure.name,
+                "target_point": [float(value) for value in case.target_point],
+                "anchor_point": [float(value) for value in case.anchor_point],
+                "target_distance": float(case.target_distance),
+                "metrics": serialized_metrics(case.label),
+            }
+            for case in self.cases
+        }
+        families: dict[str, dict[str, float | str]] = {}
+        for family_label, _family, description in self._families:
+            residual_label = f"{family_label} residual"
+            solved_label = f"{family_label} solved"
+            residual = metric_value(residual_label, "residual")
+            solved = max(metric_value(solved_label, "residual"), 1.0e-12)
+            ratio = residual / solved
+            families[family_label] = {
+                "description": description,
+                "residual_case": residual_label,
+                "solved_case": solved_label,
+                "residual": residual,
+                "solved_residual": solved,
+                "residual_ratio": ratio,
+            }
+
+        payload: dict[str, Any] = {
+            "row": "rigid_loop_closure",
+            "solver": "variational_rigid_multibody_loop_closure",
+            "scope": "point_distance_rigid_closure_family_selection",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "gravity_scale": float(self.gravity_scale),
+            "controls": {
+                "executor_index": float(executor_index),
+                "gravity_scale": float(self.gravity_scale),
+            },
+            "family_order": [
+                family_label for family_label, _family, _description in self._families
+            ],
+            "policy_order": ["residual", "solved"],
+            "case_order": [case.key for case in self.cases],
+            "case_count": float(len(self.cases)),
+            "cases": cases,
+            "families": families,
+            "history": {
+                "samples": float(
+                    max(
+                        (
+                            len(history)
+                            for history in self._residual_ratio_history.values()
+                        ),
+                        default=0,
+                    )
+                ),
+                "families": {
+                    family_label: {
+                        "max_residual_ratio": max_history(
+                            self._residual_ratio_history[family_label]
+                        )
+                    }
+                    for family_label, _family, _description in self._families
+                },
+                "cases": {
+                    case.key: {
+                        "samples": float(len(self._residual_history[case.label])),
+                        "max_residual": max_history(
+                            self._residual_history[case.label]
+                        ),
+                        "max_distance_error": max_history(
+                            self._distance_error_history[case.label]
+                        ),
+                        "max_orientation_error": max_history(
+                            self._orientation_error_history[case.label]
+                        ),
+                        "max_joint_speed": max_history(
+                            self._joint_speed_history[case.label]
+                        ),
+                        "max_step_ms": max_history(self._step_ms_history[case.label]),
+                    }
+                    for case in self.cases
+                },
+            },
+        }
+        for family_label, family_metrics in families.items():
+            prefix = family_label.lower()
+            payload[f"{prefix}_residual"] = float(family_metrics["residual"])
+            payload[f"{prefix}_solved_residual"] = float(
+                family_metrics["solved_residual"]
+            )
+            payload[f"{prefix}_residual_ratio"] = float(
+                family_metrics["residual_ratio"]
+            )
+        for case in self.cases:
+            for key, value in self._last_metrics[case.label].items():
+                if isinstance(value, (bool, np.bool_)):
+                    continue
+                if isinstance(value, (int, float, np.floating)):
+                    payload[f"{case.key}_{key}"] = float(value)
+        return payload
+
     def _sync(self) -> None:
         for case in self.cases:
             case.bridge.sync()
@@ -597,6 +729,7 @@ def build() -> SceneSetup:
             "sx_world": verifier.primary_world,
             "rigid_loop_closure_controller": verifier,
             "rigid_loop_closure_worlds": [case.world for case in verifier.cases],
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,

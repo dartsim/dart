@@ -173,7 +173,7 @@ infer.
 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker, metrics |
 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` power, metrics      |
 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals, metrics             |
-| `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals and solved ratios             |
+| `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Point, distance, rigid residuals, solved ratios, metrics       |
 
 For the focused IPC no-tunneling capability view, use
 **`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
@@ -591,6 +591,10 @@ DISTANCE holds only the tether length to an anchor, and RIGID welds the full
 endpoint pose. The panel plots residual ratios and reports tip error,
 distance error, orientation residual, tip height, and joint speed so users can
 choose the narrowest closure family that matches the model.
+`py-demo-capture` records executor/gravity controls, family and policy order,
+per-case family/policy labels, residuals, tip/distance/orientation errors,
+joint speeds, step timing, solved ratios, and compact history metrics into the
+manifest sidecar.
 
 Capture the focused rigid verifier scenes with the docked UI visible:
 
