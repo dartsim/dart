@@ -1,5 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Boxed ADMM Projected Active-Set Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path boxed active-set ADMM LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 50 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- Added a shared validated projected-active-set boxed-LCP exact-solve helper.
+  It proposes active bounds from the unconstrained solve, solves the free block
+  exactly, and accepts only candidates that pass the existing boxed solution
+  validator.
+- Default, non-warm-started `AdmmSolver` boxed LCPs without friction-index
+  coupling now try that exact path before allocating ADMM iteration workspace.
+- Warm-started, explicit custom-option, standard strict-interior, and coupled
+  friction-index ADMM rows stay on their previous paths.
+- Unit coverage now checks an active lower/upper/free boxed ADMM packet that
+  solves in zero iterations.
+- The Python LCP demo profile summary now moves `Admm` into Boxed leaders and
+  removes it from Boxed laggards.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Boxed/Admm/` wrote
+  `build/admm_boxed_projected_active_set_after.json` with `1217.118ns`,
+  `3806.814ns`, and `15540.370ns` for 12, 24, and 48 row packets.
+- All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Regenerated full profile reports Boxed `Admm` average ratio `1.56` and
+  Standard `Admm` average ratio `1.19`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/admm_boxed_projected_active_set_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `ShockPropagation`, `NNCG`, `Dantzig`, `BlockedJacobi`,
+  `BoxedSemiSmoothNewton`, `BGS`, `SubspaceMinimization`, and `Sap`.
+- FrictionIndex: `BlockedJacobi`, `ShockPropagation`, `Staggering`, `BGS`,
+  `SubspaceMinimization`, `NNCG`, `Dantzig`, `BoxedSemiSmoothNewton`, `Admm`,
+  and `Apgd`.
+- Standard: moderate `InteriorPoint`, `Sap`, `FischerBurmeisterNewton`,
+  `MinimumMapNewton`, `PenalizedFischerBurmeisterNewton`,
+  `RedBlackGaussSeidel`, `ShockPropagation`, and `BoxedSemiSmoothNewton`.
+
 ## Current Reality - 2026-06-12 Strict-Interior ShockPropagation Fast Path
 
 This section is the latest state; older sections below are historical

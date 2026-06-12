@@ -143,32 +143,36 @@ LcpResult AdmmSolver::solve(
                                    : mDefaultOptions.complementarityTolerance;
 
   Eigen::VectorXd fastW;
-  bool strictInteriorFastPath = false;
-  if (options.customOptions == nullptr && !options.warmStart
-      && problem.isStandardLcp(absTolerance)) {
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
     const double validationTolerance = std::max(absTolerance, compTolerance);
-    const double strictInteriorTolerance = std::max(0.0, absTolerance);
-    Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
-    if (exactFactorization.info() == Eigen::Success) {
-      Eigen::VectorXd candidate = exactFactorization.solve(b);
-      if (candidate.allFinite()
-          && candidate.minCoeff() > strictInteriorTolerance) {
-        fastW = A * candidate - b;
-        if (detail::validateSolution(
-                candidate, fastW, lo, hi, validationTolerance)) {
-          x = std::move(candidate);
-          strictInteriorFastPath = true;
+    if (problem.isStandardLcp(absTolerance)) {
+      const double strictInteriorTolerance = std::max(0.0, absTolerance);
+      Eigen::LLT<Eigen::MatrixXd> exactFactorization(A);
+      if (exactFactorization.info() == Eigen::Success) {
+        Eigen::VectorXd candidate = exactFactorization.solve(b);
+        if (candidate.allFinite()
+            && candidate.minCoeff() > strictInteriorTolerance) {
+          fastW = A * candidate - b;
+          if (detail::validateSolution(
+                  candidate, fastW, lo, hi, validationTolerance)) {
+            x = std::move(candidate);
+            exactFastPath = true;
+          }
         }
       }
-    }
 
-    if (!strictInteriorFastPath) {
-      strictInteriorFastPath = detail::trySolveStrictInteriorStandardLcp(
+      if (!exactFastPath) {
+        exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+            problem, absTolerance, validationTolerance, x, &fastW);
+      }
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
           problem, absTolerance, validationTolerance, x, &fastW);
     }
   }
 
-  if (strictInteriorFastPath) {
+  if (exactFastPath) {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;
     std::string boundsMessage;

@@ -1518,6 +1518,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     ahead of block/layer matrix construction after lightweight custom
     block/layer validation, preferring an LLT exact solve before falling back to
     the shared linear-solve helper.
+  - Added a validated projected-active-set boxed-LCP exact solve and wired it
+    into default non-warm-started `AdmmSolver` calls without friction-index
+    coupling, preserving ADMM's iterative path for warm starts, custom options,
+    and coupled contact rows.
   - Extended the validated strict-interior standard-LCP fast path to BGS for
     small and medium standard comparison rows, while preserving explicit custom
     block validation and leaving larger rows on the existing Gauss-Seidel block

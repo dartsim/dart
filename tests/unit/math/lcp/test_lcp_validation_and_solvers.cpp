@@ -79,6 +79,31 @@ LcpProblem makeBoxedProblem()
       std::move(findex));
 }
 
+LcpProblem makeBoxedActiveProblem(Eigen::VectorXd* expected = nullptr)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(3, 3);
+  A.diagonal() << 4.0, 3.0, 2.0;
+  Eigen::VectorXd lo(3);
+  lo << -1.0, -0.5, -0.25;
+  Eigen::VectorXd hi(3);
+  hi << 0.75, 1.0, 0.75;
+  Eigen::VectorXd target(3);
+  target << lo[0], hi[1], 0.2;
+  Eigen::VectorXd w(3);
+  w << 0.5, -0.5, 0.0;
+  Eigen::VectorXd b = A * target - w;
+  Eigen::VectorXi findex = Eigen::VectorXi::Constant(3, -1);
+  if (expected) {
+    *expected = target;
+  }
+  return LcpProblem(
+      std::move(A),
+      std::move(b),
+      std::move(lo),
+      std::move(hi),
+      std::move(findex));
+}
+
 LcpProblem makeFrictionProblem()
 {
   Eigen::MatrixXd A(3, 3);
@@ -1855,6 +1880,22 @@ TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)
     EXPECT_EQ(result.iterations, 0);
     EXPECT_TRUE(x.isApprox(expected, 1e-8));
   }
+}
+
+TEST(BoxedProjectedActiveSetFastPath, AdmmUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  AdmmSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
