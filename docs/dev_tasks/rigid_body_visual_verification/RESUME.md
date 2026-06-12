@@ -1,5 +1,30 @@
 # Resume: Rigid-Body Visual Verification
 
+## Critical Stop Handoff - 2026-06-11 World Related Metrics
+
+The user explicitly stopped further work and requested handoff-only docs with
+no further verification. Treat this section as the fresh-session entry point
+and do not continue implementation unless the user explicitly resumes it.
+
+State at the start of this handoff-only docs edit:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Worktree: clean before the docs handoff edit.
+- Local code checkpoint: `7fb9163794d`.
+- Local code checkpoint title: `Expose World related route capture metrics`.
+- Origin at that moment: `550b37d8b68`
+  (`Refresh rigid visual verification handoff`).
+- The local branch was ahead of origin by one code/docs checkpoint before this
+  handoff-only docs commit.
+- Last checked GitHub state: no PR associated with this branch.
+- This docs-only handoff commit is intended to be pushed immediately at the
+  user's request, without a new verification pass.
+
+No tests, lint, build, captures, or `git diff --check` were run after this
+handoff-only docs edit. Do not treat the handoff docs commit itself as freshly
+verified. The validated code checkpoint immediately below remains the current
+implementation context.
+
 ## Current Handoff Snapshot - 2026-06-11 World Related Metrics
 
 The continuation resumed from pushed handoff commit `550b37d8b68` and hardened

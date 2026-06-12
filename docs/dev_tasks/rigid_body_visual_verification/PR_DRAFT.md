@@ -117,6 +117,15 @@
     - passed, `ninja: no work to do`
   - `git diff --check`
     - passed
+- Handoff-only stop after the World related-route checkpoint:
+  - The user explicitly stopped further work and requested handoff-only docs
+    with no further verification.
+  - State at the start of the handoff edit: local `HEAD` `7fb9163794d`
+    (`Expose World related route capture metrics`), origin `550b37d8b68`
+    (`Refresh rigid visual verification handoff`), and no associated GitHub PR
+    in the last checked state.
+  - No tests, lint, build, captures, or `git diff --check` were run after this
+    docs-only handoff edit.
 - Handoff-only stop after the AVBD related-route checkpoint:
   - The user explicitly stopped further work and requested handoff-only docs
     with no further verification.

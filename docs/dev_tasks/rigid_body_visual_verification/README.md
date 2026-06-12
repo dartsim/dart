@@ -1,21 +1,24 @@
 # Rigid-Body Visual Verification - Dev Task
 
-## Critical Stop Handoff - 2026-06-11
+## Critical Stop Handoff - 2026-06-11 World Related Metrics
 
 The user explicitly stopped further work and requested handoff-only docs with
-no further verification. Fresh sessions should start from this boundary.
+no further verification. Fresh sessions should start from this boundary and not
+continue implementation unless the user explicitly resumes it.
 
 - Branch at handoff edit: `feature/rigid-body-gui-visual-verification`.
 - Worktree was clean before the docs handoff edit.
-- Local code checkpoint before this docs-only handoff: `4d63d2b24b0c`
-  (`Expose AVBD related route capture metrics`).
-- Origin at that moment: `5f794e65d3f8`
-  (`Document rigid visual verification handoff`).
+- Local code checkpoint before this docs-only handoff: `7fb9163794d`
+  (`Expose World related route capture metrics`).
+- Origin at that moment: `550b37d8b68`
+  (`Refresh rigid visual verification handoff`).
 - The branch was ahead of origin by one code/docs checkpoint.
 - Last checked GitHub state: no PR associated with this branch.
 - No tests, lint, build, captures, or `git diff --check` were run after this
   handoff-only docs edit. Do not infer fresh verification for the handoff docs
   commit itself.
+- This docs-only handoff commit is intended to be pushed immediately at the
+  user's request, without a new verification pass.
 
 ## Current Status
 
@@ -850,7 +853,7 @@ and the no-tunneling scope decision.
 
 1. Confirm `git status -sb` and `git log --oneline --decorate -5` on
    `feature/rigid-body-gui-visual-verification`. If this handoff was pushed,
-   expect a docs-only handoff commit on top of code checkpoint `4d63d2b24b0c`.
+   expect a docs-only handoff commit on top of code checkpoint `7fb9163794d`.
 2. Do not run tests, lint, build, captures, or whitespace verification unless
    the user explicitly resumes implementation or asks for verification.
 3. The prior stop boundary was superseded by the continuation that implemented
@@ -866,9 +869,10 @@ and the no-tunneling scope decision.
    `4d63d2b24b0c` for fixed-joint contact, spherical breakable joint, revolute
    motor, and prismatic motor. Keep these as non-numbered related shelf routes
    unless a distinct numbered workflow question appears.
-6. The broader World related-route metrics slice is implemented locally for
-   `floating_base` and `articulated`; keep both as non-numbered related shelf
-   routes unless a distinct numbered workflow question appears.
+6. The broader World related-route metrics slice is implemented in code
+   checkpoint `7fb9163794d` for `floating_base` and `articulated`; keep both as
+   non-numbered related shelf routes unless a distinct numbered workflow
+   question appears.
 7. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
