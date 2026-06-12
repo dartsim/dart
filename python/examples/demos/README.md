@@ -125,6 +125,17 @@ active friction-index microbenchmark and the native `world_card_pile` packet for
 high-aspect-ratio card-pile contact scaling.
 Authoritative performance runs remain owned by
 `tests/common/lcpsolver`, `tests/unit/math/lcp`, and `tests/benchmark/lcpsolver`.
+The panel also points to the checked performance-profile CSVs under
+`docs/background/lcp/figures` and summarizes the current leader/laggard
+families per Standard, Boxed, and FrictionIndex profile row family. Refresh
+those artifacts with:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run \
+    --cache build/lcp_profile_full.json \
+    --output docs/background/lcp/figures
+```
+
 Run the benchmark smoke with:
 
 ```bash

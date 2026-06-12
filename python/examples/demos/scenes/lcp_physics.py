@@ -213,6 +213,51 @@ _REPRESENTATIVE_BENCHMARK_COMMAND = (
     "pixi run bm lcp_compare -- --benchmark_filter="
     f"'{_REPRESENTATIVE_BENCHMARK_FILTER}'"
 )
+_PERFORMANCE_PROFILE_REFRESH_COMMAND = (
+    "pixi run python scripts/lcp_performance_profile.py --run "
+    "--cache build/lcp_profile_full.json "
+    "--output docs/background/lcp/figures"
+)
+_PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
+    {
+        "surface": "Standard",
+        "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
+        "problem_sizes": "2, 3, 12, 24, 48, 96",
+        "current_leaders": "Tgs/Pgs on scale rows; Direct only on tiny 2x/3x",
+        "current_laggards": "Lemke, InteriorPoint, Baraff, BlockedJacobi",
+        "takeaway": (
+            "TGS/PGS lead scalable SPD rows; pivot, barrier, and Newton rows "
+            "are correctness or tuning targets."
+        ),
+    },
+    {
+        "surface": "Boxed",
+        "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
+        "problem_sizes": "12, 24, 48",
+        "current_leaders": "Jacobi/Pgs",
+        "current_laggards": "Sap, BlockedJacobi, BoxedSemiSmoothNewton",
+        "takeaway": (
+            "Projection methods lead active-bound rows; SAP and boxed "
+            "semi-smooth Newton need tuning evidence before speed claims."
+        ),
+    },
+    {
+        "surface": "FrictionIndex",
+        "artifact": (
+            "docs/background/lcp/figures/performance_profile_frictionindex.csv"
+        ),
+        "problem_sizes": "4, 16, 64",
+        "current_leaders": "Tgs/Sap/Pgs",
+        "current_laggards": (
+            "BoxedSemiSmoothNewton, BlockedJacobi, ShockPropagation"
+        ),
+        "takeaway": (
+            "TGS/SAP/PGS lead current contact-scale rows; boxed "
+            "semi-smooth Newton and block/layered routes are optimization "
+            "targets."
+        ),
+    },
+)
 
 _SOLVER_SUPPORT_ROWS: tuple[dict[str, Any], ...] = (
     {
@@ -1755,6 +1800,29 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["coverage"])
                 builder.end_table()
 
+        if builder.collapsing_header("Performance profiles", default_open=False):
+            builder.text(f"profile refresh: {_PERFORMANCE_PROFILE_REFRESH_COMMAND}")
+            if builder.begin_table(
+                "lcp_performance_profiles",
+                [
+                    "Surface",
+                    "Profile CSV",
+                    "Problem sizes",
+                    "Current leaders",
+                    "Current laggards",
+                    "Takeaway",
+                ],
+            ):
+                for row in _PERFORMANCE_PROFILE_ROWS:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["surface"])
+                    _write_table_cell(builder, row["artifact"])
+                    _write_table_cell(builder, row["problem_sizes"])
+                    _write_table_cell(builder, row["current_leaders"])
+                    _write_table_cell(builder, row["current_laggards"])
+                    _write_table_cell(builder, row["takeaway"])
+                builder.end_table()
+
         if builder.collapsing_header("Standalone solver smoke", default_open=False):
             if builder.begin_table(
                 "lcp_standalone_solver_smoke", ["Solver", "Status", "Error"]
@@ -1895,6 +1963,7 @@ def build() -> SceneSetup:
             "live_packet_rows": _copy_rows(_LIVE_PACKET_ROWS),
             "live_metrics_snapshot": live_metrics_snapshot,
             "benchmark_packet_rows": _copy_rows(_BENCHMARK_PACKET_ROWS),
+            "performance_profile_rows": _copy_rows(_PERFORMANCE_PROFILE_ROWS),
             "solver_rows": _copy_rows(_SOLVER_SUPPORT_ROWS),
             "standalone_solver_rows": [dict(row) for row in standalone_solver_rows],
             "standalone_problem_rows": [
@@ -1912,6 +1981,9 @@ def build() -> SceneSetup:
             "solver_manifest_summary": _solver_manifest_summary(),
             "benchmark_command": _BENCHMARK_COMMAND,
             "benchmark_smoke_filter": _BENCHMARK_SMOKE_FILTER,
+            "performance_profile_refresh_command": (
+                _PERFORMANCE_PROFILE_REFRESH_COMMAND
+            ),
             "representative_benchmark_filter": _REPRESENTATIVE_BENCHMARK_FILTER,
             "representative_benchmark_command": _REPRESENTATIVE_BENCHMARK_COMMAND,
             "standalone_lcp_solvers_exposed_in_dartpy": (

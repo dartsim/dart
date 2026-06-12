@@ -1012,6 +1012,44 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "pixi run bm lcp_compare -- --benchmark_filter="
         f"'{info['representative_benchmark_filter']}'"
     )
+    assert info["performance_profile_refresh_command"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--cache build/lcp_profile_full.json "
+        "--output docs/background/lcp/figures"
+    )
+    profile_by_surface = {
+        row["surface"]: row for row in info["performance_profile_rows"]
+    }
+    assert set(profile_by_surface) == {"Standard", "Boxed", "FrictionIndex"}
+    assert profile_by_surface["Standard"]["artifact"].endswith(
+        "performance_profile_standard.csv"
+    )
+    assert profile_by_surface["Boxed"]["artifact"].endswith(
+        "performance_profile_boxed.csv"
+    )
+    assert profile_by_surface["FrictionIndex"]["artifact"].endswith(
+        "performance_profile_frictionindex.csv"
+    )
+    assert profile_by_surface["Standard"]["problem_sizes"] == (
+        "2, 3, 12, 24, 48, 96"
+    )
+    assert "Tgs/Pgs" in profile_by_surface["Standard"]["current_leaders"]
+    assert "Direct only on tiny" in profile_by_surface["Standard"][
+        "current_leaders"
+    ]
+    assert "Lemke" in profile_by_surface["Standard"]["current_laggards"]
+    assert "InteriorPoint" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Jacobi/Pgs" == profile_by_surface["Boxed"]["current_leaders"]
+    assert "Sap" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
+        "current_laggards"
+    ]
+    assert "Tgs/Sap/Pgs" == profile_by_surface["FrictionIndex"][
+        "current_leaders"
+    ]
+    assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
         "BM_LcpWorldBilliardsStep_BoxedLcp"
     )
@@ -1079,6 +1117,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     setup.panels[0].build(builder, object())
     assert (
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
+        in builder.events
+    )
+    assert (
+        "table:lcp_performance_profiles:Surface,Profile CSV,Problem sizes,"
+        "Current leaders,Current laggards,Takeaway"
         in builder.events
     )
     assert (

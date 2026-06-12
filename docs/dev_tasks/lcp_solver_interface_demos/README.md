@@ -1,5 +1,123 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Python Demo Performance Profiles
+
+After the stop-only hand-off and full profile refresh, work resumed on the next
+demo-focused gap: making the refreshed performance-profile artifacts visible
+from the Python LCP demo so users do not have to manually parse benchmark CSVs
+to understand current solver tradeoffs.
+
+Current slice:
+
+- `python/examples/demos/scenes/lcp_physics.py` now exposes
+  `performance_profile_rows` and `performance_profile_refresh_command` in the
+  scene `info` metadata.
+- The `lcp_physics` panel now has a "Performance profiles" table pointing to
+  the checked Standard, Boxed, and FrictionIndex CSV artifacts under
+  `docs/background/lcp/figures`.
+- The new table summarizes the current profile row families, problem sizes,
+  leader families, laggard families, and practical takeaways:
+  - Standard: scalable rows currently favor TGS/PGS, while Direct is only a
+    tiny-problem leader and Lemke/InteriorPoint/Baraff/BlockedJacobi remain
+    high-ratio targets.
+  - Boxed: active-bound rows currently favor Jacobi/PGS, while SAP,
+    BlockedJacobi, and boxed semi-smooth Newton remain tuning/optimization
+    targets.
+  - FrictionIndex: contact-scale rows currently favor TGS/SAP/PGS, while boxed
+    semi-smooth Newton, BlockedJacobi, and ShockPropagation remain
+    tuning/optimization targets.
+- `python/tests/unit/test_py_demo_panels.py` now asserts the profile metadata,
+  artifacts, refresh command, leaders/laggards, and panel table registration.
+- `python/examples/demos/README.md` documents that the panel surfaces checked
+  performance-profile CSV summaries and includes the full refresh command.
+- `CHANGELOG.md` records the new Python demo performance-profile surface.
+
+Verification completed for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Focused LCP panel metadata test passed: `1 passed in 0.43s`.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue the broad objective with benchmark-driven optimization or a deeper
+  solver-interface audit. The freshest actionable performance targets are the
+  high-ratio rows surfaced in the demo summary: Standard
+  Lemke/InteriorPoint/Baraff/BlockedJacobi, Boxed
+  SAP/BlockedJacobi/BoxedSemiSmoothNewton, and FrictionIndex
+  BoxedSemiSmoothNewton/BlockedJacobi/ShockPropagation. Pick one concrete
+  solver/problem family, measure it with the checked profile tooling, optimize
+  or retune it, then update the matching benchmark/demo evidence. Do not push
+  without explicit approval.
+
+## 2026-06-12 Stop-Only Hand-Off - After Full Profile Refresh
+
+The user explicitly stopped further work and requested only hand-off docs, with
+no further verification. Do not infer that lint, tests, builds, benchmark
+listing, benchmark regeneration, implementation edits, commits, or pushes were
+performed after that stop request. This stop-only update is limited to this
+file and `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+
+Repository state observed before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `f857a380c20 Regenerate LCP performance profiles`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 28]`.
+- Worktree: clean before this docs-only hand-off edit.
+- Remote tracking ref still pointed at
+  `737b9c95c11 Document final LCP handoff checkpoint` when inspected by
+  `git log --decorate`.
+- Push was not performed in this stop-only response.
+
+Latest completed local checkpoints:
+
+- `f857a380c20 Regenerate LCP performance profiles`
+- `dcf0d835c1b Refresh LCP performance profile tooling`
+- `7df9a018c31 Align LCP performance profile metadata`
+- `00a58f7153e Align Staggering native capability metadata`
+- `1b4e3827618 Report Staggering native support precisely`
+- `0e75c5c3985 Validate remaining LCP solver parameters`
+- `e3535141c5d Show all LCP solver parameters in py demo`
+- `b60e20a8dc8 Expose LCP solver parameters in dartpy`
+
+Interrupted/unstarted continuation slice:
+
+- No implementation files were edited for the next slice after the stop
+  request.
+- No lint, tests, builds, benchmark listing, benchmark regeneration, commit, or
+  push was run after the stop request.
+- The session had selected, but not implemented, a likely next slice: expose
+  the refreshed performance-profile leaders and laggards in the Python LCP demo
+  metadata/panel so users can see solver pros/cons without manually parsing
+  benchmark output.
+- Context gathered before the stop request, from the current full profile cache,
+  suggested the next explanatory/demo metadata should call out slow/high-ratio
+  families such as Standard `Lemke`, `InteriorPoint`, `Baraff`, and
+  `BlockedJacobi`; Boxed `Sap`, `BlockedJacobi`, and
+  `BoxedSemiSmoothNewton`; and FrictionIndex `BoxedSemiSmoothNewton`,
+  `BlockedJacobi`, and `ShockPropagation`. Treat this as hand-off context, not
+  a completed product change.
+
+Immediate next step:
+
+- Do nothing until the user explicitly resumes implementation. On resume,
+  inspect the current branch state, reread this task README and `RESUME.md`,
+  then choose one concrete solver/interface/demo/performance gap. The most
+  recent unstarted slice is the Python LCP demo performance-profile summary
+  described above. Do not push without explicit approval.
+
 ## 2026-06-12 Current Continuation - Full Performance Profile Refresh
 
 After checkpoint `dcf0d835c1b Refresh LCP performance profile tooling`, work
