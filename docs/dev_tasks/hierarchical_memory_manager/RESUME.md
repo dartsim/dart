@@ -13,12 +13,16 @@ Current slice:
   was rejected by the strict checker as noisy for all 12 EnTT comparisons. The
   DART no-growth rows still reported zero post-prewarm allocator calls. Do not
   keep allocator-policy changes from this run.
+- `ReplayState::frames` now uses `StlAllocator` over the World free allocator
+  for the top-level replay frame buffer. The focused ownership test enables
+  replay recording under the global heap counter and verifies zero global heap
+  allocations while the World free-list allocation count grows.
 - `WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
-  free allocator. `World.WorldPersistentStorageUsesWorldFreeAllocator` inserts
-  an ignored pair through `setCollisionPairIgnored()` under the global heap
-  counter, verifies zero global heap allocations, verifies the World free-list
-  allocation count grows, then verifies `clearIgnoredCollisionPairs()` releases
-  the set storage back to the World allocator.
+  free allocator. The same test inserts an ignored pair through
+  `setCollisionPairIgnored()` under the global heap counter, verifies zero
+  global heap allocations, verifies the World free-list allocation count grows,
+  then verifies `clearIgnoredCollisionPairs()` releases the set storage back to
+  the World allocator.
 
 Focused validation already run for this slice:
 
@@ -30,6 +34,9 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 build/default/cpp/Release/bin/test_world \
   --gtest_filter='World.CollisionQueryCanIgnoreSpecificPairs:World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.Replay*' \
   --gtest_color=no
 ```
 

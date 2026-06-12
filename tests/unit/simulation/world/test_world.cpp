@@ -3043,10 +3043,20 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       memoryManager.getFreeListAllocator().getAllocationCount(),
       kWorldStorageAndBuiltInStageRootAllocations + 1u);
 
-  world.setReplayRecordingEnabled(true);
+  const auto allocationsBeforeReplay
+      = memoryManager.getFreeListAllocator().getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "replay state and frame storage should allocate through the World "
+           "free allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
   EXPECT_GE(
       memoryManager.getFreeListAllocator().getAllocationCount(),
-      kWorldStorageAndBuiltInStageRootAllocations + 2u);
+      allocationsBeforeReplay + 2u);
 
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");

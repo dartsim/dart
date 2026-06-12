@@ -357,8 +357,16 @@ struct World::ReplayState
     std::vector<RigidBodyState> rigidBodies;
   };
 
+  using FrameAllocator = common::StlAllocator<Frame>;
+
+  explicit ReplayState(common::MemoryAllocator& allocator)
+    : frames(FrameAllocator{allocator})
+  {
+    // Empty.
+  }
+
   bool recordingEnabled = false;
-  std::vector<Frame> frames;
+  std::vector<Frame, FrameAllocator> frames;
   std::optional<std::size_t> cursor;
 };
 
@@ -2662,7 +2670,8 @@ void World::StepPipelineCacheDeleter::operator()(void* cache) const noexcept
 World::ReplayStatePtr World::makeReplayState(
     common::MemoryManager& memoryManager)
 {
-  auto* replayState = memoryManager.constructUsingFree<ReplayState>();
+  auto* replayState = memoryManager.constructUsingFree<ReplayState>(
+      memoryManager.getFreeAllocator());
   if (replayState == nullptr) {
     throw std::bad_alloc();
   }

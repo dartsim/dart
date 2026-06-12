@@ -15,15 +15,21 @@ DART no-growth rows still reported zero post-prewarm allocator calls. Do not
 change allocator policy from that run; use it only as evidence that timing
 measurement is currently noisy.
 
-The current code slice closes a deterministic persistent-storage ownership gap:
-`WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
-free allocator instead of a default-allocated `std::set`. The focused
-`World.WorldPersistentStorageUsesWorldFreeAllocator` check now inserts an
-ignored collision pair through the public API under the global heap counter,
-expects zero global heap allocations, verifies the World free-list allocation
-count grows for the set node, and verifies `clearIgnoredCollisionPairs()` releases
-that storage back to the World allocator. Existing behavior is covered by
-`World.CollisionQueryCanIgnoreSpecificPairs`.
+The current code slice closes two deterministic persistent-storage ownership
+gaps:
+
+- `ReplayState::frames` now uses `StlAllocator` over the World free allocator
+  for the top-level replay frame buffer. The focused ownership test enables
+  replay recording under the global heap counter and expects zero global heap
+  allocations while the World free-list allocation count grows for the replay
+  object and frame buffer.
+- `WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
+  free allocator instead of a default-allocated `std::set`. The same ownership
+  test inserts an ignored collision pair through the public API under the
+  global heap counter, verifies the World free-list allocation count grows for
+  the set node, and verifies `clearIgnoredCollisionPairs()` releases that
+  storage back to the World allocator. Existing behavior is covered by
+  `World.CollisionQueryCanIgnoreSpecificPairs`.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
@@ -1354,6 +1360,11 @@ Follow-up progress after PR #2956:
   storage can be baked, stepped without World-base allocator growth or ECS
   capacity changes, cleared to zero registry capacity, and rebuilt with the
   same storage capacities under the World free-list allocator.
+- The top-level replay frame buffer now follows the World free allocator root.
+  Enabling replay recording for an empty World allocates the replay object and
+  first frame buffer from the World allocator without global heap allocation.
+  Nested replay snapshot payloads remain follow-up work unless a no-growth gate
+  exposes them as step-loop allocations.
 - Persistent ignored-collision-pair storage now follows the same World free
   allocator root as the registry and differentiable-parameter storage. The
   public `setCollisionPairIgnored()` path no longer allocates the pair set node
