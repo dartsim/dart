@@ -372,6 +372,54 @@ TEST(DantzigSolver, SolvesBoxedLcpWithFrictionIndex)
 }
 
 //==============================================================================
+TEST(DantzigSolver, RefinesActiveFrictionIndexBounds)
+{
+  Eigen::MatrixXd A(6, 6);
+  A << 3.0, 0.12, 0.04, 0.08, 0.02, 0.0, 0.12, 2.4, 0.08, 0.01, 0.04, 0.0, 0.04,
+      0.08, 2.1, 0.0, 0.0, 0.03, 0.08, 0.01, 0.0, 2.8, 0.10, 0.05, 0.02, 0.04,
+      0.0, 0.10, 2.2, 0.07, 0.0, 0.0, 0.03, 0.05, 0.07, 2.0;
+
+  Eigen::VectorXd target(6);
+  target << 0.6, 0.30, -0.24, 0.35, -0.175, 0.05;
+
+  Eigen::VectorXd w(6);
+  w << 0.0, -0.04, 0.0, 0.0, 0.03, 0.0;
+  const Eigen::VectorXd b = A * target - w;
+
+  Eigen::VectorXd lo(6);
+  lo << 0.0, -std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity(), 0.0,
+      -std::numeric_limits<double>::infinity(),
+      -std::numeric_limits<double>::infinity();
+
+  Eigen::VectorXd hi(6);
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.5, 0.5;
+
+  Eigen::VectorXi findex(6);
+  findex << -1, 0, 0, -1, 3, 3;
+
+  DantzigSolver solver;
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.validateSolution = false;
+  options.absoluteTolerance = 1e-8;
+  options.complementarityTolerance = 1e-8;
+
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(6);
+  LcpProblem problem(A, b, lo, hi, findex);
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_FALSE(result.validated);
+  EXPECT_GT(result.iterations, 1);
+  EXPECT_LE(result.residual, 1e-8);
+  EXPECT_LE(result.complementarity, 1e-8);
+  EXPECT_NEAR((x - target).lpNorm<Eigen::Infinity>(), 0.0, 1e-8);
+  ExpectValidSolution(problem, x, 1e-8);
+}
+
+//==============================================================================
 TEST(DantzigSolver, ReusedScratchAvoidsHeapAllocationForSameShapeSolve)
 {
   Eigen::Matrix3d A;
