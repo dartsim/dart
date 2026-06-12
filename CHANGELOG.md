@@ -163,6 +163,9 @@
     rigid-body distance springs with unsprung, soft, stiff, and off-center
     anchor lanes plus replay controls and capture metrics while documenting
     that IPC and multibody worlds reject this public API.
+  - Added scene-owned capture metrics to the `rigid_fixed_joint` and
+    `rigid_limited_joints` Python `py-demos` rows so fixed/revolute/prismatic
+    constraint-error evidence is recorded in `py-demo-capture` artifacts.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity

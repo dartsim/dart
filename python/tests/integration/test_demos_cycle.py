@@ -3467,6 +3467,20 @@ def test_rigid_fixed_joint_verifier_restores_captured_transform() -> None:
     assert float(metrics["translation_error"]) < 1.0e-6
     assert float(metrics["orientation_error"]) < 1.0e-6
     assert float(metrics["payload_speed"]) < 1.0e-6
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_fixed_joint"
+    assert capture_metrics["solver"] == "sequential_rigid_joints"
+    assert capture_metrics["constraint"] == "fixed_relative_transform"
+    assert capture_metrics["joint_name"] == controller.fixed_joint.name
+    assert capture_metrics["fixed_joint_count"] == pytest.approx(1.0)
+    assert capture_metrics["metrics"]["translation_error"] == pytest.approx(
+        float(metrics["translation_error"])
+    )
+    assert capture_metrics["metrics"]["orientation_error"] == pytest.approx(
+        float(metrics["orientation_error"])
+    )
+    assert capture_metrics["history"]["samples"] > 1.0
     assert controller._translation_error_history
     assert controller._orientation_error_history
 
@@ -3562,6 +3576,21 @@ def test_rigid_one_dof_joint_verifier_preserves_locked_directions() -> None:
     assert float(metrics["slider_orthogonal_error"]) < 1.0e-6
     assert abs(float(metrics["hinge_yaw"])) > 0.1
     assert float(metrics["slider_axis_travel"]) > 0.65
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_limited_joints"
+    assert capture_metrics["solver"] == "sequential_rigid_joints"
+    assert capture_metrics["constraint"] == "revolute_prismatic_one_dof"
+    assert capture_metrics["joint_count"] == pytest.approx(2.0)
+    assert capture_metrics["joints"]["hinge"] == controller.hinge_joint.name
+    assert capture_metrics["joints"]["slider"] == controller.slider_joint.name
+    assert capture_metrics["metrics"]["hinge_radius_error"] == pytest.approx(
+        float(metrics["hinge_radius_error"])
+    )
+    assert capture_metrics["metrics"]["slider_orthogonal_error"] == pytest.approx(
+        float(metrics["slider_orthogonal_error"])
+    )
+    assert capture_metrics["history"]["samples"] > 1.0
     assert controller._hinge_radius_error_history
     assert controller._slider_orthogonal_error_history
 

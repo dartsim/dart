@@ -952,3 +952,38 @@ DART_PARALLEL_JOBS=${DART_SAFE_JOBS:-5} \
     pixi run build
 git diff --check
 ```
+
+## 2026-06-11 Fixed/One-DOF Joint Capture Metrics Follow-Up
+
+The current follow-up adds scene-owned `capture_metrics` hooks to the existing
+`rigid_fixed_joint` and `rigid_limited_joints` rows. The captures now record
+fixed relative-transform errors plus revolute/prismatic locked-axis errors in
+`scene_metrics.jsonl`, matching the panel diagnostics without changing row
+ordering or scope claims.
+
+Validation so far:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest \
+    python/tests/integration/test_demos_cycle.py::test_rigid_fixed_joint_verifier_restores_captured_transform \
+    python/tests/integration/test_demos_cycle.py::test_rigid_one_dof_joint_verifier_preserves_locked_directions \
+    python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls \
+    python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar \
+    python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order \
+    python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order \
+    python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow \
+    python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q
+pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_fixed_joint_metrics_1781222114
+pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_limited_joints_metrics_1781222114
+pixi run lint
+pixi run build
+```
+
+Observed capture evidence:
+
+- `rigid_fixed_joint`: nonblank 960x540 docked screenshot, 23 PNG frames, 24
+  scene-metrics events, latest translation error
+  `2.1673896011265015e-10`.
+- `rigid_limited_joints`: nonblank 960x540 docked screenshot, 23 PNG frames, 24
+  scene-metrics events, latest hinge radius/z and slider orthogonal errors
+  `0.0`.

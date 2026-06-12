@@ -75,7 +75,7 @@
       and history diagnostics.
 - [x] Constraint slice: `rigid_fixed_joint` and `rigid_limited_joints` expose
       perturb/reset controls plus bounded fixed, revolute, and prismatic
-      constraint-error histories.
+      constraint-error histories with scene-owned capture metrics.
 - [x] Breakage lifecycle slice: `rigid_joint_breakage` exposes AVBD-pinned
       fixed-joint break-force, broken-state, connector color, payload release,
       and reset behavior without claiming sequential-impulse or IPC parity.
@@ -260,13 +260,13 @@
 - [x] Visual smoke: `rigid_contact_scale_budget` capture writes nonblank PNGs
       with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_fixed_joint` capture writes nonblank PNGs with the
-      docked ImGui workspace.
+      docked ImGui workspace and scene-owned fixed-joint metrics.
 - [x] Visual smoke: `rigid_joint_breakage` capture writes nonblank PNGs with the
       docked ImGui workspace.
 - [x] Visual smoke: `rigid_distance_spring` capture writes nonblank PNGs with
       the docked ImGui workspace and scene-owned distance-spring metrics.
 - [x] Visual smoke: `rigid_limited_joints` capture writes nonblank PNGs with the
-      docked ImGui workspace.
+      docked ImGui workspace and scene-owned one-DOF joint metrics.
 - [x] Visual smoke: `rigid_joint_motor_limits` capture writes nonblank PNGs
       with the docked ImGui workspace.
 - [x] Visual smoke: `rigid_joint_passive_parameters` capture writes nonblank

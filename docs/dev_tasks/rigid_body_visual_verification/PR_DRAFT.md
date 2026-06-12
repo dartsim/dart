@@ -65,10 +65,11 @@
   diagnostics.
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
-  contact-scale budget, and stack-packet physics/runtime fields in
-  `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
-  event stream with first/latest events, per-key presence counts, and top-level
-  numeric ranges so mid-capture metric dropouts are visible.
+  contact-scale budget, fixed/one-DOF joint constraint errors, and stack-packet
+  physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
+  manifest summarizes the full event stream with first/latest events, per-key
+  presence counts, and top-level numeric ranges so mid-capture metric dropouts
+  are visible.
 - Adds drift tests that keep the registry, PLAN-103 sidecar, README quick table,
   and capture commands synchronized.
 - Keeps heavy IPC stacks, arm/gripper manipulation, arbitrary-point/contact
@@ -78,6 +79,20 @@
 
 ## Testing
 
+- Latest fixed/one-DOF joint capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_fixed_joint_verifier_restores_captured_transform python/tests/integration/test_demos_cycle.py::test_rigid_one_dof_joint_verifier_preserves_locked_directions python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+    - `8 passed`
+  - `pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_fixed_joint_metrics_1781222114`
+    - nonblank 960x540 screenshot, docked-workspace detection, 23 PNG frames,
+      24 scene-metrics events, latest translation error
+      `2.1673896011265015e-10`
+  - `pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_limited_joints_metrics_1781222114`
+    - nonblank 960x540 screenshot, docked-workspace detection, 23 PNG frames,
+      24 scene-metrics events, latest hinge/slider locked-axis errors `0.0`
+  - `pixi run lint`
+    - passed
+  - `pixi run build`
+    - passed
 - Latest distance-spring follow-up:
   - `pixi run lint`
     - passed

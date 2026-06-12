@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -185,6 +185,41 @@ class _RigidFixedJointVerifier:
         self._record_metrics()
         self._sync()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        translation_history = list(self._translation_error_history)
+        orientation_history = list(self._orientation_error_history)
+        return {
+            "row": "rigid_fixed_joint",
+            "solver": "sequential_rigid_joints",
+            "constraint": "fixed_relative_transform",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "joint_name": str(self.fixed_joint.name),
+            "fixed_joint_count": float(self.world.num_rigid_body_fixed_joints),
+            "controls": {
+                "perturbation": float(self.perturbation),
+            },
+            "metrics": {
+                "translation_error": float(
+                    self._last_metrics["translation_error"]
+                ),
+                "orientation_error": float(
+                    self._last_metrics["orientation_error"]
+                ),
+                "payload_speed": float(self._last_metrics["payload_speed"]),
+                "payload_angular_speed": float(
+                    self._last_metrics["payload_angular_speed"]
+                ),
+            },
+            "history": {
+                "samples": float(len(translation_history)),
+                "max_translation_error": max(translation_history, default=0.0),
+                "max_orientation_error": max(orientation_history, default=0.0),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -283,6 +318,7 @@ def build() -> SceneSetup:
             "base": verifier.base,
             "payload": verifier.payload,
             "rigid_fixed_joint_controller": verifier,
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,

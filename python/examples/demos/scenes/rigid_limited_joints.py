@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.005
 _HISTORY = 180
@@ -268,6 +268,57 @@ class _RigidOneDofJointVerifier:
         self._record_metrics()
         self._sync()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        hinge_radius_history = list(self._hinge_radius_error_history)
+        hinge_z_history = list(self._hinge_z_error_history)
+        slider_orthogonal_history = list(self._slider_orthogonal_error_history)
+        return {
+            "row": "rigid_limited_joints",
+            "solver": "sequential_rigid_joints",
+            "constraint": "revolute_prismatic_one_dof",
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "joint_count": float(self.world.num_rigid_body_joints),
+            "controls": {
+                "perturbation": float(self.perturbation),
+            },
+            "joints": {
+                "hinge": str(self.hinge_joint.name),
+                "slider": str(self.slider_joint.name),
+            },
+            "metrics": {
+                "hinge_radius_error": float(
+                    self._last_metrics["hinge_radius_error"]
+                ),
+                "hinge_z_error": float(self._last_metrics["hinge_z_error"]),
+                "hinge_yaw": float(self._last_metrics["hinge_yaw"]),
+                "hinge_angular_speed": float(
+                    self._last_metrics["hinge_angular_speed"]
+                ),
+                "slider_orthogonal_error": float(
+                    self._last_metrics["slider_orthogonal_error"]
+                ),
+                "slider_axis_travel": float(
+                    self._last_metrics["slider_axis_travel"]
+                ),
+                "slider_axis_speed": float(
+                    self._last_metrics["slider_axis_speed"]
+                ),
+            },
+            "history": {
+                "samples": float(len(hinge_radius_history)),
+                "max_hinge_radius_error": max(
+                    hinge_radius_history, default=0.0
+                ),
+                "max_hinge_z_error": max(hinge_z_history, default=0.0),
+                "max_slider_orthogonal_error": max(
+                    slider_orthogonal_history, default=0.0
+                ),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -383,6 +434,7 @@ def build() -> SceneSetup:
             "slider_base": verifier.slider_base,
             "slider_payload": verifier.slider_payload,
             "rigid_one_dof_joint_controller": verifier,
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,
