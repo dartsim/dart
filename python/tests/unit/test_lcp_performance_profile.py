@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import importlib.util
 import sys
 from pathlib import Path
@@ -165,3 +166,57 @@ def test_lcp_profile_coverage_rejects_form_support_mismatches() -> None:
                 "FrictionIndex": set(),
             },
         )
+
+
+def test_lcp_profile_evidence_csv_records_support_and_problem_type(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Boxed/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "residual": 2.0,
+                    "complementarity": 3.0,
+                    "solver_supports_standard": 1.0,
+                    "solver_supports_boxed": 1.0,
+                    "solver_supports_friction_index": 1.0,
+                    "solver_supports_problem": 1.0,
+                    "problem_type_standard": 0.0,
+                    "problem_type_boxed": 1.0,
+                    "problem_type_friction_index": 0.0,
+                    "problem_type_invalid": 0.0,
+                }
+            ]
+        }
+    )
+
+    path = tmp_path / "profile_evidence.csv"
+    module.save_profile_evidence_csv(results, path)
+
+    with path.open(newline="") as f:
+        rows = list(csv.DictReader(f))
+
+    assert rows == [
+        {
+            "category": "Boxed",
+            "solver": "Dantzig",
+            "problem_size": "12",
+            "time_ns": "10",
+            "contract_ok": "1",
+            "residual": "2",
+            "complementarity": "3",
+            "solver_supports_standard": "1",
+            "solver_supports_boxed": "1",
+            "solver_supports_friction_index": "1",
+            "solver_supports_problem": "1",
+            "problem_type_standard": "0",
+            "problem_type_boxed": "1",
+            "problem_type_friction_index": "0",
+            "problem_type_invalid": "0",
+        }
+    ]

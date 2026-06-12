@@ -60,6 +60,7 @@ PROBLEM_TYPE_COUNTERS = tuple(PROBLEM_TYPE_COUNTER_BY_CATEGORY.values()) + (
 )
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
+PROFILE_EVIDENCE_CSV_NAME = "performance_profile_evidence.csv"
 
 
 def canonical_solver_name(name: str) -> str:
@@ -337,6 +338,52 @@ def save_profile_csv(
     print(f"Saved CSV: {output_path}")
 
 
+def _csv_value(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        return f"{value:.17g}"
+    return str(value)
+
+
+def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
+    header = [
+        "category",
+        "solver",
+        "problem_size",
+        "time_ns",
+        "contract_ok",
+        "residual",
+        "complementarity",
+        "solver_supports_standard",
+        "solver_supports_boxed",
+        "solver_supports_friction_index",
+        "solver_supports_problem",
+        "problem_type_standard",
+        "problem_type_boxed",
+        "problem_type_friction_index",
+        "problem_type_invalid",
+    ]
+
+    with open(output_path, "w", newline="") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(header)
+        for category in PROFILE_CATEGORIES:
+            for (solver, problem_size), data in sorted(
+                results.get(category, {}).items()
+            ):
+                writer.writerow(
+                    [
+                        category,
+                        solver,
+                        problem_size,
+                        *(_csv_value(data.get(key)) for key in header[3:]),
+                    ]
+                )
+
+    print(f"Saved evidence CSV: {output_path}")
+
+
 def plot_performance_profile(
     tau_values: np.ndarray,
     profiles: dict,
@@ -476,6 +523,7 @@ def main():
     check_native_profile_coverage(
         results, native_support_by_category, allow_partial=args.allow_partial
     )
+    save_profile_evidence_csv(results, args.output / PROFILE_EVIDENCE_CSV_NAME)
 
     for category in PROFILE_CATEGORIES:
         ratios, solvers, problems = compute_performance_ratios(

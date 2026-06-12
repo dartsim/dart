@@ -1477,6 +1477,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     benchmark problem-family names against emitted `problem_type_*` counters,
     rejecting current-schema rows whose concrete problem type disagrees with
     the profile category.
+  - Added a checked LCP performance-profile evidence CSV that records each
+    parsed benchmark row's timing, contract metrics, concrete solver-support
+    counters, and problem-type counters, and surfaced that artifact in the
+    Python LCP demo performance-profile metadata.
   - Surfaced the checked LCP performance-profile CSVs in the Python
     `lcp_physics` demo metadata and panel, with current leader/laggard summaries
     for Standard, Boxed, and FrictionIndex apples-to-apples solver profiles.

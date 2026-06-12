@@ -218,10 +218,14 @@ _PERFORMANCE_PROFILE_REFRESH_COMMAND = (
     "--cache build/lcp_profile_full.json "
     "--output docs/background/lcp/figures"
 )
+_PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT = (
+    "docs/background/lcp/figures/performance_profile_evidence.csv"
+)
 _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
     {
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
+        "evidence_artifact": _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT,
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
             "Direct/Admm/Dantzig/BlockedJacobi/InteriorPoint/ShockPropagation/"
@@ -230,9 +234,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "PenalizedFischerBurmeisterNewton/Lemke rows"
         ),
         "current_laggards": (
-            "No Standard solver average is above 1.6x; BoxedSemiSmoothNewton "
-            "is the largest row; MPRGP, RedBlackGaussSeidel, Sap, and NNCG "
-            "are the next largest rows"
+            "No Standard solver average is above 1.6x; MPRGP is the largest "
+            "row; Tgs, RedBlackGaussSeidel, Apgd, Sap, MinimumMapNewton, and "
+            "SymmetricPsor are the next largest rows"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -248,15 +252,16 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
     {
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
+        "evidence_artifact": _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT,
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi/Dantzig/Admm/Apgd/BlockedJacobi/Sap are "
-            "the current leading group"
+            "Tgs/Pgs/SubspaceMinimization/BGS/Dantzig/Admm/BlockedJacobi/Sap "
+            "are the current leading group"
         ),
         "current_laggards": (
             "No Boxed solver average is above 1.6x; RedBlackGaussSeidel and "
-            "SymmetricPsor are the largest rows; ShockPropagation, "
-            "SubspaceMinimization, BGS, and NNCG are the next largest rows"
+            "SymmetricPsor are the largest rows; Apgd, ShockPropagation, "
+            "Jacobi, NNCG, and BoxedSemiSmoothNewton are the next largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -272,15 +277,17 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
+        "evidence_artifact": _PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT,
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi/Staggering/RedBlackGaussSeidel/Dantzig/"
-            "SymmetricPsor/BlockedJacobi/BGS are the current leading group"
+            "Tgs/Pgs/Staggering/Jacobi/Dantzig/RedBlackGaussSeidel/"
+            "SymmetricPsor are the current leading group"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 1.6x; Sap and "
-            "ShockPropagation are the largest rows; Admm, SubspaceMinimization, "
-            "Apgd, BoxedSemiSmoothNewton, and NNCG are the next largest rows"
+            "No FrictionIndex solver average is above 1.6x; Sap is the "
+            "largest row; Apgd, ShockPropagation, BlockedJacobi, "
+            "SubspaceMinimization, BoxedSemiSmoothNewton, Admm, and BGS are "
+            "the next largest rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
@@ -1844,6 +1851,7 @@ def build() -> SceneSetup:
                 [
                     "Surface",
                     "Profile CSV",
+                    "Evidence CSV",
                     "Problem sizes",
                     "Current leaders",
                     "Current laggards",
@@ -1854,6 +1862,7 @@ def build() -> SceneSetup:
                     builder.table_next_row()
                     _write_table_cell(builder, row["surface"])
                     _write_table_cell(builder, row["artifact"])
+                    _write_table_cell(builder, row["evidence_artifact"])
                     _write_table_cell(builder, row["problem_sizes"])
                     _write_table_cell(builder, row["current_leaders"])
                     _write_table_cell(builder, row["current_laggards"])

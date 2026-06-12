@@ -1,5 +1,79 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Row-Level Profile Evidence
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed earlier in this continuation; merging
+  `origin/main` reported "Already up to date." The recent DART 7 harness from
+  PR #2986 is already in this branch via the earlier `origin/main` merge.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 79]`
+- Last committed checkpoint:
+  `a966dc95c9e Validate LCP benchmark form support evidence`
+- Checkpoint target:
+  `Add LCP performance profile evidence CSV`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 80 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `scripts/lcp_performance_profile.py` writes
+  `performance_profile_evidence.csv` beside the profile curve CSVs.
+- The evidence CSV records category, manifest solver, problem size, timing,
+  contract metrics, emitted form-support counters, concrete
+  `solver_supports_problem`, and emitted `problem_type_*` counters for each
+  parsed profile row.
+- `python/examples/demos/scenes/lcp_physics.py` exposes the evidence artifact
+  in performance-profile metadata and the GUI table.
+- The checked Standard, Boxed, FrictionIndex, and evidence CSVs were
+  regenerated from current-schema `BM_LcpCompare/` benchmark JSON.
+
+Verification completed:
+
+```bash
+pixi run lint
+git diff --check
+```
+
+Progress before this docs update:
+
+- Full profile refresh:
+  `PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900`
+  completed and wrote the checked profile/evidence CSVs.
+- Evidence CSV: 184 lines including header, with support and problem-type
+  counters populated.
+- Focused parser and demo metadata tests:
+  `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_py_demo_panels.py -q`
+  passed with `49 passed`.
+- `pixi run lint`: passed and reformatted
+  `scripts/lcp_performance_profile.py`; focused parser/demo tests were rerun
+  afterwards and still passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Add LCP performance profile evidence CSV`. Continue from a fresh
+bounded DART 7 LCP interface/demo gap; avoid retrying the rejected SAP
+FrictionIndex exact shortcut or ShockPropagation exact-path probe without a
+materially different hypothesis.
+
 ## Current Reality - 2026-06-12 Form Support Schema Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
