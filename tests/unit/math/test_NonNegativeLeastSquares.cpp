@@ -216,15 +216,19 @@ TEST(NonNegativeLeastSquares, IsDeterministic)
 //==============================================================================
 TEST(NonNegativeLeastSquares, ReturnsFalseWhenIterationCapExhausted)
 {
-  std::srand(31);
-  const Eigen::MatrixXd A = Eigen::MatrixXd::Random(6, 8);
-  const Eigen::VectorXd b = Eigen::VectorXd::Random(6);
+  // Deterministic problem that needs more than one active-set iteration: the
+  // identity system requires one column per nonzero entry of b, so a cap of
+  // one iteration must report failure. (Avoids platform-dependent rand()
+  // sequences that made a randomly generated problem solvable in one
+  // iteration on some libcs.)
+  const Eigen::MatrixXd A = Eigen::MatrixXd::Identity(3, 3);
+  const Eigen::Vector3d b(3.0, 2.0, 1.0);
 
   Eigen::VectorXd x;
   EXPECT_FALSE(solveNonNegativeLeastSquares(A, b, x, -1.0, 1));
 
   // The iterate left in x must still be finite and nonnegative.
-  ASSERT_EQ(x.size(), 8);
+  ASSERT_EQ(x.size(), 3);
   EXPECT_TRUE(x.allFinite());
   EXPECT_GE(x.minCoeff(), -1e-12);
 }

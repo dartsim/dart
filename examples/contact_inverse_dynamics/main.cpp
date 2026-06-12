@@ -41,11 +41,45 @@
 #include <array>
 #include <atomic>
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
 
 using namespace dart;
+
+namespace {
+
+constexpr double kDefaultGuiScale = 1.0;
+constexpr double kMinGuiScale = 0.75;
+constexpr double kMaxGuiScale = 4.0;
+
+//==============================================================================
+double parseGuiScale(const std::string& value)
+{
+  try {
+    const double scale = std::stod(value);
+    if (scale >= kMinGuiScale && scale <= kMaxGuiScale) {
+      return scale;
+    }
+    std::cerr << "--gui-scale must be in [" << kMinGuiScale << ", "
+              << kMaxGuiScale << "]; got '" << value << "'. Falling back to "
+              << kDefaultGuiScale << ".\n";
+  } catch (const std::exception&) {
+    std::cerr << "Invalid --gui-scale value '" << value << "'. Falling back "
+              << "to " << kDefaultGuiScale << ".\n";
+  }
+  return kDefaultGuiScale;
+}
+
+//==============================================================================
+int scaleWindowExtent(int extent, double scale)
+{
+  return std::max(1, static_cast<int>(extent * scale + 0.5));
+}
+
+} // namespace
 
 //==============================================================================
 class ContactInverseDynamicsWidget : public dart::gui::osg::ImGuiWidget
@@ -55,10 +89,12 @@ public:
       dart::gui::osg::ImGuiViewer* viewer,
       dart::simulation::WorldPtr world,
       dart::dynamics::SkeletonPtr biped,
+      double guiScale,
       std::function<void()> regenerateCallback)
     : mViewer(viewer),
       mWorld(std::move(world)),
       mBiped(std::move(biped)),
+      mGuiScale(static_cast<float>(guiScale)),
       mRegenerateCallback(std::move(regenerateCallback)),
       mPlaying(true),
       mPlaybackSpeed(1.0f),
@@ -76,8 +112,17 @@ public:
 
   void render() override
   {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(420, 680));
+    // ImGuiHandler works in framebuffer pixels, so the default style and
+    // font are tiny on HiDPI/scaled displays; scale the style once and the
+    // font every frame (matching the dynamic_joint_constraints example).
+    if (!mStyleScaled) {
+      ImGui::GetStyle().ScaleAllSizes(mGuiScale);
+      mStyleScaled = true;
+    }
+    ImGui::GetIO().FontGlobalScale = mGuiScale;
+
+    ImGui::SetNextWindowPos(ImVec2(10 * mGuiScale, 20 * mGuiScale));
+    ImGui::SetNextWindowSize(ImVec2(420 * mGuiScale, 680 * mGuiScale));
     ImGui::SetNextWindowBgAlpha(0.5f);
     if (!ImGui::Begin(
             "Contact-Aware Inverse Dynamics",
@@ -161,7 +206,7 @@ public:
               nullptr,
               -200.0f,
               200.0f,
-              ImVec2(0, 80));
+              ImVec2(0, 80 * mGuiScale));
         }
       }
 
@@ -173,7 +218,7 @@ public:
           nullptr,
           0.0f,
           1000.0f,
-          ImVec2(0, 80));
+          ImVec2(0, 80 * mGuiScale));
     }
 
     ImGui::End();
@@ -236,6 +281,8 @@ protected:
   osg::ref_ptr<dart::gui::osg::ImGuiViewer> mViewer;
   dart::simulation::WorldPtr mWorld;
   dart::dynamics::SkeletonPtr mBiped;
+  float mGuiScale;
+  bool mStyleScaled = false;
   std::function<void()> mRegenerateCallback;
 
   bool mPlaying;
@@ -628,15 +675,27 @@ int main(int argc, char* argv[])
 {
   int maxFrames = -1;
   std::string screenshotPath;
+  double guiScale = kDefaultGuiScale;
+  if (const char* envScale = std::getenv("DART_GUI_SCALE")) {
+    guiScale = parseGuiScale(envScale);
+  }
 
+  const std::string guiScalePrefix = "--gui-scale=";
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "--frames" && i + 1 < argc) {
       maxFrames = std::atoi(argv[++i]);
     } else if (arg == "--screenshot" && i + 1 < argc) {
       screenshotPath = argv[++i];
+    } else if (arg == "--gui-scale" && i + 1 < argc) {
+      guiScale = parseGuiScale(argv[++i]);
+    } else if (arg.rfind(guiScalePrefix, 0) == 0) {
+      guiScale = parseGuiScale(arg.substr(guiScalePrefix.size()));
     }
   }
+
+  const int windowWidth = scaleWindowExtent(1280, guiScale);
+  const int windowHeight = scaleWindowExtent(720, guiScale);
 
   auto world
       = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
@@ -681,13 +740,13 @@ int main(int argc, char* argv[])
     viewer->addWorldNode(node);
 
     auto widget = std::make_shared<ContactInverseDynamicsWidget>(
-        viewer, world, biped, [nodePtr = node.get()]() {
+        viewer, world, biped, guiScale, [nodePtr = node.get()]() {
           nodePtr->requestKeyframeRegeneration();
         });
     viewer->getImGuiHandler()->addWidget(widget);
     node->setWidget(widget);
 
-    viewer->setUpViewInWindow(0, 0, 1280, 720);
+    viewer->setUpViewInWindow(0, 0, windowWidth, windowHeight);
     viewer->getCameraManipulator()->setHomePosition(
         ::osg::Vec3(3.0f, 1.5f, 3.0f),
         ::osg::Vec3(0.0f, 0.0f, 0.0f),
@@ -734,13 +793,13 @@ int main(int argc, char* argv[])
   viewer->addWorldNode(node);
 
   auto widget = std::make_shared<ContactInverseDynamicsWidget>(
-      viewer, world, biped, [nodePtr = node.get()]() {
+      viewer, world, biped, guiScale, [nodePtr = node.get()]() {
         nodePtr->requestKeyframeRegeneration();
       });
   viewer->getImGuiHandler()->addWidget(widget);
   node->setWidget(widget);
 
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
+  viewer->setUpViewInWindow(0, 0, windowWidth, windowHeight);
   viewer->getCameraManipulator()->setHomePosition(
       ::osg::Vec3(3.0f, 1.5f, 3.0f),
       ::osg::Vec3(0.0f, 0.0f, 0.0f),
@@ -749,6 +808,8 @@ int main(int argc, char* argv[])
 
   std::cout << "Contact-Aware Inverse Dynamics Demo\n";
   std::cout << "Use the ImGui widget to control playback and parameters\n";
+  std::cout << "Panel too small on a HiDPI display? Re-run with "
+            << "--gui-scale 2 (or set DART_GUI_SCALE).\n";
 
   viewer->run();
 

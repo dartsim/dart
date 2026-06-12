@@ -33,6 +33,11 @@ The ImGui widget provides:
 - **Force Arrow Scale**: Adjust visualization scale for contact force arrows
 - **Regenerate Keyframes**: Re-run IK with current squat depth
 
+On HiDPI/scaled displays the panel can appear tiny because the GUI works in
+framebuffer pixels. Pass `--gui-scale <factor>` (for example `--gui-scale 2`,
+accepted range 0.75-4.0) or set the `DART_GUI_SCALE` environment variable to
+scale the panel, fonts, and window.
+
 ## Status Display
 
 - **FEASIBLE/INFEASIBLE**: Whether contacts can realize the motion within friction limits
