@@ -1,5 +1,58 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Authoritative Stop Handoff (2026-06-11, Final)
+
+Maintainer instruction for this checkpoint: stop all implementation,
+optimization, benchmark, build, lint, test, and CI-followup work. This update
+is handoff documentation only. No verification is intentionally run for this
+handoff commit.
+
+Use exactly one branch as the resume point:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly redirects the work.
+
+Latest pushed source checkpoint before this docs-only handoff:
+`ebecddd5afb` (`Gate dynamic rigid IPC no-growth`). That checkpoint is the
+source state a fresh agent should verify before any new edits. The branch had
+no open PR as of the handoff check.
+
+Current stop-state notes for the next fresh session:
+
+- The temporary allocator experiment that changed
+  `FreeListAllocator::mLargeAlignedAllocationColor` from `4` to `0` was not
+  retained. It moved EnTT comparative failures/noise rather than producing a
+  clean matrix, so the source is restored to the pushed color-4 policy.
+- Before the stop request, focused baked dynamic rigid IPC no-growth/no-heap
+  gates passed locally. Broader existing default deformable/contact-family
+  no-growth/no-heap gates also passed locally in a focused run. Treat those as
+  prior-session evidence, not validation of this handoff commit.
+- The latest allocator comparative investigation found the broad DART-vs-
+  foonathan/std matrix still blocked on EnTT registry rows, not on allocator
+  call counts. A full checker run performed 94 comparisons and failed 9 EnTT
+  rows. A focused 9-repetition random-interleaved EnTT run reduced that to one
+  small 256-entity no-growth miss versus foonathan. A warmup-focused run still
+  missed three no-growth rows. A longer min-time run was too noisy to use.
+- Do not lower thresholds, change checker policy, or tune cache-line coloring
+  just to satisfy one row. Any allocator fix must be apple-to-apples for
+  persistent EnTT registry/component storage and must keep broad allocator
+  behavior green.
+
+Fresh-session entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then verify from scratch before editing. Future Phase 4/5 implementation work
+should start from this branch state and move to a fresh follow-up PR branch
+when code changes resume.
+
 ## Current Continuation (2026-06-11, Dynamic Rigid IPC No-Growth)
 
 Work resumed from the prior stop handoff on the same single continuation

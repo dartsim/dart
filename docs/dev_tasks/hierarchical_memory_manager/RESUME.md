@@ -1,5 +1,51 @@
 # Resume: Hierarchical Memory Manager
 
+## Authoritative Stop Handoff (2026-06-11, Final)
+
+Stop here. The maintainer instruction for this checkpoint is handoff only:
+no more implementation, optimization, benchmark, build, lint, test, or CI
+work. This docs-only update intentionally has no fresh verification.
+
+Resume from exactly one branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. PR #2955 and PR #2956 are merged.
+Other HMM branches are historical/no-resume targets unless a maintainer
+explicitly says otherwise.
+
+Latest pushed source checkpoint before this handoff:
+`ebecddd5afb` (`Gate dynamic rigid IPC no-growth`). Verify that source state
+from a fresh session before making any new code edits. The branch had no open
+PR as of the handoff check.
+
+Important current context:
+
+- No allocator code change is retained in this handoff. The local color-0
+  free-list experiment for large aligned EnTT storage was discarded and the
+  source is back on the pushed color-4 policy.
+- Recent focused simulation evidence before the stop request showed the baked
+  dynamic rigid IPC no-growth/no-heap gates passing, and the existing broader
+  default deformable/contact-family gates passing in focused local runs.
+  Re-run from scratch before relying on that evidence.
+- The active unresolved allocator-performance surface is EnTT registry
+  comparative performance versus foonathan/std. The latest broad checker run
+  had 94 comparisons with 9 EnTT failures; focused EnTT reruns narrowed this
+  but did not prove a clean matrix. The failures are steady-state timing/noise
+  rows with zero DART allocator calls after prewarm, so the next step is
+  evidence-first allocator/storage-layout analysis, not threshold changes.
+
+Fresh-session start:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-follow-up-clean
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+```
+
+After verification, continue only from a measured gap. Future code work should
+branch from this state into a fresh follow-up PR branch.
+
 ## Current Continuation (2026-06-11, Dynamic Rigid IPC No-Growth)
 
 Work resumed from the prior stop handoff on the same branch:
