@@ -472,7 +472,10 @@ CPU solver rows even when emitted by a CUDA-enabled build.
 For strictly interior standard LCPs without a warm start, `NncgSolver` first
 tries the shared validated linear-solve fast path. The candidate is accepted
 only when it is strictly positive and passes normal LCP validation; otherwise
-the PGS-preconditioned NNCG iteration runs normally.
+the PGS-preconditioned NNCG iteration runs normally. Boxed LCPs without
+friction-index coupling use the shared projected-active-set exact solve under
+the same non-warm-started high-level interface, while coupled friction rows
+continue through the PGS-preconditioned NNCG path.
 
 ### Properties
 

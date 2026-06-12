@@ -1,5 +1,79 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Boxed NNCG Projected Active-Set Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint:
+  `Fast path boxed active-set NNCG LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 53 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `NncgSolver` now tries the shared projected-active-set boxed-LCP exact solve
+  for non-warm-started boxed rows without friction-index coupling through its
+  high-level `LcpProblem` interface.
+- Warm-started solves and friction-index rows stay on the existing
+  PGS-preconditioned NNCG iteration path.
+- Unit coverage now checks a lower/upper/free boxed NNCG packet that solves in
+  zero iterations.
+- The Python LCP demo profile summary now removes `Nncg` from Boxed laggards
+  and lists it with the close boxed exact-path rows.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Boxed/NNCG/` wrote
+  `build/nncg_boxed_projected_active_set_after.json` with `1184.486ns`,
+  `3822.184ns`, and `13505.529ns` for 12, 24, and 48 row packets.
+- All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Regenerated full profile reports Boxed `NNCG` average ratio `1.68`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/nncg_boxed_projected_active_set_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run build` passed.
+- `pixi run lint` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `BlockedJacobi`, `BGS`, `BoxedSemiSmoothNewton`, `Sap`, and
+  `SubspaceMinimization`.
+- FrictionIndex: `BlockedJacobi`, `ShockPropagation`, `Staggering`, `BGS`,
+  `SubspaceMinimization`, `NNCG`, `BoxedSemiSmoothNewton`, `Dantzig`, and
+  `Admm`.
+- Standard: moderate `Sap`, `Baraff`, `Apgd`,
+  `PenalizedFischerBurmeisterNewton`, `FischerBurmeisterNewton`,
+  `MinimumMapNewton`, `NNCG`, and `BoxedSemiSmoothNewton`.
+
 ## Current Reality - 2026-06-12 Boxed Dantzig Projected Active-Set Fast Path
 
 This section is the latest state; older sections below are historical

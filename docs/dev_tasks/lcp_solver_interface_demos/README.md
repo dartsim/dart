@@ -1,5 +1,93 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Boxed NNCG Projected Active-Set Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint:
+  `Fast path boxed active-set NNCG LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 53 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `NncgSolver` now extends its non-warm-started exact fast-path gateway from
+  strict-interior standard rows to boxed rows without friction-index coupling.
+- The boxed shortcut uses the shared projected-active-set exact solve and is
+  accepted only when the final boxed candidate passes solution validation.
+- Warm-started solves and friction-index rows stay on the existing
+  PGS-preconditioned NNCG iteration path.
+- Unit coverage now checks a lower/upper/free boxed NNCG packet that solves in
+  zero iterations.
+- The checked LCP performance profile CSVs, Python demo metadata, projection
+  background docs, changelog, Python metadata assertions, and this dev-task
+  hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Boxed/NNCG/`.
+- `build/nncg_boxed_projected_active_set_after.json` reported:
+  - 12 rows: `1184.486ns`
+  - 24 rows: `3822.184ns`
+  - 48 rows: `13505.529ns`
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Boxed: `NNCG` average ratio `1.68`, no longer a high-ratio boxed target.
+- Current Boxed high-ratio targets are `BlockedJacobi`, `BGS`,
+  `BoxedSemiSmoothNewton`, `Sap`, and `SubspaceMinimization`.
+- FrictionIndex high-ratio targets remain `BlockedJacobi`, `ShockPropagation`,
+  `Staggering`, `BGS`, `SubspaceMinimization`, `NNCG`,
+  `BoxedSemiSmoothNewton`, `Dantzig`, and `Admm`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Boxed/NNCG/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/nncg_boxed_projected_active_set_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run build
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run lint
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile. The next natural work is reducing
+   Boxed `BlockedJacobi`/`BGS`, `BoxedSemiSmoothNewton`/`Sap`, or
+   `SubspaceMinimization`, or switching to the larger FrictionIndex high-ratio
+   rows.
+2. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Boxed Dantzig Projected Active-Set Fast Path
 
 Current branch state:

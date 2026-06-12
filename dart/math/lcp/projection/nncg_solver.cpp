@@ -153,9 +153,19 @@ LcpResult NncgSolver::solve(
   const int restartInterval = std::max(0, params->restartInterval);
 
   Eigen::VectorXd fastW;
-  if (!options.warmStart
-      && detail::trySolveStrictInteriorStandardLcp(
-          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+  bool exactFastPath = false;
+  if (!options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;
     std::string boundsMessage;

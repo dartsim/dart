@@ -1929,6 +1929,22 @@ TEST(BoxedProjectedActiveSetFastPath, ShockPropagationUsesLinearSolve)
   EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
+TEST(BoxedProjectedActiveSetFastPath, NncgUsesLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeBoxedActiveProblem(&expected);
+  NncgSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(3);
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
 TEST(LemkeSolverCoverage, MaxIterationsExceeded)
 {
   LemkeSolver solver;
