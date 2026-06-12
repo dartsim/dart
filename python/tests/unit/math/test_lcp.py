@@ -267,6 +267,28 @@ def test_direct_solver_reports_only_tiny_standard_problems_as_native() -> None:
     np.testing.assert_allclose(solution, np.array([1.0, 2.0, 3.0, 4.0]))
 
 
+def test_mprgp_solver_reports_only_spd_standard_problems_as_native() -> None:
+    spd = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]))
+    nonsymmetric = dart.LcpProblem(
+        np.array([[2.0, 1.0], [0.0, 2.0]]),
+        np.array([1.0, 2.0]),
+    )
+    indefinite = dart.LcpProblem(
+        np.array([[1.0, 0.0], [0.0, -1.0]]),
+        np.array([1.0, -1.0]),
+    )
+    boxed = dart.LcpProblem(
+        np.eye(2), np.array([1.0, 2.0]), np.array([-1.0, 0.0]), np.ones(2)
+    )
+
+    solver = dart.MprgpSolver()
+    assert solver.supports_standard_lcp()
+    assert solver.supports_problem(spd)
+    assert not solver.supports_problem(nonsymmetric)
+    assert not solver.supports_problem(indefinite)
+    assert not solver.supports_problem(boxed)
+
+
 def test_lcp_solver_rejects_wrong_initial_guess_size() -> None:
     problem = dart.LcpProblem(np.eye(2), np.array([1.0, 2.0]))
     solver = dart.DantzigSolver()

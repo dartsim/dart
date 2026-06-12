@@ -1423,6 +1423,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard
     packets remain solvable through fallback delegation.
+  - Updated `MprgpSolver::supportsProblem()` to report native support only for
+    standard packets matching its configured symmetric positive-definite native
+    path; boxed, friction-indexed, non-symmetric, and non-positive-definite
+    packets remain solvable through fallback delegation.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

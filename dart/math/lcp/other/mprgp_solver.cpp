@@ -99,6 +99,42 @@ const MprgpSolver::Parameters& MprgpSolver::getParameters() const
 }
 
 //==============================================================================
+bool MprgpSolver::supportsProblem(
+    const LcpProblem& problem, double standardTolerance) const
+{
+  if (!LcpSolver::supportsProblem(problem, standardTolerance)) {
+    return false;
+  }
+
+  if (problem.empty()) {
+    return true;
+  }
+
+  if (!std::isfinite(mParameters.epsilonForDivision)
+      || mParameters.epsilonForDivision <= 0.0) {
+    return false;
+  }
+
+  if (!std::isfinite(mParameters.symmetryTolerance)
+      || mParameters.symmetryTolerance < 0.0) {
+    return false;
+  }
+
+  if (!isSymmetric(problem.A, mParameters.symmetryTolerance)) {
+    return false;
+  }
+
+  if (mParameters.checkPositiveDefinite) {
+    Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+    if (llt.info() != Eigen::Success) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//==============================================================================
 LcpResult MprgpSolver::solve(
     const LcpProblem& problem, Eigen::VectorXd& x, const LcpOptions& options)
 {

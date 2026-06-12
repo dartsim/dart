@@ -62,10 +62,11 @@ This section tracks which LCP solvers are currently implemented in DART (`dart/m
   `supportsFrictionIndex()`, and `supportsProblem(problem)` expose each
   solver's native problem support for DART 7 research comparisons. The
   per-problem predicate includes solver-specific native limits such as Direct's
-  tiny 2D/3D standard-LCP enumeration window. These are capability predicates,
+  tiny 2D/3D standard-LCP enumeration window and MPRGP's symmetric
+  positive-definite standard-LCP requirement. These are capability predicates,
   not dispatch guarantees: several standard-only algorithms still delegate
-  boxed/findex problems to Dantzig so the unified `solve()` path remains
-  usable.
+  boxed/findex or otherwise unsupported standard problems to Dantzig so the
+  unified `solve()` path remains usable.
 - `constraint::ConstraintSolver` now builds an `LcpProblem` and calls
   `math::DantzigSolver` (primary) with an optional `math::PgsSolver` fallback.
 - Problem classification and solvers validate basic invariants (e.g., finite
@@ -331,6 +332,9 @@ solver usage examples.
 - **Features**:
   - Standard LCP only (`lo = 0`, `hi = +inf`, `findex = -1`)
   - Requires symmetric positive definite matrices
+  - Reports only symmetric positive-definite standard packets as native by
+    default; unsupported standard packets still delegate through the unified
+    `solve()` path
   - Boxed/findex problems delegate to the boxed-capable pivoting solver
 - **Use Case**: Symmetric SPD problems (e.g., fluid constraints) where a QP
   interpretation is available

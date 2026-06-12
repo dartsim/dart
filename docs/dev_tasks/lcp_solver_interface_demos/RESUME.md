@@ -33,6 +33,14 @@ form-level predicate even though its native standard-LCP path rejects
 non-symmetric matrices and, by default, matrices that fail an LLT positive
 definite check before delegating to Dantzig.
 
+The current continuation implements that MPRGP follow-up: MPRGP now overrides
+`supportsProblem(problem, standardTolerance)` and reports native support only
+for standard problems that satisfy its configured symmetry and
+positive-definite native-path checks. Focused C++ and dartpy tests cover native
+SPD support, boxed false support, non-symmetric false support, default
+indefinite false support, and the C++ parameter case where
+`checkPositiveDefinite = false`.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work. At
@@ -41,17 +49,23 @@ the start of this docs-only hand-off update, the latest code checkpoint was
 commits ahead of `origin/feature/lcp-solver-interface-demos`, which was at
 `eb2147d9e6b Document current LCP handoff state`.
 
+At the start of the MPRGP predicate slice, the branch was clean at
+`f3436654bbd Document critical LCP handoff state` and matched
+`origin/feature/lcp-solver-interface-demos`. After committing this slice, the
+local branch may be one commit ahead unless the maintainer explicitly requests a
+push.
+
 The earlier SSH fetch/push failed on `github.com:22`, but HTTPS fetch later
 succeeded. `origin/main` was refreshed over HTTPS and confirmed to be an
 ancestor of `HEAD` before this representative benchmark-command slice.
 
 ## Immediate Next Step
 
-First confirm whether this docs-only hand-off checkpoint has already been
-pushed. After that, continue with the next smallest LCP solver/interface/demo
-gap: make MPRGP's per-problem support predicate match its native standard-LCP
-route, then add focused tests. Do not push unless the maintainer/user gives
-explicit approval in the current turn.
+Continue the next smallest LCP solver/interface/demo audit gap. Good next
+targets are standard-only solvers whose native mathematical domain may be
+narrower than form-level support, or representative demo/benchmark rows that
+still do not expose a solver-specific strength or failure mode. Do not push
+unless the maintainer/user gives explicit approval in the current turn.
 
 ## Context That Would Be Lost
 
@@ -170,6 +184,28 @@ explicit approval in the current turn.
     `checkPositiveDefinite = false` parameter case.
   - Python/demo counts are expected to remain unchanged because the current
     representative standard demo packets appear symmetric positive definite.
+- Completed MPRGP predicate checkpoint:
+  - `dart/math/lcp/other/mprgp_solver.hpp` now preserves the base overloads with
+    `using LcpSolver::supportsProblem` and overrides the tolerance-aware
+    predicate.
+  - `dart/math/lcp/other/mprgp_solver.cpp` now checks base form support,
+    empty-problem success, solver parameter validity, symmetry, and the
+    configured LLT positive-definite gate.
+  - `tests/unit/math/lcp/test_all_solvers_smoke.cpp` covers SPD, boxed,
+    non-symmetric, indefinite, disabled positive-definite check, and invalid
+    symmetry-tolerance predicate cases.
+  - `python/tests/unit/math/test_lcp.py` covers the default dartpy-visible SPD,
+    non-symmetric, indefinite, and boxed cases.
+  - `docs/background/lcp/02_overview.md`,
+    `docs/background/lcp/06_other-methods.md`,
+    `docs/onboarding/python-bindings.md`, and `CHANGELOG.md` document the
+    native-support behavior.
+  - Focused verification passed:
+    `cmake --build build/default/cpp/Release --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy`;
+    `ctest -R '^UNIT_math_lcp_math_lcp_all_solvers_smoke$'`;
+    `python/tests/unit/math/test_lcp.py` with 60 passed;
+    `python/tests/unit/test_py_demo_panels.py` with 43 passed; and
+    `pixi run python scripts/check_lcp_solver_roster.py`.
 
 ## How to Resume
 

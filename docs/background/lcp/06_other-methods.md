@@ -359,8 +359,10 @@ auto result = solver.solve(problem, x, options);
 ```
 
 > Note: DART's implementation targets standard LCPs with symmetric positive
-> definite matrices and delegates boxed or friction-indexed problems to the
-> boxed-capable pivoting solver.
+> definite matrices. `supportsProblem(problem)` reports only that native SPD
+> subset by default, while boxed, friction-indexed, non-symmetric, and
+> non-positive-definite packets still delegate to the boxed-capable pivoting
+> solver through `solve()`.
 
 DART 7 benchmark evidence includes `BM_LcpMprgpSpdCheckSweep`, which compares
 well-conditioned dense SPD, banded SPD, mildly ill-conditioned SPD, and

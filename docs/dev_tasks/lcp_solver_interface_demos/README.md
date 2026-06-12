@@ -33,6 +33,9 @@
       and extended the LCP roster lint gate to catch stale documented paths.
 - [x] Captured the critical stop-and-handoff state without running further
       verification, including the interrupted MPRGP support-predicate audit.
+- [x] Tightened MPRGP per-problem native support reporting so non-symmetric and
+      non-positive-definite standard packets are marked delegated instead of
+      native.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -72,7 +75,46 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest code checkpoint, `7f4b0227eaf Align LCP docs with snake case
+The latest implementation checkpoint makes MPRGP's per-problem support
+predicate match its actual native path:
+
+- `dart/math/lcp/other/mprgp_solver.hpp` and `.cpp` now override
+  `supportsProblem(problem, standardTolerance)` while preserving the base
+  overloads.
+- MPRGP now reports native support only for standard problems with symmetric
+  matrices and, by default, a successful positive-definite factorization check.
+- Boxed, friction-indexed, non-symmetric, and non-positive-definite packets can
+  still be solved through fallback delegation, but no longer appear as native
+  MPRGP rows in Python/demo capability reporting.
+- C++ and dartpy tests now cover the SPD native case, boxed false case,
+  non-symmetric false case, indefinite false default case, and the C++ member
+  parameter case where `checkPositiveDefinite = false`.
+
+Verification for this checkpoint:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=$N cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy --parallel "$N"
+CTEST_PARALLEL_LEVEL=1 ctest --test-dir build/default/cpp/Release \
+  --output-on-failure -R '^UNIT_math_lcp_math_lcp_all_solvers_smoke$' -j 1
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run python scripts/check_lcp_solver_roster.py
+```
+
+Observed results:
+
+- Targeted C++ build: passed.
+- `UNIT_math_lcp_math_lcp_all_solvers_smoke`: passed.
+- `python/tests/unit/math/test_lcp.py`: 60 tests passed.
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- `scripts/check_lcp_solver_roster.py`: passed.
+
+## Source-Layout Docs Checkpoint
+
+The source-layout docs checkpoint, `7f4b0227eaf Align LCP docs with snake case
 headers`, realigns the LCP background docs with the actual DART 7 source
 layout:
 

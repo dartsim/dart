@@ -37,6 +37,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -229,6 +230,39 @@ TEST_F(
         << " should still allow exact classification when requested";
     EXPECT_TRUE(solver->supportsProblem(problem, 1e-8)) << solverCase.name;
   }
+}
+
+TEST_F(AllSolversSmokeTest, MprgpReportsOnlyNativeSpdStandardProblems)
+{
+  MprgpSolver solver;
+  const auto spd = LcpProblemFactory::standard2dSpd();
+  const auto boxed = LcpProblemFactory::boxed2dActiveUpper();
+
+  Eigen::Matrix2d nonsymmetric;
+  nonsymmetric << 2.0, 1.0, 0.0, 2.0;
+  const Eigen::Vector2d nonsymmetricX(0.25, 0.5);
+  const LcpProblem nonsymmetricProblem(
+      nonsymmetric, nonsymmetric * nonsymmetricX);
+
+  Eigen::Matrix2d indefinite;
+  indefinite << 1.0, 0.0, 0.0, -1.0;
+  const Eigen::Vector2d indefiniteX(0.25, 0.5);
+  const LcpProblem indefiniteProblem(indefinite, indefinite * indefiniteX);
+
+  EXPECT_TRUE(solver.supportsProblem(spd.problem));
+  EXPECT_FALSE(solver.supportsProblem(boxed.problem));
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_FALSE(solver.supportsProblem(indefiniteProblem));
+
+  auto params = solver.getParameters();
+  params.checkPositiveDefinite = false;
+  solver.setParameters(params);
+  EXPECT_FALSE(solver.supportsProblem(nonsymmetricProblem));
+  EXPECT_TRUE(solver.supportsProblem(indefiniteProblem));
+
+  params.symmetryTolerance = -1.0;
+  solver.setParameters(params);
+  EXPECT_FALSE(solver.supportsProblem(spd.problem));
 }
 
 TEST_F(AllSolversSmokeTest, DocumentedSolverAvailabilityMatchesManifest)
