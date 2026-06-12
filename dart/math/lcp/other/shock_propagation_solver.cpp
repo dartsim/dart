@@ -572,7 +572,8 @@ LcpResult ShockPropagationSolver::solve(
   std::vector<BlockData> blocks;
   bool blocksBuilt = false;
   if (!options.warmStart && problem.hasFrictionIndex()
-      && options.customOptions != nullptr) {
+      && options.customOptions != nullptr
+      && (!params->blockSizes.empty() || !params->layers.empty())) {
     if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
       result.status = LcpSolverStatus::InvalidProblem;
       result.message = problemMessage;

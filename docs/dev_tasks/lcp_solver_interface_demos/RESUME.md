@@ -1,5 +1,87 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ShockPropagation Empty-Custom Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint target:
+  `Skip empty ShockPropagation block prebuild`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 58 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ShockPropagationSolver` no longer prebuilds friction-index block data before
+  trying the validated exact shortcut when custom options are present but both
+  `blockSizes` and `layers` are empty.
+- Non-empty custom block/layer partitions still build and validate block data
+  before the exact shortcut, preserving the existing invalid-partition failure
+  behavior.
+- The broader BGS-delegation experiment was rejected because it improved small
+  rows but regressed the 64-contact FrictionIndex row.
+- The checked performance profile CSVs, Python demo profile summary,
+  other-methods background note, changelog, and this hand-off were refreshed.
+
+Evidence:
+
+- Focused
+  `BM_LcpCompare/FrictionIndex/(ShockPropagation|BGS|Pgs|Tgs)/`
+  wrote `build/friction_index_shock_skip_empty_prebuild_after.json`.
+- Compared with the previous `build/lcp_profile_full.json` cache, focused
+  `ShockPropagation` results were:
+  - contacts 4: `2214.6ns -> 1743.3ns`
+  - contacts 16: `22983.8ns -> 18426.3ns`
+  - contacts 64: `447392.9ns -> 449624.5ns`
+- Regenerated full profile reports FrictionIndex averages:
+  `BoxedSemiSmoothNewton 2.75`, `Apgd 2.04`, `ShockPropagation 2.00`,
+  `NNCG 1.93`, `SubspaceMinimization 1.92`, `BlockedJacobi 1.83`,
+  `Admm 1.76`, `Jacobi 1.74`, `Staggering 1.74`, `BGS 1.73`,
+  `Dantzig 1.73`, `RedBlackGaussSeidel 1.69`, `SymmetricPsor 1.66`,
+  `Sap 1.54`, `Tgs 1.12`, and `Pgs 1.00`.
+- The same regenerated profile reports Boxed `ShockPropagation 2.65`; that row
+  is the next obvious boxed target.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/friction_index_shock_skip_empty_prebuild_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: `ShockPropagation` is back above `2x` in the refreshed profile.
+- FrictionIndex: `BoxedSemiSmoothNewton` and `Apgd` are above `2x`, with
+  `ShockPropagation` exactly at `2x`.
+- Standard: moderate spread only; no standard row is above `2x`.
+
 ## Current Reality - 2026-06-12 Boxed SSN Line-Search Early Acceptance
 
 This section is the latest state; older sections below are historical

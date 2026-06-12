@@ -1,5 +1,95 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ShockPropagation Empty-Custom Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint target:
+  `Skip empty ShockPropagation block prebuild`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 58 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ShockPropagationSolver` now skips eager friction-index block construction
+  when custom options exist but both `blockSizes` and `layers` are empty,
+  allowing the validated strict-interior friction-index exact path to run
+  before block data construction.
+- Non-empty custom block/layer partitions still build and validate block data
+  before the exact shortcut, so invalid custom partitions still fail before a
+  fast path can accept a solution.
+- A broader BGS-delegation experiment was tried and removed because it regressed
+  the 64-contact FrictionIndex row.
+- The checked performance profile CSVs, Python demo profile summary,
+  other-methods background note, changelog, and this hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/FrictionIndex/(ShockPropagation|BGS|Pgs|Tgs)/`.
+- `build/friction_index_shock_skip_empty_prebuild_after.json` compared with the
+  previous `build/lcp_profile_full.json` cache reported:
+  - `ShockPropagation` contacts 4: `2214.6ns -> 1743.3ns`
+  - `ShockPropagation` contacts 16: `22983.8ns -> 18426.3ns`
+  - `ShockPropagation` contacts 64: `447392.9ns -> 449624.5ns`
+- All focused rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot for this slice:
+
+- FrictionIndex average ratios: `BoxedSemiSmoothNewton 2.75`, `Apgd 2.04`,
+  `ShockPropagation 2.00`, `NNCG 1.93`, `SubspaceMinimization 1.92`,
+  `BlockedJacobi 1.83`, `Admm 1.76`, `Jacobi 1.74`, `Staggering 1.74`,
+  `BGS 1.73`, `Dantzig 1.73`, `RedBlackGaussSeidel 1.69`,
+  `SymmetricPsor 1.66`, `Sap 1.54`, `Tgs 1.12`, and `Pgs 1.00`.
+- Boxed `ShockPropagation` is back above `2x` in the refreshed profile
+  (`2.65`) and is the next obvious boxed target.
+- Standard has moderate spread only; no standard row is above `2x`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(ShockPropagation|BGS|Pgs|Tgs)/' \
+  --benchmark_min_time=0.03s \
+  --benchmark_format=json > build/friction_index_shock_skip_empty_prebuild_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS="$JOBS" CTEST_PARALLEL_LEVEL="$JOBS" \
+  CMAKE_BUILD_PARALLEL_LEVEL="$JOBS" pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Optimize Boxed `ShockPropagation`, then FrictionIndex
+   `BoxedSemiSmoothNewton` and `Apgd`.
+2. Run `pixi run lint` before committing any further slice.
+3. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Boxed SSN Line-Search Early Acceptance
 
 Current branch state:

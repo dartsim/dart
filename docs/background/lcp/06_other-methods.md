@@ -304,8 +304,11 @@ solver.solve(problem, x, options);
 > solve before block data construction; the shortcut is accepted only when the
 > final boxed solution passes validation. Strictly interior friction-index rows
 > up to 48 variables use the shared validated friction-index exact solve after
-> custom block/layer validation, while larger or validator-rejected
-> friction-index rows continue through the layered block path.
+> lightweight block/layer structure validation. Default options and empty custom
+> block/layer options avoid block data construction before that exact attempt;
+> non-empty custom partitions still build and validate block data first so
+> invalid partitions fail before a fast path can accept a solution. Larger or
+> validator-rejected friction-index rows continue through the layered block path.
 > Small uncoupled fixed-bound blocks first try a local direct linear solve when
 > the unconstrained candidate is already feasible; active-bound, singular,
 > non-finite, larger, and active local `findex` blocks still use the existing

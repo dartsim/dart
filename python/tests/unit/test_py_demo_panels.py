@@ -1068,12 +1068,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Dantzig" in profile_by_surface["Boxed"]["current_leaders"]
     assert "Nncg" in profile_by_surface["Boxed"]["current_leaders"]
     assert "Sap" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "ShockPropagation" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "ShockPropagation" not in profile_by_surface["Boxed"][
+        "current_leaders"
+    ]
     assert "SubspaceMinimization" in profile_by_surface["Boxed"][
         "current_leaders"
     ]
     assert "SymmetricPsor" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "No boxed row above 2x" in profile_by_surface["Boxed"][
+    assert "ShockPropagation is above 2x" in profile_by_surface["Boxed"][
         "current_laggards"
     ]
     assert "Admm" not in profile_by_surface["Boxed"]["current_laggards"]
@@ -1086,10 +1088,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Dantzig" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "Nncg" not in profile_by_surface["Boxed"]["current_laggards"]
     assert "Sap" not in profile_by_surface["Boxed"]["current_laggards"]
-    assert (
-        "ShockPropagation"
-        not in profile_by_surface["Boxed"]["current_laggards"]
-    )
+    assert "ShockPropagation" in profile_by_surface["Boxed"]["current_laggards"]
     assert (
         "SubspaceMinimization"
         not in profile_by_surface["Boxed"]["current_laggards"]
@@ -1111,7 +1110,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
-    assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
+    assert "BlockedJacobi" not in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][

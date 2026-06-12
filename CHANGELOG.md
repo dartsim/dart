@@ -1525,6 +1525,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     also try the helper before Dantzig fallback, while active-bound,
     warm-started, large size-sensitive, and validator-rejected rows stay on
     their original iterative or Newton paths.
+  - Optimized `ShockPropagationSolver` to avoid friction-index block data
+    construction before the validated exact shortcut when custom options are
+    present but both `blockSizes` and `layers` are empty, while preserving
+    eager block validation for non-empty custom partitions.
   - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
     already reaches the natural residual tolerance, avoiding an extra Newton
     loop on warm-started or larger friction-index rows that converge directly

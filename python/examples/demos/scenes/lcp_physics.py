@@ -224,11 +224,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Admm/Tgs/Pgs/ShockPropagation and strict-interior pivot/barrier/Newton/projection/block rows"
+            "Admm/Tgs/Pgs/ShockPropagation/Jacobi/SymmetricPsor and "
+            "strict-interior pivot/barrier/Newton/projection/block rows"
         ),
         "current_laggards": (
-            "Apgd/FischerBurmeisterNewton/MinimumMapNewton, "
-            "InteriorPoint/SubspaceMinimization/MPRGP"
+            "MinimumMapNewton/PenalizedFischerBurmeisterNewton/"
+            "FischerBurmeisterNewton, with Apgd/BGS/"
+            "SubspaceMinimization/MPRGP still moderate"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -245,13 +247,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "current_leaders": (
             "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
             "BlockedJacobi/BGS/Dantzig/Admm/Nncg/"
-            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization/"
-            "ShockPropagation close"
+            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization close"
         ),
-        "current_laggards": "No boxed row above 2x in refreshed profile",
+        "current_laggards": "ShockPropagation is above 2x in the refreshed profile",
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
-            "trail active-bound rows; remaining boxed spread is moderate."
+            "trail most active-bound rows; the remaining boxed outlier is "
+            "ShockPropagation."
         ),
     },
     {
@@ -261,19 +263,20 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs; Admm/SymmetricPsor/BGS/SubspaceMinimization/"
-            "Dantzig/NNCG/Staggering/Jacobi close; Sap close; Apgd just under 2x"
+            "Tgs/Pgs; Sap/SymmetricPsor/RedBlackGaussSeidel/"
+            "BGS/Dantzig/Jacobi/Staggering/Admm/"
+            "SubspaceMinimization/NNCG close"
         ),
         "current_laggards": (
-            "BoxedSemiSmoothNewton and ShockPropagation remain above 2x; "
-            "BlockedJacobi is just above 2x"
+            "BoxedSemiSmoothNewton and Apgd remain above 2x; "
+            "ShockPropagation is exactly at 2x"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, NNCG, Dantzig, and subspace hot rows, and the boxed "
             "semi-smooth line-search shortcut trims Newton iterations; remaining "
-            "targets are ShockPropagation, BlockedJacobi, and larger "
-            "BoxedSemiSmoothNewton rows."
+            "targets are larger BoxedSemiSmoothNewton rows, Apgd, and the "
+            "borderline ShockPropagation path."
         ),
     },
 )
