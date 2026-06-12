@@ -3156,6 +3156,45 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     EXPECT_EQ(heapCounter.allocationBytes(), 0u);
   }
 
+  sx::World deformableReplayWorld;
+  sx::DeformableBodyOptions deformableOptions;
+  deformableOptions.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  deformableOptions.velocities.assign(
+      deformableOptions.positions.size(), Eigen::Vector3d::Zero());
+  deformableOptions.masses.assign(deformableOptions.positions.size(), 1.0);
+  deformableOptions.fixedNodes = {0};
+  deformableReplayWorld.addDeformableBody(
+      "allocator_replay_deformable", deformableOptions);
+  auto& deformableReplayFreeList
+      = deformableReplayWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeDeformableReplay
+      = deformableReplayFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    deformableReplayWorld.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "deformable node replay snapshots should allocate dynamic payloads "
+           "through the World free allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(
+      deformableReplayFreeList.getAllocationCount(),
+      allocationsBeforeDeformableReplay);
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    deformableReplayWorld.restoreReplayFrame(0);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "deformable node replay restore should not allocate dynamic "
+           "payloads from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
   auto& freeList = memoryManager.getFreeListAllocator();
@@ -20141,6 +20180,38 @@ TEST(World, ReplayRecordingRejectsJointRuntimeVectorSizeChanges)
       = sx::detail::toRegistryEntity(joint.getEntity());
   auto& jointComponent = registry.get<sx::comps::Joint>(jointEntity);
   jointComponent.position = Eigen::VectorXd::Zero(1);
+
+  EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// Test that replay restore rejects internally corrupted deformable payload
+// sizes instead of resizing live node-state vectors during restore.
+TEST(World, ReplayRecordingRejectsDeformableNodeVectorSizeChanges)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  world.addDeformableBody("deformable", options);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  auto& registry = sx::detail::registryOf(world);
+  auto view = registry.view<sx::comps::DeformableNodeState>();
+  std::size_t deformableNodeStateCount = 0;
+  for (auto entity : view) {
+    ++deformableNodeStateCount;
+    auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+    state.positions.push_back(Eigen::Vector3d::Zero());
+  }
+  ASSERT_EQ(deformableNodeStateCount, 1u);
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
 }

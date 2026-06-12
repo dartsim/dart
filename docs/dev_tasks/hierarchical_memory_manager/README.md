@@ -1,10 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Authoritative Stop Handoff (2026-06-12, Replay Snapshot Payload Allocators)
-
-Maintainer instruction: stop all implementation, optimization, benchmark,
-build, lint, test, and CI-followup work. This update is handoff documentation
-only. No fresh verification is intentionally run for this stop checkpoint.
+## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
 Use exactly one branch as the fresh-session resume point:
 `pr/hmm-phase45-replay-snapshot-allocators`. It was created from
@@ -26,6 +22,8 @@ allocator`).
 - Committed locally: `53c57088f3a` (`Reject replay joint vector size drift`).
 - A docs-only handoff commit should sit on top of those replay commits when
   this branch is pushed.
+- Latest local slice: deformable node replay payload snapshots now route
+  through World memory and restore without resizing live node-state vectors.
 
 The committed replay slices close the next replay ownership gaps. A new
 non-empty replay ownership assertion first reproduced one global heap
@@ -63,11 +61,23 @@ that the live vector size matches the recorded snapshot, and
 `World.ReplayRecordingRejectsJointRuntimeVectorSizeChanges` covers the
 allocation-avoidance invariant.
 
-Focused validation for the replay-name, replay-payload, and restore-size
-slices:
+The deformable replay-payload slice closes the next non-joint replay ownership
+gap. A focused assertion in
+`World.WorldPersistentStorageUsesWorldFreeAllocator` reproduced five global
+heap allocations / 324 bytes during deformable node replay record, and the
+same count during restore. `ReplayState::DeformableNodeStateSnapshot` now owns
+World-allocated payload vectors for positions, previous positions, velocities,
+masses, and fixed flags, and restore copies into existing live vectors only
+after size checks. `World.ReplayRecordingRejectsDeformableNodeVectorSizeChanges`
+covers the allocation-avoidance invariant for corrupted live node-state sizes.
+
+Validation for the replay-name, replay-payload, restore-size, and deformable
+replay-payload slices:
 
 ```bash
 pixi run lint
+pixi run build
+pixi run test-unit
 cmake --build build/default/cpp/Release --target test_world --parallel 3
 build/default/cpp/Release/bin/test_world \
   --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
@@ -77,12 +87,14 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Live joint component storage still uses `Eigen::VectorXd`; the replay changes
-only change replay-owned snapshot payloads and reject runtime vector size drift
+Live joint component storage still uses `Eigen::VectorXd`, and live deformable
+node component storage still uses plain `std::vector`; the replay changes only
+change replay-owned snapshot payloads and reject runtime vector size drift
 during restore. Richer replay restores may still allocate if they insert
-missing transient components or touch non-joint replay payloads that remain
-native heap-owned. Treat those as separate evidence-first slices; do not claim
-full World replay zero-heap coverage from the current snapshot-payload gates.
+missing transient components or touch other non-joint replay payloads that
+remain native heap-owned. Treat those as separate evidence-first slices; do not
+claim full World replay zero-heap coverage from the current snapshot-payload
+gates.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -115,11 +127,11 @@ Immediate follow-up candidates for the next fresh session:
   removing stale components. If a recorded transient component is missing live,
   restore may allocate while re-inserting it. Measure first; do not change
   behavior without evidence.
-- Non-joint replay payloads: `comps::DeformableNodeState` still owns plain
-  `std::vector` payloads for positions, previous positions, velocities, masses,
-  and fixed flags. Replay capture copies component payloads, so deformable
-  replay snapshots may still use native heap storage unless wrapped in
-  allocator-aware snapshot state.
+- Non-joint replay payloads: `comps::DeformableNodeState` replay snapshots are
+  now allocator-aware, but live `DeformableNodeState` component storage still
+  uses plain `std::vector`. Decide separately whether persistent deformable
+  node storage should move to World-backed vectors; that is broader than the
+  replay snapshot fix.
 - Existing allocator-aware transient payloads: `VariationalContactDualState`
   and `MultibodyVariationalState` already use `dart::common::StlAllocator` for
   nested vectors. Confirm copy-construction/assignment allocator propagation

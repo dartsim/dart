@@ -395,15 +395,35 @@ struct World::ReplayState
     bool hasDeformableObstacleNoCcd = false;
   };
 
+  struct DeformableNodeStateSnapshot
+  {
+    explicit DeformableNodeStateSnapshot(common::MemoryAllocator& allocator)
+      : positions(SnapshotAllocator<Eigen::Vector3d>{allocator}),
+        previousPositions(SnapshotAllocator<Eigen::Vector3d>{allocator}),
+        velocities(SnapshotAllocator<Eigen::Vector3d>{allocator}),
+        masses(SnapshotAllocator<double>{allocator}),
+        fixed(SnapshotAllocator<std::uint8_t>{allocator})
+    {
+      // Empty.
+    }
+
+    SnapshotVector<Eigen::Vector3d> positions;
+    SnapshotVector<Eigen::Vector3d> previousPositions;
+    SnapshotVector<Eigen::Vector3d> velocities;
+    SnapshotVector<double> masses;
+    SnapshotVector<std::uint8_t> fixed;
+  };
+
+  using DeformableNodeStateSnapshotEntry
+      = std::pair<entt::entity, DeformableNodeStateSnapshot>;
+
   struct Frame
   {
     explicit Frame(common::MemoryAllocator& allocator)
       : differentiableParameters(
             SnapshotAllocator<DifferentiableParameterSnapshot>{allocator}),
         deformableNodeStates(
-            SnapshotAllocator<
-                std::pair<entt::entity, comps::DeformableNodeState>>{
-                allocator}),
+            SnapshotAllocator<DeformableNodeStateSnapshotEntry>{allocator}),
         deformableAvbdWarmStartStates(
             SnapshotAllocator<
                 compute::avbd_replay::DeformableAvbdWarmStartReplayState>{
@@ -444,7 +464,7 @@ struct World::ReplayState
     std::optional<StepDerivatives> stepDerivatives;
     SnapshotVector<DifferentiableParameterSnapshot> differentiableParameters;
 
-    ComponentSnapshot<comps::DeformableNodeState> deformableNodeStates;
+    SnapshotVector<DeformableNodeStateSnapshotEntry> deformableNodeStates;
     SnapshotVector<compute::avbd_replay::DeformableAvbdWarmStartReplayState>
         deformableAvbdWarmStartStates;
     ComponentSnapshot<compute::MultibodyVariationalState>
@@ -827,6 +847,40 @@ auto captureReplayComponents(
   return snapshot;
 }
 
+template <typename ReplayVector, typename SourceVector>
+void captureReplayVectorPayload(
+    ReplayVector& target, const SourceVector& source)
+{
+  target.assign(source.begin(), source.end());
+}
+
+template <typename DeformableNodeStateSnapshot>
+auto captureReplayDeformableNodeStates(
+    const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
+{
+  using SnapshotValue = std::pair<entt::entity, DeformableNodeStateSnapshot>;
+  std::vector<SnapshotValue, common::StlAllocator<SnapshotValue>> snapshot(
+      common::StlAllocator<SnapshotValue>{allocator});
+  auto view = registry.view<comps::DeformableNodeState>();
+  snapshot.reserve(countReplayView(view));
+  for (auto entity : view) {
+    const auto& state = view.template get<comps::DeformableNodeState>(entity);
+    DeformableNodeStateSnapshot snapshotState(allocator);
+    captureReplayVectorPayload(snapshotState.positions, state.positions);
+    captureReplayVectorPayload(
+        snapshotState.previousPositions, state.previousPositions);
+    captureReplayVectorPayload(snapshotState.velocities, state.velocities);
+    captureReplayVectorPayload(snapshotState.masses, state.masses);
+    captureReplayVectorPayload(snapshotState.fixed, state.fixed);
+    snapshot.emplace_back(entity, std::move(snapshotState));
+  }
+  std::ranges::sort(snapshot, [](const auto& lhs, const auto& rhs) {
+    return static_cast<std::uint32_t>(lhs.first)
+           < static_cast<std::uint32_t>(rhs.first);
+  });
+  return snapshot;
+}
+
 template <typename Component, typename Snapshot>
 void validateReplayComponents(
     const detail::WorldRegistry& registry,
@@ -890,6 +944,48 @@ void restoreReplayComponents(
 
   for (const auto& [entity, component] : snapshot) {
     registry.replace<Component>(entity, component);
+  }
+}
+
+template <typename SourceVector, typename TargetVector>
+void restoreReplayVectorPayload(
+    const SourceVector& source,
+    TargetVector& target,
+    std::string_view componentName,
+    std::string_view payloadName)
+{
+  DART_SIMULATION_THROW_T_IF(
+      source.size() != target.size(),
+      InvalidOperationException,
+      "Cannot restore replay frame: {} {} size changed",
+      componentName,
+      payloadName);
+  std::copy(source.begin(), source.end(), target.begin());
+}
+
+template <typename Snapshot>
+void restoreReplayDeformableNodeStates(
+    detail::WorldRegistry& registry, const Snapshot& snapshot)
+{
+  constexpr std::string_view componentName = "DeformableNodeState";
+  validateReplayComponents<comps::DeformableNodeState>(
+      registry, snapshot, componentName);
+
+  for (const auto& [entity, replayState] : snapshot) {
+    auto& state = registry.get<comps::DeformableNodeState>(entity);
+    restoreReplayVectorPayload(
+        replayState.positions, state.positions, componentName, "positions");
+    restoreReplayVectorPayload(
+        replayState.previousPositions,
+        state.previousPositions,
+        componentName,
+        "previousPositions");
+    restoreReplayVectorPayload(
+        replayState.velocities, state.velocities, componentName, "velocities");
+    restoreReplayVectorPayload(
+        replayState.masses, state.masses, componentName, "masses");
+    restoreReplayVectorPayload(
+        replayState.fixed, state.fixed, componentName, "fixed");
   }
 }
 
@@ -5668,10 +5764,8 @@ void World::restoreReplayFrame(std::size_t index)
   compute::avbd_replay::restoreDeformableAvbdWarmStartReplayState(
       m_storage->registry, replayFrame.deformableAvbdWarmStartStates);
 
-  restoreReplayComponents<comps::DeformableNodeState>(
-      m_storage->registry,
-      replayFrame.deformableNodeStates,
-      "DeformableNodeState");
+  restoreReplayDeformableNodeStates(
+      m_storage->registry, replayFrame.deformableNodeStates);
   restoreReplayTransientComponents<compute::MultibodyVariationalState>(
       m_storage->registry,
       replayFrame.multibodyVariationalStates,
@@ -5809,9 +5903,9 @@ void World::recordReplayFrame()
       m_storage->differentiableParameters.begin(),
       m_storage->differentiableParameters.end());
 
-  replayFrame.deformableNodeStates
-      = captureReplayComponents<comps::DeformableNodeState>(
-          m_storage->registry, replayAllocator);
+  replayFrame.deformableNodeStates = captureReplayDeformableNodeStates<
+      ReplayState::DeformableNodeStateSnapshot>(
+      m_storage->registry, replayAllocator);
   replayFrame.deformableAvbdWarmStartStates
       = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
           m_storage->registry, replayAllocator);
