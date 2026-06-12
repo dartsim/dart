@@ -447,6 +447,41 @@ class _RigidStackStability:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        history = snapshot.get("delta_history", [])
+        if not history:
+            return 0.0
+        try:
+            return float(history[-1])
+        except (TypeError, ValueError):
+            return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            for case_metrics in metrics.values():
+                if not isinstance(case_metrics, dict):
+                    continue
+                if case_metrics.get("status") in {"overlapping", "collapsed"}:
+                    return 1.0
+                try:
+                    if float(case_metrics.get("min_clearance", 1.0)) <= 0.001:
+                        return 1.0
+                    if float(case_metrics.get("top_drift", 0.0)) >= 0.02:
+                        return 1.0
+                except (TypeError, ValueError):
+                    continue
+        try:
+            if float(self.replay_timeline_signal(snapshot)) >= 0.01:
+                return 1.0
+        except (TypeError, ValueError):
+            return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -579,6 +614,11 @@ def build() -> SceneSetup:
             "replay_capture_state": stability.capture_replay_state,
             "replay_restore_state": stability.restore_replay_state,
             "replay_sync": stability._sync,
+            "replay_timeline": {
+                "signal_label": "Top x divergence",
+                "signal": stability.replay_timeline_signal,
+                "markers": stability.replay_timeline_marker,
+            },
         },
     )
 

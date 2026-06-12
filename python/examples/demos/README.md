@@ -506,7 +506,9 @@ lets users tune the top mass ratio and friction, reset the stack, and compare
 max speed, top-block drift, minimum analytic clearance, and solver divergence.
 Capture metrics record the solver pair, executor, controls, per-solver speed,
 drift, clearance, height error, step timing, top-x divergence, and compact
-history ranges.
+history ranges. The shared Replay panel uses top-x divergence as its value
+track and marks frames where overlap, low clearance, visible top-block drift,
+or solver-family divergence make the stack worth scrubbing.
 
 ## Rigid contact manipulation
 

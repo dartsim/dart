@@ -4592,6 +4592,50 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
 
     assert controller._delta_history
     assert np.isfinite([float(value) for value in controller._delta_history]).all()
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Top x divergence"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._delta_history[-1]
+    )
+    assert timeline["markers"]({"delta_history": [0.0, 0.011]}) == pytest.approx(
+        1.0
+    )
+    assert (
+        timeline["markers"](
+            {
+                "last_metrics": {
+                    "case": {"min_clearance": 0.0005, "status": "settling"}
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {"last_metrics": {"case": {"top_drift": 0.021, "status": "settling"}}}
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"last_metrics": {"case": {"status": "collapsed"}}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "delta_history": [0.004],
+                "last_metrics": {
+                    "case": {
+                        "min_clearance": 0.02,
+                        "status": "stable",
+                        "top_drift": 0.004,
+                    }
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
     metrics = controller._last_metrics["IPC barrier"]
     assert float(metrics["min_clearance"]) > -0.002

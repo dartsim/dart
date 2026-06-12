@@ -144,7 +144,9 @@
   - Added `rigid_stack_stability` to Python `py-demos`, comparing sequential
     impulse and rigid IPC on a compact top-heavy stack with mass-ratio, drift,
     clearance, speed, step-profile diagnostics, and scene-owned capture
-    metrics.
+    metrics. The shared Replay panel now uses top-x divergence as its value
+    track and marks overlap, low-clearance, top-drift, or divergence frames
+    for targeted visual debugging.
   - Added `rigid_contact_inspector` to Python `py-demos`, exposing raw
     `World.collide()` contact pairs, points, normals, depths, local points,
     shape indices, and selected-pair histories for rigid-body visual debugging

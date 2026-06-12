@@ -2,12 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the live open-command follow-up for the rigid
-workflow evidence surface. The `Rigid Workflow` panel, workflow manifests, and
-generated `review_index.html` cards now separate a live
-`py-demos --scene ...` open command from the reproducible
-`py-demo-capture ...` evidence command, so users can jump from a packet row
-back into interactive debugging without reconstructing the viewer invocation.
+This checkpoint adds replay-guided timeline metadata to
+`rigid_stack_stability` after the live open-command workflow follow-up. The
+stack row now uses top-x divergence as its Replay value track and marks frames
+where overlap, low clearance, visible top-block drift, or solver-family
+divergence make the stack worth scrubbing.
 
 Expected repository state after this hand-off:
 
@@ -20,7 +19,7 @@ Expected repository state after this hand-off:
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command checkpoint.
+  live open-command and stack Replay timeline checkpoints.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a docs-only pushed
   checkpoint after the workflow-video packet slice.
 - `d5c6de2bee1 Describe optional rigid workflow rows`,
@@ -34,6 +33,9 @@ Expected repository state after this hand-off:
 - The live open-command continuation finished the previously documented WIP,
   added capture-helper tests and public docs, and reran focused tests, a public
   dry-run artifact inspection, and `pixi run lint`.
+- The stack Replay timeline continuation added `replay_timeline` metadata to
+  `rigid_stack_stability`, updated tests and docs, and ran focused tests plus a
+  real docked capture.
 - Do not push any new implementation or handoff commit without explicit
   approval in a future session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -179,6 +181,12 @@ capture command, and the manifest records the same command as
 `viewer_command`. Focused pytest, public row-15 dry-run artifact inspection,
 and `pixi run lint` passed.
 
+The current continuation adds replay-guided timeline metadata to
+`rigid_stack_stability`. The shared Replay panel now uses top-x divergence as
+its value track and marks overlap, low-clearance, top-drift, or
+solver-divergence frames for targeted visual debugging. Focused pytest and a
+real docked capture passed.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -193,14 +201,14 @@ Current snapshot:
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command checkpoint.
+  live open-command and stack Replay timeline checkpoints.
 - `6bbed86f397 Refresh rigid workflow stop handoff` is a pushed docs-only
   checkpoint.
 - `d5c6de2bee1 Describe optional rigid workflow rows` is local and unpushed.
 - `5a4529f0083 Audit rigid workflow guidance coverage` is local and unpushed.
 - `ad013e62069 Refresh rigid guidance audit handoff` is local and unpushed.
-- The current live open-command checkpoint is local and unpushed until an
-  explicit future push approval.
+- The current live open-command and stack Replay timeline checkpoints are local
+  and unpushed until an explicit future push approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
@@ -210,7 +218,8 @@ implementation commits to include the requested/selected manifest metadata
 slice, the review-index group-summary slice, the workflow-panel review-packet
 command slice, `3c5b9e517d3 Enable rigid workflow video packets`, and the
 optional-row metadata plus guidance-coverage audit slices, followed by the
-live open-command slice. Do not push without explicit approval in that session.
+live open-command and stack Replay timeline slices. Do not push without
+explicit approval in that session.
 
 ## Context That Would Be Lost
 
@@ -288,11 +297,15 @@ live open-command slice. Do not push without explicit approval in that session.
   `python/tests/unit/test_capture_py_demo.py` for panel, manifest,
   review-index, and backend-propagation coverage.
 - The latest read-only explorer returned after the stop instruction and was
-  not acted on. It recommended a future bounded slice for
+  later acted on. It recommended a bounded slice for
   `rigid_stack_stability`: add replay-guided timeline metadata for a
   `Top x divergence` value track and diagnostic markers for overlap/collapse,
-  low clearance, or visible top-block drift. Treat this only as a candidate
-  next slice.
+  low clearance, or visible top-block drift.
+- The completed stack Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_stack_stability.py`, with tests covering
+  the `Top x divergence` label, signal, and marker thresholds.
 
 ## How To Resume
 
@@ -605,3 +618,17 @@ and the paired `pixi run py-demo-capture -- --scene rigid_solver_compare`
 capture command. The generated `review_index.html` contained `open live`,
 `capture evidence`, the live viewer command, and the capture command.
 `pixi run lint` passed.
+
+Current stack Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_stack_stability_timeline_1781271696
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.top_x_divergence, .scene_metrics.latest.metrics.history.max_top_x_divergence, .scene_metrics.latest.metrics.history.ipc_min_clearance' /tmp/dart_capture_stack_stability_timeline_1781271696/manifest.json
+```
+
+The focused pytest reported `2 passed`. The real docked capture completed with
+exit code 0 and wrote a nonblank 960x540 screenshot with docked UI detected,
+23 PNG frames, and 24 scene-metric events. The capture manifest reported row
+`rigid_stack_stability`, current and historical maximum top-x divergence about
+`0.00405`, and IPC minimum clearance `0.0`.
