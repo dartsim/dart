@@ -2,19 +2,18 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed stop/handoff commit `9ea310b2c8b`,
-completed the row-32 `rigid_multibody_dynamics_terms` capture-metrics slice,
-and recorded focused test plus real docked capture evidence. The branch had no
-associated GitHub PR at resume time.
+Latest continuation stopped on explicit maintainer/user instruction to focus on
+handoff without any further verification. The branch had no associated GitHub
+PR at resume time.
 
-Expected branch/worktree state after this local checkpoint:
+Expected branch/worktree state after this handoff commit:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch head remains `9ea310b2c8b` unless a maintainer/user explicitly
-  approves another push.
-- The completed local checkpoint should include row-32 multibody dynamics-terms
-  capture metrics, focused assertions, docs, docked capture evidence, and
-  refreshed handoff state.
+- Origin should include the row-32 multibody dynamics-terms checkpoint plus this
+  handoff checkpoint because the maintainer/user explicitly requested a push.
+- The handoff checkpoint includes the unverified row-33
+  `rigid_link_center_of_mass` capture-metrics code/test changes plus refreshed
+  dev-task handoff docs.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -33,70 +32,67 @@ Recent checkpoints:
 - `544d2b44a62` (`Hand off rigid passive joint parameter metrics`)
 - `44354ed24c7` (`Expose rigid screw joint pitch capture metrics`)
 - `9ea310b2c8b` (`Document rigid visual verification stop handoff`)
-- the local checkpoint containing this file
+- `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
+- this handoff checkpoint containing the row-33 work-in-progress and docs
 
-Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
-checkpoint touches:
+Current work-in-progress checkpoint: `rigid_link_center_of_mass` row capture
+metrics. The checkpoint touches:
 
-- `python/examples/demos/scenes/rigid_kinematic_driver.py`
+- `python/examples/demos/scenes/rigid_link_center_of_mass.py`
 - `python/tests/integration/test_demos_cycle.py`
-- `CHANGELOG.md`
-- `python/examples/demos/README.md`
-- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 - `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
 
-What changed in code/test: row 23 now exposes
-`SceneSetup.info["capture_metrics"]` for the IPC prescribed-motion kinematic
-driver row and its sequential-impulse caveat lane. The payload exports row
-identity, solver scope, selected executor, drive-speed/grip-friction controls,
-lane order, lane solver/friction modes, world time, per-lane driver travel, box
-travel, slip, speed ratio, support gap, contact count, status, step timing, and
-compact history ranges. The focused test now asserts the capture hook is
-present and that exported lane values and histories mirror the live controller
-state.
+What changed in code/test:
 
-Validation collected for the kinematic-driver slice:
+- `python/examples/demos/scenes/rigid_link_center_of_mass.py` now imports
+  `CAPTURE_METRICS_INFO_KEY` and registers
+  `SceneSetup.info["capture_metrics"]`.
+- `_RigidLinkCenterOfMass.capture_metrics()` serializes the current controller
+  state without stepping or resetting. If no latest metrics exist, it records
+  the current metrics snapshot once.
+- The payload exports row identity, solver
+  `world_multibody_inertial_offsets`, scope
+  `contact_free_link_center_of_mass_offsets`, executor, time step, world time,
+  top-level and nested controls, lane order/count, per-lane label, offset,
+  high-inertia flag, link/joint names, local center-of-mass, serialized lane
+  metrics, mirrored torque/angle/acceleration sums, reflected mass-matrix
+  ratios, COM marker coordinates, energy, current acceleration-error max, step
+  timing, and compact history ranges.
+- `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`
+  now asserts the capture hook mirrors the live controller metrics, lane
+  metadata, top-level range-friendly fields, and history maxima.
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc -q`
-  reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_kinematic_driver_metrics_1781232929`
-  wrote a nonblank docked capture with 71 PNG frames and 72 scene-metrics
-  events. The manifest recorded top-level ranges for IPC grip, IPC slip, and
-  sequential-impulse caveat driver travel, box travel, slip, speed ratio,
-  support gap, contact count, step timing, time step, and world time.
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
-  reported `11 passed`.
-- `pixi run lint` passed.
-- Bounded `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run build`
-  passed and reported `ninja: no work to do`.
-- `git diff --check` passed.
-- Contact-manipulation completion immediately before this slice:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
-  reported `1 passed`; the real docked capture under
-  `/tmp/dart_capture_contact_manipulation_metrics_1781232293` wrote 72
-  scene-metrics events. The broader workflow/doc drift guard, `pixi run lint`,
-  bounded build, and `git diff --check` were intentionally not run for that
-  slice after the user explicitly requested handoff without further
-  verification.
-- Stack-stability completion immediately before contact manipulation:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
-  reported `10 passed`; the real docked capture under
-  `/tmp/dart_capture_stack_stability_metrics_1781231606` wrote
-  24 scene-metrics events; `pixi run lint`, bounded build, and
+Validation status for the link center-of-mass checkpoint:
+
+- A pre-handoff focused row-33 test was run before the explicit no-verification
+  stop request and reported `1 passed`.
+- A real docked capture at
+  `/tmp/dart_capture_link_center_of_mass_metrics_1781237248` wrote 71 PNG
+  frames and 72 scene-metrics events, but it predates the final extra
+  top-level fields added to the payload. Do not treat that capture as final
+  evidence for the current checkout.
+- A later capture command was in flight when the stop request arrived; no
+  final manifest from it was consumed for this handoff.
+- No tests, captures, lint, build, `git diff --check`, or other verification
+  commands were run after the explicit stop/no-further-verification request.
+
+Completed local checkpoint immediately before this handoff:
+
+- Commit `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
+  completes row 32, `rigid_multibody_dynamics_terms`.
+- That row publishes joint-space dynamics capture metrics for controls, lane
+  order/count, joint names, target/impulse patterns, mass/inverse-mass,
+  coupling, conditioning, inverse-dynamics residuals, impulse residuals, torque
+  norm, response norm, heavy-versus-coupled ratios, step timing, and compact
+  history fields.
+- Validation already collected for row 32: focused test reported `1 passed`;
+  real docked capture under
+  `/tmp/dart_capture_multibody_dynamics_terms_metrics_1781236627` wrote 95 PNG
+  frames and 96 scene-metrics events; broader workflow/doc drift guard reported
+  `13 passed`; `pixi run lint`, bounded default `pixi run build`, and
   `git diff --check` passed.
-- Spin/roll completion immediately before this slice:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
-  reported `10 passed`; the real docked capture under
-  `/tmp/dart_capture_spin_roll_metrics_1781230743` wrote 96 scene-metrics
-  events; `pixi run lint` passed before the final spin/roll handoff edit.
-- Friction-threshold completion immediately before this slice:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
-  reported `7 passed`; the real docked capture under
-  `/tmp/dart_capture_friction_threshold_metrics_1781229799` wrote 24
-  scene-metrics events; `pixi run lint`, bounded build, and `git diff --check`
-  passed.
 
 Previous local checkpoint: `rigid_joint_motor_limits` row capture metrics. The
 checkpoint touches:
@@ -318,10 +314,14 @@ Validation collected for the dynamics-terms slice so far:
 
 Immediate next step for a fresh session:
 
-1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Commit this local checkpoint if the worktree still contains only the row-32
-   slice. The next likely capture-metrics row after that is
-   `rigid_link_center_of_mass`, unless the user redirects.
+1. Verify `git status -sb` and `git log --oneline --decorate -5`; the branch
+   should be at this pushed handoff checkpoint.
+2. If verification is allowed, validate the current row-33
+   `rigid_link_center_of_mass` checkpoint first: focused test, real docked
+   capture, broad workflow/doc drift guard, `pixi run lint`, bounded
+   `pixi run build`, and `git diff --check`.
+3. Only after row 33 is validated or intentionally revised should the next
+   capture-metrics pass move to `rigid_link_jacobian`.
 
 ## Last Session Summary
 

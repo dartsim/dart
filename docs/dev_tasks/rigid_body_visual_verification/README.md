@@ -235,6 +235,19 @@
 - [x] Link center-of-mass slice: `rigid_link_center_of_mass` shows how
       `Link.center_of_mass` offsets change gravity torque, reflected mass, and
       hinge acceleration while the visual geometry stays fixed.
+- [x] Link center-of-mass handoff checkpoint:
+      `rigid_link_center_of_mass` now has unverified work-in-progress
+      capture-metrics wiring for row identity, inertial-offset scope, executor,
+      controls, lane order/count, per-lane link/joint/local-COM metadata,
+      serialized lane metrics, mirrored torque/angle/acceleration sums,
+      reflected mass-matrix ratios, COM marker positions, energy, step timing,
+      and compact histories. The focused row guard was run before the explicit
+      no-verification stop request and reported `1 passed`, but the final
+      payload fields were not followed by a fresh capture, broad guard, lint,
+      build, or `git diff --check`. A previous docked capture under
+      `/tmp/dart_capture_link_center_of_mass_metrics_1781237248` predates the
+      final top-level fields and must not be treated as final evidence for the
+      current checkout.
 - [x] Link-Jacobian slice: `rigid_link_jacobian` shows the public
       link-origin `get_world_jacobian(link)` path on a contact-free two-link
       multibody, including `J qdot` twist, finite-difference velocity,
@@ -499,12 +512,13 @@
       and histories, but no capture-metrics hook yet. This docs-only handoff
       was not followed by tests, captures, lint, build, or `git diff --check`
       because the user explicitly requested no further verification.
-- [x] Current continuation checkpoint: after the stop/handoff commit, the
-      branch records a local row-32 multibody dynamics-terms capture-metrics
-      slice with focused test, docked capture evidence, broader workflow/doc
-      drift guard, `pixi run lint`, bounded `pixi run build`, and
-      `git diff --check`. The next fresh session should inspect the next
-      likely capture-metrics row, `rigid_link_center_of_mass`.
+- [x] Current handoff checkpoint: after the row-32 multibody dynamics-terms
+      checkpoint, work stopped on explicit maintainer/user instruction to focus
+      on handoff without any further verification. The branch now carries
+      unverified row-33 `rigid_link_center_of_mass` capture-metrics code/test
+      changes plus this refreshed handoff state. The next fresh session should
+      validate or revise row 33 before moving to the next likely
+      capture-metrics row, `rigid_link_jacobian`.
 
 ## Goal
 
@@ -685,25 +699,29 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` on
-   `feature/rigid-body-gui-visual-verification`, then continue the
-   capture-metrics hardening pass one row at a time.
-2. The next likely missing capture-metrics row is
-   `rigid_joint_passive_parameters`.
-3. Keep payloads summary-oriented: row identity, solver/contact scope,
+   `feature/rigid-body-gui-visual-verification`; this branch should be at the
+   pushed handoff checkpoint.
+2. If verification is allowed, validate the current
+   `rigid_link_center_of_mass` capture-metrics checkpoint first. The final
+   payload was intentionally not re-tested or re-captured after the explicit
+   no-verification stop request.
+3. The next likely missing capture-metrics row after row 33 is validated is
+   `rigid_link_jacobian`.
+4. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-4. The branch was pushed for handoff only because the maintainer/user explicitly
+5. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-5. Refresh validation as needed, then use the local
+6. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-6. Keep related-evidence routes synchronized between the runner-owned
+7. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-7. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-8. Keep fuller articulated arm/gripper manipulation deferred until the public
+9. Keep fuller articulated arm/gripper manipulation deferred until the public
    API/runtime can support it as an interactive verifier. The current audit
    found rigid-body joints are not IPC-supported, multibody link contacts lack
    material/friction controls, and scripted IPC two-jaw pinch settings that

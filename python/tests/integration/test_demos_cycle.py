@@ -4689,6 +4689,163 @@ def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
     )
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_link_center_of_mass"
+    assert capture_metrics["solver"] == "world_multibody_inertial_offsets"
+    assert capture_metrics["scope"] == "contact_free_link_center_of_mass_offsets"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["time_step_ms"] == pytest.approx(3.0)
+    assert capture_metrics["world_time"] > 0.0
+    assert capture_metrics["com_offset"] == pytest.approx(controller.com_offset)
+    assert capture_metrics["gravity_scale"] == pytest.approx(controller.gravity_scale)
+    assert capture_metrics["link_mass"] == pytest.approx(controller.link_mass)
+    assert capture_metrics["inertia_scale"] == pytest.approx(controller.inertia_scale)
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
+    assert capture_metrics["controls"]["com_offset"] == pytest.approx(
+        controller.com_offset
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["controls"]["link_mass"] == pytest.approx(
+        controller.link_mass
+    )
+    assert capture_metrics["controls"]["inertia_scale"] == pytest.approx(
+        controller.inertia_scale
+    )
+    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
+    assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
+
+    for lane in controller.lanes:
+        lane_capture = capture_metrics["lanes"][lane.key]
+        lane_metrics = metrics[lane.key]
+        assert lane_capture["label"] == lane.label
+        assert lane_capture["offset_multiplier"] == pytest.approx(
+            lane.offset_multiplier
+        )
+        assert lane_capture["high_inertia"] is lane.high_inertia
+        assert lane_capture["link"] == lane.link.name
+        assert lane_capture["joint"] == lane.joint.name
+        assert lane_capture["local_center_of_mass"] == pytest.approx(
+            [float(lane_metrics["offset"]), 0.0, 0.0]
+        )
+        assert lane_capture["metrics"]["status"] == str(lane_metrics["status"])
+        for metric_key, metric_value in lane_metrics.items():
+            if isinstance(metric_value, str):
+                continue
+            assert lane_capture["metrics"][metric_key] == pytest.approx(
+                float(metric_value)
+            )
+            assert capture_metrics[f"{lane.key}_{metric_key}"] == pytest.approx(
+                float(metric_value)
+            )
+
+    assert capture_metrics["centered_gravity_torque"] == pytest.approx(
+        float(centered["gravity_torque"])
+    )
+    assert capture_metrics["positive_offset"] == pytest.approx(
+        float(positive["offset"])
+    )
+    assert capture_metrics["negative_offset"] == pytest.approx(
+        float(negative["offset"])
+    )
+    assert capture_metrics["positive_gravity_torque"] == pytest.approx(
+        float(positive["gravity_torque"])
+    )
+    assert capture_metrics["negative_gravity_torque"] == pytest.approx(
+        float(negative["gravity_torque"])
+    )
+    assert capture_metrics["high_inertia_gravity_torque"] == pytest.approx(
+        float(high["gravity_torque"])
+    )
+    assert capture_metrics["positive_mass_matrix"] == pytest.approx(
+        float(positive["mass_matrix"])
+    )
+    assert capture_metrics["high_inertia_mass_matrix"] == pytest.approx(
+        float(high["mass_matrix"])
+    )
+    assert capture_metrics["high_to_positive_mass_matrix_ratio"] == pytest.approx(
+        float(high["mass_matrix"]) / float(positive["mass_matrix"])
+    )
+    assert capture_metrics["positive_angle"] == pytest.approx(float(positive["angle"]))
+    assert capture_metrics["negative_angle"] == pytest.approx(float(negative["angle"]))
+    assert capture_metrics["positive_negative_angle_sum"] == pytest.approx(
+        float(positive["angle"]) + float(negative["angle"])
+    )
+    assert capture_metrics["positive_acceleration"] == pytest.approx(
+        float(positive["acceleration"])
+    )
+    assert capture_metrics["positive_expected_acceleration"] == pytest.approx(
+        float(positive["expected_acceleration"])
+    )
+    assert capture_metrics["negative_acceleration"] == pytest.approx(
+        float(negative["acceleration"])
+    )
+    assert capture_metrics["high_inertia_acceleration"] == pytest.approx(
+        float(high["acceleration"])
+    )
+    assert capture_metrics["negative_to_positive_acceleration_ratio"] == pytest.approx(
+        float(negative["acceleration"]) / abs(float(positive["acceleration"]))
+    )
+    assert capture_metrics["positive_negative_acceleration_sum"] == pytest.approx(
+        float(positive["acceleration"]) + float(negative["acceleration"])
+    )
+    assert capture_metrics["high_to_positive_acceleration_ratio"] == pytest.approx(
+        float(high["acceleration"]) / float(positive["acceleration"])
+    )
+    assert capture_metrics["positive_negative_torque_sum"] == pytest.approx(
+        float(positive["gravity_torque"]) + float(negative["gravity_torque"])
+    )
+    assert capture_metrics["positive_com_world_x"] == pytest.approx(
+        float(positive["com_world_x"])
+    )
+    assert capture_metrics["positive_com_world_z"] == pytest.approx(
+        float(positive["com_world_z"])
+    )
+    assert capture_metrics["max_abs_acceleration_error"] == pytest.approx(
+        max(abs(float(value["acceleration_error"])) for value in metrics.values())
+    )
+    assert capture_metrics["step_ms"] == pytest.approx(
+        controller._step_ms_history[-1]
+    )
+    assert capture_metrics["max_step_ms"] == pytest.approx(
+        max(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["max_step_ms"] == pytest.approx(
+        max(controller._step_ms_history)
+    )
+    for lane_key in metrics:
+        accel_error_samples = list(controller._accel_error_history[lane_key])
+        accel_error_samples = (
+            accel_error_samples[1:]
+            if len(accel_error_samples) > 1
+            else accel_error_samples
+        )
+        assert capture_metrics["history"][
+            f"{lane_key}_max_abs_angle"
+        ] == pytest.approx(max(abs(value) for value in controller._angle_history[lane_key]))
+        assert capture_metrics["history"][
+            f"{lane_key}_max_abs_acceleration"
+        ] == pytest.approx(
+            max(abs(value) for value in controller._accel_history[lane_key])
+        )
+        assert capture_metrics["history"][
+            f"{lane_key}_max_abs_acceleration_error"
+        ] == pytest.approx(max(abs(value) for value in accel_error_samples))
+        assert capture_metrics["history"][
+            f"{lane_key}_max_abs_gravity_torque"
+        ] == pytest.approx(max(abs(value) for value in controller._torque_history[lane_key]))
+        assert capture_metrics["history"][
+            f"{lane_key}_max_abs_energy"
+        ] == pytest.approx(max(abs(value) for value in controller._energy_history[lane_key]))
+
 
 def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     import numpy as np

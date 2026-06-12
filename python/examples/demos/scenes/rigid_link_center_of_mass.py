@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.003
 _HISTORY = 180
@@ -373,6 +373,172 @@ class _RigidLinkCenterOfMass:
         self._sync()
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(lane_key: str) -> dict[str, float | str]:
+            serialized: dict[str, float | str] = {}
+            for key, value in self._last_metrics[lane_key].items():
+                if isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def lane_value(lane_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[lane_key][metric_key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        def max_abs_after_initial(values: deque[float]) -> float:
+            samples = list(values)[1:] if len(values) > 1 else list(values)
+            return max((abs(value) for value in samples), default=0.0)
+
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "offset_multiplier": float(lane.offset_multiplier),
+                "high_inertia": bool(lane.high_inertia),
+                "link": lane.link.name,
+                "joint": lane.joint.name,
+                "local_center_of_mass": [float(self._lane_offset(lane)), 0.0, 0.0],
+                "metrics": serialized_metrics(lane.key),
+            }
+            for lane in self.lanes
+        }
+        positive_accel = lane_value("positive", "acceleration")
+        positive_expected = lane_value("positive", "expected_acceleration")
+        negative_accel = lane_value("negative", "acceleration")
+        high_accel = lane_value("high_inertia", "acceleration")
+        positive_mass_matrix = lane_value("positive", "mass_matrix")
+        high_mass_matrix = lane_value("high_inertia", "mass_matrix")
+        positive_torque = lane_value("positive", "gravity_torque")
+        negative_torque = lane_value("negative", "gravity_torque")
+        payload: dict[str, Any] = {
+            "row": "rigid_link_center_of_mass",
+            "solver": "world_multibody_inertial_offsets",
+            "scope": "contact_free_link_center_of_mass_offsets",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "com_offset": float(self.com_offset),
+            "gravity_scale": float(self.gravity_scale),
+            "link_mass": float(self.link_mass),
+            "inertia_scale": float(self.inertia_scale),
+            "controls": {
+                "executor_index": float(executor_index),
+                "com_offset": float(self.com_offset),
+                "gravity_scale": float(self.gravity_scale),
+                "link_mass": float(self.link_mass),
+                "inertia_scale": float(self.inertia_scale),
+            },
+            "lane_order": [lane.key for lane in self.lanes],
+            "lane_count": float(len(self.lanes)),
+            "lanes": lanes,
+            "centered_gravity_torque": lane_value("centered", "gravity_torque"),
+            "centered_angle": lane_value("centered", "angle"),
+            "centered_acceleration": lane_value("centered", "acceleration"),
+            "positive_offset": lane_value("positive", "offset"),
+            "negative_offset": lane_value("negative", "offset"),
+            "high_inertia_offset": lane_value("high_inertia", "offset"),
+            "positive_gravity_torque": positive_torque,
+            "negative_gravity_torque": negative_torque,
+            "high_inertia_gravity_torque": lane_value(
+                "high_inertia", "gravity_torque"
+            ),
+            "positive_mass_matrix": positive_mass_matrix,
+            "negative_mass_matrix": lane_value("negative", "mass_matrix"),
+            "high_inertia_mass_matrix": high_mass_matrix,
+            "high_to_positive_mass_matrix_ratio": high_mass_matrix
+            / max(positive_mass_matrix, 1.0e-12),
+            "positive_angle": lane_value("positive", "angle"),
+            "negative_angle": lane_value("negative", "angle"),
+            "high_inertia_angle": lane_value("high_inertia", "angle"),
+            "positive_negative_angle_sum": lane_value("positive", "angle")
+            + lane_value("negative", "angle"),
+            "positive_acceleration": positive_accel,
+            "positive_expected_acceleration": positive_expected,
+            "positive_acceleration_error": lane_value(
+                "positive", "acceleration_error"
+            ),
+            "negative_acceleration": negative_accel,
+            "negative_expected_acceleration": lane_value(
+                "negative", "expected_acceleration"
+            ),
+            "negative_acceleration_error": lane_value(
+                "negative", "acceleration_error"
+            ),
+            "high_inertia_acceleration": high_accel,
+            "high_inertia_expected_acceleration": lane_value(
+                "high_inertia", "expected_acceleration"
+            ),
+            "high_inertia_acceleration_error": lane_value(
+                "high_inertia", "acceleration_error"
+            ),
+            "negative_to_positive_acceleration_ratio": negative_accel
+            / max(abs(positive_accel), 1.0e-12),
+            "positive_negative_acceleration_sum": positive_accel + negative_accel,
+            "high_to_positive_acceleration_ratio": high_accel
+            / max(positive_accel, 1.0e-12),
+            "positive_negative_torque_sum": positive_torque + negative_torque,
+            "positive_com_world_x": lane_value("positive", "com_world_x"),
+            "negative_com_world_x": lane_value("negative", "com_world_x"),
+            "positive_com_world_z": lane_value("positive", "com_world_z"),
+            "high_inertia_com_world_z": lane_value(
+                "high_inertia", "com_world_z"
+            ),
+            "positive_energy": lane_value("positive", "energy"),
+            "high_inertia_energy": lane_value("high_inertia", "energy"),
+            "max_abs_acceleration_error": max(
+                abs(lane_value(lane.key, "acceleration_error")) for lane in self.lanes
+            ),
+            "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
+            "max_step_ms": max(self._step_ms_history, default=0.0),
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_step_ms": max(self._step_ms_history, default=0.0),
+            },
+        }
+        for lane in self.lanes:
+            lane_metrics = self._last_metrics[lane.key]
+            for metric_key in (
+                "offset",
+                "inertia_y",
+                "mass_matrix",
+                "expected_mass_matrix",
+                "gravity_torque",
+                "gravity_force",
+                "angle",
+                "velocity",
+                "acceleration",
+                "expected_acceleration",
+                "acceleration_error",
+                "com_world_x",
+                "com_world_z",
+                "energy",
+            ):
+                payload[f"{lane.key}_{metric_key}"] = float(lane_metrics[metric_key])
+            payload["history"][f"{lane.key}_max_abs_angle"] = max_abs(
+                self._angle_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_abs_acceleration"] = max_abs(
+                self._accel_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_abs_acceleration_error"] = (
+                max_abs_after_initial(self._accel_error_history[lane.key])
+            )
+            payload["history"][f"{lane.key}_max_abs_gravity_torque"] = max_abs(
+                self._torque_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_abs_energy"] = max_abs(
+                self._energy_history[lane.key]
+            )
+        return payload
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -531,6 +697,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": controller.world,
             "rigid_link_center_of_mass_controller": controller,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller._sync,

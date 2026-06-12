@@ -70,8 +70,8 @@
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
   stack stability, contact manipulation, kinematic driver,
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
-  passive joint parameters, screw-joint pitch, generalized dynamics terms, and
-  stack-packet physics/runtime fields in
+  passive joint parameters, screw-joint pitch, generalized dynamics terms,
+  link center-of-mass offsets, and stack-packet physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -84,6 +84,24 @@
 
 ## Testing
 
+- Latest link center-of-mass handoff checkpoint:
+  - `python/examples/demos/scenes/rigid_link_center_of_mass.py` now has
+    work-in-progress scene-owned capture metrics for the row 33 inertial-offset
+    verifier: row identity, solver scope, executor, controls, lane
+    order/count, per-lane link/joint/local-COM metadata, serialized lane
+    metrics, mirrored torque/angle/acceleration sums, reflected mass-matrix
+    ratios, COM marker positions, energy, step timing, and compact histories.
+  - `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`
+    now asserts the capture hook mirrors live controller metrics and history
+    maxima.
+  - A pre-handoff focused guard reported `1 passed`.
+  - A docked capture under
+    `/tmp/dart_capture_link_center_of_mass_metrics_1781237248` wrote 71 PNG
+    frames and 72 scene-metrics events, but it predates the final extra
+    top-level payload fields and is not final evidence for the current checkout.
+  - Not run after the explicit stop/no-further-verification request: fresh
+    row-33 capture, broad workflow/doc drift guard, `pixi run lint`, bounded
+    `pixi run build`, and `git diff --check`.
 - Latest multibody dynamics-terms capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py` now
     publishes a scene-owned capture hook for the row 32 generalized dynamics
