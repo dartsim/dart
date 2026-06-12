@@ -61,29 +61,37 @@ predicate. The generated standard packets are symmetric PSD but rank-deficient,
 so Baraff remains listed as native while MPRGP's default positive-definite
 native gate removes its fallback rows from the native benchmark list.
 
+The current continuation completed the next benchmark-routing slice:
+contact-normal standard sweep registration now builds each concrete normal-only
+contact packet once and registers only solvers whose `supportsProblem(problem)`
+accepts that packet. Current MPRGP and Baraff contact-normal rows remain
+registered because the generated packets satisfy their native predicates, and
+Direct remains limited to concrete 1-, 2-, and 3-row normal packets through the
+same support predicate rather than a size special case.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-At the start of the singular-degenerate benchmark-routing slice:
+At the start of the contact-normal benchmark-routing slice:
 
-- Local HEAD was `f86a095ce9a Document final LCP handoff state`.
+- Local HEAD was `fdc9a0c13fd Filter singular LCP benchmark native rows`.
 - `origin/feature/lcp-solver-interface-demos` was
-  `f86a095ce9a Document final LCP handoff state` after an HTTPS fetch refreshed
-  the tracking ref.
-- The local branch was clean and matched the tracking branch.
+  `f86a095ce9a Document final LCP handoff state`.
+- The local branch was clean and one commit ahead of the tracking branch.
 
 After this slice is committed, the expected local state is one additive commit
-ahead of `origin/feature/lcp-solver-interface-demos` unless the maintainer/user
-explicitly approves another push.
+on top of `fdc9a0c13fd`; do not push without explicit maintainer/user
+approval.
 
 ## Immediate Next Step
 
-Continue the benchmark-routing audit in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, starting with contact-normal
-standard sweeps. Check whether MPRGP and Baraff rows should be gated or skipped
-by `supportsProblem(problem)` on the concrete normal-only contact packets
-rather than by manifest-level standard support.
+Continue the LCP interface/demo audit from the next concrete gap. Good starting
+points are remaining manifest-level benchmark gates in
+`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, the older
+`active_friction_index_contact` demo benchmark filter, and any solver whose
+native mathematical domain is still broader in docs than in
+`supportsProblem(problem)`.
 
 ## Context That Would Be Lost
 
@@ -132,12 +140,12 @@ rather than by manifest-level standard support.
   scoped solver allowlist. The benchmark-list check for
   `BM_Lcp.*SingularDegenerate.*/(MPRGP|Baraff)` lists Baraff rows and no MPRGP
   rows.
-- Remaining benchmark follow-up: inspect
-  `RegisterContactNormalStandardSweepBenchmarks` and
-  `RunContactNormalStandardSweepBenchmark`. The solver list includes `Baraff`
-  and `MPRGP`, and the registration path currently appears to use form-level
-  support plus a `Direct` size special case rather than concrete
-  `supportsProblem(problem)` checks.
+- Completed benchmark follow-up: contact-normal standard registration now
+  generates each concrete normal-only contact packet once and checks
+  `supportsProblem(problem)` before registering rows. The benchmark-list check
+  for `BM_LcpContactNormalStandardSweep/(MPRGP|Baraff|Direct)` keeps all
+  Baraff/MPRGP rows and Direct only on concrete 1-, 2-, and 3-row normal
+  packets.
 - Generic standard rows that come from `MakeBenchmarkProblem(Standard, size)`,
   `MakeStandardSpdProblem`, MPRGP SPD-check sweeps, interior-point path sweeps,
   and mild/near-singular SPD builders may already be fine. Do not refactor all

@@ -1435,6 +1435,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     each solver's concrete `supportsProblem(problem)` predicate so MPRGP's
     Dantzig fallback is no longer listed as a native MPRGP comparison row while
     Baraff's symmetric positive-semidefinite native rows remain.
+  - Filtered contact-normal standard-LCP sweep registrations through each
+    generated normal-only contact packet's concrete solver support predicate,
+    preserving Baraff and MPRGP native rows while keeping Direct limited to its
+    native small-enumeration cases without a separate size special case.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

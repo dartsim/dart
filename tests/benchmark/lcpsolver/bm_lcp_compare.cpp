@@ -13019,16 +13019,26 @@ void RegisterContactSolverComparisonSweepBenchmarks()
 
 void RegisterContactNormalStandardSweepBenchmarks()
 {
-  for (const auto solverName : kContactNormalStandardSolverNames) {
-    const auto* solverEntry = FindSolverManifestEntry(solverName);
-    if (solverEntry == nullptr
-        || !dart::test::supportsProblem(
-            *solverEntry, dart::test::LcpProblemSupport::Standard)) {
+  for (const auto testCase : kContactNormalStandardSweepCases) {
+    std::string errorMessage;
+    const auto fixture
+        = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+    if (!fixture.has_value()) {
       continue;
     }
 
-    for (const auto testCase : kContactNormalStandardSweepCases) {
-      if (solverEntry->name == "Direct" && testCase.contactOrShapeCount > 3) {
+    const auto problem
+        = MakeContactNormalStandardProblem(*fixture, errorMessage);
+    if (!problem.has_value()) {
+      continue;
+    }
+
+    for (const auto solverName : kContactNormalStandardSolverNames) {
+      const auto* solverEntry = FindSolverManifestEntry(solverName);
+      if (solverEntry == nullptr
+          || !dart::test::supportsProblem(
+              *solverEntry, dart::test::LcpProblemSupport::Standard)
+          || !SolverSupportsConcreteProblem(*solverEntry, *problem)) {
         continue;
       }
 
