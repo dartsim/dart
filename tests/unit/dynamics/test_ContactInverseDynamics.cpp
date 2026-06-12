@@ -694,14 +694,11 @@ TEST(ContactInverseDynamics, RejectsNullSkeleton)
 }
 
 //==============================================================================
-TEST(ContactInverseDynamics, ReportsInfeasibleForNonFiniteDynamicsState)
+TEST(ContactInverseDynamics, ReportsInfeasibleForNonFiniteRegularization)
 {
   auto box = createFloatingBox();
-  Eigen::VectorXd accelerations = Eigen::VectorXd::Zero(6);
-  accelerations[5] = std::numeric_limits<double>::quiet_NaN();
-  box->setAccelerations(accelerations);
-
   ContactInverseDynamics solver(box);
+  solver.setRegularization(std::numeric_limits<double>::infinity());
   solver.setContacts(createBoxBottomContacts(box, 0.6));
   const auto result = solver.compute();
 
