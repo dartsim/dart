@@ -2035,8 +2035,7 @@ inline void buildAvbdRigidContactManifoldRows(
                  avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point)};
         }
 
-        std::size_t frictionDescriptorCount = 0u;
-        for (std::size_t i = 0; i < activeContacts.size(); ++i) {
+        const auto frictionForceLimit = [&](std::size_t i) {
           const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
           double laggedNormalForce
               = i < normalInventory.size()
@@ -2048,26 +2047,39 @@ inline void buildAvbdRigidContactManifoldRows(
             laggedNormalForce
                 = std::max(0.0, contact.startStiffness * contact.depth);
           }
-          const double forceLimit
-              = std::max(0.0, contact.frictionCoefficient) * laggedNormalForce;
-          frictionDescriptors[frictionDescriptorCount++]
-              = makeAvbdContactFrictionRowDescriptor(
-                  contact.endpointA,
-                  contact.endpointB,
-                  /*axis=*/0,
-                  forceLimit,
-                  contact.startStiffness,
-                  contact.maxStiffness,
-                  contact.row);
-          frictionDescriptors[frictionDescriptorCount++]
-              = makeAvbdContactFrictionRowDescriptor(
-                  contact.endpointA,
-                  contact.endpointB,
-                  /*axis=*/1,
-                  forceLimit,
-                  contact.startStiffness,
-                  contact.maxStiffness,
-                  contact.row);
+          return std::max(0.0, contact.frictionCoefficient) * laggedNormalForce;
+        };
+
+        bool hasPositiveFrictionLimit = false;
+        for (std::size_t i = 0; i < activeContacts.size(); ++i) {
+          hasPositiveFrictionLimit
+              = hasPositiveFrictionLimit || frictionForceLimit(i) > 0.0;
+        }
+
+        std::size_t frictionDescriptorCount = 0u;
+        if (hasPositiveFrictionLimit) {
+          for (std::size_t i = 0; i < activeContacts.size(); ++i) {
+            const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
+            const double forceLimit = frictionForceLimit(i);
+            frictionDescriptors[frictionDescriptorCount++]
+                = makeAvbdContactFrictionRowDescriptor(
+                    contact.endpointA,
+                    contact.endpointB,
+                    /*axis=*/0,
+                    forceLimit,
+                    contact.startStiffness,
+                    contact.maxStiffness,
+                    contact.row);
+            frictionDescriptors[frictionDescriptorCount++]
+                = makeAvbdContactFrictionRowDescriptor(
+                    contact.endpointA,
+                    contact.endpointB,
+                    /*axis=*/1,
+                    forceLimit,
+                    contact.startStiffness,
+                    contact.maxStiffness,
+                    contact.row);
+          }
         }
 
         std::span<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>

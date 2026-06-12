@@ -9,6 +9,26 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
+  skips the Coulomb tangent-row inventory entirely when every active contact has
+  a zero friction-force limit. The implementation preserves the existing
+  descriptor layout whenever any contact can carry positive friction, so mixed
+  manifolds keep their current row-index assumptions. Focused C++ coverage in
+  `RigidContactManifoldBuilderSkipsZeroLimitFrictionRows` verifies that normal
+  rows persist while zero-limit friction rows and inventory records are removed.
+  A refreshed `BM_AvbdDemo2dFrictionCoefficientSweep` run produced DART median
+  CPU step times of 6.20 us, 6.79 us, 14.87 us, 8.85 us, and 7.00 us for max
+  friction 0, 0.5, 1.0, 2.5, and 5.0 respectively. The tracked
+  [`avbd-friction-coefficient-sweep-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
+  now records DART faster than the same-source native runner at max friction
+  0.5, 1.0, 2.5, and 5.0, but still slower at frictionless max friction 0.
+  The benchmark stdout reported a high host load average during this run, so
+  treat the packet as current evidence rather than a paper-number claim. Local
+  validation passed the `test_avbd_rigid_block` target build, three
+  focused contact-manifold tests, `bm_avbd_rigid_fixed_joint` target build, the
+  five-row friction-coefficient benchmark, packet regeneration, and plot
+  regeneration, `pixi run lint`, final focused target rebuild, focused
+  contact-manifold test rerun, `pixi run build`, and `git diff --check`.
 - Latest resumed checkpoint (2026-06-12): the paper/source-corpus friction
   coefficient comparison now has same-source reference timing and
   per-coefficient visual-capture evidence.

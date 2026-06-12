@@ -12,43 +12,72 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Current checkout snapshot before any push/PR work:
+Current slice: skip Coulomb tangent-row inventory creation when every active
+contact in a rigid contact manifold has a zero friction-force limit. This keeps
+normal rows alive, removes useless zero-limit friction rows for frictionless
+manifolds, and preserves the existing descriptor layout whenever any contact in
+the manifold can carry positive friction.
+
+Current checkout snapshot before final commit/push work:
 
 - Branch: `avbd/source-row-extraction-precheck`.
 - Upstream: `origin/avbd/source-row-extraction-precheck`.
-- Pre-slice committed local HEAD: `10935ce8c61 Add AVBD friction sweep source timing`.
-- The visual-capture slice lives in this same local change; if it has since
-  been committed, use the latest local HEAD as the resume point.
+- Pre-slice committed local/upstream HEAD:
+  `1f3aae319a5 Add AVBD friction sweep visual captures`.
+- If this zero-limit friction-row skip has since been committed, use the latest
+  local HEAD as the resume point.
 - Current branch had no associated GitHub PR in the latest read-only
   `gh pr list --head "$(git branch --show-current)"` snapshot.
-- No hosted CI rerun, PR mutation, push, merge, stash operation, or branch
-  cleanup was performed for this resumed checkpoint before this handoff update.
+- No hosted CI rerun, PR mutation, stash operation, branch cleanup, or hosted
+  merge was performed for this resumed checkpoint before this handoff update.
   External mutations still require explicit maintainer/user approval.
 
-Current local validation for the resumed visual-capture slice:
+Current local validation for the zero-limit friction-row skip slice:
 
-- `pixi run -- pytest python/tests/unit/test_capture_py_demo.py python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py -q`
-  passed, 22 tests, after lint.
-- `pixi run -- bash -lc 'PYTHONPATH=build/default/cpp/Release/python:python pytest python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_matches_source_row python/tests/integration/test_demos_cycle.py::test_avbd_demo2d_dynamic_friction_scene_max_friction_env -q'`
-  passed, 2 tests, after lint.
+- `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.RigidContactManifoldBuilderSkipsZeroLimitFrictionRows:AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows:AvbdRigidBlock.RigidContactManifoldFrictionProjectsWarmStartedDualAcrossTangentBasis'`
+  passed, 3 tests.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
+  passed.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep-after-zero-friction-skip.json --benchmark_out_format=json'`
+  passed. Benchmark stdout reported high host load average
+  `79.94, 114.90, 61.83`.
 - `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_packet.py`
-  with the existing `/tmp/avbd-friction-coefficient-*` benchmark,
-  native-reference, plot, and five capture-manifest artifacts passed and
-  regenerated the tracked packet.
+  with the new benchmark JSON, five existing same-source native reference
+  timing files, five existing capture manifests, and the rendered plot passed
+  and regenerated the tracked packet.
+- `pixi run -- python scripts/write_avbd_friction_coefficient_sweep_plot.py`
+  passed and regenerated the tracked plot.
 - `pixi run lint` passed.
-- `pixi run build` passed.
+- `pixi run -- cmake --build build/default/cpp/Release --parallel 5 --target test_avbd_rigid_block bm_avbd_rigid_fixed_joint`
+  passed after lint.
+- `pixi run -- build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.RigidContactManifoldBuilderSkipsZeroLimitFrictionRows:AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows:AvbdRigidBlock.RigidContactManifoldFrictionProjectsWarmStartedDualAcrossTangentBasis'`
+  passed again after lint, 3 tests.
+- `pixi run build` passed with `DART_PARALLEL_JOBS=5`,
+  `CTEST_PARALLEL_LEVEL=5`, and `CMAKE_BUILD_PARALLEL_LEVEL=5`.
 - `git diff --check` passed.
+
+Current friction-coefficient sweep evidence after the zero-limit skip:
+
+| Max friction | DART median CPU step | Native reference CPU step | Current result |
+| ------------ | -------------------- | ------------------------- | -------------- |
+| `0`          | `6.20 us`            | `2.74 us`                 | DART slower    |
+| `0.5`        | `6.79 us`            | `22.04 us`                | DART faster    |
+| `1.0`        | `14.87 us`           | `17.77 us`                | DART faster    |
+| `2.5`        | `8.85 us`            | `20.66 us`                | DART faster    |
+| `5.0`        | `7.00 us`            | `19.63 us`                | DART faster    |
 
 Current local branch inventory:
 
-| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                   |
-| -------------------------------------- | --------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `10935ce8c61`         | Current consolidated continuation branch; ahead of origin by 24 commits before committing this visual-capture slice. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch in earlier work; do not mutate without explicit approval and refresh first.                          |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.                              |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired.                |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                                            |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local main matched the last checked origin/main snapshot; refresh before using it as a base.                         |
+| Branch                                 | Upstream                                      | Local head at handoff                              | State and handling                                                                                    |
+| -------------------------------------- | --------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `1f3aae319a5` before this pending slice            | Current consolidated continuation branch; matched origin before the zero-limit friction-row skip.     |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                                      | PR #2977 branch in earlier work; do not mutate without explicit approval and refresh first.           |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                      | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                      | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                      | Unrelated local branch; do not touch during AVBD handoff.                                             |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7` local, `bb851f45360` remote-tracking | Local main is stale versus the latest fetched `origin/main`; refresh before using it as a base.       |
 
 Current local stash inventory. Do not apply or drop these by default:
 
@@ -59,41 +88,17 @@ Current local stash inventory. Do not apply or drop these by default:
 - `stash@{2}` through `stash@{7}` are older
   `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
 
-Local-only commits above `origin/avbd/source-row-extraction-precheck`, newest
-first:
+Local-only commits above `origin/avbd/source-row-extraction-precheck`: none
+before committing this zero-limit friction-row skip. If this slice has since
+been committed locally, inspect
+`git log --oneline --decorate origin/avbd/source-row-extraction-precheck..HEAD`.
 
-- `10935ce8c61 Add AVBD friction sweep source timing`
-- `4608dfeb1bc Add AVBD friction coefficient sweep packet`
-- `8003dac1038 Record AVBD resumed handoff checkpoint`
-- `0952636627d Add AVBD breakable motor scale packet`
-- `95251eec1c3 Add AVBD breakable joint scale packet`
-- `1c2059c4c08 Add AVBD current-pose tiny motor persistence coverage`
-- `8c59eb9f203 Record AVBD final stop handoff`
-- `ba56bd46517 Add AVBD high-ratio sweep stability plot`
-- `87a7825b1dc Add AVBD high-ratio iteration sweep packet`
-- `702e6021676 Record AVBD final handoff state`
-- `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`
-- `3732c21233d Record AVBD current-state gap audit`
-- `30c7e8f6239 Add AVBD direct fixed movable reset coverage`
-- `33247979e31 Add AVBD direct spherical movable reset coverage`
-- `3aa6d5ab3f4 Add AVBD direct prismatic movable reset coverage`
-- `42088402003 Record AVBD critical handoff state`
-- `456b931a57b Broaden AVBD articulated reset axis coverage`
-- `6e1492826c7 Broaden AVBD private motor persistence axis coverage`
-- `68af00b8817 Record AVBD stop handoff snapshot`
-- `533dc490d87 Reuse AVBD rigid motor row scratch`
-- `77404f63496 Avoid contact-manifold row builder heap scratch for small AVBD inputs`
-- `04a369222a7 Record AVBD literal stop handoff`
-- `13604d8b8b5 Reuse AVBD distance spring row scratch`
-- `51eb9b48e08 Record AVBD angular motor validation evidence`
-
-Next preferred local gaps: CPU optimization for the slower friction
-coefficients and GPU parity remain open for the friction coefficient
-comparison. Broader PLAN-104 gaps also remain: source-demo CPU wins for the
-slower rows, broader visual breakable-wall/fracture corpus coverage, rigid
-contact persistence completeness, and source-demo CPU/GPU parity. Do not spend
-more work on source-row overhead cleanup unless a new audit identifies a
-specific blocker.
+Next preferred local gaps: the frictionless max-friction-0 case and GPU parity
+remain open for the friction coefficient comparison. Broader PLAN-104 gaps also
+remain: source-demo CPU wins for slower rows, broader visual
+breakable-wall/fracture corpus coverage, rigid contact persistence
+completeness, and source-demo CPU/GPU parity. Do not count this zero-limit
+friction-row skip as full paper/source-demo completion.
 
 Fresh-session recovery commands:
 

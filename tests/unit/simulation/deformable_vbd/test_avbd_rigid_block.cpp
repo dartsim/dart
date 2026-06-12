@@ -1155,6 +1155,72 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  contacts[0].bodyA = 0;
+  contacts[0].bodyB = 1;
+  contacts[0].endpointA
+      = {42,
+         vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 4)};
+  contacts[0].endpointB = {
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+  contacts[0].point = Vec3(0.1, 0.2, -0.15);
+  contacts[0].normalFromAtoB = Vec3::UnitX();
+  contacts[0].depth = 0.2;
+  contacts[0].frictionCoefficient = 0.5;
+  contacts[0].startStiffness = 80.0;
+  contacts[0].maxStiffness = 400.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 1u);
+  normalInventory[0].state.lambda = 8.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+
+  contacts[0].frictionCoefficient = 0.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(normalRows.size(), 1u);
+  EXPECT_TRUE(frictionInventory.records().empty());
+  EXPECT_TRUE(frictionRows.empty());
+}
+
+//==============================================================================
 TEST(
     AvbdRigidBlock,
     RigidContactManifoldFrictionProjectsWarmStartedDualAcrossTangentBasis)

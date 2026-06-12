@@ -410,8 +410,10 @@ same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
 and 5. The tracked
 [`avbd-friction-coefficient-sweep-packet.json`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json)
 validates the sweep rows, embeds same-source native timing for each coefficient,
-embeds per-coefficient visual capture hashes, and records that DART is faster
-for max friction 0.5 and 5.0 but still slower for 0, 1.0, and 2.5 on this host.
+embeds per-coefficient visual capture hashes, and records that after skipping
+all-zero Coulomb contact-friction row blocks DART is faster for max friction
+0.5, 1.0, 2.5, and 5.0 but still slower for the frictionless max friction 0
+case on this host.
 The rendered
 [`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
 plots DART and native source CPU step time versus maximum friction. This closes
