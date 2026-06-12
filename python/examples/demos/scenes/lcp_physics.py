@@ -1424,10 +1424,33 @@ def build() -> SceneSetup:
                     )
                 builder.end_table()
 
+        if builder.collapsing_header("Representative solver details", default_open=False):
+            if builder.begin_table(
+                "lcp_representative_solver_details",
+                ["Problem", "Solver", "Route", "Status", "Iterations", "Error", "us"],
+            ):
+                for row in standalone_problem_rows:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["label"])
+                    _write_table_cell(builder, row["solver"])
+                    _write_table_cell(builder, row["solve_route"])
+                    _write_table_cell(builder, row["status"])
+                    _write_table_cell(builder, str(row["iterations"]))
+                    _write_table_cell(builder, f"{row['solution_error']:.2e}")
+                    _write_table_cell(builder, f"{row['elapsed_us']:.1f}")
+                builder.end_table()
+
         if builder.collapsing_header("Solver comparison profile", default_open=False):
             if builder.begin_table(
                 "lcp_solver_profile",
-                ["Solver", "Native surfaces", "OK", "Total us", "Worst error"],
+                [
+                    "Solver",
+                    "Native surfaces",
+                    "OK",
+                    "Total us",
+                    "Worst error",
+                    "Slowest case",
+                ],
             ):
                 for row in standalone_solver_profile_rows:
                     builder.table_next_row()
@@ -1439,6 +1462,7 @@ def build() -> SceneSetup:
                     )
                     _write_table_cell(builder, f"{row['total_elapsed_us']:.1f}")
                     _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
+                    _write_table_cell(builder, row["slowest_case"])
                 builder.end_table()
 
         builder.separator()

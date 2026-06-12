@@ -936,7 +936,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     assert (
-        "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error"
+        "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
+        "Iterations,Error,us"
+        in builder.events
+    )
+    assert (
+        "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error,"
+        "Slowest case"
         in builder.events
     )
 
