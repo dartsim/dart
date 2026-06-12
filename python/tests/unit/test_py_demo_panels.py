@@ -1629,7 +1629,7 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
     assert context.scene_switch_requests == ["rigid_solver_compare"]
 
 
-def test_rigid_workflow_panel_labels_related_evidence_search_matches() -> None:
+def test_rigid_workflow_panel_opens_related_evidence_search_matches() -> None:
     scene = PythonDemoScene(
         id="rigid_solver_compare",
         title="Test rigid_solver_compare",
@@ -1667,7 +1667,7 @@ def test_rigid_workflow_panel_labels_related_evidence_search_matches() -> None:
         )
         for event in builder.events
     )
-    assert context.scene_switch_requests == ["rigid_joint_motor_limits"]
+    assert context.scene_switch_requests == ["avbd_rigid_prismatic_motor"]
 
 
 def test_rigid_workflow_panel_skips_non_numbered_world_rows() -> None:

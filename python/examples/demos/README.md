@@ -149,8 +149,10 @@ aliases such as `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
 remain visible in the row, but the filter ranks positive intent matches first
 so searches such as `contact`, `solver`, `step profile`, `backend comparison`,
 and `sequential impulse` do not get dominated by early rows that only mention
-what not to infer. Comparison and parameter rows also label the comparison axis
-and held-fixed controls in the panel and capture metrics so solver, executor,
+what not to infer. Related-evidence searches such as `rigid_ipc_tunnel` or
+`avbd prismatic` open the related shelf scene directly through the maintained
+route table. Comparison and parameter rows also label the comparison axis and
+held-fixed controls in the panel and capture metrics so solver, executor,
 contact-policy, workload-size, and parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,

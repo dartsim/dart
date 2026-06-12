@@ -1807,7 +1807,9 @@ def _workflow_search_rows(
         if builder.selectable(
             f"{label}##rigid_workflow_find_{match.scene_id}", selected
         ):
-            if selected:
+            if related_matches:
+                _request_workflow_scene(context, related_matches[0].scene_id)
+            elif selected:
                 _request_workflow_replay(context, match.scene_id)
             else:
                 _request_workflow_scene(context, match.scene_id)
@@ -1817,7 +1819,10 @@ def _workflow_search_rows(
                 f"{entry.shelf} / {entry.scene_id}: {entry.reason}"
                 for entry in related_matches[:2]
             )
-            tooltip = f"{tooltip} Related evidence match: {related_notes}"
+            tooltip = (
+                f"{tooltip} Related evidence match: {related_notes}. "
+                f"Click opens {related_matches[0].scene_id}."
+            )
         builder.item_tooltip(tooltip)
 
     if query.strip() and not matches:

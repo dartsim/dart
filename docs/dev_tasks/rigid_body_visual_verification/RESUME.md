@@ -45,8 +45,13 @@ manifest reported `status=complete`, `completed_count=36`, `failed_count=0`,
 and `elapsed_s=314.278`, and the generated `review_index.html` contained
 36 screenshot thumbnails plus comparison/metric summaries.
 The verified rigid workflow search/capture/review-index slice was then
-committed locally as
-`e4601941561 Improve rigid workflow capture evidence`; it has not been pushed.
+committed and pushed as
+`e8278b6fb53 Improve rigid workflow capture evidence`.
+
+The current continuation makes one focused viewer-routing improvement:
+related-evidence `Find row` matches such as `avbd prismatic` now open the
+matched non-numbered shelf scene directly instead of landing on the numbered
+source row first.
 
 ## Current Branch
 
@@ -54,19 +59,21 @@ committed locally as
 
 Current snapshot:
 
-- Ahead of `origin/feature/rigid-body-gui-visual-verification` by two local
-  commits.
-- Local unpushed commits:
+- At the start of the current continuation, clean and aligned with
+  `origin/feature/rigid-body-gui-visual-verification`.
+- Latest pushed commits:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
-  `e4601941561 Improve rigid workflow capture evidence`.
-- Expected worktree state after this handoff refresh is clean.
+  `e8278b6fb53 Improve rigid workflow capture evidence`.
+- Current continuation work routes related-evidence search matches directly to
+  their related shelf scenes and refreshes this handoff snapshot. After the
+  local checkpoint commit, expect this branch to be one commit ahead of origin
+  unless it is pushed with explicit approval.
 
 ## Immediate Next Step
 
-Start with `git status -sb`, inspect the two local unpushed commits, and choose
-the next bounded rigid visual-verification gap. Rerun `pixi run lint` before
-committing after any further edits. Do not push without explicit approval in
-that session.
+If the current continuation is already committed, inspect `git status -sb` and
+choose the next bounded rigid visual-verification gap. Do not push without
+explicit approval in that session.
 
 ## Context That Would Be Lost
 
@@ -138,9 +145,7 @@ pixi run py-demo-capture -- --rigid-workflow --dry-run --output-dir /tmp/dart_ca
 ```
 
 The focused pytest reported `6 passed`. The dry-run manifest reported workflow
-`rigid_visual_verification`, status `planned`, and 36 planned captures. A
-latest `pixi run lint`/`git diff --check` result should not be claimed until a
-future session reruns them after the handoff-only doc edits.
+`rigid_visual_verification`, status `planned`, and 36 planned captures.
 
 Current-continuation validation already run:
 
@@ -187,3 +192,14 @@ review index at
 `/tmp/dart_capture_rigid_workflow_full_review_index_1781259714/review_index.html`
 contained 36 screenshot thumbnails and linked the first/last screenshots plus
 comparison-axis and held-fixed metric summaries for representative rows.
+
+Current related-search routing validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves -q
+pixi run lint
+git diff --check
+```
+
+The focused pytest reported `3 passed`. `pixi run lint` passed and
+`git diff --check` was clean.

@@ -875,9 +875,9 @@ Evidence recorded for this slice:
   reported `6 passed`. `Find row` now indexes related shelf names, scene ids,
   labels, and scope notes only after core row fields fail to match, so
   `floating_base`, `two-link arm`, `rigid_ipc_tunnel`, `contact gradient`,
-  `avbd fixed contact`, `avbd spherical`, and `avbd prismatic` route to their
-  numbered source rows without demoting broad intent searches such as
-  `contact` or `solver`.
+  `avbd fixed contact`, `avbd spherical`, and `avbd prismatic` route directly
+  to their related evidence scenes without demoting broad intent searches such
+  as `contact` or `solver`.
   Related-only search results label the matched target scene and their tooltips
   explain the related shelf. The sidecar and README also document docked capture
   commands for every non-numbered related target, and tests keep those commands

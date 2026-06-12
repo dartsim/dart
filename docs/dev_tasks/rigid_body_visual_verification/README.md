@@ -25,6 +25,9 @@
 - [x] Workflow captures now write a top-level `review_index.html` contact
       sheet so all 36 row screenshots, manifests, commands, and metric
       summaries can be reviewed from one page.
+- [x] Related-evidence `Find row` matches now open the matched non-numbered
+      shelf scene directly instead of requiring an intermediate stop on the
+      numbered source row.
 
 ## Goal
 
@@ -45,12 +48,16 @@ are easy to inspect, cycle, capture, and regression-test.
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Current branch is ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by two local commits.
-- The local unpushed commits are:
+- At the start of the current continuation, the branch was clean and aligned
+  with `origin/feature/rigid-body-gui-visual-verification` at
+  `e8278b6fb53 Improve rigid workflow capture evidence`.
+- The latest pushed commits are:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
-  `e4601941561 Improve rigid workflow capture evidence`.
-- No push has been performed for either local commit.
+  `e8278b6fb53 Improve rigid workflow capture evidence`.
+- Current continuation work routes related-evidence search matches directly to
+  their related shelf scenes and refreshes this handoff snapshot. After the
+  local checkpoint commit, expect this branch to be one commit ahead of origin
+  unless it is pushed with explicit approval.
 
 ## What The Local Commit Changed
 
@@ -71,7 +78,7 @@ are easy to inspect, cycle, capture, and regression-test.
   - Document the bounded cycle command, the 151-scene catalog state, and the
     per-scene meaning of `--frames`.
 
-## What The Latest Local Commit Changed
+## What The Latest Pushed Commit Changed
 
 - `python/examples/demos/runner.py`
   - Adds aliases so users can find the intended rigid workflow rows using
@@ -271,6 +278,20 @@ Observed results:
   linked the first and last screenshots plus comparison-axis/held-fixed metric
   summaries for representative workflow rows.
 
+## Verified In The Related-Search Routing Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves -q
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Focused pytest reported `3 passed`.
+- `pixi run lint` passed.
+- `git diff --check` was clean.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -286,13 +307,14 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Resume from `git status -sb` and inspect the uncommitted changes listed
-   above.
-2. If committing after any further edits, rerun the repository-mandated
+1. Resume from `git status -sb` and inspect whether the current continuation
+   commit has been pushed.
+2. If editing or committing after any further changes, rerun the
+   repository-mandated
    `pixi run lint`; `git diff --check` is also a useful whitespace guard.
-3. If committing, include the existing local cycle-budget commit plus the
-   uncommitted search/capture/docs/handoff work in the next commit, or split
-   them deliberately.
+3. Choose the next bounded rigid visual-verification gap from the durable
+   sidecar, or retire this dev-task folder only if the maintainer explicitly
+   accepts the current scope as complete.
 4. Do not push unless the user explicitly approves pushing in that session.
 
 ## Commit And Push Notes
