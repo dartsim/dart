@@ -32,8 +32,10 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
                     "run_type": "iteration",
                     "cpu_time": 10.0,
                     "contract_ok": 1.0,
+                    "iterations": 4.0,
                     "solver_identity_schema_version": 1.0,
                     "solver_manifest_index": 1.0,
+                    "bound_violation": 0.25,
                     "solver_supports_problem": 1.0,
                     "solver_supports_standard": 1.0,
                     "solver_supports_boxed": 1.0,
@@ -50,6 +52,8 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
     row = results["Standard"][("Dantzig", 12)]
     assert row["solver_identity_schema_version"] == 1.0
     assert row["solver_manifest_index"] == 1.0
+    assert row["iterations"] == 4.0
+    assert row["bound_violation"] == 0.25
     assert row["solver_supports_problem"] == 1.0
     assert row["solver_supports_standard"] == 1.0
     assert row["problem_type_standard"] == 1.0
@@ -217,8 +221,10 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
                     "run_type": "iteration",
                     "cpu_time": 10.0,
                     "contract_ok": 1.0,
+                    "iterations": 4.0,
                     "residual": 2.0,
                     "complementarity": 3.0,
+                    "bound_violation": 0.25,
                     "solver_identity_schema_version": 1.0,
                     "solver_manifest_index": 1.0,
                     "solver_supports_standard": 1.0,
@@ -249,8 +255,10 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
             "solver_manifest_index": "1",
             "time_ns": "10",
             "contract_ok": "1",
+            "iterations": "4",
             "residual": "2",
             "complementarity": "3",
+            "bound_violation": "0.25",
             "solver_supports_standard": "1",
             "solver_supports_boxed": "1",
             "solver_supports_friction_index": "1",

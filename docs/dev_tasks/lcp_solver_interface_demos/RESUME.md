@@ -1,5 +1,90 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Profile Metric Evidence Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 82]`
+- Last committed checkpoint:
+  `8aaa8e4548b Validate LCP performance evidence roster identity`
+- Checkpoint target:
+  `Record LCP profile metric evidence`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 83 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `scripts/lcp_performance_profile.py` retains current `BM_LcpCompare`
+  `iterations` and `bound_violation` counters and writes them into
+  `performance_profile_evidence.csv`.
+- `scripts/check_lcp_solver_roster.py` validates the row-level metric fields
+  as part of `lint-lcp-solver-roster`: positive finite `time_ns`,
+  `contract_ok=1`, nonnegative integer `iterations`, and finite nonnegative
+  residual/complementarity/bound-violation values.
+- `python/tests/unit/test_lcp_performance_profile.py` covers metric retention
+  and CSV output.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers rejection of an
+  invalid evidence metric.
+- The checked evidence CSV was regenerated from the existing
+  `build/lcp_profile_full.json` cache, not from a new benchmark run.
+
+DART 7 harness rationale:
+
+- PR #2986 added the work-packet harness and the solver-family intake rule
+  that benchmark/evidence packets must machine-record resolved solver identity
+  and shared metrics. This slice keeps the current LCP dev-task branch aligned
+  with that rule without claiming a full PLAN-091 resolved-configuration
+  report is implemented.
+
+Verification completed:
+
+```bash
+git fetch https://github.com/dartsim/dart.git main:refs/remotes/origin/main
+git merge --no-edit origin/main
+PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --cache build/lcp_profile_full.json --output docs/background/lcp/figures
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+```
+
+Results:
+
+- `origin/main` fetch/merge: up to date.
+- Evidence regeneration: completed from cached profile JSON.
+- Focused parser/roster tests: `10 passed`.
+- Roster script: passed.
+- `pixi run lint`: passed, including `lint-lcp-solver-roster` with the expanded
+  evidence metric guard.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Record LCP profile metric evidence`. Continue from a fresh bounded DART 7 LCP
+interface/demo gap; avoid retrying the rejected SAP
+FrictionIndex exact shortcut or ShockPropagation exact-path probe without a
+materially different hypothesis. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 Evidence CSV Roster Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

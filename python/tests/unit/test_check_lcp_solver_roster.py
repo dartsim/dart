@@ -22,6 +22,30 @@ def _load_module():
     return module
 
 
+def _valid_evidence_row() -> dict[str, str]:
+    return {
+        "category": "Standard",
+        "solver": "Dantzig",
+        "problem_size": "12",
+        "solver_identity_schema_version": "1",
+        "solver_manifest_index": "1",
+        "time_ns": "10",
+        "contract_ok": "1",
+        "iterations": "0",
+        "residual": "0",
+        "complementarity": "0",
+        "bound_violation": "0",
+        "solver_supports_standard": "1",
+        "solver_supports_boxed": "1",
+        "solver_supports_friction_index": "1",
+        "solver_supports_problem": "1",
+        "problem_type_standard": "1",
+        "problem_type_boxed": "0",
+        "problem_type_friction_index": "0",
+        "problem_type_invalid": "0",
+    }
+
+
 def test_lcp_solver_roster_surfaces_match() -> None:
     module = _load_module()
 
@@ -38,27 +62,23 @@ def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
         writer.writeheader()
-        writer.writerow(
-            {
-                "category": "Standard",
-                "solver": "Dantzig",
-                "problem_size": "12",
-                "solver_identity_schema_version": "1",
-                "solver_manifest_index": "5",
-                "time_ns": "10",
-                "contract_ok": "1",
-                "residual": "0",
-                "complementarity": "0",
-                "solver_supports_standard": "1",
-                "solver_supports_boxed": "1",
-                "solver_supports_friction_index": "1",
-                "solver_supports_problem": "1",
-                "problem_type_standard": "1",
-                "problem_type_boxed": "0",
-                "problem_type_friction_index": "0",
-                "problem_type_invalid": "0",
-            }
-        )
+        writer.writerow(_valid_evidence_row() | {"solver_manifest_index": "5"})
 
     with pytest.raises(AssertionError, match="solver_manifest_index"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
+def test_lcp_profile_evidence_rejects_invalid_metric(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row() | {"bound_violation": ""})
+
+    with pytest.raises(AssertionError, match="bound_violation"):
         module.check_performance_profile_evidence(manifest, path)

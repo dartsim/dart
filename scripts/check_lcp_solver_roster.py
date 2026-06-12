@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ast
 import csv
+import math
 import re
 import sys
 from dataclasses import dataclass
@@ -44,8 +45,10 @@ REQUIRED_EVIDENCE_COLUMNS = (
     "solver_manifest_index",
     "time_ns",
     "contract_ok",
+    "iterations",
     "residual",
     "complementarity",
+    "bound_violation",
     "solver_supports_standard",
     "solver_supports_boxed",
     "solver_supports_friction_index",
@@ -280,6 +283,19 @@ def _csv_counter_as_int(row: dict[str, str], key: str) -> int | None:
     return rounded
 
 
+def _csv_finite_float(row: dict[str, str], key: str) -> float | None:
+    value = row.get(key, "")
+    if value == "":
+        return None
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return numeric
+
+
 def _solver_support(entry: SolverEntry, category: str) -> bool:
     if category == "Standard":
         return entry.standard
@@ -330,6 +346,27 @@ def check_performance_profile_evidence(
                 errors.append(
                     f"row {row_number}: invalid problem_size {row['problem_size']!r}"
                 )
+
+            time_ns = _csv_finite_float(row, "time_ns")
+            if time_ns is None or time_ns <= 0.0:
+                errors.append(f"row {row_number}: invalid time_ns {row['time_ns']!r}")
+
+            contract_ok = _csv_counter_as_int(row, "contract_ok")
+            if contract_ok != 1:
+                errors.append(
+                    f"row {row_number}: contract_ok {row['contract_ok']!r} != 1"
+                )
+
+            iterations = _csv_counter_as_int(row, "iterations")
+            if iterations is None or iterations < 0:
+                errors.append(
+                    f"row {row_number}: invalid iterations {row['iterations']!r}"
+                )
+
+            for metric in ("residual", "complementarity", "bound_violation"):
+                value = _csv_finite_float(row, metric)
+                if value is None or value < 0.0:
+                    errors.append(f"row {row_number}: invalid {metric} {row[metric]!r}")
 
             identity_version = _csv_counter_as_int(
                 row, "solver_identity_schema_version"
