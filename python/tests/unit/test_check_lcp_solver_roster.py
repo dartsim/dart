@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import csv
 import importlib.util
 import sys
 from pathlib import Path
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -23,3 +26,39 @@ def test_lcp_solver_roster_surfaces_match() -> None:
     module = _load_module()
 
     module.check_roster()
+
+
+def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(
+            {
+                "category": "Standard",
+                "solver": "Dantzig",
+                "problem_size": "12",
+                "solver_identity_schema_version": "1",
+                "solver_manifest_index": "5",
+                "time_ns": "10",
+                "contract_ok": "1",
+                "residual": "0",
+                "complementarity": "0",
+                "solver_supports_standard": "1",
+                "solver_supports_boxed": "1",
+                "solver_supports_friction_index": "1",
+                "solver_supports_problem": "1",
+                "problem_type_standard": "1",
+                "problem_type_boxed": "0",
+                "problem_type_friction_index": "0",
+                "problem_type_invalid": "0",
+            }
+        )
+
+    with pytest.raises(AssertionError, match="solver_manifest_index"):
+        module.check_performance_profile_evidence(manifest, path)

@@ -22,6 +22,39 @@ LCP_PROFILE_CSV_PATHS = {
     "findex": ROOT
     / "docs/background/lcp/figures/performance_profile_frictionindex.csv",
 }
+LCP_PROFILE_EVIDENCE_CSV_PATH = (
+    ROOT / "docs/background/lcp/figures/performance_profile_evidence.csv"
+)
+PROFILE_KEY_BY_CATEGORY = {
+    "Standard": "standard",
+    "Boxed": "boxed",
+    "FrictionIndex": "findex",
+}
+PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
+    "Standard": "problem_type_standard",
+    "Boxed": "problem_type_boxed",
+    "FrictionIndex": "problem_type_friction_index",
+}
+SOLVER_IDENTITY_SCHEMA_VERSION = 1
+REQUIRED_EVIDENCE_COLUMNS = (
+    "category",
+    "solver",
+    "problem_size",
+    "solver_identity_schema_version",
+    "solver_manifest_index",
+    "time_ns",
+    "contract_ok",
+    "residual",
+    "complementarity",
+    "solver_supports_standard",
+    "solver_supports_boxed",
+    "solver_supports_friction_index",
+    "solver_supports_problem",
+    "problem_type_standard",
+    "problem_type_boxed",
+    "problem_type_friction_index",
+    "problem_type_invalid",
+)
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
 DARTPY_INIT_STUB_PATH = ROOT / "python/stubs/dartpy/__init__.pyi"
@@ -44,6 +77,13 @@ class SolverEntry:
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _bool(value: str) -> bool:
@@ -226,11 +266,136 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
         )
 
 
+def _csv_counter_as_int(row: dict[str, str], key: str) -> int | None:
+    value = row.get(key, "")
+    if value == "":
+        return None
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    rounded = int(round(numeric))
+    if abs(numeric - rounded) > 1e-9:
+        return None
+    return rounded
+
+
+def _solver_support(entry: SolverEntry, category: str) -> bool:
+    if category == "Standard":
+        return entry.standard
+    if category == "Boxed":
+        return entry.boxed
+    if category == "FrictionIndex":
+        return entry.findex
+    raise AssertionError(f"unknown LCP profile category: {category}")
+
+
+def check_performance_profile_evidence(
+    manifest: list[SolverEntry],
+    path: Path = LCP_PROFILE_EVIDENCE_CSV_PATH,
+) -> None:
+    manifest_by_name = {entry.name: entry for entry in manifest}
+    manifest_index_by_name = {
+        entry.name: index for index, entry in enumerate(manifest, start=1)
+    }
+
+    errors: list[str] = []
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        header = reader.fieldnames or []
+        missing_columns = [
+            column for column in REQUIRED_EVIDENCE_COLUMNS if column not in header
+        ]
+        if missing_columns:
+            raise AssertionError(
+                f"{_display_path(path)} is missing required columns: {missing_columns}"
+            )
+
+        row_count = 0
+        for row_number, row in enumerate(reader, start=2):
+            row_count += 1
+            category = row["category"]
+            solver_name = row["solver"]
+            entry = manifest_by_name.get(solver_name)
+
+            if category not in PROFILE_KEY_BY_CATEGORY:
+                errors.append(f"row {row_number}: unknown category {category!r}")
+                continue
+            if entry is None:
+                errors.append(f"row {row_number}: unknown solver {solver_name!r}")
+                continue
+
+            problem_size = _csv_counter_as_int(row, "problem_size")
+            if problem_size is None or problem_size <= 0:
+                errors.append(
+                    f"row {row_number}: invalid problem_size {row['problem_size']!r}"
+                )
+
+            identity_version = _csv_counter_as_int(
+                row, "solver_identity_schema_version"
+            )
+            if identity_version != SOLVER_IDENTITY_SCHEMA_VERSION:
+                errors.append(
+                    f"row {row_number}: solver_identity_schema_version "
+                    f"{row['solver_identity_schema_version']!r} != "
+                    f"{SOLVER_IDENTITY_SCHEMA_VERSION}"
+                )
+
+            manifest_index = _csv_counter_as_int(row, "solver_manifest_index")
+            expected_manifest_index = manifest_index_by_name[solver_name]
+            if manifest_index != expected_manifest_index:
+                errors.append(
+                    f"row {row_number}: solver_manifest_index "
+                    f"{row['solver_manifest_index']!r} does not match "
+                    f"{solver_name} index {expected_manifest_index}"
+                )
+
+            expected_support = {
+                "solver_supports_standard": entry.standard,
+                "solver_supports_boxed": entry.boxed,
+                "solver_supports_friction_index": entry.findex,
+                "solver_supports_problem": _solver_support(entry, category),
+            }
+            for key, expected in expected_support.items():
+                expected_value = 1 if expected else 0
+                actual = _csv_counter_as_int(row, key)
+                if actual != expected_value:
+                    errors.append(
+                        f"row {row_number}: {key} {row[key]!r} != "
+                        f"{expected_value} for {solver_name}/{category}"
+                    )
+
+            expected_problem_type = {
+                "problem_type_standard": 0,
+                "problem_type_boxed": 0,
+                "problem_type_friction_index": 0,
+                "problem_type_invalid": 0,
+            }
+            expected_problem_type[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] = 1
+            for key, expected_value in expected_problem_type.items():
+                actual = _csv_counter_as_int(row, key)
+                if actual != expected_value:
+                    errors.append(
+                        f"row {row_number}: {key} {row[key]!r} != "
+                        f"{expected_value} for {category}"
+                    )
+
+    if row_count == 0:
+        errors.append(f"{_display_path(path)} has no evidence rows")
+
+    if errors:
+        raise AssertionError(
+            "LCP performance profile evidence is out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
 def check_roster() -> None:
     check_documented_lcp_paths()
 
     manifest = parse_cpp_manifest()
     check_performance_profile_headers(manifest)
+    check_performance_profile_evidence(manifest)
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]
     manifest_by_name = {entry.name: entry for entry in manifest}

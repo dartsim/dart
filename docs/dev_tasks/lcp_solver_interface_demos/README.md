@@ -1,5 +1,72 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Evidence CSV Roster Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation; merging
+  `origin/main` reported `Already up to date`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 81]`.
+- Last committed checkpoint:
+  `27bd1f8fe8d Record LCP benchmark solver identity counters`.
+- Checkpoint target:
+  `Validate LCP performance evidence roster identity`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 82 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- `scripts/check_lcp_solver_roster.py` now validates
+  `docs/background/lcp/figures/performance_profile_evidence.csv`, not just the
+  profile CSV headers.
+- The guard checks each evidence row's category, solver, positive problem
+  size, `solver_identity_schema_version`, `solver_manifest_index`, native
+  support counters, concrete `solver_supports_problem`, and one-hot
+  `problem_type_*` counters against the C++ LCP solver manifest.
+- This makes the checked row-level evidence artifact part of `pixi run lint`,
+  so stale identity-less or mismatched profile evidence fails locally.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `scripts/check_lcp_solver_roster.py`
+- `python/tests/unit/test_check_lcp_solver_roster.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with `2 passed`.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with `9 passed`.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` with the new
+  evidence CSV guard.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with
+   `Validate LCP performance evidence roster identity`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Solver Identity Counters
 
 This is the latest hand-off state. Sections below are historical checkpoints
