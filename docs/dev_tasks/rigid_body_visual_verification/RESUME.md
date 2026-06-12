@@ -15,17 +15,18 @@ GUI context.
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch should be pushed to
-  `origin/feature/rigid-body-gui-visual-verification` with the latest
-  committed implementation follow-ups:
+- Latest implementation commits covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `Enable rigid workflow video packets` if this continuation was committed.
+  by `3c5b9e517d3 Enable rigid workflow video packets`.
+- The final hand-off update is docs-only. If it was committed and pushed,
+  origin should contain that docs commit after `3c5b9e517d3`; otherwise the
+  local branch may still be ahead of origin.
 - There is no PR associated with this branch at checkpoint time.
-- An earlier hand-off-only stop request was superseded by the current
-  continuation request. Keep future work bounded to this task unless the user
-  redirects or stops it again.
+- The active user instruction for this checkpoint is to stop all implementation
+  work, keep the update to hand-off docs, do no further verification, and then
+  stop. A future session should resume only after a new user request.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -144,29 +145,42 @@ capture, recorded in per-scene manifests, and linked from the workflow
 `review_index.html`; the live `Rigid Workflow` panel exposes a current-row
 motion packet command.
 
+The final action in this checkpoint is hand-off documentation only. The user
+explicitly requested stopping all further implementation and verification, so
+no new tests, lint, dry-runs, or diff checks were run for this docs-only
+handoff update.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
 
 Current snapshot:
 
-- Latest implementation commits being handed off and pushed:
+- Latest implementation commits covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
   `f01f471bae7 Expose rigid workflow packet commands in the panel`, followed
-  by `Enable rigid workflow video packets` if this continuation was committed.
+  by `3c5b9e517d3 Enable rigid workflow video packets`.
+- The hand-off docs update is intentionally docs-only and did not add new
+  implementation work.
 - Current validation for the workflow-video packet slice is recorded below.
+- No verification was rerun after the hand-off-only docs edit because the user
+  explicitly requested no further verification.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
-commits to include the requested/selected manifest metadata slice, the
-review-index group-summary slice, the workflow-panel review-packet command
-slice, and the workflow-video packet slice if this continuation was committed.
-Do not push without explicit approval in that session. Continue choosing
-bounded rigid visual-verification gaps from the durable sidecar until the
-maintainer accepts the current scope as complete.
+Stop this session after the hand-off docs update; do not continue
+implementation or verification under the active stop instruction.
+
+In a future session, inspect `git status -sb` and `git log -5 --oneline`
+first. Expect the latest implementation commits to include the
+requested/selected manifest metadata slice, the review-index group-summary
+slice, the workflow-panel review-packet command slice, and
+`3c5b9e517d3 Enable rigid workflow video packets`. Do not push without
+explicit approval in that session. If the user explicitly asks to resume
+implementation, continue choosing bounded rigid visual-verification gaps from
+the durable sidecar until the maintainer accepts the current scope as complete.
 
 ## Context That Would Be Lost
 
