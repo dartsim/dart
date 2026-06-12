@@ -3637,6 +3637,57 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactApplyReusesSnapshotDirtyStackAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.mass = 1.0;
+  auto body = world.addRigidBody("body", bodyOptions);
+
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeAllocator();
+  auto& freeList = memoryManager.getFreeListAllocator();
+
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  snapshot.entities.push_back(
+      dart::simulation::detail::toRegistryEntity(body.getEntity()));
+  snapshot.states.push_back(
+      vbd::AvbdRigidBodyState{Vec3(0.25, 0.0, 0.0), rotationZ(0.1)});
+  snapshot.fixed.push_back(0u);
+
+  EXPECT_EQ(
+      snapshot.frameDirtyStack.get_allocator(),
+      common::StlAllocator<entt::entity>{allocator});
+
+  const auto allocationsBeforeApply = freeList.getAllocationCount();
+  const vbd::AvbdRigidWorldContactApplyResult firstApply
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          dart::simulation::detail::registryOf(world),
+          snapshot,
+          /*timeStep=*/1.0);
+
+  EXPECT_EQ(firstApply.bodies, 1u);
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeApply)
+      << "AVBD rigid-world contact writeback should allocate frame dirty "
+         "traversal scratch through the snapshot allocator";
+
+  const auto allocationsAfterFirstApply = freeList.getAllocationCount();
+  snapshot.states[0].position = Vec3(0.5, 0.0, 0.0);
+  const vbd::AvbdRigidWorldContactApplyResult secondApply
+      = vbd::applyAvbdRigidWorldContactSnapshot(
+          dart::simulation::detail::registryOf(world),
+          snapshot,
+          /*timeStep=*/1.0);
+
+  EXPECT_EQ(secondApply.bodies, 1u);
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsAfterFirstApply)
+      << "AVBD rigid-world contact writeback should reuse the snapshot-owned "
+         "dirty traversal stack for same-shape writes";
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
 {
   sx::World world;

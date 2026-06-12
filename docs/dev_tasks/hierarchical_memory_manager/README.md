@@ -1,5 +1,55 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Current Continuation (2026-06-12, AVBD Rigid Writeback Dirty Stack)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM follow-up entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: AVBD rigid-world contact transform writeback now reuses an
+allocator-aware frame-dirty traversal stack owned by
+`AvbdRigidWorldContactSnapshot`. The pre-fix gap was that
+`applyAvbdRigidWorldContactSnapshot()` marked updated rigid-frame subtrees with
+a local default-allocator `std::vector<entt::entity>`, so detail callers that
+apply solved snapshots could grow default heap storage instead of reusing
+snapshot scratch.
+
+The fix has three parts:
+
+- `AvbdRigidWorldContactSnapshot` owns `frameDirtyStack` with the same
+  `common::StlAllocator<entt::entity>` as its entity lists;
+- snapshot clearing/reservation clears and reserves that stack with body
+  capacity, so same-shape writeback reuses capacity;
+- `applyAvbdRigidWorldContactSnapshot()` uses the snapshot-owned stack for
+  mutable snapshots and preserves a const overload that builds temporary stack
+  storage from the snapshot allocator.
+
+New regression coverage:
+
+- `AvbdRigidBlock.RigidWorldContactApplyReusesSnapshotDirtyStackAllocator`
+  checks that the first writeback allocation comes from the provided
+  `MemoryManager` free allocator and that a same-shape second writeback does
+  not grow that allocator again.
+
+Validation for this slice:
+
+```bash
+cmake --build build/default/cpp/Release --target test_avbd_rigid_block \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/test_avbd_rigid_block \
+  --gtest_filter='AvbdRigidBlock.RigidWorldContactApplyReusesSnapshotDirtyStackAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_color=no
+pixi run lint
+pixi run build
+pixi run test-unit
+```
+
+Before publishing or opening any PR from this branch, rerun the relevant gates
+from a clean source state and get explicit maintainer approval before pushing.
+
 ## Hard Stop Handoff (2026-06-12, Stop-on-Handoff)
 
 Resume from exactly one branch:
@@ -1521,7 +1571,9 @@ PR is already merged.
       both map allocation and quadratic previous-row scans. Rigid AVBD contact
       projection now reuses stage-owned snapshot, point-joint, row-counter,
       row-inventory, inertial-target, and solve-row scratch for covered active
-      rigid contacts and no-contact fixed-joint rows; the public
+      rigid contacts and no-contact fixed-joint rows; the snapshot-apply
+      transform writeback helper now reuses snapshot-owned frame-dirty
+      traversal scratch; the public
       return-by-value AVBD helpers remain allocation-boundary conveniences. The
       follow-up VBD path now also reuses stage-owned Chebyshev history vectors
       and bakes self-contact candidate sweep plus adjacency capacity for all

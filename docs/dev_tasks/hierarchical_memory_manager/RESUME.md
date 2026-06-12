@@ -1,5 +1,57 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Continuation (2026-06-12, AVBD Rigid Writeback Dirty Stack)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM follow-up entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: AVBD rigid-world contact transform writeback now reuses an
+allocator-aware frame-dirty traversal stack owned by
+`AvbdRigidWorldContactSnapshot`. The pre-fix gap was that
+`applyAvbdRigidWorldContactSnapshot()` marked updated rigid-frame subtrees with
+a local default-allocator `std::vector<entt::entity>`, so detail callers that
+apply solved snapshots could grow default heap storage instead of reusing
+snapshot scratch.
+
+The fix has three parts:
+
+- `AvbdRigidWorldContactSnapshot` owns `frameDirtyStack` with the same
+  `common::StlAllocator<entt::entity>` as its entity lists;
+- snapshot clearing/reservation clears and reserves that stack with body
+  capacity, so same-shape writeback reuses capacity;
+- `applyAvbdRigidWorldContactSnapshot()` uses the snapshot-owned stack for
+  mutable snapshots and preserves a const overload that builds temporary stack
+  storage from the snapshot allocator.
+
+New regression coverage:
+
+- `AvbdRigidBlock.RigidWorldContactApplyReusesSnapshotDirtyStackAllocator`
+  checks that the first writeback allocation comes from the provided
+  `MemoryManager` free allocator and that a same-shape second writeback does
+  not grow that allocator again.
+
+Validation for this slice:
+
+```bash
+cmake --build build/default/cpp/Release --target test_avbd_rigid_block \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/test_avbd_rigid_block \
+  --gtest_filter='AvbdRigidBlock.RigidWorldContactApplyReusesSnapshotDirtyStackAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_color=no
+pixi run lint
+pixi run build
+pixi run test-unit
+```
+
+Immediate next step: continue evidence-first HMM work from this same branch.
+Prefer measured allocator/no-growth gaps in remaining solver-owned ECS storage
+or deformable/contact scratch paths. Do not push or open a PR without explicit
+maintainer approval.
+
 ## Hard Stop Handoff (2026-06-12, Stop-on-Handoff)
 
 Resume from exactly one branch:

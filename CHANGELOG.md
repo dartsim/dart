@@ -566,6 +566,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     dirtying traversal scratch through the owning World's free allocator, and
     extended the persistent-storage allocator gate to cover public 6-DOF joint
     payload and limit setters under the global heap counter.
+  - Reused AVBD rigid-world contact transform-writeback frame-dirty traversal
+    scratch from the allocator-aware snapshot, so same-shape detail writeback
+    paths do not grow a default-allocator traversal vector.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory

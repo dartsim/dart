@@ -171,6 +171,7 @@ struct AvbdRigidWorldDistanceSpringConfig
 struct AvbdRigidWorldContactSnapshot
 {
   using EntityAllocator = ::dart::common::StlAllocator<entt::entity>;
+  using EntityVector = std::vector<entt::entity, EntityAllocator>;
   using EntityBodyIndexPair = std::pair<const entt::entity, std::uint32_t>;
   using EntityBodyIndexAllocator
       = ::dart::common::StlAllocator<EntityBodyIndexPair>;
@@ -214,11 +215,12 @@ struct AvbdRigidWorldContactSnapshot
       linearMotors(LinearMotorAllocator{allocator}),
       motors(MotorAllocator{allocator}),
       distanceSprings(DistanceSpringAllocator{allocator}),
-      distanceSpringEntities(EntityAllocator{allocator})
+      distanceSpringEntities(EntityAllocator{allocator}),
+      frameDirtyStack(EntityAllocator{allocator})
   {
   }
 
-  std::vector<entt::entity, EntityAllocator> entities;
+  EntityVector entities;
   EntityBodyIndexMap entityBodyIndices;
   std::vector<AvbdRigidBodyState, BodyStateAllocator> states;
   std::vector<AvbdRigidBodyState, BodyStateAllocator> inertialTargets;
@@ -227,12 +229,13 @@ struct AvbdRigidWorldContactSnapshot
   std::vector<std::uint8_t, ByteAllocator> fixed;
   std::vector<AvbdRigidContactManifoldPoint, ContactAllocator> contacts;
   std::vector<AvbdRigidPointJoint, JointAllocator> joints;
-  std::vector<entt::entity, EntityAllocator> jointEntities;
+  EntityVector jointEntities;
   std::vector<AvbdRigidLinearMotor, LinearMotorAllocator> linearMotors;
   std::vector<AvbdRigidAngularMotor, MotorAllocator> motors;
   std::vector<AvbdRigidBodyPointPairDistanceSpringRow, DistanceSpringAllocator>
       distanceSprings;
-  std::vector<entt::entity, EntityAllocator> distanceSpringEntities;
+  EntityVector distanceSpringEntities;
+  EntityVector frameDirtyStack;
 };
 
 //==============================================================================
@@ -253,6 +256,7 @@ inline void clearAvbdRigidWorldContactSnapshot(
   snapshot.motors.clear();
   snapshot.distanceSprings.clear();
   snapshot.distanceSpringEntities.clear();
+  snapshot.frameDirtyStack.clear();
 }
 
 struct AvbdRigidWorldContactSolveOptions
@@ -426,6 +430,7 @@ inline void reserveAvbdRigidWorldContactSnapshot(
   snapshot.masses.reserve(bodyCapacity);
   snapshot.bodyInertias.reserve(bodyCapacity);
   snapshot.fixed.reserve(bodyCapacity);
+  snapshot.frameDirtyStack.reserve(bodyCapacity);
   snapshot.contacts.reserve(contactCapacity);
   snapshot.joints.reserve(jointCapacity);
   snapshot.jointEntities.reserve(jointCapacity);
@@ -1045,13 +1050,15 @@ inline Eigen::Isometry3d avbdRigidWorldContactFrameWorldTransform(
 
 //==============================================================================
 inline void avbdRigidWorldContactMarkFrameSubtreeDirty(
-    ::dart::simulation::detail::WorldRegistry& registry, entt::entity root)
+    ::dart::simulation::detail::WorldRegistry& registry,
+    entt::entity root,
+    AvbdRigidWorldContactSnapshot::EntityVector& stack)
 {
+  stack.clear();
   if (root == entt::null || !registry.valid(root)) {
     return;
   }
 
-  std::vector<entt::entity> stack;
   stack.push_back(root);
   const auto frameStateView = registry.view<comps::FrameState>();
 
@@ -2648,9 +2655,11 @@ inline std::size_t markAvbdRigidWorldFracturedPointJoints(
 }
 
 //==============================================================================
-inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
+inline AvbdRigidWorldContactApplyResult
+applyAvbdRigidWorldContactSnapshotWithStack(
     ::dart::simulation::detail::WorldRegistry& registry,
     const AvbdRigidWorldContactSnapshot& snapshot,
+    AvbdRigidWorldContactSnapshot::EntityVector& frameDirtyStack,
     double timeStep)
 {
   AvbdRigidWorldContactApplyResult result;
@@ -2709,11 +2718,34 @@ inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
                     transform->position, transform->orientation});
     }
 
-    avbdRigidWorldContactMarkFrameSubtreeDirty(registry, entity);
+    avbdRigidWorldContactMarkFrameSubtreeDirty(
+        registry, entity, frameDirtyStack);
     ++result.bodies;
   }
 
   return result;
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
+    ::dart::simulation::detail::WorldRegistry& registry,
+    AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep)
+{
+  return applyAvbdRigidWorldContactSnapshotWithStack(
+      registry, snapshot, snapshot.frameDirtyStack, timeStep);
+}
+
+//==============================================================================
+inline AvbdRigidWorldContactApplyResult applyAvbdRigidWorldContactSnapshot(
+    ::dart::simulation::detail::WorldRegistry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep)
+{
+  AvbdRigidWorldContactSnapshot::EntityVector frameDirtyStack(
+      snapshot.entities.get_allocator());
+  return applyAvbdRigidWorldContactSnapshotWithStack(
+      registry, snapshot, frameDirtyStack, timeStep);
 }
 
 //==============================================================================
