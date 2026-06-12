@@ -58,7 +58,7 @@
   - Added `rigid_executor_equivalence` to Python `py-demos`, showing matched
     rigid-body Worlds stepped by sequential and parallel executors with one
     shared physics solver, pose/velocity divergence, contact-count delta, and
-    step-profile diagnostics.
+    step-profile diagnostics, and scene-owned capture metrics.
   - Added `rigid_contact_solver_compare` to Python `py-demos`, comparing the
     default sequential-impulse contact policy and opt-in boxed-LCP contact
     policy on a tilted multi-contact rigid plank with contact-count, depth,

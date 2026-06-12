@@ -3579,6 +3579,32 @@ def test_rigid_executor_equivalence_keeps_parallel_rollout_matched() -> None:
         assert float(metrics["contact_count"]) >= 0.0
         assert float(metrics["step_ms"]) >= 0.0
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_executor_equivalence"
+    assert capture_metrics["solver"] == "same_solver_executor_equivalence"
+    assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["executor_pair"] == [case.label for case in controller.cases]
+    assert capture_metrics["sequential_contact_count"] == pytest.approx(
+        controller._last_metrics[controller.cases[0].label]["contact_count"]
+    )
+    assert capture_metrics["parallel_contact_count"] == pytest.approx(
+        controller._last_metrics[controller.cases[1].label]["contact_count"]
+    )
+    assert capture_metrics["position_divergence"] == pytest.approx(
+        controller._position_divergence[-1]
+    )
+    assert capture_metrics["velocity_divergence"] == pytest.approx(
+        controller._velocity_divergence[-1]
+    )
+    assert capture_metrics["contact_delta"] == pytest.approx(
+        controller._contact_delta[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._position_divergence)
+    )
+    assert capture_metrics["history"]["max_position_divergence"] < 1.0e-9
+
 
 def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     import numpy as np

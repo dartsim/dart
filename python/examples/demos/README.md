@@ -153,7 +153,7 @@ infer.
 | `rigid_collision_query_options`  | Which body-kind pairs does a query include?        | Query toggles, ignored-pair selector                  | Active/ignored contacts, body kinds/casts, shape ids        |
 | `rigid_collision_casts`          | Where do rays and swept probes hit?                | Ray offset, all-hit, sphere/capsule sweep controls    | Ray fractions, TOI, hit point/normal, cast margins, metrics |
 | `rigid_solver_compare`           | What changes between sequential impulse and IPC?   | Executor, launch speed, friction, restitution         | Speed, wall clearance, solver divergence, step time         |
-| `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time          |
+| `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics |
 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence          |
 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel         |
 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance                          |
@@ -372,7 +372,10 @@ physics solver, while the left world steps with the sequential executor and the
 right world steps with a parallel executor. The panel keeps the physics solver,
 friction, restitution, and launch speed explicit, then plots pose divergence,
 velocity divergence, contact-count delta, and per-executor step time so users
-can tell executor performance changes apart from physics changes.
+can tell executor performance changes apart from physics changes. Its capture
+metrics record the same-solver identity, controls, per-executor contact/timing
+metrics, divergence ranges, and fallback executor label when parallel execution
+is unavailable.
 
 ## Rigid contact solver comparison
 

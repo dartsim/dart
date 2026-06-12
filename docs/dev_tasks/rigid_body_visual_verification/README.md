@@ -10,6 +10,15 @@
 - [x] Executor-equivalence slice: `rigid_executor_equivalence` runs matched
       rigid Worlds side by side with the same physics solver and sequential vs
       parallel executors.
+- [x] Executor-equivalence capture-metrics follow-up:
+      `rigid_executor_equivalence` now publishes same-solver identity,
+      sequential/parallel executor labels, controls, per-executor contact
+      counts and step timing, pose/velocity/contact divergence, fallback status,
+      and compact history ranges through the capture hook. The focused
+      executor guard reported `1 passed`; the real docked 24-frame capture
+      wrote 24 scene-metrics events and numeric ranges for divergence, contact
+      counts, per-executor step time, and world time. The workflow/doc drift
+      guard reported `7 passed`.
 - [x] Contact-solver policy slice: `rigid_contact_solver_compare` runs matched
       Worlds with the same rigid-body solver and sequential-impulse vs boxed-LCP
       contact methods on a tilted multi-contact plank with scene-owned capture
@@ -261,7 +270,7 @@
 - [x] Visual smoke: `rigid_solver_compare` capture writes nonblank PNGs with
       the docked ImGui workspace and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_executor_equivalence` capture writes nonblank PNGs
-      with the docked ImGui workspace.
+      with the docked ImGui workspace and 24 scene-metrics events.
 - [x] Visual smoke: `rigid_contact_solver_compare` capture writes nonblank PNGs
       with the docked ImGui workspace and 72 scene-metrics events.
 - [x] Visual smoke: `contact` capture writes nonblank PNGs with the docked
@@ -563,8 +572,8 @@ and the no-tunneling scope decision.
    `feature/rigid-body-gui-visual-verification`, then continue with the next
    bounded capture-metrics hardening slice unless newer evidence identifies a
    higher-value rigid workflow gap. A likely next row is
-   `rigid_executor_equivalence`, because it is the neighboring solver/executor
-   row whose pose/velocity/contact/timing histories are already user-facing but
+   `rigid_friction_threshold`, because it is the next numbered contact-behavior
+   row whose lane drift/speed/clearance histories are already user-facing but
    not yet available in capture manifests.
 2. For that next slice, keep payloads to summary fields that users need in
    docked capture manifests; avoid raw replay dumps and preserve the selected

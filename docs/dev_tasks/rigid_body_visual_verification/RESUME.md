@@ -4,10 +4,11 @@
 
 Expected branch after this local checkpoint:
 `feature/rigid-body-gui-visual-verification` is clean and ahead of
-`origin/feature/rigid-body-gui-visual-verification` by one unpushed local
-commit on top of `a38ad5c1e3d` (`Refresh rigid visual verification handoff`).
-The latest runtime-code slice is the `rigid_collision_casts` capture-metrics
-follow-up. A fresh Claude/Codex session should start by running
+`origin/feature/rigid-body-gui-visual-verification` by two unpushed local
+commits on top of `a38ad5c1e3d` (`Refresh rigid visual verification handoff`).
+The first local commit is `7ef7a96dda0` (`Expose rigid collision cast capture
+metrics`). The latest runtime-code slice is the `rigid_executor_equivalence`
+capture-metrics follow-up. A fresh Claude/Codex session should start by running
 `git status -sb` and `git log --oneline --decorate -5` to confirm that state
 before continuing.
 
@@ -22,43 +23,43 @@ number,title,state,baseRefName,isDraft,url` returned `[]`, so this branch did
 not have a published PR. Pushes and future PR/comment mutations still require
 explicit maintainer/user approval.
 
-Current slice: `rigid_collision_casts` row capture metrics. The code changes
+Current slice: `rigid_executor_equivalence` row capture metrics. The code changes
 are limited to:
 
-- `python/examples/demos/scenes/rigid_collision_casts.py`
+- `python/examples/demos/scenes/rigid_executor_equivalence.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/examples/demos/README.md`
 - the PLAN-103 sidecar, this task's handoff docs, `PR_DRAFT.md`, and
   `CHANGELOG.md`
 
-What changed: the numbered row 14 `rigid_collision_casts` front door now
-exposes `SceneSetup.info["capture_metrics"]`. The payload exports row, query
-scope, ray/sphere/capsule controls, hit counts, first targets, ray fraction,
-sphere/capsule time of impact, margins, first point/normal/center fields,
-serialized current query metrics, and compact history ranges. The hook uses the
-current `_last_metrics` snapshot; it does not dump replay state.
+What changed: the numbered row 16 `rigid_executor_equivalence` front door now
+exposes `SceneSetup.info["capture_metrics"]`. The payload exports row,
+same-solver identity, executor pair, controls, per-executor contact counts and
+step timing, pose/velocity/contact divergence, per-case metrics, fallback
+executor status, and compact history ranges. The hook uses the current
+`_last_metrics` and divergence histories; it does not dump replay state.
 
 Validation already run for this code slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_collision_casts --frames 48 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_collision_casts_metrics_1781227741`
-  wrote a nonblank docked 960x540 screenshot, 47 PNG frames, and 48
+- `pixi run py-demo-capture -- --scene rigid_executor_equivalence --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_executor_equivalence_metrics_1781228299`
+  wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
   scene-metrics events. The manifest recorded numeric ranges for
-  `ray_hit_count`, `ray_first_fraction`, `sphere_hit_count`,
-  `sphere_first_toi`, `sphere_margin`, `capsule_hit_count`,
-  `capsule_first_toi`, `capsule_margin`, `time_step_ms`, and `world_time`.
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_collision_casts_report_nearest_all_and_swept_hits python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  `position_divergence`, `velocity_divergence`, `contact_delta`,
+  `sequential_contact_count`, `parallel_contact_count`, `sequential_step_ms`,
+  `parallel_step_ms`, `time_step_ms`, and `world_time`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_executor_equivalence_keeps_parallel_rollout_matched python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
   reported `7 passed` before and after `pixi run lint`.
 - `pixi run lint` passed.
-- Bounded `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+- Bounded `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
   passed and reported `ninja: no work to do`.
 - `git diff --check` was clean.
 
 Immediate next step for a fresh session: verify the local branch state, then
 continue the capture-metrics hardening pass on the next high-value rigid row.
-The likely next row is `rigid_executor_equivalence`, because it is the
-neighboring solver/executor row and already owns pose/velocity/contact/timing
+The likely next row is `rigid_friction_threshold`, because it is the next
+numbered contact-behavior row and already owns lane drift/speed/clearance
 histories that would be useful in docked capture manifests. Keep the payload
 summary-oriented and update the PLAN-103 row evidence plus focused tests.
 

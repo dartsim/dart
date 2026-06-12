@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_HALF = np.array([1.35, 0.55, 0.05])
 _BOX_HALF = np.array([0.11, 0.11, 0.11])
@@ -311,6 +311,68 @@ class _RigidExecutorEquivalence:
             renderables.extend(case.bridge.renderable_provider())
         return renderables
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        seq_label = self.cases[0].label
+        parallel_label = self.cases[1].label
+        seq_metrics = dict(self._last_metrics.get(seq_label, self._sample(self.cases[0])))
+        parallel_metrics = dict(
+            self._last_metrics.get(parallel_label, self._sample(self.cases[1]))
+        )
+        position_values = list(self._position_divergence)
+        velocity_values = list(self._velocity_divergence)
+        contact_delta_values = list(self._contact_delta)
+        sequential_step_values = list(self._step_ms_history[seq_label])
+        parallel_step_values = list(self._step_ms_history[parallel_label])
+        return {
+            "row": "rigid_executor_equivalence",
+            "solver": "same_solver_executor_equivalence",
+            "solver_label": self._solver_label(),
+            "solver_enum": self._solver().name,
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "executor_pair": [seq_label, parallel_label],
+            "controls": {
+                "friction": float(self.friction),
+                "launch_speed": float(self.launch_speed),
+                "restitution": float(self.restitution),
+            },
+            "sequential_contact_count": float(seq_metrics["contact_count"]),
+            "parallel_contact_count": float(parallel_metrics["contact_count"]),
+            "sequential_step_ms": float(seq_metrics["step_ms"]),
+            "parallel_step_ms": float(parallel_metrics["step_ms"]),
+            "position_divergence": (
+                float(position_values[-1]) if position_values else 0.0
+            ),
+            "velocity_divergence": (
+                float(velocity_values[-1]) if velocity_values else 0.0
+            ),
+            "contact_delta": (
+                float(contact_delta_values[-1]) if contact_delta_values else 0.0
+            ),
+            "cases": {
+                seq_label: {
+                    "executor": "sequential",
+                    "metrics": seq_metrics,
+                },
+                parallel_label: {
+                    "executor": "parallel"
+                    if parallel_label.startswith("Parallel")
+                    else "sequential_fallback",
+                    "metrics": parallel_metrics,
+                },
+            },
+            "history": {
+                "samples": float(len(position_values)),
+                "max_position_divergence": max(position_values, default=0.0),
+                "max_velocity_divergence": max(velocity_values, default=0.0),
+                "max_contact_delta": max(contact_delta_values, default=0.0),
+                "max_sequential_step_ms": max(sequential_step_values, default=0.0),
+                "max_parallel_step_ms": max(parallel_step_values, default=0.0),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         secondary = self.cases[1].world
         return {
@@ -464,6 +526,7 @@ def build() -> SceneSetup:
             "replay_capture_state": equivalence.capture_replay_state,
             "replay_restore_state": equivalence.restore_replay_state,
             "replay_sync": equivalence._sync,
+            CAPTURE_METRICS_INFO_KEY: equivalence.capture_metrics,
         },
     )
 
