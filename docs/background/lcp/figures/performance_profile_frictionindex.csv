@@ -1,4 +1,4 @@
-tau,Admm,Apgd,Bgs,BlockedJacobi,BoxedSemiSmoothNewton,Dantzig,Jacobi,Nncg,Pgs,RedBlackGaussSeidel,Sap,ShockPropagation,Staggering,SubspaceMinimization,SymmetricPsor,Tgs
+tau,Admm,Apgd,BGS,BlockedJacobi,BoxedSemiSmoothNewton,Dantzig,Jacobi,NNCG,Pgs,RedBlackGaussSeidel,Sap,ShockPropagation,Staggering,SubspaceMinimization,SymmetricPsor,Tgs
 1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.6667,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.3333
 1.0452,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.3333
 1.0905,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.3333,0.0000,0.0000,0.0000,0.0000,0.3333

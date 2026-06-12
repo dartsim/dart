@@ -20,12 +20,29 @@ from pathlib import Path
 
 import numpy as np
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from check_lcp_solver_roster import parse_cpp_manifest
+
 try:
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
+
+_MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
+
+
+def canonical_solver_name(name: str) -> str:
+    global _MANIFEST_NAME_BY_LOWER
+    if _MANIFEST_NAME_BY_LOWER is None:
+        _MANIFEST_NAME_BY_LOWER = {
+            entry.name.lower(): entry.name for entry in parse_cpp_manifest()
+        }
+    return _MANIFEST_NAME_BY_LOWER.get(name.lower(), name)
 
 
 def run_benchmarks(benchmark_exe: Path, filter_pattern: str = "") -> dict:
@@ -59,6 +76,7 @@ def parse_benchmark_results(data: dict) -> dict:
         else:
             solver_name = solver_category
             category = "Unknown"
+        solver_name = canonical_solver_name(solver_name)
 
         time_ns = bm.get("cpu_time", bm.get("real_time", 0))
         contract_ok = bm.get("contract_ok", 0)
@@ -73,13 +91,28 @@ def parse_benchmark_results(data: dict) -> dict:
     return results
 
 
-def compute_performance_ratios(results: dict, category: str) -> tuple[dict, list, list]:
+def load_native_support_by_category() -> dict[str, set[str]]:
+    manifest = parse_cpp_manifest()
+    return {
+        "Standard": {entry.name for entry in manifest if entry.standard},
+        "Boxed": {entry.name for entry in manifest if entry.boxed},
+        "FrictionIndex": {entry.name for entry in manifest if entry.findex},
+    }
+
+
+def compute_performance_ratios(
+    results: dict,
+    category: str,
+    supported_solvers: set[str] | None = None,
+) -> tuple[dict, list, list]:
     category_results = results.get(category, {})
     if not category_results:
         return {}, [], []
 
     problems = sorted(set(ps for _, ps in category_results.keys()))
     solvers = sorted(set(s for s, _ in category_results.keys()))
+    if supported_solvers is not None:
+        solvers = [solver for solver in solvers if solver in supported_solvers]
 
     ratios = defaultdict(list)
 
@@ -137,7 +170,7 @@ def save_profile_csv(
     output_path: Path,
 ):
     with open(output_path, "w", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         solvers = sorted(profiles.keys())
         writer.writerow(["tau"] + solvers)
         for i, tau in enumerate(tau_values):
@@ -252,9 +285,12 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
 
     categories = ["Standard", "Boxed", "FrictionIndex"]
+    native_support_by_category = load_native_support_by_category()
 
     for category in categories:
-        ratios, solvers, problems = compute_performance_ratios(results, category)
+        ratios, solvers, problems = compute_performance_ratios(
+            results, category, native_support_by_category[category]
+        )
         if not solvers:
             print(f"No results for category: {category}")
             continue

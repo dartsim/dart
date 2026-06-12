@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import csv
 import re
 import sys
 from dataclasses import dataclass
@@ -15,6 +16,12 @@ MANIFEST_PATH = ROOT / "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 SELECTION_GUIDE_PATH = ROOT / "docs/background/lcp/07_selection-guide.md"
 LCP_DEMO_PATH = ROOT / "python/examples/demos/scenes/lcp_physics.py"
 LCP_DOCS_DIR = ROOT / "docs/background/lcp"
+LCP_PROFILE_CSV_PATHS = {
+    "standard": ROOT / "docs/background/lcp/figures/performance_profile_standard.csv",
+    "boxed": ROOT / "docs/background/lcp/figures/performance_profile_boxed.csv",
+    "findex": ROOT
+    / "docs/background/lcp/figures/performance_profile_frictionindex.csv",
+}
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
 DARTPY_INIT_STUB_PATH = ROOT / "python/stubs/dartpy/__init__.pyi"
@@ -183,10 +190,47 @@ def check_documented_lcp_paths() -> None:
         )
 
 
+def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
+    manifest_by_name = {entry.name: entry for entry in manifest}
+    unsupported_by_profile = {
+        "standard": {entry.name for entry in manifest if not entry.standard},
+        "boxed": {entry.name for entry in manifest if not entry.boxed},
+        "findex": {entry.name for entry in manifest if not entry.findex},
+    }
+
+    errors: list[str] = []
+    for profile, path in LCP_PROFILE_CSV_PATHS.items():
+        with path.open(newline="", encoding="utf-8") as f:
+            header = next(csv.reader(f))
+        if not header or header[0] != "tau":
+            errors.append(f"{path.relative_to(ROOT)} has invalid header {header!r}")
+            continue
+
+        solvers = header[1:]
+        unknown = sorted(set(solvers) - set(manifest_by_name))
+        unsupported = sorted(set(solvers) & unsupported_by_profile[profile])
+        if unknown:
+            errors.append(
+                f"{path.relative_to(ROOT)} contains unknown solvers: {unknown}"
+            )
+        if unsupported:
+            errors.append(
+                f"{path.relative_to(ROOT)} contains non-native {profile} solvers: "
+                f"{unsupported}"
+            )
+
+    if errors:
+        raise AssertionError(
+            "LCP performance profile headers are out of sync with native "
+            "solver support:\n  - " + "\n  - ".join(errors)
+        )
+
+
 def check_roster() -> None:
     check_documented_lcp_paths()
 
     manifest = parse_cpp_manifest()
+    check_performance_profile_headers(manifest)
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]
     manifest_by_name = {entry.name: entry for entry in manifest}

@@ -1453,6 +1453,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Aligned Staggering's form-level native capability methods and Python demo
     metadata with its friction-index-only native route, while preserving
     standard and boxed fallback solve behavior through `solve()`.
+  - Filtered LCP performance-profile generation and checked CSV headers through
+    the solver manifest's native support metadata, so standard and boxed
+    profiles no longer include delegated-only Staggering comparisons and
+    acronym solver labels stay aligned with the C++ manifest.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

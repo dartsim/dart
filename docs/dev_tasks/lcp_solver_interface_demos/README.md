@@ -1,5 +1,131 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - LCP Performance Profile Native Support
+
+After the stop-only hand-off and the Staggering capability-metadata checkpoint,
+work resumed on the broad DART 7 LCP objective. The benchmark registration
+audit found that the main benchmark registration paths already instantiate
+solvers and call `supportsProblem(problem)` before registering concrete rows,
+but the background performance-profile tooling and checked CSV artifacts still
+allowed stale non-native solver columns.
+
+Current slice:
+
+- `scripts/lcp_performance_profile.py` now loads the checked C++ solver
+  manifest and filters each Standard, Boxed, and FrictionIndex profile to
+  solvers that are native for that problem form.
+- The performance-profile parser canonicalizes acronym solver names such as
+  `BGS`, `NNCG`, and `MPRGP` to the manifest spelling before computing profile
+  ratios.
+- `scripts/check_lcp_solver_roster.py` now checks the performance-profile CSV
+  headers against native manifest support, catching stale columns such as
+  delegated-only Staggering in standard or boxed profiles.
+- `docs/background/lcp/figures/performance_profile_standard.csv` and
+  `docs/background/lcp/figures/performance_profile_boxed.csv` no longer list
+  Staggering as a native profile column. Existing cached measurements were not
+  rerun in this slice, so missing newly supported profile columns remain a
+  future benchmark-refresh task rather than synthesized data.
+- `CHANGELOG.md` records the profile tooling/header alignment.
+
+Verification completed for this slice so far:
+
+```bash
+pixi run python scripts/check_lcp_solver_roster.py
+pixi run python - <<'PY'
+from scripts.lcp_performance_profile import (
+    compute_performance_ratios,
+    parse_benchmark_results,
+)
+
+results = {
+    "Standard": {
+        ("NativeSolver", 2): {"time_ns": 1.0, "contract_ok": 1.0},
+        ("DelegatedOnlySolver", 2): {"time_ns": 0.1, "contract_ok": 1.0},
+    }
+}
+ratios, solvers, problems = compute_performance_ratios(
+    results, "Standard", {"NativeSolver"}
+)
+assert solvers == ["NativeSolver"]
+assert problems == [2]
+assert ratios["NativeSolver"] == [1.0]
+parsed = parse_benchmark_results({
+    "benchmarks": [
+        {"name": "BM_LcpCompare_Bgs_Standard/2", "cpu_time": 1.0, "contract_ok": 1.0},
+        {"name": "BM_LcpCompare_Nncg_Boxed/2", "cpu_time": 1.0, "contract_ok": 1.0},
+        {"name": "BM_LcpCompare_Mprgp_Standard/2", "cpu_time": 1.0, "contract_ok": 1.0},
+    ]
+})
+assert ("BGS", 2) in parsed["Standard"]
+assert ("NNCG", 2) in parsed["Boxed"]
+assert ("MPRGP", 2) in parsed["Standard"]
+print("performance profile native-support filter passed")
+PY
+pixi run lint
+```
+
+Observed results:
+
+- LCP solver roster check passed:
+  `24 solvers, 23 standard, 15 boxed, 16 findex`.
+- Synthetic profile parsing/filter check passed.
+- `pixi run lint` passed, including the updated LCP solver roster gate.
+
+Immediate next step after this checkpoint:
+
+- Continue the broad objective with another concrete solver/interface/demo or
+  performance gap. A later benchmark-refresh slice should regenerate the
+  performance-profile artifacts from current benchmark results rather than
+  synthesizing missing solver columns from older cached data.
+
+## 2026-06-12 Stop-Only Hand-Off - After Staggering Capability Metadata
+
+The user explicitly stopped further work and requested only hand-off docs, with
+no further verification. Do not infer that lint, tests, builds, benchmark
+listing, commits, pushes, or implementation edits were performed after that
+request. This stop-only update is limited to this file and
+`docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+
+Repository state observed before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `00a58f7153e Align Staggering native capability metadata`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 25]`.
+- Worktree: clean before this docs-only hand-off edit.
+- No PR was associated with this branch when checked earlier in the session.
+- Push was not performed in this stop-only response.
+
+Latest completed local checkpoints:
+
+- `00a58f7153e Align Staggering native capability metadata`
+- `1b4e3827618 Report Staggering native support precisely`
+- `0e75c5c3985 Validate remaining LCP solver parameters`
+- `e3535141c5d Show all LCP solver parameters in py demo`
+- `b60e20a8dc8 Expose LCP solver parameters in dartpy`
+
+Interrupted continuation slice:
+
+- No implementation files were edited in the interrupted continuation slice.
+- The session was only reconstructing context and choosing the next bounded
+  gap after the Staggering capability-method checkpoint.
+- The likely next audit target was benchmark/demo registration and metadata
+  after Staggering stopped advertising native standard/boxed support. Candidate
+  files to inspect on explicit resume include
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`,
+  `python/examples/demos/scenes/lcp_physics.py`, and
+  `python/tests/unit/test_py_demo_panels.py`.
+- The broad DART 7 LCP solver/interface/demo objective is not complete. The
+  latest completed slice only aligned Staggering native capability metadata
+  and related tests.
+
+Immediate next step:
+
+- Do nothing until the user explicitly resumes implementation. On resume,
+  inspect the current branch state, reread this task README and `RESUME.md`,
+  then choose one concrete solver/interface/demo/performance gap. Do not push
+  without explicit approval.
+
 ## 2026-06-12 Current Continuation — Staggering Form-Level Native Capabilities
 
 After checkpoint `1b4e3827618 Report Staggering native support precisely`, the
