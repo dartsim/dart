@@ -397,6 +397,13 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest completion/retirement readiness audit: the maintained 36-row rigid
+  workflow plus optional rows 37-51 packet now has durable sidecar coverage,
+  Python README user guidance, sync/drift tests, full workflow capture evidence,
+  optional packet capture evidence, and explicit public-API deferrals. The
+  dev-task folder is therefore close to cleanup, but it should remain until the
+  maintainer accepts this scoped workflow as complete and the completing PR
+  removes `docs/dev_tasks/rigid_body_visual_verification` in the same change.
 - Latest optional extended-packet capture refresh:
   `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053`
   completed the non-numbered related-evidence, direct Rigid IPC shelf, and

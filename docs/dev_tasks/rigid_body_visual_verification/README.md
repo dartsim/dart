@@ -41,10 +41,16 @@ Expected repository state after this hand-off:
   rows 37-51 with `status=complete`, `capture_count=15`,
   `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
   selected related/IPC-shelf/packet groups all present.
-- This hand-off checkpoint is being finalized under an explicit stop-and-push
-  instruction. Future sessions should confirm branch status before continuing,
-  and should not start more implementation or verification unless the maintainer
-  explicitly asks.
+- The previous hand-off checkpoint was finalized under an explicit
+  stop-and-push instruction. That stop state is historical; future sessions
+  should verify branch status before acting and follow the readiness audit
+  below.
+- Current reality after this continuation: branch
+  `feature/rigid-body-gui-visual-verification` was observed clean and equal to
+  `origin/feature/rigid-body-gui-visual-verification` at
+  `91f53e5ae8e Record rigid workflow handoff evidence`, with no associated PR.
+  This task is active again under the persistent DART 7 rigid
+  visual-verification goal.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 - Historical note: immediately before this continuation resumed, the user had
   requested a stop-only hand-off. That stop state left these same
@@ -241,8 +247,8 @@ Expected repository state for that earlier checkpoint:
   metadata to `rigid_loop_closure`, updated tests and docs, and ran focused
   tests plus a real docked capture. Drift guards, lint, and diff checks are
   recorded in the validation section below.
-- Do not push these local commits without explicit approval in a future
-  session.
+- Historical note: these checkpoints were local and unpushed at that moment.
+  Current branch reality is recorded in the hand-off and readiness audit above.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -388,6 +394,53 @@ are easy to inspect, cycle, capture, and regression-test.
 - Do not add new C++ demos for this task unless a future plan explicitly calls
   for it.
 
+## Completion/Retirement Readiness Audit (2026-06-12)
+
+Result: the current scoped rigid visual-verification slice is close to
+retirement, but the dev-task folder should not be deleted yet. The missing
+piece is not another scene; it is maintainer acceptance of the current scope and
+the normal completion-PR cleanup that promotes the final durable note and
+removes this working folder in the same change.
+
+Evidence supporting readiness:
+
+- The branch was observed clean and pushed at
+  `91f53e5ae8e Record rigid workflow handoff evidence`; `gh pr status` reported
+  no pull request for this branch.
+- The durable sidecar
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
+  curated 36-row workflow, optional related/IPC-shelf/packet rows, public
+  API-gap audit, capture commands, validation snapshot, and follow-up list.
+- The user-facing `python/examples/demos/README.md` describes the same ordered
+  rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
+  capture packet, related-evidence routes, and optional packet guidance.
+- The recorded full workflow capture completed all 36 numbered rows with
+  `failed_count=0`, guidance complete, docked screenshots, frame sequences,
+  nontrivial screenshots, and nineteen Replay-labeled review cards.
+- The recorded optional extended packet completed rows 37-51 with
+  `failed_count=0`, guidance complete, and all selected related, direct IPC
+  shelf, and capture-first packet groups present.
+- Drift guards in `python/tests/integration/test_demos_cycle.py`,
+  `python/tests/unit/test_capture_py_demo.py`, and
+  `python/tests/unit/test_py_demo_panels.py` cover sidecar/README ordering,
+  capture-command sync, deferred public API gaps, workflow guidance, optional
+  packet guidance completeness, Replay timeline metadata, and review-index
+  manifest fields.
+
+Remaining before retirement:
+
+- Get explicit maintainer acceptance that the maintained 36-row workflow plus
+  optional 15-row packet is the completed scope for this dev task.
+- If accepted, do the cleanup in the completing PR: add only a short durable
+  close-out note if the sidecar or Python README still lacks it, then
+  `git rm -r docs/dev_tasks/rigid_body_visual_verification`.
+- Keep direct rigid-body impulse, sleep/wake, island activation, and
+  loop-closure compliance rows as durable PLAN-103 follow-ups until public
+  `dartpy` APIs exist; those deferrals are not blockers to retiring the current
+  scoped GUI workflow.
+- Run the repository-mandated `pixi run lint` before the cleanup commit, then
+  run the strongest relevant docs/Python gates for the final PR.
+
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
@@ -434,13 +487,13 @@ are easy to inspect, cycle, capture, and regression-test.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
   passive-parameters, screw-joint pitch, multibody dynamics-terms, link
-  center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
-  Replay timeline checkpoints are local and unpushed until explicit future
-  approval.
-- The Replay timeline capture-metadata checkpoint is also local and unpushed
-  until explicit future approval.
+  center-of-mass, link-Jacobian, multibody solver-family, loop-closure, Replay
+  capture-metadata, full workflow refresh, and optional-packet hand-off
+  checkpoints are now expected in branch history through
+  `91f53e5ae8e Record rigid workflow handoff evidence`; verify with
+  `git status -sb` before acting.
 - There is no PR associated with this branch at checkpoint time.
-- This checkpoint remains local. Do not push without explicit future approval.
+- Do not push again without explicit approval in that session.
 
 ## What The Local Commit Changed
 
@@ -1746,19 +1799,21 @@ badges plus representative cards for `37/51 floating_base`,
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the optional-row metadata, guidance-audit, handoff,
-   live-open-command, stack Replay timeline, pushed docs-only hand-off,
-   contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-   joint-breakage, distance-spring, limited-joints, motor-limits,
-   passive-parameters, screw-joint pitch, multibody dynamics-terms, link
-   center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
-   Replay timeline checkpoints, plus the Replay capture-metadata checkpoint, to
-   be present locally and unpushed.
-3. Re-evaluate the durable sidecar and dashboard before selecting the next
-   bounded rigid visual-verification slice. The default 36-row and optional
-   rows 37-51 capture refreshes are complete; the next local step should be a
-   completion/retirement readiness audit, while preserving the rule that this
-   dev-task folder is retired only with maintainer approval.
+2. Expect the optional-row metadata, guidance-audit, live-open-command, stack
+   Replay timeline, docs-only hand-off, contact-manipulation, kinematic-driver,
+   normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
+   motor-limits, passive-parameters, screw-joint pitch,
+   multibody dynamics-terms, link center-of-mass, link-Jacobian, multibody
+   solver-family, loop-closure Replay timeline, Replay capture-metadata, full
+   workflow refresh, and optional-packet hand-off checkpoints to be present in
+   branch history through `91f53e5ae8e`.
+3. Use the completion/retirement readiness audit above before selecting more
+   work. The default 36-row and optional rows 37-51 capture refreshes are
+   complete; the next decision is whether the maintainer accepts this scoped
+   task as complete. If yes, prepare the completion cleanup PR that removes this
+   dev-task folder after any final durable note. If no, choose the next bounded
+   slice from the durable follow-up list rather than extending the workflow
+   opportunistically.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.

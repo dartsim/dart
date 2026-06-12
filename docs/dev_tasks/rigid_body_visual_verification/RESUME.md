@@ -41,10 +41,16 @@ Expected repository state after this hand-off:
   rows 37-51 with `status=complete`, `capture_count=15`,
   `completed_count=15`, `failed_count=0`, `guidance_complete=true`, and
   selected related/IPC-shelf/packet groups all present.
-- This hand-off checkpoint is being finalized under an explicit stop-and-push
-  instruction. Future sessions should confirm branch status before continuing,
-  and should not start more implementation or verification unless the maintainer
-  explicitly asks.
+- The previous hand-off checkpoint was finalized under an explicit
+  stop-and-push instruction. That stop state is historical; future sessions
+  should verify branch status before acting and follow the readiness audit
+  below.
+- Current reality after this continuation: branch
+  `feature/rigid-body-gui-visual-verification` was observed clean and equal to
+  `origin/feature/rigid-body-gui-visual-verification` at
+  `91f53e5ae8e Record rigid workflow handoff evidence`, with no associated PR.
+  This task is active again under the persistent DART 7 rigid
+  visual-verification goal.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 - Historical note: immediately before this continuation resumed, the user had
   requested a stop-only hand-off. That stop state left these same
@@ -241,8 +247,8 @@ Expected repository state for that earlier checkpoint:
   metadata to `rigid_loop_closure`, updated tests and docs, and ran focused
   tests plus a real docked capture. Drift guards, lint, and diff checks are
   recorded in the validation section below.
-- Do not push these local commits without explicit approval in a future
-  session.
+- Historical note: these checkpoints were local and unpushed at that moment.
+  Current branch reality is recorded in the hand-off and readiness audit above.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -545,28 +551,35 @@ Current snapshot:
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
   passive-parameters, screw-joint pitch, multibody dynamics-terms, link
-  center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
-  Replay timeline checkpoints are local and unpushed until explicit future
-  approval.
-- The Replay timeline capture-metadata checkpoint is also local and unpushed
-  until explicit future approval.
+  center-of-mass, link-Jacobian, multibody solver-family, loop-closure, Replay
+  capture-metadata, full workflow refresh, and optional-packet hand-off
+  checkpoints are now expected in branch history through
+  `91f53e5ae8e Record rigid workflow handoff evidence`; verify with
+  `git status -sb` before acting.
 - There is no PR associated with this branch at checkpoint time.
-- This checkpoint remains local. Do not push without explicit future approval.
+- Do not push again without explicit approval in that session.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
-local checkpoints to include contact-manipulation, kinematic-driver,
-normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
-motor-limits, passive-parameters, screw-joint pitch, multibody dynamics-terms,
-link center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
-Replay timeline slices, plus the Replay capture-metadata checkpoint, after the
-pushed docs-only handoff. Re-evaluate the durable sidecar and dashboard before
-selecting the next bounded rigid visual-verification slice. The default 36-row
-and optional rows 37-51 capture refreshes are complete; the next local step
-should be a completion/retirement readiness audit, while preserving the rule
-that this dev-task folder is retired only with maintainer approval. Do not push
-without explicit approval in that session.
+Inspect `git status -sb` and `git log -5 --oneline` first. The branch should
+include the Replay metadata and optional extended-packet hand-off through
+`91f53e5ae8e Record rigid workflow handoff evidence`; verify current reality
+instead of trusting older local/unpushed notes. The next decision is whether the
+maintainer accepts the maintained 36-row workflow plus optional 15-row packet as
+complete for this dev task. If yes, prepare the completion cleanup PR that
+promotes any final durable close-out note and removes this dev-task folder. If
+no, choose the next bounded slice from the durable PLAN-103 follow-up list. Do
+not push without explicit approval in that session.
+
+Completion/retirement readiness audit: the scoped workflow is close to
+retirement because the durable PLAN-103 sidecar owns the workflow, API-gap
+audit, captures, validation snapshot, and follow-ups; the Python demo README
+owns the user-facing workflow; tests guard sidecar/README ordering,
+capture-command sync, deferred API gaps, workflow guidance, optional packet
+guidance, Replay metadata, and review-index manifest fields; the recorded full
+36-row and optional rows 37-51 captures both completed with zero failed rows.
+Do not delete this folder until explicit maintainer acceptance is recorded and
+the cleanup is included in the completing PR.
 
 Replay capture-metadata checks for this slice:
 
