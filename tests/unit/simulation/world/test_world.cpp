@@ -3048,6 +3048,25 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       memoryManager.getFreeListAllocator().getAllocationCount(),
       kWorldStorageAndBuiltInStageRootAllocations + 2u);
 
+  auto ignoredPairA = world.addRigidBody("ignored_pair_a");
+  auto ignoredPairB = world.addRigidBody("ignored_pair_b");
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeIgnoredPair = freeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.setCollisionPairIgnored(ignoredPairA, ignoredPairB);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "ignored collision-pair storage should allocate through the "
+           "World free allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeIgnoredPair);
+  EXPECT_TRUE(world.isCollisionPairIgnored(ignoredPairA, ignoredPairB));
+
+  world.clearIgnoredCollisionPairs();
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeIgnoredPair);
+
   world.addFreeFrame("frame_before_clear");
   world.clear();
   EXPECT_GE(

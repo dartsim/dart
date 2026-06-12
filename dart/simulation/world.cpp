@@ -2733,7 +2733,9 @@ World::~World() = default;
 //==============================================================================
 detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
   : registry(detail::WorldRegistryAllocator{allocator}),
-    differentiableParameters(DifferentiableParameterAllocator{allocator})
+    differentiableParameters(DifferentiableParameterAllocator{allocator}),
+    ignoredCollisionPairs(
+        std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator})
 {
   // Empty.
 }

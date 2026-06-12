@@ -1,5 +1,30 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Current Continuation (2026-06-12, Ignored Collision-Pair Storage)
+
+Work resumed from the final stop handoff on a fresh local follow-up branch:
+`pr/hmm-phase45-follow-up-next`, based on
+`pr/hmm-phase45-follow-up-clean` at `f17f382e9ad`.
+
+The first continuation probe re-ran the focused EnTT comparative gate on the
+retained source policy:
+`.benchmark_results/allocator_entt_followup_current_random_cpuauto_reps7_20260612.json`.
+It is not decision-quality allocator evidence: all 12 EnTT comparisons were
+rejected by the strict checker as noisy under the current host load, while the
+DART no-growth rows still reported zero post-prewarm allocator calls. Do not
+change allocator policy from that run; use it only as evidence that timing
+measurement is currently noisy.
+
+The current code slice closes a deterministic persistent-storage ownership gap:
+`WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
+free allocator instead of a default-allocated `std::set`. The focused
+`World.WorldPersistentStorageUsesWorldFreeAllocator` check now inserts an
+ignored collision pair through the public API under the global heap counter,
+expects zero global heap allocations, verifies the World free-list allocation
+count grows for the set node, and verifies `clearIgnoredCollisionPairs()` releases
+that storage back to the World allocator. Existing behavior is covered by
+`World.CollisionQueryCanIgnoreSpecificPairs`.
+
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
 Maintainer instruction: stop all implementation, optimization, benchmark,
@@ -1329,6 +1354,11 @@ Follow-up progress after PR #2956:
   storage can be baked, stepped without World-base allocator growth or ECS
   capacity changes, cleared to zero registry capacity, and rebuilt with the
   same storage capacities under the World free-list allocator.
+- Persistent ignored-collision-pair storage now follows the same World free
+  allocator root as the registry and differentiable-parameter storage. The
+  public `setCollisionPairIgnored()` path no longer allocates the pair set node
+  from the global heap, and `clearIgnoredCollisionPairs()` releases that storage
+  back to the World allocator.
 - The existing contact-heavy variational dual-state setup now has matching
   clear/rebuild coverage for `VariationalContactDualState` storage. The gate
   bakes six sliders with four persistent contact duals each, verifies

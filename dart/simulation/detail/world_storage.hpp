@@ -59,6 +59,11 @@ struct WorldStorage
   using DifferentiableParameterAllocator
       = dart::common::StlAllocator<DifferentiableParameter>;
   using CollisionPairKey = std::pair<entt::entity, entt::entity>;
+  using CollisionPairAllocator = dart::common::StlAllocator<CollisionPairKey>;
+  using IgnoredCollisionPairSet = std::set<
+      CollisionPairKey,
+      std::less<CollisionPairKey>,
+      CollisionPairAllocator>;
 
   explicit WorldStorage(dart::common::MemoryAllocator& allocator);
 
@@ -82,7 +87,7 @@ struct WorldStorage
   /// Persistent pair-level collision-query exclusions, stored with canonical
   /// endpoint ordering. This scene-level filter is applied after broad-phase
   /// candidate generation and before narrow-phase contact generation.
-  std::set<CollisionPairKey> ignoredCollisionPairs;
+  IgnoredCollisionPairSet ignoredCollisionPairs;
 };
 
 } // namespace dart::simulation::detail

@@ -1,5 +1,41 @@
 # Resume: Hierarchical Memory Manager
 
+## Current Continuation (2026-06-12, Ignored Collision-Pair Storage)
+
+Current local branch: `pr/hmm-phase45-follow-up-next`, created from
+`pr/hmm-phase45-follow-up-clean` at `f17f382e9ad`. It has no remote tracking
+branch yet.
+
+Current slice:
+
+- A fresh focused EnTT run,
+  `.benchmark_results/allocator_entt_followup_current_random_cpuauto_reps7_20260612.json`,
+  was rejected by the strict checker as noisy for all 12 EnTT comparisons. The
+  DART no-growth rows still reported zero post-prewarm allocator calls. Do not
+  keep allocator-policy changes from this run.
+- `WorldStorage::ignoredCollisionPairs` now uses `StlAllocator` over the World
+  free allocator. `World.WorldPersistentStorageUsesWorldFreeAllocator` inserts
+  an ignored pair through `setCollisionPairIgnored()` under the global heap
+  counter, verifies zero global heap allocations, verifies the World free-list
+  allocation count grows, then verifies `clearIgnoredCollisionPairs()` releases
+  the set storage back to the World allocator.
+
+Focused validation already run for this slice:
+
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.CollisionQueryCanIgnoreSpecificPairs:World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+```
+
+Before PR publication, run any broader focused gate selected for the final
+changed scope.
+
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
 Maintainer instruction: stop all implementation, optimization, benchmark,
