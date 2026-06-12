@@ -4297,6 +4297,112 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
     assert float(reverse["axial_travel"]) < -0.15
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_screw_joint_pitch"
+    assert capture_metrics["solver"] == "world_multibody_screw_joint_pitch"
+    assert capture_metrics["scope"] == "contact_free_screw_pitch_lanes"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["controls"]["pitch_scale"] == pytest.approx(
+        controller.pitch_scale
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["controls"]["moving_mass"] == pytest.approx(
+        controller.moving_mass
+    )
+    assert capture_metrics["controls"]["axial_inertia"] == pytest.approx(
+        controller.axial_inertia
+    )
+    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
+    assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
+    assert capture_metrics["lanes"]["fine_pitch"]["joint"] == (
+        controller.lanes[1].joint.name
+    )
+    assert capture_metrics["lanes"]["reverse_pitch"]["pitch_multiplier"] == (
+        pytest.approx(-1.0)
+    )
+    assert capture_metrics["lanes"]["zero_pitch"]["metrics"]["status"] == str(
+        zero["status"]
+    )
+    assert capture_metrics["zero_pitch"] == pytest.approx(float(zero["pitch"]))
+    assert capture_metrics["zero_pitch_angle"] == pytest.approx(
+        float(zero["angle"])
+    )
+    assert capture_metrics["fine_pitch"] == pytest.approx(float(fine["pitch"]))
+    assert capture_metrics["coarse_pitch"] == pytest.approx(float(coarse["pitch"]))
+    assert capture_metrics["reverse_pitch"] == pytest.approx(float(reverse["pitch"]))
+    assert capture_metrics["coarse_to_fine_pitch_ratio"] == pytest.approx(2.0)
+    assert capture_metrics["reverse_to_fine_pitch_ratio"] == pytest.approx(-1.0)
+    assert capture_metrics["fine_angle"] == pytest.approx(float(fine["angle"]))
+    assert capture_metrics["coarse_angle"] == pytest.approx(float(coarse["angle"]))
+    assert capture_metrics["reverse_angle"] == pytest.approx(
+        float(reverse["angle"])
+    )
+    assert capture_metrics["fine_axial_travel"] == pytest.approx(
+        float(fine["axial_travel"])
+    )
+    assert capture_metrics["coarse_axial_travel"] == pytest.approx(
+        float(coarse["axial_travel"])
+    )
+    assert capture_metrics["reverse_axial_travel"] == pytest.approx(
+        float(reverse["axial_travel"])
+    )
+    assert capture_metrics["coarse_minus_fine_axial_travel"] == pytest.approx(
+        float(coarse["axial_travel"]) - float(fine["axial_travel"])
+    )
+    assert capture_metrics["fine_travel_per_radian"] == pytest.approx(
+        float(fine["travel_per_radian"])
+    )
+    assert capture_metrics["coarse_travel_per_radian"] == pytest.approx(
+        float(coarse["travel_per_radian"])
+    )
+    assert capture_metrics["reverse_travel_per_radian"] == pytest.approx(
+        float(reverse["travel_per_radian"])
+    )
+    assert capture_metrics["fine_acceleration"] == pytest.approx(
+        float(fine["acceleration"])
+    )
+    assert capture_metrics["fine_expected_acceleration"] == pytest.approx(
+        float(fine["expected_acceleration"])
+    )
+    assert capture_metrics["fine_acceleration_error"] == pytest.approx(
+        float(fine["acceleration_error"])
+    )
+    assert capture_metrics["coarse_actual_axial_acceleration"] == pytest.approx(
+        float(coarse["actual_axial_acceleration"])
+    )
+    assert capture_metrics["coarse_expected_axial_acceleration"] == pytest.approx(
+        float(coarse["expected_axial_acceleration"])
+    )
+    assert capture_metrics["reverse_effective_mass"] == pytest.approx(
+        float(reverse["effective_mass"])
+    )
+    assert capture_metrics["reverse_mass_matrix"] == pytest.approx(
+        float(reverse["mass_matrix"])
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["fine_pitch_max_abs_angle"] == pytest.approx(
+        max(abs(value) for value in controller._angle_history["fine_pitch"])
+    )
+    assert capture_metrics["history"][
+        "coarse_pitch_max_abs_axial_travel"
+    ] == pytest.approx(
+        max(abs(value) for value in controller._travel_history["coarse_pitch"])
+    )
+    assert capture_metrics["history"][
+        "reverse_pitch_max_abs_acceleration_error"
+    ] == pytest.approx(
+        max(
+            abs(value)
+            for value in list(controller._accel_error_history["reverse_pitch"])[1:]
+        )
+    )
+
 
 def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     import numpy as np

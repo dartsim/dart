@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.003
 _HISTORY = 180
@@ -350,6 +350,191 @@ class _RigidScrewJointPitchVerifier:
     def renderable_provider(self) -> list[Any]:
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(lane_key: str) -> dict[str, float | str]:
+            serialized: dict[str, float | str] = {}
+            for key, value in self._last_metrics[lane_key].items():
+                if isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def lane_value(lane_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[lane_key][metric_key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        def max_abs_after_initial(values: deque[float]) -> float:
+            samples = list(values)[1:] if len(values) > 1 else list(values)
+            return max((abs(value) for value in samples), default=0.0)
+
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "pitch_multiplier": float(lane.pitch_multiplier),
+                "joint": lane.joint.name,
+                "metrics": serialized_metrics(lane.key),
+            }
+            for lane in self.lanes
+        }
+        fine_pitch = lane_value("fine_pitch", "pitch")
+        coarse_pitch = lane_value("coarse_pitch", "pitch")
+        reverse_pitch = lane_value("reverse_pitch", "pitch")
+        fine_travel = lane_value("fine_pitch", "axial_travel")
+        coarse_travel = lane_value("coarse_pitch", "axial_travel")
+        reverse_travel = lane_value("reverse_pitch", "axial_travel")
+        payload: dict[str, Any] = {
+            "row": "rigid_screw_joint_pitch",
+            "solver": "world_multibody_screw_joint_pitch",
+            "scope": "contact_free_screw_pitch_lanes",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "controls": {
+                "executor_index": float(executor_index),
+                "pitch_scale": float(self.pitch_scale),
+                "gravity_scale": float(self.gravity_scale),
+                "moving_mass": float(self.moving_mass),
+                "axial_inertia": float(self.axial_inertia),
+            },
+            "lane_order": [lane.key for lane in self.lanes],
+            "lane_count": float(len(self.lanes)),
+            "lanes": lanes,
+            "zero_pitch": lane_value("zero_pitch", "pitch"),
+            "zero_pitch_angle": lane_value("zero_pitch", "angle"),
+            "zero_pitch_axial_travel": lane_value("zero_pitch", "axial_travel"),
+            "fine_pitch": fine_pitch,
+            "coarse_pitch": coarse_pitch,
+            "reverse_pitch": reverse_pitch,
+            "coarse_to_fine_pitch_ratio": coarse_pitch / max(fine_pitch, 1.0e-12),
+            "reverse_to_fine_pitch_ratio": reverse_pitch / max(fine_pitch, 1.0e-12),
+            "fine_angle": lane_value("fine_pitch", "angle"),
+            "coarse_angle": lane_value("coarse_pitch", "angle"),
+            "reverse_angle": lane_value("reverse_pitch", "angle"),
+            "fine_axial_travel": fine_travel,
+            "coarse_axial_travel": coarse_travel,
+            "reverse_axial_travel": reverse_travel,
+            "coarse_minus_fine_axial_travel": coarse_travel - fine_travel,
+            "reverse_minus_fine_axial_travel": reverse_travel - fine_travel,
+            "fine_travel_per_radian": lane_value(
+                "fine_pitch", "travel_per_radian"
+            ),
+            "coarse_travel_per_radian": lane_value(
+                "coarse_pitch", "travel_per_radian"
+            ),
+            "reverse_travel_per_radian": lane_value(
+                "reverse_pitch", "travel_per_radian"
+            ),
+            "fine_acceleration": lane_value("fine_pitch", "acceleration"),
+            "fine_expected_acceleration": lane_value(
+                "fine_pitch", "expected_acceleration"
+            ),
+            "fine_acceleration_error": lane_value(
+                "fine_pitch", "acceleration_error"
+            ),
+            "coarse_acceleration": lane_value("coarse_pitch", "acceleration"),
+            "coarse_expected_acceleration": lane_value(
+                "coarse_pitch", "expected_acceleration"
+            ),
+            "coarse_acceleration_error": lane_value(
+                "coarse_pitch", "acceleration_error"
+            ),
+            "reverse_acceleration": lane_value("reverse_pitch", "acceleration"),
+            "reverse_expected_acceleration": lane_value(
+                "reverse_pitch", "expected_acceleration"
+            ),
+            "reverse_acceleration_error": lane_value(
+                "reverse_pitch", "acceleration_error"
+            ),
+            "fine_actual_axial_acceleration": lane_value(
+                "fine_pitch", "actual_axial_acceleration"
+            ),
+            "fine_expected_axial_acceleration": lane_value(
+                "fine_pitch", "expected_axial_acceleration"
+            ),
+            "coarse_actual_axial_acceleration": lane_value(
+                "coarse_pitch", "actual_axial_acceleration"
+            ),
+            "coarse_expected_axial_acceleration": lane_value(
+                "coarse_pitch", "expected_axial_acceleration"
+            ),
+            "reverse_actual_axial_acceleration": lane_value(
+                "reverse_pitch", "actual_axial_acceleration"
+            ),
+            "reverse_expected_axial_acceleration": lane_value(
+                "reverse_pitch", "expected_axial_acceleration"
+            ),
+            "fine_effective_mass": lane_value("fine_pitch", "effective_mass"),
+            "coarse_effective_mass": lane_value("coarse_pitch", "effective_mass"),
+            "reverse_effective_mass": lane_value("reverse_pitch", "effective_mass"),
+            "fine_mass_matrix": lane_value("fine_pitch", "mass_matrix"),
+            "coarse_mass_matrix": lane_value("coarse_pitch", "mass_matrix"),
+            "reverse_mass_matrix": lane_value("reverse_pitch", "mass_matrix"),
+            "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_step_ms": max(self._step_ms_history, default=0.0),
+                "max_abs_coarse_minus_fine_axial_travel": max(
+                    (
+                        abs(coarse - fine)
+                        for coarse, fine in zip(
+                            self._travel_history["coarse_pitch"],
+                            self._travel_history["fine_pitch"],
+                            strict=False,
+                        )
+                    ),
+                    default=0.0,
+                ),
+                "max_abs_reverse_minus_fine_axial_travel": max(
+                    (
+                        abs(reverse - fine)
+                        for reverse, fine in zip(
+                            self._travel_history["reverse_pitch"],
+                            self._travel_history["fine_pitch"],
+                            strict=False,
+                        )
+                    ),
+                    default=0.0,
+                ),
+            },
+        }
+        for lane in self.lanes:
+            lane_metrics = self._last_metrics[lane.key]
+            for metric_key in (
+                "pitch",
+                "angle",
+                "velocity",
+                "acceleration",
+                "expected_acceleration",
+                "acceleration_error",
+                "axial_travel",
+                "travel_per_radian",
+                "actual_axial_acceleration",
+                "expected_axial_acceleration",
+                "effective_mass",
+                "mass_matrix",
+            ):
+                payload[f"{lane.key}_{metric_key}"] = float(
+                    lane_metrics[metric_key]
+                )
+            payload["history"][f"{lane.key}_max_abs_angle"] = max_abs(
+                self._angle_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_abs_axial_travel"] = max_abs(
+                self._travel_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_abs_acceleration_error"] = (
+                max_abs_after_initial(self._accel_error_history[lane.key])
+            )
+        return payload
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -503,6 +688,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": verifier.world,
             "rigid_screw_joint_pitch_controller": verifier,
+            CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
         },

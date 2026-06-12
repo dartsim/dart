@@ -2,22 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation started from local commit `8f2119d7cf1` and moved the next
-capture-metrics slice to row 30, `rigid_joint_passive_parameters`. The branch
-had no associated GitHub PR before this handoff. The user then explicitly
-requested handoff only, push to origin, and no further verification, so this
-checkpoint records the exact WIP state instead of running the usual
-lint/build/diff gates.
+Latest continuation resumed from pushed commit `544d2b44a62`, verified the
+previous row-30 passive joint-parameter handoff gates, and started the row-31
+`rigid_screw_joint_pitch` capture-metrics slice. The branch had no associated
+GitHub PR at resume time.
 
-Expected branch/worktree state after this pushed handoff checkpoint:
+Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch should include `8f2119d7cf1` plus the handoff checkpoint
-  containing this file.
-- The handoff checkpoint includes row-30 passive joint-parameter capture
-  metrics, focused assertions, docs, and refreshed task state, but it was
-  committed without additional lint/build/diff verification at the user's
-  instruction.
+- Pushed branch head remains `544d2b44a62` unless a maintainer/user explicitly
+  approves another push.
+- The completed local checkpoint should include row-31 screw-joint pitch
+  capture metrics, focused assertions, docs, docked capture evidence, and
+  refreshed handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -33,7 +30,8 @@ Recent checkpoints:
 - `9947ab1285a` (`Expose rigid kinematic driver capture metrics`)
 - `30d65d4229c` (`Document rigid visual verification handoff`)
 - `8f2119d7cf1` (`Expose rigid joint motor limit capture metrics`)
-- the handoff checkpoint containing this file (`Hand off rigid passive joint parameter capture metrics`)
+- `544d2b44a62` (`Hand off rigid passive joint parameter metrics`)
+- the local checkpoint containing this file (`Expose rigid screw joint pitch capture metrics`)
 
 Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
 checkpoint touches:
@@ -154,7 +152,7 @@ Validation collected for the motor-limit slice:
   passed and reported `ninja: no work to do`.
 - `git diff --check` passed.
 
-Current handoff slice: `rigid_joint_passive_parameters` row capture metrics. The
+Previous local checkpoint: `rigid_joint_passive_parameters` row capture metrics. The
 handoff checkpoint touches:
 
 - `python/examples/demos/scenes/rigid_joint_passive_parameters.py`
@@ -199,18 +197,71 @@ Validation collected for the passive-parameter slice before the stop request:
   acceleration about `3.0/0.75`, armature acceleration gap about `2.25`,
   armature position gap about `0.26136`, latest step time about `0.0534 ms`,
   history samples `121`, and max observed step time about `0.1003 ms`.
-- Not run after the user's critical stop/no-further-verification instruction:
-  broader workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`,
-  and `git diff --check`.
+- The skipped post-handoff gates were run at the start of the screw-pitch
+  continuation: the broader workflow/doc drift guard reported `11 passed`,
+  `pixi run lint` passed, bounded
+  `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
+  passed with `ninja: no work to do`, and `git diff --check` passed.
+
+Current local slice: `rigid_screw_joint_pitch` row capture metrics. The local
+checkpoint touches:
+
+- `python/examples/demos/scenes/rigid_screw_joint_pitch.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `CAPTURE_METRICS_INFO_KEY` wiring in
+  `python/examples/demos/scenes/rigid_screw_joint_pitch.py`.
+- Scene-owned payload fields for row identity, solver
+  `world_multibody_screw_joint_pitch`, scope
+  `contact_free_screw_pitch_lanes`, executor, time step, world time, controls,
+  lane order/count, serialized lane metrics, pitch ratios, zero/fine/coarse/
+  reverse pitch angle and axial travel, acceleration residuals, effective mass,
+  mass matrix, step timing, and compact history maxima.
+- Focused assertions in
+  `python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation`
+  that the capture hook mirrors controller controls, lane metadata, latest
+  metrics, and residual/history fields.
+
+Validation collected for the screw-pitch slice so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation -q`
+  reported `1 passed`.
+- `pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_screw_joint_pitch_metrics_1781235714`
+  wrote a nonblank docked capture with 95 PNG frames, 96 scene-metrics events,
+  screenshot
+  `/tmp/dart_capture_screw_joint_pitch_metrics_1781235714/rigid_screw_joint_pitch.png`,
+  and final contacts `0`.
+- Latest captured payload details: row `rigid_screw_joint_pitch`, solver
+  `world_multibody_screw_joint_pitch`, scope
+  `contact_free_screw_pitch_lanes`, executor `Sequential`, lane count `4`,
+  fine/coarse/reverse pitch `0.28/0.56/-0.28`, coarse/fine pitch ratio `2`,
+  reverse/fine pitch ratio `-1`, latest fine/coarse/reverse angle about
+  `-0.8317/-0.6162/0.8317`, latest fine/coarse/reverse axial travel about
+  `-0.2329/-0.3451/-0.2329`, near-zero acceleration residuals on all nonzero
+  pitch lanes, latest step time about `0.0705 ms`, history samples `97`, and
+  max observed step time about `0.1055 ms`.
+- The broader workflow/doc drift guard with row ordering, viewer-title
+  numbering, sidecar/README/capture-command drift checks, motor-limit coverage,
+  passive-parameter coverage, replay snapshot coverage, and high-value panel
+  coverage reported `12 passed`.
+- `pixi run lint` passed.
+- Bounded `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
 
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Inspect the handoff commit and run the skipped gates before more code edits:
-   broader workflow/doc drift guard, `pixi run lint`, bounded
-   `pixi run build`, and `git diff --check`.
-3. Continue the capture-metrics hardening pass after the passive row is
-   verified. A likely next row to inspect is `rigid_screw_joint_pitch`.
+2. Continue the capture-metrics hardening pass. A likely next row to inspect is
+   `rigid_multibody_dynamics_terms`.
 
 ## Last Session Summary
 
@@ -731,9 +782,16 @@ missing rigid-body GUI evidence gap.
   a nonblank 960x540 screenshot, 119 PNG frames, and 120 scene-metrics events
   with manifest ranges for spring/damped energy, stiction/slip, armature
   acceleration/position gaps, step timing, time step, and world time. The
-  broader workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`,
-  and `git diff --check` were not run after the user's critical
-  stop/no-further-verification instruction.
+  skipped broader workflow/doc drift guard later reported `11 passed`;
+  `pixi run lint`, bounded `pixi run build`, and `git diff --check` passed.
+- Latest screw-joint pitch capture-metrics follow-up validation passed so far:
+  focused screw-pitch guard reported `1 passed`, and the docked capture under
+  `/tmp/dart_capture_screw_joint_pitch_metrics_1781235714` wrote a nonblank
+  960x540 screenshot, 95 PNG frames, and 96 scene-metrics events with manifest
+  ranges for pitch ratios, fine/coarse/reverse angle and axial travel,
+  near-zero acceleration residuals, step timing, time step, and world time.
+  The broader workflow/doc drift guard reported `12 passed`; `pixi run lint`,
+  bounded `pixi run build`, and `git diff --check` passed.
 - Latest loop-closure follow-up validation passed: the focused
   category/order/behavior/replay/panel command reported `5 passed`;
   `rigid_loop_closure` visual capture wrote a nonblank 960x540 screenshot and

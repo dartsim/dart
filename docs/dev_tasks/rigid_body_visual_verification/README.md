@@ -196,13 +196,25 @@
       docked 120-frame capture wrote 119 PNG frames and 120 scene-metrics
       events under
       `/tmp/dart_capture_joint_passive_parameters_metrics_1781235045`.
-      The broader workflow/doc drift guard, `pixi run lint`, bounded default
-      `pixi run build`, and `git diff --check` were not run after the user's
-      critical stop/no-further-verification instruction.
+      The skipped broader workflow/doc drift guard later reported `11 passed`;
+      `pixi run lint`, bounded default `pixi run build`, and
+      `git diff --check` passed.
 - [x] Screw-joint pitch slice: `rigid_screw_joint_pitch` shows zero, fine,
       coarse, and reverse World multibody screw-pitch lanes with gravity,
       mass/inertia controls, pitch-ratio, effective-mass, and acceleration
       diagnostics.
+- [x] Screw-joint pitch capture-metrics follow-up:
+      `rigid_screw_joint_pitch` now publishes row identity, screw-pitch scope,
+      executor, pitch/gravity/mass/inertia controls, lane order, per-lane
+      pitch, angle, axial travel, travel-per-radian, acceleration, expected
+      acceleration, effective mass, mass matrix, step-timing, and compact
+      history fields through the capture hook. The focused screw-pitch guard
+      reported `1 passed`, and the real docked 96-frame capture wrote 95 PNG
+      frames and 96 scene-metrics events under
+      `/tmp/dart_capture_screw_joint_pitch_metrics_1781235714`.
+      The broader workflow/doc drift guard reported `12 passed`;
+      `pixi run lint`, bounded default `pixi run build`, and
+      `git diff --check` passed.
 - [x] Multibody dynamics-terms slice: `rigid_multibody_dynamics_terms` shows
       public joint-space dynamics accessors on contact-free fixed-base
       multibodies: mass matrix, inverse mass matrix, inverse dynamics, impulse
@@ -461,15 +473,12 @@
       branch to origin, and refreshed validation. The conflict-resolution
       `pixi run test-py` command ran the full Python suite and reported
       `942 passed, 9 skipped`; `pixi run lint` also passed.
-- [x] Current handoff refresh: after the row-30 passive joint-parameter
-      capture-metrics WIP, the branch records fresh resume context for
-      `feature/rigid-body-gui-visual-verification`, notes that no published PR
-      was found before this handoff, and points the next fresh session toward
-      running the skipped broad guard, `pixi run lint`, bounded
-      `pixi run build`, and `git diff --check` before continuing toward the
-      next likely capture-metrics row, `rigid_screw_joint_pitch`. This refresh
-      was intentionally not verified after the user's critical
-      stop/no-further-verification instruction.
+- [x] Current continuation checkpoint: after verifying the skipped passive-row
+      gates, the branch records a local row-31 screw-joint pitch
+      capture-metrics slice with focused test, docked capture evidence, broad
+      workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`, and
+      `git diff --check`. The next fresh session should inspect the next likely
+      capture-metrics row, `rigid_multibody_dynamics_terms`.
 
 ## Goal
 

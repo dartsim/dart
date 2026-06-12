@@ -234,7 +234,8 @@
   - Added `rigid_screw_joint_pitch` to Python `py-demos`, showing World
     multibody screw-pitch coupling with zero, fine, coarse, and reverse pitch
     lanes plus gravity, mass, axial-inertia, pitch-ratio, effective-mass, and
-    acceleration diagnostics.
+    acceleration diagnostics that are exported through the capture-metrics
+    manifest path.
   - Added `rigid_multibody_dynamics_terms` to Python `py-demos`, showing
     contact-free fixed-base multibody mass matrices, inverse mass matrices,
     inverse dynamics, and joint-space impulse responses with coupling,

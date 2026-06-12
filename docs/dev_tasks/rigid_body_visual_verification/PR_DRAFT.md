@@ -70,7 +70,7 @@
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
   stack stability, contact manipulation, kinematic driver,
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
-  passive joint parameters, and stack-packet
+  passive joint parameters, screw-joint pitch, and stack-packet
   physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
@@ -84,6 +84,36 @@
 
 ## Testing
 
+- Latest screw-joint pitch capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_screw_joint_pitch.py` now publishes a
+    scene-owned capture hook for the row 31 screw-pitch verifier: controls,
+    lane order, pitch multipliers, joint names, zero/fine/coarse/reverse lane
+    metrics, pitch ratios, angle, axial travel, acceleration residuals,
+    effective mass, mass matrix, step timing, and compact histories.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_screw_joint_pitch_metrics_1781235714`
+    - nonblank docked capture, 95 PNG frames, 96 scene-metrics events, row
+      `rigid_screw_joint_pitch`, solver `world_multibody_screw_joint_pitch`,
+      scope `contact_free_screw_pitch_lanes`, executor `Sequential`, lane count
+      `4`, fine/coarse/reverse pitch `0.28/0.56/-0.28`, coarse/fine pitch
+      ratio `2`, reverse/fine pitch ratio `-1`, latest fine/coarse/reverse
+      angle about `-0.8317/-0.6162/0.8317`, latest fine/coarse/reverse axial
+      travel about `-0.2329/-0.3451/-0.2329`, near-zero acceleration residuals
+      on all nonzero pitch lanes, and manifest ranges for pitch, angle, axial
+      travel, acceleration residual, step-timing, time-step, and world-time
+      fields
+  - Broad workflow/doc drift guard with row ordering, viewer-title numbering,
+    sidecar/README/capture-command drift checks, motor-limit coverage,
+    passive-parameter coverage, replay snapshot coverage, and high-value panel
+    coverage
+    - `12 passed`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest passive joint-parameter capture-metrics handoff:
   - `python/examples/demos/scenes/rigid_joint_passive_parameters.py` now
     publishes a scene-owned capture hook for the row 30 passive parameter
@@ -104,9 +134,8 @@
       gap about `0.26136`, latest step time about `0.0534 ms`, and manifest
       ranges for passive response, step-timing, time-step, and world-time
       fields
-  - Not run after the user's critical stop/no-further-verification instruction:
-    broader workflow/doc drift guard, `pixi run lint`, bounded
-    `pixi run build`, and `git diff --check`.
+  - The skipped broader workflow/doc drift guard later reported `11 passed`;
+    `pixi run lint`, bounded `pixi run build`, and `git diff --check` passed.
 - Latest joint motor/limit capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_joint_motor_limits.py` now publishes a
     scene-owned capture hook for the row 29 multibody actuator verifier:
