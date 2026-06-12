@@ -230,9 +230,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "PenalizedFischerBurmeisterNewton/Lemke rows"
         ),
         "current_laggards": (
-            "No Standard solver average is above 1.6x; Baraff is the largest "
-            "row; MPRGP, Pgs, Tgs, and Apgd are the next "
-            "largest rows"
+            "No Standard solver average is above 1.6x; BoxedSemiSmoothNewton "
+            "is the largest row; MPRGP, RedBlackGaussSeidel, Sap, and NNCG "
+            "are the next largest rows"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -255,8 +255,8 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "current_laggards": (
             "No Boxed solver average is above 1.6x; RedBlackGaussSeidel and "
-            "SymmetricPsor are the largest rows; ShockPropagation, NNCG, BGS, "
-            "and SubspaceMinimization are the next largest rows"
+            "SymmetricPsor are the largest rows; ShockPropagation, "
+            "SubspaceMinimization, BGS, and NNCG are the next largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -278,9 +278,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "SymmetricPsor/BlockedJacobi/BGS are the current leading group"
         ),
         "current_laggards": (
-            "Apgd is the only row above 1.6x; ShockPropagation, Sap, Admm, "
-            "SubspaceMinimization, BoxedSemiSmoothNewton, and NNCG are the "
-            "next largest rows"
+            "No FrictionIndex solver average is above 1.6x; Sap and "
+            "ShockPropagation are the largest rows; Admm, SubspaceMinimization, "
+            "Apgd, BoxedSemiSmoothNewton, and NNCG are the next largest rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "

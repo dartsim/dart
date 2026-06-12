@@ -1578,6 +1578,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     96-row comparison packet and routed that path through the validated
     LLT-first helper, moving its refreshed Standard average from `1.59x` to
     `1.22x`.
+  - Raised `ApgdSolver`'s exact shortcut gate through the 192-row friction-index
+    comparison packet, moving its refreshed FrictionIndex average from `1.61x`
+    to `1.38x`.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

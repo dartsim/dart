@@ -1,5 +1,113 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - APGD FrictionIndex Gate
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 74]`.
+- Last committed checkpoint:
+  `63bfc8b349b Raise Jacobi standard exact gate and use LLT`.
+- Checkpoint target:
+  `Raise APGD exact gate for friction-index comparison`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 75 commits.
+- This current slice has not been pushed. No PR is associated with this branch
+  yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- This is a bounded packet-like slice under the PR #2986 harness constraints:
+  the accepted code change is the `ApgdSolver` exact shortcut gate used by the
+  64-contact FrictionIndex comparison packet.
+- The evidence packet uses the current interim LCP identity path: benchmark
+  names encode problem family, manifest solver name, and size; the profile
+  script derives rows from those names plus `contract_ok` and timing fields;
+  the Python demo exposes manifest metadata and native support checks.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/projection/apgd_solver.cpp`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+
+Current implementation slice:
+
+- `ApgdSolver` now allows validated exact shortcuts through 192 scalar rows so
+  the 64-contact FrictionIndex comparison packet can take the exact shortcut.
+- The Standard 12/24/48 rows were already exact; their focused movement in this
+  slice is treated as benchmark noise. The Standard 96 row also becomes exact
+  under the raised gate.
+
+Focused and profile evidence:
+
+- Baseline:
+  `build/findex_apgd_gate_baseline.json`.
+- Prior Standard focused reference:
+  `build/standard_sap_apgd_llt_probe.json`.
+- Accepted focused probe:
+  `build/apgd_gate192_probe.json`.
+- Focused FrictionIndex `Apgd` timings moved approximately:
+  - `Apgd/4`: `1119.00ns -> 1123.00ns`.
+  - `Apgd/16`: `12956.00ns -> 11174.00ns`.
+  - `Apgd/64`: `358923.00ns -> 231923.00ns`.
+- Focused Standard `Apgd/96` moved approximately:
+  `58359.00ns -> 41387.00ns`; smaller Standard APGD rows were already exact.
+- Latest regenerated profile highlights:
+  - Standard: `Apgd 1.22`; no solver average is above `1.6x`; highest rows are
+    `BoxedSemiSmoothNewton 1.51`, `MPRGP 1.41`, and
+    `RedBlackGaussSeidel 1.34`.
+  - Boxed: no solver average is above `1.6x`; highest rows are
+    `SymmetricPsor 1.57`, `RedBlackGaussSeidel 1.53`,
+    `ShockPropagation 1.52`, and `SubspaceMinimization 1.41`.
+  - FrictionIndex: no solver average is above `1.6x`; `Apgd` moved to `1.38`;
+    highest rows are `Sap 1.58`, `ShockPropagation 1.58`, `BGS 1.45`, and
+    `Admm 1.41`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and accepted focused probe for
+    `BM_LcpCompare/FrictionIndex/Apgd/`, with Standard APGD rows included in
+    the probe.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test:
+    `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+    passed.
+  - Focused CTest:
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' -j 1`
+    passed.
+- Still required before commit:
+  - Run `pixi run lint`.
+  - Run `git diff --check`.
+- No push has been performed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, run final lint/diff checks and
+   commit with `Raise APGD exact gate for friction-index comparison`.
+3. If this checkpoint is already committed, investigate Boxed
+   `SymmetricPsor 1.57`, Boxed `RedBlackGaussSeidel 1.53`, or FrictionIndex
+   `Sap 1.58` / `ShockPropagation 1.58` under the same packet-like evidence
+   rules.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Jacobi Standard Gate / LLT Path
 
 This is the latest hand-off state. Sections below are historical checkpoints

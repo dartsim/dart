@@ -46,7 +46,7 @@
 namespace dart::math {
 namespace {
 
-constexpr int kMaxStrictInteriorFastPathSize = 48;
+constexpr int kMaxStrictInteriorFastPathSize = 192;
 
 bool validateParameters(
     const ApgdSolver::Parameters& params, std::string* message)

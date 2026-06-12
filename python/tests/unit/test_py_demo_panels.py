@@ -1064,18 +1064,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "current_laggards"
     ]
     assert "Dantzig" not in profile_by_surface["Standard"]["current_laggards"]
-    assert "RedBlackGaussSeidel" not in profile_by_surface["Standard"][
+    assert "RedBlackGaussSeidel" in profile_by_surface["Standard"][
         "current_laggards"
     ]
     assert "BGS" not in profile_by_surface["Standard"]["current_laggards"]
-    assert "NNCG" not in profile_by_surface["Standard"]["current_laggards"]
+    assert "NNCG" in profile_by_surface["Standard"]["current_laggards"]
     assert "MinimumMapNewton" not in profile_by_surface["Standard"][
         "current_laggards"
     ]
     assert "MPRGP" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Apgd" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Apgd" not in profile_by_surface["Standard"]["current_laggards"]
     assert "Lemke" not in profile_by_surface["Standard"]["current_laggards"]
-    assert "Baraff" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Baraff" not in profile_by_surface["Standard"]["current_laggards"]
     assert "SymmetricPsor" not in profile_by_surface["Standard"][
         "current_laggards"
     ]
@@ -1161,7 +1161,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "current_leaders"
     ]
     assert (
-        "Apgd is the only row above 1.6x"
+        "No FrictionIndex solver average is above 1.6x"
         in profile_by_surface["FrictionIndex"]["current_laggards"]
     )
     assert "Apgd" in profile_by_surface["FrictionIndex"]["current_laggards"]

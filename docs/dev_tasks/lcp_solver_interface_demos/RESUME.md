@@ -1,5 +1,95 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 APGD FrictionIndex Gate
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 74]`
+- Last committed checkpoint:
+  `63bfc8b349b Raise Jacobi standard exact gate and use LLT`
+- Checkpoint target:
+  `Raise APGD exact gate for friction-index comparison`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 75 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `ApgdSolver` allows validated exact shortcuts through 192 scalar rows so the
+  64-contact FrictionIndex comparison packet can take the exact shortcut.
+- The Standard 12/24/48 rows were already exact; their focused movement in this
+  slice is benchmark noise. The Standard 96 row also becomes exact under the
+  raised gate.
+- The slice follows the PR #2986 harness stance captured below: evidence uses
+  the current interim LCP solver identity path from `BM_LcpCompare` benchmark
+  names, `contract_ok` counters, timing fields, manifest metadata, and native
+  support checks.
+
+Evidence:
+
+- Baseline:
+  `build/findex_apgd_gate_baseline.json`.
+- Prior Standard focused reference:
+  `build/standard_sap_apgd_llt_probe.json`.
+- Accepted focused probe:
+  `build/apgd_gate192_probe.json`.
+- Focused FrictionIndex `Apgd` timings:
+  - `Apgd/4`: `1119.00ns -> 1123.00ns`.
+  - `Apgd/16`: `12956.00ns -> 11174.00ns`.
+  - `Apgd/64`: `358923.00ns -> 231923.00ns`.
+- Focused Standard `Apgd/96`: `58359.00ns -> 41387.00ns`; smaller Standard
+  APGD rows were already exact.
+- Latest regenerated profile highlights:
+  - Standard: `Apgd 1.22`; no solver average is above `1.6x`; highest rows are
+    `BoxedSemiSmoothNewton 1.51`, `MPRGP 1.41`, and
+    `RedBlackGaussSeidel 1.34`.
+  - Boxed: no solver average is above `1.6x`; highest rows are
+    `SymmetricPsor 1.57`, `RedBlackGaussSeidel 1.53`,
+    `ShockPropagation 1.52`, and `SubspaceMinimization 1.41`.
+  - FrictionIndex: no solver average is above `1.6x`; `Apgd` moved to `1.38`;
+    highest rows are `Sap 1.58`, `ShockPropagation 1.58`, `BGS 1.45`, and
+    `Admm 1.41`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and accepted focused probe for
+    `BM_LcpCompare/FrictionIndex/Apgd/`, with Standard APGD rows included in
+    the probe.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks and commit
+with `Raise APGD exact gate for friction-index comparison`. If it is already
+committed, investigate Boxed `SymmetricPsor 1.57`, Boxed
+`RedBlackGaussSeidel 1.53`, or FrictionIndex `Sap 1.58` /
+`ShockPropagation 1.58` under the same packet-like evidence rules. Do not push
+without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Jacobi Standard Gate / LLT Path
 
 This is the latest hand-off. Older sections below are historical checkpoints
