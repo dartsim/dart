@@ -10,20 +10,29 @@ validation diagnostics in C++ and dartpy. The latest checkpoint tightens
 py-demos, starting with `DirectSolver` treating only n <= 3 standard packets as
 native and marking larger standard packets as delegated.
 
+This session then stopped for hand-off only after the user explicitly requested
+no further verification or implementation work. The only intended follow-up
+change is this dev-task hand-off update.
+
 ## Current Branch
 
-`feature/lcp-solver-interface-demos` — pushed to
-`origin/feature/lcp-solver-interface-demos` at
-`b2f5632b277 Expose LCP problem validation diagnostics`. The next local
-checkpoint is `Report Direct LCP native support precisely`; push still requires
-explicit maintainer/user approval.
+`feature/lcp-solver-interface-demos` — before this hand-off docs update, local
+HEAD was `80a31ddb2b5 Report Direct LCP native support precisely` and the
+tracking branch was `origin/feature/lcp-solver-interface-demos` at
+`b2f5632b277 Expose LCP problem validation diagnostics`.
+
+`git fetch origin main` failed during hand-off with
+`ssh: connect to host github.com port 22: Network is unreachable`, so remote
+`main` could not be refreshed in this environment. If push also failed, expect
+local commits to be ahead of origin.
 
 ## Immediate Next Step
 
-Resume by inspecting branch state and then selecting the next bounded LCP
-solver/interface/demo gap. If `Report Direct LCP native support precisely` is
-still uncommitted, commit it first. Fetch `origin/main` and merge it into the
-branch before any future push if main has moved.
+Resume by inspecting branch state. If local commits are not on
+`origin/feature/lcp-solver-interface-demos`, fetch `origin/main`, merge it if it
+moved, then push the consolidated branch once network access is available and
+maintainer/user approval is still in force. Do not continue implementation
+until the user asks to resume work.
 
 ## Context That Would Be Lost
 
@@ -57,6 +66,20 @@ branch before any future push if main has moved.
   coverage binary removed the segfault.
 - The branch should remain one additive published branch. Merge latest `main`
   before future pushes; avoid rebasing unless explicitly requested.
+- No verification was run after the user's stop-and-handoff instruction. The
+  last verification remains the Direct checkpoint verification listed below.
+- The interrupted next-slice audit found that
+  `python/examples/demos/scenes/lcp_physics.py` still points
+  `active_friction_index_contact` at the older two-solver benchmark filter
+  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
+  Inspect the broader manifest-driven registrations in
+  `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` before changing this metadata.
+- Good source locations for that next audit are `kContactComparisonSolverNames`,
+  `kContactNormalStandardSolverNames`, the world/contact benchmark functions,
+  and the registration block near the end of `bm_lcp_compare.cpp`.
+- `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` appears to be a narrower
+  older benchmark surface; confirm whether it is secondary before wiring demos
+  to it.
 
 ## How to Resume
 
@@ -90,7 +113,8 @@ Then read:
 - `docs/onboarding/python-bindings.md`
 - `docs/onboarding/testing.md`
 
-If `origin/main` is not an ancestor of `HEAD`, merge it before continuing:
+If the fetch succeeds and `origin/main` is not an ancestor of `HEAD`, merge it
+before pushing or continuing:
 
 ```bash
 git merge origin/main

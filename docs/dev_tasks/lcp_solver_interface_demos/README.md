@@ -16,6 +16,8 @@
 - [x] Tightened per-problem native support reporting so `DirectSolver` no
       longer reports large standard packets as native when it will delegate to
       Dantzig.
+- [x] Captured the current hand-off state after the user explicitly requested
+      no further verification or implementation work.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -122,6 +124,45 @@ Observed results:
 - `python/tests/unit/math/test_lcp.py`: 59 tests passed.
 - `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 
+## Hand-Off Snapshot
+
+The current session was stopped for hand-off only after the Direct support
+checkpoint. No implementation work and no verification were run after the user
+requested: "stop and focus on hand-off for all the current work without any
+further verification."
+
+Branch state at hand-off start:
+
+- Current branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `80a31ddb2b5 Report Direct LCP native support precisely`.
+- Remote tracking branch before the hand-off docs update:
+  `origin/feature/lcp-solver-interface-demos` at
+  `b2f5632b277 Expose LCP problem validation diagnostics`.
+- `git fetch origin main` failed in this environment with
+  `ssh: connect to host github.com port 22: Network is unreachable`, so the
+  latest remote `main` could not be refreshed before this hand-off checkpoint.
+
+Interrupted next-slice reconnaissance, with no code changes made:
+
+- The next bounded gap was going to audit whether demo/benchmark comparison
+  metadata reflects all implemented LCP solver families.
+- `python/examples/demos/scenes/lcp_physics.py` currently maps the
+  `active_friction_index_contact` benchmark packet to the older two-solver
+  filter:
+  `BM_DantzigSolver_ActiveFrictionIndexContact|BM_PgsSolver_ActiveFrictionIndexContact`.
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` appears to contain broader
+  manifest-driven contact comparison registrations. Inspect
+  `kContactComparisonSolverNames`, `kContactNormalStandardSolverNames`, the
+  world/contact benchmark functions, and the final registration block before
+  changing demo metadata.
+- `tests/benchmark/lcpsolver/bm_lcpsolver_solvers.cpp` looks like an older,
+  narrower benchmark surface for Dantzig, Lemke, and PGS. Confirm whether it is
+  secondary before pointing demos at it.
+- A likely next bounded patch is to update the demo benchmark filter and
+  `python/tests/unit/test_py_demo_panels.py` expectations to use the broader
+  manifest-driven benchmark, if source inspection confirms that is the intended
+  comparison surface.
+
 ## Verification Snapshot
 
 Latest validation API checkpoint was verified with:
@@ -150,9 +191,11 @@ metadata, packet generation, or benchmark rows.
 ## Immediate Next Steps
 
 1. Resume on `feature/lcp-solver-interface-demos`.
-2. Fetch `origin/main`; if it moved, merge it into this branch before the next
+2. Check whether the local hand-off commits are already on
+   `origin/feature/lcp-solver-interface-demos`; if not, push them after network
+   access is available and maintainer/user approval is still in force.
+3. Fetch `origin/main`; if it moved, merge it into this branch before the next
    push.
-3. Push only after explicit maintainer/user approval.
 4. Audit the next smallest LCP interface/demo gap. Good starting points are
    `dart/math/lcp`, `python/examples/demos`, `python/tests/unit/math/test_lcp.py`,
    `python/tests/unit/test_py_demo_panels.py`,
