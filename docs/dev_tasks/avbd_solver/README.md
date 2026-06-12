@@ -11,20 +11,19 @@ Corpus matrix:
 
 - Latest critical handoff stop (2026-06-11): the user explicitly directed this
   session to stop implementation and focus only on hand-off for all current
-  work, without any further verification. No lint/build/test/CI refresh was run
-  after that instruction. The current checkout is the consolidated continuation
-  branch `avbd/source-row-extraction-precheck`, which was already ahead of
-  `origin/avbd/source-row-extraction-precheck` by local commit
-  `63e3a1d44a1` and now includes the latest handoff update plus the current
-  point-attachment world-point reuse slice. That slice computes the
-  point-attachment world anchor once in `addAvbdRigidPointAttachment()` and
-  reuses it for both constraint value and 6D direction assembly. Pre-stop local
-  validation for that source edit had already passed the focused rigid-block
-  target/filter, full `test_avbd_rigid_block`, `pixi run build`, and
-  `pixi run test-unit`, but `pixi run lint` and `git diff --check` were not
-  rerun afterward by explicit instruction. This remains a narrow helper
-  overhead cleanup and does not close any source CPU-win, GPU, or paper-number
-  gate.
+  work, without any further verification. The current checkout is the
+  consolidated continuation branch `avbd/source-row-extraction-precheck`, with
+  pushed head `8fc57deb9d6` (`Checkpoint AVBD handoff state`) before this
+  final handoff-doc commit. The branch already contains the point-attachment
+  world-point reuse slice, which computes the point-attachment world anchor once
+  in `addAvbdRigidPointAttachment()` and reuses it for both constraint value and
+  6D direction assembly. Before the stop instruction, local validation had
+  already passed `pixi run lint`, the focused rigid-block target/filter, full
+  `test_avbd_rigid_block`, and `pixi run build`; `pixi run test-unit` had been
+  started but no final result is claimed in this handoff. After the stop
+  instruction, no further lint/build/test/CI or `git diff --check` verification
+  was run. This remains a narrow helper overhead cleanup and does not close any
+  source CPU-win, GPU, or paper-number gate.
 - Latest resumed validation (2026-06-11): the handoff-captured
   point-attachment and distance-spring direction helper slice on
   `avbd/source-row-extraction-precheck` has now been validated locally.
@@ -78,8 +77,8 @@ lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
   `RESUME.md`; the final handoff docs themselves intentionally have no fresh
   verification after the critical stop instruction. Local stashes may still
   exist as historical recovery points, but fresh work should not depend on
-  them. The latest pushed parent before the final local follow-ups was
-  `7a9e24b487b` (`Checkpoint AVBD source-row origin-anchor handoff`). PR #2977
+  them. The latest pushed continuation head before this final handoff update was
+  `8fc57deb9d6` (`Checkpoint AVBD handoff state`). PR #2977
   (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
   known state; the latest read-only refresh showed all visible completed checks
   green/skipped/neutral and only Linux `Debug Tests` still in progress. It

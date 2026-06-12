@@ -1128,8 +1128,7 @@ inline AvbdScalarRowDescriptor makeAvbdRigidLinearMotorRowDescriptor(
 
 //==============================================================================
 inline double avbdRigidPointAttachmentConstraintValueAtWorldPoint(
-    const Eigen::Vector3d& worldPoint,
-    const AvbdRigidPointAttachmentRow& row)
+    const Eigen::Vector3d& worldPoint, const AvbdRigidPointAttachmentRow& row)
 {
   return row.axis.dot(row.target - worldPoint);
 }

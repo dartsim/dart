@@ -9,13 +9,11 @@ gates require dedicated corpus evidence.
 
 Immediate critical-stop handoff: on 2026-06-11 the user explicitly directed the
 session to stop implementation and focus only on hand-off for all current work,
-without any further verification. No lint/build/test/CI refresh was run after
-that instruction. Preserve this branch state before doing new implementation:
-the active checkout is `avbd/source-row-extraction-precheck`, already ahead of
-`origin/avbd/source-row-extraction-precheck` by local commit
-`63e3a1d44a1 Record AVBD source-row helper validation`, with this handoff update
-on top once committed. Do not apply local stashes by default; the branch itself
-is the consolidated resume surface.
+without any further verification. Preserve this branch state before doing new
+implementation: the active checkout is `avbd/source-row-extraction-precheck`,
+with pushed head `8fc57deb9d6 Checkpoint AVBD handoff state` before this final
+handoff update. Do not apply local stashes by default; the branch itself is the
+consolidated resume surface.
 
 Current resumed note: after the pushed handoff checkpoint at `7a9e24b487b`,
 implementation resumed on `avbd/source-row-extraction-precheck` for small
@@ -36,10 +34,11 @@ The latest source edit after that validation introduces
 computed world anchor inside `addAvbdRigidPointAttachment()` for both constraint
 value and direction assembly. This avoids a duplicate local-anchor transform in
 point-attachment row stamping. Before the critical stop, focused rigid-block
-checks, the full `test_avbd_rigid_block` binary, `pixi run build`, and
-`pixi run test-unit` had passed for that source edit; `pixi run lint` and
-`git diff --check` were not rerun afterward because the user explicitly
-forbade further verification.
+checks, the full `test_avbd_rigid_block` binary, `pixi run lint`, and
+`pixi run build` had passed for that source edit; `pixi run test-unit` had been
+started, but no final result is claimed in this handoff. `git diff --check` and
+post-handoff lint were not run after the user explicitly forbade further
+verification.
 
 Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
@@ -68,10 +67,8 @@ Current continuation state:
   generic point-pair/friction origin-anchor direction fast path, and the newest
   point-attachment/distance-spring direction helper slice, plus the newest
   point-attachment world-point reuse cleanup. The latest pushed parent before
-  these local follow-ups was `7a9e24b487b`
-  (`Checkpoint AVBD source-row origin-anchor handoff`). The last committed
-  local helper validation checkpoint before the current handoff is
-  `63e3a1d44a1` (`Record AVBD source-row helper validation`). Do not require a
+  the final handoff update was `8fc57deb9d6`
+  (`Checkpoint AVBD handoff state`). Do not require a
   fresh session to inspect or apply local stashes before continuing. Keep this
   as the one consolidated local continuation branch for source-row cleanup until
   the user explicitly redirects or approves PR updates.
@@ -92,17 +89,18 @@ Current continuation state:
   Refresh this in a future session before making any PR decision.
 - The active local checkout is `avbd/source-row-extraction-precheck`. The
   latest pushed head at the start of these resumed slices was
-  `7a9e24b487b Checkpoint AVBD source-row origin-anchor handoff`. The current
-  helper checkpoint sequence is `52ccfd3187e Checkpoint AVBD source-row handoff
-  state` followed by `63e3a1d44a1 Record AVBD source-row helper validation`,
-  plus this critical-stop handoff commit once committed. The final handoff
-  commit is intentionally not accompanied by new lint/build/test evidence after
-  the user stopped verification.
+  `8fc57deb9d6 Checkpoint AVBD handoff state`. The current helper checkpoint
+  sequence includes `52ccfd3187e Checkpoint AVBD source-row handoff state`,
+  `63e3a1d44a1 Record AVBD source-row helper validation`, and
+  `8fc57deb9d6 Checkpoint AVBD handoff state`, plus this critical-stop handoff
+  commit once committed. The final handoff commit is intentionally not
+  accompanied by new post-stop lint/build/test evidence after the user stopped
+  verification.
 - The earlier no-verification stop applied only to the previous handoff
   checkpoint. Work resumed afterward; the origin-anchor follow-ups have fresh
   local validation recorded below. No hosted CI rerun, PR comment, PR update,
-  merge, branch deletion, or push of this validation-doc update has been
-  performed during this resumed slice before the current critical stop.
+  merge, or branch deletion was performed during this resumed slice before the
+  current critical stop.
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
@@ -136,9 +134,10 @@ Latest handoff-captured source edit:
   the public helper wrapper.
 - Before the latest critical stop, this source edit had passed the focused
   rigid-block target/filter, the full `test_avbd_rigid_block` binary,
-  `pixi run build`, and `pixi run test-unit`. No further verification was run
-  after the stop instruction, so do not claim final lint or diff-check evidence
-  for this handoff commit.
+  `pixi run lint`, and `pixi run build`. `pixi run test-unit` had been started
+  before the stop, but no final result is claimed in this handoff. No further
+  verification was run after the stop instruction, so do not claim final
+  post-stop lint, full-suite, or diff-check evidence for this handoff commit.
 - This is only a narrow source-row helper overhead cleanup. It does not close
   any source CPU-win, GPU, or paper-number gate.
 
@@ -290,10 +289,12 @@ cleanup:
 - After the latest point-attachment world-point reuse source edit:
   `pixi run build` passed.
 - After the latest point-attachment world-point reuse source edit:
-  `pixi run test-unit` passed, 161/161 tests.
+  `pixi run test-unit` was started before the latest critical stop, but no
+  final result is claimed in this handoff. Do not cite it as full-suite
+  validation for this final state.
 - After the user's critical stop, no additional lint/build/test/CI or
   `git diff --check` verification was run. In particular, `pixi run lint` was
-  not rerun for this final handoff commit by explicit user instruction.
+  not rerun after the final handoff-doc edits by explicit user instruction.
 - The previous handoff-only checkpoint intentionally ran no fresh verification.
   Work resumed afterward, and the current origin-anchor helper cleanups have
   fresh focused and suite validation below.
@@ -429,14 +430,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff                    | State and handling                                                                                                                        |
-| -------------------------------------- | --------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `63e3a1d44a1` plus current handoff commit | Current checkout and single resume branch. Already ahead of origin before this handoff; final handoff intentionally has no post-stop verification. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                            | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                                 |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                            | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                        |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                            | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                        |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                            | Unrelated local branch; do not touch during AVBD handoff.                                                                                 |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                            | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.                       |
+| Branch                                 | Upstream                                      | Local head at handoff                     | State and handling                                                                                                                                 |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `8fc57deb9d6` plus current handoff commit  | Current checkout and single resume branch. Final handoff intentionally has no post-stop verification.                                                |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                             | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                                          |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                             | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                                 |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                             | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                                 |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                             | Unrelated local branch; do not touch during AVBD handoff.                                                                                          |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                             | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.                                |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest critical handoff-only stop. The branches above are intentionally left in
