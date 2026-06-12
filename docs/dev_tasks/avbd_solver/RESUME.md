@@ -1,6 +1,6 @@
 # Resume: AVBD Solver
 
-## Latest Direct Private Prismatic Reset Checkpoint (2026-06-12)
+## Latest Direct Private Movable-Pair Reset Checkpoint (2026-06-12)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Do not
@@ -8,22 +8,23 @@ count source-row overhead cleanup or focused articulated lifecycle tests as
 CPU-win, GPU, or paper-number gates; those gates require dedicated corpus and
 benchmark evidence.
 
-Current resumed slice: direct private same-multibody prismatic velocity
-point-joint configs now have the same break/skip/reset coverage shape as the
-neighboring direct private movable-pair revolute reset path. The new C++
-regression uses explicit off-origin anchors and a non-cardinal slider basis,
-breaks the joint, applies opposing endpoint forces while broken rows are
-skipped, then clears `broken`, raises `breakForce`, reverses the command, and
-verifies the existing private `AvbdRigidWorldPointJointConfig` still re-engages
-its masked hard rows plus free-axis motor row across two movable same-multibody
-endpoints.
+Current resumed slice: direct private same-multibody prismatic velocity and
+spherical point-joint configs now have the same break/skip/reset coverage shape
+as the neighboring direct private movable-pair revolute reset path. The new C++
+regressions use explicit off-origin anchors, cover a non-cardinal prismatic
+slider basis plus spherical linear-only rows, apply opposing endpoint forces
+while broken rows are skipped, then clear `broken` and raise `breakForce` to
+verify the existing private `AvbdRigidWorldPointJointConfig` still re-engages
+the expected masked hard rows across two movable same-multibody endpoints. The
+prismatic case also reverses the command and verifies the free-axis motor row
+samples the updated velocity.
 
 Validation so far for this slice:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_variational_integration`
   passed.
-- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdBreakablePrismaticVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdPrismaticPointJointCurrentPoseExtractorResetReengagesMovablePair' --gtest_brief=1"`
-  passed, 3 tests.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdBreakableRevoluteVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdBreakablePrismaticVelocityPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdBreakableSphericalPointJointConfigResetReengagesMovablePair:VariationalIntegration.AvbdPrismaticPointJointCurrentPoseExtractorResetReengagesMovablePair:VariationalIntegration.AvbdSphericalPointJointCurrentPoseExtractorResetReengagesMovablePair' --gtest_brief=1"`
+  passed, 5 tests.
 - `pixi run build` passed.
 - `pixi run lint` passed.
 - `git diff --check` passed.

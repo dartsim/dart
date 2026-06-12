@@ -1007,10 +1007,12 @@ implementation work should prefer one of these gaps, in order:
    Direct private movable-pair revolute/prismatic and current-pose
    movable-pair revolute/prismatic break/reset regressions now verify broken
    rows stay skipped under opposing endpoint forces and re-enter with an
-   updated command, and the current-pose fixed movable-pair regression verifies
-   all-axis rows re-enter from a generated config. Current-pose movable-pair
-   revolute/prismatic tiny-limit regressions now also prove generated
-   free-axis motor rows honor finite effort caps while captured
+   updated command. Direct private and current-pose spherical movable-pair
+   regressions now prove linear-only rows re-enter after reset while relative
+   orientation remains free, and the current-pose fixed movable-pair regression
+   verifies all-axis rows re-enter from a generated config. Current-pose
+   movable-pair revolute/prismatic tiny-limit regressions now also prove
+   generated free-axis motor rows honor finite effort caps while captured
    anchor/hinge/masked rows remain active. Public articulated
    revolute/prismatic floating-endpoint plus selected off-origin-anchor facade
    drive regressions now also use non-cardinal axes and check the generated AVBD

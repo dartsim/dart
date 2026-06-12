@@ -11779,6 +11779,107 @@ TEST(
       2e-3);
 }
 
+// PLAN-104 AVBD articulated fracture bridge: direct private spherical
+// point-joint configs also need reset coverage between two movable
+// same-multibody endpoints. Resetting the broken joint should re-enable only
+// the linear anchor rows while leaving relative orientation free.
+TEST(
+    VariationalIntegration,
+    AvbdBreakableSphericalPointJointConfigResetReengagesMovablePair)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setTimeStep(0.005);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
+  childPose.head<3>() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  pair.child.getParentJoint().setPosition(childPose);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.type = sx::comps::JointType::Spherical;
+  joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
+  joint.breakForce = 1e-18;
+
+  const Eigen::Vector3d parentAnchor(0.2, 0.1, 0.0);
+  const Eigen::Vector3d childAnchor(-0.1, 0.1, 0.0);
+  auto& config
+      = registry.emplace<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  config.localAnchorA = parentAnchor;
+  config.localAnchorB = childAnchor;
+  config.linearAxisMask = dvbd::kAvbdRigidJointAllAxesMask;
+  config.angularAxisMask = 0u;
+  config.startStiffness = std::numeric_limits<double>::infinity();
+  config.maxStiffness = std::numeric_limits<double>::infinity();
+
+  const Eigen::Matrix3d capturedRelativeRotation
+      = pair.parent.getWorldTransform().linear().transpose()
+        * pair.child.getWorldTransform().linear();
+  const auto anchorResidual = [&]() {
+    const Eigen::Vector3d parentAnchorWorld
+        = pair.parent.getWorldTransform() * parentAnchor;
+    const Eigen::Vector3d childAnchorWorld
+        = pair.child.getWorldTransform() * childAnchor;
+    return (childAnchorWorld - parentAnchorWorld).norm();
+  };
+  const auto relativeRotationChange = [&]() {
+    const Eigen::Matrix3d relativeRotation
+        = pair.parent.getWorldTransform().linear().transpose()
+          * pair.child.getWorldTransform().linear();
+    return (relativeRotation - capturedRelativeRotation).norm();
+  };
+  const auto applyOpposingOffsetForces = [&]() {
+    pair.parent.applyForce(
+        -4.0 * Eigen::Vector3d::UnitY(),
+        parentAnchor + 0.4 * Eigen::Vector3d::UnitX());
+    pair.child.applyForce(
+        4.0 * Eigen::Vector3d::UnitY(),
+        childAnchor - 0.4 * Eigen::Vector3d::UnitX());
+  };
+
+  world.enterSimulationMode();
+  applyOpposingOffsetForces();
+  world.step();
+
+  auto& liveJoint = registry.get<sx::comps::Joint>(jointEntity);
+  ASSERT_TRUE(liveJoint.broken);
+  EXPECT_LT(anchorResidual(), 1e-6);
+
+  double maxBrokenAnchorResidual = 0.0;
+  double maxBrokenRotationChange = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    applyOpposingOffsetForces();
+    world.step();
+    maxBrokenAnchorResidual
+        = std::max(maxBrokenAnchorResidual, anchorResidual());
+    maxBrokenRotationChange
+        = std::max(maxBrokenRotationChange, relativeRotationChange());
+  }
+  ASSERT_GT(maxBrokenAnchorResidual, 1e-4);
+  ASSERT_GT(maxBrokenRotationChange, 1e-4);
+
+  pair.parent.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+  pair.child.getParentJoint().setVelocity(Eigen::VectorXd::Zero(6));
+  liveJoint.breakForce = 1e6;
+  liveJoint.broken = false;
+
+  world.step();
+
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+  const auto& resetConfig
+      = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+  EXPECT_EQ(resetConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_EQ(resetConfig.angularAxisMask, 0u);
+  EXPECT_FALSE(liveJoint.broken);
+  EXPECT_LT(anchorResidual(), 1e-6);
+  EXPECT_GT(relativeRotationChange(), 1e-4);
+}
+
 // PLAN-104 AVBD articulated bridge: current-pose extracted private revolute
 // velocity motors between two movable links must honor finite effort bounds,
 // not become unbounded hard velocity targets after config generation.
