@@ -1393,6 +1393,32 @@ def test_rigid_workflow_latest_signals_prioritize_link_com_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_link_jacobian_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "link_jacobian_angular_speed": 0.62,
+            "link_jacobian_finite_difference_error": 1.0e-8,
+            "link_jacobian_linear_speed": 0.56,
+            "link_jacobian_power_error": 0.0,
+            "link_jacobian_tau0": -0.86,
+            "link_jacobian_tau1": -0.29,
+            "link_jacobian_world_body_gap": 0.13,
+            "solver": "world_multibody_link_jacobian",
+        }
+    )
+
+    assert highlights[:8] == [
+        "link jacobian linear speed: 0.56",
+        "link jacobian angular speed: 0.62",
+        "link jacobian world body gap: 0.13",
+        "link jacobian finite difference error: 1e-08",
+        "link jacobian tau0: -0.86",
+        "link jacobian tau1: -0.29",
+        "link jacobian power error: 0",
+        "solver: world_multibody_link_jacobian",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

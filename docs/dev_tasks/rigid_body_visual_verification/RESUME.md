@@ -2,34 +2,34 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 33 now gives the World multibody link center-of-mass
-offset row the same reviewable comparison shape as the surrounding rigid
-workflow rows while continuing to follow the DART 7 architecture harness from
-PR #2986. `rigid_link_center_of_mass` names
-`link_center_of_mass_offset_family` as its comparison axis in the panel and
+Latest local slice: row 34 now gives the World multibody link Jacobian row the
+same reviewable comparison shape as the surrounding rigid workflow rows while
+continuing to follow the DART 7 architecture/work-packet harness from PR
+#2986. `rigid_link_jacobian` names
+`link_origin_jacobian_mapping_family` as its comparison axis in the panel and
 capture metrics, records held-fixed contact-free World
-revolute-link/fixed-visual-geometry/mass/gravity/time-step context, exports
-top-level centered/positive/negative gravity torque, mirrored-angle,
-high-inertia ratio, and acceleration-residual metrics, and feeds decisive
-latest signals into the workflow review index.
+two-revolute-link/time-step/finite-difference context, exports top-level link
+linear/angular speed, world/body Jacobian gap, finite-difference residual,
+transpose-mapped torque, and power-residual metrics, and feeds decisive latest
+signals into the workflow review index.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed implementation commit before this slice was
-  `a6e4f924504 Surface multibody dynamics workflow signals`; if this slice has
-  been committed, expect one additional local commit for link center-of-mass
-  workflow signals.
+  `593e7fafa84 Surface link center of mass workflow signals`; if this slice has
+  been committed, expect one additional local commit for link Jacobian workflow
+  signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-33 diff first. If it is
+- If this slice is still uncommitted, inspect the row-34 diff first. If it is
   committed, continue from a fresh audit for the next concrete rigid
   GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-33 evidence direction before broadening further.
+  row-15-through-row-34 evidence direction before broadening further.
 
-Files touched by this row-33 slice:
+Files touched by this row-34 slice:
 
-- `python/examples/demos/scenes/rigid_link_center_of_mass.py`
+- `python/examples/demos/scenes/rigid_link_jacobian.py`
 - `scripts/capture_py_demo.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/tests/unit/test_capture_py_demo.py`
@@ -39,56 +39,71 @@ Files touched by this row-33 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 
-Row-33 link center-of-mass slice:
+Row-34 link Jacobian slice:
 
-- `rigid_link_center_of_mass` now exports
-  `comparison_axis=link_center_of_mass_offset_family`, held-fixed contact-free
-  World revolute-link/fixed-visual-geometry/mass/gravity/time-step context,
-  controls, lane labels, and top-level capture metrics for
-  centered/positive/negative gravity torque, mirrored angle sum, high-inertia
-  mass and acceleration ratios, and acceleration residual.
-- The link center-of-mass panel labels the comparison axis and held-fixed
-  context before the existing COM-offset diagnostics.
-- `scripts/capture_py_demo.py` prioritizes row-33 latest-signal keys so the
-  review card orders torque sign, mirrored-angle, high-inertia ratio, residual,
-  and solver signals before generic metrics.
+- `rigid_link_jacobian` now exports
+  `comparison_axis=link_origin_jacobian_mapping_family`, held-fixed
+  contact-free World two-revolute-link/time-step/finite-difference context,
+  controls, Jacobian term names, and top-level capture metrics for link
+  linear/angular speed, world/body Jacobian gap, finite-difference residual,
+  transpose-mapped torques, and power residual.
+- The link Jacobian panel labels the comparison axis and held-fixed context
+  before the existing mapping diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-34 latest-signal keys so the
+  review card orders speed, Jacobian gap, finite-difference residual, torques,
+  power residual, and solver signals before generic metrics.
 - `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
-  document the link center-of-mass offset axis and held-fixed context.
+  document the link-origin Jacobian mapping axis and held-fixed context.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-33 latest signals prioritize
-  centered/positive/negative gravity torque, mirrored angle sum, high-inertia
-  mass and acceleration ratios, acceleration residual, and solver.
-- Real row-33 workflow capture completed under
-  `build/captures/rigid_link_center_of_mass_row_33_1781303757` with
+  sync check, and the unit guard that row-34 latest signals prioritize link
+  speed, world/body Jacobian gap, finite-difference residual, torques, power
+  residual, and solver.
+- Real row-34 workflow capture completed under
+  `build/captures/rigid_link_jacobian_row_34_1781304169` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 33 reported `comparison_axis=link_center_of_mass_offset_family`,
-  held-fixed `contacts=off`, `joint_type=revolute`, `link_mass=2.0`,
-  `gravity_scale=1.0`, `solver=world_multibody_inertial_offsets`,
-  `time_step_ms=3.0`, `visual_geometry=fixed`, controls `executor_index=0.0`,
-  `com_offset=0.18`, `gravity_scale=1.0`, `inertia_scale=4.0`,
-  `link_mass=2.0`, `com_lanes=[centered, positive, negative, high_inertia]`,
-  `link_com_centered_gravity_torque=0.0`,
-  `link_com_positive_gravity_torque=3.181624744338047`,
-  `link_com_negative_gravity_torque=-3.181624744338047`,
-  `link_com_positive_negative_angle_sum=0.0`,
-  `link_com_high_mass_matrix_ratio=2.9480519480519467`,
-  `link_com_high_acceleration_ratio=0.37020890970141507`,
-  `link_com_max_acceleration_error=0.09943438126516568`, and history
-  `positive_max_abs_angle=0.44895353573752983`.
-- `review_index.html` showed the row-33 card with `axis`, `held fixed`,
+- Row 34 reported `comparison_axis=link_origin_jacobian_mapping_family`,
+  held-fixed `contacts=off`, `gravity=off`,
+  `joint_family=two_revolute_links`, `link_length=0.55`,
+  `finite_difference_eps=1e-6`, `solver=world_multibody_link_jacobian`,
+  `time_step_ms=4.0`, controls `motion_speed=0.85`, `elbow_phase=0.72`,
+  `wrench_force=1.35`, `wrench_angle_deg=28.0`, `wrench_moment=0.12`,
+  `jacobian_terms=[world_jacobian_twist, finite_difference_velocity, jacobian_transpose_wrench, world_body_jacobian_gap]`,
+  latest linear/angular speed about `0.5652/0.6190`,
+  finite-difference error about `1.52e-7`, power error `0`, world/body
+  Jacobian gap about `0.1272`, torques about `-0.8650/-0.2949`,
+  historical max link speed about `0.6677`, and historical max world/body gap
+  about `0.2055`.
+- `review_index.html` showed the row-34 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for centered/positive/negative gravity torque, mirrored angle sum,
-  high-inertia mass and acceleration ratios, acceleration residual, and solver.
-  The per-scene capture wrote a nonblank docked screenshot and 71 PNG frames
-  from the 72-frame workflow row capture under `build/captures/`.
+  ordering for link linear/angular speed, world/body Jacobian gap,
+  finite-difference residual, torques, power residual, and solver. The
+  per-scene capture wrote a nonblank docked screenshot with 2138 unique colors
+  and 95 PNG frames from the 96-frame workflow row capture under
+  `build/captures/`.
+
+Previous completed and verified slice: row 33 gives the World multibody link
+center-of-mass offset row the same reviewable comparison shape as the
+surrounding rigid workflow rows. `rigid_link_center_of_mass` names
+`link_center_of_mass_offset_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World
+revolute-link/fixed-visual-geometry/mass/gravity/time-step context, exports
+top-level centered/positive/negative gravity torque, mirrored-angle,
+high-inertia ratio, and acceleration-residual metrics, and feeds decisive
+latest signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-33 workflow capture completed under
+`build/captures/rigid_link_center_of_mass_row_33_1781303757` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 71 PNG frames.
 
 Previous completed and verified slice: row 32 gives the World multibody
 generalized dynamics terms row the same reviewable comparison shape as the

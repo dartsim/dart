@@ -352,11 +352,27 @@ class _RigidLinkJacobian:
                 metrics[key] = float(value)
             else:
                 metrics[key] = str(value)
+        jacobian_terms = [
+            "world_jacobian_twist",
+            "finite_difference_velocity",
+            "jacobian_transpose_wrench",
+            "world_body_jacobian_gap",
+        ]
 
         payload: dict[str, Any] = {
             "row": "rigid_link_jacobian",
+            "comparison_axis": "link_origin_jacobian_mapping_family",
             "solver": "world_multibody_link_jacobian",
             "scope": "contact_free_link_origin_jacobian_wrench_map",
+            "held_fixed": {
+                "solver": "world_multibody_link_jacobian",
+                "contacts": "off",
+                "gravity": "off",
+                "joint_family": "two_revolute_links",
+                "link_length": _LINK_LENGTH,
+                "finite_difference_eps": _FINITE_DIFFERENCE_EPS,
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "motion_speed": float(self.motion_speed),
@@ -371,9 +387,19 @@ class _RigidLinkJacobian:
                 "wrench_angle_deg": float(self.wrench_angle_deg),
                 "wrench_moment": float(self.wrench_moment),
             },
+            "jacobian_terms": jacobian_terms,
             "joint_names": [joint.name for joint in self.joints],
             "link": self.links[-1].name,
             "metrics": metrics,
+            "link_jacobian_linear_speed": metric_value("linear_speed"),
+            "link_jacobian_angular_speed": metric_value("angular_speed"),
+            "link_jacobian_world_body_gap": metric_value("world_body_gap"),
+            "link_jacobian_finite_difference_error": metric_value(
+                "finite_difference_error"
+            ),
+            "link_jacobian_tau0": metric_value("tau0"),
+            "link_jacobian_tau1": metric_value("tau1"),
+            "link_jacobian_power_error": metric_value("power_error"),
             "link_origin_world_x": float(link_origin[0]),
             "link_origin_world_y": float(link_origin[1]),
             "link_origin_world_z": float(link_origin[2]),
@@ -568,6 +594,12 @@ class _RigidLinkJacobian:
 
         metrics = self._last_metrics
         builder.separator()
+        builder.text("comparison axis: link-origin Jacobian mapping family")
+        builder.text(
+            "held fixed: World multibody link Jacobian | contacts off | gravity off | "
+            f"two revolute links | link length {_LINK_LENGTH:.2f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("mapping: link-origin world Jacobian | contacts: off")
         builder.text("twist = J_world(q) qdot; tau = J_world(q)^T wrench")
         builder.text(

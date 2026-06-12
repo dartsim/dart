@@ -2,52 +2,70 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 33 now gives the World multibody link center-of-mass
-offset row the same reviewable comparison shape as the surrounding rigid
-workflow rows while continuing to follow the DART 7 architecture harness from
-PR #2986. `rigid_link_center_of_mass` names
-`link_center_of_mass_offset_family` as its comparison axis in the panel and
+Latest local slice: row 34 now gives the World multibody link Jacobian row the
+same reviewable comparison shape as the surrounding rigid workflow rows while
+continuing to follow the DART 7 architecture/work-packet harness from PR
+#2986. `rigid_link_jacobian` names
+`link_origin_jacobian_mapping_family` as its comparison axis in the panel and
 capture metrics, records held-fixed contact-free World
-revolute-link/fixed-visual-geometry/mass/gravity/time-step context, exports
-top-level centered/positive/negative gravity torque, mirrored-angle,
-high-inertia ratio, and acceleration-residual metrics, and feeds decisive
-latest signals into the workflow review index.
+two-revolute-link/time-step/finite-difference context, exports top-level link
+linear/angular speed, world/body Jacobian gap, finite-difference residual,
+transpose-mapped torque, and power-residual metrics, and feeds decisive latest
+signals into the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_link_jacobian_maps_link_origin_twist_and_wrench`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-33 latest signals prioritize
-  centered/positive/negative gravity torque, mirrored angle sum, high-inertia
-  mass and acceleration ratios, acceleration residual, and solver.
-- Real row-33 workflow capture completed under
-  `build/captures/rigid_link_center_of_mass_row_33_1781303757` with
+  sync check, and the unit guard that row-34 latest signals prioritize link
+  speed, world/body Jacobian gap, finite-difference residual, torques, power
+  residual, and solver.
+- Real row-34 workflow capture completed under
+  `build/captures/rigid_link_jacobian_row_34_1781304169` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 33 reported `comparison_axis=link_center_of_mass_offset_family`,
-  held-fixed `contacts=off`, `joint_type=revolute`, `link_mass=2.0`,
-  `gravity_scale=1.0`, `solver=world_multibody_inertial_offsets`,
-  `time_step_ms=3.0`, `visual_geometry=fixed`, controls `executor_index=0.0`,
-  `com_offset=0.18`, `gravity_scale=1.0`, `inertia_scale=4.0`,
-  `link_mass=2.0`, `com_lanes=[centered, positive, negative, high_inertia]`,
-  `link_com_centered_gravity_torque=0.0`,
-  `link_com_positive_gravity_torque=3.181624744338047`,
-  `link_com_negative_gravity_torque=-3.181624744338047`,
-  `link_com_positive_negative_angle_sum=0.0`,
-  `link_com_high_mass_matrix_ratio=2.9480519480519467`,
-  `link_com_high_acceleration_ratio=0.37020890970141507`,
-  `link_com_max_acceleration_error=0.09943438126516568`, and history
-  `positive_max_abs_angle=0.44895353573752983`.
-- `review_index.html` showed the row-33 card with `axis`, `held fixed`,
+- Row 34 reported `comparison_axis=link_origin_jacobian_mapping_family`,
+  held-fixed `contacts=off`, `gravity=off`,
+  `joint_family=two_revolute_links`, `link_length=0.55`,
+  `finite_difference_eps=1e-6`, `solver=world_multibody_link_jacobian`,
+  `time_step_ms=4.0`, controls `motion_speed=0.85`, `elbow_phase=0.72`,
+  `wrench_force=1.35`, `wrench_angle_deg=28.0`, `wrench_moment=0.12`,
+  `jacobian_terms=[world_jacobian_twist, finite_difference_velocity, jacobian_transpose_wrench, world_body_jacobian_gap]`,
+  `link_jacobian_linear_speed=0.5652313951684093`,
+  `link_jacobian_angular_speed=0.6189723084927641`,
+  `link_jacobian_world_body_gap=0.12718827155381363`,
+  `link_jacobian_finite_difference_error=1.5230419578260712e-7`,
+  `link_jacobian_tau0=-0.8650415563734137`,
+  `link_jacobian_tau1=-0.2949394787795586`,
+  `link_jacobian_power_error=0.0`, and history
+  `max_linear_speed=0.667689072417214`,
+  `max_world_body_gap=0.20550675956994502`.
+- `review_index.html` showed the row-34 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for centered/positive/negative gravity torque, mirrored angle sum,
-  high-inertia mass and acceleration ratios, acceleration residual, and solver.
-- The per-scene capture wrote a nonblank docked screenshot and 71 PNG frames for
-  `rigid_link_center_of_mass` from the 72-frame workflow row capture under
-  `build/captures/`.
+  ordering for link linear/angular speed, world/body Jacobian gap,
+  finite-difference residual, torques, power residual, and solver.
+- The per-scene capture wrote a nonblank docked screenshot with 2138 unique
+  colors and 95 PNG frames for `rigid_link_jacobian` from the 96-frame workflow
+  row capture under `build/captures/`.
+
+Previous completed and verified slice: row 33 gives the World multibody link
+center-of-mass offset row the same reviewable comparison shape as the
+surrounding rigid workflow rows. `rigid_link_center_of_mass` names
+`link_center_of_mass_offset_family` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free World
+revolute-link/fixed-visual-geometry/mass/gravity/time-step context, exports
+top-level centered/positive/negative gravity torque, mirrored-angle,
+high-inertia ratio, and acceleration-residual metrics, and feeds decisive
+latest signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-33 workflow capture completed under
+`build/captures/rigid_link_center_of_mass_row_33_1781303757` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 71 PNG frames.
 
 Previous completed and verified slice: row 32 gives the World multibody
 generalized dynamics terms row the same reviewable comparison shape as the
@@ -179,16 +197,16 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `a6e4f924504 Surface multibody dynamics workflow signals`.
+  `593e7fafa84 Surface link center of mass workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
-  slice has been committed, expect the latest local commit to describe the
-  link center-of-mass workflow signals; otherwise inspect the uncommitted diff
-  for the row-33 follow-up.
+  slice has been committed, expect the latest local commit to describe the link
+  Jacobian workflow signals; otherwise inspect the uncommitted diff for the
+  row-34 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-33 review-index/evidence direction before broadening
+current row-15-through-row-34 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable

@@ -1291,6 +1291,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World multibody revolute links | contacts off | visual geometry fixed | link mass 2.0 | gravity scale 1.0 | time step 3.0 ms",
             ),
         ),
+        (
+            rigid_link_jacobian,
+            (
+                "text:comparison axis: link-origin Jacobian mapping family",
+                "text:held fixed: World multibody link Jacobian | contacts off | gravity off | two revolute links | link length 0.55 | time step 4.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:

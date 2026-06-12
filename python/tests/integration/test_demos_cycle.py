@@ -6932,8 +6932,18 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_link_jacobian"
+    assert capture_metrics["comparison_axis"] == "link_origin_jacobian_mapping_family"
     assert capture_metrics["solver"] == "world_multibody_link_jacobian"
     assert capture_metrics["scope"] == "contact_free_link_origin_jacobian_wrench_map"
+    assert capture_metrics["held_fixed"] == {
+        "solver": "world_multibody_link_jacobian",
+        "contacts": "off",
+        "gravity": "off",
+        "joint_family": "two_revolute_links",
+        "link_length": pytest.approx(0.55),
+        "finite_difference_eps": pytest.approx(1.0e-6),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert capture_metrics["time_step_ms"] == pytest.approx(4.0)
     assert capture_metrics["world_time"] == pytest.approx(controller.world.time)
     assert capture_metrics["motion_speed"] == pytest.approx(controller.motion_speed)
@@ -6960,6 +6970,12 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
     assert capture_metrics["controls"]["wrench_moment"] == pytest.approx(
         controller.wrench_moment
     )
+    assert capture_metrics["jacobian_terms"] == [
+        "world_jacobian_twist",
+        "finite_difference_velocity",
+        "jacobian_transpose_wrench",
+        "world_body_jacobian_gap",
+    ]
     assert capture_metrics["joint_names"] == [
         joint.name for joint in controller.joints
     ]
@@ -6972,6 +6988,27 @@ def test_rigid_link_jacobian_maps_link_origin_twist_and_wrench() -> None:
             float(metric_value)
         )
         assert capture_metrics[metric_key] == pytest.approx(float(metric_value))
+    assert capture_metrics["link_jacobian_linear_speed"] == pytest.approx(
+        float(metrics["linear_speed"])
+    )
+    assert capture_metrics["link_jacobian_angular_speed"] == pytest.approx(
+        float(metrics["angular_speed"])
+    )
+    assert capture_metrics["link_jacobian_world_body_gap"] == pytest.approx(
+        float(metrics["world_body_gap"])
+    )
+    assert capture_metrics["link_jacobian_finite_difference_error"] == pytest.approx(
+        float(metrics["finite_difference_error"])
+    )
+    assert capture_metrics["link_jacobian_tau0"] == pytest.approx(
+        float(metrics["tau0"])
+    )
+    assert capture_metrics["link_jacobian_tau1"] == pytest.approx(
+        float(metrics["tau1"])
+    )
+    assert capture_metrics["link_jacobian_power_error"] == pytest.approx(
+        float(metrics["power_error"])
+    )
 
     link_origin = _BASE_ANCHOR + controller._link_origin()
     assert capture_metrics["link_origin_world_x"] == pytest.approx(link_origin[0])
