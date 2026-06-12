@@ -23,17 +23,16 @@ Corpus matrix:
 - Final stop handoff (2026-06-12): the user explicitly directed the session to
   stop working further, only ensure the hand-off docs, and then literally stop.
   The active checkout before this docs-only handoff edit was
-  `avbd/source-row-extraction-precheck` at local HEAD `3732c21233d`
-  (`Record AVBD current-state gap audit`), tracking
-  `origin/avbd/source-row-extraction-precheck` and ahead by 13 local commits.
-  A short-lived `BM_AvbdPaperScaleHighRatioChainIterationSweep` prototype was
-  removed before this handoff; no iteration-sweep benchmark, packet, plot,
-  paper-number parity, or GPU claim should be assumed. No lint/build/test/CI,
-  `git diff --check`, PR refresh, push, PR mutation, branch cleanup, merge, or
-  stash operation was performed for this stop-only handoff by explicit user
-  direction. `RESUME.md` is the source of truth for the current branch
-  inventory, stash inventory, local-only commits, PR #2977 caveats, and future
-  recovery commands.
+  `avbd/source-row-extraction-precheck` at local HEAD `8e12c559938`
+  (`Add AVBD high-ratio iteration sweep benchmark`), tracking
+  `origin/avbd/source-row-extraction-precheck` and ahead by 14 local commits.
+  The iteration-sweep benchmark row exists, but no tracked sweep packet, plot,
+  same-hardware paper-number comparison, or GPU parity claim should be assumed.
+  No fresh lint/build/test/CI, `git diff --check`, PR refresh, push, PR
+  mutation, branch cleanup, merge, or stash operation was performed for this
+  stop-only handoff by explicit user direction. `RESUME.md` is the source of
+  truth for the current branch inventory, stash inventory, local-only commits,
+  PR #2977 caveats, and future recovery commands.
 - Latest current-state audit (2026-06-12): the next-gap wording was refreshed
   against the current C++/dartpy tests and benchmark rows. The evidence now
   shows that narrow breakable benchmark rows, public world-fixed reset,

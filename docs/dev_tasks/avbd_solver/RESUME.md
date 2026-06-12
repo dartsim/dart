@@ -61,13 +61,13 @@ Current checkout snapshot before this docs-only handoff edit:
 - Branch: `avbd/source-row-extraction-precheck`.
 - Upstream: `origin/avbd/source-row-extraction-precheck`.
 - Local HEAD:
-  `3732c21233d Record AVBD current-state gap audit`.
-- Status before this docs edit: clean, ahead of upstream by 13 commits.
-- A short-lived prototype for
-  `BM_AvbdPaperScaleHighRatioChainIterationSweep` was removed before this
-  handoff. Do not assume any iteration-sweep benchmark code, display-name
-  mapping, benchmark packet, plot, paper-number parity, or GPU claim exists
-  unless a future session implements and verifies it.
+  `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`.
+- Status before this docs edit: clean, ahead of upstream by 14 commits.
+- The `BM_AvbdPaperScaleHighRatioChainIterationSweep` benchmark row exists and
+  is wired into the display-name/dashboard-runner surfaces. Do not assume any
+  tracked sweep packet, plot data, same-hardware paper-number comparison, or
+  GPU parity claim exists unless a future session implements and verifies that
+  evidence.
 - This stop-only handoff intentionally ran no lint/build/test/CI,
   `git diff --check`, PR refresh, or hosted rerun. The user explicitly asked
   for no further verification and to stop after the hand-off docs.
@@ -77,6 +77,7 @@ Current checkout snapshot before this docs-only handoff edit:
 Local-only commits above `origin/avbd/source-row-extraction-precheck`, newest
 first:
 
+- `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`
 - `3732c21233d Record AVBD current-state gap audit`
 - `30c7e8f6239 Add AVBD direct fixed movable reset coverage`
 - `33247979e31 Add AVBD direct spherical movable reset coverage`
@@ -95,7 +96,7 @@ Current local branch inventory:
 
 | Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                    |
 | -------------------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `3732c21233d`         | Current consolidated continuation branch; ahead of origin by 13 commits before this docs edit.        |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `8e12c559938`         | Current consolidated continuation branch; ahead of origin by 14 commits before this docs edit.        |
 | `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch; do not mutate or rerun CI without explicit approval and a fresh PR status refresh.   |
 | `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.               |
 | `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired. |
