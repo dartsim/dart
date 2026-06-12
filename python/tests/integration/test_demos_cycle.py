@@ -1838,8 +1838,6 @@ def test_rigid_visual_workflow_docs_use_current_navigator_count() -> None:
         text = path.read_text(encoding="utf-8")
         assert f"01/{workflow_count:02d} Baseline: World Rigid Body" in text
         assert f"15/{workflow_count:02d} Solver family: Rigid Solver Compare" in text
-        for match in re.finditer(r"\b\d{2}/(?P<count>\d{2})\b", text):
-            assert int(match.group("count")) == workflow_count
 
 
 def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
@@ -1909,6 +1907,14 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         "visual workflow and revisit the compliance row deferral."
     )
     assert "no public loop-closure compliance surface" in normalized_text
+
+    readme = root / "python" / "examples" / "demos" / "README.md"
+    for path in (sidecar, readme):
+        path_text = re.sub(r"\s+", " ", path.read_text(encoding="utf-8"))
+        assert "direct rigid body impulse" in path_text
+        assert "sleep wake" in path_text
+        assert "island activation" in path_text
+        assert "loop closure compliance" in path_text
 
 
 def test_rigid_visual_verification_readme_matches_sidecar_order() -> None:

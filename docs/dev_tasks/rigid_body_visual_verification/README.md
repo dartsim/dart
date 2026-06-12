@@ -2,6 +2,16 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: the API-deferred gap audit still finds no public
+direct `RigidBody` impulse surface, no public sleep/wake or island activation
+surface, and no public loop-closure compliance/stiffness/damping surface. The
+in-viewer `Rigid Workflow` search now routes deferred-user terms such as
+`direct rigid body impulse`, `sleep wake`, `island activation`, and
+`loop closure compliance` to the closest current rows while preserving explicit
+non-claim caveats instead of adding speculative numbered rows. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `6 passed`.
+
 Latest local state: after the row-36 loop-closure implementation commit, a
 fresh full numbered workflow packet completed all 36 World Rigid Body rows in
 one `py-demo-capture -- --rigid-workflow` run. That packet exercises the same

@@ -186,7 +186,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     "rigid_body_modes": (
         "Which body mode should I choose?",
         ("Dynamic vs static vs kinematic lanes", "Static drift and path error"),
-        "Contact-free mode semantics row; contact-driven prescribed motion is routed later.",
+        "Contact-free mode semantics row; no sleep/wake or island activation API claim.",
     ),
     "rigid_free_flight": (
         "Do initial velocity, gravity, and spin evolve?",
@@ -201,7 +201,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     "rigid_external_loads": (
         "How do external loads move and spin bodies?",
         ("Mass-scaled acceleration", "Torque response and static drift"),
-        "Contact-free zero-gravity accumulator row; not a point-force or impulse verifier.",
+        "Contact-free zero-gravity accumulator row; no direct rigid-body impulse API claim.",
     ),
     "rigid_link_point_loads": (
         "Do point forces create lever-arm torque?",
@@ -511,6 +511,26 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
 }
 
 _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
+    "rigid_body_modes": (
+        "activation state",
+        "body activation",
+        "body deactivation",
+        "deactivation",
+        "island activation",
+        "sleep",
+        "sleep state",
+        "sleep wake",
+        "sleeping body",
+        "wake",
+    ),
+    "rigid_external_loads": (
+        "direct impulse",
+        "direct rigid body impulse",
+        "impulse kick",
+        "instant impulse",
+        "rigid body impulse",
+        "velocity impulse",
+    ),
     "rigid_step_diagnostics": (
         "step profile",
         "step profiling",
@@ -588,6 +608,16 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
     "rigid_stack_stability": ("sequential impulse vs ipc stack", "ipc stack"),
     "rigid_kinematic_driver": ("ipc kinematic",),
     "rigid_kinematic_normal_push": ("ipc normal", "sequential impulse normal"),
+    "rigid_loop_closure": (
+        "closure compliance",
+        "closure damping",
+        "closure stiffness",
+        "compliant loop closure",
+        "loop closure compliance",
+        "loop closure damping",
+        "loop closure stiffness",
+        "loop compliance",
+    ),
 }
 
 

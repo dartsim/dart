@@ -1849,6 +1849,37 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
     ][:1] == ["rigid_contact_solver_compare"]
 
 
+def test_rigid_workflow_search_routes_deferred_api_terms() -> None:
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("direct rigid body impulse")
+    ][:1] == ["rigid_external_loads"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("velocity impulse")
+    ][:1] == ["rigid_external_loads"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("sleep wake")
+    ][:1] == ["rigid_body_modes"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("island activation")
+    ][:1] == ["rigid_body_modes"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("loop closure compliance")
+    ][:1] == ["rigid_loop_closure"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("closure stiffness")
+    ][:1] == ["rigid_loop_closure"]
+
+    assert "no direct rigid-body impulse API claim" in (
+        RIGID_VISUAL_WORKFLOW_GUIDES["rigid_external_loads"].scope
+    )
+    assert "no sleep/wake or island activation API claim" in (
+        RIGID_VISUAL_WORKFLOW_GUIDES["rigid_body_modes"].scope
+    )
+    assert "not a compliance" in (
+        RIGID_VISUAL_WORKFLOW_GUIDES["rigid_loop_closure"].scope
+    )
+
+
 def test_rigid_workflow_guides_expose_capture_commands() -> None:
     assert len(RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS) == len(RIGID_VISUAL_WORKFLOW_GUIDES)
     for scene_id, frames, width, height, show_ui in RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS:

@@ -148,17 +148,20 @@ live `py-demos --scene` open command, a paired `py-demo-capture` command with
 frame/resolution/UI settings, and a ranked text filter over row ids, scene ids,
 labels, questions, signals, and explicit aliases such as `RigidBodySolver`,
 `SI`, `boxed LCP`, `ContactSolverMethod`, `Taskflow executor`,
-`backend/executor`, `worker count`, and `accelerated backend` that request
-in-viewer scene switches. Scope caveats
-remain visible in the row, but the filter ranks positive intent matches first
-so searches such as `contact`, `solver`, `step profile`, `backend comparison`,
-and `sequential impulse` do not get dominated by early rows that only mention
-what not to infer. Related-evidence searches such as `rigid_ipc_tunnel`,
-`rigid_ipc_edge_drop`, or `avbd prismatic` open the related shelf scene
-directly through the maintained route table. Comparison and parameter rows also
-label the comparison axis and held-fixed controls in the panel and capture
-metrics so solver, executor, contact-policy, workload-size, and
-parameter-family changes are not conflated.
+`backend/executor`, `worker count`, `accelerated backend`,
+`direct rigid body impulse`, `sleep wake`, `island activation`, and
+`loop closure compliance` that request in-viewer scene switches. Scope caveats
+remain visible in the row, so deferred public-API searches route to the closest
+current row without claiming unsupported impulse, activation, or compliance
+behavior. The filter ranks positive intent matches first so searches such as
+`contact`, `solver`, `step profile`, `backend comparison`, and
+`sequential impulse` do not get dominated by early rows that only mention what
+not to infer. Related-evidence searches such as `rigid_ipc_tunnel`,
+`rigid_ipc_edge_drop`, or `avbd prismatic` open the related shelf scene directly
+through the maintained route table. Comparison and parameter rows also label the
+comparison axis and held-fixed controls in the panel and capture metrics so
+solver, executor, contact-policy, workload-size, and parameter-family changes
+are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
 frame directories, live open commands, workflow-row rerun commands, direct
