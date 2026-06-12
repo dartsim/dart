@@ -3,48 +3,62 @@
 ## Fresh-Session Handoff (2026-06-11)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
-deformable row coverage with evidence against the native source corpus, but do
-not treat source-row overhead cleanup as a CPU-win, GPU, or paper-number gate.
-The parent bounded task is PR #2977,
-[`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
-on `avbd/source-row-perf-slice`. That branch has been pushed and is waiting on
-hosted CI. The active local continuation branch is now
-`avbd/source-row-extraction-precheck`, stacked on #2977.
+deformable row coverage with evidence against the native source corpus. Do not
+count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
+gates require dedicated corpus evidence.
 
-Current stop target for #2977 and the stacked continuation:
+Current stop state:
 
-- Merge latest `origin/main` into the published PR branch before pushing; this
-  checkout already merged `origin/main` at `7d05d7b9ea7`.
+- The active PR is #2977,
+  [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
+  on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
+  It has been pushed and includes the merge from `origin/main` at
+  `7d05d7b9ea7`.
+- #2977 is open, non-draft, milestone `DART 7.0`, base `main`, and currently
+  `BLOCKED` only because required hosted checks are queued or running. As of
+  this handoff, ReadTheDocs, CI Lint documentation, and several lightweight
+  matrix `changes` jobs have passed; CUDA Build, Linux/Windows jobs, CodeQL,
+  lint, Alt Linux repro, and dartpy wheel jobs are still pending/running. No new
+  compiler, test, or CodeQL failure is visible on the current head.
+- The active local checkout is `avbd/source-row-extraction-precheck`, with
+  merge head `6b3b7a21d05` plus this docs handoff commit on top. After this
+  handoff commit it is ahead of `origin/avbd/source-row-extraction-precheck` by
+  seven local commits. This stacked branch has merged
+  `avbd/source-row-perf-slice`, including the #2977 follow-up and latest
+  `origin/main`. The merge conflicts were docs-only in
+  `docs/dev_tasks/avbd_solver/README.md` and `RESUME.md`, and were resolved by
+  preserving both #2977 handoff status and the stacked continuation status.
+- The working tree was clean before this docs handoff edit and should be clean
+  after committing it. Do not add unrelated commits to #2977 while it waits on
+  hosted CI.
+
+Current #2977 technical scope:
+
 - Keep the source-row optimization narrow: no-contact worlds still skip the
   contact query and collision-shape capacity scan during
   `RigidBodyContactStage::prepare()`.
-- Fix the contact-scene regression by warming `World::queryContacts()` during
-  `prepare()` when rigid contacts are possible, then reserve AVBD contact
-  scratch from `max(collision-shape estimate, warmed query capacity)`.
+- Preserve the contact-scene fix: when rigid contacts are possible,
+  `prepare()` warms `World::queryContacts()` and reserves AVBD contact scratch
+  from the larger of the collision-shape estimate and warmed query capacity.
 - Do not reply to the Codecov bot comment
   `https://github.com/dartsim/dart/pull/2977#issuecomment-4686080725`. Treat
   it as addressed by the code/coverage-aware validation path and the next
   pushed coverage run.
-- After the final #2977 commit is pushed, watch #2977 only until the new checks
-  are clearly queued/running or a concrete blocker appears. The current #2977
-  head `5297462d34b` is queued with no runner assigned, so local AVBD work can
-  continue on the stacked extraction-precheck branch without adding unrelated
-  commits to #2977.
 
 CI diagnosis for the previous #2977 head `c4f8f5e3fd95`:
 
 - `CUDA Build` failed on self-hosted runner `dartsim-mark13-4`. The job API
-  shows step 8, `Build CUDA targets`, stuck `in_progress` with no completed
-  failure step, and the log ends after `nvidia-smi`. No compiler or test failure
-  was recorded.
+  showed step 8, `Build CUDA targets`, stuck `in_progress` with no completed
+  failure step, and the log ended after `nvidia-smi`. No compiler or test
+  failure was recorded.
 - `Security | CodeQL (cpp)` failed on self-hosted runner `dartsim-mark13-5`.
-  The job API shows step 8, `Build`, stuck `in_progress`; job logs are missing
-  (`log not found`). No CodeQL finding or compiler error was recorded.
+  The job API showed step 8, `Build`, stuck `in_progress`; job logs were
+  missing (`log not found`). No CodeQL finding or compiler error was recorded.
 - The Codecov bot comment reported patch coverage at `95.65217%` with one
   missing changed line in `dart/simulation/compute/world_step_stage.cpp`, while
   all Codecov statuses were passing.
 
-Local validation already run for this handoff:
+Local validation already run for #2977 head `5297462d34b`:
 
 - `pixi run -e cuda -- cmake --build build/cuda/cpp/Release --target test_world`
   passed.
@@ -52,66 +66,78 @@ Local validation already run for this handoff:
   passed in about 67 s.
 - `pixi run build` passed.
 - `pixi run test-unit` passed, 161/161 tests.
+- `pixi run lint` passed before the merge commit on
+  `avbd/source-row-extraction-precheck`.
 - `pixi run -e cuda test-all` was started earlier on
   `avbd/source-row-extraction-precheck` and stopped intentionally after the user
   redirected the task to #2977; do not claim full CUDA `test-all` evidence from
   that aborted run.
 
-Local branches at handoff snapshot:
+Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Snapshot head                                  | Note                                                                                                 |
-| -------------------------------------- | --------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                                  | Landed #2975-era branch; stale locally.                                                              |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `70e54bd00d8`                                  | Stacked follow-up branch with local WIP preserved in `stash@{0}`.                                    |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5f6306b9d6a` before this final handoff commit | Active #2977 branch; merged `origin/main` at `7d05d7b9ea7`.                                          |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                                  | Raw 33-hour checkpoint branch; keep as archival safety.                                              |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                                  | Unrelated local branch; do not touch during AVBD handoff.                                            |
-| `main`                                 | `origin/main`                                 | `906a6c0241f`                                  | Local `main` is stale relative to fetched `origin/main` `7d05d7b9ea7`; fast-forward before using it. |
+| Branch                                 | Upstream                                      | Local head                   | State and handling                                                                                                                                    |
+| -------------------------------------- | --------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `6b3b7a21d05` + docs handoff | Current checkout; ahead by seven commits after merging #2977 and committing this handoff. Stacked continuation branch; do not push until appropriate. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                | Active #2977 branch; pushed, waiting on hosted CI.                                                                                                    |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                                    |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                                    |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                | Unrelated local branch; do not touch during AVBD handoff.                                                                                             |
+| `main`                                 | `origin/main`                                 | `906a6c0241f`                | Local `main` is behind fetched `origin/main` `7d05d7b9ea7`; fast-forward before using it.                                                             |
 
-Local stashes at handoff snapshot:
+Remote-only AVBD split branches still visible:
 
-- `stash@{Thu Jun 11 17:24:44 2026}` on
-  `avbd/source-row-extraction-precheck`:
-  `codex-pr2977-switch-preserve-extraction-precheck-wip`. It contains the
-  extraction-precheck WIP plus the same contact-query warmup, a quaternion
-  normalization fast path/test, and dev-task notes. Apply selectively after
-  #2977 lands; do not blindly pop it.
-- `stash@{Thu Jun 11 14:09:50 2026}` on
-  `avbd/source-row-extraction-precheck`:
-  `codex-avbd-normalize-fastpath-wip`.
-- `stash@{Tue Jun 9 22:06:58 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `origin/avbd/core-row-solver` at `b8e34e4c495`.
+- `origin/avbd/world-integration-serialization` at `2af5f83c88a`.
+- `origin/avbd/variational-integrator-extensions` at `d826d010991`.
+
+Local stashes at this handoff:
+
+- `stash@{0}` on `avbd/source-row-extraction-precheck`:
+  `codex-pr2977-switch-preserve-extraction-precheck-wip`. It touches
+  `world_step_stage.cpp`, `rigid_block_kernel.hpp`, this dev-task README/RESUME,
+  and `test_avbd_rigid_block.cpp`. The `world_step_stage.cpp` hunk is the
+  contact-query warmup already present in #2977; do not reapply that hunk. The
+  still-relevant part is the quaternion normalization fast path/test plus any
+  matching dev-task notes.
+- `stash@{1}` on `avbd/source-row-extraction-precheck`:
+  `codex-avbd-normalize-fastpath-wip`. It contains the same quaternion
+  normalization fast path/test without the #2977 contact-query overlap.
+- `stash@{2}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-https-origin-main-merge-20260609220658`.
-- `stash@{Tue Jun 9 19:40:25 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `stash@{3}` on `feature/avbd-articulated-masked-rows`:
   `codex-temp-avbd-before-origin-main-merge`.
-- `stash@{Tue Jun 9 07:45:26 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `stash@{4}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-main-merge-20260609074526`.
-- `stash@{Tue Jun 9 06:01:27 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `stash@{5}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-main-merge-20260609060120`.
-- `stash@{Tue Jun 9 00:52:55 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `stash@{6}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-main-merge-20260609005244`.
-- `stash@{Mon Jun 8 22:53:23 2026}` on
-  `feature/avbd-articulated-masked-rows`:
+- `stash@{7}` on `feature/avbd-articulated-masked-rows`:
   `codex-avbd-pre-main-merge-20260608225323`.
 
 Fresh-session plan after this stop:
 
 1. Start with `git status --short --branch`, `git fetch origin main`, and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-2. If #2977 is green and mergeable, ask before merging; do not merge without
+2. If #2977 CI has failed, inspect only the newest failed run/job and keep any
+   fix limited to the prepare/cache-reserve behavior unless CI proves a separate
+   issue. Run `pixi run lint` before committing.
+3. If #2977 is green and mergeable, ask before merging; do not merge without
    explicit user approval.
-3. If #2977 needs another fix, keep it limited to the prepare/cache-reserve
-   behavior unless CI proves a separate issue.
-4. On `avbd/source-row-extraction-precheck`, apply only the still-relevant hunks
-   from `stash@{0}` after merging the latest parent branch. The quaternion
-   normalization fast path and extraction precheck work are separate from #2977.
-5. Clean local branches only after confirming their PRs have landed and after
-   asking the user. The branch inventory above is intentionally retained for
-   recovery.
+4. After #2977 lands, ask before branch cleanup. Likely cleanup candidates are
+   `avbd/source-row-perf-slice` and
+   `avbd/articulated-stiffness-roundtrip`; keep
+   `feature/avbd-articulated-masked-rows` as the raw checkpoint until the full
+   split AVBD work is safely landed, and leave
+   `feature/free-joint-energy-benchmarks` alone.
+5. Continue stacked work on `avbd/source-row-extraction-precheck` only after
+   merging the latest parent branch. Apply only the still-relevant hunks from
+   `stash@{0}` or `stash@{1}`; the quaternion normalization fast path is
+   separate from #2977, and the duplicate `world_step_stage.cpp` hunk should be
+   skipped.
+6. Keep updating this handoff with every plan/progress change that affects the
+   next session, including branch heads, stashes, PR state, validation, and
+   cleanup decisions.
 
 ## Last Session Summary
 

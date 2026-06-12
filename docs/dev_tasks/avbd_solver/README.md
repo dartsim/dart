@@ -9,6 +9,18 @@ Corpus matrix:
 
 ## Current Status
 
+- Handoff refresh: the active checkout is
+  `avbd/source-row-extraction-precheck`, with merge head `6b3b7a21d05` plus
+  this docs handoff commit on top. It is ahead of
+  `origin/avbd/source-row-extraction-precheck` by seven local commits after
+  merging the published #2977 branch into the stacked continuation. PR #2977
+  (`avbd/source-row-perf-slice`, head `5297462d34b`) is still open and blocked
+  only by hosted checks that are queued/running; ReadTheDocs and several
+  lightweight matrix changes jobs have passed, and no new compiler/test failure
+  is visible. No additional AVBD implementation should be added to #2977 while
+  that PR is waiting on CI. `RESUME.md` is the detailed source of truth for the
+  current plan, local branch inventory, stashes, validation, and branch-cleanup
+  rules for a fresh session.
 - Latest local follow-up: `RigidBodyContactStage::execute()` now uses
   storage-level AVBD point-joint and distance-spring prechecks before running
   the exact extraction views. This avoids scanning the same AVBD config sets
