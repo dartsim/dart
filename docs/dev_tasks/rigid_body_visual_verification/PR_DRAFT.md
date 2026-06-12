@@ -68,8 +68,9 @@
   contact-scale budget, baseline first-run diagnostics, contact inspection,
   collision casts, solver comparison, executor equivalence, contact-policy
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
-  stack stability, contact manipulation, fixed/breakage/one-DOF joint
-  constraint errors, and stack-packet physics/runtime fields in
+  stack stability, contact manipulation, kinematic driver,
+  fixed/breakage/one-DOF joint constraint errors, and stack-packet
+  physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -82,7 +83,7 @@
 
 ## Testing
 
-- Latest contact-manipulation capture-metrics follow-up:
+- Previous contact-manipulation capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
     - `1 passed`
   - `pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_manipulation_metrics_1781232293`
@@ -95,6 +96,24 @@
   - Not run after the user's explicit stop/no-further-verification instruction:
     broader workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`,
     and `git diff --check`.
+- Latest kinematic-driver capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc -q`
+    - `1 passed`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+    - `11 passed`
+  - `pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_kinematic_driver_metrics_1781232929`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `rigid_kinematic_driver`, solver
+      `ipc_kinematic_driver_with_si_caveat`, IPC grip/slip lane solvers `IPC`,
+      sequential caveat solver `SEQUENTIAL_IMPULSE`, and numeric ranges for
+      per-lane driver travel, box travel, slip, speed ratio, support gap,
+      contact count, step timing, time step, and world time
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest stack-stability capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered -q`
     - `1 passed`

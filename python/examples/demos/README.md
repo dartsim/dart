@@ -160,7 +160,7 @@ infer.
 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | Executor, friction, speed, backspin                   | Slip speed, roll ratio, spin change, energy, metrics        |
 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error, metrics      |
 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity, metrics       |
-| `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio                |
+| `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics       |
 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                    |
 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed            |
 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset          |
@@ -459,6 +459,10 @@ friction lets the support slip under the box, and the sequential-impulse lane
 shows the current static-like caveat for kinematic bodies. The panel exposes
 driver speed, grip friction, executor choice, driver travel, box travel, slip,
 speed ratio, support gap, and step timing.
+Capture metrics record the IPC grip/slip lanes, the sequential-impulse caveat
+lane, solver enums, friction modes, controls, per-lane driver travel, box
+travel, slip, speed ratio, support gap, contact count, status, step timing, and
+compact history ranges.
 
 The **`rigid_kinematic_normal_push`** scene keeps the next prescribed-motion
 question separate: what happens when a kinematic paddle moves normally into a

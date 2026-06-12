@@ -2,20 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Latest human instruction: stop extending the active DART 7 rigid-body visual
-verification implementation and focus only on handoff, without running any
-further verification. The contact-manipulation code/test/docs changes are being
-checkpointed with this handoff, but the broader workflow/doc drift guard,
-`pixi run lint`, bounded build, and `git diff --check` were intentionally not
-run after the stop instruction. Treat the slice as locally focused-tested and
-capture-smoked, not fully pre-commit validated.
+Latest continuation resumed the active DART 7 rigid-body visual-verification
+goal from pushed branch head `b68f216ebe9`. The next bounded row selected from
+this task state was `rigid_kinematic_driver`, because it already had live panel
+and replay diagnostics but did not export those signals into
+`py-demo-capture` manifests.
 
-Expected branch after this handoff commit is pushed:
-`feature/rigid-body-gui-visual-verification` should be clean and aligned with
-`origin/feature/rigid-body-gui-visual-verification`, with two new pushed
-checkpoints on top of `c2beab542e9` (`Expose rigid spin roll capture metrics`).
-Future pushes, PR creation, comments, review replies, CI retriggers, merges, or
-other GitHub mutations still require explicit maintainer/user approval.
+Expected branch after this local checkpoint:
+`feature/rigid-body-gui-visual-verification` should be clean and ahead of
+`origin/feature/rigid-body-gui-visual-verification` by one local completion
+commit on top of `b68f216ebe9` (`Expose rigid contact manipulation capture
+metrics`). Future pushes, PR creation, comments, review replies, CI retriggers,
+merges, or other GitHub mutations still require explicit maintainer/user
+approval.
 
 Recent checkpoints:
 
@@ -25,12 +24,13 @@ Recent checkpoints:
 - `d16c6200850` (`Complete rigid friction threshold capture docs`)
 - `c2beab542e9` (`Expose rigid spin roll capture metrics`)
 - `dfef5306aac` (`Expose rigid stack stability capture metrics`)
-- the local checkpoint containing this file (`Expose rigid contact manipulation capture metrics`)
+- `b68f216ebe9` (`Expose rigid contact manipulation capture metrics`)
+- the local checkpoint containing this file (`Expose rigid kinematic driver capture metrics`)
 
-Current handoff slice: `rigid_contact_manipulation` row capture metrics. The
+Current local slice: `rigid_kinematic_driver` row capture metrics. The
 local checkpoint touches:
 
-- `python/examples/demos/scenes/rigid_contact_manipulation.py`
+- `python/examples/demos/scenes/rigid_kinematic_driver.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -39,28 +39,40 @@ local checkpoint touches:
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 - `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
 
-What changed in code/test: row 22 now exposes
-`SceneSetup.info["capture_metrics"]` for the sequential-impulse versus IPC
-contact-manipulation scene. The payload exports row identity, solver pair,
-selected executor, launch/friction/pusher-mass controls, world time, per-solver
-target travel, pusher gap, contact count, target speed, lateral drift, goal
-error, status, step timing, travel divergence, and compact history ranges. The
-focused test now asserts the capture hook is present and that exported case
-values and histories mirror the live controller state.
+What changed in code/test: row 23 now exposes
+`SceneSetup.info["capture_metrics"]` for the IPC prescribed-motion kinematic
+driver row and its sequential-impulse caveat lane. The payload exports row
+identity, solver scope, selected executor, drive-speed/grip-friction controls,
+lane order, lane solver/friction modes, world time, per-lane driver travel, box
+travel, slip, speed ratio, support gap, contact count, status, step timing, and
+compact history ranges. The focused test now asserts the capture hook is
+present and that exported lane values and histories mirror the live controller
+state.
 
 Validation collected for this slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc -q`
   reported `1 passed`.
-- `pixi run py-demo-capture -- --scene rigid_contact_manipulation --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_manipulation_metrics_1781232293`
+- `pixi run py-demo-capture -- --scene rigid_kinematic_driver --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_kinematic_driver_metrics_1781232929`
   wrote a nonblank docked capture with 71 PNG frames and 72 scene-metrics
-  events. The manifest recorded top-level ranges for sequential-impulse and IPC
-  target travel, pusher gap, contact count, target speed, lateral drift, goal
-  error, step timing, travel divergence, time step, and world time.
-- Not run after the stop instruction: the broader
-  `test_demos_cycle.py` workflow/doc drift guard, `pixi run lint`, bounded
-  `pixi run build`, and `git diff --check`.
-- Stack-stability completion immediately before this slice:
+  events. The manifest recorded top-level ranges for IPC grip, IPC slip, and
+  sequential-impulse caveat driver travel, box travel, slip, speed ratio,
+  support gap, contact count, step timing, time step, and world time.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+  reported `11 passed`.
+- `pixi run lint` passed.
+- Bounded `DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
+- Contact-manipulation completion immediately before this slice:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
+  reported `1 passed`; the real docked capture under
+  `/tmp/dart_capture_contact_manipulation_metrics_1781232293` wrote 72
+  scene-metrics events. The broader workflow/doc drift guard, `pixi run lint`,
+  bounded build, and `git diff --check` were intentionally not run for that
+  slice after the user explicitly requested handoff without further
+  verification.
+- Stack-stability completion immediately before contact manipulation:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
   reported `10 passed`; the real docked capture under
   `/tmp/dart_capture_stack_stability_metrics_1781231606` wrote
@@ -79,13 +91,11 @@ Validation collected for this slice:
   passed.
 
 Immediate next step for a fresh session: verify the branch state with
-`git status -sb` and `git log --oneline --decorate -5`, then decide whether to
-run the skipped contact-manipulation validation gates before extending the
-workflow. After that, continue with the next bounded capture-metrics row. The
-likely next row is
-`rigid_kinematic_driver`, because it already owns driver travel, box travel,
-slip, speed ratio, support gap, status, and step-profile histories that should
-appear in docked capture manifests.
+`git status -sb` and `git log --oneline --decorate -5`, then continue the
+capture-metrics hardening pass. The likely next missing row is
+`rigid_joint_motor_limits`, because rows 24-28 already expose capture hooks
+while row 29 still only has live panel/replay diagnostics for motor speed,
+limit error, acceleration gap, effort cap, and step-profile histories.
 
 ## Last Session Summary
 
@@ -511,9 +521,10 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 
 ## Immediate Next Step
 
-Refresh validation as needed, then use `PR_DRAFT.md` after maintainer approval
-to commit/push/open a PR. Without that approval, keep the broader goal active
-and continue only with a distinct rigid-body feature gap from a fresh audit.
+Use the current handoff snapshot at the top of this file for live branch state.
+For the next implementation slice, continue the capture-metrics hardening pass
+at `rigid_joint_motor_limits` unless a fresh audit finds a higher-priority
+missing rigid-body GUI evidence gap.
 
 ## Context That Would Be Lost
 

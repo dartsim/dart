@@ -2534,7 +2534,42 @@ def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
         assert controller._box_history[case.key]
         assert controller._slip_history[case.key]
         assert controller._ratio_history[case.key]
+        assert controller._gap_history[case.key]
+        assert controller._contact_history[case.key]
         assert np.isfinite(float(metrics[case.key]["step_ms"]))
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_kinematic_driver"
+    assert capture_metrics["solver"] == "ipc_kinematic_driver_with_si_caveat"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["controls"]["drive_speed"] == pytest.approx(
+        controller.drive_speed
+    )
+    assert capture_metrics["controls"]["grip_friction"] == pytest.approx(
+        controller.grip_friction
+    )
+    assert capture_metrics["lane_order"] == [case.key for case in controller.cases]
+    assert set(capture_metrics["lanes"]) == {"ipc_grip", "ipc_slip", "si_caveat"}
+    assert capture_metrics["lanes"]["ipc_grip"]["rigid_body_solver"] == "IPC"
+    assert capture_metrics["lanes"]["ipc_slip"]["friction_mode"] == "zero"
+    assert (
+        capture_metrics["lanes"]["si_caveat"]["rigid_body_solver"]
+        == "SEQUENTIAL_IMPULSE"
+    )
+    assert capture_metrics["ipc_grip_box_travel"] == pytest.approx(
+        grip["box_travel"]
+    )
+    assert capture_metrics["ipc_slip_slip"] == pytest.approx(slip["slip"])
+    assert capture_metrics["si_caveat_driver_travel"] == pytest.approx(
+        caveat["driver_travel"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._driver_history["ipc_grip"])
+    )
+    assert capture_metrics["history"]["ipc_grip_max_box_travel"] > 0.07
+    assert capture_metrics["history"]["ipc_slip_max_slip"] > 0.08
+    assert capture_metrics["history"]["si_caveat_max_abs_driver_travel"] < 1.0e-6
 
 
 def test_rigid_kinematic_normal_push_exposes_normal_pusher_caveat() -> None:

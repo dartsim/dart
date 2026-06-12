@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _PLATFORM_HALF = np.array([0.78, 0.24, 0.05])
 _BOX_HALF = np.array([0.12, 0.12, 0.12])
@@ -97,6 +97,12 @@ class _RigidKinematicDriver:
             case.key: deque(maxlen=_HISTORY) for case in self.cases
         }
         self._ratio_history: dict[str, deque[float]] = {
+            case.key: deque(maxlen=_HISTORY) for case in self.cases
+        }
+        self._gap_history: dict[str, deque[float]] = {
+            case.key: deque(maxlen=_HISTORY) for case in self.cases
+        }
+        self._contact_history: dict[str, deque[float]] = {
             case.key: deque(maxlen=_HISTORY) for case in self.cases
         }
         self._step_ms_history: dict[str, deque[float]] = {
@@ -261,6 +267,8 @@ class _RigidKinematicDriver:
             *self._box_history.values(),
             *self._slip_history.values(),
             *self._ratio_history.values(),
+            *self._gap_history.values(),
+            *self._contact_history.values(),
             *self._step_ms_history.values(),
         ):
             history.clear()
@@ -334,6 +342,8 @@ class _RigidKinematicDriver:
             self._box_history[case.key].append(float(metrics["box_travel"]))
             self._slip_history[case.key].append(float(metrics["slip"]))
             self._ratio_history[case.key].append(float(metrics["speed_ratio"]))
+            self._gap_history[case.key].append(float(metrics["support_gap"]))
+            self._contact_history[case.key].append(float(metrics["contact_count"]))
             self._step_ms_history[case.key].append(float(metrics["step_ms"]))
 
     def _sync(self) -> None:
@@ -364,6 +374,131 @@ class _RigidKinematicDriver:
             renderables.extend(case.bridge.renderable_provider())
         return renderables
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+        lanes = {
+            case.key: {
+                "label": case.label,
+                "rigid_body_solver": case.solver.name,
+                "friction_mode": case.friction_mode,
+                "metrics": dict(self._last_metrics[case.key]),
+            }
+            for case in self.cases
+        }
+        driver_history = {
+            case.key: list(self._driver_history[case.key]) for case in self.cases
+        }
+        box_history = {
+            case.key: list(self._box_history[case.key]) for case in self.cases
+        }
+        slip_history = {
+            case.key: list(self._slip_history[case.key]) for case in self.cases
+        }
+        ratio_history = {
+            case.key: list(self._ratio_history[case.key]) for case in self.cases
+        }
+        gap_history = {
+            case.key: list(self._gap_history[case.key]) for case in self.cases
+        }
+        contact_history = {
+            case.key: list(self._contact_history[case.key]) for case in self.cases
+        }
+        step_ms_history = {
+            case.key: list(self._step_ms_history[case.key])
+            for case in self.cases
+        }
+
+        def lane_metric(key: str, metric_key: str) -> float:
+            return float(self._last_metrics[key][metric_key])
+
+        def max_abs(values: list[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        def min_abs(values: list[float]) -> float:
+            return min((abs(value) for value in values), default=0.0)
+
+        return {
+            "row": "rigid_kinematic_driver",
+            "solver": "ipc_kinematic_driver_with_si_caveat",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "controls": {
+                "drive_speed": float(self.drive_speed),
+                "grip_friction": float(self.grip_friction),
+            },
+            "lane_order": [case.key for case in self.cases],
+            "ipc_grip_solver_enum": self.cases[0].solver.name,
+            "ipc_grip_driver_travel": lane_metric("ipc_grip", "driver_travel"),
+            "ipc_grip_box_travel": lane_metric("ipc_grip", "box_travel"),
+            "ipc_grip_slip": lane_metric("ipc_grip", "slip"),
+            "ipc_grip_speed_ratio": lane_metric("ipc_grip", "speed_ratio"),
+            "ipc_grip_support_gap": lane_metric("ipc_grip", "support_gap"),
+            "ipc_grip_contact_count": lane_metric("ipc_grip", "contact_count"),
+            "ipc_grip_step_ms": lane_metric("ipc_grip", "step_ms"),
+            "ipc_slip_solver_enum": self.cases[1].solver.name,
+            "ipc_slip_driver_travel": lane_metric("ipc_slip", "driver_travel"),
+            "ipc_slip_box_travel": lane_metric("ipc_slip", "box_travel"),
+            "ipc_slip_slip": lane_metric("ipc_slip", "slip"),
+            "ipc_slip_speed_ratio": lane_metric("ipc_slip", "speed_ratio"),
+            "ipc_slip_support_gap": lane_metric("ipc_slip", "support_gap"),
+            "ipc_slip_contact_count": lane_metric("ipc_slip", "contact_count"),
+            "ipc_slip_step_ms": lane_metric("ipc_slip", "step_ms"),
+            "si_caveat_solver_enum": self.cases[2].solver.name,
+            "si_caveat_driver_travel": lane_metric("si_caveat", "driver_travel"),
+            "si_caveat_box_travel": lane_metric("si_caveat", "box_travel"),
+            "si_caveat_slip": lane_metric("si_caveat", "slip"),
+            "si_caveat_speed_ratio": lane_metric("si_caveat", "speed_ratio"),
+            "si_caveat_support_gap": lane_metric("si_caveat", "support_gap"),
+            "si_caveat_contact_count": lane_metric("si_caveat", "contact_count"),
+            "si_caveat_step_ms": lane_metric("si_caveat", "step_ms"),
+            "lanes": lanes,
+            "history": {
+                "samples": float(len(driver_history["ipc_grip"])),
+                "ipc_grip_max_driver_travel": max(
+                    driver_history["ipc_grip"], default=0.0
+                ),
+                "ipc_grip_max_box_travel": max(box_history["ipc_grip"], default=0.0),
+                "ipc_grip_max_abs_slip": max_abs(slip_history["ipc_grip"]),
+                "ipc_grip_max_speed_ratio": max(
+                    ratio_history["ipc_grip"], default=0.0
+                ),
+                "ipc_grip_min_abs_support_gap": min_abs(gap_history["ipc_grip"]),
+                "ipc_grip_max_contact_count": max(
+                    contact_history["ipc_grip"], default=0.0
+                ),
+                "ipc_slip_max_driver_travel": max(
+                    driver_history["ipc_slip"], default=0.0
+                ),
+                "ipc_slip_max_abs_box_travel": max_abs(box_history["ipc_slip"]),
+                "ipc_slip_max_slip": max(slip_history["ipc_slip"], default=0.0),
+                "ipc_slip_max_abs_speed_ratio": max_abs(ratio_history["ipc_slip"]),
+                "ipc_slip_min_abs_support_gap": min_abs(gap_history["ipc_slip"]),
+                "ipc_slip_max_contact_count": max(
+                    contact_history["ipc_slip"], default=0.0
+                ),
+                "si_caveat_max_abs_driver_travel": max_abs(
+                    driver_history["si_caveat"]
+                ),
+                "si_caveat_max_abs_box_travel": max_abs(box_history["si_caveat"]),
+                "si_caveat_max_abs_slip": max_abs(slip_history["si_caveat"]),
+                "si_caveat_max_abs_speed_ratio": max_abs(
+                    ratio_history["si_caveat"]
+                ),
+                "si_caveat_min_abs_support_gap": min_abs(gap_history["si_caveat"]),
+                "si_caveat_max_contact_count": max(
+                    contact_history["si_caveat"], default=0.0
+                ),
+                "max_step_ms": max(
+                    (value for values in step_ms_history.values() for value in values),
+                    default=0.0,
+                ),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -387,6 +522,12 @@ class _RigidKinematicDriver:
             },
             "ratio_history": {
                 key: list(values) for key, values in self._ratio_history.items()
+            },
+            "gap_history": {
+                key: list(values) for key, values in self._gap_history.items()
+            },
+            "contact_history": {
+                key: list(values) for key, values in self._contact_history.items()
             },
             "step_ms_history": {
                 key: list(values) for key, values in self._step_ms_history.items()
@@ -423,6 +564,8 @@ class _RigidKinematicDriver:
         self._restore_histories(self._box_history, state.get("box_history", {}))
         self._restore_histories(self._slip_history, state.get("slip_history", {}))
         self._restore_histories(self._ratio_history, state.get("ratio_history", {}))
+        self._restore_histories(self._gap_history, state.get("gap_history", {}))
+        self._restore_histories(self._contact_history, state.get("contact_history", {}))
         self._restore_histories(
             self._step_ms_history, state.get("step_ms_history", {})
         )
@@ -510,6 +653,7 @@ def build() -> SceneSetup:
             "sx_world": driver.primary_world,
             "rigid_kinematic_driver_controller": driver,
             "rigid_kinematic_driver_worlds": [case.world for case in driver.cases],
+            CAPTURE_METRICS_INFO_KEY: driver.capture_metrics,
             "replay_capture_state": driver.capture_replay_state,
             "replay_restore_state": driver.restore_replay_state,
             "replay_sync": driver._sync,

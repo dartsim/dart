@@ -219,6 +219,17 @@
 - [x] Kinematic-driver slice: `rigid_kinematic_driver` shows IPC prescribed
       tangential motion carrying a box through friction, a zero-friction slip
       baseline, and the current sequential-impulse static-like caveat.
+- [x] Kinematic-driver capture-metrics follow-up:
+      `rigid_kinematic_driver` now publishes IPC grip/slip lane identity, the
+      sequential-impulse caveat lane, executor, drive-speed/grip-friction
+      controls, per-lane solver/friction modes, driver travel, box travel,
+      slip, speed ratio, support gap, contact count, status, step timing, and
+      compact history ranges through the capture hook. The focused
+      kinematic-driver guard reported `1 passed`; the real docked 72-frame
+      capture wrote 72 scene-metrics events under
+      `/tmp/dart_capture_kinematic_driver_metrics_1781232929`; and the focused
+      workflow/doc drift guard reported `11 passed`. `pixi run lint`, bounded
+      default `pixi run build`, and `git diff --check` passed.
 - [x] Kinematic normal-push caveat slice:
       `rigid_kinematic_normal_push` shows explicit normal prescribed motion
       with IPC normal/heavy penetration-caveat lanes and a sequential-impulse
@@ -614,13 +625,12 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` on
-   `feature/rigid-body-gui-visual-verification`, then decide whether to run the
-   contact-manipulation validation gates skipped by the stop instruction before
-   continuing the capture-metrics hardening pass.
-2. The next likely implementation row is `rigid_kinematic_driver`, because it
-   is the next numbered contact-control row and already owns driver travel, box
-   travel, slip, speed ratio, support gap, status, and step-profile histories
-   that are useful in docked capture manifests.
+   `feature/rigid-body-gui-visual-verification`, then continue the
+   capture-metrics hardening pass one row at a time.
+2. The next likely missing capture-metrics row is `rigid_joint_motor_limits`,
+   because rows 24-28 already expose capture hooks while row 29 still only has
+   live panel/replay diagnostics for motor speed, limit error, acceleration gap,
+   effort cap, and step-profile histories.
 3. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
