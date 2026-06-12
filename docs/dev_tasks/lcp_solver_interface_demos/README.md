@@ -24,6 +24,8 @@
       error in the LCP py-demo.
 - [x] Pointed the high-mass-ratio stack demo metadata at solver-manifest stack
       contact benchmarks as well as the boxed world-step benchmark.
+- [x] Added GUI plots for billiard momentum, energy, and symmetry invariant
+      histories in the LCP py-demo.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -244,6 +246,24 @@ Observed results:
 - `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 - Benchmark listing showed `BM_LcpWorldStackContact/FrictionIndex/<solver>`
   rows and `BM_LcpWorldStackStep_BoxedLcp` rows.
+
+## Billiard Invariant Plot Checkpoint
+
+The live LCP panel now plots billiard momentum error, kinetic-energy error, and
+symmetry error histories for both the sequential impulse and boxed-LCP worlds.
+This keeps the table values and GUI time histories aligned for the billiards
+dealbreaker example.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+```
+
+Observed result:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
 
 ## Verification Snapshot
 

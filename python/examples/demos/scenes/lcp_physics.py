@@ -1413,6 +1413,30 @@ def build() -> SceneSetup:
         builder.plot_lines("Sequential ramp slide", list(sequential.ramp_slide_history))
         builder.plot_lines("Boxed LCP ramp slide", list(boxed_lcp.ramp_slide_history))
         builder.plot_lines(
+            "Sequential billiard momentum error",
+            list(sequential.momentum_error_history),
+        )
+        builder.plot_lines(
+            "Boxed LCP billiard momentum error",
+            list(boxed_lcp.momentum_error_history),
+        )
+        builder.plot_lines(
+            "Sequential billiard energy error",
+            list(sequential.energy_error_history),
+        )
+        builder.plot_lines(
+            "Boxed LCP billiard energy error",
+            list(boxed_lcp.energy_error_history),
+        )
+        builder.plot_lines(
+            "Sequential billiard symmetry error",
+            list(sequential.billiard_symmetry_history),
+        )
+        builder.plot_lines(
+            "Boxed LCP billiard symmetry error",
+            list(boxed_lcp.billiard_symmetry_history),
+        )
+        builder.plot_lines(
             "Sequential stack drift", list(sequential.stack_drift_history)
         )
         builder.plot_lines("Boxed LCP stack drift", list(boxed_lcp.stack_drift_history))

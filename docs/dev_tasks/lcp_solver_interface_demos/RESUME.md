@@ -16,7 +16,9 @@ comparison sweeps in the LCP py-demo metadata while keeping the exact
 benchmark. It then added `billiard_symmetry_error` to the live LCP py-demo so
 billiard symmetry is tracked alongside momentum and kinetic-energy error. The
 high-mass-ratio stack benchmark metadata now points at
-`BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp`.
+`BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp`. The live LCP panel
+also plots billiard momentum, energy, and symmetry invariant histories for both
+comparison worlds.
 
 ## Current Branch
 
@@ -98,6 +100,9 @@ solver/interface/demo gap at a time.
   benchmark across friction-index-capable solvers. The filter keeps the slash in
   `BM_LcpWorldStackContact/` to avoid matching the separate boxed contact
   assembly benchmark unintentionally.
+- The billiard invariant plot checkpoint added GUI plots for sequential and
+  boxed-LCP momentum error, energy error, and symmetry error histories. The
+  focused panel test passed 43 tests after this update.
 
 ## How to Resume
 

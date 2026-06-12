@@ -990,6 +990,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Worst residual,Slowest case"
         in builder.events
     )
+    for plot_prefix in (
+        "plot:Sequential billiard momentum error:",
+        "plot:Boxed LCP billiard momentum error:",
+        "plot:Sequential billiard energy error:",
+        "plot:Boxed LCP billiard energy error:",
+        "plot:Sequential billiard symmetry error:",
+        "plot:Boxed LCP billiard symmetry error:",
+    ):
+        assert any(event.startswith(plot_prefix) for event in builder.events)
 
 
 def test_lcp_physics_updates_live_metrics_headlessly() -> None:
