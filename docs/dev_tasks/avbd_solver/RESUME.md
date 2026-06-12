@@ -4,7 +4,50 @@
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Do not
-count the new breakable scale packet as a breakable-wall/fracture corpus,
+count the new breakable motor scale packet as a broad motor lifecycle corpus,
+breakable-wall/fracture corpus, CPU-win, GPU, paper-number, or source-demo
+parity gate without visual corpus, reference comparison, GPU, and
+same-hardware evidence.
+
+Current resumed slice: the public articulated breakable motor benchmark
+surface now has a validated benchmark-only scale packet,
+`avbd-breakable-motor-scale-packet.json`, generated from a real
+`BM_AvbdArticulatedBreakableMotorStep`,
+`BM_AvbdArticulatedPrismaticBreakableMotorStep`,
+`BM_AvbdArticulatedWorldPrismaticBreakableMotorStep`, and
+`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` run over 1, 8, and 32
+motors. The packet validates finite timing rows and exact `motors` plus
+`breakable_motors` counters for the same-multibody/world-link
+revolute/prismatic public motor row families.
+
+Validation for this slice:
+
+- `pixi run -- pytest python/tests/unit/test_write_avbd_breakable_motor_scale_packet.py -q`
+  passed, 6 tests.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
+  passed, no work to do.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdArticulated(BreakableMotor|PrismaticBreakableMotor|WorldPrismaticBreakableMotor|WorldRevoluteBreakableMotor)Step/(1|8|32)$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-breakable-motor-scale.json --benchmark_out_format=json'`
+  passed and produced all four articulated breakable motor row families over
+  1/8/32.
+- `pixi run -- python scripts/write_avbd_breakable_motor_scale_packet.py --benchmark-json /tmp/avbd-breakable-motor-scale.json`
+  passed and wrote the tracked packet.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. After this slice is committed,
+use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
+mutate PRs, or clean/delete branches without explicit user approval.
+
+Next preferred local gap after this slice remains broader visual
+breakable-wall/fracture corpus coverage, rigid contact persistence
+completeness, and source-demo CPU/GPU parity. Keep all claims narrow unless
+corpus or benchmark evidence supports them.
+
+## Previous Breakable Joint Scale Checkpoint (2026-06-12)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
+count the breakable joint scale packet as a breakable-wall/fracture corpus,
 CPU-win, GPU, paper-number, or source-demo parity gate without visual corpus,
 reference comparison, GPU, and same-hardware evidence.
 

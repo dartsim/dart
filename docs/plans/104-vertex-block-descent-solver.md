@@ -749,7 +749,13 @@ tracks the active break-force armed articulated prismatic motor path through
 world-anchored articulated prismatic motor path through
 `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep`, tracks the active
 world-anchored articulated revolute motor path through
-`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep`, and it
+`BM_AvbdArticulatedWorldRevoluteBreakableMotorStep`, and
+[`avbd-breakable-motor-scale-packet.json`](104-vertex-block-descent-solver/avbd-breakable-motor-scale-packet.json)
+now validates those four public articulated breakable motor benchmark rows over
+1, 8, and 32 motors with finite timing rows and exact `motors` plus
+`breakable_motors` counters. This remains benchmark-only scale evidence rather
+than a broad motor lifecycle, source-demo, GPU, or paper-number claim. The same
+dashboard slice also
 tracks the public free-rigid and
 articulated breakable fixed point-joint paths through
 `BM_AvbdRigidBreakableJointStep` and

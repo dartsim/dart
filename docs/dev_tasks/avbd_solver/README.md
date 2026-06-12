@@ -9,6 +9,19 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the public articulated breakable
+  motor benchmark surface now has a validated scale packet,
+  [`avbd-breakable-motor-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-motor-scale-packet.json),
+  generated from a real `BM_AvbdArticulatedBreakableMotorStep`,
+  `BM_AvbdArticulatedPrismaticBreakableMotorStep`,
+  `BM_AvbdArticulatedWorldPrismaticBreakableMotorStep`, and
+  `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep` run over 1, 8, and 32
+  motors. The packet validates finite timing rows and exact `motors` plus
+  `breakable_motors` counters for the same-multibody/world-link
+  revolute/prismatic public motor row families. This is benchmark-only scale
+  evidence for existing public motor break/reset rows; it is not a broad motor
+  lifecycle corpus, visual fracture/breakable-wall corpus, CPU-win, GPU, or
+  paper-number claim.
 - Latest resumed checkpoint (2026-06-12): the public fixed/spherical
   breakable point-joint benchmark surface now has a validated scale packet,
   [`avbd-breakable-joint-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-joint-scale-packet.json),

@@ -402,8 +402,11 @@ now records the public world-anchored articulated revolute motor break/reset
 scene's headless visual capture and
 `BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/1` benchmark. Focused
 integration coverage now also reverses its target velocity after reset and
-checks weak re-arm breaks again. Broad motor lifecycle coverage, GPU parity, and
-paper-number gates remain open.
+checks weak re-arm breaks again.
+[`avbd-breakable-motor-scale-packet.json`](avbd-breakable-motor-scale-packet.json)
+now validates the four public articulated breakable motor benchmark rows over
+1, 8, and 32 motors. Broad motor lifecycle coverage, source-demo comparison,
+GPU parity, and paper-number gates remain open.
 [`avbd-rigid-breakable-joint-packet.json`](avbd-rigid-breakable-joint-packet.json)
 and
 [`avbd-articulated-breakable-joint-packet.json`](avbd-articulated-breakable-joint-packet.json)
