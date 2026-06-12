@@ -204,7 +204,8 @@ void evaluatePointTriangleBarrierGradientsCuda(
     const std::vector<PointTriangleBarrierInput>& inputs,
     PointTriangleBarrierGradientResult& result);
 
-/// Evaluate private point-point barrier values, gradients, and Hessians on CUDA.
+/// Evaluate private point-point barrier values, gradients, and Hessians on
+/// CUDA.
 ///
 /// This packet extends local-kernel evidence to primitive Hessian assembly for
 /// the point-point family. It intentionally does not cover PSD projection,

@@ -51,9 +51,8 @@ point-triangle primitive barrier gradient, all four primitive-family tangent
 stencils, and now the first primitive-family barrier Hessian row. The overall
 barrier/friction row remains `in-progress` because broader Hessian assembly,
 PSD coupling, runtime contact rows, and the top-level/runtime speedup gate
-remain future evidence. Durable plan sidecars still need a normal follow-up
-sync for the point-point barrier-Hessian row after work resumes; this stop-only
-handoff intentionally updates the dev-task handoff surfaces first.
+remain future evidence. Durable plan sidecars now record the point-point
+barrier-Hessian packet as in-progress evidence, not completion.
 
 ## Last Evidence Gathered Before Stop
 
@@ -98,24 +97,27 @@ The point-point barrier-Hessian packet measured:
 - `point_point_barrier_hessian.sample_count = 65536`
 - `point_point_barrier_hessian.active_barrier_count = 59578`
 - `point_point_barrier_hessian.max_result_abs_error =
-  2.4868995751603507e-14`
+2.4868995751603507e-14`
 - `point_point_barrier_hessian.speedup = 2.2036790873726364`
 - `point_point_barrier_hessian.meets_speedup_gate = true`
 - top-level `max_result_abs_error = 3.982848877516439e-14`
 - top-level `speedup = 0.18351053106151646`
 - top-level `meets_speedup_gate = false`
 
-No additional validation was run after the critical stop request.
+No additional validation was run during that stop-only handoff. After
+continuation resumed, a fresh packet run measured
+`point_point_barrier_hessian.speedup = 1.1162432610528892`,
+`point_point_barrier_hessian.meets_speedup_gate = false`, top-level
+`speedup = 0.4709699971084976`, and top-level `meets_speedup_gate = false`.
 
 ## Resume Guidance
 
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
 2. Inspect the current branch, latest pushed commit, hosted CI, and new review
    comments before editing. Do not reply to bot comments.
-3. Continue on the same PR by first syncing the durable PLAN-083 plan sidecars
-   for the point-point barrier-Hessian row, then proceed with the remaining
-   runtime/parity gaps: broader Hessian assembly, PSD coupling, runtime contact
-   rows, and packet speedup gates.
+3. Continue on the same PR with the remaining runtime/parity gaps: broader
+   Hessian assembly, PSD coupling, runtime contact rows, and packet speedup
+   gates.
 4. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

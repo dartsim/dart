@@ -27,12 +27,11 @@ current hand-off package on #2978 adds a private CUDA point-point
 barrier-Hessian packet slice: private input/result contracts,
 `evaluatePointPointBarrierHessiansCuda`, a CUDA kernel/launcher, fixed and
 generated CPU/CUDA parity coverage, benchmark packet rows, packet writer/test
-coverage, and this dev-task handoff text. Durable plan sidecars still need a
-normal follow-up sync for the point-point barrier-Hessian row after work
-resumes; do that before claiming the row in `gpu-parity-packet.json`,
-`completion-audit.md`, `paper-deck-manifest.md`, or `docs/plans/dashboard.md`.
-No lint, build, test, benchmark, hosted-CI polling, or review action was run
-after the maintainer's no-verification stop directive.
+coverage, and this dev-task handoff text. Durable plan sidecars now record the
+point-point barrier-Hessian row as in-progress evidence in
+`gpu-parity-packet.json`, `completion-audit.md`, `paper-deck-manifest.md`, and
+`docs/plans/dashboard.md`. The stop-only handoff package itself did not run
+lint, build, test, benchmark, hosted-CI polling, or review actions.
 
 Latest PR #2978 checkpoint: the current branch adds private CUDA
 point-triangle primitive barrier-gradient parity plus point-triangle,
@@ -97,6 +96,18 @@ row remains `in-progress` because broader Hessian assembly, PSD coupling,
 runtime contact rows, and the top-level/runtime speedup gate remain future
 evidence. No lint, build, test, benchmark, PR-check polling, or fresh review
 request was run after the maintainer's critical stop request.
+
+Fresh validation checkpoint (2026-06-11): after continuation resumed, the
+branch passed `pixi run python scripts/check_plan083_gpu_parity_packet.py`,
+`pixi run python scripts/check_plan083_completion_audit.py`, focused
+packet/audit pytest (13 passed), `pixi run lint`, `pixi run build`, `pixi run
+test-unit` (161/161), `pixi run -e cuda build-cuda Release`, focused
+`test_barrier_friction_kernel_cuda` CTest, and `pixi run -e cuda
+bm-plan083-gpu-barrier-friction-packet`. The refreshed packet measured
+`point_point_barrier_hessian.max_result_abs_error=2.4868995751603507e-14`,
+`point_point_barrier_hessian.speedup=1.1162432610528892x`, and top-level
+`speedup=0.4709699971084976x` with `meets_speedup_gate=false`; keep the row
+`in-progress`.
 
 Continuation checkpoint (2026-06-11, edge-edge tangent-stencil slice): after
 implementation resumed, the same #2978 branch added private CUDA edge-edge
@@ -456,14 +467,15 @@ carries point-triangle and edge-edge contact-stencil filtering,
 winding-independent endpoint-linear point-triangle CCD, edge-edge
 CCD/line-search packets, scalar barrier/friction local kernels plus
 point-triangle primitive barrier gradients and point-triangle/edge-edge tangent
-stencils plus point-edge/point-point tangent stencils, reduced assembly/solve
-parity, reduced scene state-batch parity, and
+stencils plus point-edge/point-point tangent stencils, point-point primitive
+barrier-Hessian parity, reduced assembly/solve parity, reduced scene
+state-batch parity, and
 reduced ABD
 complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless their
 full row policy is satisfied: broad-phase/runtime GPU candidate construction,
-rigid curved trajectories, runtime scene line search, Hessian assembly, PSD
-coupling, sparse global solving, GPU `World::step`, paper-scale assets, and
-accepted reference timings remain future evidence.
+rigid curved trajectories, runtime scene line search, broader Hessian assembly,
+PSD coupling, sparse global solving, GPU `World::step`, paper-scale assets,
+and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 

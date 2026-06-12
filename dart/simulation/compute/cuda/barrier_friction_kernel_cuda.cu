@@ -884,8 +884,8 @@ __global__ void pointPointBarrierHessianKernel(
 
   const double stiffness
       = isfinite(input.stiffness) ? fmax(0.0, input.stiffness) : 0.0;
-  const BarrierScalar barrier
-      = c2ClampedLogBarrierDevice(squaredDistance, input.squaredActivationDistance);
+  const BarrierScalar barrier = c2ClampedLogBarrierDevice(
+      squaredDistance, input.squaredActivationDistance);
   if (barrier.active == 0u || !(stiffness > 0.0)) {
     return;
   }
@@ -903,12 +903,10 @@ __global__ void pointPointBarrierHessianKernel(
       const int colPoint = col < 3 ? 0 : 1;
       const int rowComponent = row % 3;
       const int colComponent = col % 3;
-      const double distanceHessian
-          = rowComponent == colComponent
-                ? (rowPoint == colPoint ? 2.0 : -2.0)
-                : 0.0;
-      barrierHessians
-          [hessianOffset + static_cast<std::size_t>(6 * row + col)]
+      const double distanceHessian = rowComponent == colComponent
+                                         ? (rowPoint == colPoint ? 2.0 : -2.0)
+                                         : 0.0;
+      barrierHessians[hessianOffset + static_cast<std::size_t>(6 * row + col)]
           = stiffness
             * (barrier.secondDerivative * distanceGradient[row]
                    * distanceGradient[col]

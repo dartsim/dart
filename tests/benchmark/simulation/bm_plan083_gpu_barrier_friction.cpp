@@ -226,12 +226,11 @@ cuda::PointPointBarrierInput makePointPointBarrierInput(const int i)
       0.15 * row,
       0.05 + 0.0005 * static_cast<double>(i % 17));
   const Eigen::Vector3d offset
-      = inactive
-            ? Eigen::Vector3d(0.9, 0.6, 0.5)
-            : Eigen::Vector3d(
-                0.04 + 0.001 * static_cast<double>(i % 23),
-                0.05 + 0.001 * static_cast<double>(i % 19),
-                0.06 + 0.001 * static_cast<double>(i % 29));
+      = inactive ? Eigen::Vector3d(0.9, 0.6, 0.5)
+                 : Eigen::Vector3d(
+                       0.04 + 0.001 * static_cast<double>(i % 23),
+                       0.05 + 0.001 * static_cast<double>(i % 19),
+                       0.06 + 0.001 * static_cast<double>(i % 29));
 
   cuda::PointPointBarrierInput input;
   writeVec3(input.pointA, a);
@@ -505,8 +504,7 @@ void evaluateCpu(
     }
     for (int row = 0; row < 6; ++row) {
       for (int col = 0; col < 6; ++col) {
-        result.barrierHessians[36 * i + static_cast<std::size_t>(
-                                             6 * row + col)]
+        result.barrierHessians[36 * i + static_cast<std::size_t>(6 * row + col)]
             = barrier.hessian(row, col);
       }
     }

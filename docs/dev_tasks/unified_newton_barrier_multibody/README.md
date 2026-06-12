@@ -18,8 +18,8 @@ barrier/friction packet, and the current hand-off package adds a private CUDA
 point-point primitive barrier-Hessian row. The latest point-point
 barrier-Hessian packet measured
 `max_result_abs_error=2.4868995751603507e-14` and
-`speedup=2.2036790873726364x`, while the top-level packet still measured
-`speedup=0.18351053106151646x` with `meets_speedup_gate=false`. The row remains
+`speedup=1.1162432610528892x`, while the top-level packet still measured
+`speedup=0.4709699971084976x` with `meets_speedup_gate=false`. The row remains
 `in-progress` because broader Hessian assembly, PSD coupling, runtime contact
 rows, and the top-level speedup gate remain future evidence.
 
@@ -35,11 +35,14 @@ Use `HANDOFF.md` plus `RESUME.md` as the fresh-session entry point; this
 hand-off step did not run new lint/build/test/benchmark gates after that
 directive.
 
+Durable sidecar sync (2026-06-11): `gpu-parity-packet.json`,
+`completion-audit.md`, `paper-deck-manifest.md`, and `docs/plans/dashboard.md`
+now record the point-point barrier-Hessian packet as in-progress evidence.
+
 Fresh-session continuation: first inspect #2978, the branch head, hosted CI, and
-new review comments. Then sync the durable PLAN-083 plan sidecars for the
-point-point barrier-Hessian row before continuing with broader Hessian
-assembly, PSD coupling, runtime contact rows, or speedup-gate work. Do not open
-another PLAN-083 PR.
+new review comments. Then continue with broader Hessian assembly, PSD coupling,
+runtime contact rows, or speedup-gate work on the same PR. Do not open another
+PLAN-083 PR.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
