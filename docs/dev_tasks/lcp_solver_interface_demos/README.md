@@ -1,6 +1,63 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-11 Current Continuation — Friction Coefficient Validation
+## 2026-06-11 Current Continuation — Advanced Solver Parameters
+
+The user later explicitly resumed the broad LCP solver/interface/demo goal, so
+the previous stop-only hand-off is historical. This continuation resumes from
+`17a994e3772 Reject negative LCP friction coefficients` on
+`feature/lcp-solver-interface-demos` and adds a bounded dartpy interface slice.
+
+Current slice:
+
+- dartpy now exposes `AdmmSolverParameters`, `SapSolverParameters`, and
+  `BoxedSemiSmoothNewtonSolverParameters` with DART 7 snake_case field names.
+- dartpy `AdmmSolver`, `SapSolver`, and `BoxedSemiSmoothNewtonSolver` now have
+  `parameters` properties backed by the existing C++ `setParameters()` /
+  `getParameters()` APIs.
+- Python LCP tests cover default values, round-tripping customized settings,
+  and solving a small boxed problem with customized advanced solver parameters.
+- The manual dartpy stubs, generated API boundary inventory, LCP roster lint
+  guard, and changelog describe the new Python-facing surface.
+
+Verification completed for this slice:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+```
+
+Observed results:
+
+- `pixi run build-py-dev` rebuilt and linked `dartpy`.
+- `python/tests/unit/math/test_lcp.py`: `66 passed`.
+- LCP solver roster check: `24 solvers, 24 standard, 16 boxed/findex`.
+- `pixi run lint` passed.
+
+Current observed state before this slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD:
+  `17a994e3772 Reject negative LCP friction coefficients`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 17]`.
+- Recent local checkpoints:
+  - `17a994e3772 Reject negative LCP friction coefficients`
+  - `e3353bf04b7 Expose LCP solver sweep metadata`
+  - `46700198d80 Expose LCP scale benchmark metadata`
+  - `197b55c335a Use concrete LCP contact registration gates`
+- No PR was associated with this branch when checked before the stop-only
+  hand-off.
+
+A fresh session should read this file and `RESUME.md`, inspect branch state,
+and continue from the verification/commit state recorded here. The broad LCP
+solver/interface/demo objective remains open; this dev-task folder must not be
+retired from this checkpoint.
+
+## 2026-06-11 Latest Completed Implementation — Friction Coefficient Validation
 
 The current continuation resumes from
 `e3353bf04b7 Expose LCP solver sweep metadata` on
@@ -35,6 +92,7 @@ Observed results:
 
 - C++ LCP suite: `100% tests passed, 0 tests failed out of 17`.
 - The focused dartpy LCP test reported `62 passed`.
+- `pixi run lint` passed before commit.
 
 ## 2026-06-11 Historical Stop-Only Hand-Off
 
@@ -196,6 +254,8 @@ That stop-only state is historical after the current continuation.
 - [x] Reject negative friction-index `hi` coefficients consistently across C++
       validation, effective-bound construction, generated invalid-problem
       coverage, and dartpy.
+- [x] Expose advanced boxed/friction-index solver parameter objects and
+      `parameters` properties in dartpy, with focused Python tests and lint.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -235,21 +295,11 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint extends the Python LCP demo's
-representative benchmark packet metadata so the generated representative
-command now reaches the active-set scale/production benchmark surfaces and the
-larger/stress/extreme singular-degenerate benchmark surfaces, plus the
-solver-specific tuning and robustness sweep surfaces, in addition to the
-existing live contact, solver-profile, concrete support-routing, generated
-coverage, and benchmark registration cleanup slices.
-
-Previous hand-off note: after the local implementation checkpoint
-`e3353bf04b7 Expose LCP solver sweep metadata`, the user instructed the agent
-to stop implementation and verification and only ensure hand-off docs. No
-further verification was run. Because repo policy requires `pixi run lint`
-before committing and the user explicitly forbade further verification, this
-final hand-off edit is intentionally docs-only working-tree context for a fresh
-session unless a later human/session chooses to lint, commit, and push it.
+The current implementation checkpoint is the in-progress dartpy advanced
+solver-parameter slice. It exposes Python parameter objects and solver
+`parameters` properties for ADMM, SAP, and boxed semi-smooth Newton so the
+Python demos can tune the same advanced boxed/friction-index solver knobs that
+the C++ benchmark sweeps exercise.
 
 ## Py-Demo Representative Scale Metadata Checkpoint
 
@@ -1566,13 +1616,12 @@ Observed result:
 
 ## Verification Snapshot
 
-Latest validation API checkpoint was verified with:
+Latest friction-coefficient validation checkpoint was verified before the
+current stop-only hand-off with:
 
 ```bash
-cmake --build build/default/cpp/Release \
-  --target UNIT_math_lcp_math_lcp_lcp_types dartpy --parallel "$JOBS"
-build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_types
-pixi run test-lcpsolver
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
 PYTHONPATH=build/default/cpp/Release/python:python \
   pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
 pixi run lint
@@ -1580,10 +1629,11 @@ pixi run lint
 
 Observed results:
 
-- `UNIT_math_lcp_math_lcp_lcp_types`: 13 tests passed.
 - `pixi run test-lcpsolver`: 17/17 tests passed.
-- `python/tests/unit/math/test_lcp.py`: 58 tests passed.
+- `python/tests/unit/math/test_lcp.py`: 62 tests passed.
 - `pixi run lint`: passed.
+
+No verification was run after the user's final stop-only instruction.
 
 Earlier branch checkpoints also ran the LCP demo panel tests and active
 friction benchmark smoke rows; re-run those if the next change touches demo
@@ -1591,17 +1641,10 @@ metadata, packet generation, or benchmark rows.
 
 ## Immediate Next Steps
 
-1. Resume on `feature/lcp-solver-interface-demos`.
-2. Check that the remote `feature/lcp-solver-interface-demos` branch contains
-   the final hand-off checkpoint from this session; do not trust the stale
-   local tracking ref without fetching.
-3. Fetch `origin/main`; if it moved, merge it into this branch before any later
-   push.
-4. Continue the LCP interface/demo audit from the next concrete gap. Good
-   starting points are any remaining manifest-level benchmark gates in
-   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` that still publish native
-   rows without generated-problem support checks or representative
-   contact-family probes, plus any solver whose native mathematical domain is
-   still broader in docs than in `supportsProblem(problem)`.
-5. Prefer a bounded checkpoint: one benchmark/demo routing gap, focused tests,
-   `pixi run lint`, then an additive commit.
+1. Resume on `feature/lcp-solver-interface-demos` and inspect
+   `git status --short --branch` plus
+   `git log --oneline --decorate --max-count=15`.
+2. Commit the current dartpy advanced-solver parameter slice locally if it has
+   not already been committed.
+3. If publishing later, fetch/merge latest `origin/main` before any push and do
+   not push without explicit approval.

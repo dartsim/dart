@@ -120,7 +120,8 @@ def parse_demo_roster() -> tuple[list[dict[str, Any]], dict[str, str]]:
 
 def parse_bound_solver_classes() -> dict[str, str]:
     pattern = re.compile(
-        r"bindLcpSolverClass<\s*(?P<class_name>[A-Za-z0-9_]+)\s*>\s*"
+        r"bind(?:Parameterized)?LcpSolverClass"
+        r"<\s*(?P<class_name>[A-Za-z0-9_]+)\s*>\s*"
         r'\(\s*m\s*,\s*"(?P<python_name>[A-Za-z0-9_]+)"\s*\)',
         re.DOTALL,
     )

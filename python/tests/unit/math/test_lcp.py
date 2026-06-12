@@ -253,6 +253,107 @@ def test_lcp_solver_capabilities_classify_problem_forms(solver_type: type) -> No
     assert solver.supports_problem(findex) is supports_findex
 
 
+def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
+    admm = dart.AdmmSolver()
+    admm_params = dart.AdmmSolverParameters()
+    assert admm_params.rho_init == pytest.approx(1.0)
+    assert admm_params.mu_prox == pytest.approx(1e-9)
+    assert admm_params.adaptive_rho_tolerance == pytest.approx(5.0)
+    assert admm_params.adaptive_rho
+
+    admm_params.rho_init = 0.35
+    admm_params.mu_prox = 1e-8
+    admm_params.adaptive_rho_tolerance = 2.5
+    admm_params.adaptive_rho = False
+    admm.parameters = admm_params
+    assert admm.parameters.rho_init == pytest.approx(0.35)
+    assert admm.parameters.mu_prox == pytest.approx(1e-8)
+    assert admm.parameters.adaptive_rho_tolerance == pytest.approx(2.5)
+    assert not admm.parameters.adaptive_rho
+
+    sap = dart.SapSolver()
+    sap_params = dart.SapSolverParameters()
+    assert sap_params.regularization == pytest.approx(1e-4)
+    assert sap_params.armijos_parameter == pytest.approx(1e-4)
+    assert sap_params.backtracking_factor == pytest.approx(0.5)
+    assert sap_params.max_line_search_iterations == 20
+
+    sap_params.regularization = 1e-3
+    sap_params.armijos_parameter = 5e-4
+    sap_params.backtracking_factor = 0.25
+    sap_params.max_line_search_iterations = 8
+    sap.parameters = sap_params
+    assert sap.parameters.regularization == pytest.approx(1e-3)
+    assert sap.parameters.armijos_parameter == pytest.approx(5e-4)
+    assert sap.parameters.backtracking_factor == pytest.approx(0.25)
+    assert sap.parameters.max_line_search_iterations == 8
+
+    newton = dart.BoxedSemiSmoothNewtonSolver()
+    newton_params = dart.BoxedSemiSmoothNewtonSolverParameters()
+    assert newton_params.max_line_search_steps == 10
+    assert newton_params.step_reduction == pytest.approx(0.5)
+    assert newton_params.sufficient_decrease == pytest.approx(1e-4)
+    assert newton_params.min_step == pytest.approx(1e-8)
+    assert newton_params.jacobian_regularization == pytest.approx(1e-10)
+
+    newton_params.max_line_search_steps = 12
+    newton_params.step_reduction = 0.35
+    newton_params.sufficient_decrease = 2e-4
+    newton_params.min_step = 1e-10
+    newton_params.jacobian_regularization = 1e-8
+    newton.parameters = newton_params
+    assert newton.parameters.max_line_search_steps == 12
+    assert newton.parameters.step_reduction == pytest.approx(0.35)
+    assert newton.parameters.sufficient_decrease == pytest.approx(2e-4)
+    assert newton.parameters.min_step == pytest.approx(1e-10)
+    assert newton.parameters.jacobian_regularization == pytest.approx(1e-8)
+
+
+@pytest.mark.parametrize(
+    ("solver", "params"),
+    (
+        (dart.AdmmSolver(), dart.AdmmSolverParameters()),
+        (dart.SapSolver(), dart.SapSolverParameters()),
+        (
+            dart.BoxedSemiSmoothNewtonSolver(),
+            dart.BoxedSemiSmoothNewtonSolverParameters(),
+        ),
+    ),
+)
+def test_customized_advanced_boxed_solvers_solve_boxed_problem(
+    solver: dart.LcpSolver, params: object
+) -> None:
+    if isinstance(params, dart.AdmmSolverParameters):
+        params.rho_init = 0.45
+        params.mu_prox = 1e-8
+        params.adaptive_rho_tolerance = 2.0
+    elif isinstance(params, dart.SapSolverParameters):
+        params.regularization = 1e-3
+        params.max_line_search_iterations = 12
+    elif isinstance(params, dart.BoxedSemiSmoothNewtonSolverParameters):
+        params.max_line_search_steps = 16
+        params.jacobian_regularization = 1e-8
+    solver.parameters = params
+
+    problem = dart.LcpProblem(
+        np.eye(2), np.array([0.25, 0.75]), np.zeros(2), np.ones(2)
+    )
+    options = dart.LcpOptions.high_accuracy()
+    options.max_iterations = 120
+    options.validate_solution = False
+
+    result, solution = solver.solve(problem, options=options)
+
+    assert solver.supports_problem(problem)
+    assert result.status in (
+        dart.LcpSolverStatus.SUCCESS,
+        dart.LcpSolverStatus.MAX_ITERATIONS,
+    )
+    assert solution.shape == (2,)
+    assert np.all(solution >= problem.lo - 1e-8)
+    assert np.all(solution <= problem.hi + 1e-8)
+
+
 def test_lcp_solver_supports_problem_uses_default_standard_tolerance() -> None:
     A = np.eye(2)
     near_standard = dart.LcpProblem(

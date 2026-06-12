@@ -1,14 +1,83 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality — 2026-06-11 Friction Coefficient Validation
+## Current Reality — 2026-06-11 Advanced Solver Parameters
 
-The current continuation resumes from
-`e3353bf04b7 Expose LCP solver sweep metadata` on
-`feature/lcp-solver-interface-demos`. The previous stop-only hand-off edits in
-this file and the dev-task README are preserved, and this continuation adds a
-bounded LCP problem-interface validation slice.
+The user later explicitly resumed the broad LCP solver/interface/demo goal, so
+the prior stop-only hand-off is now historical. This continuation resumes from
+`17a994e3772 Reject negative LCP friction coefficients` on
+`feature/lcp-solver-interface-demos` and adds a bounded dartpy interface slice.
 
-The current implementation slice:
+Current implementation slice:
+
+- Exposes `AdmmSolverParameters`, `SapSolverParameters`, and
+  `BoxedSemiSmoothNewtonSolverParameters` through dartpy with DART 7 snake_case
+  field names.
+- Adds `parameters` properties to dartpy `AdmmSolver`, `SapSolver`, and
+  `BoxedSemiSmoothNewtonSolver`, forwarding to the existing C++
+  `setParameters()` / `getParameters()` APIs.
+- Updates the manual dartpy type stubs and Python LCP tests so Python demos can
+  tune the same advanced boxed and friction-index solver knobs used by C++
+  benchmark sweeps such as `BM_LcpAdmmRhoSweep`,
+  `BM_LcpSapRegularizationSweep`, and
+  `BM_LcpBoxedSemiSmoothNewtonLineSearchSweep`.
+- Updates `CHANGELOG.md`, the LCP roster lint guard, the generated API
+  boundary inventory, and these dev-task docs.
+
+Verification completed for this slice:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+```
+
+Observed results:
+
+- `pixi run build-py-dev` rebuilt and linked `dartpy`.
+- `python/tests/unit/math/test_lcp.py`: `66 passed`.
+- LCP solver roster check: `24 solvers, 24 standard, 16 boxed/findex`.
+- `pixi run lint` passed.
+
+Observed repository state before this slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD:
+  `17a994e3772 Reject negative LCP friction coefficients`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 17]`.
+- Recent local checkpoints:
+  - `17a994e3772 Reject negative LCP friction coefficients`
+  - `e3353bf04b7 Expose LCP solver sweep metadata`
+  - `46700198d80 Expose LCP scale benchmark metadata`
+  - `197b55c335a Use concrete LCP contact registration gates`
+- No PR was associated with this branch when checked before the stop-only
+  hand-off.
+
+Fresh-session resume sequence:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status --short --branch
+git log --oneline --decorate --max-count=15
+```
+
+Then read:
+
+- `docs/ai/principles.md`
+- `docs/dev_tasks/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- this file
+
+Do not treat this slice as completion of the broad LCP solver/interface/demo
+objective. Continue one bounded DART 7 LCP interface, solver completeness,
+demo, benchmark, or performance gap at a time.
+
+## Latest Completed Implementation — 2026-06-11 Friction Coefficient Validation
+
+The latest committed implementation slice:
 
 - Rejects friction-index rows with negative stored upper coefficients `hi[i]`
   in shared problem validation. DART's public LCP docs define this slot as the
@@ -36,25 +105,7 @@ Observed results:
 
 - C++ LCP suite: `100% tests passed, 0 tests failed out of 17`.
 - The focused dartpy LCP test reported `62 passed`.
-
-Fresh-session resume sequence:
-
-```bash
-git checkout feature/lcp-solver-interface-demos
-git status --short --branch
-git log --oneline --decorate --max-count=15
-```
-
-Then read:
-
-- `docs/ai/principles.md`
-- `docs/dev_tasks/README.md`
-- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
-- this file
-
-Do not treat this slice as completion of the broad LCP solver/interface/demo
-objective. Continue one bounded DART 7 LCP interface, solver completeness,
-demo, benchmark, or performance gap at a time.
+- `pixi run lint` passed before commit.
 
 ## Historical Hand-Off — 2026-06-11 Stop-Only Point
 
@@ -87,7 +138,7 @@ rechecked during the current continuation. Existing tests intentionally use
 effective tangent bounds from `hi`; do not tighten that behavior without a
 separate design decision.
 
-## Latest Completed Implementation — 2026-06-11 Py-Demo Metadata
+## Previous Completed Implementation — 2026-06-11 Py-Demo Metadata
 
 The latest completed implementation slices extend the Python LCP demo's
 representative benchmark packet metadata:
@@ -705,16 +756,10 @@ push.
 
 ## Immediate Next Step
 
-Continue the broader LCP interface/demo audit from the next concrete gap. Good
-starting points after the Python demo concrete native-case profile slice are
-remaining tests or demos that still summarize native rows without checking the
-concrete generated problem. Audit `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
-carefully before changing it because some manifest-level checks may
-intentionally verify the manifest categories rather than concrete native
-routing. Also audit any solver whose documented native mathematical domain is
-still broader than its concrete `supportsProblem(problem)` predicate, and GUI
-demo packets that still lack clear apples-to-apples benchmark coverage. Do not
-treat the broad LCP objective as complete.
+Commit the current advanced-solver dartpy parameter slice locally if it has not
+already been committed. Do not push without explicit approval. After that,
+continue the broader LCP interface/demo audit from the next concrete gap. Do
+not treat the broad LCP objective as complete.
 
 ## Context That Would Be Lost
 

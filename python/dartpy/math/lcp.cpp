@@ -94,6 +94,19 @@ void bindLcpSolverClass(nb::module_& m, const char* name)
       nb::new_([]() { return std::make_shared<Solver>(); }));
 }
 
+template <typename Solver>
+void bindParameterizedLcpSolverClass(nb::module_& m, const char* name)
+{
+  nb::class_<Solver, LcpSolver>(m, name)
+      .def(nb::new_([]() { return std::make_shared<Solver>(); }))
+      .def_prop_rw(
+          "parameters",
+          [](const Solver& self) { return self.getParameters(); },
+          [](Solver& self, const typename Solver::Parameters& params) {
+            self.setParameters(params);
+          });
+}
+
 std::pair<LcpResult, Eigen::VectorXd> solveLcp(
     LcpSolver& solver,
     const LcpProblem& problem,
@@ -185,6 +198,41 @@ void defLcp(nb::module_& m)
           nb::arg("max_iterations") = 100)
       .def_static("high_accuracy", &LcpOptions::highAccuracy)
       .def_static("real_time", &LcpOptions::realTime);
+
+  nb::class_<AdmmSolver::Parameters>(m, "AdmmSolverParameters")
+      .def(nb::init<>())
+      .def_rw("rho_init", &AdmmSolver::Parameters::rhoInit)
+      .def_rw("mu_prox", &AdmmSolver::Parameters::muProx)
+      .def_rw(
+          "adaptive_rho_tolerance",
+          &AdmmSolver::Parameters::adaptiveRhoTolerance)
+      .def_rw("adaptive_rho", &AdmmSolver::Parameters::adaptiveRho);
+
+  nb::class_<SapSolver::Parameters>(m, "SapSolverParameters")
+      .def(nb::init<>())
+      .def_rw("regularization", &SapSolver::Parameters::regularization)
+      .def_rw("armijos_parameter", &SapSolver::Parameters::armijosParameter)
+      .def_rw("backtracking_factor", &SapSolver::Parameters::backtrackingFactor)
+      .def_rw(
+          "max_line_search_iterations",
+          &SapSolver::Parameters::maxLineSearchIterations);
+
+  nb::class_<BoxedSemiSmoothNewtonSolver::Parameters>(
+      m, "BoxedSemiSmoothNewtonSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "max_line_search_steps",
+          &BoxedSemiSmoothNewtonSolver::Parameters::maxLineSearchSteps)
+      .def_rw(
+          "step_reduction",
+          &BoxedSemiSmoothNewtonSolver::Parameters::stepReduction)
+      .def_rw(
+          "sufficient_decrease",
+          &BoxedSemiSmoothNewtonSolver::Parameters::sufficientDecrease)
+      .def_rw("min_step", &BoxedSemiSmoothNewtonSolver::Parameters::minStep)
+      .def_rw(
+          "jacobian_regularization",
+          &BoxedSemiSmoothNewtonSolver::Parameters::jacobianRegularization);
 
   nb::class_<LcpProblem>(m, "LcpProblem")
       .def(
@@ -283,15 +331,15 @@ void defLcp(nb::module_& m)
       m, "FischerBurmeisterNewtonSolver");
   bindLcpSolverClass<PenalizedFischerBurmeisterNewtonSolver>(
       m, "PenalizedFischerBurmeisterNewtonSolver");
-  bindLcpSolverClass<BoxedSemiSmoothNewtonSolver>(
+  bindParameterizedLcpSolverClass<BoxedSemiSmoothNewtonSolver>(
       m, "BoxedSemiSmoothNewtonSolver");
 
   bindLcpSolverClass<InteriorPointSolver>(m, "InteriorPointSolver");
   bindLcpSolverClass<MprgpSolver>(m, "MprgpSolver");
   bindLcpSolverClass<ShockPropagationSolver>(m, "ShockPropagationSolver");
   bindLcpSolverClass<StaggeringSolver>(m, "StaggeringSolver");
-  bindLcpSolverClass<AdmmSolver>(m, "AdmmSolver");
-  bindLcpSolverClass<SapSolver>(m, "SapSolver");
+  bindParameterizedLcpSolverClass<AdmmSolver>(m, "AdmmSolver");
+  bindParameterizedLcpSolverClass<SapSolver>(m, "SapSolver");
 }
 
 } // namespace dart::python_nb

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 __all__: list[str] = [
     "AdmmSolver",
+    "AdmmSolverParameters",
     "AngleAxis",
     "ApgdSolver",
     "BaraffSolver",
     "BgsSolver",
     "BlockedJacobiSolver",
     "BoxedSemiSmoothNewtonSolver",
+    "BoxedSemiSmoothNewtonSolverParameters",
     "DantzigSolver",
     "DirectSolver",
     "FischerBurmeisterNewtonSolver",
@@ -34,6 +36,7 @@ __all__: list[str] = [
     "SO3",
     "SO3Tangent",
     "SapSolver",
+    "SapSolverParameters",
     "ShockPropagationSolver",
     "StaggeringSolver",
     "SubspaceMinimizationSolver",
@@ -234,6 +237,31 @@ class LcpOptions:
     @staticmethod
     def real_time() -> LcpOptions: ...
 
+class AdmmSolverParameters:
+    def __init__(self) -> None: ...
+
+    rho_init: float
+    mu_prox: float
+    adaptive_rho_tolerance: float
+    adaptive_rho: bool
+
+class SapSolverParameters:
+    def __init__(self) -> None: ...
+
+    regularization: float
+    armijos_parameter: float
+    backtracking_factor: float
+    max_line_search_iterations: int
+
+class BoxedSemiSmoothNewtonSolverParameters:
+    def __init__(self) -> None: ...
+
+    max_line_search_steps: int
+    step_reduction: float
+    sufficient_decrease: float
+    min_step: float
+    jacobian_regularization: float
+
 class LcpProblem:
     @overload
     def __init__(
@@ -344,6 +372,8 @@ class PenalizedFischerBurmeisterNewtonSolver(LcpSolver):
     def __init__(self) -> None: ...
 
 class BoxedSemiSmoothNewtonSolver(LcpSolver):
+    parameters: BoxedSemiSmoothNewtonSolverParameters
+
     def __init__(self) -> None: ...
 
 class InteriorPointSolver(LcpSolver):
@@ -359,9 +389,13 @@ class StaggeringSolver(LcpSolver):
     def __init__(self) -> None: ...
 
 class AdmmSolver(LcpSolver):
+    parameters: AdmmSolverParameters
+
     def __init__(self) -> None: ...
 
 class SapSolver(LcpSolver):
+    parameters: SapSolverParameters
+
     def __init__(self) -> None: ...
 
 class Isometry3:

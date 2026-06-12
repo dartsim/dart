@@ -1423,6 +1423,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     problem validation and effective-bound construction, keeping the public
     DART 7 problem interface aligned with the documented `hi = +mu`
     convention instead of silently normalizing invalid coefficients.
+  - Exposed dartpy parameter objects and `parameters` properties for
+    `AdmmSolver`, `SapSolver`, and `BoxedSemiSmoothNewtonSolver`, allowing
+    Python demos to tune the advanced boxed/friction-index solver settings used
+    by the matching C++ benchmark sweeps.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard
