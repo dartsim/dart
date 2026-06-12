@@ -726,8 +726,10 @@ pixi run py-demo-capture -- --rigid-workflow \
 
 For long review packets, add `--continue-on-failure` when later rows should
 still be captured after one row fails. The manifest records
-`continue_on_failure=true`; the final workflow status and process exit code
-still report failure if any selected row failed.
+`continue_on_failure=true` plus a `failed_rows` list, and
+`review_index.html` shows a Failed Rows summary with rerun commands. The final
+workflow status and process exit code still report failure if any selected row
+failed.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --include-related \

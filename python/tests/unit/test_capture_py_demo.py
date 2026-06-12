@@ -407,6 +407,7 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["status"] == "planned"
     assert manifest["capture_count"] == len(specs)
     assert manifest["completed_count"] == 0
+    assert manifest["failed_rows"] == []
     assert manifest["guidance_complete"] is True
     assert manifest["guidance_missing_count"] == 0
     assert manifest["guidance_missing_rows"] == []
@@ -1094,6 +1095,20 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     assert manifest["status"] == "failed"
     assert manifest["completed_count"] == 0
     assert manifest["failed_count"] == 1
+    assert manifest["failed_rows"] == [
+        {
+            "order": 1,
+            "count": 2,
+            "scene": "rigid_body",
+            "workflow_group": "numbered",
+            "workflow_label": "Baseline",
+            "failure_reason": "missing_manifest",
+            "return_code": 0,
+            "manifest_exists": False,
+            "manifest": str(output / "scenes" / "01_rigid_body" / "manifest.json"),
+            "command": manifest["captures"][0]["command"],
+        }
+    ]
     first_capture = manifest["captures"][0]
     assert first_capture["scene"] == "rigid_body"
     assert first_capture["status"] == "failed"
@@ -1101,7 +1116,11 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     assert first_capture["failure_reason"] == "missing_manifest"
     review_index = pathlib.Path(manifest["artifacts"]["review_index"])
     assert review_index.is_file()
-    assert "missing_manifest" in review_index.read_text()
+    review_html = review_index.read_text()
+    assert "Failed Rows" in review_html
+    assert "1/2 rigid_body" in review_html
+    assert "missing_manifest" in review_html
+    assert "rerun failed row" in review_html
 
 
 def test_rigid_workflow_can_continue_after_scene_failure(
@@ -1146,6 +1165,12 @@ def test_rigid_workflow_can_continue_after_scene_failure(
     assert manifest["status"] == "failed"
     assert manifest["completed_count"] == 1
     assert manifest["failed_count"] == 1
+    assert len(manifest["failed_rows"]) == 1
+    assert manifest["failed_rows"][0]["order"] == 1
+    assert manifest["failed_rows"][0]["scene"] == "rigid_body"
+    assert manifest["failed_rows"][0]["failure_reason"] == "return_code"
+    assert manifest["failed_rows"][0]["return_code"] == 9
+    assert manifest["failed_rows"][0]["manifest_exists"] is False
     assert [capture["status"] for capture in manifest["captures"]] == [
         "failed",
         "captured",
@@ -1160,6 +1185,9 @@ def test_rigid_workflow_can_continue_after_scene_failure(
     review_html = review_index.read_text()
     assert "failure mode" in review_html
     assert "continue" in review_html
+    assert "Failed Rows" in review_html
+    assert "1/2 rigid_body" in review_html
+    assert "rerun failed row" in review_html
     assert "return_code" in review_html
     assert "rigid_solver_compare" in review_html
 

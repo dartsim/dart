@@ -1326,6 +1326,66 @@ def _workflow_guidance_warning(missing: list[dict[str, object]]) -> str:
     )
 
 
+def _workflow_failed_rows(
+    captures: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    failed_rows: list[dict[str, object]] = []
+    for capture in captures:
+        if capture.get("status") != "failed":
+            continue
+        failed_rows.append(
+            {
+                "order": capture.get("order"),
+                "count": capture.get("count"),
+                "scene": capture.get("scene"),
+                "workflow_group": capture.get("workflow_group"),
+                "workflow_label": capture.get("workflow_label"),
+                "failure_reason": capture.get("failure_reason", "unknown"),
+                "return_code": capture.get("return_code"),
+                "manifest_exists": capture.get("manifest_exists"),
+                "manifest": capture.get("manifest"),
+                "command": capture.get("command"),
+            }
+        )
+    return failed_rows
+
+
+def _workflow_failure_summary(failed_rows: list[dict[str, object]]) -> str:
+    if not failed_rows:
+        return ""
+    items: list[str] = []
+    for entry in failed_rows:
+        order = entry.get("order", "?")
+        count = entry.get("count", "?")
+        scene = entry.get("scene", "unknown")
+        reason = entry.get("failure_reason", "unknown")
+        return_code = entry.get("return_code")
+        rc_text = f" return code {return_code}" if return_code is not None else ""
+        command = entry.get("command")
+        command_html = ""
+        if isinstance(command, str) and command:
+            command_html = (
+                '<p class="command-label">rerun failed row</p>'
+                f"<pre>{html.escape(command)}</pre>"
+            )
+        items.append(
+            "<li>"
+            f"<strong>{html.escape(str(order))}/{html.escape(str(count))} "
+            f"{html.escape(str(scene))}</strong>: "
+            f"{html.escape(str(reason))}{html.escape(rc_text)}"
+            f"{command_html}"
+            "</li>"
+        )
+    return (
+        '<section class="failure-summary">'
+        "<h2>Failed Rows</h2>"
+        "<p>These selected rows failed during the workflow packet. Inspect or "
+        "rerun them before relying on the packet as complete evidence.</p>"
+        f"<ul>{''.join(items)}</ul>"
+        "</section>"
+    )
+
+
 def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) -> str:
     summary = _workflow_scene_manifest_summary(capture, output_dir)
     order = capture.get("order", "?")
@@ -1479,6 +1539,8 @@ def _write_workflow_review_index(
     )
     guidance_missing = _workflow_guidance_missing(captures)
     guidance_warning = _workflow_guidance_warning(guidance_missing)
+    failed_rows = _workflow_failed_rows(captures)
+    failure_summary = _workflow_failure_summary(failed_rows)
     capture_orders = [
         int(capture["order"])
         for capture in captures
@@ -1571,12 +1633,22 @@ def _write_workflow_review_index(
       border-radius: 6px;
       background: #fff8c5;
     }}
+    .failure-summary {{
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #ff8182;
+      border-radius: 6px;
+      background: #ffebe9;
+    }}
+    .failure-summary h2,
     .guidance-warning h2 {{
       margin-bottom: 8px;
     }}
+    .failure-summary p,
     .guidance-warning p {{
       margin: 0 0 8px;
     }}
+    .failure-summary ul,
     .guidance-warning ul {{
       margin: 0;
       padding-left: 20px;
@@ -1692,6 +1764,7 @@ def _write_workflow_review_index(
     <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
   </header>
   <main>
+    {failure_summary}
     {guidance_warning}
     <section class="grid">
 {cards}
@@ -1757,6 +1830,7 @@ def _write_workflow_manifest(
         else 0
     )
     guidance_missing = _workflow_guidance_missing(captures)
+    failed_rows = _workflow_failed_rows(captures)
     _write_json(
         manifest,
         {
@@ -1777,6 +1851,7 @@ def _write_workflow_manifest(
             "capture_count": len(captures),
             "completed_count": completed,
             "failed_count": failed,
+            "failed_rows": failed_rows,
             "guidance_complete": not guidance_missing,
             "guidance_missing_count": len(guidance_missing),
             "guidance_missing_rows": guidance_missing,

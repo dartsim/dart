@@ -82,12 +82,16 @@ Observed repository state at this hand-off:
   `git diff --check` was clean.
 - Verification for the latest failure-resilience slice: the focused pytest
   covering fail-fast behavior, continue mode, workflow-only flag validation,
-  panel command rendering, and docs guard reported `9 passed`. The public
+  panel command rendering, failed-row summaries, and docs guard reported
+  `10 passed`. The public
   dry-run with `--continue-on-failure` over rows 51-52 reported
   `status=planned`, `continue_on_failure=true`, `capture_count=2`,
   `workflow_total_count=52`, `guidance_complete=true`, and both capture-first
   stack packet rows. The current continuation reran the focused pytest after
-  adding the review-index failure-mode badge and then ran the required
+  adding the review-index failure-mode badge, then extended the manifest and
+  review index with failed-row triage summaries for resilient packets, verified
+  the public dry-run reports `failed_rows` length `0` and review-index
+  `failure mode=continue` for a planned packet, and then ran the required
   pre-commit lint gate.
 
 Previous Replay capture-metadata checkpoint context: this checkpoint added
@@ -561,11 +565,15 @@ recorded below.
 Current snapshot:
 
 - Latest local commit being handed off is titled
-  `Let rigid workflow packets continue after failures`; it builds on the
-  row-range guidance commit and the earlier heavy-packet implementation commit.
+  `Summarize rigid workflow failed rows`; it builds on the
+  `Let rigid workflow packets continue after failures` failure-resilience slice,
+  the row-range guidance commit, and the earlier heavy-packet implementation
+  commit.
 - The previous local slice refreshes the README/PLAN-103 row-range packet
   examples and guard for rows 47-48.
 - The newest local slice adds `--continue-on-failure` for workflow packets.
+- The current follow-up adds `failed_rows` to workflow manifests and a Failed
+  Rows summary with rerun commands to `review_index.html`.
 - The origin tip before these local slices was
   `bdf757db2c9 Refresh rigid handoff stop state`.
 - The previous heavy-packet slice adds the verified
@@ -579,13 +587,14 @@ Current snapshot:
 ## Immediate Next Step
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
-first. If the failure-resilience slice is still uncommitted, review and either
-commit or intentionally discard it according to the user's latest instruction.
-If the failure-resilience commit is present and the tree is clean, the next
-decision returns to the completion/retirement readiness audit: either get
-maintainer acceptance and prepare the completion cleanup PR, or choose the next
-bounded slice from durable PLAN-103 follow-ups. Do not push without explicit
-approval in the session that performs the push.
+first. If the failed-row triage follow-up is still uncommitted, review and
+either commit or intentionally discard it according to the user's latest
+instruction. If the row-range guidance, failure-resilience, and failed-row
+triage commits are present and the tree is clean, the next decision returns to
+the completion/retirement readiness audit: either get maintainer acceptance and
+prepare the completion cleanup PR, or choose the next bounded slice from
+durable PLAN-103 follow-ups. Do not push without explicit approval in the
+session that performs the push.
 
 Replay capture-metadata checks for this slice:
 

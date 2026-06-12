@@ -82,12 +82,16 @@ Observed repository state at this hand-off:
   `git diff --check` was clean.
 - Verification for the latest failure-resilience slice: the focused pytest
   covering fail-fast behavior, continue mode, workflow-only flag validation,
-  panel command rendering, and docs guard reported `9 passed`. The public
+  panel command rendering, failed-row summaries, and docs guard reported
+  `10 passed`. The public
   dry-run with `--continue-on-failure` over rows 51-52 reported
   `status=planned`, `continue_on_failure=true`, `capture_count=2`,
   `workflow_total_count=52`, `guidance_complete=true`, and both capture-first
   stack packet rows. The current continuation reran the focused pytest after
-  adding the review-index failure-mode badge and then ran the required
+  adding the review-index failure-mode badge, then extended the manifest and
+  review index with failed-row triage summaries for resilient packets, verified
+  the public dry-run reports `failed_rows` length `0` and review-index
+  `failure mode=continue` for a planned packet, and then ran the required
   pre-commit lint gate.
 
 Previous Replay capture-metadata checkpoint context: this checkpoint added
@@ -429,7 +433,8 @@ Expected repository state for that earlier checkpoint:
       keeps README/PLAN-103 from drifting back to the old row-47-only command.
 - [x] Workflow packets now support `--continue-on-failure`, preserving
       later-row evidence after a failed row while still failing the final
-      workflow manifest/exit status.
+      workflow manifest/exit status; failed rows are summarized in
+      `manifest.json` and `review_index.html`.
 
 ## Goal
 
@@ -502,8 +507,10 @@ Remaining before retirement:
 
 - Branch: `feature/rigid-body-gui-visual-verification`
 - Latest local commit at this hand-off is titled
-  `Let rigid workflow packets continue after failures`; it builds on the
-  row-range guidance commit and the earlier heavy-packet implementation commit.
+  `Summarize rigid workflow failed rows`; it builds on the
+  `Let rigid workflow packets continue after failures` failure-resilience slice,
+  the row-range guidance commit, and the earlier heavy-packet implementation
+  commit.
   Origin tip observed before these local slices was
   `bdf757db2c9 Refresh rigid handoff stop state`.
 - Local `HEAD` before the loop-closure implementation work was
@@ -1892,17 +1899,17 @@ passed and `git diff --check` was clean.
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the heavy `rigid_ipc_heavy_stack_packet` slice to be present locally
-   after `249cde7a36b Audit rigid visual workflow retirement readiness`; verify
-   the exact commit hash with `git log`.
-3. If the tree is clean with the heavy-packet commit present, return to the
+2. Expect the row-range guidance, `--continue-on-failure`, and failed-row
+   triage-summary slices to be present locally on top of
+   `bdf757db2c9 Refresh rigid handoff stop state`; verify the exact commit
+   hashes with `git log`.
+3. If the tree is clean with those slices present, return to the
    completion/retirement readiness audit: maintainer acceptance is the next
-   decision before deleting this dev-task folder.
-4. If the heavy-packet slice is still uncommitted, inspect the final lint/diff
-   gates and commit it locally before selecting new work.
-5. Retire this dev-task folder only if the maintainer explicitly accepts the
+   decision before deleting this dev-task folder, or choose another bounded
+   PLAN-103 follow-up if the maintainer wants more GUI evidence first.
+4. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-6. Do not push again unless the user explicitly approves pushing in that
+5. Do not push again unless the user explicitly approves pushing in that
    session; before pushing a PR branch, merge latest base rather than rebasing.
 
 ## Commit And Push Notes
