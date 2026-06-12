@@ -49,6 +49,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxStrictInteriorFastPathSize = 48;
+constexpr int kMaxFrictionIndexExactFastPathSize = 192;
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
@@ -166,10 +167,20 @@ LcpResult RedBlackGaussSeidelSolver::solve(
   }
 
   Eigen::VectorXd fastW;
-  if (options.customOptions == nullptr && !options.warmStart
-      && n <= kMaxStrictInteriorFastPathSize
-      && detail::trySolveStrictInteriorStandardLcp(
-          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+  bool exactFastPath = false;
+  if (options.customOptions == nullptr && !options.warmStart) {
+    const double validationTolerance = std::max(absTol, compTolOpt);
+    if (n <= kMaxStrictInteriorFastPathSize && problem.isStandardLcp(absTol)) {
+      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    } else if (
+        n <= kMaxFrictionIndexExactFastPathSize && problem.hasFrictionIndex()) {
+      exactFastPath = detail::trySolveInteriorFrictionIndexLcp(
+          problem, absTol, validationTolerance, x, &fastW);
+    }
+  }
+
+  if (exactFastPath) {
     Eigen::VectorXd loEffFast;
     Eigen::VectorXd hiEffFast;
     std::string boundsMessage;

@@ -1,5 +1,101 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Jacobi/RBGS FrictionIndex Exact Paths
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `d00106704aa Optimize friction exact helper with LLT`.
+- Current checkpoint target:
+  `Extend Jacobi and RedBlackGaussSeidel friction exact paths`.
+- Pre-commit state: the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 67 commits with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 68
+  commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `JacobiSolver` and `RedBlackGaussSeidelSolver` now try the shared validated
+  LLT-first strict-interior friction-index exact helper for default,
+  non-warm-started solves up to 192 variables, covering the current
+  64-contact FrictionIndex comparison packet.
+- Their standard-LCP exact gates are unchanged. Boxed paths remain iterative
+  because the current boxed profile does not justify adding dense boxed exact
+  probes to these solvers.
+- Unit coverage adds both solvers to the small FrictionIndex exact-path smoke
+  coverage and adds large 64-contact exact-path regressions for each solver.
+- The checked profile CSVs, Python demo profile summaries, metadata
+  assertions, projection-method docs, changelog, and hand-off docs were
+  refreshed.
+
+Evidence:
+
+- Baseline:
+  `build/friction_index_rbg_jacobi_baseline.json`.
+- Accepted focused probe:
+  `build/friction_index_rbg_jacobi_exact_probe.json`.
+- Focused FrictionIndex timings moved approximately:
+  - `Jacobi/4`: `1748.16ns -> 1089.70ns`, `iterations 8 -> 0`.
+  - `Jacobi/16`: `12519.10ns -> 11009.86ns`, `iterations 12 -> 0`.
+  - `Jacobi/64`: `356776.39ns -> 236860.91ns`, `iterations 17 -> 0`.
+  - `RedBlackGaussSeidel/4`: `1533.68ns -> 1047.22ns`,
+    `iterations 5 -> 0`.
+  - `RedBlackGaussSeidel/16`: `16208.84ns -> 12713.89ns`,
+    `iterations 8 -> 0`.
+  - `RedBlackGaussSeidel/64`: `295732.70ns -> 253038.00ns`,
+    `iterations 7 -> 0`.
+- Regenerated `build/lcp_profile_full.json` reports FrictionIndex
+  `Jacobi 1.23` and `RedBlackGaussSeidel 1.27`. The largest FrictionIndex
+  averages are now `ShockPropagation 1.88`, `Admm 1.64`, `Sap 1.62`,
+  `BGS 1.55`, `Apgd 1.49`, `NNCG 1.48`, and
+  `SubspaceMinimization 1.47`.
+- The same regenerated profile reports Boxed `RedBlackGaussSeidel 1.95` and
+  `ShockPropagation 1.81`, and Standard `InteriorPoint 2.68` with
+  `PenalizedFischerBurmeisterNewton` around `2x`.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(RedBlackGaussSeidel|Jacobi|Pgs|Tgs|Dantzig|Admm|BGS|Apgd|Sap)/' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_rbg_jacobi_exact_probe.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Finish this checkpoint by running the focused Python metadata test, CSV shape
+check, required `pixi run lint`, and `git diff --check`. If clean, commit with
+`Extend Jacobi and RedBlackGaussSeidel friction exact paths`. If this
+checkpoint is already committed, continue with Standard `InteriorPoint 2.68`,
+Standard `PenalizedFischerBurmeisterNewton ~2.00`, Boxed
+`RedBlackGaussSeidel 1.95`, FrictionIndex `ShockPropagation 1.88`, or Boxed
+`ShockPropagation 1.81`. Do not push or mutate GitHub state without explicit
+maintainer/user approval.
+
 ## Current Reality - 2026-06-12 LLT-First FrictionIndex Exact Helper
 
 This is the latest state. Older sections below are historical checkpoints and

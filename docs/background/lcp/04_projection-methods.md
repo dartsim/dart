@@ -53,13 +53,13 @@ validation. Dense exact solves are only used on packet sizes where current
 profile evidence shows they are profitable; larger rows stay on the iterative
 projection path. The shared strict-interior friction-index exact helper tries
 an LLT solve first for SPD rows and falls back to the previous LU solve when
-the LLT candidate is unavailable or fails validation. APGD also uses the shared
-projected-active-set boxed exact helper and the medium friction-index exact
-helper on non-warm-started solves without per-call custom options. Symmetric
-PSOR uses the medium friction-index exact helper under the same default,
-non-warm-started gate, but intentionally does not use the boxed exact helper
-because current boxed profile probes were slower. Restart-policy comparison
-rows keep the iterative APGD path.
+the LLT candidate is unavailable or fails validation. APGD, Jacobi, Red-Black
+Gauss-Seidel, and Symmetric PSOR also use the friction-index exact helper on
+non-warm-started default solves at the packet sizes where refreshed profile
+evidence shows the dense solve is profitable. APGD also uses the shared
+projected-active-set boxed exact helper. Symmetric PSOR intentionally does not
+use the boxed exact helper because current boxed profile probes were slower.
+Restart-policy comparison rows keep the iterative APGD path.
 
 ## 1. Jacobi Method ✅ (Implemented)
 

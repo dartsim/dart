@@ -1529,6 +1529,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     to try an LLT solve before falling back to the previous LU solve, reducing
     current SPD FrictionIndex exact-path rows and removing the remaining
     above-`2x` averages from the refreshed FrictionIndex profile.
+  - Extended Jacobi and Red-Black Gauss-Seidel default non-warm-started
+    friction-index solves to use the validated LLT-first exact helper through
+    the current 64-contact comparison packet, moving both rows to zero
+    iterations and below `1.3x` average in the refreshed FrictionIndex profile.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving
