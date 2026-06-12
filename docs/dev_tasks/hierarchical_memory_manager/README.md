@@ -1,11 +1,17 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
+## Authoritative Stop Handoff (2026-06-12, Replay Snapshot Payload Allocators)
 
-Work resumed from the single pushed handoff branch on a fresh local follow-up
-branch: `pr/hmm-phase45-replay-snapshot-allocators`, based on
-`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. This is the current local
-resume point in this workspace. It has no remote tracking branch yet.
+Maintainer instruction: stop all implementation, optimization, benchmark,
+build, lint, test, and CI-followup work. This update is handoff documentation
+only. No fresh verification is intentionally run for this stop checkpoint.
+
+Use exactly one branch as the fresh-session resume point:
+`pr/hmm-phase45-replay-snapshot-allocators`. It was created from
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877` after PR #2955 and PR #2956
+merged. Treat `pr/hmm-phase45-follow-up-clean` and the older HMM branches as
+historical base branches only unless a maintainer explicitly redirects the
+work.
 
 Current branch state:
 
@@ -17,9 +23,9 @@ World allocator`).
 allocator`).
 - Committed locally: `20d25cb08e6` (`Route replay joint payloads through World
 allocator`).
-- Latest local checkpoint in this continuation: replay restore rejects live
-  joint vector size drift instead of resizing `Eigen::VectorXd` storage during
-  restore.
+- Committed locally: `53c57088f3a` (`Reject replay joint vector size drift`).
+- A docs-only handoff commit should sit on top of those replay commits when
+  this branch is pushed.
 
 The committed replay slices close the next replay ownership gaps. A new
 non-empty replay ownership assertion first reproduced one global heap
@@ -87,28 +93,52 @@ DART no-growth rows still reported zero post-prewarm allocator calls. Do not
 change allocator policy from that run; use it only as evidence that timing
 measurement is currently noisy.
 
-Fresh-session entry point for this active branch:
+Fresh-session entry point:
 
 ```bash
 git fetch origin
 git checkout pr/hmm-phase45-replay-snapshot-allocators
+git pull --ff-only
 git status -sb
 git log --oneline --decorate -8
 git diff --stat
 ```
 
-Next implementation slice should be evidence-first: either stress richer replay
-restore paths that insert transient components or touch non-joint replay
-payloads, or return to the EnTT storage-layout investigation for the allocator
-comparative matrix. Before publishing or opening a PR, run `pixi run lint` plus
+Then verify from scratch before any new code, benchmark, or PR work. Do not
+continue implementation from this stop checkpoint without first choosing a
+fresh follow-up PR plan and running the relevant local gates.
+
+Immediate follow-up candidates for the next fresh session:
+
+- Replay transient restore path: `restoreReplayTransientComponents()` still
+  uses `registry.emplace_or_replace<Component>(entity, component)` after
+  removing stale components. If a recorded transient component is missing live,
+  restore may allocate while re-inserting it. Measure first; do not change
+  behavior without evidence.
+- Non-joint replay payloads: `comps::DeformableNodeState` still owns plain
+  `std::vector` payloads for positions, previous positions, velocities, masses,
+  and fixed flags. Replay capture copies component payloads, so deformable
+  replay snapshots may still use native heap storage unless wrapped in
+  allocator-aware snapshot state.
+- Existing allocator-aware transient payloads: `VariationalContactDualState`
+  and `MultibodyVariationalState` already use `dart::common::StlAllocator` for
+  nested vectors. Confirm copy-construction/assignment allocator propagation
+  before changing those paths.
+- Allocator comparative matrix: the remaining standard/foonathan misses are
+  still EnTT steady-state registry rows, especially fixed 1024-element
+  component payload pages plus sparse/packed entity pages. Do not lower
+  checker thresholds or keep cache-line/coloring tuning unless the full EnTT
+  matrix improves for an apple-to-apples workload reason.
+
+Before publishing or opening a PR from this branch, run `pixi run lint` plus
 the selected focused test/build gate for the final changed scope. Do not
 push/open a PR without explicit maintainer approval.
 
-## Authoritative Stop Handoff (2026-06-12, Final)
+## Historical Stop Handoff (2026-06-12, Superseded)
 
-Maintainer instruction: stop all implementation, optimization, benchmark,
-build, lint, test, and CI-followup work. This update is handoff documentation
-only. No fresh verification is intentionally run for this stop checkpoint.
+This stop point is superseded by the replay snapshot allocator handoff above.
+Do not resume from this section unless a maintainer explicitly asks to discard
+the replay snapshot allocator continuation.
 
 Use exactly one branch as the resume point:
 `pr/hmm-phase45-follow-up-clean`, tracking

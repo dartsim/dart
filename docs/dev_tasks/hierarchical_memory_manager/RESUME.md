@@ -1,10 +1,16 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
+## Authoritative Stop Handoff (2026-06-12, Replay Snapshot Payload Allocators)
 
-Current local branch: `pr/hmm-phase45-replay-snapshot-allocators`, created from
-`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. It has no remote tracking
-branch yet.
+Stop here. The maintainer instruction for this checkpoint is handoff only:
+no more implementation, optimization, benchmark, build, lint, test, or CI
+work. This docs-only update intentionally has no fresh verification.
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`. It was created from
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877` after PR #2955 and PR #2956
+merged. Older HMM branches, including `pr/hmm-phase45-follow-up-clean`, are
+historical base branches unless a maintainer explicitly says otherwise.
 
 Current local state:
 
@@ -16,9 +22,9 @@ World allocator`).
 allocator`).
 - Committed locally: `20d25cb08e6` (`Route replay joint payloads through World
 allocator`).
-- Latest local checkpoint in this continuation: replay restore rejects live
-  joint vector size drift instead of resizing `Eigen::VectorXd` storage during
-  restore.
+- Committed locally: `53c57088f3a` (`Reject replay joint vector size drift`).
+- A docs-only handoff commit should sit on top of those replay commits when
+  this branch is pushed.
 
 Committed replay slice:
 
@@ -84,12 +90,6 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Immediate next step: choose the next evidence-first HMM slice. Good candidates
-are richer replay restore paths that insert transient components or touch
-non-joint replay payloads, or the EnTT storage-layout investigation for the
-allocator comparative matrix. Do not push or open a PR without explicit
-maintainer approval.
-
 Remaining replay-specific follow-up: live joint component storage still uses
 `Eigen::VectorXd`; the latest replay changes only change replay-owned snapshot
 payloads and reject runtime vector size drift during restore. Richer replay
@@ -97,21 +97,47 @@ restores may still allocate if they insert missing transient components or
 touch non-joint replay payloads that remain native heap-owned. Treat those as
 separate evidence-first slices.
 
+Interrupted inspection context for the next fresh session:
+
+- `restoreReplayTransientComponents()` validates recorded entities, builds
+  World-allocated scratch lists, removes stale components, and then restores
+  with `registry.emplace_or_replace<Component>(entity, component)`. If the
+  component is missing live, that insertion path may allocate. Measure before
+  changing behavior.
+- `captureReplayComponents()` copies component payloads into World-allocated
+  snapshot vectors, but nested component storage only follows the World
+  allocator if that component type itself is allocator-aware.
+- `comps::DeformableNodeState` still uses plain `std::vector` payloads for
+  positions, previous positions, velocities, masses, and fixed flags. This is
+  the clearest non-joint replay payload ownership candidate.
+- `VariationalContactDualState` and `MultibodyVariationalState` already use
+  `dart::common::StlAllocator` for their nested vectors. Confirm allocator
+  propagation semantics before touching those paths.
+- The EnTT comparative gap is still storage-layout/timing, not post-prewarm
+  allocator-call growth. Useful retained evidence remains
+  `.benchmark_results/allocator_entt_resume_cpu5_reps5_20260612.json`; noisy
+  or reverted probes should not guide policy.
+
 Fresh-session start:
 
 ```bash
 git fetch origin
 git checkout pr/hmm-phase45-replay-snapshot-allocators
+git pull --ff-only
 git status -sb
 git log --oneline --decorate -8
 git diff --stat
 ```
 
-## Authoritative Stop Handoff (2026-06-12, Final)
+Then verify from scratch before any new code, benchmark, or PR work. Future
+implementation should start from a fresh follow-up PR plan, not from merged
+PR #2956.
 
-Maintainer instruction: stop all implementation, optimization, benchmark,
-build, lint, test, and CI-followup work. This docs-only handoff intentionally
-has no fresh verification.
+## Historical Stop Handoff (2026-06-12, Superseded)
+
+This stop point is superseded by the replay snapshot allocator handoff above.
+Do not resume from this section unless a maintainer explicitly asks to discard
+the replay snapshot allocator continuation.
 
 Resume from exactly one branch:
 `pr/hmm-phase45-follow-up-clean`, tracking
