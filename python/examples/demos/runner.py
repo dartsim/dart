@@ -606,6 +606,42 @@ def _rigid_workflow_capture_command(
     return command
 
 
+def _rigid_workflow_packet_command(
+    *,
+    include_related: bool = False,
+    include_ipc_shelf: bool = False,
+    include_packets: bool = False,
+    start_row: int | None = None,
+    end_row: int | None = None,
+    output_dir: str | None = None,
+) -> str:
+    command = "pixi run py-demo-capture -- --rigid-workflow"
+    if include_related:
+        command = f"{command} --include-related"
+    if include_ipc_shelf:
+        command = f"{command} --include-ipc-shelf"
+    if include_packets:
+        command = f"{command} --include-packets"
+    if start_row is not None:
+        command = f"{command} --workflow-start-row {start_row}"
+    if end_row is not None:
+        command = f"{command} --workflow-end-row {end_row}"
+    if output_dir:
+        command = f"{command} --output-dir {output_dir}"
+    return command
+
+
+def _rigid_workflow_row_packet_command(guide: RigidWorkflowGuide) -> str:
+    return _rigid_workflow_packet_command(
+        start_row=guide.index,
+        end_row=guide.index,
+        output_dir=(
+            "/tmp/"
+            f"dart_capture_rigid_workflow_row_{guide.index:02d}_{guide.scene_id}"
+        ),
+    )
+
+
 def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
     scene_ids = [scene_id for scene_id, _label in RIGID_VISUAL_WORKFLOW_LABELS]
     count = len(scene_ids)
@@ -1879,6 +1915,27 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         )
         builder.text(guide.capture_command)
         builder.item_tooltip("Run from the repository root to regenerate this row.")
+        builder.separator()
+        builder.text("Review packet")
+        builder.text(
+            _rigid_workflow_packet_command(
+                output_dir="/tmp/dart_capture_rigid_workflow"
+            )
+        )
+        builder.item_tooltip("Capture all numbered rows and write review_index.html.")
+        builder.text(_rigid_workflow_row_packet_command(guide))
+        builder.item_tooltip("Capture only this workflow row in a review packet.")
+        builder.text(
+            _rigid_workflow_packet_command(
+                include_related=True,
+                include_ipc_shelf=True,
+                include_packets=True,
+                output_dir="/tmp/dart_capture_rigid_workflow_extended",
+            )
+        )
+        builder.item_tooltip(
+            "Capture numbered rows plus related, Rigid IPC shelf, and packet rows."
+        )
         builder.separator()
         builder.text("Route")
         _workflow_replay_row(builder, _context, guide)

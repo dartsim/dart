@@ -2,27 +2,26 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds a workflow-manifest semantics follow-up after the direct
-Rigid IPC shelf capture bundle. Row-range workflow manifests now keep the
-requested optional packet groups in `include_related`, `include_ipc_shelf`, and
-`include_packets`, while separate `selected_include_*` fields report which
-optional groups are present in the selected row range. The generated
-`review_index.html` mirrors that context with row-span, requested-groups, and
-selected-groups badges.
+This checkpoint adds the next workflow evidence usability follow-up after the
+manifest/review-index metadata slices. The in-viewer `Rigid Workflow` panel now
+lists full numbered, current-row rerun, and extended related/IPC-shelf/packet
+commands so users can get from live inspection to `manifest.json` and
+`review_index.html` without leaving the GUI context.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - The branch should be pushed to
-  `origin/feature/rigid-body-gui-visual-verification` with these latest
-  implementation commits:
-  `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `a95687dc628 Promote rigid IPC shelf metrics`.
-  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
-- This continuation adds a local follow-up commit for the manifest
-  requested-versus-selected optional-group split unless a future session has
-  not committed it yet.
+  `origin/feature/rigid-body-gui-visual-verification` with the latest
+  committed implementation follow-ups:
+  `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
+  `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
+  `Expose rigid workflow packet commands in the panel` if this handoff commit
+  succeeded.
 - There is no PR associated with this branch at checkpoint time.
+- The user explicitly requested hand-off-only work, no further verification,
+  and then a full stop. Do not continue feature work from this checkpoint
+  unless a future user request resumes it.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -131,6 +130,10 @@ and `include_packets` tied to the requested packet shape, while new
 in the selected rows. The workflow `review_index.html` header shows the same
 row-span, requested-groups, and selected-groups context for reviewers.
 
+The newest continuation closes the loop back into the live GUI: the
+`Rigid Workflow` panel now lists full numbered packet, current-row range rerun,
+and extended related/IPC-shelf/packet commands under a `Review packet` section.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -138,21 +141,22 @@ row-span, requested-groups, and selected-groups context for reviewers.
 Current snapshot:
 
 - Latest implementation commits being handed off and pushed:
-  `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `a95687dc628 Promote rigid IPC shelf metrics`.
-  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
-- This continuation adds a local manifest-semantics follow-up commit. It has
-  not been pushed unless the user explicitly approves a push.
+  `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
+  `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
+  `Expose rigid workflow packet commands in the panel` if this handoff commit
+  succeeded.
+- The final stop instruction superseded any further local verification.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` and `git log -5 --oneline` first. Expect the direct
-Rigid IPC shelf capture-bundle slice to be committed as
-`d6ccdd38c4e Bundle direct rigid IPC shelf captures`, followed by the manifest
-requested-versus-selected optional-group follow-up if this continuation was
-committed. Do not push new changes without explicit approval in that session,
-and rerun `pixi run lint` before committing further changes.
+Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
+commits to include the requested/selected manifest metadata slice, the
+review-index group-summary slice, and the workflow-panel review-packet command
+slice if this handoff commit succeeded. Do not continue feature work from this
+checkpoint unless the user resumes the task. Rerun `pixi run lint` before
+committing future changes, and do not push again without explicit approval in
+that session.
 
 ## Context That Would Be Lost
 
@@ -449,3 +453,17 @@ The manifest also reported `capture_count=5`, `workflow_total_count=51`,
 review index header contained row-span `47-51 / 51`, requested-groups
 `numbered, related, ipc shelf, packets`, and selected-groups
 `ipc shelf, packets`. `pixi run lint` passed and `git diff --check` was clean.
+
+Current workflow panel packet-command validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_guides_expose_capture_commands python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches -q
+pixi run lint
+```
+
+The focused panel pytest reported `3 passed`. The tested `Rigid Workflow`
+panel now emits the per-row capture command plus a `Review packet` section
+containing the full numbered workflow command, the current-row row-range rerun
+command, and the extended related/IPC-shelf/packet command. `pixi run lint`
+passed. `git diff --check` was not rerun after the final handoff edits because
+the user explicitly requested no further verification.

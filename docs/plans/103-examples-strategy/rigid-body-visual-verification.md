@@ -55,6 +55,9 @@ previous/next numbered route, restart command, direct row selector, and
 ranked row filter as scene-switch rows. The panel also shows the exact
 per-row `pixi run py-demo-capture` command, frame count, resolution, and
 docked-UI mode so visual evidence can be regenerated from the viewer context.
+It also lists the full numbered workflow packet command, the current row-range
+rerun command, and the extended related/IPC-shelf/packet command that generate
+`manifest.json` plus `review_index.html`.
 Rows that compare solvers, executors, contact policies, time-step
 multipliers, workload sizes, or passive joint parameter families label the
 comparison axis and held-fixed controls directly in both the panel and capture

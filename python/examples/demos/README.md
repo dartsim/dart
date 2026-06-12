@@ -661,6 +661,8 @@ Use the workflow mode to plan or run the full numbered rigid capture set. It
 writes a top-level manifest that points at every per-scene manifest and a
 `review_index.html` contact sheet for scanning the 36 screenshots, row
 questions, try-first guidance, scope notes, and metric summaries from one page:
+the in-viewer `Rigid Workflow` panel also shows the full numbered packet,
+current-row rerun, and extended related/IPC-shelf/packet commands.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run

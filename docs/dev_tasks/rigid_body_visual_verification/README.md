@@ -2,27 +2,26 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint adds a workflow-manifest semantics follow-up after the direct
-Rigid IPC shelf capture bundle. Row-range workflow manifests now keep the
-requested optional packet groups in `include_related`, `include_ipc_shelf`, and
-`include_packets`, while separate `selected_include_*` fields report which
-optional groups are present in the selected row range. The generated
-`review_index.html` mirrors that context with row-span, requested-groups, and
-selected-groups badges.
+This checkpoint adds the next workflow evidence usability follow-up after the
+manifest/review-index metadata slices. The in-viewer `Rigid Workflow` panel now
+lists full numbered, current-row rerun, and extended related/IPC-shelf/packet
+commands so users can get from live inspection to `manifest.json` and
+`review_index.html` without leaving the GUI context.
 
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - The branch should be pushed to
-  `origin/feature/rigid-body-gui-visual-verification` with these latest
-  implementation commits:
-  `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `a95687dc628 Promote rigid IPC shelf metrics`.
-  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
-- This continuation adds a local follow-up commit for the manifest
-  requested-versus-selected optional-group split unless a future session has
-  not committed it yet.
+  `origin/feature/rigid-body-gui-visual-verification` with the latest
+  committed implementation follow-ups:
+  `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
+  `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
+  `Expose rigid workflow packet commands in the panel` if this handoff commit
+  succeeded.
 - There is no PR associated with this branch at checkpoint time.
+- The user explicitly requested hand-off-only work, no further verification,
+  and then a full stop. Do not continue feature work from this checkpoint
+  unless a future user request resumes it.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -81,6 +80,8 @@ Expected repository state after this hand-off:
       while exposing `selected_include_*` fields for the selected slice.
 - [x] The workflow `review_index.html` header now shows row-span,
       requested-groups, and selected-groups badges for row-range packets.
+- [x] The in-viewer `Rigid Workflow` panel now shows workflow-level review
+      packet commands in addition to the per-row direct capture command.
 
 ## Goal
 
@@ -102,11 +103,11 @@ are easy to inspect, cycle, capture, and regression-test.
 
 - Branch: `feature/rigid-body-gui-visual-verification`
 - Latest implementation commits being handed off and pushed:
-  `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `a95687dc628 Promote rigid IPC shelf metrics`.
-  `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
-- This continuation adds a local manifest-semantics follow-up commit. It has
-  not been pushed unless the user explicitly approves a push.
+  `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
+  `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
+  `Expose rigid workflow packet commands in the panel` if this handoff commit
+  succeeded.
+- The final stop instruction superseded any further local verification.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -544,6 +545,24 @@ Observed results:
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Workflow Panel Packet-Command Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_guides_expose_capture_commands python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches -q
+pixi run lint
+```
+
+Observed results:
+
+- Focused panel pytest reported `3 passed`.
+- The tested `Rigid Workflow` panel now emits the per-row capture command plus
+  a `Review packet` section containing the full numbered workflow command, the
+  current-row row-range rerun command, and the extended
+  related/IPC-shelf/packet command.
+- `pixi run lint` passed.
+- `git diff --check` was not rerun after the final handoff edits because the
+  user explicitly requested no further verification.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -560,15 +579,18 @@ Observed results:
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`. Expect the
-   direct Rigid IPC shelf capture-bundle slice to be committed as
-   `d6ccdd38c4e Bundle direct rigid IPC shelf captures`, followed by the
-   manifest requested-versus-selected optional-group follow-up if this
-   continuation was committed.
-2. Rerun the repository-mandated `pixi run lint` before any further commit.
-3. Choose the next bounded rigid visual-verification gap from the durable
+   latest commits to include the requested/selected manifest metadata slice,
+   the review-index group-summary slice, and the workflow-panel review-packet
+   command slice if this handoff commit succeeded.
+2. Do not continue feature work from this checkpoint unless the user resumes
+   the task. The latest user instruction was handoff-only, no further
+   verification, and full stop.
+3. Rerun the repository-mandated `pixi run lint` before any future commit.
+4. Choose the next bounded rigid visual-verification gap from the durable
    sidecar, or retire this dev-task folder only if the maintainer explicitly
    accepts the current scope as complete.
-4. Do not push unless the user explicitly approves pushing in that session.
+5. Do not push again unless the user explicitly approves pushing in that
+   session.
 
 ## Commit And Push Notes
 

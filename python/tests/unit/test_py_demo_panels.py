@@ -17,6 +17,8 @@ from examples.demos.runner import (
     _default_initial_scene_args,
     _has_world_replay_api,
     _make_world_factory,
+    _rigid_workflow_packet_command,
+    _rigid_workflow_row_packet_command,
     _scene_build_timeout_ms,
     _workflow_matching_guides,
     _validate_scene,
@@ -1201,6 +1203,35 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         ) in events
         assert f"text:{guide.capture_command}" in events
         assert "tooltip:Run from the repository root to regenerate this row." in events
+        assert "text:Review packet" in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                output_dir="/tmp/dart_capture_rigid_workflow"
+            )
+        ) in events
+        assert (
+            "tooltip:Capture all numbered rows and write review_index.html."
+            in events
+        )
+        assert f"text:{_rigid_workflow_row_packet_command(guide)}" in events
+        assert (
+            "tooltip:Capture only this workflow row in a review packet."
+            in events
+        )
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                include_related=True,
+                include_ipc_shelf=True,
+                include_packets=True,
+                output_dir="/tmp/dart_capture_rigid_workflow_extended",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture numbered rows plus related, Rigid IPC shelf, "
+            "and packet rows."
+        ) in events
         assert "text:Route" in events
         if guide.previous_scene_id is None:
             assert f"text:{previous_text}" in events

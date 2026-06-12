@@ -67,6 +67,9 @@
     non-numbered related evidence routes and capture-first rigid IPC packets
     to the same rigid workflow capture/review packet, and row-range options for
     targeted reruns after a long workflow capture fails or needs inspection.
+    The in-viewer rigid workflow panel now also lists full numbered, current
+    row-range, and extended workflow packet commands for generating
+    `manifest.json` plus `review_index.html`.
     Promote `rigid_ipc_edge_drop` into the related-evidence packet with a
     self-describing panel and capture metrics for degenerate edge-barrier
     contact. Add scene-owned capture metrics to the remaining Rigid IPC shelf
