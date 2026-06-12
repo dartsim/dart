@@ -1673,6 +1673,12 @@ bool shouldSkipRigidBodyContactQuery(const detail::WorldRegistry& registry)
 {
   const auto collisionGeometryView = registry.view<comps::CollisionGeometry>();
   for (const entt::entity entity : collisionGeometryView) {
+    const auto& geometry
+        = collisionGeometryView.get<comps::CollisionGeometry>(entity);
+    if (!geometry.hasShapes()) {
+      continue;
+    }
+
     if (hasPrescribedRigidBodyContactResponse(registry, entity)) {
       continue;
     }

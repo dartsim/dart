@@ -6,9 +6,17 @@ Last session summary: use exactly one branch for the post-#2956 HMM handoff:
 `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean`. Other similarly named HMM follow-up
 branches are historical/no-resume targets unless a maintainer explicitly
-redirects the work. The latest code checkpoint before this docs-only handoff is
-`13c4757e7b3` (`Skip empty multibody contact queries`); the final pushed branch
-should have one handoff-doc commit on top of that.
+redirects the work. The last pushed code checkpoint before the current
+continuation was `13c4757e7b3` (`Skip empty multibody contact queries`),
+followed by the handoff-doc commit `9a351697b5b` (`Refresh HMM handoff docs`).
+
+Current continuation note: the rigid contact stage now treats empty
+`CollisionGeometry` components like no collision geometry when deciding whether
+contact-stage prepare/execute should query contacts. The added baked no-heap
+regression covers a pre-existing empty collision-geometry component, but this
+slice is query-pruning rather than a newly closed failing heap gate. The
+session was then stopped for handoff by maintainer request before any fresh
+full `pixi run test-unit` pass for this slice.
 
 Current branch state to expect:
 
@@ -30,6 +38,8 @@ gap was the pure semi-implicit external-force multibody path:
   `MultibodyDynamicsScratch::bodyJacobian` for link body Jacobians.
 - Split semi-implicit multibody contact/unified stages skip collision queries
   when no relevant collision shapes exist.
+- Rigid contact prepare/execute skips the same no-shape query work for empty
+  collision-geometry components.
 - `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
   `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` cover the
   forced-slider external-force fixture after bake.
@@ -42,6 +52,17 @@ Verification already run for the latest code checkpoint:
 - `pixi run test-unit`
 - `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_color=no`
 - `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+
+Verification run before the 2026-06-11 stop-and-handoff request for the rigid
+empty-geometry query-pruning continuation:
+
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator' --gtest_color=no`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+
+Not run after this continuation: `pixi run test-unit`. Do not infer a broader
+Phase 4/5 allocation closure from the rigid empty-geometry slice.
 
 Fresh-session reading order:
 

@@ -6,9 +6,9 @@ Use one branch for resume/handoff: `pr/hmm-phase45-follow-up-clean`, tracking
 `origin/pr/hmm-phase45-follow-up-clean` and based on `origin/main` after PR
 #2956 landed. Other similarly named HMM follow-up branches are historical and
 should not be used by fresh sessions unless a maintainer explicitly redirects
-the work. The latest code checkpoint before this docs-only handoff is
-`13c4757e7b3` (`Skip empty multibody contact queries`); a handoff-doc commit
-should be on top after the final push.
+the work. The last pushed code checkpoint before the current continuation was
+`13c4757e7b3` (`Skip empty multibody contact queries`), followed by the
+handoff-doc commit `9a351697b5b` (`Refresh HMM handoff docs`).
 
 Fresh-session agents should start with
 `docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
@@ -26,7 +26,12 @@ gates after bake. The body-Jacobian container now reuses
 `MultibodyDynamicsScratch::bodyJacobian`, and the remaining pure
 external-force global-heap allocations were removed by skipping split
 semi-implicit contact/unified collision queries when no relevant collision
-shapes exist.
+shapes exist. A follow-up query-pruning slice makes the rigid contact stage
+treat empty `CollisionGeometry` components like no collision geometry when
+deciding whether prepare/execute needs a contact query; this is a scoped
+performance guard, not a new claimed heap-gap closure. This latest slice was
+stopped for handoff by maintainer request before a fresh full unit-test pass;
+do not treat it as broader Phase 4/5 closure.
 
 The last full local validation for the code checkpoint was:
 
@@ -36,6 +41,20 @@ The last full local validation for the code checkpoint was:
 - `pixi run test-unit`
 - Focused `test_world` no-growth/no-heap gates covering the forced-slider,
   multibody/deformable, and boxed-LCP fallback shapes.
+
+Additional checks completed before the 2026-06-11 stop-and-handoff request for
+the rigid empty-geometry query-pruning slice:
+
+- Focused `test_world` contact gates:
+  `World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap`,
+  `World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator`, and
+  `World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap`.
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+
+No additional verification was run after the stop request; in particular,
+`pixi run test-unit` was not re-run for the latest rigid empty-geometry slice.
 
 Continue only with evidence-first Phase 4/5 work from the remaining follow-up
 items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
@@ -1027,6 +1046,10 @@ Follow-up progress after PR #2956:
   prewarms that scratch during `prepare()`, and the baked rigid sphere-ground
   boxed-LCP gate now covers both World-base no-growth and global-heap
   no-allocation behavior.
+- The rigid contact stage now skips contact-query prepare/execute work when the
+  only rigid/link collision-geometry components are empty. A baked global-heap
+  regression covers that loaded/pre-existing ECS-storage shape without changing
+  the existing shape-backed rigid, link, AVBD, and boxed-LCP contact gates.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

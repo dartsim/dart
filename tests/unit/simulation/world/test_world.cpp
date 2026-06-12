@@ -6356,6 +6356,13 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
   namespace sx = dart::simulation;
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid body empty collision geometry", [](sx::World& world) {
+        auto body = world.addRigidBody("empty_geometry_body");
+        auto& registry = sx::detail::registryOf(world);
+        registry.emplace<sx::comps::CollisionGeometry>(
+            sx::detail::toRegistryEntity(body.getEntity()));
+      });
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "rigid body resting contact",
       [](sx::World& world) {
         world.setGravity(Eigen::Vector3d::Zero());

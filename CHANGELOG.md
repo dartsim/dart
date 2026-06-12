@@ -599,7 +599,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     allocating a step-local Jacobian vector. The split semi-implicit multibody
     contact/unified stages now also skip collision queries when no relevant
     collision shapes exist, keeping pure external-force multibody steps inside
-    the baked no-heap gate. Public multibody link-contact
+    the baked no-heap gate. The rigid contact stage now also treats
+    empty collision-geometry components as query-empty for contact-stage
+    prepare/execute, avoiding unnecessary no-shape contact queries while
+    preserving shape-backed rigid, link, and boxed-LCP contact paths. Public
+    multibody link-contact
     assembly now has reusable scratch storage that can be borrowed by the
     in-place unified assembler without same-shape heap growth, and the
     boxed-LCP fallback gates include larger five- and eight-multibody stacked
