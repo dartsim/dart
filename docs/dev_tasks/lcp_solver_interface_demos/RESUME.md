@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 RedBlackGaussSeidel Standard LLT Path
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 71]`
+- Last committed checkpoint:
+  `2d1ae4bd041 Use LLT for BlockedJacobi standard exact path`
+- Checkpoint target:
+  `Use LLT for RedBlackGaussSeidel standard exact path`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 72 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `RedBlackGaussSeidelSolver` routes its Standard strict-interior exact path
+  through `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- The 96-row focused benchmark remains on the iterative path; the observed
+  timing movement there is benchmark noise, not acceptance evidence.
+- The slice follows the PR #2986 harness stance captured below: evidence uses
+  the current interim LCP solver identity path from `BM_LcpCompare` benchmark
+  names, `contract_ok` counters, timing fields, manifest metadata, and native
+  support checks.
+
+Evidence:
+
+- Baseline:
+  `build/standard_redblack_baseline.json`.
+- Accepted focused probe:
+  `build/standard_redblack_llt_probe.json`.
+- Focused Standard `RedBlackGaussSeidel` timings:
+  - `RedBlackGaussSeidel/12`: `884.00ns -> 750.00ns`.
+  - `RedBlackGaussSeidel/24`: `3096.00ns -> 1936.00ns`.
+  - `RedBlackGaussSeidel/48`: `11944.00ns -> 8659.00ns`.
+  - `RedBlackGaussSeidel/96`: `52695.00ns -> 56005.00ns`
+    (iterative path; not used as acceptance evidence).
+- Latest regenerated profile highlights:
+  - Standard: `RedBlackGaussSeidel 1.39`; highest rows are `Sap 1.83`,
+    `Apgd 1.64`, `MPRGP 1.59`, and `Jacobi 1.50`.
+  - Boxed: highest rows are `NNCG 1.72`, `SymmetricPsor 1.52`,
+    `Apgd 1.52`, `ShockPropagation 1.50`, and
+    `RedBlackGaussSeidel 1.48`.
+  - FrictionIndex: no solver average is above `1.6x`; highest rows are
+    `Apgd 1.51`, `ShockPropagation 1.51`, `Sap 1.46`, and `Admm 1.40`.
+
+Verification state:
+
+- Completed so far:
+  - Focused baseline and accepted focused probe for
+    `BM_LcpCompare/Standard/RedBlackGaussSeidel/`.
+  - Focused C++ build for `BM_LCP_COMPARE` and
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+  - Full profile regeneration into `docs/background/lcp/figures`.
+  - Focused Python demo metadata test.
+  - Focused CTest for
+    `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`.
+- Final pre-commit checks after any final edits:
+  - `pixi run lint`.
+  - `git diff --check`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+```
+
+If this checkpoint is still uncommitted, run final lint/diff checks and commit
+with `Use LLT for RedBlackGaussSeidel standard exact path`. If it is already
+committed, investigate Standard `Sap 1.83`, Standard `Apgd 1.64`, or Boxed
+`NNCG 1.72` under the same packet-like evidence rules. Do not push without
+explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 BlockedJacobi Standard LLT Path
 
 This is the latest hand-off. Older sections below are historical checkpoints

@@ -1567,6 +1567,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Routed `BlockedJacobiSolver` standard strict-interior exact shortcuts
     through the validated LLT-first helper, moving its refreshed Standard
     average from `1.62x` to `1.18x`.
+  - Routed `RedBlackGaussSeidelSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper, moving its refreshed
+    Standard average from `1.63x` to `1.39x`.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

@@ -171,7 +171,7 @@ LcpResult RedBlackGaussSeidelSolver::solve(
   if (options.customOptions == nullptr && !options.warmStart) {
     const double validationTolerance = std::max(absTol, compTolOpt);
     if (n <= kMaxStrictInteriorFastPathSize && problem.isStandardLcp(absTol)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
     } else if (
         n <= kMaxFrictionIndexExactFastPathSize && problem.hasFrictionIndex()) {

@@ -225,12 +225,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
             "Direct/Admm/Dantzig/BlockedJacobi/InteriorPoint/ShockPropagation/"
-            "Baraff/NNCG/BGS and strict-interior FischerBurmeisterNewton/Pgs/"
-            "BoxedSemiSmoothNewton/PenalizedFischerBurmeisterNewton/Lemke rows"
+            "Baraff/NNCG/BGS/RedBlackGaussSeidel and strict-interior "
+            "FischerBurmeisterNewton/Pgs/BoxedSemiSmoothNewton/"
+            "PenalizedFischerBurmeisterNewton/Lemke rows"
         ),
         "current_laggards": (
-            "Jacobi and RedBlackGaussSeidel are above 1.6x; Apgd and Sap are "
-            "the next largest rows"
+            "Sap and Apgd are above 1.6x; MPRGP, Jacobi, Admm, and "
+            "ShockPropagation are the next largest rows"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
@@ -238,8 +239,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "MPRGP, ADMM, APGD/Jacobi, ShockPropagation, and small/medium "
             "block hot rows. The LLT-first Newton/interior-point exact helper "
             "plus Dantzig, Lemke, Baraff, Symmetric PSOR, "
-            "SubspaceMinimization, BGS, NNCG, and BlockedJacobi standard exact "
-            "paths move those rows out of the Standard laggard group."
+            "SubspaceMinimization, BGS, NNCG, BlockedJacobi, and RedBlack "
+            "Gauss-Seidel standard exact paths move those rows out of the "
+            "Standard laggard group."
         ),
     },
     {
@@ -247,20 +249,20 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi/Dantzig/Admm/BGS/BlockedJacobi/Apgd/NNCG are "
+            "Tgs/Pgs/Jacobi/Dantzig/BlockedJacobi/Admm/Sap are "
             "the current leading group"
         ),
         "current_laggards": (
-            "Sap is the only row above 1.6x; RedBlackGaussSeidel, "
-            "SymmetricPsor, ShockPropagation, and BoxedSemiSmoothNewton are "
-            "the next largest rows"
+            "NNCG is the only row above 1.6x; SymmetricPsor, Apgd, "
+            "ShockPropagation, RedBlackGaussSeidel, BGS, and "
+            "SubspaceMinimization are the next largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
             "trail active-bound rows; delayed ShockPropagation reset and the "
             "LLT-first boxed exact helper reduced several boxed rows, while "
-            "the refreshed Boxed Sap, RedBlackGaussSeidel, and Symmetric PSOR "
-            "rows are the next largest profile targets."
+            "the refreshed Boxed NNCG, Symmetric PSOR, APGD, and "
+            "ShockPropagation rows are the next largest profile targets."
         ),
     },
     {
@@ -274,16 +276,17 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "SymmetricPsor/BlockedJacobi/BGS are the current leading group"
         ),
         "current_laggards": (
-            "ShockPropagation and Sap are above 1.6x; Apgd, NNCG, and "
-            "SubspaceMinimization are the next largest rows"
+            "No FrictionIndex solver average is above 1.6x; Apgd and "
+            "ShockPropagation are the largest rows; Sap, Admm, "
+            "SubspaceMinimization, and NNCG are the next largest rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
             "staggering, and subspace hot rows, and the boxed semi-smooth "
             "line-search shortcut plus configurable exact shortcut trim Newton "
-            "iterations; ShockPropagation and SAP are the refreshed "
-            "FrictionIndex rows above 1.6x, with APGD, NNCG, and subspace "
-            "rows forming the next group."
+            "iterations; no refreshed FrictionIndex row is above 1.6x, with "
+            "APGD, ShockPropagation, SAP, ADMM, subspace, and NNCG rows "
+            "forming the next group."
         ),
     },
 )
