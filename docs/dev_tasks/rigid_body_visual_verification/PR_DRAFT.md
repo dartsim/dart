@@ -86,6 +86,21 @@
 
 ## Testing
 
+- Current handoff-only stop:
+  - The user explicitly stopped implementation after the
+    `diff_drone_liftoff` contact-gradient checkpoint and requested handoff only
+    with no further verification.
+  - Branch state at the start of that handoff edit: local `HEAD`
+    `949d08083a8` (`Expose contact-gradient route capture metrics`), origin
+    `377e55ce5cb` (`Document rigid visual verification stop handoff`), and no
+    associated GitHub PR in the last checked state.
+  - No tests, lint, build, captures, or `git diff --check` were run after the
+    docs-only handoff edit.
+  - The next AVBD related-route metrics slice was inspected/planned but not
+    implemented: `avbd_rigid_fixed_joint_contact`,
+    `avbd_rigid_spherical_breakable_joint`,
+    `avbd_rigid_revolute_motor`, and `avbd_rigid_prismatic_motor` still need
+    capture metrics; `avbd_rigid_breakable_joint` already has the pattern.
 - Latest contact-gradient related-shelf capture-metrics follow-up:
   - `python/examples/demos/scenes/diff_drone_liftoff.py` now publishes
     scene-owned capture metrics for the non-numbered Differentiable shelf route

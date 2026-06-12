@@ -443,6 +443,20 @@
       gaps because `DART_BUILD_DIFF=OFF` in the default capture environment.
       The related route/docs drift guard reported `17 passed`; `pixi run lint`,
       bounded default `pixi run build`, and `git diff --check` passed.
+- [x] Critical stop handoff refresh after the contact-gradient checkpoint:
+      local `HEAD` was `949d08083a8` and origin still pointed at
+      `377e55ce5cb` when the user explicitly stopped implementation and asked
+      for handoff only with no further verification. This handoff records that
+      no tests, lint, build, captures, or `git diff --check` were run after the
+      docs-only edit. The next slice had only been inspected/planned; no code
+      changes were successfully applied.
+- [ ] Remaining AVBD related-route metrics follow-up: keep these as
+      non-numbered related evidence, and add scene-owned capture metrics to
+      `avbd_rigid_fixed_joint_contact`,
+      `avbd_rigid_spherical_breakable_joint`,
+      `avbd_rigid_revolute_motor`, and
+      `avbd_rigid_prismatic_motor`. `avbd_rigid_breakable_joint` already has a
+      capture hook and is the intended implementation pattern.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -802,16 +816,21 @@ and the no-tunneling scope decision.
    `diff_drone_liftoff` contact-gradient route now have capture metrics. Keep
    both as related shelf routes, not new numbered rigid rows, unless a distinct
    user question appears.
-4. Keep payloads summary-oriented: row identity, solver/contact scope,
+4. The next inspected but unimplemented follow-up is the AVBD related-route
+   metrics slice: fixed-joint contact, spherical breakable joint, revolute
+   motor, and prismatic motor. Start from
+   `python/examples/demos/scenes/avbd_rigid_breakable_joint.py` as the existing
+   capture-metrics pattern.
+5. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-5. The branch was pushed for handoff only because the maintainer/user explicitly
+6. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-6. Refresh validation as needed, then use the local
+7. Refresh validation only after implementation resumes, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-7. Keep related-evidence routes synchronized between the runner-owned
+8. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
 8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure

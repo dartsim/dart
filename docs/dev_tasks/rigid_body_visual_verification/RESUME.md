@@ -1,5 +1,125 @@
 # Resume: Rigid-Body Visual Verification
 
+## Critical Stop Handoff - 2026-06-11
+
+The user explicitly stopped the continuation and requested handoff only for all
+current work with no further verification. This section is the current
+fresh-session entry point.
+
+State at the start of this handoff edit:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Worktree: clean.
+- Local `HEAD`: `949d08083a8` (`Expose contact-gradient route capture
+  metrics`).
+- Origin: `origin/feature/rigid-body-gui-visual-verification` still pointed at
+  `377e55ce5cb` (`Document rigid visual verification stop handoff`).
+- Local branch was ahead of origin by one code/docs checkpoint before this
+  handoff-only docs commit.
+- Last checked GitHub state: no PR associated with this branch.
+
+What is complete in the local checkpoint:
+
+- `diff_drone_liftoff` now has scene-owned capture metrics for the
+  non-numbered Differentiable contact-gradient route linked from
+  `rigid_contact_solver_compare`.
+- The checkpoint includes code, test, CHANGELOG, Python demo README, PLAN-103
+  sidecar, dev-task README, this resume file, and PR draft updates.
+- Validation for that checkpoint was already collected before the stop request:
+  focused contact-gradient metrics test `1 passed`; docked default-build
+  capture under `/tmp/dart_capture_diff_drone_liftoff_metrics_1781241455`
+  wrote 95 PNG frames, 96 scene-metrics events, and a nonblank screenshot;
+  related route/docs drift guard `17 passed`; `pixi run lint` passed; bounded
+  default `pixi run build` passed with `ninja: no work to do`; and
+  `git diff --check` passed.
+- The default capture reported status `fallback` and `optimized=false` because
+  the default build has `DART_BUILD_DIFF=OFF`; that was expected by the test.
+
+No tests, lint, build, captures, or `git diff --check` were run after this
+handoff-only docs edit. Do not treat the handoff docs commit itself as freshly
+verified.
+
+What was interrupted:
+
+- The next continuation had only inspected and planned the next bounded slice.
+  It did not successfully edit code.
+- A broad `apply_patch` attempt for the next slice failed due to context
+  mismatch. No partial changes were applied by that failed patch.
+- The next candidate slice was: add scene-owned capture metrics to the missing
+  AVBD related-evidence routes while keeping them non-numbered:
+  `avbd_rigid_fixed_joint_contact`,
+  `avbd_rigid_spherical_breakable_joint`,
+  `avbd_rigid_revolute_motor`, and `avbd_rigid_prismatic_motor`.
+- `avbd_rigid_breakable_joint` already has capture metrics and should be used
+  as the local pattern.
+
+Relevant related-evidence mapping:
+
+- `rigid_free_flight` links to `floating_base`.
+- `rigid_multibody_dynamics_terms` links to `articulated`.
+- `rigid_solver_compare` links to `rigid_ipc_tunnel`, which now has capture
+  metrics.
+- `rigid_contact_solver_compare` links to `diff_drone_liftoff`, which now has
+  capture metrics.
+- `contact` links to `avbd_rigid_fixed_joint_contact`, which still lacks
+  capture metrics.
+- `rigid_joint_breakage` links to `avbd_rigid_breakable_joint`, which already
+  has capture metrics, and `avbd_rigid_spherical_breakable_joint`, which still
+  lacks capture metrics.
+- `rigid_joint_motor_limits` links to `avbd_rigid_revolute_motor` and
+  `avbd_rigid_prismatic_motor`, which still lack capture metrics.
+
+Recommended resume path:
+
+1. Confirm branch state with `git status -sb` and
+   `git log --oneline --decorate -5`.
+2. Read `avbd_rigid_breakable_joint.py` as the capture-metrics pattern before
+   editing the four missing AVBD scenes.
+3. Add `CAPTURE_METRICS_INFO_KEY` hooks to the four missing AVBD related
+   routes, keeping payloads summary-oriented: row id, related source row,
+   solver/scope or actuator label, current metrics, compact history extrema,
+   and manifest-friendly top-level numeric fields.
+4. Extend the existing focused AVBD integration tests in
+   `python/tests/integration/test_demos_cycle.py` rather than adding broad new
+   test surfaces.
+5. Update `CHANGELOG.md`, `python/examples/demos/README.md`, PLAN-103, this
+   task README, this resume, and `PR_DRAFT.md` after code changes.
+6. Run focused tests/captures/lint/build only after the user explicitly resumes
+   implementation or asks for verification.
+
+Scene details gathered before the stop:
+
+- `avbd_rigid_fixed_joint_contact.py` has fixed-joint base/payload/ground
+  contact, connector sync, and panel-only histories for captured-offset error,
+  payload-ground clearance, and payload speed. Suggested payload fields:
+  `row`, `solver=avbd_rigid_joints`, `constraint=fixed_joint_contact_path`,
+  `related_source_row=contact`, fixed-joint count, contact count, offset error,
+  clearance, speed, base/payload x positions, and history extrema.
+- `avbd_rigid_spherical_breakable_joint.py` has a weak spherical break-force
+  joint, reset/rearm helpers, connector color changes, captured offset and
+  captured rotation, and panel-only histories for anchor error, orientation
+  drift, and broken state. Suggested payload fields: `row`,
+  `constraint=spherical_break_force_anchor_lifecycle`,
+  `related_source_row=rigid_joint_breakage`, break/reset forces, anchor error,
+  orientation drift, payload speed/height, broken/status, and history extrema.
+- `avbd_rigid_revolute_motor.py` has a zero-gravity revolute velocity motor
+  with target speed `1.2` and max torque `800.0`, plus panel-only speed/error
+  histories. Suggested payload fields: `row`,
+  `actuator=revolute_velocity_motor`,
+  `related_source_row=rigid_joint_motor_limits`, target speed, max torque,
+  measured speed, speed error, absolute speed error, and history extrema.
+- `avbd_rigid_prismatic_motor.py` has a zero-gravity prismatic velocity motor
+  with target speed `0.8` and max force `800.0`, plus panel-only speed,
+  position, and orthogonal-drift histories. Suggested payload fields: `row`,
+  `actuator=prismatic_velocity_motor`,
+  `related_source_row=rigid_joint_motor_limits`, target speed, max force,
+  measured speed, speed error, axis position, orthogonal drift, and history
+  extrema.
+
+Future pushes, PR creation, comments, review replies, CI retriggers, merges, or
+other GitHub mutations require fresh explicit maintainer/user approval unless
+the user has explicitly requested that exact mutation in the active turn.
+
 ## Current Handoff Snapshot - 2026-06-11 Continuation
 
 The post-stop continuation resumed from pushed handoff commit `377e55ce5cb`
