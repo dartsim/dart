@@ -2,11 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_joint_motor_limits` Replay timeline slice
-after the limited-joints checkpoint. The World multibody actuator row now uses
-force travel gap as its Replay value track and marks velocity-clamp,
-position-stop, or effort-cap frames so saved-state scrubbing can jump to the
-motor/limit behavior users need to inspect.
+This checkpoint completes the `rigid_joint_passive_parameters` Replay timeline
+slice after the motor-limits checkpoint. The World multibody passive-parameter
+row now uses armature position gap as its Replay value track and marks damping
+energy separation, Coulomb slip, or armature-lag frames so saved-state
+scrubbing can jump to the passive-parameter behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -23,14 +23,14 @@ Expected repository state after this hand-off:
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
-  limited-joints Replay timeline, followed by the motor-limits Replay timeline
-  checkpoint.
+  limited-joints Replay timeline, motor-limits Replay timeline, followed by
+  the passive-parameters Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `40115d08429 Add limited joints replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by seven commits before
-  the motor-limits slice.
+  `11146140b5c Add joint motor limits replay timeline`; the branch was ahead
+  of `origin/feature/rigid-body-gui-visual-verification` by eight commits
+  before the passive-parameters slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -66,9 +66,14 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Force travel gap`, with markers for velocity-clamp, position-stop, or
   effort-cap frames.
+- The current passive-parameters Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Armature position gap`, with markers for damping energy separation, Coulomb
+  slip, or armature-lag frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
-  `rigid_joint_passive_parameters`, but a future session should inspect the
+  `rigid_screw_joint_pitch`, but a future session should inspect the
   sidecar and scene/test internals before implementing it.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -106,6 +111,10 @@ Expected repository state after this hand-off:
 - The motor-limits Replay timeline continuation added `replay_timeline`
   metadata to `rigid_joint_motor_limits`, updated tests and docs, raised its
   maintained capture budget to 96 frames so the position stop is visible, and
+  ran focused tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
+- The passive-parameters Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_joint_passive_parameters`, updated tests and docs, and
   ran focused tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
 - Do not push these local commits without explicit approval in a future
@@ -206,9 +215,12 @@ Expected repository state after this hand-off:
 - [x] `rigid_joint_motor_limits` now exposes a Replay timeline value track for
       force travel gap and markers for velocity-clamp, position-stop, or
       effort-cap frames.
+- [x] `rigid_joint_passive_parameters` now exposes a Replay timeline value
+      track for armature position gap and markers for damping energy
+      separation, Coulomb slip, or armature-lag frames.
 - [ ] Next bounded Replay timeline slice is likely
-      `rigid_joint_passive_parameters` after a future session re-checks the
-      sidecar and scene/test internals.
+      `rigid_screw_joint_pitch` after a future session re-checks the sidecar
+      and scene/test internals.
 
 ## Goal
 
@@ -241,17 +253,18 @@ are easy to inspect, cycle, capture, and regression-test.
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
-  limited-joints Replay timeline, followed by the motor-limits Replay timeline
-  checkpoint.
+  limited-joints Replay timeline, motor-limits Replay timeline, followed by
+  the passive-parameters Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `40115d08429 Add limited joints replay timeline`; it was seven commits ahead
-  of `origin/feature/rigid-body-gui-visual-verification` before the
-  motor-limits Replay timeline slice.
+  `11146140b5c Add joint motor limits replay timeline`; it was eight commits
+  ahead of `origin/feature/rigid-body-gui-visual-verification` before the
+  passive-parameters Replay timeline slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-  joint-breakage, distance-spring, limited-joints, and motor-limits Replay timeline
-  checkpoints are local and unpushed until explicit future approval.
+  joint-breakage, distance-spring, limited-joints, motor-limits, and
+  passive-parameters Replay timeline checkpoints are local and unpushed until
+  explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## What The Local Commit Changed
@@ -1171,19 +1184,63 @@ git diff --check
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Passive Parameters Replay Timeline Continuation
+
+The current continuation makes the `rigid_joint_passive_parameters` row easier
+to debug from the shared Replay panel:
+
+- `python/examples/demos/scenes/rigid_joint_passive_parameters.py` adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata.
+- The shared Replay panel value track label is `Armature position gap`.
+- Timeline markers cover damping energy separation, Coulomb slip, and
+  armature-lag frames.
+- `python/tests/integration/test_demos_cycle.py` covers the label, signal,
+  energy-separation marker, stiction/slip marker, armature-lag marker, and
+  quiet-frame behavior.
+- `CHANGELOG.md`, `python/examples/demos/README.md`, and
+  `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+  document the new Replay timeline value track and markers.
+
+Focused validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response -q
+pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_passive_parameters_timeline_1781277900
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- The focused passive-parameters test reported `1 passed`.
+- The focused Replay/passive-parameters pytest plus drift guards reported
+  `6 passed`.
+- The real docked capture completed with exit code 0 and wrote a nonblank
+  960x540 screenshot with docked UI detected, 119 PNG frames, and
+  120 scene-metric events.
+- The capture manifest reported row `rigid_joint_passive_parameters`, spring
+  energy about `2.1583`, damped energy about `1.3403`, damped-energy ratio
+  about `0.6210`, stiction position `0.0`, slip position about `0.1742` m,
+  slip speed about `0.7200` m/s, armature acceleration gap about `2.25` m/s^2,
+  and armature position gap about `0.2614` m.
+- `pixi run lint` passed.
+- `git diff --check` was clean.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the optional-row metadata, guidance-audit, handoff,
    live-open-command, stack Replay timeline, pushed docs-only hand-off,
    contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-   joint-breakage, distance-spring, limited-joints, and motor-limits Replay
-   timeline checkpoints to be present locally. These timeline commits may still
-   be local and unpushed.
+   joint-breakage, distance-spring, limited-joints, motor-limits, and
+   passive-parameters Replay timeline checkpoints to be present locally and
+   unpushed.
 3. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice; the next adjacent constraints row is likely
-   `rigid_joint_passive_parameters`, but do not assume it without inspecting
-   current evidence.
+   `rigid_screw_joint_pitch`, but do not assume it without inspecting current
+   evidence.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.

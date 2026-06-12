@@ -38,6 +38,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _PassiveLane:
     key: str
@@ -599,6 +608,117 @@ class _RigidJointPassiveParameterVerifier:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        positions = snapshot.get("position_history", {})
+        if isinstance(positions, dict):
+            reference = _last_float(positions.get("armature_reference", []))
+            heavy = _last_float(positions.get("armature_heavy", []))
+            if reference is not None and heavy is not None:
+                return max(0.0, reference - heavy)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            reference_metrics = metrics.get("armature_reference", {})
+            heavy_metrics = metrics.get("armature_heavy", {})
+            if isinstance(reference_metrics, dict) and isinstance(
+                heavy_metrics, dict
+            ):
+                try:
+                    return max(
+                        0.0,
+                        float(reference_metrics.get("position", 0.0))
+                        - float(heavy_metrics.get("position", 0.0)),
+                    )
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.05:
+            return 1.0
+
+        energies = snapshot.get("energy_history", {})
+        if isinstance(energies, dict):
+            spring_energy = _last_float(energies.get("spring_only", []))
+            damped_energy = _last_float(energies.get("spring_damper", []))
+            if (
+                spring_energy is not None
+                and damped_energy is not None
+                and spring_energy - damped_energy >= 0.25
+            ):
+                return 1.0
+
+        positions = snapshot.get("position_history", {})
+        if isinstance(positions, dict):
+            slip_position = _last_float(positions.get("slip", []))
+            stiction_position = _last_float(positions.get("stiction", []))
+            if slip_position is not None:
+                stiction_position = stiction_position or 0.0
+                if slip_position - stiction_position >= 0.05:
+                    return 1.0
+
+        accelerations = snapshot.get("accel_history", {})
+        if isinstance(accelerations, dict):
+            reference_acceleration = _last_float(
+                accelerations.get("armature_reference", [])
+            )
+            heavy_acceleration = _last_float(accelerations.get("armature_heavy", []))
+            if (
+                reference_acceleration is not None
+                and heavy_acceleration is not None
+                and abs(reference_acceleration - heavy_acceleration) >= 0.50
+            ):
+                return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                spring_metrics = metrics.get("spring_only", {})
+                damped_metrics = metrics.get("spring_damper", {})
+                if isinstance(spring_metrics, dict) and isinstance(
+                    damped_metrics, dict
+                ):
+                    if (
+                        float(spring_metrics.get("energy", 0.0))
+                        - float(damped_metrics.get("energy", 0.0))
+                        >= 0.25
+                    ):
+                        return 1.0
+
+                stiction_metrics = metrics.get("stiction", {})
+                slip_metrics = metrics.get("slip", {})
+                if isinstance(stiction_metrics, dict) and isinstance(
+                    slip_metrics, dict
+                ):
+                    if (
+                        float(slip_metrics.get("position", 0.0))
+                        - float(stiction_metrics.get("position", 0.0))
+                        >= 0.05
+                    ):
+                        return 1.0
+
+                reference_metrics = metrics.get("armature_reference", {})
+                heavy_metrics = metrics.get("armature_heavy", {})
+                if isinstance(reference_metrics, dict) and isinstance(
+                    heavy_metrics, dict
+                ):
+                    if (
+                        abs(
+                            float(reference_metrics.get("acceleration", 0.0))
+                            - float(heavy_metrics.get("acceleration", 0.0))
+                        )
+                        >= 0.50
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -760,6 +880,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Armature position gap",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
         },
     )
 

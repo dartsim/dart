@@ -5496,6 +5496,93 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["history"]["armature_heavy_max_abs_acceleration"] == pytest.approx(
         max(abs(value) for value in controller._accel_history["armature_heavy"])
     )
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_armature_gap = (
+        controller._position_history["armature_reference"][-1]
+        - controller._position_history["armature_heavy"][-1]
+    )
+    assert timeline["signal_label"] == "Armature position gap"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_armature_gap)
+    assert (
+        timeline["markers"](
+            {
+                "energy_history": {
+                    "spring_only": [2.0],
+                    "spring_damper": [1.7],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "position_history": {
+                    "stiction": [0.0],
+                    "slip": [0.06],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "position_history": {
+                    "armature_reference": [0.10],
+                    "armature_heavy": [0.03],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "accel_history": {
+                    "armature_reference": [0.75],
+                    "armature_heavy": [0.10],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "position_history": {
+                    "stiction": [0.0],
+                    "slip": [0.02],
+                    "armature_reference": [0.04],
+                    "armature_heavy": [0.02],
+                },
+                "energy_history": {
+                    "spring_only": [2.0],
+                    "spring_damper": [1.9],
+                },
+                "accel_history": {
+                    "armature_reference": [0.30],
+                    "armature_heavy": [0.10],
+                },
+                "last_metrics": {
+                    "spring_only": {"energy": 2.0},
+                    "spring_damper": {"energy": 1.9},
+                    "stiction": {"position": 0.0},
+                    "slip": {"position": 0.02},
+                    "armature_reference": {
+                        "position": 0.04,
+                        "acceleration": 0.30,
+                    },
+                    "armature_heavy": {
+                        "position": 0.02,
+                        "acceleration": 0.10,
+                    },
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
