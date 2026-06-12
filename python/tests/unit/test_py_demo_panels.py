@@ -918,6 +918,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     }
     assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
         "active_set_transition",
+        "active_friction_index_contact",
         "singular_degenerate",
         "near_singular",
         "world_stack",
@@ -935,6 +936,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["world_card_pile"]["surface"] == "boxed contact"
     assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
         "BM_LcpWorldCardPileStep_BoxedLcp"
+    )
+    assert benchmark_by_packet["active_friction_index_contact"]["surface"] == (
+        "findex contact"
+    )
+    assert benchmark_by_packet["active_friction_index_contact"][
+        "benchmark_filter"
+    ] == (
+        "BM_DantzigSolver_ActiveFrictionIndexContact|"
+        "BM_PgsSolver_ActiveFrictionIndexContact"
     )
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())

@@ -74,6 +74,15 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "bound changes and warm-start behavior",
     },
     {
+        "packet": "active_friction_index_contact",
+        "surface": "findex contact",
+        "benchmark_filter": (
+            "BM_DantzigSolver_ActiveFrictionIndexContact|"
+            "BM_PgsSolver_ActiveFrictionIndexContact"
+        ),
+        "coverage": "coupled two-contact active tangent bounds",
+    },
+    {
         "packet": "singular_degenerate",
         "surface": "standard/boxed/findex",
         "benchmark_filter": "BM_LcpSingularDegenerate",
