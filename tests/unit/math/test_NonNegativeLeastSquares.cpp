@@ -234,6 +234,26 @@ TEST(NonNegativeLeastSquares, ReturnsFalseWhenIterationCapExhausted)
 }
 
 //==============================================================================
+TEST(NonNegativeLeastSquares, HandlesTinyPassiveSetDropBeforeCapExhaustion)
+{
+  // A near-zero problem can drop every passive variable as numerical zero
+  // during the alpha step. This exercises the defensive empty-passive-set path
+  // before the explicit iteration cap reports lack of progress.
+  Eigen::MatrixXd A(2, 2);
+  A << -196.10687892694176, -146.79622095495228, 4.8772250786757949,
+      1.7022925405257139;
+  const Eigen::Vector2d b(-4.572853677476421e-14, -6.1808117898806715e-13);
+
+  Eigen::VectorXd x;
+  EXPECT_FALSE(solveNonNegativeLeastSquares(A, b, x, -1.0, 2));
+
+  ASSERT_EQ(x.size(), 2);
+  EXPECT_TRUE(x.allFinite());
+  EXPECT_GE(x.minCoeff(), -1e-12);
+  EXPECT_NEAR(x.norm(), 0.0, 1e-18);
+}
+
+//==============================================================================
 // Regression: a small underdetermined system whose active set churns needs
 // more inner iterations than the old 3*n default cap allowed.
 TEST(NonNegativeLeastSquares, DefaultCapHandlesActiveSetChurn)

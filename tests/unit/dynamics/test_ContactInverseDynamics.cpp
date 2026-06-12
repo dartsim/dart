@@ -319,6 +319,34 @@ TEST(ContactInverseDynamics, ComputeDoesNotModifyJointForces)
 }
 
 //==============================================================================
+TEST(ContactInverseDynamics, AccessorsAndTuningValidation)
+{
+  auto box = createFloatingBox();
+  ContactInverseDynamics solver(box);
+
+  EXPECT_EQ(solver.getSkeleton(), box);
+  EXPECT_DOUBLE_EQ(solver.getRegularization(), 1e-8);
+  EXPECT_DOUBLE_EQ(solver.getResidualTolerance(), 1e-6);
+
+  const auto contacts = createBoxBottomContacts(box, 0.6);
+  solver.setContacts(contacts);
+  ASSERT_EQ(solver.getContacts().size(), contacts.size());
+  EXPECT_EQ(solver.getContacts()[0].bodyNode, contacts[0].bodyNode);
+
+  solver.setRegularization(-1.0);
+  EXPECT_DOUBLE_EQ(solver.getRegularization(), 1e-8);
+  solver.setRegularization(1e-4);
+  EXPECT_DOUBLE_EQ(solver.getRegularization(), 1e-4);
+
+  solver.setResidualTolerance(0.0);
+  EXPECT_DOUBLE_EQ(solver.getResidualTolerance(), 1e-6);
+  solver.setResidualTolerance(1e-5);
+  EXPECT_DOUBLE_EQ(solver.getResidualTolerance(), 1e-5);
+
+  EXPECT_TRUE(solver.compute().feasible);
+}
+
+//==============================================================================
 TEST(ContactInverseDynamics, DetectsFreeRootJointAsUnactuated)
 {
   const auto biped = createFloatingBiped();
@@ -657,9 +685,27 @@ TEST(ContactInverseDynamics, RejectsNonFiniteContactSpecs)
 TEST(ContactInverseDynamics, RejectsNullSkeleton)
 {
   ContactInverseDynamics solver(nullptr);
+  EXPECT_EQ(solver.getSkeleton(), nullptr);
+  EXPECT_TRUE(solver.getUnactuatedDofs().empty());
+
   const auto result = solver.compute();
   EXPECT_FALSE(result.feasible);
   EXPECT_EQ(result.jointForces.size(), 0);
+}
+
+//==============================================================================
+TEST(ContactInverseDynamics, ReportsInfeasibleForNonFiniteDynamicsState)
+{
+  auto box = createFloatingBox();
+  Eigen::VectorXd accelerations = Eigen::VectorXd::Zero(6);
+  accelerations[5] = std::numeric_limits<double>::quiet_NaN();
+  box->setAccelerations(accelerations);
+
+  ContactInverseDynamics solver(box);
+  solver.setContacts(createBoxBottomContacts(box, 0.6));
+  const auto result = solver.compute();
+
+  EXPECT_FALSE(result.feasible);
 }
 
 //==============================================================================
