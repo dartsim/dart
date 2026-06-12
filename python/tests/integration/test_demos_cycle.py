@@ -5277,6 +5277,65 @@ def test_rigid_joint_motor_limits_clamp_commands_and_effort() -> None:
         acceleration_gap
     )
     assert capture_metrics["history"]["max_force_position_gap"] > 0.20
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Force travel gap"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._force_position_gap_history[-1]
+    )
+    assert (
+        timeline["markers"](
+            {
+                "limited_acceleration_history": [0.0, 2.0],
+                "open_acceleration_history": [0.0, 3.0],
+                "force_position_gap_history": [0.0],
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "controls": {"command_speed": 0.55, "velocity_limit": 0.30},
+                "motor_speed_history": [0.0, 0.28],
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "controls": {"position_limit": 0.35},
+                "limit_angle_history": [0.0, 0.34],
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "controls": {
+                    "command_speed": 0.20,
+                    "velocity_limit": 0.30,
+                    "position_limit": 0.35,
+                },
+                "motor_speed_history": [0.10],
+                "limit_angle_history": [0.20],
+                "limit_error_history": [0.0],
+                "limited_acceleration_history": [2.0],
+                "open_acceleration_history": [2.1],
+                "force_position_gap_history": [0.02],
+                "last_metrics": {
+                    "motor_speed": 0.10,
+                    "position_limit_angle": 0.20,
+                    "position_limit_error": 0.0,
+                    "force_acceleration_gap": 0.10,
+                    "force_position_gap": 0.02,
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_joint_passive_parameters_order_passive_response() -> None:

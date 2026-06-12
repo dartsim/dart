@@ -284,7 +284,7 @@ RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
     ("rigid_joint_breakage", 48, 960, 540, True),
     ("rigid_distance_spring", 72, 960, 540, True),
     ("rigid_limited_joints", 24, 960, 540, True),
-    ("rigid_joint_motor_limits", 72, 960, 540, True),
+    ("rigid_joint_motor_limits", 96, 960, 540, True),
     ("rigid_joint_passive_parameters", 120, 960, 540, True),
     ("rigid_screw_joint_pitch", 96, 960, 540, True),
     ("rigid_multibody_dynamics_terms", 96, 960, 540, True),

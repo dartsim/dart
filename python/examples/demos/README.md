@@ -200,7 +200,7 @@ plus a warning block if any selected row is missing those fields.
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken/released state, connector color, reset, Replay marks    |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, Replay marks              |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks           |
-| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics            |
+| 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks              |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration, metrics    |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error, metrics  |
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response, metrics       |
@@ -599,6 +599,8 @@ motor speed, position-limit error, and force-response histories.
 `py-demo-capture` records the same row identity, actuator scope, control values,
 joint names, motor clamp, position-stop, force/effort-cap, acceleration-gap,
 step-timing, and compact history metrics into the manifest sidecar.
+The shared Replay panel uses force travel gap as its value track and marks
+velocity-clamp, position-stop, and effort-cap frames.
 
 The **`rigid_joint_passive_parameters`** scene covers the public passive
 multibody joint parameters for rigid links without contacts or gravity. Matched
@@ -826,7 +828,7 @@ pixi run py-demo-capture -- --scene rigid_distance_spring --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_limited_joints --frames 24 \
     --width 960 --height 540 --show-ui
-pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 \
+pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 96 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_joint_passive_parameters --frames 120 \
     --width 960 --height 540 --show-ui

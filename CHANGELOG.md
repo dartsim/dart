@@ -249,6 +249,9 @@
   - Added Replay timeline metadata to `rigid_limited_joints`, using locked-axis
     error as the value track and marking locked-error or free-axis motion
     frames.
+  - Added Replay timeline metadata to `rigid_joint_motor_limits`, using force
+    travel gap as the value track and marking velocity-clamp, position-stop, or
+    effort-cap frames.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity

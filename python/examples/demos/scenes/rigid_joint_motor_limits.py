@@ -37,6 +37,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 def _box(size: tuple[float, float, float]) -> dart.BoxShape:
     return dart.BoxShape(np.asarray(size, dtype=float))
 
@@ -445,6 +454,101 @@ class _RigidJointMotorLimitVerifier:
             "last_metrics": dict(self._last_metrics),
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        force_position_gap = _last_float(snapshot.get("force_position_gap_history", []))
+        if force_position_gap is not None:
+            return max(0.0, force_position_gap)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                return max(0.0, float(metrics.get("force_position_gap", 0.0)))
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.05:
+            return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if not isinstance(metrics, dict):
+            metrics = {}
+        controls = snapshot.get("controls", {})
+        if not isinstance(controls, dict):
+            controls = {}
+
+        try:
+            command_speed = float(
+                controls.get(
+                    "command_speed",
+                    metrics.get("motor_command_speed", self.command_speed),
+                )
+            )
+            velocity_limit = float(
+                controls.get(
+                    "velocity_limit",
+                    metrics.get("motor_velocity_limit", self.velocity_limit),
+                )
+            )
+            motor_speed = _last_float(snapshot.get("motor_speed_history", []))
+            if motor_speed is None:
+                motor_speed = float(metrics.get("motor_speed", 0.0))
+            if (
+                command_speed > velocity_limit + 1.0e-6
+                and abs(motor_speed) >= 0.85 * velocity_limit
+            ):
+                return 1.0
+        except (TypeError, ValueError):
+            pass
+
+        try:
+            position_limit = float(
+                controls.get(
+                    "position_limit",
+                    metrics.get("position_limit_upper", self.position_limit),
+                )
+            )
+            limit_angle = _last_float(snapshot.get("limit_angle_history", []))
+            if limit_angle is None:
+                limit_angle = float(metrics.get("position_limit_angle", 0.0))
+            limit_error = _last_float(snapshot.get("limit_error_history", []))
+            if limit_error is None:
+                limit_error = float(metrics.get("position_limit_error", 0.0))
+            if limit_angle >= position_limit - 0.02 or abs(limit_error) >= 0.005:
+                return 1.0
+        except (TypeError, ValueError):
+            pass
+
+        limited_acceleration = _last_float(
+            snapshot.get("limited_acceleration_history", [])
+        )
+        open_acceleration = _last_float(snapshot.get("open_acceleration_history", []))
+        if limited_acceleration is not None and open_acceleration is not None:
+            if abs(open_acceleration - limited_acceleration) >= 0.50:
+                return 1.0
+        else:
+            try:
+                if abs(float(metrics.get("force_acceleration_gap", 0.0))) >= 0.50:
+                    return 1.0
+            except (TypeError, ValueError):
+                pass
+
+        force_gap = _last_float(snapshot.get("force_position_gap_history", []))
+        if force_gap is None:
+            try:
+                force_gap = float(metrics.get("force_position_gap", 0.0))
+            except (TypeError, ValueError):
+                force_gap = 0.0
+        if force_gap >= 0.05:
+            return 1.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.command_speed = float(controls.get("command_speed", self.command_speed))
@@ -608,6 +712,11 @@ def build() -> SceneSetup:
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,
+            "replay_timeline": {
+                "signal_label": "Force travel gap",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
         },
     )
 

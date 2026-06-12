@@ -2,11 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_limited_joints` Replay timeline slice
-after the distance-spring checkpoint. The one-DOF joint row now uses locked-axis
-error as its Replay value track and marks locked-error or free-axis-motion
-frames so saved-state scrubbing can jump to either constraint-correction or
-allowed hinge/slider motion.
+This checkpoint completes the `rigid_joint_motor_limits` Replay timeline slice
+after the limited-joints checkpoint. The World multibody actuator row now uses
+force travel gap as its Replay value track and marks velocity-clamp,
+position-stop, or effort-cap frames so saved-state scrubbing can jump to the
+motor/limit behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -22,14 +22,15 @@ Expected repository state after this hand-off:
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline, distance-spring Replay timeline, followed by
-  the limited-joints Replay timeline checkpoint.
+  joint-breakage Replay timeline, distance-spring Replay timeline,
+  limited-joints Replay timeline, followed by the motor-limits Replay timeline
+  checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `d9db27b8ccd Add distance spring replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by six commits before
-  the limited-joints slice.
+  `40115d08429 Add limited joints replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by seven commits before
+  the motor-limits slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -60,7 +61,15 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Locked-axis error`, with markers for locked-error or free-axis-motion
   frames.
+- The current motor-limits Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Force travel gap`, with markers for velocity-clamp, position-stop, or
+  effort-cap frames.
 - There is no PR associated with this branch at checkpoint time.
+- The next adjacent durable sidecar row appears to be
+  `rigid_joint_passive_parameters`, but a future session should inspect the
+  sidecar and scene/test internals before implementing it.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
   hand-off-only stop checkpoint.
@@ -93,6 +102,11 @@ Expected repository state after this hand-off:
 - The limited-joints Replay timeline continuation added `replay_timeline`
   metadata to `rigid_limited_joints`, updated tests and docs, and ran focused
   tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
+- The motor-limits Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_joint_motor_limits`, updated tests and docs, raised its
+  maintained capture budget to 96 frames so the position stop is visible, and
+  ran focused tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
 - Do not push these local commits without explicit approval in a future
   session.
@@ -189,6 +203,12 @@ Expected repository state after this hand-off:
 - [x] `rigid_limited_joints` now exposes a Replay timeline value track for
       locked-axis error and markers for locked-error or free-axis-motion
       frames.
+- [x] `rigid_joint_motor_limits` now exposes a Replay timeline value track for
+      force travel gap and markers for velocity-clamp, position-stop, or
+      effort-cap frames.
+- [ ] Next bounded Replay timeline slice is likely
+      `rigid_joint_passive_parameters` after a future session re-checks the
+      sidecar and scene/test internals.
 
 ## Goal
 
@@ -220,16 +240,17 @@ are easy to inspect, cycle, capture, and regression-test.
   live open-command, stack Replay timeline, pushed hand-off, contact
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
-  joint-breakage Replay timeline, distance-spring Replay timeline, followed by
-  the limited-joints Replay timeline checkpoint.
+  joint-breakage Replay timeline, distance-spring Replay timeline,
+  limited-joints Replay timeline, followed by the motor-limits Replay timeline
+  checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `d9db27b8ccd Add distance spring replay timeline`; it was six commits ahead
+  `40115d08429 Add limited joints replay timeline`; it was seven commits ahead
   of `origin/feature/rigid-body-gui-visual-verification` before the
-  limited-joints Replay timeline slice.
+  motor-limits Replay timeline slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-  joint-breakage, distance-spring, and limited-joints Replay timeline
+  joint-breakage, distance-spring, limited-joints, and motor-limits Replay timeline
   checkpoints are local and unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
@@ -1123,19 +1144,46 @@ Observed results so far:
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Joint Motor Limits Replay Timeline Continuation
+
+Current motor-limits Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_timeline_1781276821
+jq -r '.scene, .capture.requested_frames, .capture.converted_frames, .show_ui, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.motor_speed, .scene_metrics.latest.metrics.motor_expected_speed, .scene_metrics.latest.metrics.motor_speed_error, .scene_metrics.latest.metrics.position_limit_angle, .scene_metrics.latest.metrics.position_limit_upper, .scene_metrics.latest.metrics.position_limit_error, .scene_metrics.latest.metrics.force_position_gap, .scene_metrics.latest.metrics.force_acceleration_gap, .scene_metrics.latest.metrics.history.max_force_position_gap, .scene_metrics.latest.metrics.history.max_force_acceleration_gap' /tmp/dart_capture_joint_motor_limits_timeline_1781276821/manifest.json
+pixi run lint
+git diff --check
+```
+
+- Focused Replay/motor-limits pytest and drift guards reported `6 passed`.
+- The real docked capture completed with exit code 0 and wrote a nonblank
+  960x540 screenshot with docked UI detected, 95 PNG frames, and
+  96 scene-metric events.
+- The maintained workflow capture budget was raised from 72 to 96 frames
+  because the 72-frame packet showed velocity clamp and effort gap, but did not
+  reach the position stop. The 96-frame packet reached the stop with
+  `position_limit_angle` equal to `position_limit_upper` (`0.35` rad).
+- The capture manifest reported row `rigid_joint_motor_limits`, motor speed
+  and expected speed `0.3` m/s, motor speed error `0.0`, position-limit error
+  `0.0`, force travel gap about `0.6984` m, and force acceleration gap about
+  `6.0` m/s^2.
+- `pixi run lint` passed.
+- `git diff --check` was clean.
+
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the optional-row metadata, guidance-audit, handoff,
    live-open-command, stack Replay timeline, pushed docs-only hand-off,
    contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-   joint-breakage, distance-spring, and limited-joints Replay timeline
-   checkpoints to be present locally. These timeline commits may still be local
-   and unpushed.
+   joint-breakage, distance-spring, limited-joints, and motor-limits Replay
+   timeline checkpoints to be present locally. These timeline commits may still
+   be local and unpushed.
 3. Re-evaluate the durable sidecar before selecting any next bounded rigid
    visual-verification slice; the next adjacent constraints row is likely
-   `rigid_joint_motor_limits`, but do not assume it without inspecting current
-   evidence.
+   `rigid_joint_passive_parameters`, but do not assume it without inspecting
+   current evidence.
 4. Rerun the repository-mandated `pixi run lint` before any future commit.
 5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
