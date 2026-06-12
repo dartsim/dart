@@ -1525,6 +1525,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     also try the helper before Dantzig fallback, while active-bound,
     warm-started, large size-sensitive, and validator-rejected rows stay on
     their original iterative or Newton paths.
+  - Optimized the shared validated strict-interior friction-index exact helper
+    to try an LLT solve before falling back to the previous LU solve, reducing
+    current SPD FrictionIndex exact-path rows and removing the remaining
+    above-`2x` averages from the refreshed FrictionIndex profile.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

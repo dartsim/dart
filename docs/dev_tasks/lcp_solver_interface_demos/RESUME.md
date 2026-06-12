@@ -1,5 +1,119 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 LLT-First FrictionIndex Exact Helper
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `e024c24a20a Raise ShockPropagation friction exact gate`.
+- Current checkpoint target:
+  `Optimize friction exact helper with LLT`.
+- Pre-commit resume state: this branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 66 commits with the LLT helper
+  slice uncommitted.
+- After this checkpoint is committed, the branch should become ahead of
+  `origin/feature/lcp-solver-interface-demos` by 67 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `detail::trySolveInteriorFrictionIndexLcp(...)` now tries an
+  `Eigen::LLT` solve first for SPD strict-interior friction-index rows.
+- If LLT fails or the candidate fails the existing finite, bound, or solution
+  validation checks, the helper falls back to the previous `partialPivLu()`
+  solve.
+- This keeps the exact helper's acceptance contract unchanged while reducing
+  the dense-solve cost for current SPD FrictionIndex comparison packets.
+- The checked profile CSVs, Python demo profile summaries, metadata assertions,
+  projection-method docs, changelog, and hand-off docs were refreshed.
+- Files changed by this checkpoint:
+  `CHANGELOG.md`, `dart/math/lcp/lcp_validation.hpp`,
+  `docs/background/lcp/04_projection-methods.md`,
+  `docs/background/lcp/figures/performance_profile_boxed.csv`,
+  `docs/background/lcp/figures/performance_profile_frictionindex.csv`,
+  `docs/background/lcp/figures/performance_profile_standard.csv`,
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md`,
+  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`,
+  `python/examples/demos/scenes/lcp_physics.py`, and
+  `python/tests/unit/test_py_demo_panels.py`.
+
+Evidence:
+
+- Focused probe:
+  `build/friction_index_llt_exact_probe.json`.
+- Focused 64-contact FrictionIndex exact rows improved approximately:
+  - `BlockedJacobi`: `631253.79ns -> 254343.08ns`.
+  - `BoxedSemiSmoothNewton`: `430872.80ns -> 248047.48ns`.
+  - `NNCG`: `459364.02ns -> 254507.79ns`.
+  - `ShockPropagation`: `466220.22ns -> 270455.13ns`.
+- Regenerated `build/lcp_profile_full.json` reports no FrictionIndex solver
+  average above `2x`; the largest FrictionIndex averages are now
+  `RedBlackGaussSeidel 1.81`, `Jacobi 1.77`, `Admm 1.65`,
+  `ShockPropagation 1.60`, `BGS 1.45`, `Sap 1.44`, and `Apgd 1.41`.
+- CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+  columns.
+
+Verification and checks already gathered for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/FrictionIndex/(BlockedJacobi|BoxedSemiSmoothNewton|Dantzig|ShockPropagation|BGS|NNCG|SubspaceMinimization|Pgs|Tgs|SymmetricPsor|Sap|Apgd|Admm)/' \
+  --benchmark_min_time=0.1s \
+  --benchmark_format=json > build/friction_index_llt_exact_probe.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+A `pixi run lint` command completed successfully during the earlier hand-off
+turn. Because this checkpoint edits hand-off docs afterward, rerun the required
+pre-commit lint and diff checks before committing.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, first checkpoint the LLT helper slice
+with `Optimize friction exact helper with LLT`. If this checkpoint is already
+committed, continue with the refreshed profile's highest remaining rows:
+FrictionIndex `RedBlackGaussSeidel 1.81`,
+FrictionIndex `Jacobi 1.77`, Boxed `ShockPropagation 1.66`, Standard
+`Lemke 1.65`, and FrictionIndex `Admm 1.65`. Do not push or mutate GitHub state
+without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 ShockPropagation Large FrictionIndex Exact Path
 
 This is the latest state. Older sections below are historical checkpoints and

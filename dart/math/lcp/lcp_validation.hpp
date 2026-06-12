@@ -36,6 +36,7 @@
 
 #include <dart/common/macros.hpp>
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/LU>
 
@@ -535,40 +536,48 @@ inline bool trySolveInteriorFrictionIndexLcp(
     return false;
   }
 
-  Eigen::VectorXd candidate = problem.A.partialPivLu().solve(problem.b);
-  if (!candidate.allFinite()) {
-    return false;
-  }
-
-  Eigen::VectorXd loEff;
-  Eigen::VectorXd hiEff;
-  if (!computeEffectiveBounds(
-          problem.lo, problem.hi, problem.findex, candidate, loEff, hiEff)) {
-    return false;
-  }
-
-  const double strictInteriorTol = std::max(0.0, interiorTolerance);
-  for (Eigen::Index i = 0; i < candidate.size(); ++i) {
-    if (std::isfinite(loEff[i])
-        && candidate[i] <= loEff[i] + strictInteriorTol) {
+  const auto tryCandidate = [&](Eigen::VectorXd candidate) -> bool {
+    if (!candidate.allFinite()) {
       return false;
     }
-    if (std::isfinite(hiEff[i])
-        && candidate[i] >= hiEff[i] - strictInteriorTol) {
+
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    if (!computeEffectiveBounds(
+            problem.lo, problem.hi, problem.findex, candidate, loEff, hiEff)) {
       return false;
     }
+
+    const double strictInteriorTol = std::max(0.0, interiorTolerance);
+    for (Eigen::Index i = 0; i < candidate.size(); ++i) {
+      if (std::isfinite(loEff[i])
+          && candidate[i] <= loEff[i] + strictInteriorTol) {
+        return false;
+      }
+      if (std::isfinite(hiEff[i])
+          && candidate[i] >= hiEff[i] - strictInteriorTol) {
+        return false;
+      }
+    }
+
+    Eigen::VectorXd w = problem.A * candidate - problem.b;
+    if (!validateSolution(candidate, w, loEff, hiEff, validationTolerance)) {
+      return false;
+    }
+
+    x = std::move(candidate);
+    if (wOut) {
+      *wOut = std::move(w);
+    }
+    return true;
+  };
+
+  const Eigen::LLT<Eigen::MatrixXd> llt(problem.A);
+  if (llt.info() == Eigen::Success && tryCandidate(llt.solve(problem.b))) {
+    return true;
   }
 
-  Eigen::VectorXd w = problem.A * candidate - problem.b;
-  if (!validateSolution(candidate, w, loEff, hiEff, validationTolerance)) {
-    return false;
-  }
-
-  x = std::move(candidate);
-  if (wOut) {
-    *wOut = std::move(w);
-  }
-  return true;
+  return tryCandidate(problem.A.partialPivLu().solve(problem.b));
 }
 
 } // namespace dart::math::detail
