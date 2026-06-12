@@ -150,12 +150,12 @@ explicit "not now"):
 1. **NOT MET.** Python demos cover the DART 7 World surface broadly, but the
    retire decision still needs the high-value planned rows to become usable
    World-native demos or be explicitly retired. Today the Python registry has
-   99 rows across World rigid body, AVBD rigid constraints, planned World ports,
-   robot/control placeholders, Rigid IPC, PLAN-083 placeholders, replay,
-   variational, differentiable, VBD, and IPC deformable categories. Planned rows
-   keep remaining IK, puppet, SIMBICON, operational-space-control,
-   collision-sandbox, and mobile-manipulation gaps visible without preserving
-   legacy DART 6 implementations in the catalog.
+   151 rows across World rigid body, AVBD source-demo and rigid/articulated
+   constraint rows, planned World ports, robot/control placeholders, Rigid IPC,
+   PLAN-083 placeholders, replay, variational, differentiable, VBD, and IPC
+   deformable categories. Planned rows keep remaining IK, puppet, SIMBICON,
+   operational-space-control, collision-sandbox, and mobile-manipulation gaps
+   visible without preserving legacy DART 6 implementations in the catalog.
 2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
    `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
    smoke is PLAN-012's responsibility.
@@ -192,11 +192,11 @@ now" because checklist items 1–3 remain open.
   an ordered registry and a `__main__` CLI (`--scene`/`--cycle-scenes`/
   `--frames`/`--screenshot`/`--list`, plus interactive/headless modes).
   `pixi run py-demos` opens the workspace; the cycle smoke is pytest-gated
-  (`python/tests/integration/test_demos_cycle.py`). The current catalog has 99
-  rows across World rigid body, AVBD rigid constraints, planned World ports,
-  robot/control placeholders, Rigid IPC, PLAN-083 placeholders, simulation
-  replay, variational integrators, differentiable scenes, VBD, and IPC
-  deformable.
+  (`python/tests/integration/test_demos_cycle.py`). The current catalog has 151
+  rows across World rigid body, AVBD source-demo and rigid/articulated
+  constraint rows, planned World ports, robot/control placeholders, Rigid IPC,
+  PLAN-083 placeholders, simulation replay, variational integrators,
+  differentiable scenes, VBD, and IPC deformable.
 - **DART 7 pruning.** Legacy DART 6 demo implementations and cross-language
   golden parity fixtures were removed from the demo surfaces. High-value missing
   rows appear as planned World-port placeholders until they become usable

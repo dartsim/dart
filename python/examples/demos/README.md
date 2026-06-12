@@ -37,6 +37,10 @@ The runner mirrors C++ `dart-demos` to keep the cross-language UX consistent:
 | `--show-ui`         | Include ImGui panels in headless screenshots               |
 | `--list`            | Print the catalog and exit                                 |
 
+In cycle mode, `--frames N` is the per-scene budget. The host prints
+`Cycling demo scene <i>/<N>: <scene_id>` as it advances, which keeps long
+headless or live-window catalog smokes diagnosable.
+
 `--screenshot` and `--out` use the real Filament render path. For visual
 debugging, avoid `--backend noop`: it can exercise CPU code but produces blank
 pixels and is not evidence for layout, camera, lighting, or material quality.

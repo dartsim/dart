@@ -50,6 +50,9 @@
     balance, operational-space control, collision sandbox, and
     mobile-manipulation follow-ups stay visible without keeping legacy scene
     implementations.
+  - Fixed `pixi run py-demos -- --cycle-scenes --frames N` so `N` is the
+    per-scene cycle budget instead of a global viewer stop, and added per-scene
+    progress output for long catalog smokes.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

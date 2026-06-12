@@ -35,6 +35,7 @@ from examples.demos.runner import (  # noqa: E402
     CAPTURE_METRICS_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     RIGID_VISUAL_WORKFLOW_LABELS,
+    PythonDemoScene,
     _RIGID_WORKFLOW_RELATED_EVIDENCE,
     _viewer_catalog_title,
 )
@@ -400,8 +401,40 @@ def test_runner_cycle_returns_zero() -> None:
         pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
     if not _simulation_has("World"):
         pytest.skip("dartpy.World unavailable in this build")
-    rc = run(["--cycle-scenes", "--frames", "2", "--headless"], make_demo_scenes())
+    rc = run(["--cycle-scenes", "--frames", "1", "--headless"], make_demo_scenes())
     assert rc == 0
+
+
+def test_runner_cycle_frames_budget_applies_per_scene() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    if not _simulation_has("World"):
+        pytest.skip("dartpy.World unavailable in this build")
+
+    from examples.demos.scenes.rigid_body import SCENE as BASE_SCENE
+
+    visited: list[str] = []
+
+    def make_scene(scene_id: str) -> PythonDemoScene:
+        def build():
+            visited.append(scene_id)
+            return BASE_SCENE.build()
+
+        return PythonDemoScene(
+            id=scene_id,
+            title=f"Cycle {scene_id}",
+            category="Cycle Test",
+            summary="Small regression scene for the cycle harness.",
+            build=build,
+        )
+
+    rc = run(
+        ["--cycle-scenes", "--frames", "1", "--headless", "--hide-ui"],
+        [make_scene("cycle_a"), make_scene("cycle_b")],
+    )
+
+    assert rc == 0
+    assert visited == ["cycle_a", "cycle_b"]
 
 
 def test_runner_list_prints_catalog(capsys: pytest.CaptureFixture[str]) -> None:
