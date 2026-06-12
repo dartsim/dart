@@ -9,6 +9,22 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest handoff follow-up: PR #2977 (`avbd/source-row-perf-slice`) has been
+  merged forward to `origin/main` at `7d05d7b9ea7` after the hosted PR branch
+  reported `BEHIND`. The two red hosted checks were self-hosted runner losses
+  during build (`CUDA Build` on `dartsim-mark13-4` and CodeQL C++ on
+  `dartsim-mark13-5`); their logs stop with the build step still in progress
+  and no compiler/test failure recorded. The Codecov bot comment on
+  `world_step_stage.cpp` reported one uncovered changed line while the Codecov
+  statuses were passing. The PR follow-up keeps the no-contact prepare skip,
+  but restores prepare-time `World::queryContacts()` cache warmup for worlds
+  that can have rigid contacts and sizes AVBD contact scratch from the larger
+  of the collision-shape estimate and warmed query capacity. Focused CUDA
+  `test_world --gtest_filter=World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`,
+  `pixi run build`, and `pixi run test-unit` pass locally. Full CUDA
+  `test-all` was previously started on the stacked extraction branch and
+  intentionally stopped when the task changed to #2977 handoff. See
+  `RESUME.md` for the branch/stash inventory and exact fresh-session plan.
 - Latest local follow-up: after merging `origin/main` at `906a6c0241fe`, the
   narrow `RigidBodyContactStage::prepare()` source-row cleanup still builds and
   focused AVBD source-row tests plus `pixi run test-unit` pass. The cleanup
