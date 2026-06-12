@@ -219,6 +219,19 @@
       public joint-space dynamics accessors on contact-free fixed-base
       multibodies: mass matrix, inverse mass matrix, inverse dynamics, impulse
       response, coupling, conditioning, and residual diagnostics.
+- [x] Multibody dynamics-terms capture-metrics follow-up:
+      `rigid_multibody_dynamics_terms` now publishes row identity, joint-space
+      dynamics scope, executor, target-acceleration/impulse/heavy-mass/gravity
+      controls, lane order, per-lane joint names, target/impulse patterns,
+      mass, inverse-mass, coupling, conditioning, inverse-dynamics residual,
+      impulse residual, torque, response, heavy-versus-coupled ratios,
+      step-timing, and compact history fields through the capture hook. The
+      focused dynamics-terms guard reported `1 passed`, and the real docked
+      96-frame capture wrote 95 PNG frames and 96 scene-metrics events under
+      `/tmp/dart_capture_multibody_dynamics_terms_metrics_1781236627`.
+      The broader workflow/doc drift guard reported `13 passed`;
+      `pixi run lint`, bounded default `pixi run build`, and
+      `git diff --check` passed.
 - [x] Link center-of-mass slice: `rigid_link_center_of_mass` shows how
       `Link.center_of_mass` offsets change gravity torque, reflected mass, and
       hinge acceleration while the visual geometry stays fixed.
@@ -486,6 +499,12 @@
       and histories, but no capture-metrics hook yet. This docs-only handoff
       was not followed by tests, captures, lint, build, or `git diff --check`
       because the user explicitly requested no further verification.
+- [x] Current continuation checkpoint: after the stop/handoff commit, the
+      branch records a local row-32 multibody dynamics-terms capture-metrics
+      slice with focused test, docked capture evidence, broader workflow/doc
+      drift guard, `pixi run lint`, bounded `pixi run build`, and
+      `git diff --check`. The next fresh session should inspect the next
+      likely capture-metrics row, `rigid_link_center_of_mass`.
 
 ## Goal
 

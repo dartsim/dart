@@ -4462,6 +4462,138 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
     assert controller._coupling_history
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_multibody_dynamics_terms"
+    assert capture_metrics["solver"] == "world_multibody_dynamics_terms"
+    assert capture_metrics["scope"] == "contact_free_joint_space_dynamics"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["time_step_ms"] == pytest.approx(3.0)
+    assert capture_metrics["world_time"] > 0.0
+    assert capture_metrics["target_acceleration"] == pytest.approx(
+        controller.target_acceleration
+    )
+    assert capture_metrics["joint_impulse"] == pytest.approx(controller.joint_impulse)
+    assert capture_metrics["heavy_distal_mass_scale"] == pytest.approx(
+        controller.heavy_distal_mass_scale
+    )
+    assert capture_metrics["gravity_scale"] == pytest.approx(controller.gravity_scale)
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        controller.executor_index
+    )
+    assert capture_metrics["controls"]["target_acceleration"] == pytest.approx(
+        controller.target_acceleration
+    )
+    assert capture_metrics["controls"]["joint_impulse"] == pytest.approx(
+        controller.joint_impulse
+    )
+    assert capture_metrics["controls"]["heavy_distal_mass_scale"] == pytest.approx(
+        controller.heavy_distal_mass_scale
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
+        controller.gravity_scale
+    )
+    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
+    assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
+
+    for lane in controller.lanes:
+        lane_capture = capture_metrics["lanes"][lane.key]
+        lane_metrics = metrics[lane.key]
+        assert lane_capture["label"] == lane.label
+        assert lane_capture["dofs"] == pytest.approx(len(lane.joints))
+        assert lane_capture["joints"] == [joint.name for joint in lane.joints]
+        assert lane_capture["target_pattern"] == pytest.approx(
+            list(lane.target_pattern)
+        )
+        assert lane_capture["impulse_pattern"] == pytest.approx(
+            list(lane.impulse_pattern)
+        )
+        assert lane_capture["metrics"]["status"] == str(lane_metrics["status"])
+        for metric_key, metric_value in lane_metrics.items():
+            if isinstance(metric_value, str):
+                continue
+            assert lane_capture["metrics"][metric_key] == pytest.approx(
+                float(metric_value)
+            )
+            assert capture_metrics[f"{lane.key}_{metric_key}"] == pytest.approx(
+                float(metric_value)
+            )
+
+    assert capture_metrics["single_hinge_mass_diag0"] == pytest.approx(
+        float(single["mass_diag0"])
+    )
+    assert capture_metrics["single_hinge_inverse_diag0"] == pytest.approx(
+        float(single["inverse_diag0"])
+    )
+    assert capture_metrics["single_hinge_dynamics_residual"] == pytest.approx(
+        float(single["dynamics_residual"])
+    )
+    assert capture_metrics["coupled_two_link_coupling"] == pytest.approx(
+        float(coupled["coupling"])
+    )
+    assert capture_metrics["coupled_two_link_response1"] == pytest.approx(
+        float(coupled["response1"])
+    )
+    assert capture_metrics["heavy_distal_coupling"] == pytest.approx(
+        float(heavy["coupling"])
+    )
+    assert capture_metrics["heavy_distal_response1"] == pytest.approx(
+        float(heavy["response1"])
+    )
+    assert capture_metrics["heavy_minus_coupled_tau_norm"] == pytest.approx(
+        float(heavy["tau_norm"]) - float(coupled["tau_norm"])
+    )
+    assert capture_metrics["heavy_to_coupled_tau_norm_ratio"] == pytest.approx(
+        float(heavy["tau_norm"]) / float(coupled["tau_norm"])
+    )
+    assert capture_metrics["heavy_to_coupled_response_norm_ratio"] == pytest.approx(
+        float(heavy["response_norm"]) / float(coupled["response_norm"])
+    )
+    assert capture_metrics["coupled_response1_abs"] == pytest.approx(
+        abs(float(coupled["response1"]))
+    )
+    assert capture_metrics["heavy_response1_abs"] == pytest.approx(
+        abs(float(heavy["response1"]))
+    )
+    assert capture_metrics["max_dynamics_residual"] == pytest.approx(
+        max(float(value["dynamics_residual"]) for value in metrics.values())
+    )
+    assert capture_metrics["max_inverse_dynamics_residual"] == pytest.approx(
+        max(float(value["inverse_dynamics_residual"]) for value in metrics.values())
+    )
+    assert capture_metrics["max_impulse_residual"] == pytest.approx(
+        max(float(value["impulse_residual"]) for value in metrics.values())
+    )
+    assert capture_metrics["max_acceleration_error"] == pytest.approx(
+        max(float(value["acceleration_error"]) for value in metrics.values())
+    )
+    assert capture_metrics["max_identity_error"] == pytest.approx(
+        max(float(value["identity_error"]) for value in metrics.values())
+    )
+    assert capture_metrics["step_ms"] == pytest.approx(
+        controller._step_ms_history[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["max_step_ms"] == pytest.approx(
+        max(controller._step_ms_history)
+    )
+    assert capture_metrics["history"]["max_abs_coupling"] == pytest.approx(
+        max(abs(value) for value in controller._coupling_history)
+    )
+    for lane_key in metrics:
+        assert capture_metrics["history"][
+            f"{lane_key}_max_dynamics_residual"
+        ] == pytest.approx(max(controller._residual_history[lane_key]))
+        assert capture_metrics["history"][
+            f"{lane_key}_max_response_norm"
+        ] == pytest.approx(max(controller._response_history[lane_key]))
+        assert capture_metrics["history"][f"{lane_key}_max_tau_norm"] == pytest.approx(
+            max(controller._tau_history[lane_key])
+        )
+
 
 def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:
     import numpy as np

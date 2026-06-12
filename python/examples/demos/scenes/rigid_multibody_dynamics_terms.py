@@ -12,7 +12,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 0.003
 _HISTORY = 180
@@ -442,6 +442,166 @@ class _RigidMultibodyDynamicsTerms:
         self._sync()
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            terms = self._prepare_terms_and_forces()
+            self._record_metrics(terms, use_joint_acceleration=False)
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+
+        def serialized_metrics(lane_key: str) -> dict[str, float | str]:
+            serialized: dict[str, float | str] = {}
+            for key, value in self._last_metrics[lane_key].items():
+                if isinstance(value, (int, float, np.floating)):
+                    serialized[key] = float(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        def lane_value(lane_key: str, metric_key: str) -> float:
+            return float(self._last_metrics[lane_key][metric_key])
+
+        def max_abs(values: deque[float]) -> float:
+            return max((abs(value) for value in values), default=0.0)
+
+        def max_history(values: deque[float]) -> float:
+            return max(values, default=0.0)
+
+        lanes = {
+            lane.key: {
+                "label": lane.label,
+                "dofs": float(len(lane.joints)),
+                "joints": [joint.name for joint in lane.joints],
+                "distal_mass_scale": float(
+                    self.heavy_distal_mass_scale
+                    if lane.key == "heavy_distal"
+                    else lane.distal_mass_scale
+                ),
+                "target_pattern": [
+                    float(value) for value in np.asarray(lane.target_pattern).reshape(-1)
+                ],
+                "impulse_pattern": [
+                    float(value) for value in np.asarray(lane.impulse_pattern).reshape(-1)
+                ],
+                "metrics": serialized_metrics(lane.key),
+            }
+            for lane in self.lanes
+        }
+        coupled_tau = lane_value("coupled_two_link", "tau_norm")
+        coupled_response = lane_value("coupled_two_link", "response_norm")
+        heavy_tau = lane_value("heavy_distal", "tau_norm")
+        heavy_response = lane_value("heavy_distal", "response_norm")
+        payload: dict[str, Any] = {
+            "row": "rigid_multibody_dynamics_terms",
+            "solver": "world_multibody_dynamics_terms",
+            "scope": "contact_free_joint_space_dynamics",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "target_acceleration": float(self.target_acceleration),
+            "joint_impulse": float(self.joint_impulse),
+            "heavy_distal_mass_scale": float(self.heavy_distal_mass_scale),
+            "gravity_scale": float(self.gravity_scale),
+            "controls": {
+                "executor_index": float(executor_index),
+                "target_acceleration": float(self.target_acceleration),
+                "joint_impulse": float(self.joint_impulse),
+                "heavy_distal_mass_scale": float(self.heavy_distal_mass_scale),
+                "gravity_scale": float(self.gravity_scale),
+            },
+            "lane_order": [lane.key for lane in self.lanes],
+            "lane_count": float(len(self.lanes)),
+            "lanes": lanes,
+            "single_hinge_mass_diag0": lane_value("single_hinge", "mass_diag0"),
+            "single_hinge_inverse_diag0": lane_value(
+                "single_hinge", "inverse_diag0"
+            ),
+            "single_hinge_tau_norm": lane_value("single_hinge", "tau_norm"),
+            "single_hinge_response_norm": lane_value(
+                "single_hinge", "response_norm"
+            ),
+            "single_hinge_dynamics_residual": lane_value(
+                "single_hinge", "dynamics_residual"
+            ),
+            "single_hinge_impulse_residual": lane_value(
+                "single_hinge", "impulse_residual"
+            ),
+            "coupled_two_link_coupling": lane_value(
+                "coupled_two_link", "coupling"
+            ),
+            "coupled_two_link_condition": lane_value(
+                "coupled_two_link", "condition"
+            ),
+            "coupled_two_link_tau_norm": coupled_tau,
+            "coupled_two_link_response_norm": coupled_response,
+            "coupled_two_link_response1": lane_value(
+                "coupled_two_link", "response1"
+            ),
+            "coupled_two_link_dynamics_residual": lane_value(
+                "coupled_two_link", "dynamics_residual"
+            ),
+            "coupled_two_link_impulse_residual": lane_value(
+                "coupled_two_link", "impulse_residual"
+            ),
+            "heavy_distal_coupling": lane_value("heavy_distal", "coupling"),
+            "heavy_distal_condition": lane_value("heavy_distal", "condition"),
+            "heavy_distal_tau_norm": heavy_tau,
+            "heavy_distal_response_norm": heavy_response,
+            "heavy_distal_response1": lane_value("heavy_distal", "response1"),
+            "heavy_distal_dynamics_residual": lane_value(
+                "heavy_distal", "dynamics_residual"
+            ),
+            "heavy_distal_impulse_residual": lane_value(
+                "heavy_distal", "impulse_residual"
+            ),
+            "heavy_minus_coupled_tau_norm": heavy_tau - coupled_tau,
+            "heavy_to_coupled_tau_norm_ratio": heavy_tau
+            / max(coupled_tau, 1.0e-12),
+            "heavy_to_coupled_response_norm_ratio": heavy_response
+            / max(coupled_response, 1.0e-12),
+            "coupled_response1_abs": abs(
+                lane_value("coupled_two_link", "response1")
+            ),
+            "heavy_response1_abs": abs(lane_value("heavy_distal", "response1")),
+            "max_dynamics_residual": max(
+                lane_value(lane.key, "dynamics_residual") for lane in self.lanes
+            ),
+            "max_inverse_dynamics_residual": max(
+                lane_value(lane.key, "inverse_dynamics_residual")
+                for lane in self.lanes
+            ),
+            "max_impulse_residual": max(
+                lane_value(lane.key, "impulse_residual") for lane in self.lanes
+            ),
+            "max_acceleration_error": max(
+                lane_value(lane.key, "acceleration_error") for lane in self.lanes
+            ),
+            "max_identity_error": max(
+                lane_value(lane.key, "identity_error") for lane in self.lanes
+            ),
+            "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
+            "history": {
+                "samples": float(len(self._step_ms_history)),
+                "max_step_ms": max_history(self._step_ms_history),
+                "max_abs_coupling": max_abs(self._coupling_history),
+            },
+        }
+        for lane in self.lanes:
+            lane_metrics = self._last_metrics[lane.key]
+            for metric_key, metric_value in lane_metrics.items():
+                if isinstance(metric_value, (int, float, np.floating)):
+                    payload[f"{lane.key}_{metric_key}"] = float(metric_value)
+            payload["history"][f"{lane.key}_max_dynamics_residual"] = max_history(
+                self._residual_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_response_norm"] = max_history(
+                self._response_history[lane.key]
+            )
+            payload["history"][f"{lane.key}_max_tau_norm"] = max_history(
+                self._tau_history[lane.key]
+            )
+        return payload
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -604,6 +764,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": controller.world,
             "rigid_multibody_dynamics_terms_controller": controller,
+            CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
             "replay_sync": controller._sync,

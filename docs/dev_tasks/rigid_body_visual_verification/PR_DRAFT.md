@@ -70,8 +70,8 @@
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
   stack stability, contact manipulation, kinematic driver,
   fixed/breakage/one-DOF joint constraint errors, motor/limit behavior,
-  passive joint parameters, screw-joint pitch, and stack-packet
-  physics/runtime fields in
+  passive joint parameters, screw-joint pitch, generalized dynamics terms, and
+  stack-packet physics/runtime fields in
   `scene_metrics.jsonl` and `manifest.json`. The manifest summarizes the full
   event stream with first/latest events, per-key presence counts, and top-level
   numeric ranges so mid-capture metric dropouts are visible.
@@ -84,15 +84,40 @@
 
 ## Testing
 
-- Stop/handoff-only update:
-  - After commit `44354ed24c7` (`Expose rigid screw joint pitch capture
-    metrics`), the user explicitly requested handoff only and no further
-    verification.
-  - This final handoff updates only `docs/dev_tasks/rigid_body_visual_verification/`.
-    No tests, captures, lint, build, or `git diff --check` were run after that
-    instruction.
-  - The next likely row, `rigid_multibody_dynamics_terms`, was inspected but
-    not edited.
+- Latest multibody dynamics-terms capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py` now
+    publishes a scene-owned capture hook for the row 32 generalized dynamics
+    verifier: controls, lane order, joint names, target/impulse patterns,
+    mass/inverse-mass, coupling, conditioning, inverse-dynamics residual,
+    impulse residual, torque norm, response norm, heavy-versus-coupled ratios,
+    step timing, and compact histories.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_multibody_dynamics_terms_metrics_1781236627`
+    - nonblank docked capture, 95 PNG frames, 96 scene-metrics events, row
+      `rigid_multibody_dynamics_terms`, solver
+      `world_multibody_dynamics_terms`, scope
+      `contact_free_joint_space_dynamics`, executor `Sequential`, lane count
+      `3`, target acceleration `2.2`, joint impulse `3.0`, heavy distal mass
+      scale `4.0`, gravity scale `1.0`, latest coupled/heavy coupling about
+      `0.3566/1.4265`, latest coupled/heavy response norm about
+      `15.4636/8.6328`, latest coupled/heavy tau norm about
+      `8.8632/27.0012`, heavy-to-coupled tau ratio about `3.0464`,
+      heavy-to-coupled response ratio about `0.5583`, near-zero dynamics and
+      impulse residuals, and manifest ranges for controls, mass, coupling,
+      condition, response, torque, residual, step-timing, time-step, and
+      world-time fields
+  - Broad workflow/doc drift guard with row ordering, viewer-title numbering,
+    sidecar/README/capture-command drift checks, motor-limit coverage,
+    passive-parameter coverage, screw-pitch coverage, replay snapshot coverage,
+    and high-value panel coverage
+    - `13 passed`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 CMAKE_BUILD_PARALLEL_LEVEL=2 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest screw-joint pitch capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_screw_joint_pitch.py` now publishes a
     scene-owned capture hook for the row 31 screw-pitch verifier: controls,

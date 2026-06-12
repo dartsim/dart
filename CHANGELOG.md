@@ -239,7 +239,8 @@
   - Added `rigid_multibody_dynamics_terms` to Python `py-demos`, showing
     contact-free fixed-base multibody mass matrices, inverse mass matrices,
     inverse dynamics, and joint-space impulse responses with coupling,
-    conditioning, residual, torque, and response diagnostics.
+    conditioning, residual, torque, and response diagnostics that are exported
+    through the capture-metrics manifest path.
   - Added `rigid_link_jacobian` to Python `py-demos`, showing a contact-free
     two-link multibody's link-origin `get_world_jacobian(link) @ qdot`
     velocity mapping, finite-difference velocity check, and

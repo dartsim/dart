@@ -2,24 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed from pushed commit `544d2b44a62`, verified the
-previous row-30 passive joint-parameter handoff gates, completed and committed
-the row-31 `rigid_screw_joint_pitch` capture-metrics slice as
-`44354ed24c7` (`Expose rigid screw joint pitch capture metrics`), then stopped
-feature work when the user explicitly requested handoff only and no further
-verification.
+Latest continuation resumed from pushed stop/handoff commit `9ea310b2c8b`,
+completed the row-32 `rigid_multibody_dynamics_terms` capture-metrics slice,
+and recorded focused test plus real docked capture evidence. The branch had no
+associated GitHub PR at resume time.
 
-Expected branch/worktree state after this handoff:
+Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Origin should include the row-31 screw-joint pitch metrics commit and the
-  docs-only stop/handoff commit that contains this file. If a fresh session
-  sees the branch still ahead of origin, push only after fresh
-  maintainer/user approval.
-- No code edits were made after `44354ed24c7`. The only post-stop work was
-  updating `docs/dev_tasks/rigid_body_visual_verification/` for handoff.
-- No tests, captures, lint, build, or `git diff --check` were run after the
-  user's explicit stop/no-further-verification instruction.
+- Pushed branch head remains `9ea310b2c8b` unless a maintainer/user explicitly
+  approves another push.
+- The completed local checkpoint should include row-32 multibody dynamics-terms
+  capture metrics, focused assertions, docs, docked capture evidence, and
+  refreshed handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -37,7 +32,8 @@ Recent checkpoints:
 - `8f2119d7cf1` (`Expose rigid joint motor limit capture metrics`)
 - `544d2b44a62` (`Hand off rigid passive joint parameter metrics`)
 - `44354ed24c7` (`Expose rigid screw joint pitch capture metrics`)
-- the docs-only stop/handoff checkpoint containing this file
+- `9ea310b2c8b` (`Document rigid visual verification stop handoff`)
+- the local checkpoint containing this file
 
 Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
 checkpoint touches:
@@ -263,25 +259,69 @@ Validation collected for the screw-pitch slice so far:
   passed and reported `ninja: no work to do`.
 - `git diff --check` passed.
 
+Current local slice: `rigid_multibody_dynamics_terms` row capture metrics. The
+local checkpoint touches:
+
+- `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `CAPTURE_METRICS_INFO_KEY` wiring in
+  `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py`.
+- Scene-owned payload fields for row identity, solver
+  `world_multibody_dynamics_terms`, scope
+  `contact_free_joint_space_dynamics`, executor, time step, world time,
+  top-level and nested controls, lane order/count, joint names,
+  target/impulse patterns, per-lane mass/inverse-mass, coupling, conditioning,
+  residual, torque, response, heavy-versus-coupled ratios, step timing, and
+  compact history maxima.
+- Focused assertions in
+  `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms`
+  that the capture hook mirrors controller controls, lane metadata, latest
+  metrics, ratio fields, and history maxima.
+
+Validation collected for the dynamics-terms slice so far:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms -q`
+  reported `1 passed`.
+- `pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_multibody_dynamics_terms_metrics_1781236627`
+  wrote a nonblank docked capture with 95 PNG frames, 96 scene-metrics events,
+  screenshot
+  `/tmp/dart_capture_multibody_dynamics_terms_metrics_1781236627/rigid_multibody_dynamics_terms.png`,
+  and final contacts `0`.
+- Latest captured payload details: row `rigid_multibody_dynamics_terms`,
+  solver `world_multibody_dynamics_terms`, scope
+  `contact_free_joint_space_dynamics`, executor `Sequential`, lane count `3`,
+  target acceleration `2.2`, joint impulse `3.0`, heavy distal mass scale `4.0`,
+  gravity scale `1.0`, latest coupled/heavy coupling about `0.3566/1.4265`,
+  latest coupled/heavy response norm about `15.4636/8.6328`, latest
+  coupled/heavy tau norm about `8.8632/27.0012`, heavy-to-coupled tau ratio
+  about `3.0464`, heavy-to-coupled response ratio about `0.5583`, near-zero
+  residuals, latest step time about `0.0574 ms`, history samples `97`, and max
+  observed step time about `0.1144 ms`.
+- The broader workflow/doc drift guard with row ordering, viewer-title
+  numbering, sidecar/README/capture-command drift checks, motor-limit coverage,
+  passive-parameter coverage, screw-pitch coverage, replay snapshot coverage,
+  and high-value panel coverage reported `13 passed`.
+- `pixi run lint` passed.
+- Bounded
+  `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 CMAKE_BUILD_PARALLEL_LEVEL=2 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
+
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Continue the capture-metrics hardening pass from row 32,
-   `rigid_multibody_dynamics_terms`, unless the user redirects.
-
-Row-32 inspection context already gathered before the stop request:
-
-- `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py` has replay
-  state hooks but no `SceneSetup.info["capture_metrics"]` hook yet.
-- The controller already tracks executor, target acceleration, joint impulse,
-  heavy distal mass scale, gravity scale, per-lane metrics for
-  `single_hinge`, `coupled_two_link`, and `heavy_distal`, plus residual,
-  response, torque, coupling, and step-time histories.
-- The focused guard
-  `test_rigid_multibody_dynamics_terms_expose_generalized_terms` already
-  asserts the generalized dynamics behavior and is the natural place to add
-  capture-hook assertions.
-- No row-32 files were edited in this stop/handoff pass.
+2. Commit this local checkpoint if the worktree still contains only the row-32
+   slice. The next likely capture-metrics row after that is
+   `rigid_link_center_of_mass`, unless the user redirects.
 
 ## Last Session Summary
 

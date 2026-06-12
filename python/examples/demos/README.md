@@ -169,7 +169,7 @@ infer.
 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, acceleration gap, metrics           |
 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature acceleration, metrics   |
 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error, metrics |
-| `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response               |
+| `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response, metrics      |
 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker         |
 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` torque power       |
 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Executor, gravity scale, reset                        | Residual-only vs solved closure residuals                     |
@@ -542,6 +542,10 @@ single hinge, a coupled two-link arm, and a heavy-distal two-link arm show
 diagnostics compact: matrix shape and conditioning, one off-diagonal coupling
 term, inverse-dynamics residual, joint-space impulse residual, torque norm, and
 response norm.
+`py-demo-capture` records lane order, executor, target-acceleration, impulse,
+heavy-mass, gravity, per-lane mass/coupling/conditioning/residual/torque/
+response fields, heavy-versus-coupled ratios, step timing, and compact history
+metrics into the manifest sidecar.
 
 The **`rigid_link_center_of_mass`** scene keeps the link visual geometry fixed
 while moving `Link.center_of_mass` in the link frame. Centered, +X, -X, and
