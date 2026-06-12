@@ -103,8 +103,9 @@ __device__ double pointTriangleSquaredDistance(
   const Vec3 ab = b - a;
   const Vec3 ac = c - a;
   const double normalSquared = squaredNorm(cross(ab, ac));
-  const double scale = squaredNorm(ab) + squaredNorm(ac) + squaredNorm(c - b);
-  if (normalSquared <= kRelativeEpsilon * fmax(1.0, scale)) {
+  const double scale
+      = fmax(squaredNorm(ab) * squaredNorm(ac), 2.2250738585072014e-308);
+  if (normalSquared <= kRelativeEpsilon * scale) {
     return fmin(
         pointSegmentSquaredDistance(p, a, b),
         fmin(

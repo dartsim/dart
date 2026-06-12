@@ -135,6 +135,34 @@ TEST(ContactCandidateFilterCuda, MatchesCpuPointTriangleStencilFilter)
 }
 
 //==============================================================================
+TEST(ContactCandidateFilterCuda, KeepsSmallValidTriangleNondegenerate)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  Fixture fixture;
+  appendPoint(fixture, {0.0, 0.0, 0.0});
+  appendPoint(fixture, {1e-8, 0.0, 0.0});
+  appendPoint(fixture, {0.0, 1e-8, 0.0});
+  appendPoint(fixture, {2.5e-9, 2.5e-9, 0.0});
+  fixture.triangles.insert(fixture.triangles.end(), {0u, 1u, 2u});
+  fixture.stencils.push_back({3u, 0u});
+
+  const std::vector<double> expectedDistances = cpuSquaredDistances(fixture);
+
+  cuda::PointTriangleCandidateFilterResult result;
+  cuda::filterPointTriangleContactStencilsCuda(
+      fixture.positions, fixture.triangles, fixture.stencils, 1e-10, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), expectedDistances.size());
+  ASSERT_EQ(result.accepted.size(), expectedDistances.size());
+  EXPECT_EQ(result.acceptedCount, 1u);
+  EXPECT_NEAR(result.squaredDistances[0], expectedDistances[0], 1e-30);
+  EXPECT_EQ(result.accepted[0], 1u);
+}
+
+//==============================================================================
 TEST(ContactCandidateFilterCuda, RejectsInvalidStencil)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
