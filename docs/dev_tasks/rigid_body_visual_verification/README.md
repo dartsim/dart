@@ -2,7 +2,14 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 36 now gives the variational rigid multibody
+Latest local state: after the row-36 loop-closure implementation commit, a
+fresh full numbered workflow packet completed all 36 World Rigid Body rows in
+one `py-demo-capture -- --rigid-workflow` run. That packet exercises the same
+docked Filament/ImGui capture path, per-row manifests, screenshots, frame
+directories, workflow guidance, and `review_index.html` contact sheet that a
+maintainer would use to review the row-15-through-row-36 DART 7 harness pass.
+
+Latest implementation slice: row 36 gives the variational rigid multibody
 loop-closure family row the same reviewable comparison shape as the surrounding
 rigid workflow rows while continuing to follow the DART 7
 architecture/work-packet harness from PR #2986. `rigid_loop_closure` names
@@ -15,6 +22,14 @@ latest signals into the workflow review index.
 
 Evidence for this slice:
 
+- Fresh full numbered workflow packet:
+  `build/captures/rigid_workflow_rows_01_36_1781305407` completed with
+  `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
+  `guidance_missing_count=0`, and `failed_rows=[]`. It wrote
+  `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
+  frame PNGs across rows 01-36; the first row was `rigid_body` and the last row
+  was `rigid_loop_closure`.
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
   `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`,
@@ -228,18 +243,17 @@ Repository state notes:
 
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
-- Latest completed implementation commit before this slice:
-  `0308ec62d8b Surface multibody solver family workflow signals`.
+- Latest completed implementation commit for the row-15-through-row-36 pass:
+  `608a8792afa Surface loop closure workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
-- Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
-  slice has been committed, expect the latest local commit to describe the loop
-  closure workflow signals; otherwise inspect the uncommitted diff for the
-  row-36 follow-up.
+- Resume check: inspect `git status -sb` and `git log -8 --oneline`. Expect the
+  latest implementation commit to describe the loop-closure workflow signals;
+  if a docs-only evidence commit exists after it, inspect that diff first.
 
-Recommended next action: ask for maintainer acceptance of the current
-row-15-through-row-36 review-index/evidence direction before broadening to
-another rigid branch, or run a fresh audit if the maintainer wants another
-bounded follow-up.
+Recommended next action: use the full row-01-through-row-36 packet as the
+maintainer-review evidence for the current numbered rigid workflow. If more
+local progress is requested before pushing/review, audit optional related rows
+37-52 or API-deferred gaps rather than adding speculative numbered rows.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
 comparison shape as the surrounding rigid workflow rows. `rigid_fixed_joint`

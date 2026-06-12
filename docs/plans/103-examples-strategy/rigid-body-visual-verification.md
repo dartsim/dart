@@ -419,6 +419,58 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest full numbered workflow packet evidence: after the row-36
+  loop-closure implementation commit, the real workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781305407` captured rows 01-36
+  with `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
+  `guidance_missing_count=0`, and `failed_rows=[]`. The packet wrote
+  `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
+  frame PNGs; the first row was `rigid_body` and the last row was
+  `rigid_loop_closure`.
+
+- Latest loop-closure family row evidence: the real workflow packet
+  `build/captures/rigid_loop_closure_row_36_1781304923` captured row 36 with
+  `status=complete`, `capture_count=1`, `completed_count=1`,
+  `failed_count=0`, `workflow_total_count=36`, and `guidance_complete=true`.
+  The focused row/panel/docs-order/review-index pytest subset reported
+  `6 passed`. Row 36 now exposes
+  `loop_closure_family_policy_selection` as the comparison axis, held-fixed
+  contact-free variational rigid multibody/four-link-chain/gravity/time-step
+  context, closure family and policy lanes, Replay signal/markers, metric-key
+  summary, and latest-signal ordering for POINT/DISTANCE/RIGID residual
+  ratios, distance-family distance/tip error, RIGID orientation error, and
+  solver. The per-scene capture wrote a nonblank docked screenshot with 2446
+  unique colors and 71 PNG frames from the 72-frame workflow row capture.
+
+- Latest multibody solver-family row evidence: the real workflow packet
+  `build/captures/rigid_multibody_solver_family_row_35_1781304535` captured
+  row 35 with `status=complete`, `capture_count=1`, `completed_count=1`,
+  `failed_count=0`, `workflow_total_count=36`, and
+  `guidance_complete=true`. The focused row/panel/docs-order/review-index
+  pytest subset reported `6 passed`. Row 35 now exposes
+  `multibody_integration_solve_policy_family` as the comparison axis,
+  held-fixed contact-free World point-closure/three-link-chain/gravity/time-step
+  context, controls, lane order, Replay signal/markers, metric-key summary, and
+  latest-signal ordering for residual-only residual, solved residual, residual
+  solve ratio, lane residuals, solved tip error, max step time, and solver. The
+  per-scene capture wrote a nonblank docked screenshot and 71 PNG frames from
+  the 72-frame workflow row capture.
+
+- Latest link-Jacobian row evidence: the real workflow packet
+  `build/captures/rigid_link_jacobian_row_34_1781304169` captured row 34 with
+  `status=complete`, `capture_count=1`, `completed_count=1`,
+  `failed_count=0`, `workflow_total_count=36`, and `guidance_complete=true`.
+  The focused row/panel/docs-order/review-index pytest subset reported
+  `6 passed`. Row 34 now exposes `link_origin_jacobian_mapping_family` as the
+  comparison axis, held-fixed contact-free World
+  two-revolute-link/time-step/finite-difference context, controls, Jacobian
+  term order, Replay signal/markers, metric-key summary, and latest-signal
+  ordering for link speed, world/body Jacobian gap, transpose-mapped torques,
+  finite-difference residual, power residual, and solver. The per-scene capture
+  wrote a nonblank docked screenshot and 95 PNG frames from the 96-frame
+  workflow row capture.
+
 - Latest link center-of-mass row evidence: the real workflow packet
   `build/captures/rigid_link_center_of_mass_row_33_1781303757` captured row 33
   with `status=complete`, `capture_count=1`, `completed_count=1`,
