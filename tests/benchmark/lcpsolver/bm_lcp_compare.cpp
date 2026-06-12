@@ -13006,23 +13006,87 @@ void RegisterGroupedParallelBatchBenchmarks()
   }
 }
 
+struct BenchmarkArgProblem
+{
+  int arg{0};
+  LcpProblem problem;
+};
+
+std::vector<int> GetConcreteContactBenchmarkArgs(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const std::vector<BenchmarkArgProblem>& argProblems)
+{
+  std::vector<int> args;
+  for (const auto& argProblem : argProblems) {
+    if (SolverSupportsConcreteProblem(solver, argProblem.problem)) {
+      args.push_back(argProblem.arg);
+    }
+  }
+
+  return args;
+}
+
+std::vector<BenchmarkArgProblem> MakeWorldContactBenchmarkArgProblems()
+{
+  std::vector<BenchmarkArgProblem> argProblems;
+  for (const int contactCount : std::array<int, 3>{1, 2, 4}) {
+    std::string errorMessage;
+    auto fixture = MakeWorldContactBenchmarkProblem(contactCount, errorMessage);
+    if (!fixture.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        BenchmarkArgProblem{contactCount, std::move(fixture->problem)});
+  }
+
+  return argProblems;
+}
+
+std::vector<BenchmarkArgProblem> MakeWorldStackContactBenchmarkArgProblems()
+{
+  constexpr std::array<int, 17> sphereCounts{
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 24, 32};
+
+  std::vector<BenchmarkArgProblem> argProblems;
+  for (const int sphereCount : sphereCounts) {
+    std::string errorMessage;
+    auto fixture
+        = MakeWorldStackContactBenchmarkProblem(sphereCount, errorMessage);
+    if (!fixture.has_value()) {
+      continue;
+    }
+
+    argProblems.push_back(
+        BenchmarkArgProblem{sphereCount, std::move(fixture->problem)});
+  }
+
+  return argProblems;
+}
+
 void RegisterWorldContactBenchmarks()
 {
+  const auto argProblems = MakeWorldContactBenchmarkArgProblems();
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
       continue;
     }
 
+    const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
+    if (args.empty()) {
+      continue;
+    }
+
     const auto name = MakeWorldContactBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        name.c_str(),
-        [solver](benchmark::State& state) {
-          RunWorldContactBenchmark(state, solver);
-        })
-        ->Arg(1)
-        ->Arg(2)
-        ->Arg(4);
+    AddBenchmarkArgs(
+        benchmark::RegisterBenchmark(
+            name.c_str(),
+            [solver](benchmark::State& state) {
+              RunWorldContactBenchmark(state, solver);
+            }),
+        args);
   }
 }
 
@@ -13061,37 +13125,27 @@ void RegisterWorldBoxContactBenchmarks()
 
 void RegisterWorldStackContactBenchmarks()
 {
+  const auto argProblems = MakeWorldStackContactBenchmarkArgProblems();
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
       continue;
     }
 
-    const auto name = MakeWorldStackContactBenchmarkName(solver);
-    auto* registeredBenchmark = benchmark::RegisterBenchmark(
-        name.c_str(), [solver](benchmark::State& state) {
-          RunWorldStackContactBenchmark(state, solver);
-        });
-    registeredBenchmark->Arg(2)->Arg(3)->Arg(4)->Arg(5)->Arg(6);
-    registeredBenchmark->Arg(7);
-    if (solver.name == "Pgs") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-    } else if (solver.name == "Jacobi") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-    } else if (solver.name == "BlockedJacobi") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-    } else if (solver.name == "RedBlackGaussSeidel") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-    } else if (solver.name == "ShockPropagation") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
-    } else if (
-        solver.name != "Pgs" && solver.name != "Jacobi"
-        && solver.name != "BlockedJacobi" && solver.name != "ShockPropagation"
-        && solver.name != "RedBlackGaussSeidel") {
-      registeredBenchmark->Arg(8)->Arg(9)->Arg(10);
+    const auto args = GetConcreteContactBenchmarkArgs(solver, argProblems);
+    if (args.empty()) {
+      continue;
     }
-    registeredBenchmark->Arg(11)->Arg(12)->Arg(13)->Arg(14)->Arg(15)->Arg(16);
-    registeredBenchmark->Arg(24)->Arg(32);
+
+    const auto name = MakeWorldStackContactBenchmarkName(solver);
+    AddBenchmarkArgs(
+        benchmark::RegisterBenchmark(
+            name.c_str(),
+            [solver](benchmark::State& state) {
+              RunWorldStackContactBenchmark(state, solver);
+            }),
+        args);
   }
 }
 
@@ -13143,15 +13197,23 @@ void RegisterStaggeringContactPipelineSweepBenchmarks()
 
 void RegisterContactSolverComparisonSweepBenchmarks()
 {
-  for (const auto solverName : kContactComparisonSolverNames) {
-    const auto* solverEntry = FindSolverManifestEntry(solverName);
-    if (solverEntry == nullptr
-        || !dart::test::supportsProblem(
-            *solverEntry, dart::test::LcpProblemSupport::FrictionIndex)) {
+  for (const auto testCase : kStaggeringContactPipelineSweepCases) {
+    std::string errorMessage;
+    const auto fixture
+        = MakeStaggeringContactPipelineSweepProblem(testCase, errorMessage);
+    if (!fixture.has_value()) {
       continue;
     }
 
-    for (const auto testCase : kStaggeringContactPipelineSweepCases) {
+    for (const auto solverName : kContactComparisonSolverNames) {
+      const auto* solverEntry = FindSolverManifestEntry(solverName);
+      if (solverEntry == nullptr
+          || !dart::test::supportsProblem(
+              *solverEntry, dart::test::LcpProblemSupport::FrictionIndex)
+          || !SolverSupportsConcreteProblem(*solverEntry, fixture->problem)) {
+        continue;
+      }
+
       const auto name = MakeContactSolverComparisonSweepBenchmarkName(
           *solverEntry, testCase);
       benchmark::RegisterBenchmark(

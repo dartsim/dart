@@ -64,6 +64,10 @@
       `BM_LcpBatch` argument rows through concrete generated-problem support,
       keeping benchmark problem sizes aligned with solver native-route
       predicates.
+- [x] Filtered separated world-contact, world stack-contact, and contact-solver
+      comparison benchmark rows through concrete generated contact packets
+      while avoiding registration-time generation of the largest dense
+      box/articulated fixtures.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -103,8 +107,52 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the manifest/batch benchmark argument
-routing slice.
+The latest implementation checkpoint is the world/contact benchmark routing
+slice.
+
+## World/Contact Benchmark Routing Checkpoint
+
+The latest implementation checkpoint aligns low-cost contact-derived benchmark
+registration with concrete native solver support:
+
+- `BM_LcpWorldContact/FrictionIndex` now precomputes the 1-, 2-, and 4-contact
+  separated world packets once and registers only solver/arg rows whose concrete
+  packet is accepted by `supportsProblem(problem)`.
+- `BM_LcpWorldStackContact/FrictionIndex` now precomputes the existing
+  2- through 16-, 24-, and 32-sphere stack packets once and filters those args
+  through the same concrete support predicate.
+- `BM_LcpContactSolverComparisonSweep` now builds each DART 7 contact-pipeline
+  comparison packet once per case and filters the scoped comparison solvers
+  (`Admm`, `Sap`, and `BoxedSemiSmoothNewton`) through concrete support.
+- Dense world-box contact, articulated unified contact, and batch contact rows
+  still use manifest-level friction-index gating in this checkpoint; filtering
+  those by concrete support needs a registration-time fixture strategy that does
+  not eagerly construct the largest 256-contact packets for every benchmark
+  listing.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpWorldContact/FrictionIndex/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpWorldStackContact/FrictionIndex/(Dantzig|Pgs|BoxedSemiSmoothNewton)|BM_LcpContactSolverComparisonSweep/(Dantzig|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpContactSolverComparisonSweep/(Admm|Sap|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpWorldContact/FrictionIndex/Dantzig/1|BM_LcpWorldStackContact/FrictionIndex/Pgs/2|BM_LcpContactSolverComparisonSweep/Admm/WorldSeparated1' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The separated world-contact and stack-contact row-list check built
+  `BM_LCP_COMPARE` and preserved representative Dantzig, PGS, and
+  BoxedSemiSmoothNewton rows.
+- The contact-solver comparison row-list check confirmed the scoped solver set
+  (`Admm`, `Sap`, `BoxedSemiSmoothNewton`) remains registered for the current
+  world, stack, and articulated contact-pipeline cases.
+- The short benchmark execution reported `contract_ok=1` on the targeted rows;
+  the regex also matched larger `Pgs/24` and `Admm/WorldSeparated16` rows, which
+  also reported `contract_ok=1`.
 
 ## Manifest And Batch Benchmark Argument Routing Checkpoint
 

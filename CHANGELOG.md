@@ -1452,6 +1452,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     generated problem support, so solver rows and problem sizes stay tied to
     each solver's native `supportsProblem(problem)` route instead of only the
     manifest-level problem family.
+  - Filtered separated world-contact, world stack-contact, and contact-solver
+    comparison benchmark registrations through concrete contact packets, keeping
+    representative DART 7 contact rows aligned with solver native support while
+    avoiding registration-time construction of the largest dense box/articulated
+    contact fixtures.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

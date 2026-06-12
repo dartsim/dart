@@ -103,11 +103,19 @@ manifest-level problem family. The existing row shape is preserved while Direct,
 MPRGP, Baraff, and other solvers stay aligned with their
 `supportsProblem(problem)` native-route predicates.
 
+The latest continuation completed the next contact-routing slice: separated
+world-contact, world stack-contact, and contact-solver comparison sweep
+registrations now filter through concrete generated contact packets before
+registering rows. Dense world-box contact, articulated unified contact, and
+contact batch rows still use manifest-level friction-index gates because
+eagerly constructing the largest 256-contact fixtures during benchmark
+registration needs a separate strategy.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the manifest/batch benchmark argument-routing slice:
+Current reality after the world/contact benchmark routing slice:
 
 - The latest implementation checkpoints changed `CHANGELOG.md`,
   `python/examples/demos/scenes/lcp_physics.py`,
@@ -116,7 +124,7 @@ Current reality after the manifest/batch benchmark argument-routing slice:
 - This slice changes `CHANGELOG.md`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
 - Local HEAD before this slice was
-  `be4643d1743 Document consolidated LCP handoff state`.
+  `4c63db30bd7 Filter LCP benchmark args concretely`.
 - The configured SSH remote-tracking ref still showed
   `origin/feature/lcp-solver-interface-demos` at
   `d143d0dc355c Document latest LCP handoff state` immediately after the prior
@@ -134,12 +142,12 @@ push is approved.
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
 starting points are remaining manifest-level benchmark gates in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially world/contact
-benchmark registrations and contact-pipeline comparison rows, any solver whose
-documented native mathematical domain is still broader than its concrete
-`supportsProblem(problem)` predicate, and GUI/demo packets that still lack clear
-apples-to-apples benchmark coverage. Do not treat the broad LCP objective as
-complete.
+`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially dense world-box
+contact, articulated unified contact, and contact batch registrations, any
+solver whose documented native mathematical domain is still broader than its
+concrete `supportsProblem(problem)` predicate, and GUI/demo packets that still
+lack clear apples-to-apples benchmark coverage. Do not treat the broad LCP
+objective as complete.
 
 ## Context That Would Be Lost
 
@@ -211,6 +219,18 @@ complete.
   Boxed, and FrictionIndex families, and a short execution check reported
   `contract_ok=1` on representative affected single, serial-batch, and
   parallel-batch rows.
+- Completed benchmark follow-up: separated `BM_LcpWorldContact/FrictionIndex`,
+  `BM_LcpWorldStackContact/FrictionIndex`, and
+  `BM_LcpContactSolverComparisonSweep` registrations now prebuild the relevant
+  concrete contact packets and register only solver/arg rows accepted by
+  `supportsProblem(problem)`. Focused row-list checks covered representative
+  Dantzig, PGS, BoxedSemiSmoothNewton rows and the scoped comparison solvers
+  `Admm`, `Sap`, `BoxedSemiSmoothNewton`; a short execution check reported
+  `contract_ok=1` on targeted rows and on two larger rows matched by the regex.
+- Remaining contact registration gap: dense world-box contact, articulated
+  unified contact, and contact batch rows still use manifest-level
+  friction-index gates because concrete filtering them naively would construct
+  very large 256-contact fixtures during benchmark registration/listing.
 - Final hand-off note: after the 2026-06-11 stop instruction, no additional
   verification was run, including `pixi run lint`. This intentionally follows
   the user's "without any further verification" instruction.
