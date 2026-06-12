@@ -1090,6 +1090,7 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     assert rendered == ["rigid_body"]
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["dry_run"] is False
+    assert manifest["continue_on_failure"] is False
     assert manifest["status"] == "failed"
     assert manifest["completed_count"] == 0
     assert manifest["failed_count"] == 1
@@ -1101,6 +1102,66 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
     review_index = pathlib.Path(manifest["artifacts"]["review_index"])
     assert review_index.is_file()
     assert "missing_manifest" in review_index.read_text()
+
+
+def test_rigid_workflow_can_continue_after_scene_failure(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body", 24, 960, 540, True),
+        ("rigid_solver_compare", 24, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    rendered: list[str] = []
+
+    def fake_run(argv: list[str]) -> int:
+        scene = argv[argv.index("--scene") + 1]
+        rendered.append(scene)
+        if scene == "rigid_body":
+            return 9
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        (output_dir / "manifest.json").write_text(
+            json.dumps({"scene": scene, "artifacts": {}}, sort_keys=True) + "\n"
+        )
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--continue-on-failure",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 9
+    assert rendered == ["rigid_body", "rigid_solver_compare"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["dry_run"] is False
+    assert manifest["continue_on_failure"] is True
+    assert manifest["status"] == "failed"
+    assert manifest["completed_count"] == 1
+    assert manifest["failed_count"] == 1
+    assert [capture["status"] for capture in manifest["captures"]] == [
+        "failed",
+        "captured",
+    ]
+    first_capture = manifest["captures"][0]
+    assert first_capture["scene"] == "rigid_body"
+    assert first_capture["return_code"] == 9
+    assert first_capture["failure_reason"] == "return_code"
+    assert first_capture["manifest_exists"] is False
+    review_index = pathlib.Path(manifest["artifacts"]["review_index"])
+    assert review_index.is_file()
+    review_html = review_index.read_text()
+    assert "failure mode" in review_html
+    assert "continue" in review_html
+    assert "return_code" in review_html
+    assert "rigid_solver_compare" in review_html
 
 
 def test_rigid_workflow_run_can_resume_from_selected_row(
@@ -1182,6 +1243,10 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
         ("--include-related", "--include-related requires --rigid-workflow"),
         ("--include-ipc-shelf", "--include-ipc-shelf requires --rigid-workflow"),
         ("--include-packets", "--include-packets requires --rigid-workflow"),
+        (
+            "--continue-on-failure",
+            "--continue-on-failure requires --rigid-workflow",
+        ),
         (
             "--workflow-end-row",
             "--workflow-start-row/--workflow-end-row require --rigid-workflow",

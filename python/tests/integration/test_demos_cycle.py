@@ -1998,6 +1998,34 @@ def test_rigid_visual_motion_capture_video_flags_are_documented() -> None:
         assert expected_tokens in text
 
 
+def test_rigid_visual_workflow_continue_on_failure_is_documented() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    helper_text = (root / "scripts" / "capture_py_demo.py").read_text(
+        encoding="utf-8"
+    )
+    assert "--continue-on-failure" in helper_text
+
+    expected_tokens = (
+        "pixi run py-demo-capture -- --rigid-workflow --include-related"
+        " --include-ipc-shelf --include-packets --continue-on-failure"
+        " --output-dir /tmp/dart_capture_rigid_workflow_resilient"
+    )
+    for path in (
+        root / "python" / "examples" / "demos" / "README.md",
+        root
+        / "docs"
+        / "plans"
+        / "103-examples-strategy"
+        / "rigid-body-visual-verification.md",
+    ):
+        text = " ".join(
+            line.strip().removesuffix("\\").strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+        )
+        assert "continue_on_failure=true" in text
+        assert expected_tokens in text
+
+
 def test_root_readme_source_checkout_points_to_py_demos_rigid_front_door() -> None:
     root = pathlib.Path(__file__).resolve().parents[3]
     text = (root / "README.md").read_text(encoding="utf-8")

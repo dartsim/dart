@@ -2,13 +2,21 @@
 
 ## Current Handoff (2026-06-12)
 
-The latest continuation refreshes the public packet row-range rerun examples
+The latest continuation adds workflow failure resilience for long visual
+evidence packets. `py-demo-capture -- --rigid-workflow
+--continue-on-failure` now keeps capturing later selected rows after a row
+fails, while the final workflow manifest and process exit code still fail when
+any selected row failed. The manifest records `continue_on_failure`; the
+in-viewer `Rigid Workflow` panel exposes a resilient extended-packet command;
+and README/PLAN-103 describe the same user path.
+
+Previous checkpoint: the public packet row-range rerun examples were refreshed
 after the capture-first heavy stack packet expansion. The README and PLAN-103
 sidecar now tell users to rerun rows 47-48 when they request
 `--include-related --include-packets`, so both `rigid_ipc_stack_packet` and
-`rigid_ipc_heavy_stack_packet` are included. The new drift guard scopes the
-public rerun example and prevents it from regressing to the old row-47-only
-packet command.
+`rigid_ipc_heavy_stack_packet` are included. The drift guard scopes the public
+rerun example and prevents it from regressing to the old row-47-only packet
+command.
 
 Previous checkpoint: the capture-first heavier Rigid IPC stack packet slice
 completed. The existing four-box `rigid_ipc_stack_packet` now shares a
@@ -19,20 +27,32 @@ Rigid Body workflow remains unchanged.
 
 Historical stop-only note: after the heavy packet commit, the user requested
 no further implementation and no further verification while hand-off docs were
-ensured. That note was superseded by the later active-goal continuation that
-performed this row-range documentation/test sync.
+ensured. That note was superseded by later active-goal continuations.
 
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Latest local slice updates `python/examples/demos/README.md`,
+- Resume check: verify whether the latest `--continue-on-failure`
+  failure-resilience slice is committed with `git status -sb` and
+  `git log -5 --oneline` before resuming. It was developed locally on top of
+  the row-range guidance commit and has not been pushed without explicit
+  approval.
+- Latest local slice updates `scripts/capture_py_demo.py`,
+  `python/examples/demos/runner.py`, `python/tests/unit/test_capture_py_demo.py`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/tests/integration/test_demos_cycle.py`,
+  `python/examples/demos/README.md`, and the PLAN-103 rigid sidecar to support
+  and document `--continue-on-failure` for workflow packets.
+- Previous row-range slice updated `python/examples/demos/README.md`,
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`, and
   `python/tests/integration/test_demos_cycle.py` to keep the packet row-range
   example aligned with the two capture-first packet rows.
-- Implementation commit being handed off:
-  `72bad39e123 Add heavy rigid IPC stack packet`, built on
-  `249cde7a36b Audit rigid visual workflow retirement readiness`.
-- Origin tip observed before this row-range sync was
+- Latest local commit being handed off is titled
+  `Let rigid workflow packets continue after failures`; it builds on
+  `12df4e1f083 Refresh rigid packet row range guidance`, which built on the
+  earlier heavy-packet commit
+  `72bad39e123 Add heavy rigid IPC stack packet`.
+- Origin tip observed before these local slices was
   `bdf757db2c9 Refresh rigid handoff stop state`.
 - There is no PR associated with this branch.
 - Do not push without explicit approval; always verify with `git status -sb`
@@ -60,6 +80,15 @@ Observed repository state at this hand-off:
   `/tmp/dart_capture_rigid_workflow_packet_rows_47_48_1781287569`;
   `pixi run lint` passed; the post-lint focused pytest passed again; and
   `git diff --check` was clean.
+- Verification for the latest failure-resilience slice: the focused pytest
+  covering fail-fast behavior, continue mode, workflow-only flag validation,
+  panel command rendering, and docs guard reported `9 passed`. The public
+  dry-run with `--continue-on-failure` over rows 51-52 reported
+  `status=planned`, `continue_on_failure=true`, `capture_count=2`,
+  `workflow_total_count=52`, `guidance_complete=true`, and both capture-first
+  stack packet rows. The current continuation reran the focused pytest after
+  adding the review-index failure-mode badge and then ran the required
+  pre-commit lint gate.
 
 Previous Replay capture-metadata checkpoint context: this checkpoint added
 reviewer-facing Replay timeline metadata to the capture packet after the
@@ -275,6 +304,10 @@ dry-run, a real row-52 docked workflow capture, lint, and diff checks passed.
 The current continuation then refreshed the public row-range rerun examples so
 the related-plus-packets command covers rows 47-48 instead of only the original
 row 47 packet, and added focused drift coverage for that public command.
+The newest continuation adds `--continue-on-failure` to workflow packets,
+surfaces a resilient extended-packet command in the live `Rigid Workflow`
+panel, documents the command in README/PLAN-103, and adds focused regression
+coverage for failure continuation and workflow-only flag validation.
 
 The previous implementation session fixed `py-demos --cycle-scenes` so a
 bounded `--frames N` value applies to every scene instead of ending the whole
@@ -527,12 +560,13 @@ recorded below.
 
 Current snapshot:
 
-- Latest implementation commit being handed off is
-  `72bad39e123 Add heavy rigid IPC stack packet`, built on
-  `249cde7a36b Audit rigid visual workflow retirement readiness`.
-- Latest local slice after that commit refreshes the README/PLAN-103 row-range
-  packet examples and guard for rows 47-48.
-- The origin tip before this row-range sync was
+- Latest local commit being handed off is titled
+  `Let rigid workflow packets continue after failures`; it builds on the
+  row-range guidance commit and the earlier heavy-packet implementation commit.
+- The previous local slice refreshes the README/PLAN-103 row-range packet
+  examples and guard for rows 47-48.
+- The newest local slice adds `--continue-on-failure` for workflow packets.
+- The origin tip before these local slices was
   `bdf757db2c9 Refresh rigid handoff stop state`.
 - The previous heavy-packet slice adds the verified
   `rigid_ipc_heavy_stack_packet` capture-first packet and was verified with
@@ -545,7 +579,9 @@ Current snapshot:
 ## Immediate Next Step
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
-first. If the row-range sync commit is present and the tree is clean, the next
+first. If the failure-resilience slice is still uncommitted, review and either
+commit or intentionally discard it according to the user's latest instruction.
+If the failure-resilience commit is present and the tree is clean, the next
 decision returns to the completion/retirement readiness audit: either get
 maintainer acceptance and prepare the completion cleanup PR, or choose the next
 bounded slice from durable PLAN-103 follow-ups. Do not push without explicit

@@ -874,6 +874,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--continue-on-failure",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, keep capturing later rows after a row "
+            "fails. The final workflow manifest and exit code still report "
+            "failure when any row fails."
+        ),
+    )
+    parser.add_argument(
         "--workflow-start-row",
         type=int,
         help=(
@@ -1453,6 +1462,7 @@ def _write_workflow_review_index(
     captures: list[dict[str, object]],
     started_at: float,
     requested_include_flags: dict[str, bool] | None = None,
+    continue_on_failure: bool = False,
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     index = _workflow_review_index_path(output_dir)
@@ -1500,6 +1510,10 @@ def _write_workflow_review_index(
             _workflow_badge("failed", failed),
             _workflow_badge("elapsed s", elapsed_s),
             _workflow_badge("mode", "plan" if dry_run else "capture"),
+            _workflow_badge(
+                "failure mode",
+                "continue" if continue_on_failure else "fail fast",
+            ),
         ]
     )
     index.write_text(
@@ -1699,6 +1713,7 @@ def _write_workflow_manifest(
     captures: list[dict[str, object]],
     started_at: float,
     requested_include_flags: dict[str, bool] | None = None,
+    continue_on_failure: bool = False,
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "manifest.json"
@@ -1709,6 +1724,7 @@ def _write_workflow_manifest(
         captures=captures,
         started_at=started_at,
         requested_include_flags=requested_include_flags,
+        continue_on_failure=continue_on_failure,
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
@@ -1755,6 +1771,7 @@ def _write_workflow_manifest(
             "workflow_total_count": workflow_total_count,
             "workflow_row_start": min(capture_orders) if capture_orders else None,
             "workflow_row_end": max(capture_orders) if capture_orders else None,
+            "continue_on_failure": continue_on_failure,
             "dry_run": dry_run,
             "status": status,
             "capture_count": len(captures),
@@ -1805,6 +1822,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             captures=captures,
             started_at=started_at,
             requested_include_flags=requested_include_flags,
+            continue_on_failure=args.continue_on_failure,
         )
         for capture in captures:
             print(capture["command"], flush=True)
@@ -1818,7 +1836,9 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         captures=captures,
         started_at=started_at,
         requested_include_flags=requested_include_flags,
+        continue_on_failure=args.continue_on_failure,
     )
+    first_failure_rc = 0
     for capture in captures:
         order = int(capture["order"])
         spec = specs[order - 1]
@@ -1836,7 +1856,9 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         else:
             capture["status"] = "failed"
             capture["failure_reason"] = "return_code" if rc != 0 else "missing_manifest"
-            status = "failed"
+            status = "running" if args.continue_on_failure else "failed"
+            if first_failure_rc == 0:
+                first_failure_rc = rc if rc != 0 else 1
         manifest = _write_workflow_manifest(
             output_dir,
             dry_run=False,
@@ -1844,21 +1866,25 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             captures=captures,
             started_at=started_at,
             requested_include_flags=requested_include_flags,
+            continue_on_failure=args.continue_on_failure,
         )
         if capture["status"] == "failed":
             print(f"manifest: {manifest}", flush=True)
-            return rc if rc != 0 else 1
+            if not args.continue_on_failure:
+                return rc if rc != 0 else 1
 
+    final_status = "failed" if first_failure_rc else "complete"
     manifest = _write_workflow_manifest(
         output_dir,
         dry_run=False,
-        status="complete",
+        status=final_status,
         captures=captures,
         started_at=started_at,
         requested_include_flags=requested_include_flags,
+        continue_on_failure=args.continue_on_failure,
     )
     print(f"workflow manifest: {manifest}", flush=True)
-    return 0
+    return first_failure_rc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1870,6 +1896,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--include-ipc-shelf requires --rigid-workflow")
     if args.include_packets and not args.rigid_workflow:
         raise SystemExit("--include-packets requires --rigid-workflow")
+    if args.continue_on_failure and not args.rigid_workflow:
+        raise SystemExit("--continue-on-failure requires --rigid-workflow")
     if args.video and args.fps < 1:
         raise SystemExit("--fps must be positive")
     if (

@@ -620,6 +620,7 @@ def _rigid_workflow_packet_command(
     end_row: int | None = None,
     video: bool = False,
     fps: int = 24,
+    continue_on_failure: bool = False,
     output_dir: str | None = None,
 ) -> str:
     command = "pixi run py-demo-capture -- --rigid-workflow"
@@ -635,6 +636,8 @@ def _rigid_workflow_packet_command(
         command = f"{command} --workflow-end-row {end_row}"
     if video:
         command = f"{command} --video --fps {fps}"
+    if continue_on_failure:
+        command = f"{command} --continue-on-failure"
     if output_dir:
         command = f"{command} --output-dir {output_dir}"
     return command
@@ -2028,6 +2031,19 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         )
         builder.item_tooltip(
             "Capture numbered rows plus related, Rigid IPC shelf, and packet rows."
+        )
+        builder.text(
+            _rigid_workflow_packet_command(
+                include_related=True,
+                include_ipc_shelf=True,
+                include_packets=True,
+                continue_on_failure=True,
+                output_dir="/tmp/dart_capture_rigid_workflow_extended_resilient",
+            )
+        )
+        builder.item_tooltip(
+            "Capture the extended packet while preserving later-row evidence "
+            "after a row fails."
         )
         builder.separator()
         builder.text("Route")

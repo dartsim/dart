@@ -724,6 +724,17 @@ pixi run py-demo-capture -- --rigid-workflow \
     --output-dir /tmp/dart_capture_rigid_workflow
 ```
 
+For long review packets, add `--continue-on-failure` when later rows should
+still be captured after one row fails. The manifest records
+`continue_on_failure=true`; the final workflow status and process exit code
+still report failure if any selected row failed.
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-related \
+    --include-ipc-shelf --include-packets --continue-on-failure \
+    --output-dir /tmp/dart_capture_rigid_workflow_resilient
+```
+
 Add `--include-related` when the review packet should also capture the
 non-numbered related evidence routes after the 36-row workflow:
 

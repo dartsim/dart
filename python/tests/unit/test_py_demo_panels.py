@@ -1302,6 +1302,20 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
             "tooltip:Capture numbered rows plus related, Rigid IPC shelf, "
             "and packet rows."
         ) in events
+        assert (
+            "text:"
+            + _rigid_workflow_packet_command(
+                include_related=True,
+                include_ipc_shelf=True,
+                include_packets=True,
+                continue_on_failure=True,
+                output_dir="/tmp/dart_capture_rigid_workflow_extended_resilient",
+            )
+        ) in events
+        assert (
+            "tooltip:Capture the extended packet while preserving later-row "
+            "evidence after a row fails."
+        ) in events
         assert "text:Route" in events
         if guide.previous_scene_id is None:
             assert f"text:{previous_text}" in events
