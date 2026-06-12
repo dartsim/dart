@@ -9,25 +9,24 @@ Corpus matrix:
 
 ## Current Status
 
-- Critical handoff stop (2026-06-11): the user explicitly directed the session
-  to stop implementation and focus only on hand-off for all current work,
-  without any further verification. No lint, build, test, CI refresh, PR
-  refresh, branch deletion, or further implementation was run for this final
-  handoff. The active checkout is `avbd/source-row-extraction-precheck`; before
-  this handoff edit it was one commit ahead of
-  `origin/avbd/source-row-extraction-precheck` at
-  `e4b72c704d6` (`Skip origin-anchor point-pair direction cross products`) with
-  uncommitted WIP in:
-  `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp` and
-  `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`.
-  That WIP moves `avbdRigidWorldPointDirection()` earlier so point attachments
-  can use it, routes point-attachment and distance-spring direction helpers
-  through the exact-origin helper, and adds
-  `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`.
-  Treat this newest attachment/distance-spring direction WIP as unverified by
-  explicit request. A fresh session should start from `RESUME.md`, run the
-  required validation before review or PR work, and avoid applying local stashes
-  unless a human asks for recovery.
+- Latest resumed validation (2026-06-11): the handoff-captured
+  point-attachment and distance-spring direction helper slice on
+  `avbd/source-row-extraction-precheck` has now been validated locally.
+  `avbdRigidWorldPointDirection()` is available to point attachments,
+  point-attachment and distance-spring direction helpers now share the
+  exact-origin path, and
+  `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`
+  covers the attachment origin-anchor behavior. The focused rigid-block helper
+  filter passed 9 tests, the full `test_avbd_rigid_block` binary passed 95
+  tests, `pixi run build` passed, `pixi run lint` passed, `git diff --check`
+  passed, and `pixi run test-unit` passed 161/161 tests. This is still a
+  narrow helper overhead cleanup and does not close any source CPU-win, GPU, or
+  paper-number gate.
+- Previous critical handoff stop (2026-06-11): the user explicitly directed the
+  session to stop implementation and focus only on hand-off for all current
+  work, without any further verification. The checkpoint was preserved and
+  pushed first; work has since resumed and the checkpointed helper slice now
+  has the local validation evidence above.
 - Latest resumed follow-up (2026-06-11): generic rigid point-pair and paired
   friction direction assembly now share `avbdRigidWorldPointDirection()`, the
   same exact-origin helper used by distance springs. Source rows whose rigid
@@ -58,16 +57,17 @@ lint`, `pixi run build`, and `pixi run test-unit` passed locally; this is
   the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
   origin-anchor distance-spring, generic point-pair, point-attachment, and
   distance-spring direction helper fast paths. The point-attachment and final
-  distance-spring direction edits are handoff-captured and unverified by the
-  final stop instruction; do not claim their validation until a fresh session
-  runs it. Local stashes may still exist as historical recovery points, but
+  distance-spring direction edits now have local validation recorded in
+  `RESUME.md`. Local stashes may still exist as historical recovery points, but
   fresh work should not depend on them. The latest pushed parent before the
   final local follow-ups was `7a9e24b487b`
   (`Checkpoint AVBD source-row origin-anchor handoff`). PR #2977
   (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
-  known state and should only receive CI-fix commits if a fresh status refresh
-  reveals a concrete failure. `RESUME.md` is the detailed source of truth for
-  the current plan, branch inventory, validation, and branch-cleanup rules.
+  known state; the latest read-only refresh showed all visible completed checks
+  green/skipped/neutral and only Linux `Debug Tests` still in progress. It
+  should only receive CI-fix commits if a fresh status refresh reveals a
+  concrete failure. `RESUME.md` is the detailed source of truth for the current
+  plan, branch inventory, validation, and branch-cleanup rules.
 - Latest handoff-captured follow-up: `addAvbdRigidDistanceSpringHessianAtWorldPoint()`
   now stamps the translational 3x3 Hessian block directly when the world anchor
   is exactly the rigid body origin, avoiding the generic world-point Jacobian

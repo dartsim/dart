@@ -12,25 +12,22 @@ implementation resumed on `avbd/source-row-extraction-precheck` for small
 source-row overhead slices. One committed local follow-up,
 `e4b72c704d6 Skip origin-anchor point-pair direction cross products`, makes
 generic rigid point-pair and paired friction direction assembly share the same
-exact-origin helper as distance springs. The newest handoff-captured WIP then
-moves that helper earlier so point attachments can use it, routes
-point-attachment and distance-spring direction helpers through the same
-exact-origin path, and adds
-`AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`.
-This keeps source rows whose rigid point-joint, motor, spring, attachment, or
-friction anchors sit exactly at a body origin from computing angular-arm cross
-products in those helper paths. It remains a narrow helper cleanup, not a
-CPU-win, GPU, or paper-number claim.
+exact-origin helper as distance springs. The next checkpoint,
+`52ccfd3187e Checkpoint AVBD source-row handoff state`, moved that helper
+earlier so point attachments can use it, routes point-attachment and
+distance-spring direction helpers through the same exact-origin path, and adds
+`AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`. That
+checkpoint has now been locally validated. This keeps source rows whose rigid
+point-joint, motor, spring, attachment, or friction anchors sit exactly at a
+body origin from computing angular-arm cross products in those helper paths. It
+remains a narrow helper cleanup, not a CPU-win, GPU, or paper-number claim.
 
 Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
-without any further verification. No lint, build, test, CI refresh, PR refresh,
-branch deletion, or additional implementation was run after that instruction.
-The handoff documentation records the already-known local state and the current
-handoff-captured WIP so a fresh Claude/Codex session can resume without
-reconstructing the branch, PR, validation, stash, and cleanup context. Treat the
-newest point-attachment/distance-spring direction helper WIP as unverified until
-a future session runs the required validation.
+without any further verification. That checkpoint was committed and pushed
+first. Work has since resumed, and the previously handoff-captured
+point-attachment/distance-spring direction helper slice now has the local
+validation evidence recorded below.
 
 Historical stop note: an earlier session was also redirected to hand-off only
 and requested no further verification. The branch was then resumed for a narrow
@@ -50,48 +47,41 @@ Current continuation state:
   origin-anchor rigid world-point fast path, the origin-anchor distance-spring
   Hessian fast path, the origin-anchor distance-spring direction fast path, the
   generic point-pair/friction origin-anchor direction fast path, and the newest
-  handoff-captured point-attachment/distance-spring direction helper WIP. The
-  latest pushed parent before these local follow-ups was `7a9e24b487b`
+  point-attachment/distance-spring direction helper slice. The latest pushed
+  parent before these local follow-ups was `7a9e24b487b`
   (`Checkpoint AVBD source-row origin-anchor handoff`). The last committed
-  local code follow-up before this handoff was `e4b72c704d6`
-  (`Skip origin-anchor point-pair direction cross products`), leaving the
-  branch one commit ahead of upstream plus the final handoff-captured WIP until
-  it is committed/pushed. Do not require a fresh session to inspect or apply
-  local stashes before continuing. Keep this as the one consolidated local
-  continuation branch for source-row cleanup until the user explicitly redirects
-  or approves PR updates.
+  local helper checkpoint is `52ccfd3187e`
+  (`Checkpoint AVBD source-row handoff state`). Do not require a fresh session
+  to inspect or apply local stashes before continuing. Keep this as the one
+  consolidated local continuation branch for source-row cleanup until the user
+  explicitly redirects or approves PR updates.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   It has been pushed and includes the merge from `origin/main` at
   `7d05d7b9ea7`.
 - #2977 was refreshed read-only after this resumed slice. Its latest known
-  state is open, non-draft, `MERGEABLE`, and `BLOCKED` only because required
-  hosted checks were still running. CUDA Build, CI Lint, Alt Linux repro,
-  CodeQL C++/Python, ReadTheDocs, Codecov project/patch, macOS arm64, Windows
-  Release, wheels, Coverage Debug, Core Linux, Native Collision, Asserts,
-  Eigen alignment, headless rendering, and GUI smoke were green; Linux Debug
-  Tests and Linux Release Tests were still in progress. No new compiler, test,
-  CodeQL, or Codecov failure was visible on head
-  `5297462d34b6118e600647cf18cdd7f13e0182b3`.
+  state is open, non-draft, `MERGEABLE`, and `BLOCKED` only because one
+  required hosted check was still running. CUDA Build, CI Lint, Alt Linux
+  repro, CodeQL C++/Python, ReadTheDocs, Codecov project/patch, macOS arm64,
+  Windows Release, wheels, Coverage Debug, Core Linux, Native Collision,
+  Asserts, Eigen alignment, headless rendering, GUI smoke, and Linux Release
+  Tests were green/skipped/neutral; Linux `Debug Tests` was still
+  `IN_PROGRESS`. No new compiler, test, CodeQL, or Codecov failure was visible
+  on head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   Refresh this in a future session before making any PR decision.
 - The active local checkout is `avbd/source-row-extraction-precheck`. The
   latest pushed head at the start of these resumed slices was
-  `7a9e24b487b Checkpoint AVBD source-row origin-anchor handoff`. Before this
-  handoff edit, the current local head was one commit ahead at
-  `e4b72c704d6 Skip origin-anchor point-pair direction cross products`, with
-  final uncommitted WIP in:
-  `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp`,
-  `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`,
-  `docs/dev_tasks/avbd_solver/README.md`, and
-  `docs/dev_tasks/avbd_solver/RESUME.md`. The final code WIP touches only the
-  first two files and is unverified by explicit user request.
-- The earlier no-verification stop applied only to the previous docs-only
-  handoff commit. Work resumed afterward; the origin-anchor follow-up has fresh
-  focused local validation recorded below. The latest stop again returned the
-  session to docs-only handoff with no new verification. No hosted CI rerun, PR
-  comment, PR update, merge, or branch deletion has been performed for this
-  latest handoff update.
+  `7a9e24b487b Checkpoint AVBD source-row origin-anchor handoff`. The current
+  helper checkpoint is `52ccfd3187e Checkpoint AVBD source-row handoff state`.
+  The validation evidence in this file was recorded after that checkpoint; if
+  committed locally, the docs-only evidence commit will be ahead of origin until
+  a future session receives explicit push approval.
+- The earlier no-verification stop applied only to the previous handoff
+  checkpoint. Work resumed afterward; the origin-anchor follow-ups have fresh
+  local validation recorded below. No hosted CI rerun, PR comment, PR update,
+  merge, branch deletion, or push of this validation-doc update has been
+  performed during this resumed slice.
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
@@ -113,7 +103,7 @@ Latest resumed local follow-up:
   helper overhead cleanup; it does not close any source CPU-win, GPU, or
   paper-number gate.
 
-Newest handoff-captured WIP, unverified by explicit stop instruction:
+Newest validated local follow-up:
 
 - `avbdRigidWorldPointIsBodyOrigin()` and `avbdRigidWorldPointDirection()` were
   moved immediately after `avbdRigidBodyWorldPoint()` so earlier helper paths
@@ -127,11 +117,9 @@ Newest handoff-captured WIP, unverified by explicit stop instruction:
   body-origin anchors.
 - `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational` was
   added to cover the new point-attachment origin-anchor behavior.
-- No validation was run for this newest WIP after the user said to stop and
-  focus on handoff without further verification. A fresh session should run the
-  rigid-block target, a focused helper filter, full `test_avbd_rigid_block`,
-  `pixi run build`, `pixi run lint`, and `git diff --check` before treating it
-  as review-ready.
+- This slice has local validation evidence below. It remains only a narrow
+  source-row helper overhead cleanup; it does not close any source CPU-win,
+  GPU, or paper-number gate.
 
 Previous resumed local follow-up:
 
@@ -251,8 +239,28 @@ Local validation for the consolidated branch after the latest source-row
 cleanup:
 
 - The previous handoff-only checkpoint intentionally ran no fresh verification.
-  Work resumed afterward, and the current point-pair/friction origin-anchor
-  helper cleanup has fresh focused validation below.
+  Work resumed afterward, and the current origin-anchor helper cleanups have
+  fresh focused and suite validation below.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational:AvbdRigidBlock.PointAttachmentStampsForceTorqueAndPsdHessian:AvbdRigidBlock.PointPairOriginAnchorDirectionStaysTranslational:AvbdRigidBlock.DistanceSpringOriginAnchorDirectionStaysTranslational:AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational:AvbdRigidBlock.PointPairDistanceSpringStampsRadialFiniteStiffness:AvbdRigidBlock.PointPairDistanceSpringStepReducesStretch:AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows:AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition' --gtest_brief=1"`
+  passed, 9 tests.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1"`
+  passed, 95 tests.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint: `pixi run build` passed.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint: `pixi run lint` passed.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint: `git diff --check` passed.
+- Current resumed validation after the point-attachment/distance-spring
+  direction helper checkpoint: `pixi run test-unit` passed, 161/161 tests.
 - Current resumed validation after the generic point-pair/friction
   origin-anchor direction helper:
   `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
@@ -365,14 +373,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                           |
-| -------------------------------------- | --------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `e4b72c704d6` plus final WIP before handoff commit | Current checkout and single resume branch. One committed local follow-up ahead of upstream plus handoff-captured WIP before the final checkpoint/push. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                    |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                           |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                           |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                                                    |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.          |
+| Branch                                 | Upstream                                      | Local head at handoff                    | State and handling                                                                                                                        |
+| -------------------------------------- | --------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `52ccfd3187e` plus validation-doc update | Current checkout and single resume branch. Helper checkpoint is pushed; this validation-doc update is local until explicit push approval. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                            | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                                 |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                            | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                                        |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                            | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                                        |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                            | Unrelated local branch; do not touch during AVBD handoff.                                                                                 |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                            | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.                       |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest handoff-only stop. Cleanup candidates remain documented here, but a
@@ -421,11 +429,10 @@ Fresh-session plan after this progress checkpoint:
    `git fetch origin main` (or the equivalent HTTPS fetch if SSH to GitHub is
    still blocked on port 22) and
    `gh pr view 2977 --json mergeStateStatus,headRefOid,statusCheckRollup`.
-3. Before treating the newest handoff-captured helper WIP as review-ready, run
-   the rigid-block target, a focused helper filter including
-   `AvbdRigidBlock.PointAttachmentOriginAnchorDirectionStaysTranslational`,
-   full `test_avbd_rigid_block`, `pixi run build`, `pixi run lint`, and
-   `git diff --check`. This was intentionally skipped for the handoff stop.
+3. The newest helper checkpoint has local validation recorded above. Before
+   using it for reviewer-facing PR work, refresh against the intended base,
+   rerun the appropriate focused checks if files changed, and keep source-row
+   overhead claims separate from CPU-win, GPU, and paper-number gates.
 4. If #2977 CI has failed, inspect only the newest failed run/job and keep any
    fix limited to the prepare/cache-reserve behavior unless CI proves a separate
    issue. Run `pixi run lint` before committing.
