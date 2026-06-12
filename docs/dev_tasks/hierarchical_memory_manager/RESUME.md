@@ -1,12 +1,23 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
+## Current Continuation (2026-06-12, Replay Snapshot Name Allocators)
 
 Current local branch: `pr/hmm-phase45-replay-snapshot-allocators`, created from
 `pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. It has no remote tracking
 branch yet.
 
-Current slice:
+Current local state:
+
+- Committed locally: `40fe160da8c` (`Route replay snapshots through World
+allocator`).
+- Committed locally: `f5e7625a6e0` (`Route replay restore scratch through
+World allocator`).
+- Latest local checkpoint in this continuation: replay joint-layout and
+  loop-closure names use World-allocated replay snapshot strings, with
+  long-name record/restore ownership probes in
+  `World.WorldPersistentStorageUsesWorldFreeAllocator`.
+
+Committed replay slice:
 
 - A focused non-empty replay ownership assertion reproduced the pre-fix gap:
   enabling replay recording for a World with one rigid body made one global
@@ -26,7 +37,20 @@ Current slice:
   and avoids the generic subtree-dirty helper allocation by restoring rigid-body
   transform components directly after the replay layout checks.
 
-Focused validation run so far:
+Current replay-name slice:
+
+- `ReplayState::JointLayoutState::name` and
+  `ReplayState::LoopClosureState::name` are changed from `std::string` to
+  World-allocated `ReplayState::SnapshotString`.
+- `recordReplayFrame()`, loop-closure replay capture, joint layout comparison,
+  and loop-closure validation are updated to preserve/compare those allocator
+  owned names.
+- `World.WorldPersistentStorageUsesWorldFreeAllocator` is extended with long
+  joint-name and long loop-closure-name record/restore probes.
+- The long joint-name probe reproduced one global heap allocation / 81 bytes
+  during `setReplayRecordingEnabled(true)` before the local fix.
+
+Focused validation for the replay-name slice:
 
 ```bash
 pixi run lint
@@ -39,14 +63,25 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Immediate next step: inspect the final diff and commit the local checkpoint.
-Do not push or open a PR without explicit maintainer approval.
+Immediate next step: choose the next evidence-first HMM slice. Good candidates
+are dynamic `Eigen::VectorXd` payload ownership in richer replay snapshots or
+the EnTT storage-layout investigation for the allocator comparative matrix. Do
+not push or open a PR without explicit maintainer approval.
 
-Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` fields and
-`std::string` names inside richer replay snapshots still use their native
-heap-owning storage. Richer replay restores may also allocate if they insert
-missing transient components or copy those native payloads. Treat those as
-separate evidence-first slices.
+Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` fields inside
+richer replay snapshots remain native heap-owning/unproven. Richer replay
+restores may also allocate if they insert missing transient components or copy
+native payloads. Treat those as separate evidence-first slices.
+
+Fresh-session start:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-replay-snapshot-allocators
+git status -sb
+git log --oneline --decorate -8
+git diff --stat
+```
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 

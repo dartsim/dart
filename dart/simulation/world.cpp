@@ -243,14 +243,24 @@ struct World::ReplayState
   template <typename Component>
   using ComponentSnapshot = SnapshotVector<std::pair<entt::entity, Component>>;
 
+  using SnapshotCharTraits = std::char_traits<char>;
+  using SnapshotString
+      = std::basic_string<char, SnapshotCharTraits, SnapshotAllocator<char>>;
+
   using DifferentiableParameterSnapshot
       = std::pair<entt::entity, PhysicalParameter>;
 
   struct JointLayoutState
   {
+    explicit JointLayoutState(common::MemoryAllocator& allocator)
+      : name(SnapshotAllocator<char>{allocator})
+    {
+      // Empty.
+    }
+
     comps::JointType type = comps::JointType::Revolute;
     comps::ActuatorType actuatorType = comps::ActuatorType::Force;
-    std::string name;
+    SnapshotString name;
     Eigen::VectorXd springStiffness;
     Eigen::VectorXd dampingCoefficient;
     Eigen::VectorXd restPosition;
@@ -279,6 +289,11 @@ struct World::ReplayState
 
   struct JointState
   {
+    explicit JointState(common::MemoryAllocator& allocator) : layout(allocator)
+    {
+      // Empty.
+    }
+
     entt::entity entity = entt::null;
     JointLayoutState layout;
     Eigen::VectorXd position;
@@ -308,8 +323,14 @@ struct World::ReplayState
 
   struct LoopClosureState
   {
+    explicit LoopClosureState(common::MemoryAllocator& allocator)
+      : name(SnapshotAllocator<char>{allocator})
+    {
+      // Empty.
+    }
+
     entt::entity entity = entt::null;
-    std::string name;
+    SnapshotString name;
     comps::LoopClosure loopClosure;
   };
 
@@ -439,7 +460,8 @@ template <typename JointLayout>
 bool sameReplayJointLayout(const comps::Joint& joint, const JointLayout& layout)
 {
   return joint.type == layout.type && joint.actuatorType == layout.actuatorType
-         && joint.name == layout.name
+         && std::string_view{joint.name}
+                == std::string_view{layout.name.data(), layout.name.size()}
          && sameReplayVector(joint.springStiffness, layout.springStiffness)
          && sameReplayVector(
              joint.dampingCoefficient, layout.dampingCoefficient)
@@ -855,11 +877,12 @@ auto captureReplayLoopClosures(
   auto view = registry.view<comps::LoopClosure, comps::Name>();
   states.reserve(countReplayView(view));
   for (auto entity : view) {
-    states.push_back(
-        LoopClosureState{
-            entity,
-            view.get<comps::Name>(entity).name,
-            view.get<comps::LoopClosure>(entity)});
+    LoopClosureState state(allocator);
+    state.entity = entity;
+    const auto& name = view.get<comps::Name>(entity).name;
+    state.name.assign(name.begin(), name.end());
+    state.loopClosure = view.get<comps::LoopClosure>(entity);
+    states.push_back(std::move(state));
   }
   std::ranges::sort(states, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)
@@ -889,8 +912,9 @@ void validateReplayLoopClosures(
 
     const auto& name = registry.get<comps::Name>(state.entity);
     const auto& loopClosure = registry.get<comps::LoopClosure>(state.entity);
+    const std::string_view stateName{state.name.data(), state.name.size()};
     DART_SIMULATION_THROW_T_IF(
-        name.name != state.name
+        std::string_view{name.name} != stateName
             || !sameReplayLoopClosure(loopClosure, state.loopClosure),
         InvalidOperationException,
         "Cannot restore replay frame: LoopClosure entity layout changed");
@@ -5713,40 +5737,43 @@ void World::recordReplayFrame()
   replayFrame.joints.reserve(countReplayView(jointView));
   for (auto entity : jointView) {
     const auto& joint = jointView.get<comps::Joint>(entity);
-    replayFrame.joints.push_back(
-        ReplayState::JointState{
-            entity,
-            ReplayState::JointLayoutState{
-                joint.type,
-                joint.actuatorType,
-                joint.name,
-                joint.springStiffness,
-                joint.dampingCoefficient,
-                joint.restPosition,
-                joint.armature,
-                joint.coulombFriction,
-                joint.breakForce,
-                joint.hasAvbdStiffnessState,
-                joint.avbdStartStiffness,
-                joint.avbdLinearStiffness,
-                joint.avbdAngularStiffness,
-                joint.avbdMaxStiffness,
-                joint.limits,
-                joint.axis,
-                joint.axis2,
-                joint.pitch,
-                joint.parentLink,
-                joint.childLink,
-                joint.hasRigidBodyFixedJointAnchors,
-                joint.rigidBodyFixedJointLocalAnchorParent,
-                joint.rigidBodyFixedJointLocalAnchorChild,
-                joint.rigidBodyFixedJointTargetRelativeOrientation},
-            joint.position,
-            joint.velocity,
-            joint.acceleration,
-            joint.torque,
-            joint.commandVelocity,
-            joint.broken});
+    ReplayState::JointState state(replayAllocator);
+    state.entity = entity;
+    state.layout.type = joint.type;
+    state.layout.actuatorType = joint.actuatorType;
+    state.layout.name.assign(joint.name.begin(), joint.name.end());
+    state.layout.springStiffness = joint.springStiffness;
+    state.layout.dampingCoefficient = joint.dampingCoefficient;
+    state.layout.restPosition = joint.restPosition;
+    state.layout.armature = joint.armature;
+    state.layout.coulombFriction = joint.coulombFriction;
+    state.layout.breakForce = joint.breakForce;
+    state.layout.hasAvbdStiffnessState = joint.hasAvbdStiffnessState;
+    state.layout.avbdStartStiffness = joint.avbdStartStiffness;
+    state.layout.avbdLinearStiffness = joint.avbdLinearStiffness;
+    state.layout.avbdAngularStiffness = joint.avbdAngularStiffness;
+    state.layout.avbdMaxStiffness = joint.avbdMaxStiffness;
+    state.layout.limits = joint.limits;
+    state.layout.axis = joint.axis;
+    state.layout.axis2 = joint.axis2;
+    state.layout.pitch = joint.pitch;
+    state.layout.parentLink = joint.parentLink;
+    state.layout.childLink = joint.childLink;
+    state.layout.hasRigidBodyFixedJointAnchors
+        = joint.hasRigidBodyFixedJointAnchors;
+    state.layout.rigidBodyFixedJointLocalAnchorParent
+        = joint.rigidBodyFixedJointLocalAnchorParent;
+    state.layout.rigidBodyFixedJointLocalAnchorChild
+        = joint.rigidBodyFixedJointLocalAnchorChild;
+    state.layout.rigidBodyFixedJointTargetRelativeOrientation
+        = joint.rigidBodyFixedJointTargetRelativeOrientation;
+    state.position = joint.position;
+    state.velocity = joint.velocity;
+    state.acceleration = joint.acceleration;
+    state.torque = joint.torque;
+    state.commandVelocity = joint.commandVelocity;
+    state.broken = joint.broken;
+    replayFrame.joints.push_back(std::move(state));
   }
   std::ranges::sort(replayFrame.joints, [](const auto& lhs, const auto& rhs) {
     return static_cast<std::uint32_t>(lhs.entity)

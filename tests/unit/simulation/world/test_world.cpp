@@ -3083,6 +3083,79 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     EXPECT_EQ(heapCounter.allocationBytes(), 0u);
   }
 
+  sx::World jointReplayWorld;
+  auto robot = jointReplayWorld.addMultibody("allocator_replay_robot");
+  auto base = robot.addLink("allocator_replay_base");
+  sx::JointSpec jointSpec;
+  jointSpec.name = std::string(80, 'j');
+  jointSpec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("allocator_replay_link", base, jointSpec);
+  auto joint = link.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
+  joint.setVelocity(Eigen::VectorXd::Constant(1, 0.5));
+  joint.setForce(Eigen::VectorXd::Constant(1, 1.5));
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, -0.75));
+  auto& jointReplayFreeList
+      = jointReplayWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeJointReplay
+      = jointReplayFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    jointReplayWorld.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "joint replay snapshots should allocate dynamic payloads through "
+           "the World free allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(
+      jointReplayFreeList.getAllocationCount(), allocationsBeforeJointReplay);
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    jointReplayWorld.restoreReplayFrame(0);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "joint replay restore should not allocate dynamic payloads from "
+           "the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
+  sx::World closureReplayWorld;
+  auto closureRobot = closureReplayWorld.addMultibody("closure_replay_robot");
+  auto closureBase = closureRobot.addLink("closure_replay_base");
+  auto closureLink = closureRobot.addLink(
+      "closure_replay_link",
+      closureBase,
+      sx::JointSpec{.name = "closure_replay_joint"});
+  const std::string longClosureName(80, 'c');
+  closureReplayWorld.addLoopClosure(
+      longClosureName, {.frameA = closureBase, .frameB = closureLink});
+  auto& closureReplayFreeList
+      = closureReplayWorld.getMemoryManager().getFreeListAllocator();
+  const auto allocationsBeforeClosureReplay
+      = closureReplayFreeList.getAllocationCount();
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    closureReplayWorld.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "loop-closure replay names should allocate through the World free "
+           "allocator, not the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_GT(
+      closureReplayFreeList.getAllocationCount(),
+      allocationsBeforeClosureReplay);
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    closureReplayWorld.restoreReplayFrame(0);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "loop-closure replay restore should not allocate names from the "
+           "global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
   auto ignoredPairA = world.addRigidBody("ignored_pair_a");
   auto ignoredPairB = world.addRigidBody("ignored_pair_b");
   auto& freeList = memoryManager.getFreeListAllocator();

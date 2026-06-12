@@ -1,25 +1,46 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
+## Current Continuation (2026-06-12, Replay Snapshot Name Allocators)
 
 Work resumed from the single pushed handoff branch on a fresh local follow-up
 branch: `pr/hmm-phase45-replay-snapshot-allocators`, based on
-`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`.
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877`. This is the current local
+resume point in this workspace. It has no remote tracking branch yet.
 
-This slice closes the next replay ownership gaps. A new non-empty replay
-ownership assertion first reproduced one global heap allocation / 368 bytes
-when enabling replay recording for a World with one rigid body. The fix routes
-`ReplayState::Frame` snapshot vectors through the World free allocator and adds
-an allocator-aware AVBD warm-start replay capture overload so World-owned
-replay recording can also allocate AVBD row snapshots from the same allocator
-root. Extending the same test to restore that recorded frame then reproduced
-three global heap allocations / 16 bytes from replay restore scratch. The
-restore path now uses World-allocated rigid-body ordering and transient
-component cleanup scratch, and writes restored rigid-body transform components
-directly so it does not enter the generic subtree-dirty helper that allocated
-the final default 4-byte stack node.
+Current branch state:
 
-Focused validation run so far:
+- Committed locally: `40fe160da8c` (`Route replay snapshots through World
+allocator`).
+- Committed locally: `f5e7625a6e0` (`Route replay restore scratch through
+World allocator`).
+- Latest local checkpoint in this continuation: replay joint-layout and
+  loop-closure names use World-allocated replay snapshot strings, with
+  long-name record/restore ownership probes in
+  `World.WorldPersistentStorageUsesWorldFreeAllocator`.
+
+The committed replay slices close the next replay ownership gaps. A new
+non-empty replay ownership assertion first reproduced one global heap
+allocation / 368 bytes when enabling replay recording for a World with one
+rigid body. The fix routes `ReplayState::Frame` snapshot vectors through the
+World free allocator and adds an allocator-aware AVBD warm-start replay capture
+overload so World-owned replay recording can also allocate AVBD row snapshots
+from the same allocator root. Extending the same test to restore that recorded
+frame then reproduced three global heap allocations / 16 bytes from replay
+restore scratch. The restore path now uses World-allocated rigid-body ordering
+and transient component cleanup scratch, and writes restored rigid-body
+transform components directly so it does not enter the generic subtree-dirty
+helper that allocated the final default 4-byte stack node.
+
+The replay-name slice closes the next measured heap allocation in richer
+replay snapshots. Replay joint-layout and loop-closure names now use
+World-allocated `ReplayState::SnapshotString` storage, and replay capture,
+layout comparison, and loop-closure validation preserve/compare those
+allocator-owned names. Before that fix, the long joint-name probe reproduced
+one global heap allocation / 81 bytes during `setReplayRecordingEnabled(true)`.
+The ownership gate now covers long joint-name and long loop-closure-name replay
+record/restore paths.
+
+Focused validation for the replay-name slice:
 
 ```bash
 pixi run lint
@@ -32,12 +53,12 @@ build/default/cpp/Release/bin/test_world \
   --gtest_color=no
 ```
 
-Remaining replay-specific follow-up: dynamic `Eigen::VectorXd` payloads and
-`std::string` names inside replay joint/loop-closure snapshots still use their
-native heap-owning storage. Richer replay restores may also allocate if they
-insert missing transient components or copy those native payloads. Treat those
-as separate evidence-first slices; do not claim complete replay zero-heap
-coverage from the current rigid-body ownership gate.
+Dynamic `Eigen::VectorXd` payloads inside richer replay joint snapshots remain
+native heap-owning/unproven; the current one-DOF replay-name probe does not
+prove that larger dynamic Eigen payloads are allocator-clean. Richer replay
+restores may also allocate if they insert missing transient components or copy
+native payloads. Treat those as separate evidence-first slices; do not claim
+complete replay zero-heap coverage from the current rigid-body and name probes.
 
 The first continuation probe re-ran the focused EnTT comparative gate on the
 retained source policy:
@@ -55,10 +76,15 @@ git fetch origin
 git checkout pr/hmm-phase45-replay-snapshot-allocators
 git status -sb
 git log --oneline --decorate -8
+git diff --stat
 ```
 
-Before publishing, run `pixi run lint` plus the selected focused test/build
-gate for the final changed scope.
+Next implementation slice should be evidence-first: either prove/fix dynamic
+`Eigen::VectorXd` payload ownership in richer replay snapshots, or return to
+the EnTT storage-layout investigation for the allocator comparative matrix.
+Before publishing or opening a PR, run `pixi run lint` plus the selected
+focused test/build gate for the final changed scope. Do not push/open a PR
+without explicit maintainer approval.
 
 ## Authoritative Stop Handoff (2026-06-12, Final)
 
