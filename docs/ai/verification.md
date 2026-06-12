@@ -26,6 +26,10 @@ paper-parity target unless the maintainer explicitly changes scope.
 
 Completion requires direct evidence for all of the following:
 
+- the solver-family intake checklist in `docs/plans/solver-family-intake.md`
+  recorded in full, including its solver-contract conformance and
+  solver-identity/metrics items — every benchmark or evidence packet must
+  machine-record the resolved solver configuration that actually ran;
 - every algorithm, feature, parameter, edge case, and limitation named by the
   paper, project page, reference source, videos, and supplemental material;
 - CPU and GPU implementations when the method or user request includes both,

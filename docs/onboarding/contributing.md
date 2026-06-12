@@ -168,6 +168,11 @@ Your PR description should include:
 5. **Breaking Changes**: Any API changes?
 6. **Related Issues**: Link to relevant issues
 
+Keep Summary first as the reviewer skim target. If the motivation is necessary
+to understand the outcome, make the first Summary sentence problem-oriented,
+then put the fuller rationale in Motivation rather than moving Motivation above
+Summary.
+
 Also set the milestone to match the target branch (see above).
 
 ### Review Checklist
