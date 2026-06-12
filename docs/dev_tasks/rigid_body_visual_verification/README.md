@@ -19,17 +19,15 @@
       wrote 24 scene-metrics events and numeric ranges for divergence, contact
       counts, per-executor step time, and world time. The workflow/doc drift
       guard reported `7 passed`.
-- [x] Interrupted friction-threshold capture-metrics handoff:
-      `rigid_friction_threshold` has local code/test changes that publish IPC
+- [x] Friction-threshold capture-metrics follow-up:
+      `rigid_friction_threshold` now publishes IPC
       solver identity, executor, angle/friction controls, threshold delta,
       per-lane drift/speed/clearance/friction/status, step timing, and compact
-      history ranges through the capture hook. Before the critical stop
-      instruction, the focused friction-threshold guard reported `1 passed` and
-      a real docked 24-frame capture wrote 24 scene-metrics events under
-      `/tmp/dart_capture_friction_threshold_metrics_1781229316`. The latest
-      operator instruction stopped further verification; the workflow/doc drift
-      guard, `pixi run lint`, bounded build, `git diff --check`, and non-dev
-      doc sync are intentionally not completed in this handoff.
+      history ranges through the capture hook. The focused workflow/doc drift
+      guard reported `7 passed`; the real docked 24-frame capture wrote
+      24 scene-metrics events under
+      `/tmp/dart_capture_friction_threshold_metrics_1781229799`; the lint gate
+      passed; and a bounded default build reported `ninja: no work to do`.
 - [x] Contact-solver policy slice: `rigid_contact_solver_compare` runs matched
       Worlds with the same rigid-body solver and sequential-impulse vs boxed-LCP
       contact methods on a tilted multi-contact plank with scene-owned capture
@@ -78,13 +76,14 @@
       numeric ranges for contact counts, depths, world time, and shape indices.
       The focused workflow/doc drift guard reported `4 passed`; `pixi run lint`,
       bounded default `pixi run build`, and `git diff --check` all passed.
-- [x] Current critical handoff refresh: runtime-code checkpoints
-      `7ef7a96dda0` (`Expose rigid collision cast capture metrics`) and
-      `b54c4f5dba3` (`Expose rigid executor equivalence capture metrics`) are
-      followed by the interrupted `rigid_friction_threshold` capture-metrics
-      work. The latest operator instruction was to stop implementation work,
-      focus only on handoff, push the handoff state, and run no additional
-      verification.
+- [x] Current local completion refresh: runtime-code checkpoints
+      `7ef7a96dda0` (`Expose rigid collision cast capture metrics`),
+      `b54c4f5dba3` (`Expose rigid executor equivalence capture metrics`), and
+      `a47d52b7aea` (`Hand off rigid friction threshold capture metrics`) are
+      followed by a local docs/validation completion for the
+      `rigid_friction_threshold` capture-metrics slice. Future pushes, PR
+      creation, comments, review replies, or other GitHub mutations still
+      require explicit approval.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
       same capture hook so manifests preserve method-family/contact-policy case
@@ -581,17 +580,15 @@ and the no-tunneling scope decision.
 
 ## Immediate Next Steps
 
-1. Respect the stop instruction: do not continue implementation or validation
-   from this handoff unless the user explicitly resumes the task.
-2. If resumed, first verify `git status -sb` and `git log --oneline
-   --decorate -5`, then finish the interrupted `rigid_friction_threshold`
-   capture-metrics slice by syncing the non-dev docs (`CHANGELOG.md`,
-   `python/examples/demos/README.md`, and the PLAN-103 sidecar).
-3. Only after the user resumes implementation, run the skipped gates:
-   workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`, and
-   `git diff --check`. The next likely row after friction-threshold is
-   `rigid_spin_roll_coupling`, because it already owns slip/roll/spin/travel
-   histories that are useful in capture manifests.
+1. Confirm `git status -sb` on
+   `feature/rigid-body-gui-visual-verification`, then continue the
+   capture-metrics hardening pass one row at a time.
+2. The next likely row is `rigid_spin_roll_coupling`, because it already owns
+   slip/roll/spin/travel/energy histories that are user-facing and useful in
+   docked capture manifests.
+3. Keep payloads summary-oriented: row identity, solver/contact scope,
+   user-facing controls, current lane metrics, compact history ranges, and
+   enough top-level numeric fields for manifest range summaries.
 4. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.

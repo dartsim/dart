@@ -156,7 +156,7 @@ infer.
 | `rigid_executor_equivalence`     | Does parallel execution preserve the same physics? | Physics solver, launch speed, friction, restitution   | Pose/velocity divergence, contact count, step time, metrics |
 | `rigid_contact_solver_compare`   | What changes when contact solver policy changes?   | Executor, launch speed, friction, restitution, tilt   | Contact count, depth, clearance, speed, divergence          |
 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel         |
-| `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance                          |
+| `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance, metrics                 |
 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | Executor, friction, speed, backspin                   | Slip speed, roll ratio, spin change, energy                 |
 | `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error               |
 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity                |
@@ -407,7 +407,9 @@ into a three-lane visual verifier. The upper lane uses friction below
 and should stick, and the middle lane is user-controlled. The panel keeps the
 threshold calculation visible, resets the run when the controlled friction or
 ramp angle changes, and plots down-slope drift and speed so users can debug
-stick/slip behavior without relying on exact-at-threshold claims.
+stick/slip behavior without relying on exact-at-threshold claims. Capture
+metrics record the threshold, controlled-friction delta, per-lane friction,
+drift, speed, clearance, status, step timing, and compact history ranges.
 
 ## Rigid spin/roll coupling
 

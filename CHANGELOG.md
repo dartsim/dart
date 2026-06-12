@@ -79,7 +79,7 @@
   - Added `rigid_friction_threshold` to Python `py-demos`, a three-lane rigid
     IPC ramp that shows below-threshold sliding, user-controlled friction near
     the threshold, and above-threshold sticking with down-slope drift and speed
-    diagnostics.
+    diagnostics plus scene-owned capture metrics.
   - Added `rigid_spin_roll_coupling` to Python `py-demos`, a sequential-impulse
     contact-friction row that visualizes matched rolling, slip-to-roll spin-up,
     backspin scrub, and low-friction slip with contact slip, roll ratio, spin
