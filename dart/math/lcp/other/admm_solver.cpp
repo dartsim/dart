@@ -43,6 +43,35 @@
 
 namespace dart::math {
 
+namespace {
+
+bool validateParameters(
+    const AdmmSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.rhoInit) || params.rhoInit <= 0.0) {
+    if (message) {
+      *message = "ADMM rho_init must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.muProx) || params.muProx < 0.0) {
+    if (message) {
+      *message = "ADMM mu_prox must be non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.adaptiveRhoTolerance)
+      || params.adaptiveRhoTolerance <= 1.0) {
+    if (message) {
+      *message = "ADMM adaptive_rho_tolerance must be greater than 1";
+    }
+    return false;
+  }
+  return true;
+}
+
+} // namespace
+
 AdmmSolver::AdmmSolver()
 {
   mDefaultOptions.maxIterations = 200;
@@ -95,6 +124,12 @@ LcpResult AdmmSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,

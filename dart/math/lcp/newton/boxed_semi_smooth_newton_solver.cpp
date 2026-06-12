@@ -120,6 +120,49 @@ Eigen::VectorXd computeNaturalResidual(
   return x - projected;
 }
 
+bool validateParameters(
+    const BoxedSemiSmoothNewtonSolver::Parameters& params, std::string* message)
+{
+  if (params.maxLineSearchSteps <= 0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton max_line_search_steps must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.stepReduction) || params.stepReduction <= 0.0
+      || params.stepReduction >= 1.0) {
+    if (message) {
+      *message = "Boxed semi-smooth Newton step_reduction must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.sufficientDecrease)
+      || params.sufficientDecrease < 0.0 || params.sufficientDecrease >= 1.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton sufficient_decrease must be in [0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.minStep) || params.minStep <= 0.0) {
+    if (message) {
+      *message = "Boxed semi-smooth Newton min_step must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.jacobianRegularization)
+      || params.jacobianRegularization < 0.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton jacobian_regularization must be "
+            "non-negative";
+    }
+    return false;
+  }
+  return true;
+}
+
 } // namespace
 
 BoxedSemiSmoothNewtonSolver::BoxedSemiSmoothNewtonSolver()
@@ -176,6 +219,12 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,

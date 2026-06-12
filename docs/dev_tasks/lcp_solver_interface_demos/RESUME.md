@@ -1,5 +1,139 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality — 2026-06-11 Advanced Parameter Validation Resumed
+
+The user resumed the broad LCP solver/interface/demo goal after the previous
+stop-only hand-off. The interrupted advanced solver parameter validation slice
+has now been rebuilt and verified locally.
+
+Latest implementation slice:
+
+- `AdmmSolver` returns `InvalidProblem` before iteration for invalid
+  `rhoInit`, `muProx`, or `adaptiveRhoTolerance` values.
+- `SapSolver` returns `InvalidProblem` before iteration for invalid
+  `regularization`, Armijo, backtracking, or line-search iteration settings.
+- `BoxedSemiSmoothNewtonSolver` returns `InvalidProblem` before iteration for
+  invalid line-search, sufficient-decrease, minimum-step, or Jacobian
+  regularization settings.
+- C++ coverage in the LCP smoke and validation tests exercises invalid custom
+  parameter structs.
+- dartpy coverage exercises invalid Python parameter objects through the solver
+  `parameters` properties.
+- `CHANGELOG.md` and the dev-task README describe the new validation behavior.
+
+Verification completed:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --gtest_filter='BoxedSemiSmoothNewtonSolverCoverage.*:AdmmSolverCoverage.*'
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+```
+
+Observed results:
+
+- Focused validation executable passed 4 tests after an explicit rebuild.
+- `pixi run test-lcpsolver`: 17/17 C++ LCP tests passed.
+- `python/tests/unit/math/test_lcp.py`: 69 passed.
+
+Immediate next step:
+
+- Run `pixi run lint`, then commit the validation slice if lint is clean.
+- After that checkpoint, continue the broad DART 7 LCP audit with the next
+  concrete solver/interface/demo/performance gap. Do not mark the overall goal
+  complete from this focused validation slice.
+
+## Current Reality — 2026-06-11 Stop-Only Hand-Off
+
+The user explicitly requested a full stop and asked only to ensure the
+hand-off docs, with no further verification. After that instruction, do not
+infer that tests, lint, commits, or pushes were performed; this hand-off only
+updates `docs/dev_tasks/lcp_solver_interface_demos/README.md` and this file.
+
+Observed repository state before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `06ac009b27c Show LCP solver parameters in py demo`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 19]`.
+- Worktree had uncommitted implementation edits in:
+  - `CHANGELOG.md`
+  - `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp`
+  - `dart/math/lcp/other/admm_solver.cpp`
+  - `dart/math/lcp/other/sap_solver.cpp`
+  - `python/tests/unit/math/test_lcp.py`
+  - `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
+  - `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`
+
+## Immediate Next Step
+
+Do nothing unless the user explicitly resumes implementation. If resumed, first
+inspect the current worktree and the uncommitted validation slice:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status --short --branch
+git log --oneline --decorate --max-count=15
+git diff --stat
+```
+
+Then inspect:
+
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- this file
+- the uncommitted files listed above
+
+## Interrupted Implementation Slice
+
+The interrupted, uncommitted slice adds solve-time validation for advanced
+solver parameter structs:
+
+- `AdmmSolver`: rejects non-positive `rhoInit`, negative `muProx`, and
+  `adaptiveRhoTolerance <= 1` or non-finite values with `InvalidProblem`.
+- `SapSolver`: rejects non-positive `regularization`, invalid Armijo and
+  backtracking factors outside `(0, 1)`, non-positive line-search iteration
+  counts, and non-finite values with `InvalidProblem`.
+- `BoxedSemiSmoothNewtonSolver`: rejects invalid line-search steps,
+  `stepReduction`, `sufficientDecrease`, `minStep`, and
+  `jacobianRegularization` values with `InvalidProblem`.
+- C++ and dartpy tests were added or adjusted to assert invalid advanced
+  parameters are rejected before solver iteration.
+- `CHANGELOG.md` was updated for the new validation behavior.
+
+Verification that happened before the stop-only instruction:
+
+- Explicit build of `UNIT_math_lcp_math_lcp_all_solvers_smoke` plus `dartpy`
+  succeeded after fixing a const-qualification issue in the smoke test.
+- `build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_all_solvers_smoke`
+  passed 17 tests.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest
+python/tests/unit/math/test_lcp.py -q` passed 69 tests.
+- `pixi run test-lcpsolver` failed only
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`; the failure output still
+  appeared to use the old test name and old expectations after the source was
+  edited, so a fresh session should first rebuild that exact target and rerun
+  the focused executable before drawing conclusions.
+
+Suggested first verification only if implementation is resumed:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --gtest_filter='BoxedSemiSmoothNewtonSolverCoverage.*:AdmmSolverCoverage.*'
+```
+
+Do not push or commit without a fresh explicit user instruction and the normal
+DART pre-commit checks.
+
+This stop-only state is historical after the current continuation.
+
 ## Current Reality — 2026-06-11 Advanced Solver Parameters
 
 The user later explicitly resumed the broad LCP solver/interface/demo goal, so

@@ -1,5 +1,141 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-11 Current Continuation — Advanced Parameter Validation
+
+The user resumed the broad LCP solver/interface/demo goal after the stop-only
+hand-off. This continuation finishes the interrupted advanced solver parameter
+validation slice on `feature/lcp-solver-interface-demos`.
+
+Current slice:
+
+- ADMM now rejects invalid advanced parameters before numerical iteration:
+  non-positive or non-finite `rhoInit`, negative or non-finite `muProx`, and
+  `adaptiveRhoTolerance <= 1`.
+- SAP now rejects invalid advanced parameters before numerical iteration:
+  non-positive or non-finite `regularization`, Armijo and backtracking factors
+  outside `(0, 1)`, and non-positive line-search iteration counts.
+- Boxed semi-smooth Newton now rejects invalid advanced line-search and
+  regularization parameters before numerical iteration:
+  non-positive line-search step counts, `stepReduction` outside `(0, 1)`,
+  `sufficientDecrease` outside `[0, 1)`, non-positive `minStep`, and negative
+  `jacobianRegularization`.
+- C++ smoke and validation tests cover invalid custom option structs for the
+  affected solvers.
+- dartpy LCP tests cover invalid Python parameter objects routed through the
+  solver `parameters` properties.
+- `CHANGELOG.md` records the new solve-time validation behavior.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --gtest_filter='BoxedSemiSmoothNewtonSolverCoverage.*:AdmmSolverCoverage.*'
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-lcpsolver
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+```
+
+Observed results:
+
+- The explicit validation target rebuilt and relinked, resolving the stale-test
+  symptom from the interrupted hand-off.
+- Focused boxed semi-smooth Newton and ADMM validation coverage passed 4 tests.
+- C++ LCP suite: `100% tests passed, 0 tests failed out of 17`.
+- Focused dartpy LCP tests: `69 passed`.
+
+Remaining before checkpoint commit:
+
+- Run `pixi run lint` and include any formatter/docs updates in the checkpoint.
+
+## 2026-06-11 Critical Stop-Only Hand-Off — Advanced Parameter Validation
+
+The user explicitly stopped further work and requested only hand-off docs, with
+no further verification. After that instruction, the only intended edits are
+this file and `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`; no lint,
+build, tests, benchmark listing, solver execution, commit, or push should be
+run as part of this stop-only hand-off.
+
+Repository state observed before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `06ac009b27c Show LCP solver parameters in py demo`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 19]`.
+- Recent local checkpoints:
+  - `06ac009b27c Show LCP solver parameters in py demo`
+  - `8cd98e2e553 Expose advanced LCP parameters in dartpy`
+  - `17a994e3772 Reject negative LCP friction coefficients`
+  - `e3353bf04b7 Expose LCP solver sweep metadata`
+- Uncommitted implementation files observed before this docs-only hand-off:
+  - `CHANGELOG.md`
+  - `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp`
+  - `dart/math/lcp/other/admm_solver.cpp`
+  - `dart/math/lcp/other/sap_solver.cpp`
+  - `python/tests/unit/math/test_lcp.py`
+  - `tests/unit/math/lcp/test_all_solvers_smoke.cpp`
+  - `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`
+
+Current uncommitted slice:
+
+- Adds solve-time validation for advanced ADMM parameters:
+  `rhoInit > 0`, `muProx >= 0`, and `adaptiveRhoTolerance > 1`.
+- Adds solve-time validation for advanced SAP parameters:
+  positive `regularization`, `armijosParameter` and `backtrackingFactor` in
+  `(0, 1)`, and positive `maxLineSearchIterations`.
+- Adds solve-time validation for boxed semi-smooth Newton parameters:
+  positive `maxLineSearchSteps`, `stepReduction` in `(0, 1)`,
+  `sufficientDecrease` in `[0, 1)`, positive `minStep`, and non-negative
+  `jacobianRegularization`.
+- Returns `InvalidProblem` with parameter-specific messages before numerical
+  iteration begins.
+- Adds focused C++ coverage in the all-solvers smoke test and validation
+  coverage, plus dartpy coverage for invalid advanced parameter values.
+- Updates `CHANGELOG.md` for the new validation behavior.
+
+Verification that had already run before the stop-only instruction:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_all_solvers_smoke dartpy \
+  --parallel "$JOBS"
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_all_solvers_smoke
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+pixi run test-lcpsolver
+```
+
+Observed results before the stop-only instruction:
+
+- After a const-qualification fix in
+  `tests/unit/math/lcp/test_all_solvers_smoke.cpp`, the explicit build of
+  `UNIT_math_lcp_math_lcp_all_solvers_smoke` and `dartpy` succeeded.
+- `UNIT_math_lcp_math_lcp_all_solvers_smoke` passed 17 tests.
+- `python/tests/unit/math/test_lcp.py` passed 69 tests.
+- `pixi run test-lcpsolver` still failed only
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`. The failure output still
+  appeared to reference the older
+  `BoxedSemiSmoothNewtonSolverCoverage.FailureAndValidationBranches` test name
+  and old expectations, even after the source had been edited, so the next
+  session should suspect a stale or unrelinked test executable before assuming
+  the source patch is wrong.
+
+Immediate next step for a fresh session:
+
+1. Confirm current state with `git status --short --branch` and recent log.
+2. Inspect the uncommitted implementation and these hand-off docs.
+3. If implementation work is explicitly resumed, first rebuild only
+   `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` and rerun that focused
+   executable before rerunning broader LCP verification.
+
+Do not treat this as a completed checkpoint. This is an intentionally
+uncommitted, unpushed hand-off snapshot.
+
+That interrupted state is historical after the current continuation.
+
 ## 2026-06-11 Current Continuation — Advanced Solver Parameters
 
 The user later explicitly resumed the broad LCP solver/interface/demo goal, so
@@ -264,6 +400,9 @@ That stop-only state is historical after the current continuation.
       `parameters` properties in dartpy, with focused Python tests and lint.
 - [x] Add the advanced solver parameter summary to the Python LCP demo panel
       and metadata, with focused py-demo panel tests.
+- [x] Validate advanced ADMM, SAP, and boxed semi-smooth Newton parameter
+      structs before numerical iteration and cover the behavior from C++ and
+      dartpy.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -303,10 +442,19 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The current implementation checkpoint is the dartpy advanced solver-parameter
-slice. It exposes Python parameter objects and solver `parameters` properties
-for ADMM, SAP, and boxed semi-smooth Newton, then surfaces those tunable knobs
-in the Python LCP demo next to the matching benchmark sweeps.
+The current committed implementation checkpoint is the dartpy advanced
+solver-parameter slice. It exposes Python parameter objects and solver
+`parameters` properties for ADMM, SAP, and boxed semi-smooth Newton, then
+surfaces those tunable knobs in the Python LCP demo next to the matching
+benchmark sweeps.
+
+The current uncommitted implementation slice adds solve-time validation for
+those advanced solver parameter structs. It is intentionally left uncommitted
+and unpushed in this hand-off.
+
+The next checkpoint after that hand-off completes the validation slice and
+verifies it with focused C++/Python LCP tests. The broader LCP
+solver/interface/demo objective remains open.
 
 ## Py-Demo Representative Scale Metadata Checkpoint
 

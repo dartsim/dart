@@ -94,6 +94,38 @@ void addBarrierHessianDiagonal(
   }
 }
 
+bool validateParameters(
+    const SapSolver::Parameters& params, std::string* message)
+{
+  if (!std::isfinite(params.regularization) || params.regularization <= 0.0) {
+    if (message) {
+      *message = "SAP regularization must be positive";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.armijosParameter) || params.armijosParameter <= 0.0
+      || params.armijosParameter >= 1.0) {
+    if (message) {
+      *message = "SAP armijos_parameter must be in (0, 1)";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.backtrackingFactor)
+      || params.backtrackingFactor <= 0.0 || params.backtrackingFactor >= 1.0) {
+    if (message) {
+      *message = "SAP backtracking_factor must be in (0, 1)";
+    }
+    return false;
+  }
+  if (params.maxLineSearchIterations <= 0) {
+    if (message) {
+      *message = "SAP max_line_search_iterations must be positive";
+    }
+    return false;
+  }
+  return true;
+}
+
 } // namespace
 
 SapSolver::SapSolver()
@@ -150,6 +182,12 @@ LcpResult SapSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  std::string parameterMessage;
+  if (!validateParameters(*params, &parameterMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = parameterMessage;
+    return result;
+  }
 
   const int maxIterations = std::max(
       1,

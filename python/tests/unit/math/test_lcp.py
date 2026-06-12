@@ -354,6 +354,38 @@ def test_customized_advanced_boxed_solvers_solve_boxed_problem(
     assert np.all(solution <= problem.hi + 1e-8)
 
 
+@pytest.mark.parametrize(
+    ("solver", "params", "expected_message"),
+    (
+        (dart.AdmmSolver(), dart.AdmmSolverParameters(), "rho_init"),
+        (dart.SapSolver(), dart.SapSolverParameters(), "regularization"),
+        (
+            dart.BoxedSemiSmoothNewtonSolver(),
+            dart.BoxedSemiSmoothNewtonSolverParameters(),
+            "max_line_search_steps",
+        ),
+    ),
+)
+def test_advanced_boxed_solvers_reject_invalid_parameters_from_dartpy_math(
+    solver: dart.LcpSolver, params: object, expected_message: str
+) -> None:
+    if isinstance(params, dart.AdmmSolverParameters):
+        params.rho_init = 0.0
+    elif isinstance(params, dart.SapSolverParameters):
+        params.regularization = 0.0
+    elif isinstance(params, dart.BoxedSemiSmoothNewtonSolverParameters):
+        params.max_line_search_steps = 0
+    solver.parameters = params
+
+    problem = dart.LcpProblem(
+        np.eye(2), np.array([0.25, 0.75]), np.zeros(2), np.ones(2)
+    )
+    result, _ = solver.solve(problem)
+
+    assert result.status == dart.LcpSolverStatus.INVALID_PROBLEM
+    assert expected_message in result.message
+
+
 def test_lcp_solver_supports_problem_uses_default_standard_tolerance() -> None:
     A = np.eye(2)
     near_standard = dart.LcpProblem(

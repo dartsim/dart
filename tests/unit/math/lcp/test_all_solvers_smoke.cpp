@@ -629,23 +629,74 @@ TEST(AdvancedBoxedSolvers, InvalidMixedBoundsAreRejectedBeforeIteration)
   EXPECT_FALSE(result.message.empty());
 }
 
-TEST(AdvancedBoxedSolvers, BoxedNewtonReportsConfiguredLineSearchFailure)
+TEST(AdvancedBoxedSolvers, InvalidParametersAreRejectedBeforeIteration)
 {
-  const auto problem = LcpProblemFactory::standard2dSpd();
-  BoxedSemiSmoothNewtonSolver solver;
-  BoxedSemiSmoothNewtonSolver::Parameters params;
-  params.maxLineSearchSteps = 0;
+  const auto problem = LcpProblemFactory::boxed3dMixedBounds();
+  auto expectInvalid = [](const LcpResult& result, std::string_view token) {
+    EXPECT_EQ(result.status, LcpSolverStatus::InvalidProblem);
+    EXPECT_NE(result.message.find(token), std::string::npos) << result.message;
+  };
 
-  LcpOptions options = solver.getDefaultOptions();
-  options.maxIterations = 4;
-  options.validateSolution = false;
-  options.customOptions = &params;
+  auto solveAdmm = [&](AdmmSolver::Parameters params) {
+    AdmmSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  AdmmSolver::Parameters admmParams;
+  admmParams.rhoInit = 0.0;
+  expectInvalid(solveAdmm(admmParams), "rho_init");
+  admmParams = {};
+  admmParams.muProx = -1.0;
+  expectInvalid(solveAdmm(admmParams), "mu_prox");
+  admmParams = {};
+  admmParams.adaptiveRhoTolerance = 1.0;
+  expectInvalid(solveAdmm(admmParams), "adaptive_rho_tolerance");
 
-  Eigen::VectorXd x(2);
-  x << 0.0, 0.0;
-  const auto result = solver.solve(problem.problem, x, options);
+  auto solveSap = [&](SapSolver::Parameters params) {
+    SapSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  SapSolver::Parameters sapParams;
+  sapParams.regularization = 0.0;
+  expectInvalid(solveSap(sapParams), "regularization");
+  sapParams = {};
+  sapParams.armijosParameter = 0.0;
+  expectInvalid(solveSap(sapParams), "armijos_parameter");
+  sapParams = {};
+  sapParams.backtrackingFactor = 1.0;
+  expectInvalid(solveSap(sapParams), "backtracking_factor");
+  sapParams = {};
+  sapParams.maxLineSearchIterations = 0;
+  expectInvalid(solveSap(sapParams), "max_line_search_iterations");
 
-  EXPECT_EQ(result.status, LcpSolverStatus::Failed);
-  EXPECT_EQ(result.message, "Line search failed");
-  EXPECT_TRUE(x.allFinite());
+  auto solveBoxedNewton = [&](BoxedSemiSmoothNewtonSolver::Parameters params) {
+    BoxedSemiSmoothNewtonSolver solver;
+    LcpOptions options = solver.getDefaultOptions();
+    options.validateSolution = false;
+    options.customOptions = &params;
+    Eigen::VectorXd x;
+    return solver.solve(problem.problem, x, options);
+  };
+  BoxedSemiSmoothNewtonSolver::Parameters newtonParams;
+  newtonParams.maxLineSearchSteps = 0;
+  expectInvalid(solveBoxedNewton(newtonParams), "max_line_search_steps");
+  newtonParams = {};
+  newtonParams.stepReduction = 1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "step_reduction");
+  newtonParams = {};
+  newtonParams.sufficientDecrease = 1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "sufficient_decrease");
+  newtonParams = {};
+  newtonParams.minStep = 0.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "min_step");
+  newtonParams = {};
+  newtonParams.jacobianRegularization = -1.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "jacobian_regularization");
 }

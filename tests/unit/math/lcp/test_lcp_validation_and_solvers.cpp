@@ -3653,22 +3653,23 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_EQ(xEmpty.size(), 0);
 }
 
-TEST(BoxedSemiSmoothNewtonSolverCoverage, FailureAndValidationBranches)
+TEST(BoxedSemiSmoothNewtonSolverCoverage, ParameterAndValidationBranches)
 {
   BoxedSemiSmoothNewtonSolver solver;
 
-  BoxedSemiSmoothNewtonSolver::Parameters failParams;
-  failParams.maxLineSearchSteps = 0;
-  LcpOptions failOptions = solver.getDefaultOptions();
-  failOptions.customOptions = &failParams;
-  failOptions.maxIterations = 1;
-  failOptions.validateSolution = false;
+  BoxedSemiSmoothNewtonSolver::Parameters invalidParams;
+  invalidParams.maxLineSearchSteps = 0;
+  LcpOptions invalidOptions = solver.getDefaultOptions();
+  invalidOptions.customOptions = &invalidParams;
+  invalidOptions.maxIterations = 1;
+  invalidOptions.validateSolution = false;
 
   auto standard = makeStandardProblem(2);
   Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
-  const auto failedResult = solver.solve(standard, x, failOptions);
-  EXPECT_EQ(failedResult.status, LcpSolverStatus::Failed);
-  EXPECT_FALSE(failedResult.message.empty());
+  const auto invalidResult = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidResult.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidResult.message.find("max_line_search_steps"), std::string::npos);
 
   LcpOptions validationOptions = solver.getDefaultOptions();
   validationOptions.validateSolution = true;
@@ -3825,7 +3826,7 @@ TEST(AdmmSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_FALSE(invalidResult.message.empty());
 
   AdmmSolver::Parameters singularParams;
-  singularParams.rhoInit = 0.0;
+  singularParams.rhoInit = 1e-9;
   singularParams.muProx = 0.0;
   singularParams.adaptiveRho = false;
   LcpOptions singularOptions = customSolver.getDefaultOptions();
