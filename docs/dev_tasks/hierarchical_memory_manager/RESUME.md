@@ -1,5 +1,73 @@
 # Resume: Hierarchical Memory Manager
 
+## Authoritative Stop Handoff (2026-06-12, Final)
+
+Maintainer instruction for this checkpoint: stop all implementation,
+optimization, benchmark, build, lint, test, and CI follow-up work. This update
+is handoff documentation only; no fresh verification is intentionally run for
+this handoff.
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. It was created from
+`pr/hmm-phase45-follow-up-clean` at `31e0daa6877` after PR #2955 and PR #2956
+merged. Treat `pr/hmm-phase45-follow-up-clean` and older HMM branches as
+historical base branches unless a maintainer explicitly redirects the work.
+
+Latest committed source checkpoint before this docs-only handoff:
+`0c6ac25a7ef` (`Route deformable replay payloads through World allocator`).
+That commit sits on top of the replay snapshot/name/joint-payload replay
+allocator series and has prior-session local validation recorded below. Re-run
+from a fresh session before relying on that evidence.
+
+Do not continue implementation from the interrupted local working tree. The
+working tree at this handoff still contains an uncommitted transient replay
+restore probe in:
+
+- `dart/simulation/world.cpp`
+- `tests/unit/simulation/world/test_world.cpp`
+
+That probe was intentionally not committed or pushed. It added a heap counter
+around restoring missing transient variational replay components, attempted to
+avoid some replay-restore rebuild work, and still reproduced global heap
+allocations from kinematics/compute graph string resource construction. Treat
+it as scratch evidence only. A fresh agent should either inspect and discard
+the local diff before starting a clean branch, or explicitly turn it into a new
+evidence-first follow-up slice after re-measuring from scratch.
+
+Fresh-session entry point:
+
+```bash
+git fetch origin
+git checkout pr/hmm-phase45-replay-snapshot-allocators
+git pull --ff-only
+git status -sb
+git log --oneline --decorate -8
+git diff --stat
+```
+
+If `git diff --stat` shows the transient replay probe files above, do not
+assume they are validated. Stop, inspect the diff, and decide whether to
+discard it or restart the investigation as a separate follow-up PR.
+
+Immediate follow-up candidates for the next fresh session:
+
+- Replay transient restore path: measure missing
+  `MultibodyVariationalState` / `VariationalContactDualState` restore under a
+  global-heap counter. Prior scratch evidence pointed at
+  `WorldKinematicsGraph::rebuild()` / compute-graph resource-name strings as a
+  remaining allocation source, not just EnTT component insertion.
+- Persistent deformable storage: replay-owned `DeformableNodeState` snapshots
+  are allocator-aware, but live `DeformableNodeState` component storage still
+  uses plain `std::vector`.
+- Allocator comparative matrix: remaining standard/foonathan misses are still
+  EnTT steady-state registry rows. Do not tune thresholds or keep allocator
+  policy changes without a clean, apple-to-apples EnTT matrix improvement.
+
+Before publishing or opening any PR from this branch, run the relevant lint,
+build, and focused test gates from a clean source state and get explicit
+maintainer approval before pushing.
+
 ## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
 
 Resume from exactly one branch:
@@ -19,8 +87,11 @@ allocator`).
 - Committed locally: `20d25cb08e6` (`Route replay joint payloads through World
 allocator`).
 - Committed locally: `53c57088f3a` (`Reject replay joint vector size drift`).
-- A docs-only handoff commit should sit on top of those replay commits when
-  this branch is pushed.
+- Committed locally: `194bc3ad206` (`Record HMM replay allocator handoff`).
+- Committed locally: `0c6ac25a7ef` (`Route deformable replay payloads through
+World allocator`).
+- A docs-only stop-handoff commit should sit on top of those replay commits
+  when this branch is pushed.
 - Latest local slice: deformable node replay payload snapshots now route
   through World memory and restore without resizing live node-state vectors.
 
