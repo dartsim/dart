@@ -205,7 +205,7 @@ plus a warning block if any selected row is missing those fields.
 | 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Sequential joints, static base, perturbation, reset   | Fixed-transform axis, pose error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | AVBD joints, weak break force, static base            | Break-force axis, broken state, release distance, reset       |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, rest length, initial stretch, gravity       | Distance-spring axis, lane stretch, offset spin               |
-| 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks          |
+| 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Sequential joints, static bases, z axis               | One-DOF axis, locked errors, free-axis motion                 |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks             |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks       |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks           |
@@ -662,9 +662,13 @@ rigid-body joint rows without making motor or limit claims. The hinge lane
 tracks locked anchor radius and z error while its free z-axis spin continues;
 the slider lane tracks locked lateral error while its z-axis travel remains
 free. Both lanes expose perturb/reset controls so the bounded errors are
-visible in the same live GUI workflow as the contact scenes.
-The shared Replay panel uses locked-axis error as its value track and marks
-constraint-error or free-axis motion frames.
+visible in the same live GUI workflow as the contact scenes. The panel and
+capture metrics label the one-DOF joint constraint-family axis, held-fixed
+sequential-joint/static-base/z-axis context, lane names, and top-level review
+signals for locked hinge radius/z error, locked slider orthogonal error, hinge
+yaw, slider travel, and free-axis speeds. The shared Replay panel uses
+locked-axis error as its value track and marks constraint-error or free-axis
+motion frames.
 
 The **`rigid_joint_motor_limits`** scene covers the public World multibody joint
 actuator path for rigid links. It keeps three compact lanes visible at once: a

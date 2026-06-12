@@ -285,39 +285,52 @@ class _RigidOneDofJointVerifier:
         hinge_yaw_history = list(self._hinge_yaw_history)
         slider_orthogonal_history = list(self._slider_orthogonal_error_history)
         slider_axis_history = list(self._slider_axis_travel_history)
+        metrics = {
+            "hinge_radius_error": float(self._last_metrics["hinge_radius_error"]),
+            "hinge_z_error": float(self._last_metrics["hinge_z_error"]),
+            "hinge_yaw": float(self._last_metrics["hinge_yaw"]),
+            "hinge_angular_speed": float(
+                self._last_metrics["hinge_angular_speed"]
+            ),
+            "slider_orthogonal_error": float(
+                self._last_metrics["slider_orthogonal_error"]
+            ),
+            "slider_axis_travel": float(
+                self._last_metrics["slider_axis_travel"]
+            ),
+            "slider_axis_speed": float(self._last_metrics["slider_axis_speed"]),
+        }
         return {
             "row": "rigid_limited_joints",
+            "comparison_axis": "one_dof_joint_constraint_family",
             "solver": "sequential_rigid_joints",
             "constraint": "revolute_prismatic_one_dof",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "joint_count": float(self.world.num_rigid_body_joints),
+            "held_fixed": {
+                "base": "static",
+                "joint_axes": "z-axis revolute and prismatic",
+                "payload_mass": 1.0,
+                "solver": "Sequential rigid joints",
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "controls": {
                 "perturbation": float(self.perturbation),
             },
+            "joint_lanes": ["hinge", "slider"],
             "joints": {
                 "hinge": str(self.hinge_joint.name),
                 "slider": str(self.slider_joint.name),
             },
-            "metrics": {
-                "hinge_radius_error": float(
-                    self._last_metrics["hinge_radius_error"]
-                ),
-                "hinge_z_error": float(self._last_metrics["hinge_z_error"]),
-                "hinge_yaw": float(self._last_metrics["hinge_yaw"]),
-                "hinge_angular_speed": float(
-                    self._last_metrics["hinge_angular_speed"]
-                ),
-                "slider_orthogonal_error": float(
-                    self._last_metrics["slider_orthogonal_error"]
-                ),
-                "slider_axis_travel": float(
-                    self._last_metrics["slider_axis_travel"]
-                ),
-                "slider_axis_speed": float(
-                    self._last_metrics["slider_axis_speed"]
-                ),
-            },
+            "one_dof_hinge_radius_error": metrics["hinge_radius_error"],
+            "one_dof_hinge_z_error": metrics["hinge_z_error"],
+            "one_dof_slider_orthogonal_error": metrics["slider_orthogonal_error"],
+            "one_dof_hinge_yaw": metrics["hinge_yaw"],
+            "one_dof_slider_axis_travel": metrics["slider_axis_travel"],
+            "one_dof_hinge_angular_speed": metrics["hinge_angular_speed"],
+            "one_dof_slider_axis_speed": metrics["slider_axis_speed"],
+            "metrics": metrics,
             "history": {
                 "samples": float(len(hinge_radius_history)),
                 "max_hinge_radius_error": max(
@@ -452,6 +465,11 @@ class _RigidOneDofJointVerifier:
 
         metrics = self._last_metrics or {}
         builder.separator()
+        builder.text("comparison axis: one-DOF joint constraint family")
+        builder.text(
+            "held fixed: sequential rigid joints | static bases | z-axis joints | "
+            f"payload mass 1.0 | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("revolute: locked anchor, free z-axis spin")
         builder.text(f"hinge joint: {self.hinge_joint.name}")
         builder.text(

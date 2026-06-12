@@ -1250,6 +1250,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             ),
         ),
         (
+            rigid_limited_joints,
+            (
+                "text:comparison axis: one-DOF joint constraint family",
+                "text:held fixed: sequential rigid joints | static bases | z-axis joints | payload mass 1.0 | time step 5.0 ms",
+            ),
+        ),
+        (
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",

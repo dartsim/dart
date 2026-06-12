@@ -2,47 +2,62 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 27 now gives the rigid-body distance-spring row the
-same reviewable comparison shape as the surrounding rigid workflow rows.
-`rigid_distance_spring` names `distance_spring_response_family` as its
-comparison axis in the panel and capture metrics, records held-fixed
-executor/rest-length/payload/time-step context, exports top-level
-distance-spring stretch and offset-spin metrics, and feeds decisive latest
-signals into the workflow review index.
+Latest local slice: after merging `origin/main` at
+`c3d219c3b41`, row 28 now gives the rigid-body one-DOF joint row the same
+reviewable comparison shape as the surrounding rigid workflow rows while
+following the DART 7 architecture harness from PR #2986. `rigid_limited_joints`
+names `one_dof_joint_constraint_family` as its comparison axis in the panel and
+capture metrics, records held-fixed sequential-joint/static-base/z-axis
+context, exports top-level locked-axis and free-axis motion metrics, and feeds
+decisive latest signals into the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_one_dof_joint_verifier_preserves_locked_directions`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-27 latest signals prioritize
-  free/soft/stiff/offset absolute stretch, offset angular speed, max sprung
-  absolute stretch, and solver.
-- Real row-27 workflow capture completed under
-  `/tmp/dart_capture_rigid_distance_spring_row_27_1781300614` with
+  sync check, and the unit guard that row-28 latest signals prioritize hinge
+  radius/z error, slider orthogonal error, hinge yaw, slider travel, free-axis
+  speeds, and solver.
+- Real row-28 workflow capture completed under
+  `/tmp/dart_capture_rigid_limited_joints_row_28_1781301510` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 27 reported `comparison_axis=distance_spring_response_family`,
-  held-fixed `executor=Sequential`, `payload_mass=1.0`,
-  `rest_length_m=0.45`,
-  `solver=Sequential impulse + AVBD distance springs`,
-  `time_step_ms=4.0`, controls `gravity_scale=0.0`,
-  `initial_stretch=0.33`, `distance_spring_free_abs_stretch=0.33`,
-  `distance_spring_soft_abs_stretch=0.11348857428734854`,
-  `distance_spring_stiff_abs_stretch=0.12534534044775142`,
-  `distance_spring_offset_abs_stretch=0.0009906215487145986`,
-  `distance_spring_offset_angular_speed=1.9564860922194471`,
-  `distance_spring_max_sprung_abs_stretch=0.34624116949577527`,
-  and history maxima `max_offset_angular_speed=21.039723405238743`,
-  `max_sprung_abs_stretch=0.34624116949577527`.
-- `review_index.html` showed the row-27 card with `axis`, `held fixed`,
+- Row 28 reported `comparison_axis=one_dof_joint_constraint_family`,
+  held-fixed `base=static`,
+  `joint_axes=z-axis revolute and prismatic`, `payload_mass=1.0`,
+  `solver=Sequential rigid joints`, `time_step_ms=5.0`, controls
+  `perturbation=0.18`, `joint_count=2.0`, `joint_lanes=[hinge, slider]`,
+  `one_dof_hinge_radius_error=0.0`, `one_dof_hinge_z_error=0.0`,
+  `one_dof_slider_orthogonal_error=0.0`,
+  `one_dof_hinge_yaw=0.16800000000000043`,
+  `one_dof_slider_axis_travel=0.6040000000000021`,
+  `one_dof_hinge_angular_speed=1.4000000000000012`,
+  `one_dof_slider_axis_speed=0.45000000000001705`, and history maxima
+  `max_abs_hinge_yaw=0.16800000000000043`,
+  `max_slider_axis_travel=0.6040000000000021`.
+- `review_index.html` showed the row-28 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and visible latest
-  signals for free, soft, stiff, and offset absolute stretch, offset angular
-  speed, max sprung absolute stretch, and solver.
-- The per-scene capture wrote a nonblank docked screenshot and 71 PNG frames
-  for `rigid_distance_spring` from the 72-frame workflow row capture.
+  signals for hinge radius/z error, slider orthogonal error, hinge yaw, slider
+  travel, hinge angular speed, slider axis speed, and solver.
+- The per-scene capture wrote a nonblank docked screenshot and 23 PNG frames
+  for `rigid_limited_joints` from the 24-frame workflow row capture.
+
+Previous completed and verified slice: row 27 gives the rigid-body
+distance-spring row the same reviewable comparison shape as the surrounding
+rigid workflow rows. `rigid_distance_spring` names
+`distance_spring_response_family` as its comparison axis in the panel and
+capture metrics, records held-fixed executor/rest-length/payload/time-step
+context, exports top-level distance-spring stretch and offset-spin metrics, and
+feeds decisive latest signals into the workflow review index. Evidence:
+focused row/panel/docs-order/review-index pytest subset reported `6 passed`;
+the real row-27 workflow capture completed under
+`/tmp/dart_capture_rigid_distance_spring_row_27_1781300614` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 71 PNG frames.
 
 Previous completed and verified slice: row 26 gives the AVBD-pinned fixed-joint
 breakage row the same reviewable comparison shape as the surrounding rigid
@@ -89,16 +104,17 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `7c7e865f60a Surface joint breakage workflow signals`.
+  `c3d219c3b41 Merge remote-tracking branch 'origin/main' into
+feature/rigid-body-gui-visual-verification`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  distance-spring workflow signals; otherwise inspect the uncommitted diff for
-  the row-27 follow-up.
+  one-DOF joint workflow signals; otherwise inspect the uncommitted diff for
+  the row-28 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-27 review-index/evidence direction before broadening
+current row-15-through-row-28 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable

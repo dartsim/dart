@@ -1232,6 +1232,33 @@ def test_rigid_workflow_latest_signals_prioritize_distance_spring_values() -> No
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_one_dof_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "comparison_axis": "one_dof_joint_constraint_family",
+            "one_dof_hinge_angular_speed": 1.4,
+            "one_dof_hinge_radius_error": 0.000001,
+            "one_dof_hinge_yaw": 0.21,
+            "one_dof_hinge_z_error": 0.000002,
+            "one_dof_slider_axis_speed": 0.45,
+            "one_dof_slider_axis_travel": 0.72,
+            "one_dof_slider_orthogonal_error": 0.000003,
+            "solver": "sequential_rigid_joints",
+        }
+    )
+
+    assert highlights[:8] == [
+        "one dof hinge radius error: 1e-06",
+        "one dof hinge z error: 2e-06",
+        "one dof slider orthogonal error: 3e-06",
+        "one dof hinge yaw: 0.21",
+        "one dof slider axis travel: 0.72",
+        "one dof hinge angular speed: 1.4",
+        "one dof slider axis speed: 0.45",
+        "solver: sequential_rigid_joints",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
