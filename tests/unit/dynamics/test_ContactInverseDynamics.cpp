@@ -36,6 +36,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/math/Random.hpp"
 
 #include <gtest/gtest.h>
@@ -481,6 +482,53 @@ TEST(ContactInverseDynamics, RoundTripWithForwardDynamics)
     skel->clearExternalForces();
     skel->resetGeneralizedForces();
   }
+}
+
+//==============================================================================
+// Same round trip with a rotated and tilted floating base: FreeJoint
+// generalized forces are expressed in exponential coordinates, so this
+// catches any frame inconsistency between the inverse dynamics result and
+// the contact Jacobians.
+TEST(ContactInverseDynamics, RoundTripWithRotatedRoot)
+{
+  const auto biped = createFloatingBiped();
+  const auto& skel = biped.skel;
+
+  Eigen::VectorXd positions = Eigen::VectorXd::Zero(skel->getNumDofs());
+  const Eigen::Matrix3d rotation
+      = (Eigen::AngleAxisd(0.8, Eigen::Vector3d::UnitZ())
+         * Eigen::AngleAxisd(0.05, Eigen::Vector3d::UnitX()))
+            .toRotationMatrix();
+  positions.head<3>() = dart::math::logMap(rotation);
+  positions[skel->getDof("left_thigh_joint")->getIndexInSkeleton()] = 0.2;
+  positions[skel->getDof("left_shank_joint")->getIndexInSkeleton()] = -0.4;
+  positions[skel->getDof("left_foot_joint")->getIndexInSkeleton()] = 0.2;
+  positions[skel->getDof("right_thigh_joint")->getIndexInSkeleton()] = 0.2;
+  positions[skel->getDof("right_shank_joint")->getIndexInSkeleton()] = -0.4;
+  positions[skel->getDof("right_foot_joint")->getIndexInSkeleton()] = 0.2;
+  skel->setPositions(positions);
+  skel->setVelocities(Eigen::VectorXd::Zero(skel->getNumDofs()));
+  skel->setAccelerations(Eigen::VectorXd::Zero(skel->getNumDofs()));
+
+  const auto contacts = createFootContacts(biped, 0.8);
+
+  ContactInverseDynamics solver(skel);
+  solver.setContacts(contacts);
+  const auto result = solver.compute();
+
+  ASSERT_TRUE(result.feasible);
+
+  skel->setForces(result.jointForces);
+  for (std::size_t k = 0; k < contacts.size(); ++k) {
+    contacts[k].bodyNode->addExtForce(
+        result.contactForces[k], contacts[k].localOffset, false, true);
+  }
+
+  skel->computeForwardDynamics();
+  EXPECT_LT(skel->getAccelerations().lpNorm<Eigen::Infinity>(), 1e-6);
+
+  skel->clearExternalForces();
+  skel->resetGeneralizedForces();
 }
 
 //==============================================================================
