@@ -8,6 +8,31 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
+Previous pushed handoff checkpoint commit: `2ff2418d93d`
+(`Record HMM final handoff stop state`). The branch is expected to be clean and
+tracking `origin/pr/hmm-phase45-replay-snapshot-allocators`; rerun
+`git status -sb && git branch -vv` and check `git log -1 --oneline` before
+trusting any local workspace state.
+
+Suggested Codex goal prompt for a future resumed session:
+
+```text
+Resume DART hierarchical memory manager work from the pushed branch
+pr/hmm-phase45-replay-snapshot-allocators. First read AGENTS.md,
+docs/ai/principles.md, docs/dev_tasks/hierarchical_memory_manager/RESUME.md,
+and docs/dev_tasks/hierarchical_memory_manager/README.md, then run the
+$dart-resume recon steps before editing. Treat the top Hard Stop Handoff
+section as authoritative; lower Historical Slice sections are evidence from
+previous work, not live instructions. Do not continue implementation, run
+verification, push, open a PR, or add new scenes unless the maintainer has
+explicitly resumed the work. When resumed, continue toward the DART 7 HMM north
+star with one small evidence-first slice at a time, prefer DART-owned
+simulation-loop storage or stage scratch, avoid overfitting benchmarks or
+changing thresholds without apple-to-apples evidence, update this README and
+RESUME as gaps close, run pixi run lint before every commit, and get explicit
+approval before any push or PR mutation.
+```
+
 Latest implementation/evidence commit before this docs-only handoff:
 `a2e2332ad5f` (`Route collision query cache scratch through World allocator`).
 At the start of this handoff update, the local branch was ahead of
@@ -64,6 +89,13 @@ from this stop state unless the maintainer explicitly resumes the work. The
 validation list above records the already-completed collision-query slice
 evidence; no lint, build, test, or benchmark command was run for this
 docs-only handoff update, by explicit maintainer instruction.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section and suggested Codex goal prompt as the authoritative handoff
+surface.
 
 ## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 
@@ -156,7 +188,7 @@ diff/status.
 No lint, build, test, or benchmark command was run for this handoff update, by
 explicit maintainer instruction.
 
-## Current Continuation (2026-06-12, Public Setter Dirty Traversal Allocators)
+## Historical Slice (2026-06-12, Public Setter Dirty Traversal Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -234,7 +266,7 @@ Next EnTT work should inspect storage layout/cache placement or run on a
 quieter host before changing allocator policy. Keep the strict 12-row focused
 checker green against both foonathan and std before retaining an optimization.
 
-## Current Continuation (2026-06-12, Live Joint and Loaded Component Allocators)
+## Historical Slice (2026-06-12, Live Joint and Loaded Component Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -358,7 +390,7 @@ instruction. Before publishing, opening a PR, or using any result as current
 evidence, rerun the relevant lint/build/test gates from a clean and intentional
 source state.
 
-## Current Continuation (2026-06-12, Deformable Creation Scratch Allocators)
+## Historical Slice (2026-06-12, Deformable Creation Scratch Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -439,7 +471,7 @@ Stop-state rules for the next agent:
   slice, collect evidence first, and avoid adding broad new scenes unless the
   follow-up PR scope explicitly calls for them.
 
-## Current Continuation (2026-06-12, Live Deformable Storage Allocators)
+## Historical Slice (2026-06-12, Live Deformable Storage Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -557,7 +589,7 @@ Before publishing or opening any PR from this branch, run the relevant lint,
 build, and focused test gates from a clean source state and get explicit
 maintainer approval before pushing.
 
-## Current Continuation (2026-06-12, Replay Snapshot Payload Allocators)
+## Historical Slice (2026-06-12, Replay Snapshot Payload Allocators)
 
 Use exactly one branch as the fresh-session resume point:
 `pr/hmm-phase45-replay-snapshot-allocators`. It was created from
@@ -830,7 +862,7 @@ Then verify from scratch before editing. Future Phase 4/5 implementation work
 should start from this branch state and move to a fresh follow-up PR branch
 when code changes resume.
 
-## Current Continuation (2026-06-11, Dynamic Rigid IPC No-Growth)
+## Historical Slice (2026-06-11, Dynamic Rigid IPC No-Growth)
 
 Work resumed from the prior stop handoff on the same single continuation
 branch: `pr/hmm-phase45-follow-up-clean`, tracking
@@ -919,7 +951,7 @@ git log --oneline --decorate -8
 Then read `RESUME.md` and the remaining Phase 4/5 follow-up list below.
 Continue evidence-first only after reproducing a real allocator/no-heap gap.
 
-## Current Continuation (2026-06-11)
+## Historical Slice (2026-06-11)
 
 Work resumed from the prior handoff on the same single continuation branch:
 `pr/hmm-phase45-follow-up-clean`, tracking
@@ -1001,7 +1033,7 @@ Then read `RESUME.md` and the remaining Phase 4/5 follow-up items in this
 file. Continue evidence-first: reproduce a real allocator/no-heap gap before
 editing. Do not add more work to PR #2956; it is already merged.
 
-## Current Continuation Handoff
+## Historical Handoff
 
 Work resumed after the prior critical stop handoff on the same authoritative
 branch, `pr/hmm-phase45-follow-up-clean`. The current slice adds baked
