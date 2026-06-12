@@ -1,5 +1,125 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - SAP Boxed Profile Regularization
+
+After the ADMM checkpoint below, work continued on the next high-ratio bounded
+profile target: `SapSolver` on boxed rows. The production solver default was
+already `regularization = 1e-4`, but the main `BM_LcpCompare/*/Sap` profile was
+overriding SAP to `1e-6` for every family. The focused regularization sweep
+showed that boxed rows meet the comparison contract at `1e-4` and drop from
+52 iterations to 3 on the 24-row boxed fixture, while standard and
+friction-index rows were better kept at `1e-6`.
+
+Current slice:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now configures SAP compare
+  rows with `regularization = 1e-4` only for bounded non-findex packets, and
+  keeps `regularization = 1e-6` for standard and friction-index packets.
+- SAP benchmark counters now record `sap_regularization` and
+  `sap_max_line_search_iterations` for main compare rows as well as contact
+  rows, making cached benchmark JSON self-describing.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated.
+- `docs/background/lcp/06_other-methods.md` documents the profile policy and
+  keeps the regularization sweep as the source of evidence for stricter values.
+- The Python demo profile summary and panel test were updated for the refreshed
+  Standard and Boxed leader/laggard text.
+- `CHANGELOG.md` records the SAP profile tuning.
+
+Focused SAP before/after `BM_LcpCompare` evidence:
+
+- Standard profile rows stayed effectively unchanged: runtime ratios `1.026`,
+  `1.055`, `1.084`, and `1.057` for sizes 12, 24, 48, and 96 relative to the
+  pre-change focused run; all still used `sap_regularization = 1e-6`.
+- Boxed profile rows improved sharply: runtime ratios `0.060`, `0.038`, and
+  `0.028` for sizes 12, 24, and 48; iterations changed from 34/52/70 to
+  3/3/3; all used `sap_regularization = 1e-4`.
+- FrictionIndex profile rows stayed effectively unchanged or improved within
+  benchmark noise: runtime ratios `1.002`, `0.765`, and `0.956`; all still used
+  `sap_regularization = 1e-6`.
+- Mean focused ratio was `0.707`; best `0.028`; worst `1.084`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `Sap` average ratio is now `1.19`; current leaders are `Tgs`,
+  `Pgs`, `Sap`, and tiny-row `Direct`; current high-ratio targets remain
+  `Lemke`, `InteriorPoint`, `Baraff`, and Newton-family rows.
+- Boxed: `Sap` average ratio improved from about `60.35` to `2.53`; current
+  leaders are `Tgs`, `Pgs`, and `Jacobi`; current high-ratio targets are
+  `Admm`, `BoxedSemiSmoothNewton`, and `ShockPropagation`.
+- FrictionIndex: `Sap` average ratio is now `1.30`; current leaders are `Pgs`,
+  `Tgs`, `Sap`, `SymmetricPsor`, and `Jacobi`; current high-ratio targets are
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, `ShockPropagation`, and
+  `Staggering`.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpSapRegularizationSweep/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/sap_regularization_sweep_current.json
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Sap/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/sap_compare_before.json
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/Sap/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/sap_compare_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- `BM_LCP_COMPARE` rebuilt successfully after the benchmark option change.
+- The focused regularization sweep confirmed boxed `Reg1e_4` was the fast
+  contract-passing row for the current 24-row boxed fixture.
+- Focused SAP after-run showed all Standard, Boxed, and FrictionIndex profile
+  rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.40s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Checkpoint this SAP profile tuning slice. After that, continue
+  benchmark-driven optimization or interface audit from the refreshed profile.
+  The clearest remaining profile targets are Standard `Lemke`, `InteriorPoint`,
+  `Baraff`, and Newton-family rows; Boxed `Admm`,
+  `BoxedSemiSmoothNewton`, and `ShockPropagation`; and FrictionIndex
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, `ShockPropagation`, and
+  `Staggering`.
+
 ## 2026-06-12 Current Continuation - ADMM Default Rho Tuning
 
 After the ShockPropagation checkpoint below, work continued from the refreshed

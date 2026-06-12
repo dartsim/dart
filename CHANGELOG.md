@@ -1490,6 +1490,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Tuned `AdmmSolver`'s default initial penalty to `rhoInit = 4.0`, reducing
     active-box iteration counts in current adaptive-rho profile rows while
     preserving the same projection and adaptive residual-balancing algorithm.
+  - Tuned SAP benchmark-profile options so boxed comparison rows use the
+    solver's default compliance regularization while standard and
+    friction-index rows retain stricter regularization; boxed SAP profile rows
+    now converge in 3 iterations in the refreshed comparison packet.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

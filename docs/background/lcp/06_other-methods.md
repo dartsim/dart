@@ -435,10 +435,14 @@ design.
 Focused `BM_LcpSapRegularizationSweep` rows compare regularization values
 `1e-6`, `1e-5`, and `1e-4` on identical standard, boxed, and friction-index
 benchmark fixtures; these rows are CPU solver rows even when emitted by a
-CUDA-enabled build. Additional `BM_LcpContactSolverComparisonSweep/Sap/*` rows
-reuse DART 7 separated sphere-ground, coupled vertical-stack, and articulated
-unified-contact friction-index fixtures so SAP contact evidence is tracked
-independently from the synthetic regularization sweep. SAP also has
+CUDA-enabled build. The main `BM_LcpCompare/*/Sap` profile uses the stricter
+`1e-6` regularization for standard and friction-index rows, and the solver's
+default `1e-4` compliance regularization for boxed rows where the current
+comparison tolerance admits the expected approximate complementarity. Additional
+`BM_LcpContactSolverComparisonSweep/Sap/*` rows reuse DART 7 separated
+sphere-ground, coupled vertical-stack, and articulated unified-contact
+friction-index fixtures so SAP contact evidence is tracked independently from
+the synthetic regularization sweep. SAP also has
 solver-specific generated evidence on 16x-coupled mildly ill-conditioned
 friction-index packets at 16 and 24 contacts; the focused correctness slice and
 `BM_LcpMildIllConditioned/ExtremeCoupled*` rows keep that claim separate from

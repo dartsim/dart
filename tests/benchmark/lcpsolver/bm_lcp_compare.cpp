@@ -2915,6 +2915,14 @@ void AddBoxedSsnCounters(
       = params.jacobianRegularization;
 }
 
+void AddSapCounters(
+    benchmark::State& state, const dart::math::SapSolver::Parameters& params)
+{
+  state.counters["sap_regularization"] = params.regularization;
+  state.counters["sap_max_line_search_iterations"]
+      = params.maxLineSearchIterations;
+}
+
 void AddNncgCounters(
     benchmark::State& state, const dart::math::NncgSolver::Parameters& params)
 {
@@ -6004,9 +6012,15 @@ void ConfigureSolverBenchmarkOptions(
   } else if (solver.name == "Sap") {
     storage.options.absoluteTolerance = 1e-5;
     storage.options.relativeTolerance = 1e-3;
-    storage.options.complementarityTolerance
-        = (problem.findex.array() >= 0).any() ? 2e-3 : 1e-3;
-    storage.sapParams.regularization = 1e-6;
+    const bool hasFrictionIndex = (problem.findex.array() >= 0).any();
+    storage.options.complementarityTolerance = hasFrictionIndex ? 2e-3 : 1e-3;
+    const bool hasBoxBounds = problem.hi.array().isFinite().any()
+                              || (problem.lo.array() < 0.0).any();
+    if (!hasFrictionIndex && hasBoxBounds) {
+      storage.sapParams.regularization = 1e-4;
+    } else {
+      storage.sapParams.regularization = 1e-6;
+    }
     storage.sapParams.maxLineSearchIterations = 32;
     storage.options.customOptions = &storage.sapParams;
     storage.hasSapParams = true;
@@ -7112,6 +7126,9 @@ void RunManifestBenchmark(
   }
   if (storage.hasShockPropagationParams) {
     AddShockPropagationCounters(state, storage.shockPropagationParams);
+  }
+  if (storage.hasSapParams) {
+    AddSapCounters(state, storage.sapParams);
   }
 }
 
@@ -9281,9 +9298,7 @@ void RunArticulatedUnifiedContactBenchmark(
         = static_cast<double>(fixture->bodyCount);
   }
   if (storage.hasSapParams) {
-    state.counters["sap_regularization"] = storage.sapParams.regularization;
-    state.counters["sap_max_line_search_iterations"]
-        = storage.sapParams.maxLineSearchIterations;
+    AddSapCounters(state, storage.sapParams);
   }
   if (storage.hasShockPropagationParams) {
     if (storage.shockPropagationParams.blockSizes.empty()) {

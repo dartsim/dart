@@ -223,7 +223,7 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": "Tgs/Sap/Pgs on scale rows; Direct only on tiny 2x/3x",
+        "current_leaders": "Tgs/Pgs/Sap on scale rows; Direct only on tiny 2x/3x",
         "current_laggards": (
             "Lemke, InteriorPoint, Baraff, FischerBurmeisterNewton"
         ),
@@ -236,12 +236,12 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Pgs; Jacobi/Tgs remain close",
+        "current_leaders": "Tgs; Pgs/Jacobi remain close",
         "current_laggards": (
-            "Sap, Admm, BoxedSemiSmoothNewton, ShockPropagation"
+            "Admm, BoxedSemiSmoothNewton, ShockPropagation"
         ),
         "takeaway": (
-            "Projection methods lead active-bound rows; SAP, ADMM, boxed "
+            "Projection methods lead active-bound rows; ADMM, boxed "
             "semi-smooth Newton, and layered rows remain tuning targets."
         ),
     },
