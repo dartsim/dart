@@ -158,7 +158,7 @@ infer.
 | `contact`                        | Do articulated links contact like rigid bodies?    | Executor, friction, restitution, drop/slide/push      | Link contacts, rebound, slide travel, target travel         |
 | `rigid_friction_threshold`       | Where is the stick/slip boundary?                  | Executor, ramp angle, controlled friction             | Down-slope drift, speed, clearance, metrics                 |
 | `rigid_spin_roll_coupling`       | Does friction couple sliding and spin?             | Executor, friction, speed, backspin                   | Slip speed, roll ratio, spin change, energy, metrics        |
-| `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error               |
+| `rigid_stack_stability`          | Does a top-heavy stack jitter or collapse?         | Executor, top mass ratio, friction                    | Max speed, top drift, clearance, height error, metrics      |
 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity                |
 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio                |
 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                    |
@@ -433,6 +433,9 @@ while still showing the mass-ratio failure mode users care about: residual
 jitter, lateral drift, clearance/overlap, and per-step solve cost. The panel
 lets users tune the top mass ratio and friction, reset the stack, and compare
 max speed, top-block drift, minimum analytic clearance, and solver divergence.
+Capture metrics record the solver pair, executor, controls, per-solver speed,
+drift, clearance, height error, step timing, top-x divergence, and compact
+history ranges.
 
 ## Rigid contact manipulation
 

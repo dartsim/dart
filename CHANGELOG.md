@@ -87,7 +87,8 @@
     scene-owned capture metrics.
   - Added `rigid_stack_stability` to Python `py-demos`, comparing sequential
     impulse and rigid IPC on a compact top-heavy stack with mass-ratio, drift,
-    clearance, speed, and step-profile diagnostics.
+    clearance, speed, step-profile diagnostics, and scene-owned capture
+    metrics.
   - Added `rigid_contact_inspector` to Python `py-demos`, exposing raw
     `World.collide()` contact pairs, points, normals, depths, local points,
     shape indices, and selected-pair histories for rigid-body visual debugging

@@ -68,7 +68,8 @@
   contact-scale budget, baseline first-run diagnostics, contact inspection,
   collision casts, solver comparison, executor equivalence, contact-policy
   comparison, multibody-link contact, friction threshold, spin/roll coupling,
-  fixed/breakage/one-DOF joint constraint errors, and stack-packet
+  stack stability, fixed/breakage/one-DOF joint constraint errors, and
+  stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
   presence counts, and top-level numeric ranges so mid-capture metric dropouts
@@ -82,6 +83,23 @@
 
 ## Testing
 
+- Latest stack-stability capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered -q`
+    - `1 passed`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+    - `10 passed`
+  - `pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_stack_stability_metrics_1781231606`
+    - nonblank docked capture, 23 PNG frames, 24 scene-metrics events, latest
+      row `rigid_stack_stability`, solver `sequential_impulse_vs_ipc`,
+      case solvers `SEQUENTIAL_IMPULSE`/`IPC`, top mass ratio `20`, friction
+      `0.8`, and numeric ranges for per-solver speed, clearance, height error,
+      top drift, step timing, top-x divergence, and world time
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest spin/roll coupling capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
     - `10 passed`

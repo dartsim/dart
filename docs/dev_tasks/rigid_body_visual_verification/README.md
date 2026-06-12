@@ -82,8 +82,8 @@
       `a47d52b7aea` (`Hand off rigid friction threshold capture metrics`) are
       followed by a local docs/validation completion for the
       `rigid_friction_threshold` capture-metrics slice and a pushed
-      `rigid_spin_roll_coupling` handoff. The user explicitly requested this
-      handoff push and no further verification; future pushes, PR creation,
+      `rigid_spin_roll_coupling` handoff. That handoff instruction is
+      satisfied; the current continuation is local. Future pushes, PR creation,
       comments, review replies, CI retriggers, or other GitHub mutations still
       require explicit approval.
 - [x] Solver/contact comparison capture-metrics follow-up:
@@ -123,6 +123,15 @@
       further verification.
 - [x] Third stack slice: `rigid_stack_stability` compares sequential impulse and
       rigid IPC on a compact top-heavy mass-ratio stack.
+- [x] Stack-stability capture-metrics follow-up:
+      `rigid_stack_stability` now publishes solver-pair identity, executor,
+      top-mass/friction controls, per-solver speed, top drift, clearance,
+      height error, status, step timing, top-x divergence, and compact history
+      ranges through the capture hook. The focused workflow/doc drift guard
+      reported `10 passed`; the real docked 24-frame capture wrote
+      24 scene-metrics events under
+      `/tmp/dart_capture_stack_stability_metrics_1781231606`; `pixi run lint`,
+      bounded default `pixi run build`, and `git diff --check` passed.
 - [x] Contact-observability slice: `rigid_contact_inspector` exposes raw
       `World.collide()` contact pairs, points, normals, depths, local points,
       shape indices, and selected-pair histories across representative public
@@ -596,10 +605,10 @@ and the no-tunneling scope decision.
 1. Confirm `git status -sb` on
    `feature/rigid-body-gui-visual-verification`, then continue the
    capture-metrics hardening pass one row at a time.
-2. The next likely row is `rigid_stack_stability`, because it is the next
-   numbered contact/stability row and already owns stack drift, speed,
-   clearance, height-error, divergence, and step-profile histories that are
-   useful in docked capture manifests.
+2. The next likely row is `rigid_contact_manipulation`, because it is the next
+   numbered contact row and already owns pusher travel, target gap,
+   contact/proximity, target speed, drift, goal error, solver divergence, and
+   step-profile histories that are useful in docked capture manifests.
 3. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.

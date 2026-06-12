@@ -2,33 +2,29 @@
 
 ## Current Handoff Snapshot
 
-Latest human instruction for this handoff: stop active implementation, focus on
-handoff, do not run further verification, push the current checkpoint, then
-stop. A fresh session should treat the validation below as the last collected
-evidence and should not assume any unrecorded build/test/diff-check happened
-after the spin/roll handoff edits.
+Latest human instruction: continue the active DART 7 rigid-body visual
+verification goal from the current worktree state. The earlier stop/push
+handoff instruction was satisfied by commit `c2beab542e9`; future pushes, PR
+creation, comments, review replies, CI retriggers, merges, or other GitHub
+mutations still require explicit maintainer/user approval.
 
-Expected branch after the handoff commit is pushed:
-`feature/rigid-body-gui-visual-verification` should be clean and aligned with
-`origin/feature/rigid-body-gui-visual-verification`. The latest pushed commits
-on this branch should include the friction-threshold docs completion and the
-spin/roll capture-metrics handoff on top of `a47d52b7aea` (`Hand off rigid
-friction threshold capture metrics`). The recent checkpoints are:
+Expected branch after this local checkpoint:
+`feature/rigid-body-gui-visual-verification` should be clean and ahead of
+`origin/feature/rigid-body-gui-visual-verification` by one local completion
+commit on top of `c2beab542e9` (`Expose rigid spin roll capture metrics`). The
+recent checkpoints are:
 
 - `7ef7a96dda0` (`Expose rigid collision cast capture metrics`)
 - `b54c4f5dba3` (`Expose rigid executor equivalence capture metrics`)
 - `a47d52b7aea` (`Hand off rigid friction threshold capture metrics`)
 - `d16c6200850` (`Complete rigid friction threshold capture docs`)
-- the handoff commit containing this file (`Expose rigid spin roll capture metrics`)
+- `c2beab542e9` (`Expose rigid spin roll capture metrics`)
+- the local checkpoint containing this file (`Expose rigid stack stability capture metrics`)
 
-The user explicitly approved this push. Future PR creation, comments, review
-replies, CI retriggers, merges, or other GitHub mutations still require
-explicit maintainer/user approval.
-
-Current completed local slice: `rigid_spin_roll_coupling` row capture metrics.
+Current completed local slice: `rigid_stack_stability` row capture metrics.
 The local completion touches:
 
-- `python/examples/demos/scenes/rigid_spin_roll_coupling.py`
+- `python/examples/demos/scenes/rigid_stack_stability.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `CHANGELOG.md`
 - `python/examples/demos/README.md`
@@ -37,27 +33,35 @@ The local completion touches:
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 - `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
 
-What changed in code/test: row 20 now exposes
-`SceneSetup.info["capture_metrics"]` for the sequential-impulse spin/roll scene.
-The payload exports row identity, solver and solver enum, selected executor,
-contact-friction/launch/backspin controls, contact count, world time, per-lane
-slip, roll ratio, spin delta, travel, energy, friction, status, step timing, and
-compact history ranges. The focused test now asserts the capture hook is
-present and that representative exported lane values and histories match the
-live controller state.
+What changed in code/test: row 21 now exposes
+`SceneSetup.info["capture_metrics"]` for the sequential-impulse versus IPC
+stack-stability scene. The payload exports row identity, solver pair, selected
+executor, friction/top-mass controls, world time, per-solver speed, top drift,
+clearance, height error, status, step timing, top-x divergence, and compact
+history ranges. The focused test now asserts the capture hook is present and
+that exported case values and histories mirror the live controller state.
 
 Validation collected for this slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_spin_roll_coupling_converts_slip_to_roll python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered -q`
+  reported `1 passed` after the capture hook was added and after the derived
+  height-error history summary was corrected.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_scenes_use_solver_focused_categories python/tests/integration/test_demos_cycle.py::test_world_rigid_visual_verification_scenes_are_ordered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_viewer_titles_are_numbered python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow python/tests/integration/test_demos_cycle.py::test_rigid_stack_stability_keeps_ipc_stack_ordered python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels -q`
   reported `10 passed`.
-- `pixi run py-demo-capture -- --scene rigid_spin_roll_coupling --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_spin_roll_metrics_1781230743`
-  wrote a nonblank docked capture with 95 PNG frames and 96 scene-metrics
-  events. The manifest recorded top-level ranges for per-lane contact slip,
-  roll ratio, spin delta, travel, low-friction coefficient, matched-roll energy,
-  contact count, `step_ms`, `time_step_ms`, and `world_time`.
-- `pixi run lint` completed successfully before this handoff update. No later
-  build, capture, test, or `git diff --check` was run because the user
-  explicitly requested no further verification.
+- `pixi run py-demo-capture -- --scene rigid_stack_stability --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_stack_stability_metrics_1781231606`
+  wrote a nonblank docked capture with 23 PNG frames and 24 scene-metrics
+  events. The manifest recorded top-level ranges for sequential-impulse and IPC
+  height error, speed, clearance, top drift, step timing, top-x divergence,
+  time step, and world time.
+- `pixi run lint` passed.
+- Bounded `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
+- Spin/roll completion immediately before this slice:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
+  reported `10 passed`; the real docked capture under
+  `/tmp/dart_capture_spin_roll_metrics_1781230743` wrote 96 scene-metrics
+  events; `pixi run lint` passed before the final spin/roll handoff edit.
 - Friction-threshold completion immediately before this slice:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest ... -q`
   reported `7 passed`; the real docked capture under
@@ -68,9 +72,9 @@ Validation collected for this slice:
 Immediate next step for a fresh session: verify the branch state with
 `git status -sb` and `git log --oneline --decorate -5`, then continue with the
 next bounded capture-metrics row. The likely next row is
-`rigid_stack_stability`, because it already owns stack drift, speed, clearance,
-height-error, divergence, and step-profile histories that should appear in
-docked capture manifests.
+`rigid_contact_manipulation`, because it already owns pusher travel, target
+gap, contact/proximity, target speed, drift, goal error, solver divergence, and
+step-profile histories that should appear in docked capture manifests.
 
 ## Last Session Summary
 

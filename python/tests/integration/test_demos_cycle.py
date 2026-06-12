@@ -3717,6 +3717,43 @@ def test_rigid_stack_stability_keeps_ipc_stack_ordered() -> None:
     assert float(metrics["top_drift"]) < 0.03
     assert float(metrics["max_speed"]) < 0.02
 
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_stack_stability"
+    assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["controls"]["friction"] == pytest.approx(
+        controller.friction
+    )
+    assert capture_metrics["controls"]["top_mass_ratio"] == pytest.approx(
+        controller.top_mass_ratio
+    )
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert set(capture_metrics["cases"]) == {"Sequential impulse", "IPC barrier"}
+    assert (
+        capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]
+        == "SEQUENTIAL_IMPULSE"
+    )
+    assert capture_metrics["cases"]["IPC barrier"]["rigid_body_solver"] == "IPC"
+    assert capture_metrics["sequential_impulse_max_speed"] == pytest.approx(
+        controller._last_metrics["Sequential impulse"]["max_speed"]
+    )
+    assert capture_metrics["ipc_max_speed"] == pytest.approx(
+        controller._last_metrics["IPC barrier"]["max_speed"]
+    )
+    assert capture_metrics["ipc_min_clearance"] == pytest.approx(
+        controller._last_metrics["IPC barrier"]["min_clearance"]
+    )
+    assert capture_metrics["top_x_divergence"] == pytest.approx(
+        controller._delta_history[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._speed_history["Sequential impulse"])
+    )
+    assert capture_metrics["history"]["ipc_max_speed"] < 0.02
+    assert capture_metrics["history"]["ipc_min_clearance"] > -0.002
+    assert capture_metrics["history"]["max_top_x_divergence"] >= 0.0
+
 
 def test_rigid_fixed_joint_verifier_restores_captured_transform() -> None:
     from examples.demos.scenes.rigid_fixed_joint import build

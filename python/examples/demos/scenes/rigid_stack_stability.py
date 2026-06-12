@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_HALF = np.array([0.72, 0.36, 0.04])
 _BOX_HALF = np.array([0.12, 0.12, 0.10])
@@ -294,6 +294,111 @@ class _RigidStackStability:
         self._record_metrics()
         self._sync()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+        cases = {
+            case.label: {
+                "rigid_body_solver": case.solver.name,
+                "metrics": dict(self._last_metrics[case.label]),
+            }
+            for case in self.cases
+        }
+        speed_history = {
+            case.label: list(self._speed_history[case.label]) for case in self.cases
+        }
+        drift_history = {
+            case.label: list(self._drift_history[case.label]) for case in self.cases
+        }
+        clearance_history = {
+            case.label: list(self._clearance_history[case.label])
+            for case in self.cases
+        }
+        height_history = {
+            case.label: list(self._height_history[case.label]) for case in self.cases
+        }
+        step_ms_history = {
+            case.label: list(self._step_ms_history[case.label])
+            for case in self.cases
+        }
+        si_label = self.cases[0].label
+        ipc_label = self.cases[1].label
+        ideal_top_height = float(_BOX_HALF[2] + 2.0 * _BOX_HALF[2])
+
+        def case_metric(label: str, metric_key: str) -> float:
+            return float(self._last_metrics[label][metric_key])
+
+        return {
+            "row": "rigid_stack_stability",
+            "solver": "sequential_impulse_vs_ipc",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "controls": {
+                "friction": float(self.friction),
+                "top_mass_ratio": float(self.top_mass_ratio),
+            },
+            "case_pair": [case.label for case in self.cases],
+            "sequential_impulse_solver_enum": self.cases[0].solver.name,
+            "sequential_impulse_max_speed": case_metric(si_label, "max_speed"),
+            "sequential_impulse_top_drift": case_metric(si_label, "top_drift"),
+            "sequential_impulse_min_clearance": case_metric(
+                si_label, "min_clearance"
+            ),
+            "sequential_impulse_height_error": case_metric(
+                si_label, "height_error"
+            ),
+            "sequential_impulse_step_ms": case_metric(si_label, "step_ms"),
+            "ipc_solver_enum": self.cases[1].solver.name,
+            "ipc_max_speed": case_metric(ipc_label, "max_speed"),
+            "ipc_top_drift": case_metric(ipc_label, "top_drift"),
+            "ipc_min_clearance": case_metric(ipc_label, "min_clearance"),
+            "ipc_height_error": case_metric(ipc_label, "height_error"),
+            "ipc_step_ms": case_metric(ipc_label, "step_ms"),
+            "top_x_divergence": (
+                float(self._delta_history[-1]) if self._delta_history else 0.0
+            ),
+            "cases": cases,
+            "history": {
+                "samples": float(len(speed_history[si_label])),
+                "max_top_x_divergence": max(self._delta_history, default=0.0),
+                "sequential_impulse_max_speed": max(
+                    speed_history[si_label], default=0.0
+                ),
+                "sequential_impulse_max_top_drift": max(
+                    drift_history[si_label], default=0.0
+                ),
+                "sequential_impulse_min_clearance": min(
+                    clearance_history[si_label], default=0.0
+                ),
+                "sequential_impulse_max_abs_height_error": max(
+                    (
+                        abs(value - ideal_top_height)
+                        for value in height_history[si_label]
+                    ),
+                    default=0.0,
+                ),
+                "ipc_max_speed": max(speed_history[ipc_label], default=0.0),
+                "ipc_max_top_drift": max(drift_history[ipc_label], default=0.0),
+                "ipc_min_clearance": min(
+                    clearance_history[ipc_label], default=0.0
+                ),
+                "ipc_max_abs_height_error": max(
+                    (
+                        abs(value - ideal_top_height)
+                        for value in height_history[ipc_label]
+                    ),
+                    default=0.0,
+                ),
+                "max_step_ms": max(
+                    (value for values in step_ms_history.values() for value in values),
+                    default=0.0,
+                ),
+            },
+        }
+
     def force_drag(self, event: dict[str, Any]) -> None:
         if not event.get("active", False):
             for case in self.cases:
@@ -470,6 +575,7 @@ def build() -> SceneSetup:
             "sx_world": stability.primary_world,
             "rigid_stack_stability_controller": stability,
             "rigid_stack_stability_worlds": [case.world for case in stability.cases],
+            CAPTURE_METRICS_INFO_KEY: stability.capture_metrics,
             "replay_capture_state": stability.capture_replay_state,
             "replay_restore_state": stability.restore_replay_state,
             "replay_sync": stability._sync,
