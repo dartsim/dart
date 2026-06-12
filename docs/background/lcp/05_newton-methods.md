@@ -384,6 +384,9 @@ For friction-index rows, the effective lower and upper bounds depend on the
 normal impulse. The DART implementation includes that moving-bound derivative in
 the generalized Jacobian, so coupled friction-index cases are handled by the
 Newton system rather than treated as fixed boxes.
+The Newton step solves the semi-smooth Jacobian system directly and keeps a
+regularized least-squares solve as a fallback when the direct step fails the
+projected line search, avoiding normal-equation overhead on the common path.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>

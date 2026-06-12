@@ -234,11 +234,11 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Jacobi/Pgs",
-        "current_laggards": "Sap, BlockedJacobi, BoxedSemiSmoothNewton",
+        "current_leaders": "Pgs/Tgs; Jacobi remains close",
+        "current_laggards": "Sap, BlockedJacobi, BGS, Admm",
         "takeaway": (
-            "Projection methods lead active-bound rows; SAP and boxed "
-            "semi-smooth Newton need tuning evidence before speed claims."
+            "Projection methods lead active-bound rows; SAP, block, and "
+            "operator-splitting routes remain tuning targets."
         ),
     },
     {
@@ -247,9 +247,9 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Tgs/Sap/Pgs",
+        "current_leaders": "Tgs; Sap/Pgs remain close",
         "current_laggards": (
-            "BoxedSemiSmoothNewton, BlockedJacobi, ShockPropagation"
+            "BoxedSemiSmoothNewton, BlockedJacobi, BGS, ShockPropagation"
         ),
         "takeaway": (
             "TGS/SAP/PGS lead current contact-scale rows; boxed "

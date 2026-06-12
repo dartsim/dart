@@ -35,6 +35,7 @@
 #include "dart/math/lcp/lcp_validation.hpp"
 
 #include <Eigen/Cholesky>
+#include <Eigen/LU>
 
 #include <algorithm>
 #include <ranges>
@@ -256,6 +257,9 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
   Eigen::VectorXd w(n);
   Eigen::VectorXd H(n);
   Eigen::VectorXd dx(n);
+  Eigen::VectorXd xTrial(n);
+  Eigen::VectorXd loTrial(n);
+  Eigen::VectorXd hiTrial(n);
   Eigen::MatrixXd J(n, n);
 
   int iterationsUsed = 0;
@@ -311,51 +315,70 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
 
     J.diagonal().array() += params->jacobianRegularization;
 
-    Eigen::LLT<Eigen::MatrixXd> llt(J.transpose() * J);
-    if (llt.info() != Eigen::Success) {
-      J.diagonal().array() += 1e-6;
-      llt.compute(J.transpose() * J);
-    }
-    dx = llt.solve(-J.transpose() * H);
+    dx = J.partialPivLu().solve(-H);
 
     if (!dx.allFinite()) {
-      result.status = LcpSolverStatus::NumericalError;
-      result.message = "Newton solve produced non-finite step";
-      result.iterations = iterationsUsed;
-      return result;
+      dx.setZero();
     }
 
-    double alpha = 1.0;
-    bool accepted = false;
+    auto acceptLineSearchStep = [&](const Eigen::VectorXd& step) {
+      double alpha = 1.0;
 
-    for (int ls = 0; ls < params->maxLineSearchSteps; ++ls) {
-      Eigen::VectorXd xNew = projectVector(x + alpha * dx, loEff, hiEff);
+      for (int ls = 0; ls < params->maxLineSearchSteps; ++ls) {
+        xTrial = x + alpha * step;
+        for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
+          xTrial[i] = project(xTrial[i], loEff[i], hiEff[i]);
+        }
 
-      for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
-        if (findex[i] >= 0) {
-          const double fricLimit = std::abs(hi[i] * xNew[findex[i]]);
-          loEff[i] = -fricLimit;
-          hiEff[i] = fricLimit;
-          xNew[i] = project(xNew[i], loEff[i], hiEff[i]);
+        loTrial = loEff;
+        hiTrial = hiEff;
+        for (const auto i : std::views::iota(Eigen::Index{0}, n)) {
+          if (findex[i] >= 0) {
+            const double fricLimit = std::abs(hi[i] * xTrial[findex[i]]);
+            loTrial[i] = -fricLimit;
+            hiTrial[i] = fricLimit;
+            xTrial[i] = project(xTrial[i], loTrial[i], hiTrial[i]);
+          }
+        }
+
+        const Eigen::VectorXd wNew = A * xTrial - b;
+        const Eigen::VectorXd HNew
+            = computeNaturalResidual(xTrial, wNew, loTrial, hiTrial);
+        const double HnewNorm = HNew.lpNorm<Eigen::Infinity>();
+
+        if (HnewNorm < Hnorm * (1.0 - params->sufficientDecrease * alpha)
+            || HnewNorm < Hnorm) {
+          x = xTrial;
+          loEff = loTrial;
+          hiEff = hiTrial;
+          return true;
+        }
+
+        alpha *= params->stepReduction;
+        if (alpha < params->minStep) {
+          break;
         }
       }
 
-      const Eigen::VectorXd wNew = A * xNew - b;
-      const Eigen::VectorXd HNew
-          = computeNaturalResidual(xNew, wNew, loEff, hiEff);
-      const double HnewNorm = HNew.lpNorm<Eigen::Infinity>();
+      return false;
+    };
 
-      if (HnewNorm < Hnorm * (1.0 - params->sufficientDecrease * alpha)
-          || HnewNorm < Hnorm) {
-        x = xNew;
-        accepted = true;
-        break;
-      }
+    bool accepted = acceptLineSearchStep(dx);
 
-      alpha *= params->stepReduction;
-      if (alpha < params->minStep) {
-        break;
+    if (!accepted) {
+      Eigen::LLT<Eigen::MatrixXd> llt(J.transpose() * J);
+      if (llt.info() != Eigen::Success) {
+        J.diagonal().array() += 1e-6;
+        llt.compute(J.transpose() * J);
       }
+      dx = llt.solve(-J.transpose() * H);
+      if (!dx.allFinite()) {
+        result.status = LcpSolverStatus::NumericalError;
+        result.message = "Newton solve produced non-finite step";
+        result.iterations = iterationsUsed;
+        return result;
+      }
+      accepted = acceptLineSearchStep(dx);
     }
 
     if (!accepted) {

@@ -1,5 +1,101 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Boxed Semi-Smooth Newton Direct Step
+
+After the Python demo performance-profile surface, work moved into the next
+benchmark-driven optimization target: `BoxedSemiSmoothNewtonSolver`.
+
+Current slice:
+
+- `dart/math/lcp/newton/boxed_semi_smooth_newton_solver.cpp` now tries the
+  direct semi-smooth Newton system `J dx = -H` before falling back to the
+  previous regularized least-squares normal-equation solve.
+- Line-search trials now keep friction-index moving-bound updates local to the
+  trial state, and only publish the updated effective bounds when a step is
+  accepted.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated from the optimized solver.
+- `docs/background/lcp/05_newton-methods.md` now documents the direct
+  Jacobian-solve common path and least-squares fallback.
+- `python/examples/demos/scenes/lcp_physics.py` and the panel metadata test now
+  reflect the refreshed current leader/laggard families after the optimization.
+- `CHANGELOG.md` records the solver optimization.
+
+Focused before/after `BM_LcpCompare` evidence for
+`BoxedSemiSmoothNewtonSolver`:
+
+- Standard profile rows: mean runtime ratio `0.577`, best `0.395`, worst
+  `0.731` relative to the pre-change focused run.
+- Boxed profile rows: mean runtime ratio `0.608`, best `0.502`, worst `0.696`.
+- FrictionIndex profile rows: mean runtime ratio `0.557`, best `0.451`, worst
+  `0.704`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BoxedSemiSmoothNewton/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/bssn_profile_after.json
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+pixi run python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+```
+
+Observed results:
+
+- `BM_LCP_COMPARE` rebuilt successfully.
+- Focused BSSN after-run showed all Standard, Boxed, and FrictionIndex profile
+  rows passing contract checks and running at roughly 40-70% of the pre-change
+  runtime, depending on row.
+- LCP comparison, generated coverage, and validation solver test executables
+  all passed through CTest: `100% tests passed, 0 tests failed out of 3`.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.47s`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization. The freshest full profile still shows
+  high-ratio targets:
+  - Standard: `Lemke`, `InteriorPoint`, `Baraff`, `BlockedJacobi`,
+    `ShockPropagation`.
+  - Boxed: `Sap`, `BlockedJacobi`, `BGS`, `Admm`, `BoxedSemiSmoothNewton`.
+  - FrictionIndex: `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`,
+    `Staggering`, `ShockPropagation`.
+- Pick one solver/problem family, measure it with the same profile tooling,
+  optimize or retune it, then update benchmark/demo evidence. Do not push
+  without explicit approval.
+
 ## 2026-06-12 Current Continuation - Python Demo Performance Profiles
 
 After the stop-only hand-off and full profile refresh, work resumed on the next
