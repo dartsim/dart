@@ -32,6 +32,9 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
                     "cpu_time": 10.0,
                     "contract_ok": 1.0,
                     "solver_supports_problem": 1.0,
+                    "solver_supports_standard": 1.0,
+                    "solver_supports_boxed": 1.0,
+                    "solver_supports_friction_index": 1.0,
                     "problem_type_standard": 1.0,
                     "problem_type_boxed": 0.0,
                     "problem_type_friction_index": 0.0,
@@ -43,6 +46,7 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
 
     row = results["Standard"][("Dantzig", 12)]
     assert row["solver_supports_problem"] == 1.0
+    assert row["solver_supports_standard"] == 1.0
     assert row["problem_type_standard"] == 1.0
 
 
@@ -119,6 +123,40 @@ def test_lcp_profile_coverage_rejects_problem_type_name_mismatches() -> None:
     )
 
     with pytest.raises(RuntimeError, match="problem_type counters"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
+def test_lcp_profile_coverage_rejects_form_support_mismatches() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "solver_supports_standard": 0.0,
+                    "solver_supports_boxed": 1.0,
+                    "solver_supports_friction_index": 1.0,
+                    "solver_supports_problem": 1.0,
+                    "problem_type_standard": 1.0,
+                    "problem_type_boxed": 0.0,
+                    "problem_type_friction_index": 0.0,
+                    "problem_type_invalid": 0.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="unsupported form counters"):
         module.check_native_profile_coverage(
             results,
             {

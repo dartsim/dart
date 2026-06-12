@@ -1470,6 +1470,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     whose solver does not natively support the concrete problem, while still
     accepting historical cached benchmark JSON without those counters.
   - Tightened current LCP performance-profile ingestion to cross-check
+    benchmark problem-family names against emitted `solver_supports_*` form
+    counters, rejecting current-schema rows whose solver does not advertise
+    native support for the profile category.
+  - Tightened current LCP performance-profile ingestion to cross-check
     benchmark problem-family names against emitted `problem_type_*` counters,
     rejecting current-schema rows whose concrete problem type disagrees with
     the profile category.

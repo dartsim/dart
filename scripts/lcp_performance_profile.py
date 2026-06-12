@@ -44,11 +44,17 @@ except ImportError:
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 
 PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
+FORM_SUPPORT_COUNTER_BY_CATEGORY = {
+    "Standard": "solver_supports_standard",
+    "Boxed": "solver_supports_boxed",
+    "FrictionIndex": "solver_supports_friction_index",
+}
 PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
     "Standard": "problem_type_standard",
     "Boxed": "problem_type_boxed",
     "FrictionIndex": "problem_type_friction_index",
 }
+FORM_SUPPORT_COUNTERS = tuple(FORM_SUPPORT_COUNTER_BY_CATEGORY.values())
 PROBLEM_TYPE_COUNTERS = tuple(PROBLEM_TYPE_COUNTER_BY_CATEGORY.values()) + (
     "problem_type_invalid",
 )
@@ -158,6 +164,9 @@ def parse_benchmark_results(data: dict) -> dict:
             "contract_ok": contract_ok,
             "residual": bm.get("residual", 0),
             "complementarity": bm.get("complementarity", 0),
+            "solver_supports_standard": bm.get("solver_supports_standard"),
+            "solver_supports_boxed": bm.get("solver_supports_boxed"),
+            "solver_supports_friction_index": bm.get("solver_supports_friction_index"),
             "solver_supports_problem": bm.get("solver_supports_problem"),
             "problem_type_standard": bm.get("problem_type_standard"),
             "problem_type_boxed": bm.get("problem_type_boxed"),
@@ -196,6 +205,12 @@ def check_native_profile_coverage(
             if data.get("solver_supports_problem") is not None
             and data["solver_supports_problem"] <= 0.5
         )
+        form_support_mismatches = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if any(data.get(key) is not None for key in FORM_SUPPORT_COUNTERS)
+            and data.get(FORM_SUPPORT_COUNTER_BY_CATEGORY[category], 0.0) <= 0.5
+        )
         problem_type_mismatches = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -217,6 +232,11 @@ def check_native_profile_coverage(
             errors.append(
                 f"{category}: current-schema rows report "
                 f"solver_supports_problem=0 for {unsupported_rows}"
+            )
+        if form_support_mismatches:
+            errors.append(
+                f"{category}: current-schema rows report unsupported "
+                f"form counters for {form_support_mismatches}"
             )
         if problem_type_mismatches:
             errors.append(

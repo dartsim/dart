@@ -1,5 +1,92 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Form Support Schema Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed earlier in this continuation; merging
+  `origin/main` reported "Already up to date." The recent DART 7 harness from
+  PR #2986 is already in this branch via the earlier `origin/main` merge.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 78]`
+- Last committed checkpoint:
+  `3cd4d9382c9 Validate LCP benchmark problem type evidence`
+- Checkpoint target:
+  `Validate LCP benchmark form support evidence`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 79 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `scripts/lcp_performance_profile.py` retains the emitted
+  `solver_supports_standard`, `solver_supports_boxed`, and
+  `solver_supports_friction_index` counters.
+- Current-schema profile ingestion now rejects rows whose
+  `BM_LcpCompare/<problem-family>/...` category disagrees with the solver's
+  form-level native support counter for that category.
+- Historical cached rows without these form-level counters remain accepted.
+- `python/tests/unit/test_lcp_performance_profile.py` covers the new
+  form-support mismatch rejection in addition to the existing concrete support
+  and problem-type checks.
+
+Verification completed:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+PYTHONPATH=python pixi run python - <<'PY'
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+path = Path("scripts/lcp_performance_profile.py")
+spec = importlib.util.spec_from_file_location("lcp_performance_profile", path)
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+data = json.loads(Path("build/lcp_support_counters_probe.json").read_text())
+results = module.parse_benchmark_results(data)
+module.check_native_profile_coverage(
+    results,
+    {"Standard": {"Dantzig"}, "Boxed": set(), "FrictionIndex": set()},
+)
+PY
+pixi run lint
+git diff --check
+```
+
+Results:
+
+- Python profile parser tests: `5 passed`.
+- Focused parser acceptance check against
+  `build/lcp_support_counters_probe.json`: passed.
+- `pixi run lint`: passed and reformatted
+  `scripts/lcp_performance_profile.py`; parser tests were rerun afterwards and
+  still passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Validate LCP benchmark form support evidence`. Continue from a fresh bounded
+DART 7 harness gap; avoid retrying the rejected SAP FrictionIndex exact shortcut
+or ShockPropagation exact-path probe without a materially different hypothesis.
+
 ## Current Reality - 2026-06-12 Problem Type Schema Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
