@@ -37,6 +37,7 @@
 #include <dart/common/macros.hpp>
 
 #include <Eigen/Core>
+#include <Eigen/LU>
 
 #include <algorithm>
 #include <limits>
@@ -397,6 +398,40 @@ inline bool validateSolution(
     }
   }
 
+  return true;
+}
+
+inline bool trySolveStrictInteriorStandardLcp(
+    const LcpProblem& problem,
+    double interiorTolerance,
+    double validationTolerance,
+    Eigen::VectorXd& x,
+    Eigen::VectorXd* wOut = nullptr)
+{
+  if (!problem.isStandardLcp(interiorTolerance)) {
+    return false;
+  }
+
+  Eigen::VectorXd candidate = problem.A.partialPivLu().solve(problem.b);
+  if (!candidate.allFinite()) {
+    return false;
+  }
+
+  const double strictInteriorTol = std::max(0.0, interiorTolerance);
+  if (candidate.minCoeff() <= strictInteriorTol) {
+    return false;
+  }
+
+  Eigen::VectorXd w = problem.A * candidate - problem.b;
+  if (!validateSolution(
+          candidate, w, problem.lo, problem.hi, validationTolerance)) {
+    return false;
+  }
+
+  x = std::move(candidate);
+  if (wOut) {
+    *wOut = std::move(w);
+  }
   return true;
 }
 

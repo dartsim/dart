@@ -182,6 +182,31 @@ LcpResult BaraffSolver::solve(
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);
   }
+
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+    Eigen::VectorXd loEff;
+    Eigen::VectorXd hiEff;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            lo, hi, findex, x, loEff, hiEff, &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity
+        = detail::complementarityInfinityNorm(x, fastW, loEff, hiEff, compTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   if (!hasNativeBaraffMatrixSupport(A, absTol)) {
     DantzigSolver fallback;
     return fallback.solve(problem, x, options);

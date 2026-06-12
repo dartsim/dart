@@ -87,6 +87,10 @@ auto result = solver.solve(problem, x, options);
 
 > Note: DART's implementation targets standard LCPs and delegates boxed or
 > friction-indexed problems to the boxed-capable pivoting solver.
+> Strictly interior standard LCPs first try the shared validated linear-solve
+> fast path. This path is accepted only when the candidate is strictly positive
+> and passes the LCP solution validator; otherwise the path-following solver
+> runs normally.
 
 DART 7 benchmark evidence includes `BM_LcpInteriorPointPathSweep`, which
 compares centering parameter $\sigma=0.1/0.3$ and step scales 0.75/0.99 over

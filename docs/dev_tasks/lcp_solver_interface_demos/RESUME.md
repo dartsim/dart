@@ -1,5 +1,113 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Strict-Interior Standard Fast Path
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Checkpoint hand-off:
+
+- The strict-interior standard-LCP fast path has been implemented and verified
+  locally.
+- This section records the checkpoint titled
+  `Fast path strict-interior standard LCPs`.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Parent checkpoint: `4e6e57e7ccb Reuse ADMM iteration workspace`
+- Latest local checkpoint: `Fast path strict-interior standard LCPs`
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 40 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+What this slice changes:
+
+- Adds shared `detail::trySolveStrictInteriorStandardLcp()`.
+- `LemkeSolver`, `BaraffSolver`, and `InteriorPointSolver` use it only when the
+  caller is not warm-starting.
+- It accepts only strict positive standard-LCP linear solves that pass normal
+  solution validation; active-bound, boxed, and friction-index cases keep the
+  existing algorithm/fallback paths.
+- Adds unit coverage for zero-iteration strict-interior success on all three
+  solvers.
+- Regenerates the LCP performance profile CSVs and updates demo/docs/changelog
+  text.
+
+Checkpoint surface:
+
+- Core implementation: `dart/math/lcp/lcp_validation.hpp`,
+  `dart/math/lcp/pivoting/lemke_solver.cpp`,
+  `dart/math/lcp/pivoting/baraff_solver.cpp`, and
+  `dart/math/lcp/other/interior_point_solver.cpp`.
+- Coverage and user-facing metadata:
+  `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/examples/demos/scenes/lcp_physics.py`, and `CHANGELOG.md`.
+- Background/profile artifacts:
+  `docs/background/lcp/03_pivoting-methods.md`,
+  `docs/background/lcp/06_other-methods.md`, and
+  `docs/background/lcp/figures/performance_profile_*.csv`.
+- Hand-off docs: this file and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Standard/(Lemke|Baraff|InteriorPoint)/` after-run
+  compared to the previous full profile cache:
+  - Lemke ratios: `0.058`, `0.033`, `0.018`, `0.004`.
+  - Baraff ratios: `0.083`, `0.052`, `0.026`, `0.013`.
+  - Interior Point ratios: `0.021`, `0.021`, `0.028`, `0.013`.
+  - Mean focused ratio `0.031`; best `0.004`; worst `0.083`.
+  - All focused rows reported `contract_ok=1.0` and `iterations=0`.
+- Full regenerated profile snapshot:
+  - Standard `Lemke` average ratio `1.42`.
+  - Standard `Baraff` average ratio `1.35`.
+  - Standard `InteriorPoint` average ratio `1.44`.
+
+Verification completed:
+
+- Relevant benchmark and unit-test targets rebuilt.
+- Focused additional/all-solvers/validation CTests passed:
+  `100% tests passed, 0 tests failed out of 3`.
+- Focused strict-interior validation CTest passed after adding the direct unit
+  coverage: `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/strict_interior_standard_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- CSV shape check reported 15 Boxed columns, 16 FrictionIndex columns,
+  23 Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed: `1 passed in 0.41s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log -5 --oneline --decorate
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Standard: `PenalizedFischerBurmeisterNewton`,
+  `FischerBurmeisterNewton`, `MinimumMapNewton`, `Nncg`, `BlockedJacobi`, and
+  `ShockPropagation`.
+- Boxed: `Admm`, `ShockPropagation`, `Dantzig`, and `Nncg`.
+- FrictionIndex: `BlockedJacobi`, `BGS`, `ShockPropagation`, `Staggering`, and
+  `SubspaceMinimization`.
+
 ## Current Reality - 2026-06-12 ADMM Workspace Reuse
 
 This section is the latest state; older sections below are historical

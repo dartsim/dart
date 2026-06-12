@@ -184,6 +184,24 @@ LcpResult InteriorPointSolver::solve(
   const double sigma = params->sigma;
   const double stepScale = params->stepScale;
 
+  Eigen::VectorXd fastW;
+  if (!options.warmStart
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTolOpt), x, &fastW)) {
+    Eigen::VectorXd loEff = Eigen::VectorXd::Zero(n);
+    Eigen::VectorXd hiEff
+        = Eigen::VectorXd::Constant(n, std::numeric_limits<double>::infinity());
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEff, hiEff);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEff, hiEff, compTolOpt);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   const double initScale = std::max(1.0, vectorInfinityNorm(b));
   const double minVal = std::clamp(1e-6 * initScale, 1e-8, 1.0);
 

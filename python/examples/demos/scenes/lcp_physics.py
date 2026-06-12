@@ -223,20 +223,22 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Standard",
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
-        "current_leaders": "Tgs/Pgs/Sap on scale rows; Direct only on tiny 2x/3x",
+        "current_leaders": "Tgs/Pgs/Sap and strict-interior pivot/barrier rows",
         "current_laggards": (
-            "Lemke, InteriorPoint, Baraff, FischerBurmeisterNewton"
+            "PenalizedFischerBurmeisterNewton, FischerBurmeisterNewton, "
+            "MinimumMapNewton, Nncg"
         ),
         "takeaway": (
-            "PGS/SAP/TGS lead scalable SPD rows; pivot, barrier, and layered "
-            "Newton-family rows remain correctness or tuning targets."
+            "Strict-interior linear solves remove the old pivot/barrier "
+            "hot rows; Newton-family and block/projection rows remain tuning "
+            "targets."
         ),
     },
     {
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Pgs/Tgs/Jacobi; RedBlackGaussSeidel next",
+        "current_leaders": "Tgs/Pgs/Jacobi; SymmetricPsor next",
         "current_laggards": "Admm, ShockPropagation, Dantzig, Nncg",
         "takeaway": (
             "Projection methods lead active-bound rows; ADMM, layered rows, "

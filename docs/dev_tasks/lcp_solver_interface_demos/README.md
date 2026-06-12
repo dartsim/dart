@@ -1,5 +1,135 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Standard Fast Path
+
+Checkpoint hand-off:
+
+- The strict-interior standard-LCP fast path has been implemented and verified
+  locally.
+- This section records the checkpoint titled
+  `Fast path strict-interior standard LCPs`.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current branch state for this slice:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Parent checkpoint: `4e6e57e7ccb Reuse ADMM iteration workspace`.
+- Latest local checkpoint: `Fast path strict-interior standard LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 40 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation after the ADMM checkpoint;
+  pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- Added a shared `detail::trySolveStrictInteriorStandardLcp()` helper.
+- `LemkeSolver`, `BaraffSolver`, and `InteriorPointSolver` use it when the
+  caller is not warm-starting.
+- The fast path solves the unconstrained standard linear system and accepts the
+  result only when the candidate is strictly positive and passes the standard
+  LCP validator. Boundary, active-set, boxed, and friction-index cases still run
+  the existing pivot/path-following or fallback paths.
+- Added unit coverage proving Lemke, Baraff, and Interior Point report
+  zero-iteration success on a validated strict-interior standard LCP.
+- Regenerated the checked LCP performance profile CSV artifacts and refreshed
+  demo/docs/changelog text.
+
+Checkpoint surface:
+
+- Core implementation: `dart/math/lcp/lcp_validation.hpp`,
+  `dart/math/lcp/pivoting/lemke_solver.cpp`,
+  `dart/math/lcp/pivoting/baraff_solver.cpp`, and
+  `dart/math/lcp/other/interior_point_solver.cpp`.
+- Coverage and user-facing metadata:
+  `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`,
+  `python/tests/unit/test_py_demo_panels.py`,
+  `python/examples/demos/scenes/lcp_physics.py`, and `CHANGELOG.md`.
+- Background/profile artifacts:
+  `docs/background/lcp/03_pivoting-methods.md`,
+  `docs/background/lcp/06_other-methods.md`, and
+  `docs/background/lcp/figures/performance_profile_*.csv`.
+- Hand-off docs: this file and
+  `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Standard/(Lemke|Baraff|InteriorPoint)/`.
+- Compared to the prior full profile cache:
+  - Lemke row runtime ratios: `0.058`, `0.033`, `0.018`, `0.004`.
+  - Baraff row runtime ratios: `0.083`, `0.052`, `0.026`, `0.013`.
+  - Interior Point row runtime ratios: `0.021`, `0.021`, `0.028`, `0.013`.
+  - Mean focused ratio was `0.031`; best `0.004`; worst `0.083`.
+  - All focused after rows reported `contract_ok=1.0` and `iterations=0`.
+- Focused validation CTest
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` passed.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `Lemke` average ratio `1.42`, `Baraff` `1.35`, and
+  `InteriorPoint` `1.44`; these are no longer Standard profile laggards.
+- Current Standard high-ratio targets are
+  `PenalizedFischerBurmeisterNewton`, `FischerBurmeisterNewton`,
+  `MinimumMapNewton`, `Nncg`, `BlockedJacobi`, and `ShockPropagation`.
+- Boxed/FrictionIndex targets are unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`; FrictionIndex `BlockedJacobi`, `BGS`,
+  `ShockPropagation`, `Staggering`, and `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_additional_solvers \
+           UNIT_math_lcp_math_lcp_all_solvers_smoke \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(additional_solvers|all_solvers_smoke|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/(Lemke|Baraff|InteriorPoint)/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/strict_interior_standard_after.json
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j "$JOBS"
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. On resume, inspect `git status -sb`, `git log -5 --oneline --decorate`, and
+   `git diff --stat` before acting.
+2. Continue from the refreshed profile; do not push without explicit
+   maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - ADMM Workspace Reuse
 
 Current branch state for this slice:

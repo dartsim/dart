@@ -1039,16 +1039,17 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Tgs/Pgs/Sap" in profile_by_surface["Standard"][
         "current_leaders"
     ]
-    assert "Direct only on tiny" in profile_by_surface["Standard"][
+    assert "strict-interior" in profile_by_surface["Standard"][
         "current_leaders"
     ]
-    assert "Lemke" in profile_by_surface["Standard"]["current_laggards"]
-    assert "InteriorPoint" in profile_by_surface["Standard"]["current_laggards"]
+    assert "PenalizedFischerBurmeisterNewton" in profile_by_surface[
+        "Standard"
+    ]["current_laggards"]
     assert "FischerBurmeisterNewton" in profile_by_surface["Standard"][
         "current_laggards"
     ]
-    assert "Pgs/Tgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "RedBlackGaussSeidel next" in profile_by_surface["Boxed"][
+    assert "Tgs/Pgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "SymmetricPsor next" in profile_by_surface["Boxed"][
         "current_leaders"
     ]
     assert "Admm" in profile_by_surface["Boxed"]["current_laggards"]
