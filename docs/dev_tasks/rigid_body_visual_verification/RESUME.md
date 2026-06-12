@@ -2,18 +2,19 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation stopped on explicit maintainer/user instruction to focus on
-handoff without any further verification. The branch had no associated GitHub
-PR at resume time.
+Latest continuation resumed from pushed handoff commit `7452a0f22d4`, validated
+the row-33 `rigid_link_center_of_mass` capture-metrics checkpoint with a
+focused test and fresh docked capture, and refreshed the durable docs/dev-task
+handoff. The branch had no associated GitHub PR at resume time.
 
-Expected branch/worktree state after this handoff commit:
+Expected branch/worktree state after this local checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Origin should include the row-32 multibody dynamics-terms checkpoint plus this
-  handoff checkpoint because the maintainer/user explicitly requested a push.
-- The handoff checkpoint includes the unverified row-33
-  `rigid_link_center_of_mass` capture-metrics code/test changes plus refreshed
-  dev-task handoff docs.
+- Pushed branch head remains `7452a0f22d4` unless a maintainer/user explicitly
+  approves another push.
+- The local checkpoint should include row-33 link center-of-mass capture
+  metrics, focused assertions, docs, docked capture evidence, and refreshed
+  handoff state.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -33,13 +34,17 @@ Recent checkpoints:
 - `44354ed24c7` (`Expose rigid screw joint pitch capture metrics`)
 - `9ea310b2c8b` (`Document rigid visual verification stop handoff`)
 - `bbf8a8006b7` (`Expose rigid multibody dynamics term capture metrics`)
-- this handoff checkpoint containing the row-33 work-in-progress and docs
+- `7452a0f22d4` (`Hand off rigid link center of mass metrics`)
+- the local checkpoint containing this file
 
-Current work-in-progress checkpoint: `rigid_link_center_of_mass` row capture
-metrics. The checkpoint touches:
+Current local slice: `rigid_link_center_of_mass` row capture metrics. The
+checkpoint touches:
 
 - `python/examples/demos/scenes/rigid_link_center_of_mass.py`
 - `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 - `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
@@ -66,17 +71,33 @@ What changed in code/test:
 
 Validation status for the link center-of-mass checkpoint:
 
-- A pre-handoff focused row-33 test was run before the explicit no-verification
-  stop request and reported `1 passed`.
-- A real docked capture at
-  `/tmp/dart_capture_link_center_of_mass_metrics_1781237248` wrote 71 PNG
-  frames and 72 scene-metrics events, but it predates the final extra
-  top-level fields added to the payload. Do not treat that capture as final
-  evidence for the current checkout.
-- A later capture command was in flight when the stop request arrived; no
-  final manifest from it was consumed for this handoff.
-- No tests, captures, lint, build, `git diff --check`, or other verification
-  commands were run after the explicit stop/no-further-verification request.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque -q`
+  reported `1 passed`.
+- `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_center_of_mass_metrics_1781237623`
+  wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
+  screenshot
+  `/tmp/dart_capture_link_center_of_mass_metrics_1781237623/rigid_link_center_of_mass.png`,
+  and final contacts `0`.
+- Latest captured payload details: row `rigid_link_center_of_mass`, solver
+  `world_multibody_inertial_offsets`, scope
+  `contact_free_link_center_of_mass_offsets`, executor `Sequential`, lane count
+  `4`, COM offset `0.18`, gravity scale `1.0`, link mass `2.0`, inertia scale
+  `4.0`, latest positive/negative angle about `+/-0.44895`, latest
+  positive/negative gravity torque about `+/-3.18162`, zero mirrored torque,
+  angle, and acceleration sums, positive/high mass matrix about `0.1848/0.5448`,
+  high-to-positive mass-matrix ratio about `2.948`, latest positive/high
+  acceleration about `17.316/6.411`, high-to-positive acceleration ratio about
+  `0.3702`, max current acceleration error about `0.0994`, history samples
+  `73`, and max observed step time about `0.1534 ms`.
+- The broader workflow/doc drift guard with row ordering, viewer-title
+  numbering, sidecar/README/capture-command drift checks, motor-limit coverage,
+  passive-parameter coverage, screw-pitch coverage, dynamics-terms coverage,
+  replay snapshot coverage, and high-value panel coverage reported `14 passed`.
+- `pixi run lint` passed.
+- Bounded
+  `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 CMAKE_BUILD_PARALLEL_LEVEL=2 pixi run build`
+  passed and reported `ninja: no work to do`.
+- `git diff --check` passed.
 
 Completed local checkpoint immediately before this handoff:
 
@@ -314,14 +335,12 @@ Validation collected for the dynamics-terms slice so far:
 
 Immediate next step for a fresh session:
 
-1. Verify `git status -sb` and `git log --oneline --decorate -5`; the branch
-   should be at this pushed handoff checkpoint.
-2. If verification is allowed, validate the current row-33
-   `rigid_link_center_of_mass` checkpoint first: focused test, real docked
-   capture, broad workflow/doc drift guard, `pixi run lint`, bounded
-   `pixi run build`, and `git diff --check`.
-3. Only after row 33 is validated or intentionally revised should the next
-   capture-metrics pass move to `rigid_link_jacobian`.
+1. Verify `git status -sb` and `git log --oneline --decorate -5`.
+2. If the current local checkpoint has not been committed yet, commit the row-33
+   checkpoint after confirming the working tree contains only the files listed
+   above.
+3. After row 33 is committed, the next likely capture-metrics pass is
+   `rigid_link_jacobian`, unless the user redirects.
 
 ## Last Session Summary
 

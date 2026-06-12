@@ -177,7 +177,7 @@
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity
     torque response with COM markers, mass-matrix, acceleration, energy, and
-    step-timing diagnostics.
+    step-timing diagnostics, and scene-owned capture metrics.
   - Added an in-viewer `Rigid Workflow` guide panel to every numbered World
     Rigid Body row so users can see the maintained question, try-first
     checklist, primary signals to inspect, scope note, and selectable
@@ -195,9 +195,9 @@
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. The baseline, contact-inspection, solver-comparison,
-    contact-policy, multibody link-contact, step-diagnostics, contact-scale
-    budget, and rigid IPC stack packet rows use it to make capture artifacts
-    carry scene-owned physics/runtime evidence.
+    contact-policy, multibody link-contact, link center-of-mass,
+    step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
+    it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`

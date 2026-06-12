@@ -84,24 +84,42 @@
 
 ## Testing
 
-- Latest link center-of-mass handoff checkpoint:
-  - `python/examples/demos/scenes/rigid_link_center_of_mass.py` now has
-    work-in-progress scene-owned capture metrics for the row 33 inertial-offset
-    verifier: row identity, solver scope, executor, controls, lane
-    order/count, per-lane link/joint/local-COM metadata, serialized lane
-    metrics, mirrored torque/angle/acceleration sums, reflected mass-matrix
+- Latest link center-of-mass capture-metrics follow-up:
+  - `python/examples/demos/scenes/rigid_link_center_of_mass.py` now publishes
+    scene-owned capture metrics for the row 33 inertial-offset verifier: row
+    identity, solver scope, executor, controls, lane order/count, per-lane
+    link/joint/local-COM metadata, serialized lane metrics, mirrored
+    torque/angle/acceleration sums, reflected mass-matrix and acceleration
     ratios, COM marker positions, energy, step timing, and compact histories.
   - `python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque`
     now asserts the capture hook mirrors live controller metrics and history
     maxima.
-  - A pre-handoff focused guard reported `1 passed`.
-  - A docked capture under
-    `/tmp/dart_capture_link_center_of_mass_metrics_1781237248` wrote 71 PNG
-    frames and 72 scene-metrics events, but it predates the final extra
-    top-level payload fields and is not final evidence for the current checkout.
-  - Not run after the explicit stop/no-further-verification request: fresh
-    row-33 capture, broad workflow/doc drift guard, `pixi run lint`, bounded
-    `pixi run build`, and `git diff --check`.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_link_center_of_mass_offsets_gravity_torque -q`
+    - `1 passed`
+  - `pixi run py-demo-capture -- --scene rigid_link_center_of_mass --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_link_center_of_mass_metrics_1781237623`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `rigid_link_center_of_mass`, solver
+      `world_multibody_inertial_offsets`, scope
+      `contact_free_link_center_of_mass_offsets`, executor `Sequential`, lane
+      count `4`, COM offset `0.18`, gravity scale `1.0`, link mass `2.0`,
+      inertia scale `4.0`, latest positive/negative angle about
+      `+/-0.44895`, latest positive/negative gravity torque about
+      `+/-3.18162`, zero mirrored torque/angle/acceleration sums,
+      high-to-positive mass-matrix ratio about `2.948`, high-to-positive
+      acceleration ratio about `0.3702`, 73 history samples, and manifest
+      ranges for controls, mirrored response fields, mass matrices,
+      acceleration ratios, step timing, time-step, and world-time fields
+  - Broad workflow/doc drift guard with row ordering, viewer-title numbering,
+    sidecar/README/capture-command drift checks, motor-limit coverage,
+    passive-parameter coverage, screw-pitch coverage, dynamics-terms coverage,
+    replay snapshot coverage, and high-value panel coverage
+    - `14 passed`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=2 CTEST_PARALLEL_LEVEL=2 CMAKE_BUILD_PARALLEL_LEVEL=2 pixi run build`
+    - passed; `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Latest multibody dynamics-terms capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py` now
     publishes a scene-owned capture hook for the row 32 generalized dynamics
