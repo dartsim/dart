@@ -71,6 +71,10 @@
 - [x] Captured the critical no-verification hand-off after local implementation
       commit `8f0242c2442` so a fresh session can resume from the consolidated
       branch without relying on chat context.
+- [x] Added concrete support gates to the remaining heavyweight contact
+      benchmark registrations: exact generated-batch checks for mixed
+      world-contact batches and representative small contact probes for dense
+      box-contact, articulated unified-contact, and dense box-contact batch rows.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -110,13 +114,66 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the world/contact benchmark routing
-slice at local commit `8f0242c2442 Filter LCP contact benchmark rows
-concretely`.
+The latest implementation checkpoint is the heavyweight contact benchmark
+support-gating slice. It builds on local commit
+`8f0242c2442 Filter LCP contact benchmark rows concretely`.
 
-The latest task checkpoint is hand-off only: no lint, build, tests, benchmark
-listing, solver execution, or additional implementation work was run after the
-user's critical stop instruction.
+The previous task checkpoint was hand-off only: no lint, build, tests,
+benchmark listing, solver execution, or additional implementation work was run
+after that user's critical stop instruction. The current checkpoint resumes
+implementation from that hand-off.
+
+## Heavyweight Contact Benchmark Support-Gating Checkpoint
+
+The latest implementation checkpoint replaces the remaining manifest-only
+contact benchmark gates without making benchmark registration construct the
+largest dense contact fixtures:
+
+- `BM_LcpWorldBoxContact/FrictionIndex` now builds a one-box concrete support
+  probe and registers dense box-count rows only for dense-box-scoped solvers
+  whose `supportsProblem(problem)` accepts that concrete contact packet.
+- `BM_LcpArticulatedUnifiedContact/FrictionIndex` now builds one-contact
+  support probes for the ground, rigid-impact, and cross-link articulated cases
+  and registers each case only for solvers that accept the concrete probe.
+- `BM_LcpWorldContactBatchSerial/FrictionIndex` and
+  `BM_LcpWorldContactBatchParallel/FrictionIndex`, including the stress-stack
+  and contact-pipeline-32 families, now check each generated batch's concrete
+  problem list through `supportsProblem(problem)` before publishing serial or
+  parallel rows.
+- `BM_LcpWorldBoxContactBatchSerial/FrictionIndex` and
+  `BM_LcpWorldBoxContactBatchParallel/FrictionIndex` now build a one-box
+  batch support probe and publish dense box batch rows only for dense-box-scoped
+  solvers that accept that concrete batch.
+
+Scope note: the dense box-contact and articulated unified-contact families
+still avoid exact per-argument generation of the 256-contact fixtures during
+benchmark listing. The registration gate is concrete and representative for
+the contact family; the benchmark body remains the source of truth for each
+large fixture.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex/(Pgs|Admm)|BM_LcpWorldContact(Batch|StressBatch|Pipeline32Batch)(Serial|Parallel)/FrictionIndex/(Pgs|Admm)|BM_LcpWorldBoxContactBatch(Serial|Parallel)/FrictionIndex/(Pgs|Admm)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpArticulatedUnifiedContact/FrictionIndex/(Ground|RigidImpact|CrossLinkImpact)/(Pgs|Admm)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpWorldBoxContact/FrictionIndex/Pgs/1|BM_LcpArticulatedUnifiedContact/FrictionIndex/Ground/Admm/1|BM_LcpWorldContactBatchSerial/FrictionIndex/Pgs$|BM_LcpWorldBoxContactBatchSerial/FrictionIndex/Pgs/1/4' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+```
+
+Observed results:
+
+- The first benchmark-list check built `BM_LCP_COMPARE` and listed PGS and
+  ADMM rows for dense world-box contact, baseline/stress/contact-pipeline mixed
+  world-contact batches, and dense world-box contact batches.
+- The articulated benchmark-list check listed PGS and ADMM rows for ground,
+  rigid-impact, and cross-link articulated unified-contact cases.
+- The short benchmark execution reported `contract_ok=1` for the targeted
+  dense box-contact, articulated unified-contact, mixed world-contact batch,
+  and dense box-contact batch rows; the regex also matched larger dense
+  box-contact and articulated rows, which also reported `contract_ok=1`.
 
 ## Critical No-Verification Hand-Off
 
@@ -173,10 +230,7 @@ registration with concrete native solver support:
   comparison packet once per case and filters the scoped comparison solvers
   (`Admm`, `Sap`, and `BoxedSemiSmoothNewton`) through concrete support.
 - Dense world-box contact, articulated unified contact, and batch contact rows
-  still use manifest-level friction-index gating in this checkpoint; filtering
-  those by concrete support needs a registration-time fixture strategy that does
-  not eagerly construct the largest 256-contact packets for every benchmark
-  listing.
+  were completed by the later heavyweight contact support-gating checkpoint.
 
 Verification for this checkpoint:
 
@@ -848,10 +902,10 @@ metadata, packet generation, or benchmark rows.
 3. Fetch `origin/main`; if it moved, merge it into this branch before any later
    push.
 4. Continue the LCP interface/demo audit from the next concrete gap. Good
-   starting points are remaining manifest-level benchmark gates in
-   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially dense world-box
-   contact, articulated unified contact, and contact batch registrations, plus
-   any solver whose native mathematical domain is still broader in docs than in
-   `supportsProblem(problem)`.
+   starting points are any remaining manifest-level benchmark gates in
+   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` that still publish native
+   rows without generated-problem support checks or representative
+   contact-family probes, plus any solver whose native mathematical domain is
+   still broader in docs than in `supportsProblem(problem)`.
 5. Prefer a bounded checkpoint: one benchmark/demo routing gap, focused tests,
    `pixi run lint`, then an additive commit.

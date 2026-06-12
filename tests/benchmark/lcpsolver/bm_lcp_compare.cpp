@@ -13064,6 +13064,69 @@ std::vector<BenchmarkArgProblem> MakeWorldStackContactBenchmarkArgProblems()
   return argProblems;
 }
 
+std::optional<LcpProblem> MakeWorldBoxContactSupportProbe()
+{
+  std::string errorMessage;
+  auto fixture = MakeWorldBoxContactBenchmarkProblem(errorMessage, 0, 1);
+  if (!fixture.has_value()) {
+    return std::nullopt;
+  }
+
+  return std::move(fixture->problem);
+}
+
+std::vector<int> GetWorldBoxContactBenchmarkArgs()
+{
+  return {1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 192, 256};
+}
+
+struct ArticulatedContactBenchmarkProbe
+{
+  ArticulatedContactBenchmarkCase benchmarkCase;
+  LcpProblem problem;
+};
+
+std::vector<ArticulatedContactBenchmarkProbe>
+MakeArticulatedUnifiedContactSupportProbes()
+{
+  std::vector<ArticulatedContactBenchmarkProbe> probes;
+  for (const auto benchmarkCase : std::array{
+           ArticulatedContactBenchmarkCase::Ground,
+           ArticulatedContactBenchmarkCase::RigidImpact,
+           ArticulatedContactBenchmarkCase::CrossLinkImpact}) {
+    std::string errorMessage;
+    auto fixture = MakeArticulatedUnifiedContactBenchmarkProblem(
+        benchmarkCase, 1, errorMessage);
+    if (!fixture.has_value()) {
+      continue;
+    }
+
+    probes.push_back(
+        ArticulatedContactBenchmarkProbe{
+            benchmarkCase, std::move(fixture->problem)});
+  }
+
+  return probes;
+}
+
+std::vector<int> GetArticulatedUnifiedContactBenchmarkArgs()
+{
+  return {1, 4, 8, 16, 24, 32, 48, 64, 96, 128, 192, 256};
+}
+
+std::optional<WorldContactBenchmarkBatch> MakeWorldContactBatchSupportProbe(
+    const WorldContactBatchKind batchKind)
+{
+  std::string errorMessage;
+  return MakeWorldContactBenchmarkBatch(errorMessage, batchKind);
+}
+
+std::optional<WorldContactBenchmarkBatch> MakeWorldBoxContactBatchSupportProbe()
+{
+  std::string errorMessage;
+  return MakeWorldBoxContactBenchmarkBatch(1, 1, errorMessage);
+}
+
 void RegisterWorldContactBenchmarks()
 {
   const auto argProblems = MakeWorldContactBenchmarkArgProblems();
@@ -13092,6 +13155,11 @@ void RegisterWorldContactBenchmarks()
 
 void RegisterWorldBoxContactBenchmarks()
 {
+  const auto supportProbe = MakeWorldBoxContactSupportProbe();
+  if (!supportProbe.has_value()) {
+    return;
+  }
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
@@ -13100,26 +13168,18 @@ void RegisterWorldBoxContactBenchmarks()
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
       continue;
     }
+    if (!SolverSupportsConcreteProblem(solver, *supportProbe)) {
+      continue;
+    }
 
     const auto name = MakeWorldBoxContactBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        name.c_str(),
-        [solver](benchmark::State& state) {
-          RunWorldBoxContactBenchmark(state, solver);
-        })
-        ->Arg(1)
-        ->Arg(2)
-        ->Arg(4)
-        ->Arg(8)
-        ->Arg(16)
-        ->Arg(24)
-        ->Arg(32)
-        ->Arg(48)
-        ->Arg(64)
-        ->Arg(96)
-        ->Arg(128)
-        ->Arg(192)
-        ->Arg(256);
+    AddBenchmarkArgs(
+        benchmark::RegisterBenchmark(
+            name.c_str(),
+            [solver](benchmark::State& state) {
+              RunWorldBoxContactBenchmark(state, solver);
+            }),
+        GetWorldBoxContactBenchmarkArgs());
   }
 }
 
@@ -13151,35 +13211,33 @@ void RegisterWorldStackContactBenchmarks()
 
 void RegisterArticulatedUnifiedContactBenchmarks()
 {
+  const auto supportProbes = MakeArticulatedUnifiedContactSupportProbes();
+  if (supportProbes.empty()) {
+    return;
+  }
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
       continue;
     }
 
-    for (const auto benchmarkCase : std::array{
-             ArticulatedContactBenchmarkCase::Ground,
-             ArticulatedContactBenchmarkCase::RigidImpact,
-             ArticulatedContactBenchmarkCase::CrossLinkImpact}) {
-      const auto name
-          = MakeArticulatedUnifiedContactBenchmarkName(benchmarkCase, solver);
-      benchmark::RegisterBenchmark(
-          name.c_str(),
-          [solver, benchmarkCase](benchmark::State& state) {
-            RunArticulatedUnifiedContactBenchmark(state, solver, benchmarkCase);
-          })
-          ->Arg(1)
-          ->Arg(4)
-          ->Arg(8)
-          ->Arg(16)
-          ->Arg(24)
-          ->Arg(32)
-          ->Arg(48)
-          ->Arg(64)
-          ->Arg(96)
-          ->Arg(128)
-          ->Arg(192)
-          ->Arg(256);
+    for (const auto& supportProbe : supportProbes) {
+      if (!SolverSupportsConcreteProblem(solver, supportProbe.problem)) {
+        continue;
+      }
+
+      const auto name = MakeArticulatedUnifiedContactBenchmarkName(
+          supportProbe.benchmarkCase, solver);
+      AddBenchmarkArgs(
+          benchmark::RegisterBenchmark(
+              name.c_str(),
+              [solver, benchmarkCase = supportProbe.benchmarkCase](
+                  benchmark::State& state) {
+                RunArticulatedUnifiedContactBenchmark(
+                    state, solver, benchmarkCase);
+              }),
+          GetArticulatedUnifiedContactBenchmarkArgs());
     }
   }
 }
@@ -13263,26 +13321,38 @@ void RegisterContactNormalStandardSweepBenchmarks()
 
 void RegisterWorldContactBatchBenchmarks()
 {
+  const auto baselineProbe
+      = MakeWorldContactBatchSupportProbe(WorldContactBatchKind::Baseline);
+  const auto stressProbe
+      = MakeWorldContactBatchSupportProbe(WorldContactBatchKind::StressStack);
+  const auto pipeline32Probe = MakeWorldContactBatchSupportProbe(
+      WorldContactBatchKind::ContactPipeline32);
+
   for (const auto& solver : dart::test::kLcpSolverManifest) {
     if (!dart::test::supportsProblem(
             solver, dart::test::LcpProblemSupport::FrictionIndex)) {
       continue;
     }
 
-    const auto serialName = MakeWorldContactBatchSerialBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        serialName.c_str(), [solver](benchmark::State& state) {
-          RunWorldContactBatchSerialBenchmark(state, solver);
-        });
+    if (baselineProbe.has_value()
+        && SolverSupportsConcreteProblemBatch(
+            solver, baselineProbe->problems)) {
+      const auto serialName = MakeWorldContactBatchSerialBenchmarkName(solver);
+      benchmark::RegisterBenchmark(
+          serialName.c_str(), [solver](benchmark::State& state) {
+            RunWorldContactBatchSerialBenchmark(state, solver);
+          });
 
-    const auto parallelName
-        = MakeWorldContactBatchParallelBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        parallelName.c_str(), [solver](benchmark::State& state) {
-          RunWorldContactBatchParallelBenchmark(state, solver);
-        });
+      const auto parallelName
+          = MakeWorldContactBatchParallelBenchmarkName(solver);
+      benchmark::RegisterBenchmark(
+          parallelName.c_str(), [solver](benchmark::State& state) {
+            RunWorldContactBatchParallelBenchmark(state, solver);
+          });
+    }
 
-    if (solver.name != "NNCG") {
+    if (solver.name != "NNCG" && stressProbe.has_value()
+        && SolverSupportsConcreteProblemBatch(solver, stressProbe->problems)) {
       const auto stressSerialName
           = MakeWorldContactStressBatchSerialBenchmarkName(solver);
       benchmark::RegisterBenchmark(
@@ -13300,26 +13370,35 @@ void RegisterWorldContactBatchBenchmarks()
           });
     }
 
-    const auto pipeline32SerialName
-        = MakeWorldContactPipeline32BatchSerialBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        pipeline32SerialName.c_str(), [solver](benchmark::State& state) {
-          RunWorldContactBatchSerialBenchmark(
-              state, solver, WorldContactBatchKind::ContactPipeline32);
-        });
+    if (pipeline32Probe.has_value()
+        && SolverSupportsConcreteProblemBatch(
+            solver, pipeline32Probe->problems)) {
+      const auto pipeline32SerialName
+          = MakeWorldContactPipeline32BatchSerialBenchmarkName(solver);
+      benchmark::RegisterBenchmark(
+          pipeline32SerialName.c_str(), [solver](benchmark::State& state) {
+            RunWorldContactBatchSerialBenchmark(
+                state, solver, WorldContactBatchKind::ContactPipeline32);
+          });
 
-    const auto pipeline32ParallelName
-        = MakeWorldContactPipeline32BatchParallelBenchmarkName(solver);
-    benchmark::RegisterBenchmark(
-        pipeline32ParallelName.c_str(), [solver](benchmark::State& state) {
-          RunWorldContactBatchParallelBenchmark(
-              state, solver, WorldContactBatchKind::ContactPipeline32);
-        });
+      const auto pipeline32ParallelName
+          = MakeWorldContactPipeline32BatchParallelBenchmarkName(solver);
+      benchmark::RegisterBenchmark(
+          pipeline32ParallelName.c_str(), [solver](benchmark::State& state) {
+            RunWorldContactBatchParallelBenchmark(
+                state, solver, WorldContactBatchKind::ContactPipeline32);
+          });
+    }
   }
 }
 
 void RegisterWorldBoxContactBatchBenchmarks()
 {
+  const auto supportProbe = MakeWorldBoxContactBatchSupportProbe();
+  if (!supportProbe.has_value()) {
+    return;
+  }
+
   const auto addWorldBoxContactBatchArgs
       = [](benchmark::Benchmark* registeredBenchmark,
            const dart::test::LcpSolverManifestEntry& solver) {
@@ -13355,6 +13434,9 @@ void RegisterWorldBoxContactBatchBenchmarks()
       continue;
     }
     if (!SupportsDenseWorldBoxContactPatch(solver.name)) {
+      continue;
+    }
+    if (!SolverSupportsConcreteProblemBatch(solver, supportProbe->problems)) {
       continue;
     }
 

@@ -1838,6 +1838,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     snapshots up to 8 contacts. Direct rows are limited to 1-, 2-, and 3-row
     subproblems to avoid benchmarking its Dantzig fallback as direct
     enumeration.
+  - Tightened DART 7 LCP contact benchmark registration so dense box-contact,
+    articulated unified-contact, and mixed contact-batch rows check concrete
+    solver support before publishing rows. The largest dense/articulated rows
+    use small representative contact probes at registration time so benchmark
+    listing does not eagerly construct the 256-contact fixtures, while the
+    lighter mixed world-contact batch rows check their concrete generated batch
+    packets directly.
   - Replaced the experimental rigid-body contact stage's per-contact
     sequential normal impulses with a coupled boxed-LCP solve over all
     rigid-rigid contacts (`dart/math/lcp` Dantzig solver). It assembles the

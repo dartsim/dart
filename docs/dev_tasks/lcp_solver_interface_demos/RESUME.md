@@ -23,12 +23,11 @@ No lint, build, tests, benchmark listing, solver execution, or additional
 implementation work was run after the critical stop instruction. Historical
 verification notes below belong to their named implementation checkpoints only.
 
-Immediate resume target: continue the broad LCP interface/demo audit from one
-bounded remaining gap. The strongest known benchmark-routing gaps are dense
-world-box contact, articulated unified contact, and contact batch registrations
-in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, which still use
-manifest-level friction-index gates because naive concrete filtering would
-construct very large 256-contact fixtures during benchmark registration.
+Current continuation note: the previously strongest benchmark-routing gap was
+closed by adding concrete support gates to dense world-box contact,
+articulated unified-contact, mixed world-contact batch, and dense world-box
+batch registrations. Resume from the next bounded gap in the broader LCP
+interface/demo audit rather than repeating that slice.
 
 Current first-parent stack before this docs-only checkpoint:
 
@@ -156,6 +155,14 @@ The final requested work is this no-verification hand-off checkpoint. It is
 documentation-only and is intended to preserve the current branch state for a
 fresh AI session.
 
+The current continuation resumes implementation from that hand-off and closes
+the remaining heavyweight contact benchmark registration gap. Dense box-contact
+single rows, articulated unified-contact single rows, and dense box-contact
+batch rows now use small concrete support probes before publishing their large
+argument sets, while mixed world-contact batch rows check the exact generated
+batch problem lists for the baseline, stress-stack, and contact-pipeline-32
+families.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
@@ -186,9 +193,9 @@ latest `main` before any later push.
 ## Immediate Next Step
 
 Continue the broader LCP interface/demo audit from the next concrete gap. Good
-starting points are remaining manifest-level benchmark gates in
-`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, especially dense world-box
-contact, articulated unified contact, and contact batch registrations, any
+starting points after the heavyweight contact benchmark support-gating slice
+are any remaining manifest-level benchmark gates that still publish native rows
+without a generated problem or representative contact-family support probe, any
 solver whose documented native mathematical domain is still broader than its
 concrete `supportsProblem(problem)` predicate, and GUI/demo packets that still
 lack clear apples-to-apples benchmark coverage. Do not treat the broad LCP
@@ -272,13 +279,20 @@ objective as complete.
   Dantzig, PGS, BoxedSemiSmoothNewton rows and the scoped comparison solvers
   `Admm`, `Sap`, `BoxedSemiSmoothNewton`; a short execution check reported
   `contract_ok=1` on targeted rows and on two larger rows matched by the regex.
-- Remaining contact registration gap: dense world-box contact, articulated
-  unified contact, and contact batch rows still use manifest-level
+- Superseded contact registration gap: dense world-box contact, articulated
+  unified contact, and contact batch rows previously used manifest-level
   friction-index gates because concrete filtering them naively would construct
   very large 256-contact fixtures during benchmark registration/listing.
-- Final hand-off note: after the 2026-06-11 stop instruction, no additional
-  verification was run, including `pixi run lint`. This intentionally follows
-  the user's "without any further verification" instruction.
+- Completed benchmark follow-up: the heavyweight dense/contact registrations
+  now use concrete solver support gates. `BM_LcpWorldBoxContact`,
+  `BM_LcpArticulatedUnifiedContact`, and `BM_LcpWorldBoxContactBatch` use small
+  concrete support probes to avoid registration-time construction of their
+  largest fixtures; `BM_LcpWorldContactBatch` baseline, stress-stack, and
+  contact-pipeline-32 families check the exact generated batch problem lists.
+- Historical hand-off note: after the earlier 2026-06-11 stop instruction, no
+  additional verification was run in that hand-off-only checkpoint, including
+  `pixi run lint`. The later heavyweight contact support-gating continuation
+  resumed implementation and ran focused benchmark checks plus `pixi run lint`.
 - Generic standard rows that come from `MakeBenchmarkProblem(Standard, size)`,
   `MakeStandardSpdProblem`, MPRGP SPD-check sweeps, interior-point path sweeps,
   and mild/near-singular SPD builders may already be fine. Do not refactor all
