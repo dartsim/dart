@@ -56,7 +56,7 @@ namespace dart::gui::detail {
 // Declared locally because detail/renderable_factory.hpp pulls Filament math
 // headers whose include directories are private to dart-gui-core; the symbol
 // itself is exported, and a signature drift fails at link time.
-bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
+DART_GUI_API bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
 } // namespace dart::gui::detail
 
 namespace {

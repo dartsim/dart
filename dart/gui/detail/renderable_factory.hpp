@@ -62,7 +62,7 @@ std::optional<Renderable> createDebugLineRenderable(
 /// metallic/roughness/reflectance parameters and does not supply its own
 /// per-part asset materials (asset meshes and unlit line/point/voxel
 /// renderables are excluded).
-bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
+DART_GUI_API bool shapeUsesLitMaterialOverride(dart::gui::ShapeKind kind);
 
 std::optional<Renderable> createRenderableFromDescriptor(
     ::filament::Engine& engine,

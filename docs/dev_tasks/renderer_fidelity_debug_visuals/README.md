@@ -23,6 +23,8 @@
         Decisions / RESUME.md)
   - [x] Address Codex P2 finding: Python descriptor-backed GUI scenes now carry
         `VisualAspect` PBR values through `MaterialDescriptor`
+  - [x] Address Codex P2 finding: exported the lit-material override helper
+        that `UNIT_gui_DebugVisuals` links under strict symbol visibility
   - [ ] Watch remaining CI matrix; mark ready for review when green per
         `docs/onboarding/ai-tools.md` draft-ready fast path
 - [ ] Phase 6 (post-merge follow-ups, tracked in the design doc): A2 IBL
@@ -78,6 +80,10 @@ all renderer-neutral (backend-hidden rule).
   `metallic` / `roughness` / `reflectance`, and the Python world render bridge
   copies non-negative `VisualAspect` PBR values into descriptor-backed GUI
   renderables.
+- **Strict visibility test link**: `shapeUsesLitMaterialOverride` remains an
+  internal GUI detail helper, but it is exported because
+  `UNIT_gui_DebugVisuals` intentionally links against it without including the
+  Filament-private detail header.
 
 ## Immediate Next Steps
 

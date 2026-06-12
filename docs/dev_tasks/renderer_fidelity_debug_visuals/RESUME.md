@@ -14,7 +14,10 @@ built-in panel controls while keeping the helpers available through
 `debugProvider`. A later Codex P2 finding noted that descriptor-backed Python
 GUI scenes did not propagate PBR values; the local follow-up exposes the
 optional `MaterialDescriptor` PBR fields in dartpy and copies non-negative
-`VisualAspect` values through `_world_render_bridge.py`.
+`VisualAspect` values through `_world_render_bridge.py`. The next Codex review
+flagged strict-symbol-visibility linkage for
+`shapeUsesLitMaterialOverride`; the local follow-up exports the helper and
+marks the test's local declaration with `DART_GUI_API`.
 
 ## Current Branch
 
@@ -42,6 +45,12 @@ current local and remote state with `git status --short --branch` and
   roughness, and reflectance values into `gui.MaterialDescriptor`. Do NOT reply
   to the bot; fix silently, resolve the thread via GraphQL only after the fix is
   pushed.
+- **Codex P2** (review `4489544810`,
+  `dart/gui/detail/renderable_factory.hpp:65`) has a local fix:
+  `shapeUsesLitMaterialOverride` is exported consistently so
+  `UNIT_gui_DebugVisuals` can link under DLL / strict-symbol-visibility builds.
+  Do NOT reply to the bot; fix silently, resolve the thread via GraphQL only
+  after the fix is pushed.
 
 ## CI State (snapshot, verify fresh)
 
