@@ -77,6 +77,10 @@ Rows with scene-owned Replay timeline metadata also export a JSON-safe
 `scene_metadata.replay_timeline` summary, so the per-scene manifest and review
 card name the exact Replay value track and whether it has signal and marker
 tracks without serializing Python callables.
+Direct single-scene captures for maintained rigid workflow rows also write a
+`workflow_guidance` manifest block with the row number, role, user question,
+try-first action, inspect signals, healthy signal, and scope note, so a single
+row capture remains self-describing outside a workflow packet.
 Optional related-evidence, direct Rigid IPC shelf, and capture-first packet
 rows use the same manifest/review-index metadata fields, so extended packets
 also explain the row's role, user question, first action, inspect signals,
@@ -415,6 +419,15 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest direct-capture workflow-guidance slice:
+  direct `py-demo-capture -- --scene ...` manifests for maintained rigid
+  workflow rows now include a `workflow_guidance` block with row number, role,
+  user question, try-first action, inspect signals, healthy signal, and scope
+  note. The focused
+  `test_visual_capture_manifest_records_image_evidence` guard verifies the
+  manifest block while preserving image, Replay metadata, and scene-metrics
+  evidence; the focused direct-manifest plus rigid-workflow capture test subset
+  reported `26 passed, 13 deselected`.
 - Latest review-index row-rerun command slice:
   every workflow review card now includes the packet-preserving
   `workflow_rerun_command` for that selected row, not only the failed-row

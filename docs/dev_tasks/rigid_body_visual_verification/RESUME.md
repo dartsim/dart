@@ -2,7 +2,13 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: the rigid workflow `review_index.html` now shows each
+Latest local slice: direct single-scene `py-demo-capture -- --scene ...`
+manifests for maintained rigid workflow rows now include a `workflow_guidance`
+block with row number, role, user question, try-first action, inspect signals,
+healthy signal, and scope note. This keeps a one-row capture self-describing
+when it is handed to a reviewer outside the full workflow packet.
+
+Previous checkpoint: the rigid workflow `review_index.html` now shows each
 selected row's packet-preserving `workflow_rerun_command` directly on the row
 card, not only inside the Failed Rows summary. This lets reviewers rerun any
 planned, captured, or failed row with the same workflow packet shape, absolute
@@ -68,16 +74,16 @@ Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Current continuation started with the branch clean at
-  `bb6bede0104 Make dart-demos list catalog without graphics`, nine commits
+  `4987c22130c Expose rigid workflow row reruns in review index`, ten commits
   ahead of `origin/feature/rigid-body-gui-visual-verification`, then added the
-  review-index row-rerun command follow-up in `scripts/capture_py_demo.py`,
+  direct-manifest workflow-guidance follow-up in `scripts/capture_py_demo.py`,
   `python/tests/unit/test_capture_py_demo.py`, `python/examples/demos/README.md`,
   PLAN-103's rigid sidecar, this file, and `README.md`.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
   resumed work. Expect the latest completed implementation commit to be
-  `Expose rigid workflow row reruns in review index` if this slice has been
-  committed; otherwise inspect the uncommitted diff for the same review-index
-  row-rerun command follow-up files named above.
+  `Add rigid workflow guidance to capture manifests` if this slice has been
+  committed; otherwise inspect the uncommitted diff for the same direct-manifest
+  workflow-guidance follow-up files named above.
 - Do not push without explicit approval in the session that performs the push.
 - Latest local slice updates `examples/demos/registry.cpp`,
   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
@@ -110,6 +116,15 @@ Observed repository state at this hand-off:
   `25 passed, 14 deselected` with the built `dartpy` PYTHONPATH. The final
   lint, Markdown-format, docs-policy, spelling, and `git diff --check` gates
   passed.
+- Latest local direct-manifest follow-up updates `scripts/capture_py_demo.py`,
+  `python/tests/unit/test_capture_py_demo.py`, `python/examples/demos/README.md`,
+  PLAN-103's rigid sidecar, and this handoff so direct captures carry rigid
+  workflow guidance without requiring the full packet context.
+- Verification for the latest direct-manifest follow-up: the focused
+  `python/tests/unit/test_capture_py_demo.py -k 'visual_capture_manifest_records_image_evidence or rigid_workflow'`
+  suite reported `26 passed, 13 deselected` with the built `dartpy` PYTHONPATH.
+  The final lint, Markdown-format, docs-policy, spelling, and `git diff --check`
+  gates passed.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -684,9 +699,9 @@ Current snapshot:
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
 first. Expect the latest completed local implementation commit to be
-`Expose rigid workflow row reruns in review index` if this slice has been
-committed; otherwise inspect the uncommitted diff for the same review-index
-row-rerun command follow-up.
+`Add rigid workflow guidance to capture manifests` if this slice has been
+committed; otherwise inspect the uncommitted diff for the same direct-manifest
+workflow-guidance follow-up.
 
 If the tree is clean with that slice present, return to maintainer acceptance
 for the current scoped rigid visual workflow. If accepted, prepare the

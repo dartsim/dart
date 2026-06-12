@@ -529,6 +529,8 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
 
     for scene_id, guide in RIGID_VISUAL_WORKFLOW_GUIDES.items():
         guidance[str(scene_id)] = {
+            "workflow_index": guide.index,
+            "workflow_count": guide.count,
             "workflow_label": guide.label,
             "user_question": guide.question,
             "try_first": guide.try_first,
@@ -2108,6 +2110,7 @@ def main(argv: list[str] | None = None) -> int:
         "width": args.width,
         "height": args.height,
     }
+    workflow_guidance = _rigid_workflow_guidance_by_scene().get(args.scene)
     visual_evidence: dict[str, object] = {
         "first_frame": None,
         "screenshot": None,
@@ -2149,6 +2152,7 @@ def main(argv: list[str] | None = None) -> int:
         "show_ui": args.show_ui,
         "ui_ready": None,
         "visual_evidence": visual_evidence,
+        "workflow_guidance": workflow_guidance,
     }
     _write_json(manifest, manifest_payload)
     rc = _run_demo(demo_args)

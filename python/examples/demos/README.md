@@ -59,7 +59,10 @@ the artifact paths. On Linux it defaults to the same software Mesa settings used
 by GUI tests, so captures stay useful on dev hosts where the desktop GL driver
 is unavailable. With `--show-ui`, it also rejects screenshots that do not show
 the docked workspace and drops early warm-up frames before ImGui is visible from
-the converted frame sequence. Capture the docked ImGui workspace:
+the converted frame sequence. For scenes in the maintained rigid workflow, the
+single-scene `manifest.json` also records `workflow_guidance` with the row
+number, role, user question, try-first action, inspect signals, healthy signal,
+and scope note. Capture the docked ImGui workspace:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_solver_compare --show-ui --frames 2 \

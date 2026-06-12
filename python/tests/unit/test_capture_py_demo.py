@@ -149,6 +149,16 @@ def test_visual_capture_manifest_records_image_evidence(
 ) -> None:
     output = tmp_path / "capture"
     width, height = 320, 240
+    workflow_guidance = {
+        "workflow_index": 1,
+        "workflow_count": 36,
+        "workflow_label": "Baseline",
+        "user_question": "What is the baseline DART 7 World rigid-body path?",
+        "try_first": "Start here before moving to specialized rows.",
+        "inspect": ["Solver/material controls", "Contacts, energy, step timing"],
+        "healthy_signal": "Contacts settle and energy remains bounded.",
+        "scope": "Baseline front door; focused edge cases stay specialized.",
+    }
 
     def fake_run_demo(demo_args: list[str]) -> int:
         screenshot = pathlib.Path(
@@ -232,6 +242,11 @@ def test_visual_capture_manifest_records_image_evidence(
         )
         return 0
 
+    monkeypatch.setattr(
+        capture_py_demo,
+        "_rigid_workflow_guidance_by_scene",
+        lambda: {"rigid_body": workflow_guidance},
+    )
     monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
 
     rc = capture_py_demo.main(
@@ -260,6 +275,7 @@ def test_visual_capture_manifest_records_image_evidence(
             "signal_label": "Diagnostic gap",
         }
     }
+    assert manifest["workflow_guidance"] == workflow_guidance
     assert manifest["capture"] == {
         "converted_frames": 2,
         "height": height,
