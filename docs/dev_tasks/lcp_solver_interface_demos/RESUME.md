@@ -2,9 +2,59 @@
 
 ## Current Reality — 2026-06-11 Active Continuation
 
-The current continuation builds on
-`6fc7fea2ea9 Drop redundant LCP benchmark family prechecks` on
-`feature/lcp-solver-interface-demos`.
+The current continuation resumes from
+`197b55c335a Use concrete LCP contact registration gates` on
+`feature/lcp-solver-interface-demos`. The branch had two uncommitted
+stop-only hand-off doc edits from the previous instruction; this continuation
+preserves those edits and adds a bounded py-demo benchmark metadata slice.
+
+The latest implementation slice extends the Python LCP demo's representative
+benchmark packet metadata:
+
+- `active_set_scale` now points at the larger, stress, extreme, production,
+  and production-batch active-set transition benchmark rows.
+- `singular_degenerate_scale` now points at larger, stress, extreme, and
+  serial/parallel batch singular-degenerate benchmark rows.
+- The existing representative filter union continues to derive
+  `representative_benchmark_filter` and `representative_benchmark_command`
+  from every packet row, so the demo now exposes the current scalability and
+  hard-degeneracy benchmark surfaces without duplicating another command owner.
+- `python/tests/unit/test_py_demo_panels.py`, `CHANGELOG.md`, and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe and cover the
+  slice.
+
+Verification completed for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition|BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)|BM_Lcp(Larger|Stress|Extreme)SingularDegenerate|BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)'
+pixi run lint
+```
+
+Observed results:
+
+- The Python demo-panel test reported `43 passed`.
+- The benchmark-list check rebuilt/linked `BM_LCP_COMPARE` and listed the
+  newly exposed active-set scale/production and singular-degenerate
+  scale/batch benchmark rows.
+- `pixi run lint` passed.
+
+Fresh-session resume sequence:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status --short --branch
+git log --oneline --decorate --max-count=15
+```
+
+Then read:
+
+- `docs/ai/principles.md`
+- `docs/dev_tasks/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- this file
 
 The latest implementation slice removes redundant manifest-family prechecks
 from contact benchmark registration paths:

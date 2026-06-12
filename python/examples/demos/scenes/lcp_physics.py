@@ -75,6 +75,19 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "bound changes and warm-start behavior",
     },
     {
+        "packet": "active_set_scale",
+        "surface": "standard/boxed/findex",
+        "benchmark_filter": (
+            "BM_LcpLargerActiveSetTransition|"
+            "BM_LcpStressActiveSetTransition|"
+            "BM_LcpExtremeActiveSetTransition|"
+            "BM_LcpProductionActiveSetTransition|"
+            "BM_LcpProductionActiveSetTransitionBatchSerial|"
+            "BM_LcpProductionActiveSetTransitionBatchParallel"
+        ),
+        "coverage": "active-set scaling and production batches",
+    },
+    {
         "packet": "active_friction_index_contact",
         "surface": "findex contact",
         "benchmark_filter": "BM_LcpActiveFrictionIndexContact",
@@ -100,6 +113,20 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "surface": "standard/boxed/findex",
         "benchmark_filter": "BM_LcpSingularDegenerate",
         "coverage": "rank-deficient and degenerate complementarity",
+    },
+    {
+        "packet": "singular_degenerate_scale",
+        "surface": "standard/boxed/findex",
+        "benchmark_filter": (
+            "BM_LcpLargerSingularDegenerate|"
+            "BM_LcpStressSingularDegenerate|"
+            "BM_LcpExtremeSingularDegenerate|"
+            "BM_LcpSingularDegenerateFrictionIndexBatchSerial|"
+            "BM_LcpSingularDegenerateFrictionIndexBatchParallel|"
+            "BM_LcpSingularDegenerateStandardBoxedBatchSerial|"
+            "BM_LcpSingularDegenerateStandardBoxedBatchParallel"
+        ),
+        "coverage": "rank-deficient scaling and batch degeneracy",
     },
     {
         "packet": "near_singular",

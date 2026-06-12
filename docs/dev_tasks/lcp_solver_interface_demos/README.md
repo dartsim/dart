@@ -113,6 +113,13 @@
       ill-conditioned, near-singular, and singular-degenerate packets.
 - [x] Removed redundant manifest-family prechecks from contact benchmark
       registration paths that already use concrete contact support probes.
+- [x] Captured the final stop-only hand-off at local checkpoint
+      `197b55c335a`, with no lint, build, tests, benchmark listing, solver
+      execution, push, or implementation work after the user's final stop
+      instruction.
+- [x] Extended the LCP py-demo representative benchmark metadata to expose
+      active-set scale/production rows and larger/stress/extreme
+      singular-degenerate rows in the generated representative command.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -152,14 +159,57 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint removes redundant manifest-family
-prechecks from contact benchmark registration paths that already gate rows
-through concrete support probes, following the concrete benchmark helper
-cleanup, all-solvers smoke-test concrete support-routing, pivoting scale sweep
-concrete support-routing, singular-degenerate batch, conditioning, active set
-scale, Python demo concrete native-case profile, benchmark concrete-gate
-cleanup, grouped batch support-routing, generated coverage support-routing, and
-heavyweight contact benchmark support-gating slices.
+The latest implementation checkpoint extends the Python LCP demo's
+representative benchmark packet metadata so the generated representative
+command now reaches the active-set scale/production benchmark surfaces and the
+larger/stress/extreme singular-degenerate benchmark surfaces, in addition to
+the existing live contact, solver-profile, concrete support-routing, generated
+coverage, and benchmark registration cleanup slices.
+
+Previous hand-off note: after the local implementation checkpoint
+`197b55c335a Use concrete LCP contact registration gates`, the user instructed
+the agent to stop implementation and verification and only ensure hand-off
+docs. No further verification was run. Because repo policy requires
+`pixi run lint` before committing and the user explicitly forbade further
+verification, this final hand-off edit is intentionally docs-only working-tree
+context for a fresh session unless a later human/session chooses to lint,
+commit, and push it.
+
+## Py-Demo Representative Scale Metadata Checkpoint
+
+The latest Python-demo metadata checkpoint adds two representative benchmark
+packet rows:
+
+- `active_set_scale` points at `BM_LcpLargerActiveSetTransition`,
+  `BM_LcpStressActiveSetTransition`, `BM_LcpExtremeActiveSetTransition`,
+  `BM_LcpProductionActiveSetTransition`, and the serial/parallel production
+  active-set transition batch rows.
+- `singular_degenerate_scale` points at the larger/stress/extreme
+  singular-degenerate rows and the serial/parallel singular-degenerate batch
+  rows.
+
+This keeps `representative_benchmark_filter` and
+`representative_benchmark_command` aligned with the current hard-case and
+scalability benchmark registrations instead of only the smaller transition and
+base singular-degenerate names.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(Larger|Stress|Extreme|Production)ActiveSetTransition|BM_LcpProductionActiveSetTransitionBatch(Serial|Parallel)|BM_Lcp(Larger|Stress|Extreme)SingularDegenerate|BM_LcpSingularDegenerate(FrictionIndexBatch|StandardBoxedBatch)(Serial|Parallel)'
+pixi run lint
+```
+
+Observed results:
+
+- The Python demo-panel test reported `43 passed`.
+- The benchmark-list check rebuilt/linked `BM_LCP_COMPARE` and listed the
+  newly exposed active-set scale/production and singular-degenerate
+  scale/batch benchmark rows.
+- `pixi run lint` passed.
 
 ## Contact Benchmark Registration Cleanup Checkpoint
 

@@ -932,10 +932,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     }
     assert {row["packet"] for row in info["benchmark_packet_rows"]} >= {
         "active_set_transition",
+        "active_set_scale",
         "active_friction_index_contact",
         "contact_solver_comparison_sweep",
         "contact_normal_standard_sweep",
         "singular_degenerate",
+        "singular_degenerate_scale",
         "near_singular",
         "world_stack",
         "world_billiards",
@@ -965,6 +967,14 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
         "BM_LcpWorldCardPileStep_BoxedLcp"
     )
+    assert benchmark_by_packet["active_set_scale"]["benchmark_filter"] == (
+        "BM_LcpLargerActiveSetTransition|"
+        "BM_LcpStressActiveSetTransition|"
+        "BM_LcpExtremeActiveSetTransition|"
+        "BM_LcpProductionActiveSetTransition|"
+        "BM_LcpProductionActiveSetTransitionBatchSerial|"
+        "BM_LcpProductionActiveSetTransitionBatchParallel"
+    )
     assert benchmark_by_packet["active_friction_index_contact"]["surface"] == (
         "findex contact"
     )
@@ -980,6 +990,17 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["contact_normal_standard_sweep"][
         "benchmark_filter"
     ] == "BM_LcpContactNormalStandardSweep"
+    assert benchmark_by_packet["singular_degenerate_scale"][
+        "benchmark_filter"
+    ] == (
+        "BM_LcpLargerSingularDegenerate|"
+        "BM_LcpStressSingularDegenerate|"
+        "BM_LcpExtremeSingularDegenerate|"
+        "BM_LcpSingularDegenerateFrictionIndexBatchSerial|"
+        "BM_LcpSingularDegenerateFrictionIndexBatchParallel|"
+        "BM_LcpSingularDegenerateStandardBoxedBatchSerial|"
+        "BM_LcpSingularDegenerateStandardBoxedBatchParallel"
+    )
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())
     assert (

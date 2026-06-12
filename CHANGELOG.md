@@ -1493,6 +1493,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.
+  - Extended the Python LCP demo's representative benchmark packet table to
+    include active-set scale/production rows and larger/stress/extreme
+    singular-degenerate rows, so the generated representative command reaches
+    the current scalability and hard-degeneracy benchmark surfaces.
   - Updated the Python LCP demo solver profile to report native case coverage
     from the concrete representative problem suite, so partial native support
     such as Direct's small standard-LCP window is visible in the apples-to-apples
