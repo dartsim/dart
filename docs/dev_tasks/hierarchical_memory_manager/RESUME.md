@@ -1,12 +1,18 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Collision Query Cache Scratch Allocators)
+## Hard Stop Handoff (2026-06-12, Collision Query Cache Scratch Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
-HMM follow-up entry point unless a maintainer explicitly redirects the work.
+HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
+
+Latest implementation/evidence commit before this docs-only handoff:
+`a2e2332ad5f` (`Route collision query cache scratch through World allocator`).
+At the start of this handoff update, the local branch was ahead of
+`origin/pr/hmm-phase45-replay-snapshot-allocators` by that one commit and had
+no uncommitted changes.
 
 Latest local slice: DART-owned collision query cache scratch now uses the
 World free allocator for reusable cache vectors. The pre-fix gap was that the
@@ -53,10 +59,11 @@ pixi run build
 pixi run test-unit
 ```
 
-Immediate next step: continue evidence-first HMM work from this same branch.
-Prefer measured allocator/no-growth gaps in DART-owned simulation-loop storage
-or stage scratch. Do not push or open a PR without explicit maintainer
-approval.
+Do not continue optimization, add scenes, run verification, push, or open a PR
+from this stop state unless the maintainer explicitly resumes the work. The
+validation list above records the already-completed collision-query slice
+evidence; no lint, build, test, or benchmark command was run for this
+docs-only handoff update, by explicit maintainer instruction.
 
 ## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 
