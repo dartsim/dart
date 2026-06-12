@@ -10008,11 +10008,12 @@ struct RigidBodyContactStage::ContactScratch
   ContactScratch() = default;
 
   explicit ContactScratch(common::MemoryAllocator& allocator)
-    : constraints(ConstraintAllocator{allocator})
+    : constraints(ConstraintAllocator{allocator}), boxedLcp(allocator)
   {
   }
 
   std::vector<NormalConstraint, ConstraintAllocator> constraints;
+  detail::BoxedLcpContactScratch boxedLcp;
 };
 
 //==============================================================================
@@ -10116,9 +10117,15 @@ void RigidBodyContactStage::prepare(World& world)
   constraints.reserve(contactConstraintCapacity);
 
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
-  const std::size_t contactCount
-      = skipContactQuery ? 0u
-                         : world.queryContacts(CollisionQueryOptions{}).size();
+  std::size_t contactCount = 0u;
+  if (!skipContactQuery) {
+    const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+    contactCount = contacts.size();
+    if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
+      detail::reserveBoxedLcpContactScratch(
+          registry, contacts, m_contactScratch->boxedLcp);
+    }
+  }
 
   if (m_avbdScratch == nullptr) {
     m_avbdScratch = AvbdScratchPtr(
@@ -10369,8 +10376,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // the resulting impulses to body velocities. The default SequentialImpulse
   // path below is unchanged.
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
+    if (m_contactScratch == nullptr) {
+      m_contactScratch = ContactScratchPtr(
+          createContactScratch(m_memoryManager),
+          ContactScratchDeleter{m_memoryManager});
+    }
     (void)detail::solveBoxedLcpContacts(
-        registry, contacts, world.getTimeStep());
+        registry, contacts, world.getTimeStep(), m_contactScratch->boxedLcp);
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
     return;
   }

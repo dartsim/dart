@@ -726,7 +726,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contacts and no-contact fixed-joint rows; large motor and distance-spring
     row staging also borrows allocator-backed scratch for generated
     descriptors, active-row lists, and thresholded fracture-index results, with
-    baked base-allocator and global-heap no-growth guards. Active inter-body
+    baked base-allocator and global-heap no-growth guards. The pure rigid
+    boxed-LCP contact branch now reuses prewarmed stage-owned solver scratch for
+    its contact normals, body lookup, dense work matrices/vectors, and Dantzig
+    buffers under the same baked no-growth gates. Active inter-body
     deformable surface-CCD
     crossings and two non-square production-scale deformable frictional
     self-contact grids now have the same baked no-growth guard coverage.

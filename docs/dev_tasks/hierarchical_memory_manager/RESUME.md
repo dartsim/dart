@@ -17,6 +17,13 @@ borrows the same solve scratch allocator. Focused large-row/fracture builder
 tests plus the existing rigid AVBD allocator and baked World no-heap gates pass
 for this slice.
 
+The current boxed-LCP continuation routes the pure rigid
+`ContactSolverMethod::BoxedLcp` branch through reusable `RigidBodyContactStage`
+scratch for contact normals, body-column lookup, dense Delassus work
+matrices/vectors, and Dantzig buffers. `prepare()` prewarms the same scratch,
+and the baked rigid sphere-ground boxed-LCP gate now covers both World-base
+no-growth and global-heap no-allocation behavior.
+
 The latest post-merge pipeline/scratch slices add allocator-aware construction
 for `BatchedRigidBodyIntegrationStage` and allocator-aware
 `WorldStepPipeline` overflow storage. Custom batched stages can now borrow a

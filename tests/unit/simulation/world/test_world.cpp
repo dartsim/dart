@@ -2582,6 +2582,27 @@ void configureRigidAvbdContactRowsScene(dart::simulation::World& world)
       sx::detail::toRegistryEntity(sphere.getEntity()));
 }
 
+void configureRigidBoxedLcpContactRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("rigid_boxed_lcp_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.49);
+  auto sphere = world.addRigidBody("rigid_boxed_lcp_sphere", sphereOptions);
+  sphere.setMass(1.0);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+}
+
 void configureRigidAvbdFixedJointRowsScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -6758,6 +6779,8 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
 TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
 {
   expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
+      "rigid sphere-ground boxed LCP", configureRigidBoxedLcpContactRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
       "cross multibody different-DOF fallback",
       configureCrossMultibodyDifferentDofFallbackScene);
   expectNoWorldBaseAllocatorActivityDuringBakedBoxedLcpSteps(
@@ -6820,6 +6843,8 @@ TEST(World, BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator)
 
 TEST(World, BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap)
 {
+  expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
+      "rigid sphere-ground boxed LCP", configureRigidBoxedLcpContactRowsScene);
   expectNoGlobalHeapAllocationsDuringBakedBoxedLcpSteps(
       "cross multibody different-DOF fallback",
       configureCrossMultibodyDifferentDofFallbackScene);

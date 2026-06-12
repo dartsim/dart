@@ -970,6 +970,12 @@ Follow-up progress after PR #2956:
   through the same allocator root.
   A focused stacked boxed-LCP prepare test verifies those stage-owned reserves
   use and release a provided free-list allocator.
+- The pure rigid `ContactSolverMethod::BoxedLcp` branch now keeps reusable
+  stage-owned scratch for contact normals, body-column lookup, dense Delassus
+  work matrices/vectors, and Dantzig solver buffers. `RigidBodyContactStage`
+  prewarms that scratch during `prepare()`, and the baked rigid sphere-ground
+  boxed-LCP gate now covers both World-base no-growth and global-heap
+  no-allocation behavior.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 
