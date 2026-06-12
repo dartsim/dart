@@ -1,5 +1,92 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 BGS FrictionIndex Exact Gate
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `f27dad169a7 Use LLT for boxed active-set exact helper`.
+- Current checkpoint target:
+  `Raise BGS friction exact gate`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 71 commits with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 72
+  commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `BgsSolver` raises its strict-interior exact gate from 96 to 192 variables so
+  the current 64-contact FrictionIndex comparison packet exits through the
+  shared LLT-first friction exact helper.
+- Unit coverage adds a 64-contact FrictionIndex BGS exact-path regression with
+  `maxIterations = 1` and expects zero iterations.
+- The regenerated full profile moved FrictionIndex `BGS` from the largest row
+  (`1.65x` before this slice) to `1.24x`. The largest remaining rows are now
+  FrictionIndex `Admm 1.70`, Boxed `SymmetricPsor 1.62`, FrictionIndex
+  `ShockPropagation 1.57`, FrictionIndex `Sap 1.55`, and Standard
+  `Lemke 1.54`.
+
+Evidence:
+
+- Baseline:
+  `build/friction_index_bgs_baseline.json`.
+- Accepted focused probe:
+  `build/friction_index_bgs_gate192_probe.json`.
+- Focused FrictionIndex timings moved approximately:
+  - `BGS/4`: `1629.88ns -> 1179.10ns`.
+  - `BGS/16`: `12570.26ns -> 12323.68ns`.
+  - `BGS/64`: `330609.46ns -> 254061.50ns`.
+- Latest regenerated profile highlights:
+  - Standard: no solver above `1.54x`; highest rows are `Lemke 1.54` and
+    `Jacobi 1.53`.
+  - Boxed: `SymmetricPsor 1.62` is the only solver above `1.6x`;
+    `RedBlackGaussSeidel 1.51` and `ShockPropagation 1.51` are next.
+  - FrictionIndex: `BGS 1.24`; highest rows are `Admm 1.70`,
+    `ShockPropagation 1.57`, `Sap 1.55`, and `Apgd 1.42`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS \
+  pixi run lint
+git diff --check
+```
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, review the expected dirty files and
+commit with `Raise BGS friction exact gate`. If this checkpoint is already
+committed, continue with FrictionIndex `Admm 1.70`, Boxed
+`SymmetricPsor 1.62`, FrictionIndex `ShockPropagation 1.57`, FrictionIndex
+`Sap 1.55`, or Standard `Lemke 1.54`. Do not push or mutate GitHub state
+without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Boxed Exact Helper LLT Path
 
 This is the latest state. Older sections below are historical checkpoints and

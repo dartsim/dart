@@ -1546,6 +1546,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     LLT-based dense solves before falling back to LU, removing the remaining
     above-`2x` Boxed averages from the refreshed profile while preserving the
     previous validated active-set acceptance contract.
+  - Raised `BgsSolver`'s strict-interior exact gate through the current
+    64-contact FrictionIndex comparison packet, moving the refreshed
+    FrictionIndex BGS average to `1.24x`.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

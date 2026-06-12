@@ -2241,6 +2241,22 @@ TEST(FrictionIndexInteriorFastPath, RedBlackGaussSeidelUsesLargeLinearSolve)
   EXPECT_TRUE(x.isApprox(expected, 1e-8));
 }
 
+TEST(FrictionIndexInteriorFastPath, BgsUsesLargeLinearSolve)
+{
+  Eigen::VectorXd expected;
+  auto problem = makeFrictionBlockProblem(64, &expected);
+  BgsSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.size());
+  LcpOptions options = solver.getDefaultOptions();
+  options.warmStart = false;
+  options.maxIterations = 1;
+
+  const auto result = solver.solve(problem, x, options);
+  EXPECT_EQ(result.status, LcpSolverStatus::Success);
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.isApprox(expected, 1e-8));
+}
+
 TEST(FrictionIndexInteriorFastPath, BoxedSemiSmoothNewtonUsesMediumLinearSolve)
 {
   Eigen::VectorXd expected;

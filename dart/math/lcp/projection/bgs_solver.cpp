@@ -51,7 +51,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
-constexpr int kMaxStrictInteriorFastPathSize = 96;
+constexpr int kMaxStrictInteriorFastPathSize = 192;
 
 struct BlockData
 {

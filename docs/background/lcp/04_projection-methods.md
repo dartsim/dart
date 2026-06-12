@@ -58,15 +58,16 @@ the lower-overhead projection helpers keep the LU-based standard helper. BGS
 uses that standard exact path through the current 96-row comparison packet. The
 shared strict-interior friction-index exact helper tries an LLT solve first for
 SPD rows and falls back to the previous LU solve when the LLT candidate is
-unavailable or fails validation. APGD, Jacobi, Red-Black Gauss-Seidel, and
-Symmetric PSOR also use the friction-index exact helper on non-warm-started
+unavailable or fails validation. APGD, BGS, Jacobi, Red-Black Gauss-Seidel,
+and Symmetric PSOR also use the friction-index exact helper on non-warm-started
 default solves at the packet sizes where refreshed profile evidence shows the
-dense solve is profitable. APGD also uses the shared projected-active-set
-boxed exact helper. That boxed helper uses an LLT-first dense solve with a full
-LU fallback when the LLT-based active-set candidate does not validate.
-Symmetric PSOR intentionally does not use the boxed exact helper because
-current boxed profile probes were slower. Restart-policy comparison rows keep
-the iterative APGD path.
+dense solve is profitable. BGS covers the current 64-contact FrictionIndex
+comparison packet. APGD also uses the shared projected-active-set boxed exact
+helper. That boxed helper uses an LLT-first dense solve with a full LU fallback
+when the LLT-based active-set candidate does not validate. Symmetric PSOR
+intentionally does not use the boxed exact helper because current boxed profile
+probes were slower. Restart-policy comparison rows keep the iterative APGD
+path.
 
 ## 1. Jacobi Method ✅ (Implemented)
 
