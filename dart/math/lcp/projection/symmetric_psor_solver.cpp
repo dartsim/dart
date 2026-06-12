@@ -44,7 +44,7 @@
 namespace dart::math {
 namespace {
 
-constexpr int kMaxStrictInteriorFastPathSize = 48;
+constexpr int kMaxStrictInteriorFastPathSize = 96;
 
 double matrixInfinityNorm(const Eigen::MatrixXd& A)
 {
@@ -162,7 +162,7 @@ LcpResult SymmetricPsorSolver::solve(
       && n <= kMaxStrictInteriorFastPathSize) {
     const double validationTolerance = std::max(absTol, compTolOpt);
     if (problem.isStandardLcp(absTol)) {
-      exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+      exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
     } else if (problem.hasFrictionIndex()) {
       exactFastPath = detail::trySolveInteriorFrictionIndexLcp(

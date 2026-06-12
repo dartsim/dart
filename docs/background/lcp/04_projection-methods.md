@@ -53,9 +53,10 @@ validation. Dense exact solves are only used on packet sizes where current
 profile evidence shows they are profitable; larger rows stay on the iterative
 projection path. Dense Newton, interior-point, NNCG, and BGS standard exact
 paths use an LLT-first variant of the shared helper and fall back to the
-original LU solve when the LLT candidate is unavailable or fails validation;
-the lower-overhead projection helpers keep the LU-based standard helper. BGS
-uses that standard exact path through the current 96-row comparison packet. The
+original LU solve when the LLT candidate is unavailable or fails validation.
+BGS and Symmetric PSOR use that standard exact path through the current 96-row
+comparison packet; lower-overhead projection helpers keep the LU-based
+standard helper. The
 shared strict-interior friction-index exact helper tries an LLT solve first for
 SPD rows and falls back to the previous LU solve when the LLT candidate is
 unavailable or fails validation. APGD, BGS, Jacobi, Red-Black Gauss-Seidel,

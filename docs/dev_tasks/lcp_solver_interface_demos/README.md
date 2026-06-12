@@ -1,5 +1,137 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Dantzig/Symmetric PSOR Standard LLT Paths
+
+This is the latest hand-off state after resuming the previously stopped
+Dantzig/Symmetric PSOR slice. Sections below are historical checkpoints and may
+describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 73]`.
+- Last committed checkpoint:
+  `ce7dbf7aa58 Raise ADMM friction exact gate`.
+- Checkpoint target:
+  `Use LLT for Dantzig and Symmetric PSOR exact paths`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 73 commits, with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 74
+  commits.
+- This current slice has not been pushed. No PR is associated with this branch
+  yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+Current dirty files:
+
+- `dart/math/lcp/pivoting/dantzig_solver.cpp`
+- `dart/math/lcp/projection/symmetric_psor_solver.cpp`
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`
+- `docs/background/lcp/03_pivoting-methods.md`
+- `docs/background/lcp/04_projection-methods.md`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `CHANGELOG.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Current implementation slice:
+
+- `DantzigSolver` standard strict-interior exact path now uses
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)` instead of the
+  LU-only strict-interior helper.
+- `SymmetricPsorSolver` standard strict-interior exact path now uses the same
+  LLT-first helper and raises its strict-interior fast-path gate from 48 to 96
+  variables, covering the current 96-row Standard comparison packet.
+- Unit coverage adds `SymmetricPsorSolver` to
+  `StandardStrictInteriorFastPath.HighOverheadSolversUseLargeLinearSolve` with
+  a 96-size Standard problem, `maxIterations = 1`, and an expectation of zero
+  iterations.
+- Background docs and demo metadata have been partially updated for the latest
+  regenerated profile.
+
+Known unfinished items for this slice:
+
+- No known focused validation failures remain after the metadata assertion fix.
+- If this checkpoint is already committed, continue with the refreshed profile's
+  highest remaining rows: Standard `SubspaceMinimization 1.64`, Standard
+  `Baraff/Jacobi/Sap 1.57`, Standard `Lemke 1.54`, Boxed
+  `ShockPropagation 1.51`, or FrictionIndex `ShockPropagation 1.53`.
+
+Focused and profile evidence already collected before the stop request:
+
+- Baseline:
+  `build/standard_dantzig_sympsor_baseline.json`.
+- Accepted focused probe:
+  `build/standard_dantzig_sympsor_llt_probe.json`.
+- Focused Standard Dantzig timings moved approximately:
+  - `Dantzig/12`: `848.38ns -> 784.74ns`.
+  - `Dantzig/24`: `2751.88ns -> 1959.32ns`.
+  - `Dantzig/48`: `11071.67ns -> 8444.85ns`.
+  - `Dantzig/96`: `59370.01ns -> 39535.71ns`.
+- Focused Standard Symmetric PSOR timings moved approximately:
+  - `SymmetricPsor/12`: `991.57ns -> 878.19ns`.
+  - `SymmetricPsor/24`: `3454.77ns -> 2760.61ns`.
+  - `SymmetricPsor/48`: `12911.97ns -> 10933.11ns`.
+  - `SymmetricPsor/96`: `51214.00ns -> 45922.66ns`.
+- Latest regenerated profile highlights from the current uncommitted slice:
+  - Standard: `Dantzig 1.02`, `SymmetricPsor 1.26`,
+    `SubspaceMinimization 1.64`, `Baraff/Jacobi/Sap 1.57`,
+    `Lemke 1.54`, `BlockedJacobi/RedBlackGaussSeidel 1.51`,
+    and `Apgd 1.50`.
+  - Boxed: no solver above `1.6x`; highest rows are
+    `ShockPropagation 1.51`, `SymmetricPsor 1.47`,
+    `RedBlackGaussSeidel 1.47`, `BGS 1.36`, and `BlockedJacobi 1.36`.
+  - FrictionIndex: no solver above `1.6x`; highest rows are
+    `ShockPropagation 1.53`, `Sap 1.44`, `Apgd 1.43`,
+    `Admm 1.37`, and `SymmetricPsor 1.36`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS \
+  pixi run lint
+```
+
+The CSV shape check reported `Boxed 15/200`, `FrictionIndex 16/200`, and
+`Standard 23/200`. Run `git diff --check` after any final edits before
+committing.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -5`.
+2. If this checkpoint is still uncommitted, run `git diff --check` after any
+   final edits and commit with
+   `Use LLT for Dantzig and Symmetric PSOR exact paths`.
+3. If this checkpoint is already committed, continue with Standard
+   `SubspaceMinimization 1.64`, Standard `Baraff/Jacobi/Sap 1.57`, Standard
+   `Lemke 1.54`, Boxed `ShockPropagation 1.51`, or FrictionIndex
+   `ShockPropagation 1.53`.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - ADMM FrictionIndex Exact Gate
 
 This is the latest hand-off state. Sections below are historical checkpoints

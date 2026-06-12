@@ -1,5 +1,138 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Dantzig/Symmetric PSOR Standard LLT Paths
+
+This is the latest hand-off after resuming the previously stopped
+Dantzig/Symmetric PSOR slice. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Local branch relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 73]`
+- Last committed checkpoint:
+  `ce7dbf7aa58 Raise ADMM friction exact gate`.
+- Checkpoint target:
+  `Use LLT for Dantzig and Symmetric PSOR exact paths`.
+- There is no associated PR yet.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 73 commits, with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 74
+  commits.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+Dirty worktree at hand-off:
+
+- `dart/math/lcp/pivoting/dantzig_solver.cpp`
+- `dart/math/lcp/projection/symmetric_psor_solver.cpp`
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp`
+- `docs/background/lcp/03_pivoting-methods.md`
+- `docs/background/lcp/04_projection-methods.md`
+- `docs/background/lcp/figures/performance_profile_boxed.csv`
+- `docs/background/lcp/figures/performance_profile_frictionindex.csv`
+- `docs/background/lcp/figures/performance_profile_standard.csv`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `CHANGELOG.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+What this uncommitted slice changes:
+
+- `DantzigSolver` routes its Standard strict-interior exact path through
+  `detail::trySolveStrictInteriorStandardLcpLltFirst(...)`.
+- `SymmetricPsorSolver` routes its Standard strict-interior exact path through
+  the LLT-first helper and raises the Standard strict-interior gate from 48 to
+  96 variables.
+- Unit coverage adds `SymmetricPsorSolver` to the 96-size Standard exact-path
+  regression with `maxIterations = 1` and zero expected iterations.
+- Background LCP docs and Python demo metadata have been partially updated to
+  reflect the latest regenerated profile.
+
+Known unfinished item:
+
+- No known focused validation failures remain after the metadata assertion fix.
+- If this checkpoint is already committed, continue with the refreshed profile's
+  highest remaining rows: Standard `SubspaceMinimization 1.64`, Standard
+  `Baraff/Jacobi/Sap 1.57`, Standard `Lemke 1.54`, Boxed
+  `ShockPropagation 1.51`, or FrictionIndex `ShockPropagation 1.53`.
+
+Evidence already collected before the stop request:
+
+- Baseline:
+  `build/standard_dantzig_sympsor_baseline.json`.
+- Accepted focused probe:
+  `build/standard_dantzig_sympsor_llt_probe.json`.
+- Focused Standard Dantzig timings:
+  - `Dantzig/12`: `848.38ns -> 784.74ns`.
+  - `Dantzig/24`: `2751.88ns -> 1959.32ns`.
+  - `Dantzig/48`: `11071.67ns -> 8444.85ns`.
+  - `Dantzig/96`: `59370.01ns -> 39535.71ns`.
+- Focused Standard Symmetric PSOR timings:
+  - `SymmetricPsor/12`: `991.57ns -> 878.19ns`.
+  - `SymmetricPsor/24`: `3454.77ns -> 2760.61ns`.
+  - `SymmetricPsor/48`: `12911.97ns -> 10933.11ns`.
+  - `SymmetricPsor/96`: `51214.00ns -> 45922.66ns`.
+- Latest regenerated profile highlights:
+  - Standard: `Dantzig 1.02`, `SymmetricPsor 1.26`,
+    `SubspaceMinimization 1.64`, `Baraff/Jacobi/Sap 1.57`,
+    `Lemke 1.54`, `BlockedJacobi/RedBlackGaussSeidel 1.51`,
+    and `Apgd 1.50`.
+  - Boxed: no solver above `1.6x`; highest rows are
+    `ShockPropagation 1.51`, `SymmetricPsor 1.47`,
+    `RedBlackGaussSeidel 1.47`, `BGS 1.36`, and `BlockedJacobi 1.36`.
+  - FrictionIndex: no solver above `1.6x`; highest rows are
+    `ShockPropagation 1.53`, `Sap 1.44`, `Apgd 1.43`,
+    `Admm 1.37`, and `SymmetricPsor 1.36`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS \
+  pixi run lint
+```
+
+The CSV shape check reported `Boxed 15/200`, `FrictionIndex 16/200`, and
+`Standard 23/200`. Run `git diff --check` after any final edits before
+committing.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, run `git diff --check` after any final
+edits and commit with `Use LLT for Dantzig and Symmetric PSOR exact paths`. If
+this checkpoint is already committed, continue with Standard
+`SubspaceMinimization 1.64`, Standard `Baraff/Jacobi/Sap 1.57`, Standard
+`Lemke 1.54`, Boxed `ShockPropagation 1.51`, or FrictionIndex
+`ShockPropagation 1.53`. Do not push without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 ADMM FrictionIndex Exact Gate
 
 This is the latest state. Older sections below are historical checkpoints and

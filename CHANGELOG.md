@@ -1553,6 +1553,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     current medium comparison packet, moving the refreshed FrictionIndex ADMM
     average from `1.70x` to `1.41x` while leaving the large row on the
     operator-splitting path.
+  - Routed `DantzigSolver` and `SymmetricPsorSolver` standard strict-interior
+    exact shortcuts through the validated LLT-first helper and raised Symmetric
+    PSOR's standard exact gate through the current 96-row comparison packet,
+    moving the refreshed Standard Dantzig and Symmetric PSOR rows to `1.02x`
+    and `1.26x` average respectively.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

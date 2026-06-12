@@ -224,22 +224,21 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
         "problem_sizes": "2, 3, 12, 24, 48, 96",
         "current_leaders": (
-            "Tgs/Pgs/Direct/BGS/NNCG/Admm and strict-interior "
+            "Dantzig/Direct/Admm/BGS/NNCG and strict-interior "
             "MinimumMapNewton/InteriorPoint/FischerBurmeisterNewton rows"
         ),
         "current_laggards": (
-            "Dantzig and SymmetricPsor are above 1.7x; Baraff, Apgd, "
-            "Jacobi, RedBlackGaussSeidel, SubspaceMinimization, Lemke, "
-            "and BlockedJacobi are the next largest rows"
+            "SubspaceMinimization is the only Standard solver above 1.6x; "
+            "Baraff, Jacobi, Sap, Lemke, BlockedJacobi, "
+            "RedBlackGaussSeidel, and Apgd are the next largest rows"
         ),
         "takeaway": (
             "Strict-interior linear solves remove the old pivot, barrier, "
             "Dantzig, Newton-family including boxed semi-smooth, projection, "
             "MPRGP, ADMM, APGD/Jacobi, ShockPropagation, and small/medium "
             "block hot rows. The LLT-first Newton/interior-point exact helper "
-            "and BGS/NNCG standard exact paths move the Standard surface below "
-            "1.5x; remaining targets are moderate-ratio iterative projection "
-            "rows."
+            "plus Dantzig, Symmetric PSOR, BGS, and NNCG standard exact paths "
+            "leave one above-1.6x Standard row in the refreshed profile."
         ),
     },
     {
@@ -247,13 +246,14 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
         "current_leaders": (
-            "Pgs/Tgs lead; Dantzig, BlockedJacobi, Jacobi, "
-            "SubspaceMinimization, Admm, and Sap cluster below 1.3x"
+            "Pgs/Tgs lead; Jacobi, Dantzig, BoxedSemiSmoothNewton, "
+            "Apgd, SubspaceMinimization, Admm, NNCG, and Sap cluster "
+            "below 1.35x"
         ),
         "current_laggards": (
-            "No Boxed solver average is above 1.5x; SymmetricPsor, "
-            "ShockPropagation, RedBlackGaussSeidel, BGS, "
-            "BoxedSemiSmoothNewton, NNCG, and Apgd are the largest rows"
+            "No Boxed solver average is above 1.6x; ShockPropagation, "
+            "SymmetricPsor, RedBlackGaussSeidel, BGS, and BlockedJacobi are "
+            "the largest rows"
         ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
@@ -269,14 +269,14 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
-            "Tgs/Pgs/Jacobi/Staggering/RedBlackGaussSeidel/Dantzig/"
-            "NNCG/BoxedSemiSmoothNewton/BGS/SymmetricPsor are the current "
+            "Tgs/Pgs/RedBlackGaussSeidel/Staggering/Dantzig/NNCG/"
+            "SubspaceMinimization/Jacobi/BlockedJacobi/BGS are the current "
             "leading group"
         ),
         "current_laggards": (
-            "No FrictionIndex solver average is above 1.6x; Apgd, "
-            "ShockPropagation, Sap, Admm, SubspaceMinimization, "
-            "and BlockedJacobi are the largest remaining rows"
+            "No FrictionIndex solver average is above 1.6x; "
+            "ShockPropagation, Sap, Apgd, Admm, SymmetricPsor, and "
+            "BoxedSemiSmoothNewton are the largest remaining rows"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
