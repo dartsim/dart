@@ -205,6 +205,17 @@
       sequential impulse and rigid IPC table-push tasks with executor, launch
       speed, friction, pusher mass, travel, gap, contact/proximity, drift,
       goal-error, divergence, and step-timing diagnostics.
+- [x] Contact-manipulation capture-metrics follow-up:
+      `rigid_contact_manipulation` now publishes solver-pair identity,
+      executor, launch/friction/pusher-mass controls, per-solver target travel,
+      pusher gap, contact count, target speed, lateral drift, goal error, step
+      timing, travel divergence, and compact history ranges through the capture
+      hook. The focused contact-manipulation guard reported `1 passed`; the
+      real docked 72-frame capture wrote 72 scene-metrics events under
+      `/tmp/dart_capture_contact_manipulation_metrics_1781232293`. The broader
+      workflow/doc drift guard, lint, bounded build, and `git diff --check`
+      were not run after the user's explicit stop/no-further-verification
+      instruction.
 - [x] Kinematic-driver slice: `rigid_kinematic_driver` shows IPC prescribed
       tangential motion carrying a box through friction, a zero-friction slip
       baseline, and the current sequential-impulse static-like caveat.
@@ -603,12 +614,13 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` on
-   `feature/rigid-body-gui-visual-verification`, then continue the
-   capture-metrics hardening pass one row at a time.
-2. The next likely row is `rigid_contact_manipulation`, because it is the next
-   numbered contact row and already owns pusher travel, target gap,
-   contact/proximity, target speed, drift, goal error, solver divergence, and
-   step-profile histories that are useful in docked capture manifests.
+   `feature/rigid-body-gui-visual-verification`, then decide whether to run the
+   contact-manipulation validation gates skipped by the stop instruction before
+   continuing the capture-metrics hardening pass.
+2. The next likely implementation row is `rigid_kinematic_driver`, because it
+   is the next numbered contact-control row and already owns driver travel, box
+   travel, slip, speed ratio, support gap, status, and step-profile histories
+   that are useful in docked capture manifests.
 3. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.

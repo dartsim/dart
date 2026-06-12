@@ -11,7 +11,7 @@ import dartpy as sx
 import numpy as np
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _GROUND_HALF = np.array([0.90, 0.38, 0.05])
 _TARGET_HALF = np.array([0.13, 0.13, 0.13])
@@ -90,6 +90,12 @@ class _RigidContactManipulation:
             case.label: deque(maxlen=_HISTORY) for case in self.cases
         }
         self._speed_history: dict[str, deque[float]] = {
+            case.label: deque(maxlen=_HISTORY) for case in self.cases
+        }
+        self._drift_history: dict[str, deque[float]] = {
+            case.label: deque(maxlen=_HISTORY) for case in self.cases
+        }
+        self._goal_error_history: dict[str, deque[float]] = {
             case.label: deque(maxlen=_HISTORY) for case in self.cases
         }
         self._step_ms_history: dict[str, deque[float]] = {
@@ -239,6 +245,8 @@ class _RigidContactManipulation:
             *self._gap_history.values(),
             *self._contact_history.values(),
             *self._speed_history.values(),
+            *self._drift_history.values(),
+            *self._goal_error_history.values(),
             *self._step_ms_history.values(),
             self._divergence_history,
         ):
@@ -316,6 +324,8 @@ class _RigidContactManipulation:
             self._gap_history[case.label].append(float(metrics["gap"]))
             self._contact_history[case.label].append(float(metrics["contact_count"]))
             self._speed_history[case.label].append(float(metrics["target_speed"]))
+            self._drift_history[case.label].append(float(metrics["lateral_drift"]))
+            self._goal_error_history[case.label].append(float(metrics["goal_error"]))
             self._step_ms_history[case.label].append(float(metrics["step_ms"]))
             travels.append(float(metrics["target_travel"]))
         if len(travels) == 2:
@@ -331,6 +341,124 @@ class _RigidContactManipulation:
             case.world.step(executor)
         self._record_metrics()
         self._sync()
+
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+        cases = {
+            case.label: {
+                "rigid_body_solver": case.solver.name,
+                "metrics": dict(self._last_metrics[case.label]),
+            }
+            for case in self.cases
+        }
+        travel_history = {
+            case.label: list(self._travel_history[case.label]) for case in self.cases
+        }
+        gap_history = {
+            case.label: list(self._gap_history[case.label]) for case in self.cases
+        }
+        contact_history = {
+            case.label: list(self._contact_history[case.label]) for case in self.cases
+        }
+        speed_history = {
+            case.label: list(self._speed_history[case.label]) for case in self.cases
+        }
+        drift_history = {
+            case.label: list(self._drift_history[case.label]) for case in self.cases
+        }
+        goal_error_history = {
+            case.label: list(self._goal_error_history[case.label])
+            for case in self.cases
+        }
+        step_ms_history = {
+            case.label: list(self._step_ms_history[case.label])
+            for case in self.cases
+        }
+        si_label = self.cases[0].label
+        ipc_label = self.cases[1].label
+
+        def case_metric(label: str, metric_key: str) -> float:
+            return float(self._last_metrics[label][metric_key])
+
+        def min_abs(values: list[float]) -> float:
+            return min((abs(value) for value in values), default=0.0)
+
+        return {
+            "row": "rigid_contact_manipulation",
+            "solver": "sequential_impulse_vs_ipc",
+            "executor": self._executors[executor_index][0],
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.primary_world.time),
+            "controls": {
+                "friction": float(self.friction),
+                "launch_speed": float(self.launch_speed),
+                "pusher_mass": float(self.pusher_mass),
+            },
+            "case_pair": [case.label for case in self.cases],
+            "sequential_impulse_solver_enum": self.cases[0].solver.name,
+            "sequential_impulse_target_travel": case_metric(
+                si_label, "target_travel"
+            ),
+            "sequential_impulse_gap": case_metric(si_label, "gap"),
+            "sequential_impulse_contact_count": case_metric(
+                si_label, "contact_count"
+            ),
+            "sequential_impulse_target_speed": case_metric(
+                si_label, "target_speed"
+            ),
+            "sequential_impulse_lateral_drift": case_metric(
+                si_label, "lateral_drift"
+            ),
+            "sequential_impulse_goal_error": case_metric(si_label, "goal_error"),
+            "sequential_impulse_step_ms": case_metric(si_label, "step_ms"),
+            "ipc_solver_enum": self.cases[1].solver.name,
+            "ipc_target_travel": case_metric(ipc_label, "target_travel"),
+            "ipc_gap": case_metric(ipc_label, "gap"),
+            "ipc_contact_count": case_metric(ipc_label, "contact_count"),
+            "ipc_target_speed": case_metric(ipc_label, "target_speed"),
+            "ipc_lateral_drift": case_metric(ipc_label, "lateral_drift"),
+            "ipc_goal_error": case_metric(ipc_label, "goal_error"),
+            "ipc_step_ms": case_metric(ipc_label, "step_ms"),
+            "travel_divergence": (
+                float(self._divergence_history[-1])
+                if self._divergence_history
+                else 0.0
+            ),
+            "cases": cases,
+            "history": {
+                "samples": float(len(travel_history[si_label])),
+                "max_travel_divergence": max(self._divergence_history, default=0.0),
+                "sequential_impulse_max_target_travel": max(
+                    travel_history[si_label], default=0.0
+                ),
+                "sequential_impulse_min_gap": min(gap_history[si_label], default=0.0),
+                "sequential_impulse_max_contact_count": max(
+                    contact_history[si_label], default=0.0
+                ),
+                "sequential_impulse_max_target_speed": max(
+                    speed_history[si_label], default=0.0
+                ),
+                "sequential_impulse_max_lateral_drift": max(
+                    drift_history[si_label], default=0.0
+                ),
+                "sequential_impulse_min_abs_goal_error": min_abs(
+                    goal_error_history[si_label]
+                ),
+                "ipc_max_target_travel": max(travel_history[ipc_label], default=0.0),
+                "ipc_min_gap": min(gap_history[ipc_label], default=0.0),
+                "ipc_max_contact_count": max(contact_history[ipc_label], default=0.0),
+                "ipc_max_target_speed": max(speed_history[ipc_label], default=0.0),
+                "ipc_max_lateral_drift": max(drift_history[ipc_label], default=0.0),
+                "ipc_min_abs_goal_error": min_abs(goal_error_history[ipc_label]),
+                "max_step_ms": max(
+                    (value for values in step_ms_history.values() for value in values),
+                    default=0.0,
+                ),
+            },
+        }
 
     def force_drag(self, event: dict[str, Any]) -> None:
         if not event.get("active", False):
@@ -372,6 +500,13 @@ class _RigidContactManipulation:
             "speed_history": {
                 key: list(values) for key, values in self._speed_history.items()
             },
+            "drift_history": {
+                key: list(values) for key, values in self._drift_history.items()
+            },
+            "goal_error_history": {
+                key: list(values)
+                for key, values in self._goal_error_history.items()
+            },
             "step_ms_history": {
                 key: list(values) for key, values in self._step_ms_history.items()
             },
@@ -402,6 +537,10 @@ class _RigidContactManipulation:
         self._restore_histories(self._gap_history, state.get("gap_history", {}))
         self._restore_histories(self._contact_history, state.get("contact_history", {}))
         self._restore_histories(self._speed_history, state.get("speed_history", {}))
+        self._restore_histories(self._drift_history, state.get("drift_history", {}))
+        self._restore_histories(
+            self._goal_error_history, state.get("goal_error_history", {})
+        )
         self._restore_histories(
             self._step_ms_history, state.get("step_ms_history", {})
         )
@@ -518,6 +657,7 @@ def build() -> SceneSetup:
             "rigid_contact_manipulation_worlds": [
                 case.world for case in manipulation.cases
             ],
+            CAPTURE_METRICS_INFO_KEY: manipulation.capture_metrics,
             "replay_capture_state": manipulation.capture_replay_state,
             "replay_restore_state": manipulation.restore_replay_state,
             "replay_sync": manipulation._sync,

@@ -2445,10 +2445,52 @@ def test_rigid_contact_manipulation_pushes_target_toward_goal() -> None:
         assert controller._travel_history[case.label]
         assert controller._gap_history[case.label]
         assert controller._contact_history[case.label]
+        assert controller._drift_history[case.label]
+        assert controller._goal_error_history[case.label]
         assert (
             max(controller._contact_history[case.label]) > 0.0
             or min(controller._gap_history[case.label]) < 0.025
         )
+
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_contact_manipulation"
+    assert capture_metrics["solver"] == "sequential_impulse_vs_ipc"
+    assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["controls"]["launch_speed"] == pytest.approx(
+        controller.launch_speed
+    )
+    assert capture_metrics["controls"]["friction"] == pytest.approx(
+        controller.friction
+    )
+    assert capture_metrics["controls"]["pusher_mass"] == pytest.approx(
+        controller.pusher_mass
+    )
+    assert capture_metrics["case_pair"] == [case.label for case in controller.cases]
+    assert set(capture_metrics["cases"]) == {"Sequential impulse", "IPC barrier"}
+    assert (
+        capture_metrics["cases"]["Sequential impulse"]["rigid_body_solver"]
+        == "SEQUENTIAL_IMPULSE"
+    )
+    assert capture_metrics["cases"]["IPC barrier"]["rigid_body_solver"] == "IPC"
+    assert capture_metrics["sequential_impulse_target_travel"] == pytest.approx(
+        controller._last_metrics["Sequential impulse"]["target_travel"]
+    )
+    assert capture_metrics["ipc_target_travel"] == pytest.approx(
+        controller._last_metrics["IPC barrier"]["target_travel"]
+    )
+    assert capture_metrics["ipc_gap"] == pytest.approx(
+        controller._last_metrics["IPC barrier"]["gap"]
+    )
+    assert capture_metrics["travel_divergence"] == pytest.approx(
+        controller._divergence_history[-1]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        len(controller._travel_history["Sequential impulse"])
+    )
+    assert capture_metrics["history"]["max_travel_divergence"] > 1.0e-4
+    assert capture_metrics["history"]["ipc_max_target_travel"] > 0.08
+    assert capture_metrics["history"]["sequential_impulse_min_gap"] < 0.025
 
 
 def test_rigid_kinematic_driver_carries_box_with_ipc() -> None:
