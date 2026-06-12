@@ -255,6 +255,9 @@
   - Added Replay timeline metadata to `rigid_joint_passive_parameters`, using
     armature position gap as the value track and marking damping, Coulomb slip,
     or armature-lag frames.
+  - Added Replay timeline metadata to `rigid_screw_joint_pitch`, using
+    coarse/fine travel gap as the value track and marking pitch-spread,
+    zero-pitch contrast, or reverse-sign frames.
   - Added `rigid_link_center_of_mass` to Python `py-demos`, a contact-free
     World multibody row that keeps visual geometry fixed while moving
     `Link.center_of_mass` to show centered, mirrored, and high-inertia gravity

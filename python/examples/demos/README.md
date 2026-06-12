@@ -202,7 +202,7 @@ plus a warning block if any selected row is missing those fields.
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge/slider locked error, free motion, Replay marks           |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | Speed command, velocity/position/effort limits        | Motor speed, limit error, force gap, Replay marks              |
 | 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks        |
-| 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Angle, axial travel, pitch ratio, acceleration error, metrics  |
+| 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks            |
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Mass matrix, inverse dynamics, impulse response, metrics       |
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Gravity torque, mass matrix, acceleration, COM marker, metrics |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | Motion speed, elbow phase, wrench force/angle/moment  | Link twist, finite-difference error, `J.T` power, metrics      |
@@ -624,6 +624,8 @@ expected-versus-actual acceleration from mass and axial inertia.
 controls, per-lane pitch, angle, axial travel, travel-per-radian, acceleration,
 effective mass, mass matrix, step-timing, and compact history metrics into the
 manifest sidecar.
+The shared Replay panel uses coarse/fine travel gap as its value track and
+marks pitch-spread, zero-pitch contrast, and reverse-sign frames.
 
 The **`rigid_multibody_dynamics_terms`** scene makes the public generalized
 dynamics accessors visible before the solver-family and loop-closure rows. A

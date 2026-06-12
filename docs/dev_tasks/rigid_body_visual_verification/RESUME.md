@@ -2,11 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_joint_passive_parameters` Replay timeline
-slice after the motor-limits checkpoint. The World multibody passive-parameter
-row now uses armature position gap as its Replay value track and marks damping
-energy separation, Coulomb slip, or armature-lag frames so saved-state
-scrubbing can jump to the passive-parameter behavior users need to inspect.
+This checkpoint completes the `rigid_screw_joint_pitch` Replay timeline slice
+after the passive-parameters checkpoint. The World multibody screw-pitch row
+now uses coarse/fine travel gap as its Replay value track and marks
+pitch-spread, zero-pitch contrast, or reverse-sign frames so saved-state
+scrubbing can jump to the pitch-coupling behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -23,14 +23,15 @@ Expected repository state after this hand-off:
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
-  limited-joints Replay timeline, motor-limits Replay timeline, followed by
-  the passive-parameters Replay timeline checkpoint.
+  limited-joints Replay timeline, motor-limits Replay timeline,
+  passive-parameters Replay timeline, followed by the screw-joint pitch Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `11146140b5c Add joint motor limits replay timeline`; the branch was ahead
-  of `origin/feature/rigid-body-gui-visual-verification` by eight commits
-  before the passive-parameters slice.
+  `6f307966524 Add passive joint replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by nine commits before
+  the screw-joint pitch slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -71,6 +72,11 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Armature position gap`, with markers for damping energy separation, Coulomb
   slip, or armature-lag frames.
+- The current screw-joint pitch Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Coarse/fine travel gap`, with markers for pitch-spread, zero-pitch
+  contrast, or reverse-sign frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
   `rigid_screw_joint_pitch`, but a future session should inspect the
@@ -116,6 +122,10 @@ Expected repository state after this hand-off:
 - The passive-parameters Replay timeline continuation added `replay_timeline`
   metadata to `rigid_joint_passive_parameters`, updated tests and docs, and
   ran focused tests, drift guards, a real docked capture, `pixi run lint`, and
+  `git diff --check`.
+- The screw-joint pitch Replay timeline continuation added `replay_timeline`
+  metadata to `rigid_screw_joint_pitch`, updated tests and docs, and ran
+  focused tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
 - Do not push these local commits without explicit approval in a future
   session.
@@ -337,6 +347,13 @@ slip, or armature-lag frames. Focused pytest, sidecar/README drift guards,
 `pixi run lint`, `git diff --check`, and a real docked capture passed before
 the local passive-parameters commit.
 
+The latest continuation completes the next Replay timeline slice for
+`rigid_screw_joint_pitch`. The shared Replay panel now uses coarse/fine travel
+gap as its value track and marks pitch-spread, zero-pitch contrast, or
+reverse-sign frames. Focused pytest, sidecar/README drift guards,
+`pixi run lint`, `git diff --check`, and a real docked capture passed before
+the local screw-joint pitch commit.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -355,18 +372,19 @@ Current snapshot:
   manipulation Replay timeline, kinematic-driver Replay timeline,
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
-  limited-joints Replay timeline, motor-limits Replay timeline, followed by
-  the passive-parameters Replay timeline checkpoint.
+  limited-joints Replay timeline, motor-limits Replay timeline,
+  passive-parameters Replay timeline, followed by the screw-joint pitch Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `11146140b5c Add joint motor limits replay timeline`; it was eight commits
-  ahead of `origin/feature/rigid-body-gui-visual-verification` before the
-  passive-parameters Replay timeline slice.
+  `6f307966524 Add passive joint replay timeline`; it was nine commits ahead
+  of `origin/feature/rigid-body-gui-visual-verification` before the screw-joint
+  pitch Replay timeline slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
-  joint-breakage, distance-spring, limited-joints, motor-limits, and
-  passive-parameters Replay timeline checkpoints are local and unpushed until
-  explicit future approval.
+  joint-breakage, distance-spring, limited-joints, motor-limits,
+  passive-parameters, and screw-joint pitch Replay timeline checkpoints are
+  local and unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
@@ -374,11 +392,11 @@ Current snapshot:
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
-motor-limits, and passive-parameters Replay timeline slices after the pushed
-docs-only handoff. Re-evaluate the durable sidecar before selecting the next
-bounded rigid visual-verification slice; the next adjacent constraints row is
-likely `rigid_screw_joint_pitch`. Do not push without explicit approval in
-that session.
+motor-limits, passive-parameters, and screw-joint pitch Replay timeline slices
+after the pushed docs-only handoff. Re-evaluate the durable sidecar before
+selecting the next bounded rigid visual-verification slice; the next adjacent
+constraints row is likely `rigid_multibody_dynamics_terms`. Do not push without
+explicit approval in that session.
 
 Passive-parameters checks for this slice:
 
@@ -397,6 +415,25 @@ about `1.3403`, damped-energy ratio about `0.6210`, stiction position `0.0`,
 slip position about `0.1742` m, slip speed about `0.7200` m/s, armature
 acceleration gap about `2.25` m/s^2, and armature position gap about `0.2614`
 m. `pixi run lint` passed and `git diff --check` was clean.
+
+Screw-joint pitch checks for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_screw_joint_pitch_couples_rotation_and_translation python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_screw_joint_pitch --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_screw_joint_pitch_timeline_1781278553
+pixi run lint
+git diff --check
+```
+
+The focused Replay/screw-joint pytest plus drift guards reported `6 passed`;
+the real docked capture wrote a nonblank 960x540 screenshot with docked UI,
+95 PNG frames, and 96 scene-metric events. The manifest recorded row
+`rigid_screw_joint_pitch`, fine angle about `-0.8317` rad, coarse angle about
+`-0.6162` rad, reverse angle about `0.8317` rad, fine axial travel about
+`-0.2329` m, coarse axial travel about `-0.3451` m, reverse axial travel about
+`-0.2329` m, coarse/fine travel gap about `0.1122` m, and travel-per-radian
+values `0.28`, `0.56`, and `-0.28`. `pixi run lint` passed and
+`git diff --check` was clean.
 
 ## Context That Would Be Lost
 
@@ -541,6 +578,13 @@ m. `pixi run lint` passed and `git diff --check` was clean.
   for the `Armature position gap` value track and damping, Coulomb slip, and
   armature-lag markers. It has focused pytest, drift-guard, docked-capture,
   lint, and diff-check evidence.
+- The completed screw-joint pitch Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_screw_joint_pitch.py`, with tests for the
+  `Coarse/fine travel gap` value track and pitch-spread, zero-pitch contrast,
+  and reverse-sign markers. It has focused pytest, drift-guard,
+  docked-capture, lint, and diff-check evidence.
 
 ## How To Resume
 

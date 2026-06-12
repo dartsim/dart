@@ -5750,6 +5750,69 @@ def test_rigid_screw_joint_pitch_couples_rotation_and_translation() -> None:
             for value in list(controller._accel_error_history["reverse_pitch"])[1:]
         )
     )
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_travel_gap = abs(
+        controller._travel_history["coarse_pitch"][-1]
+        - controller._travel_history["fine_pitch"][-1]
+    )
+    assert timeline["signal_label"] == "Coarse/fine travel gap"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_travel_gap)
+    assert (
+        timeline["markers"](
+            {
+                "travel_history": {
+                    "fine_pitch": [-0.11],
+                    "coarse_pitch": [-0.18],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "travel_history": {
+                    "zero_pitch": [0.0],
+                    "fine_pitch": [-0.09],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "angle_history": {
+                    "fine_pitch": [-0.30],
+                    "reverse_pitch": [0.30],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "travel_history": {
+                    "zero_pitch": [0.005],
+                    "fine_pitch": [-0.04],
+                    "coarse_pitch": [-0.06],
+                },
+                "angle_history": {
+                    "fine_pitch": [-0.10],
+                    "reverse_pitch": [0.10],
+                },
+                "last_metrics": {
+                    "zero_pitch": {"axial_travel": 0.005},
+                    "fine_pitch": {"axial_travel": -0.04, "angle": -0.10},
+                    "coarse_pitch": {"axial_travel": -0.06},
+                    "reverse_pitch": {"angle": 0.10},
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:

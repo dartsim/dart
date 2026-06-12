@@ -36,6 +36,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 @dataclass
 class _ScrewLane:
     key: str
@@ -562,6 +571,93 @@ class _RigidScrewJointPitchVerifier:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        travels = snapshot.get("travel_history", {})
+        if isinstance(travels, dict):
+            fine = _last_float(travels.get("fine_pitch", []))
+            coarse = _last_float(travels.get("coarse_pitch", []))
+            if fine is not None and coarse is not None:
+                return abs(coarse - fine)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            fine_metrics = metrics.get("fine_pitch", {})
+            coarse_metrics = metrics.get("coarse_pitch", {})
+            if isinstance(fine_metrics, dict) and isinstance(coarse_metrics, dict):
+                try:
+                    return abs(
+                        float(coarse_metrics.get("axial_travel", 0.0))
+                        - float(fine_metrics.get("axial_travel", 0.0))
+                    )
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 0.05:
+            return 1.0
+
+        travels = snapshot.get("travel_history", {})
+        if isinstance(travels, dict):
+            zero = _last_float(travels.get("zero_pitch", []))
+            fine = _last_float(travels.get("fine_pitch", []))
+            if zero is not None and fine is not None:
+                if abs(zero) <= 0.01 and abs(fine) >= 0.08:
+                    return 1.0
+
+        angles = snapshot.get("angle_history", {})
+        if isinstance(angles, dict):
+            fine_angle = _last_float(angles.get("fine_pitch", []))
+            reverse_angle = _last_float(angles.get("reverse_pitch", []))
+            if fine_angle is not None and reverse_angle is not None:
+                if fine_angle <= -0.25 and reverse_angle >= 0.25:
+                    return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                zero_metrics = metrics.get("zero_pitch", {})
+                fine_metrics = metrics.get("fine_pitch", {})
+                reverse_metrics = metrics.get("reverse_pitch", {})
+                coarse_metrics = metrics.get("coarse_pitch", {})
+
+                if isinstance(fine_metrics, dict) and isinstance(
+                    coarse_metrics, dict
+                ):
+                    if (
+                        abs(
+                            float(coarse_metrics.get("axial_travel", 0.0))
+                            - float(fine_metrics.get("axial_travel", 0.0))
+                        )
+                        >= 0.05
+                    ):
+                        return 1.0
+
+                if isinstance(zero_metrics, dict) and isinstance(fine_metrics, dict):
+                    if (
+                        abs(float(zero_metrics.get("axial_travel", 0.0))) <= 0.01
+                        and abs(float(fine_metrics.get("axial_travel", 0.0)))
+                        >= 0.08
+                    ):
+                        return 1.0
+
+                if isinstance(fine_metrics, dict) and isinstance(
+                    reverse_metrics, dict
+                ):
+                    if (
+                        float(fine_metrics.get("angle", 0.0)) <= -0.25
+                        and float(reverse_metrics.get("angle", 0.0)) >= 0.25
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.executor_index = max(
@@ -691,6 +787,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: verifier.capture_metrics,
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Coarse/fine travel gap",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
         },
     )
 
