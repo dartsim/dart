@@ -138,6 +138,8 @@ std::vector<cuda::PointTriangleCcdLineSearchPair> makeFixture()
   const Eigen::Vector3d c(0.0, 1.0, 0.0);
   return {
       makePair({0.0, 0.0, 0.2}, {0.0, 0.0, -0.2}, a, b, c),
+      makePair({0.0, 0.0, -0.2}, {0.0, 0.0, 0.2}, a, b, c),
+      makePair({0.0, 0.0, -0.2}, {0.0, 0.0, 0.2}, a, c, b),
       makePair({0.25, 0.0, 0.2}, {0.25, 0.0, 0.1}, a, b, c),
       makePair({2.0, 0.0, 0.2}, {2.0, 0.0, -0.2}, a, b, c),
       makePair({0.0, 0.0, 0.3}, {0.0, 0.0, -0.1}, a, b, c),
@@ -197,15 +199,20 @@ TEST(CcdLineSearchCuda, MatchesCpuPointTriangleStepBounds)
   ASSERT_EQ(result.stepBounds.size(), pairs.size());
   ASSERT_EQ(result.hits.size(), pairs.size());
   ASSERT_EQ(result.indeterminate.size(), pairs.size());
-  EXPECT_EQ(result.hitCount, 2u);
   EXPECT_LT(result.minStepBound, 1.0);
 
+  std::size_t expectedHits = 0;
   for (std::size_t i = 0; i < pairs.size(); ++i) {
     const auto expected = cpuResult(pairs[i], options);
+    if (expected.hit) {
+      ++expectedHits;
+    }
     EXPECT_EQ(result.hits[i] != 0u, expected.hit) << i;
     EXPECT_EQ(result.indeterminate[i] != 0u, expected.indeterminate) << i;
     EXPECT_NEAR(result.stepBounds[i], expected.stepBound, 1e-8) << i;
   }
+  EXPECT_EQ(result.hitCount, expectedHits);
+  EXPECT_NEAR(result.stepBounds[1], result.stepBounds[2], 1e-12);
 }
 
 //==============================================================================

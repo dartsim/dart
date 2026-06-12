@@ -201,8 +201,9 @@ __global__ void pointTriangleCcdLineSearchKernel(
   const double signedEnd = dot(p1 - a, normal) / normalNorm;
   const double threshold = fmax(0.0, minSeparation);
   const double effectiveTolerance = fmax(0.0, tolerance);
+  const double effectiveThreshold = threshold + effectiveTolerance;
 
-  if (signedStart <= threshold + effectiveTolerance) {
+  if (fabs(signedStart) <= effectiveThreshold) {
     if (pointInTriangle(p0, a, b, c)) {
       hits[index] = 1u;
       stepBounds[index] = 0.0;
@@ -210,16 +211,30 @@ __global__ void pointTriangleCcdLineSearchKernel(
     return;
   }
 
-  if (signedEnd > threshold + effectiveTolerance) {
+  const bool startsAbove = signedStart > effectiveThreshold;
+  const bool startsBelow = signedStart < -effectiveThreshold;
+  const bool endsAbove = signedEnd > effectiveThreshold;
+  const bool endsBelow = signedEnd < -effectiveThreshold;
+  if ((startsAbove && endsAbove) || (startsBelow && endsBelow)) {
     return;
   }
 
-  const double denom = signedStart - signedEnd;
-  if (denom <= 0.0) {
+  double alpha = 1.0;
+  if (startsAbove) {
+    const double denom = signedStart - signedEnd;
+    if (denom <= 0.0) {
+      return;
+    }
+    alpha = (signedStart - threshold) / denom;
+  } else if (startsBelow) {
+    const double denom = signedEnd - signedStart;
+    if (denom <= 0.0) {
+      return;
+    }
+    alpha = (-threshold - signedStart) / denom;
+  } else {
     return;
   }
-
-  const double alpha = (signedStart - threshold) / denom;
   if (!(alpha >= 0.0 && alpha <= 1.0)) {
     return;
   }

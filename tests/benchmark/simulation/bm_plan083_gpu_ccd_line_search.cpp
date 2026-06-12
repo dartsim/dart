@@ -157,8 +157,13 @@ CcdFixture makeCcdFixture(const int pairCount)
     const double x = static_cast<double>((i % 8) - 4) * 0.05;
     const double y = static_cast<double>(((i / 8) % 8) - 4) * 0.05;
     const bool hit = (i % 4) != 0;
-    const double endZ = hit ? -0.2 : 0.1;
-    fixture.pairs.push_back(makePair({x, y, 0.2}, {x, y, endZ}, a, b, c));
+    const double startZ = (i % 8) < 4 ? 0.2 : -0.2;
+    const double endZ = hit ? -startZ : 0.5 * startZ;
+    if ((i % 2) == 0) {
+      fixture.pairs.push_back(makePair({x, y, startZ}, {x, y, endZ}, a, b, c));
+    } else {
+      fixture.pairs.push_back(makePair({x, y, startZ}, {x, y, endZ}, a, c, b));
+    }
   }
 
   for (const auto& pair : fixture.pairs) {
