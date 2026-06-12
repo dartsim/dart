@@ -329,6 +329,28 @@ def rigid_workflow_packet_capture_specs() -> (
     return RIGID_WORKFLOW_PACKET_CAPTURE_SPECS
 
 
+def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
+    python_dir = _repo_root() / "python"
+    if str(python_dir) not in sys.path:
+        sys.path.append(str(python_dir))
+    try:
+        from examples.demos.runner import RIGID_VISUAL_WORKFLOW_GUIDES
+    except Exception:
+        return {}
+
+    guidance: dict[str, dict[str, object]] = {}
+    for scene_id, guide in RIGID_VISUAL_WORKFLOW_GUIDES.items():
+        guidance[str(scene_id)] = {
+            "workflow_label": guide.label,
+            "user_question": guide.question,
+            "try_first": guide.try_first,
+            "inspect": list(guide.inspect),
+            "healthy_signal": guide.healthy_signal,
+            "scope": guide.scope,
+        }
+    return guidance
+
+
 def _safe_stem(value: str) -> str:
     safe = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in value)
     return safe or "scene"
@@ -766,6 +788,7 @@ def _workflow_plan_entries(
     )
     count = len(specs)
     start_row, end_row = _workflow_row_bounds(args, count)
+    guidance_by_scene = _rigid_workflow_guidance_by_scene()
     for order, spec in enumerate(specs, start=1):
         if order < start_row or order > end_row:
             continue
@@ -794,6 +817,8 @@ def _workflow_plan_entries(
                 "status": "planned",
             }
         )
+        if workflow_group == "numbered":
+            entries[-1].update(guidance_by_scene.get(scene, {}))
     return entries
 
 
@@ -930,6 +955,26 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
         ),
         _workflow_detail("ui", "docked" if capture.get("show_ui") else "headless"),
     ]
+    workflow_label = capture.get("workflow_label")
+    if isinstance(workflow_label, str) and workflow_label:
+        details.insert(0, _workflow_detail("role", workflow_label))
+    user_question = capture.get("user_question")
+    if isinstance(user_question, str) and user_question:
+        details.append(_workflow_detail("question", user_question))
+    try_first = capture.get("try_first")
+    if isinstance(try_first, str) and try_first:
+        details.append(_workflow_detail("try first", try_first))
+    inspect = capture.get("inspect")
+    if isinstance(inspect, list) and inspect:
+        details.append(
+            _workflow_detail("inspect", " / ".join(str(item) for item in inspect))
+        )
+    healthy_signal = capture.get("healthy_signal")
+    if isinstance(healthy_signal, str) and healthy_signal:
+        details.append(_workflow_detail("healthy", healthy_signal))
+    scope = capture.get("scope")
+    if isinstance(scope, str) and scope:
+        details.append(_workflow_detail("scope", scope))
     return_code = capture.get("return_code")
     if return_code is not None:
         details.append(_workflow_detail("return code", return_code))

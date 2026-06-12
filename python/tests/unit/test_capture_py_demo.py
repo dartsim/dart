@@ -328,12 +328,21 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["captures"][0]["command"].startswith(
         "pixi run py-demo-capture -- --scene rigid_body"
     )
+    assert manifest["captures"][0]["workflow_label"] == "Baseline"
+    assert (
+        manifest["captures"][0]["user_question"]
+        == "What is the baseline DART 7 World rigid-body path?"
+    )
+    assert "Solver/material controls" in manifest["captures"][0]["inspect"]
+    assert manifest["captures"][1]["workflow_label"] == "Solver family"
     assert manifest["captures"][0]["manifest"].endswith(
         "scenes/01_rigid_body/manifest.json"
     )
     review_index = pathlib.Path(manifest["artifacts"]["review_index"])
     review_html = review_index.read_text()
     assert "DART rigid workflow review index" in review_html
+    assert "What is the baseline DART 7 World rigid-body path?" in review_html
+    assert "Healthy: contacts settle" in review_html
     assert "rigid_solver_compare" in review_html
     assert "scenes/01_rigid_body/manifest.json" in review_html
 

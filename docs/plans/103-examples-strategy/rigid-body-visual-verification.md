@@ -61,7 +61,8 @@ comparison axis and held-fixed controls directly in both the panel and capture
 metrics.
 The workflow capture helper also writes `review_index.html` beside the
 top-level manifest. That static contact sheet links every numbered row's
-manifest, screenshot, frame directory, command, and comparison/metrics summary
+manifest, screenshot, frame directory, command, maintained user question,
+try-first guidance, healthy signal, scope note, and comparison/metrics summary
 so a reviewer can scan all 36 captures without opening each scene folder.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as

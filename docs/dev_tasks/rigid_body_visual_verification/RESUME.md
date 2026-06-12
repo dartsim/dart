@@ -3,17 +3,18 @@
 ## Current Handoff (2026-06-12)
 
 This checkpoint resumes after the earlier stop-state hand-off and captures the
-workflow row-range rerun helper as local work.
+workflow review-index guidance helper as local work.
 
 Expected repository state after this checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is four local commits ahead of origin unless a future session has
+- The branch is five local commits ahead of origin unless a future session has
   pushed it:
   - `1e3fd63bc04 Route rigid related search directly`.
   - `Capture rigid related evidence bundle`.
   - `Capture rigid IPC packet bundle`.
   - `Resume rigid workflow captures by row`.
+  - `Annotate rigid workflow review index`.
 - There is no PR associated with this branch at checkpoint time.
 - The latest checkpoint has not been pushed. Do not push without explicit
   maintainer/user approval in that session.
@@ -87,6 +88,12 @@ The current continuation adds workflow row-range selection:
 captures or dry-runs only the selected absolute workflow rows while keeping
 their original row labels and `scenes/NN_<scene>` output directories.
 
+The latest continuation enriches the generated workflow evidence packet:
+numbered rigid workflow entries now carry the same row guidance as the
+in-viewer `Rigid Workflow` panel, including role label, user question,
+try-first action, inspect signals, healthy signal, and scope note in both the
+manifest and `review_index.html`.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -98,17 +105,18 @@ Current snapshot:
 - Latest pushed commits:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current branch is expected to be four local commits ahead of origin after this
+- Current branch is expected to be five local commits ahead of origin after this
   checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
   `Capture rigid related evidence bundle`, `Capture rigid IPC packet bundle`,
-  and `Resume rigid workflow captures by row`.
+  `Resume rigid workflow captures by row`, and
+  `Annotate rigid workflow review index`.
 - The latest checkpoint is local only and should not be pushed without explicit
   maintainer/user approval in the next active session.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and confirm whether the local checkpoint has been
-pushed or is still ahead of origin. Expect four unpushed commits unless a
+pushed or is still ahead of origin. Expect five unpushed commits unless a
 future session has already handled them. Do not push without explicit approval
 in that session, and rerun `pixi run lint` before committing further changes.
 
@@ -161,6 +169,9 @@ in that session, and rerun `pixi run lint` before committing further changes.
   packet fails or needs manual inspection. It keeps absolute row labels and
   output directories, so selected row 46 still appears as `46/46` and writes to
   `scenes/46_rigid_ipc_stack_packet`.
+- The review index now mirrors the numbered rows' in-viewer guidance so the
+  capture packet answers "what am I looking at?" without opening the live GUI
+  or sidecar table.
 
 ## How To Resume
 
@@ -293,3 +304,17 @@ The focused pytest reported `11 passed`. The public dry-run completed with
 one selected row-46 command, the manifest reported `capture_count=1`,
 `workflow_total_count=46`, selected row order/count `46/46`, and the generated
 review index contained the absolute `46/46 rigid_ipc_stack_packet` row.
+
+Current review-index guidance validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_guidance_dry_run
+jq -r '.captures[0].workflow_label, .captures[0].user_question, .captures[0].try_first, .captures[0].healthy_signal, .captures[0].scope' /tmp/dart_capture_rigid_workflow_guidance_dry_run/manifest.json
+rg -n "How do the rigid method families differ visually|Healthy: wall clearance|Generic thin-wall comparison" /tmp/dart_capture_rigid_workflow_guidance_dry_run/review_index.html
+```
+
+The focused pytest reported `11 passed`. The public row-15 dry-run completed,
+the manifest reported the `Solver family` role plus the maintained user
+question, try-first guidance, healthy signal, and scope note, and the generated
+review index contained the same solver-family guidance beside the row card.
