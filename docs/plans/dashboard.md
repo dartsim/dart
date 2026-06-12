@@ -302,15 +302,15 @@ its own line so status updates remain git-history friendly.
   parity, scalar barrier/friction local-kernel parity plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
   tangent-stencil parity, point-triangle/point-point/point-edge primitive
-  barrier-Hessian parity, point-triangle primitive barrier-Hessian
-  PSD-projection parity, reduced diagonal assembly/solve parity, reduced hanging-bridge scene
-  state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets, and an
-  ABD/FEM coupled micro-solve packet. It still
+  barrier-Hessian parity, point-triangle/point-point/point-edge primitive
+  barrier-Hessian PSD-projection parity, reduced diagonal assembly/solve
+  parity, reduced hanging-bridge scene state-batch CPU/GPU parity and speedup,
+  reduced ABD complex-geometry packets, and an ABD/FEM coupled micro-solve
+  packet. It still
   keeps broad-phase/runtime GPU candidate construction, rigid curved
-  trajectories, broader sparse Hessian assembly, remaining PSD-coupled rows, off-diagonal sparse
-  assembly, global factorization, GPU `World::step`, paper-scale assets, full
-  runtime affine/FEM coupling, and accepted reference timings as future
-  evidence. The
+  trajectories, broader sparse Hessian assembly, off-diagonal sparse assembly,
+  global factorization, GPU `World::step`, paper-scale assets, full runtime
+  affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
   direction before deletion.

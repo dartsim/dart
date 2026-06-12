@@ -1002,6 +1002,16 @@ double maxOutputError(
   return maxError;
 }
 
+double maxPsdProjectedHessianError(
+    const CpuPointPointBarrierResult& expected,
+    const cuda::PointPointBarrierHessianResult& actual)
+{
+  std::vector<double> expectedProjected = expected.barrierHessians;
+  cuda::projectSymmetricBlocksToPsdReference(
+      expectedProjected, 6, expected.squaredDistances.size());
+  return maxAbsDifference(expectedProjected, actual.barrierHessians);
+}
+
 double maxOutputError(
     const CpuPointEdgeBarrierResult& expected,
     const cuda::PointEdgeBarrierHessianResult& actual)
@@ -1019,6 +1029,16 @@ double maxOutputError(
       maxError,
       maxAbsDifference(expected.barrierHessians, actual.barrierHessians));
   return maxError;
+}
+
+double maxPsdProjectedHessianError(
+    const CpuPointEdgeBarrierResult& expected,
+    const cuda::PointEdgeBarrierHessianResult& actual)
+{
+  std::vector<double> expectedProjected = expected.barrierHessians;
+  cuda::projectSymmetricBlocksToPsdReference(
+      expectedProjected, 9, expected.squaredDistances.size());
+  return maxAbsDifference(expectedProjected, actual.barrierHessians);
 }
 
 double maxOutputError(
@@ -1459,6 +1479,65 @@ BENCHMARK(BM_Plan083PointPointBarrierHessianCuda)
     ->UseRealTime();
 
 //==============================================================================
+static void BM_Plan083PointPointBarrierHessianPsdCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointPointBarrierFixture(static_cast<int>(state.range(0)));
+  std::vector<double> projected;
+
+  for (auto _ : state) {
+    projected = fixture.cpu.barrierHessians;
+    cuda::projectSymmetricBlocksToPsdReference(
+        projected, 6, fixture.inputs.size());
+    benchmark::DoNotOptimize(projected.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointPointBarrierHessianPsdCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointPointBarrierHessianPsdCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointPointBarrierFixture(static_cast<int>(state.range(0)));
+  cuda::PointPointBarrierHessianResult result;
+  double psdProjectionNs = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointPointBarrierHessiansCuda(fixture.inputs, result);
+    const auto psdStart = Clock::now();
+    cuda::projectSymmetricBlocksToPsdCuda(
+        result.barrierHessians, 6, fixture.inputs.size());
+    const auto psdEnd = Clock::now();
+    psdProjectionNs = elapsedNs(psdStart, psdEnd);
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(
+      state, fixture, maxPsdProjectedHessianError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["psd_projection_ns"] = psdProjectionNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointPointBarrierHessianPsdCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
 static void BM_Plan083PointEdgeBarrierHessianCpu(benchmark::State& state)
 {
   const auto fixture
@@ -1505,6 +1584,65 @@ static void BM_Plan083PointEdgeBarrierHessianCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083PointEdgeBarrierHessianCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointEdgeBarrierHessianPsdCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makePointEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  std::vector<double> projected;
+
+  for (auto _ : state) {
+    projected = fixture.cpu.barrierHessians;
+    cuda::projectSymmetricBlocksToPsdReference(
+        projected, 9, fixture.inputs.size());
+    benchmark::DoNotOptimize(projected.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083PointEdgeBarrierHessianPsdCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083PointEdgeBarrierHessianPsdCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makePointEdgeBarrierFixture(static_cast<int>(state.range(0)));
+  cuda::PointEdgeBarrierHessianResult result;
+  double psdProjectionNs = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointEdgeBarrierHessiansCuda(fixture.inputs, result);
+    const auto psdStart = Clock::now();
+    cuda::projectSymmetricBlocksToPsdCuda(
+        result.barrierHessians, 9, fixture.inputs.size());
+    const auto psdEnd = Clock::now();
+    psdProjectionNs = elapsedNs(psdStart, psdEnd);
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(
+      state, fixture, maxPsdProjectedHessianError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["psd_projection_ns"] = psdProjectionNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083PointEdgeBarrierHessianPsdCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

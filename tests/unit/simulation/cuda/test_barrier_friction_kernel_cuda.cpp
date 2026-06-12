@@ -712,6 +712,47 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointPointBarrierHessians)
 }
 
 //==============================================================================
+TEST(BarrierFrictionKernelCuda, ProjectsPointPointBarrierHessiansToPsd)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto inputs = makePointPointBarrierFixture();
+  for (int i = 0; i < 4096; ++i) {
+    inputs.push_back(makeGeneratedPointPointBarrierInput(i));
+  }
+
+  std::vector<double> expected(36 * inputs.size(), 0.0);
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::pointPointBarrier(
+        readVec3(input.pointA),
+        readVec3(input.pointB),
+        input.squaredActivationDistance,
+        input.stiffness);
+    for (int row = 0; row < 6; ++row) {
+      for (int col = 0; col < 6; ++col) {
+        expected[36 * i + static_cast<std::size_t>(6 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+  cuda::projectSymmetricBlocksToPsdReference(expected, 6, inputs.size());
+
+  cuda::PointPointBarrierHessianResult result;
+  cuda::evaluatePointPointBarrierHessiansCuda(inputs, result);
+  cuda::projectSymmetricBlocksToPsdCuda(
+      result.barrierHessians, 6, inputs.size());
+
+  ASSERT_EQ(result.barrierHessians.size(), expected.size());
+  for (std::size_t entry = 0; entry < expected.size(); ++entry) {
+    EXPECT_NEAR(result.barrierHessians[entry], expected[entry], 1e-7)
+        << "entry=" << entry;
+  }
+}
+
+//==============================================================================
 TEST(BarrierFrictionKernelCuda, MatchesCpuPointEdgeBarrierHessians)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -766,6 +807,48 @@ TEST(BarrierFrictionKernelCuda, MatchesCpuPointEdgeBarrierHessians)
     }
   }
   EXPECT_EQ(result.activeBarrierCount, activeCount);
+}
+
+//==============================================================================
+TEST(BarrierFrictionKernelCuda, ProjectsPointEdgeBarrierHessiansToPsd)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto inputs = makePointEdgeBarrierFixture();
+  for (int i = 0; i < 4096; ++i) {
+    inputs.push_back(makeGeneratedPointEdgeBarrierInput(i));
+  }
+
+  std::vector<double> expected(81 * inputs.size(), 0.0);
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    const auto& input = inputs[i];
+    const auto barrier = nb::pointEdgeBarrier(
+        readVec3(input.point),
+        readVec3(input.edgeA),
+        readVec3(input.edgeB),
+        input.squaredActivationDistance,
+        input.stiffness);
+    for (int row = 0; row < 9; ++row) {
+      for (int col = 0; col < 9; ++col) {
+        expected[81 * i + static_cast<std::size_t>(9 * row + col)]
+            = barrier.hessian(row, col);
+      }
+    }
+  }
+  cuda::projectSymmetricBlocksToPsdReference(expected, 9, inputs.size());
+
+  cuda::PointEdgeBarrierHessianResult result;
+  cuda::evaluatePointEdgeBarrierHessiansCuda(inputs, result);
+  cuda::projectSymmetricBlocksToPsdCuda(
+      result.barrierHessians, 9, inputs.size());
+
+  ASSERT_EQ(result.barrierHessians.size(), expected.size());
+  for (std::size_t entry = 0; entry < expected.size(); ++entry) {
+    EXPECT_NEAR(result.barrierHessians[entry], expected[entry], 1e-7)
+        << "entry=" << entry;
+  }
 }
 
 //==============================================================================
