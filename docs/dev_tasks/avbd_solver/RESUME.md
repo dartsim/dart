@@ -1,5 +1,107 @@
 # Resume: AVBD Solver
 
+## Previous Explicit Hand-Off Stop (2026-06-12)
+
+User directive: stop working further, only ensure the hand-off docs, and then
+literally stop. Do not continue implementation, verification, hosted CI work,
+branch cleanup, PR mutation, push, merge, review-comment handling, or stash
+cleanup from this checkpoint unless a future user request explicitly asks for
+that specific action. This section is a hand-off snapshot only and supersedes
+older stop-handoff snapshots lower in this file.
+
+North star if work is explicitly resumed later: continue PLAN-104 AVBD toward
+source-shaped articulated rigid and deformable row coverage with evidence
+against the native source corpus. Keep claims narrow. The recent breakable
+joint/motor packets are benchmark-only scale evidence for existing public
+fixed/spherical joint and revolute/prismatic motor row families; they are not a
+broad motor lifecycle corpus, broad visual breakable-wall/fracture corpus,
+CPU-win, GPU parity, source-demo parity, or same-hardware paper-number claim.
+
+Current checkout snapshot for this docs-only hand-off:
+
+- Branch: `avbd/source-row-extraction-precheck`.
+- Upstream: `origin/avbd/source-row-extraction-precheck`.
+- Local HEAD: `0952636627d Add AVBD breakable motor scale packet`.
+- Status before this docs edit: clean, ahead of upstream by 21 commits.
+- Current branch has no associated GitHub PR.
+- No fresh lint/build/test/CI, `git diff --check`, hosted rerun, PR refresh
+  beyond a read-only `gh pr status`, push, branch deletion, merge, or stash
+  operation was performed for this hand-off. The user explicitly asked to stop
+  after the hand-off docs.
+
+Local-only commits above `origin/avbd/source-row-extraction-precheck`, newest
+first:
+
+- `0952636627d Add AVBD breakable motor scale packet`
+- `95251eec1c3 Add AVBD breakable joint scale packet`
+- `1c2059c4c08 Add AVBD current-pose tiny motor persistence coverage`
+- `8c59eb9f203 Record AVBD final stop handoff`
+- `ba56bd46517 Add AVBD high-ratio sweep stability plot`
+- `87a7825b1dc Add AVBD high-ratio iteration sweep packet`
+- `702e6021676 Record AVBD final handoff state`
+- `8e12c559938 Add AVBD high-ratio iteration sweep benchmark`
+- `3732c21233d Record AVBD current-state gap audit`
+- `30c7e8f6239 Add AVBD direct fixed movable reset coverage`
+- `33247979e31 Add AVBD direct spherical movable reset coverage`
+- `3aa6d5ab3f4 Add AVBD direct prismatic movable reset coverage`
+- `42088402003 Record AVBD critical handoff state`
+- `456b931a57b Broaden AVBD articulated reset axis coverage`
+- `6e1492826c7 Broaden AVBD private motor persistence axis coverage`
+- `68af00b8817 Record AVBD stop handoff snapshot`
+- `533dc490d87 Reuse AVBD rigid motor row scratch`
+- `77404f63496 Avoid contact-manifold row builder heap scratch for small AVBD inputs`
+- `04a369222a7 Record AVBD literal stop handoff`
+- `13604d8b8b5 Reuse AVBD distance spring row scratch`
+- `51eb9b48e08 Record AVBD angular motor validation evidence`
+
+Current local branch inventory:
+
+| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                          |
+| -------------------------------------- | --------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `0952636627d`         | Current consolidated continuation branch; ahead of origin by 21 commits before this docs edit.                              |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | PR #2977 branch; read-only status showed one failing visible check and up-to-date. Do not mutate without explicit approval. |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch reported merged by the user; cleanup still requires explicit approval.                                     |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint; keep until the split AVBD work is safely landed or explicitly retired.                       |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                                                   |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local main matched the last checked origin/main snapshot; refresh before using it as a base.                                |
+
+Current local stash inventory. Do not apply or drop these by default:
+
+- `stash@{0}` on `avbd/source-row-extraction-precheck`:
+  `codex-pr2977-switch-preserve-extraction-precheck-wip`.
+- `stash@{1}` on `avbd/source-row-extraction-precheck`:
+  `codex-avbd-normalize-fastpath-wip`.
+- `stash@{2}` through `stash@{7}` are older
+  `feature/avbd-articulated-masked-rows` pre-main-merge recovery stashes.
+
+Read-only GitHub status snapshot for AVBD:
+
+- Current branch: no associated PR.
+- PR #2977, `avbd/source-row-perf-slice`: open, up-to-date, with one visible
+  failing check at the time of the read-only snapshot. Refresh before acting.
+- User-reported merged PRs during the broader AVBD split include #2967, #2968,
+  #2969, #2973, and #2975. Do not mutate branches or GitHub state based only on
+  this hand-off note; refresh first if the user explicitly asks to resume that
+  work.
+
+Stopped plan: no implementation should continue from this checkpoint. If a
+future user explicitly asks to resume implementation, start with a fresh
+read-only audit of the genuinely open PLAN-104 gaps before editing. The next
+likely gaps remain broader visual breakable-wall/fracture corpus coverage,
+rigid contact persistence completeness, and source-demo CPU/GPU parity. Do not
+spend more work on source-row overhead cleanup unless a new audit identifies a
+specific blocker.
+
+Fresh-session recovery commands:
+
+```bash
+git switch avbd/source-row-extraction-precheck
+git status --short --branch
+git log --oneline --decorate origin/avbd/source-row-extraction-precheck..HEAD
+git branch -vv
+git stash list
+```
+
 ## Latest Resumed Checkpoint (2026-06-12)
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and

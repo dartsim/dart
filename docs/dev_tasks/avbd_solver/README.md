@@ -9,6 +9,21 @@ Corpus matrix:
 
 ## Current Status
 
+- Previous explicit hand-off stop (2026-06-12): the user explicitly directed this
+  session to stop working further, only ensure the hand-off docs, and then
+  literally stop. Do not continue implementation, validation, hosted CI work,
+  branch cleanup, PR mutation, push, merge, or review-comment handling unless a
+  future user request explicitly asks for that specific action. The active
+  checkout for this docs-only hand-off is
+  `avbd/source-row-extraction-precheck` at local HEAD `0952636627d`
+  (`Add AVBD breakable motor scale packet`), tracking
+  `origin/avbd/source-row-extraction-precheck` and ahead by 21 local commits.
+  This supersedes older stop-handoff snapshots below that captured earlier
+  local heads. No fresh lint/build/test/CI, `git diff --check`, push, branch
+  cleanup, merge, stash operation, or PR mutation was performed for this
+  hand-off by explicit user direction. `RESUME.md` is the source of truth for
+  the current branch inventory, stash inventory, local-only commits, PR caveats,
+  stopped plan, and future recovery commands.
 - Latest resumed checkpoint (2026-06-12): the public articulated breakable
   motor benchmark surface now has a validated scale packet,
   [`avbd-breakable-motor-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-motor-scale-packet.json),
