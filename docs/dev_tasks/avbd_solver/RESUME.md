@@ -8,9 +8,11 @@ count source-row overhead cleanup as a CPU-win, GPU, or paper-number gate; those
 gates require dedicated corpus evidence.
 
 Historical stop note: the previous session was explicitly redirected to
-hand-off only and requested no further verification. The branch has since been
-resumed for a narrow source-row prepare-overhead cleanup; use the validation
-section below for the current evidence.
+hand-off only and requested no further verification. The branch was then
+resumed for a narrow source-row prepare-overhead cleanup, and the user has now
+redirected the session back to hand-off only again. Use the validation section
+below for the already-recorded evidence, but do not treat this final hand-off
+docs update as new lint/build/test/CI evidence.
 
 Current stop state:
 
@@ -21,30 +23,35 @@ Current stop state:
   handoff docs, and the formerly stash-only quaternion normalization fast path.
   Do not require a fresh session to inspect or apply local stashes before
   continuing. The hand-off action for this stop is to keep this as the one
-  consolidated branch and push the final docs/code hand-off commit there.
+  consolidated branch, commit this docs-only hand-off update there, push it to
+  `origin/avbd/source-row-extraction-precheck`, and stop.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
   It has been pushed and includes the merge from `origin/main` at
   `7d05d7b9ea7`.
-- #2977 is open, non-draft, milestone `DART 7.0`, base `main`, and currently
-  `BLOCKED` only because required hosted checks are queued or running. As of
-  the latest check on 2026-06-11 local time / 2026-06-12 UTC, CUDA Build,
-  ReadTheDocs, CI Lint, Alt Linux repro, macOS arm64 tests, Python and C++
-  CodeQL, Windows wheels, and multiple Linux jobs have passed; Linux Debug,
-  Linux Release, Coverage Debug, and Windows Release Tests are still running.
-  No new compiler, test, or CodeQL failure is visible on the current head.
+- #2977 was open, non-draft, milestone `DART 7.0`, base `main`, and `BLOCKED`
+  only because required hosted checks were queued or running at the last
+  read-only check before the final no-verification stop. As of that check on
+  2026-06-11 local time / 2026-06-12 UTC, CUDA Build, ReadTheDocs, CI Lint, Alt
+  Linux repro, macOS arm64 tests, Python and C++ CodeQL, Windows wheels, and
+  multiple Linux jobs had passed; Linux Debug, Linux Release, Coverage Debug,
+  and Windows Release Tests were still running. No new compiler, test, or
+  CodeQL failure was visible on that head. This status was not refreshed after
+  the final stop request.
 - The active local checkout is `avbd/source-row-extraction-precheck`. Its top
-  local commit is `Trim AVBD contact row assignment overhead`, containing the
+  local code commit before this docs-only hand-off update is
+  `8f6fe0ff632 Avoid AVBD scratch reserve without AVBD rows`, containing the
   #2977 parent changes, the extraction-precheck changes, the quaternion
   normalization fast path/test that previously lived only in `stash@{1}`, the
-  latest contact row-assignment cleanup, and this hand-off update. This stacked
-  branch has merged `avbd/source-row-perf-slice`, including the #2977 follow-up
-  and latest `origin/main`; a pre-push `git fetch` over HTTPS plus
-  `git merge --no-ff FETCH_HEAD` reported `Already up to date` before the
-  previous handoff push. The branch should be pushed to
-  `origin/avbd/source-row-extraction-precheck` as the single fresh-session
-  resume branch.
+  contact row-assignment cleanup, and the latest prepare-stage AVBD scratch
+  reserve guard. Before this final docs edit, the branch was clean and ahead of
+  `origin/avbd/source-row-extraction-precheck` by that one commit. After this
+  docs-only hand-off commit is pushed, the branch head on origin is the single
+  fresh-session resume point.
+- No new feature work, lint, build, tests, benchmark, hosted CI refresh, or PR
+  mutation was intentionally performed after the final user stop request. The
+  only allowed action was this hand-off update plus the requested push.
 - Do not add unrelated commits to #2977 while it waits on hosted CI. If #2977
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.

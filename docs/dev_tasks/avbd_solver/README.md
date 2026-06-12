@@ -17,12 +17,16 @@ Corpus matrix:
   with focused rigid-block coverage. Local stashes may still exist as
   historical recovery points, but fresh work should not depend on them. PR
   #2977 (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open and
-  should only receive CI-fix commits if its hosted checks reveal a concrete
-  failure. `RESUME.md` is the detailed source of truth for the current plan,
-  branch inventory, validation, and branch-cleanup rules.
+  should only receive CI-fix commits if a fresh status refresh reveals a
+  concrete failure. `RESUME.md` is the detailed source of truth for the current
+  plan, branch inventory, validation, and branch-cleanup rules.
 - Critical handoff stop: the user redirected the session to hand-off only with
-  no further verification. Do not treat this final docs update as new
-  lint/build/test evidence; use the previously recorded validation in
+  no further verification. Before this final docs edit, the current branch was
+  clean and ahead of `origin/avbd/source-row-extraction-precheck` by
+  `8f6fe0ff632 Avoid AVBD scratch reserve without AVBD rows`; this docs-only
+  handoff is the final requested action and should be pushed to the same
+  consolidated branch. Do not treat this final docs update as new
+  lint/build/test/CI evidence; use the previously recorded validation in
   `RESUME.md`, refresh PR #2977 status in a fresh session, and resume from the
   consolidated branch above.
 - Latest resumed follow-up: `RigidBodyContactStage::prepare()` now reserves
