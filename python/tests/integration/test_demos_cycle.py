@@ -1597,10 +1597,33 @@ def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None
     assert controller._energy_history
     assert controller._contact_history
     assert np.isfinite([float(value) for value in controller._step_ms_history]).all()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "rigid_body"
+    assert capture_metrics["solver"] == controller._solver_label()
+    assert capture_metrics["solver_enum"] == controller._solver().name
+    assert capture_metrics["dynamic_body_count"] == pytest.approx(
+        float(len(controller.dynamic_bodies))
+    )
+    assert capture_metrics["controls"]["friction"] == pytest.approx(0.42)
+    assert capture_metrics["controls"]["restitution"] == pytest.approx(0.31)
+    assert capture_metrics["metrics"]["max_speed"] == pytest.approx(
+        metrics["max_speed"]
+    )
+    assert capture_metrics["metrics"]["contact_count"] == pytest.approx(
+        metrics["contact_count"]
+    )
+    assert capture_metrics["history"]["samples"] == pytest.approx(
+        float(len(controller._speed_history))
+    )
+    assert capture_metrics["history"]["max_contacts"] >= 1.0
 
     controller.reset(clear_replay=False)
     assert controller.world.time == pytest.approx(0.0)
     assert len(controller._speed_history) == 1
+    reset_capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert reset_capture_metrics["world_time"] == pytest.approx(0.0)
+    assert reset_capture_metrics["history"]["samples"] == pytest.approx(1.0)
     reset_positions = [
         np.asarray(state.body.translation, dtype=float).reshape(3)
         for state in controller._initial_states

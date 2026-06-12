@@ -2,47 +2,45 @@
 
 ## Current Handoff Snapshot
 
-Current branch: `feature/rigid-body-gui-visual-verification`. The branch was
-merged with latest `origin/main`, pushed through
-`origin/feature/rigid-body-gui-visual-verification`, and this final handoff
-slice is expected to be pushed before the session stops.
+Current branch: `feature/rigid-body-gui-visual-verification`. This handoff
+captures the baseline capture-metrics slice prepared for the explicit
+maintainer-approved push at the end of this session. If this file is read from
+`origin/feature/rigid-body-gui-visual-verification`, no additional push is
+needed for this slice.
 
-Current slice: solver/contact comparison capture metrics. The code changes are
-limited to:
+Current slice: baseline capture metrics. The code changes are limited to:
 
-- `python/examples/demos/scenes/rigid_solver_compare.py`
-- `python/examples/demos/scenes/rigid_contact_solver_compare.py`
+- `python/examples/demos/scenes/rigid_body.py`
 - `python/tests/integration/test_demos_cycle.py`
 - this task's handoff docs, the PLAN-103 sidecar, and `CHANGELOG.md`
 
-What changed: both comparison scenes now expose
-`SceneSetup.info["capture_metrics"]`. `rigid_solver_compare` exports row,
-solver family, executor, controls, case solver enums, world time, and x
-divergence; `rigid_contact_solver_compare` exports row, contact policy,
-executor, controls, case contact-method enums, world time, and pose divergence.
-The existing focused tests now assert those payloads, including case names and
-divergence maxima.
+What changed: the default `rigid_body` front door now exposes
+`SceneSetup.info["capture_metrics"]`. The payload exports row, solver label and
+enum, material controls, dynamic-body count, world time, current max
+speed/min-height/energy/contact/step diagnostics, and compact history ranges.
+The focused baseline test now asserts the payload before and after reset.
 
 Validation already run for this slice:
 
-- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy -q`
-  reported `2 passed`.
-- `pixi run py-demo-capture -- --scene rigid_solver_compare --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_solver_compare_metrics_1781223785`
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
+  reported `1 passed`.
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+  reported `4 passed`.
+- `pixi run py-demo-capture -- --scene rigid_body --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_body_metrics_1781224228`
   wrote a nonblank docked 960x540 screenshot, 23 PNG frames, and 24
-  scene-metrics events. Latest metrics had solver
-  `sequential_impulse_vs_ipc`, case solvers `SEQUENTIAL_IMPULSE`/`IPC`, and
-  max x-divergence `0.0012064618479162847`.
-- `pixi run py-demo-capture -- --scene rigid_contact_solver_compare --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_contact_solver_compare_metrics_1781223800`
-  wrote a nonblank docked 960x540 screenshot, 71 PNG frames, and 72
-  scene-metrics events. Latest metrics had contact policy
-  `sequential_impulse_vs_boxed_lcp`, case methods
-  `SEQUENTIAL_IMPULSE`/`BOXED_LCP`, and max pose divergence
-  `0.003909716491843896`.
+  scene-metrics events. Latest metrics had solver `Sequential impulse`, solver
+  enum `SEQUENTIAL_IMPULSE`, dynamic-body count `5.0`, max speed
+  `2.0129441124879746`, and min height `0.9956250000000001`.
+- `pixi run lint` passed.
+- Bounded `pixi run build` passed with `DART_PARALLEL_JOBS=4`.
+- `git diff --check` was clean.
 
-Immediate next step for a fresh session: verify `git status -sb` is clean and
-the branch is up to date with origin. If so, do not redo this capture-metrics
-slice; continue from the next bounded rigid visual-verification follow-up or PR
-review/CI triage after explicit maintainer approval.
+Immediate next step for a fresh session: verify `git status -sb` and inspect the
+branch tip on `origin/feature/rigid-body-gui-visual-verification`. If the
+baseline-metrics commit is present there, continue with the next implementation
+slice. The explorer-backed recommendation is to add capture metrics to row 18,
+`contact`, because its multibody-link drop/slide/pusher metrics are already
+JSON-friendly and high-value for users.
 
 ## Last Session Summary
 
@@ -910,6 +908,18 @@ methods. The focused guard reported `2 passed`. The real docked captures wrote
 24 and 72 scene-metrics events respectively, with nonblank 960x540 docked
 screenshots and manifest summaries for case enums, controls, executor, world
 time, and divergence histories.
+
+Fresh baseline capture-metrics follow-up on 2026-06-11: `rigid_body` now records
+the default first-run scene's solver/material controls, dynamic-body count,
+current speed/height/energy/contact/timing diagnostics, and history ranges in
+`py-demo-capture` manifests. The focused baseline guard reported `1 passed`, and
+the real docked capture wrote a nonblank 960x540 screenshot, 23 PNG frames, and
+24 scene-metrics events.
+
+The specialized-agent audit for the next slice ranked row 18 `contact` first,
+row 12 `rigid_contact_inspector` second, and row 5 `rigid_external_loads` third
+for capture-metrics follow-up value/risk. Prefer `contact` next unless PR/CI
+state or maintainer instruction changes the priority.
 
 ## How to Resume
 

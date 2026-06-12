@@ -153,7 +153,7 @@
     DART 7 rigid-body debugging path.
   - Upgraded the `rigid_body` front door with solver/material controls, an
     explicit reset path, force-drag, contact, energy, height, speed, step-timing,
-    and replay-control diagnostics.
+    replay-control diagnostics, and scene-owned capture metrics.
   - Added `rigid_joint_breakage` to Python `py-demos`, an AVBD-pinned fixed
     joint break-force row that shows broken state, connector color, offset
     error, payload speed, capture metrics, and an explicit reset lifecycle
@@ -190,9 +190,9 @@
   - Added scene-owned capture metrics to `py-demo-capture` manifests for
     Python demos that expose `SceneSetup.info["capture_metrics"]`, with a
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
-    manifest. The solver-comparison, contact-policy, step-diagnostics,
-    contact-scale budget, and rigid IPC stack packet rows use it to make capture
-    artifacts carry scene-owned physics/runtime evidence.
+    manifest. The baseline, solver-comparison, contact-policy,
+    step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
+    it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
     `Replay` panel. Scenes can now feed the saved-state scrubber a diagnostic
     signal and event markers without adding another panel; `rigid_solver_compare`

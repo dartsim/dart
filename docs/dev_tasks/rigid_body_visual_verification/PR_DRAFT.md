@@ -65,7 +65,8 @@
   diagnostics.
 - Adds scene-owned capture metrics to `py-demo-capture` manifests via
   `SceneSetup.info["capture_metrics"]`, including step-diagnostics,
-  contact-scale budget, solver comparison, contact-policy comparison,
+  contact-scale budget, baseline first-run diagnostics, solver comparison,
+  contact-policy comparison,
   fixed/breakage/one-DOF joint constraint errors, and stack-packet
   physics/runtime fields in `scene_metrics.jsonl` and `manifest.json`. The
   manifest summarizes the full event stream with first/latest events, per-key
@@ -80,6 +81,20 @@
 
 ## Testing
 
+- Latest baseline capture-metrics follow-up:
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
+    - `1 passed`
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q`
+    - `4 passed`
+  - `pixi run py-demo-capture -- --scene rigid_body --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_rigid_body_metrics_1781224228`
+    - nonblank 960x540 screenshot, docked-workspace detection, 23 PNG frames,
+      24 scene-metrics events, latest solver `Sequential impulse`, solver enum
+      `SEQUENTIAL_IMPULSE`, dynamic-body count `5.0`, max speed
+      `2.0129441124879746`, and minimum height `0.9956250000000001`
+  - `pixi run lint`
+    - passed
+  - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run build`
+    - passed
 - Latest solver/contact comparison capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_solver_compare_records_wall_response python/tests/integration/test_demos_cycle.py::test_rigid_contact_solver_compare_records_coupled_contact_policy -q`
     - `2 passed`

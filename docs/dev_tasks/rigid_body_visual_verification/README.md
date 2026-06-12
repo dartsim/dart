@@ -36,6 +36,11 @@
       after adding metrics for `rigid_step_diagnostics` and
       `rigid_contact_scale_budget`, and short real captures for both rows wrote
       eight scene-metrics events apiece.
+- [x] Baseline capture-metrics follow-up: the default `rigid_body` front door
+      now publishes solver, material controls, dynamic body count, world time,
+      current diagnostics, and history ranges through the same capture hook. The
+      focused baseline guard reported `1 passed`; the real docked capture wrote
+      24 scene-metrics events.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
       same capture hook so manifests preserve method-family/contact-policy case
@@ -146,8 +151,8 @@
       `NN/MM` row ids.
 - [x] Baseline-hardening slice: `rigid_body` now keeps the simple falling-body
       first run while exposing solver/material controls, explicit reset,
-      force-drag, contact, energy, height, speed, step-timing, and replay-control
-      diagnostics.
+      force-drag, contact, energy, height, speed, step-timing, replay-control
+      diagnostics, and scene-owned capture metrics.
 - [x] Body-mode slice: `rigid_body_modes` compares dynamic, static, and
       kinematic rigid-body mode semantics in one contact-free World, with
       shared solver/executor controls, gravity/force controls, prescribed-path
@@ -254,7 +259,7 @@
 - [x] Visual smoke: `rigid_collision_casts` capture writes nonblank PNGs with
       the docked ImGui workspace.
 - [x] Visual smoke: `rigid_body` capture writes nonblank PNGs with the docked
-      ImGui workspace.
+      ImGui workspace and scene-owned baseline metrics.
 - [x] Visual smoke: `rigid_body_modes` capture writes nonblank PNGs with the
       docked ImGui workspace.
 - [x] Visual smoke: `rigid_free_flight` capture writes nonblank PNGs with the

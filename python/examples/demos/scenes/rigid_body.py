@@ -20,7 +20,7 @@ import dartpy as dart
 import dartpy as sx
 
 from .._world_bridge import WorldRenderBridge
-from ..runner import PythonDemoScene, ScenePanel, SceneSetup
+from ..runner import CAPTURE_METRICS_INFO_KEY, PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 1.0 / 120.0
 _HISTORY = 160
@@ -239,6 +239,36 @@ class _RigidBodyBaseline:
     def renderable_provider(self) -> list[Any]:
         return self.bridge.renderable_provider()
 
+    def capture_metrics(self) -> dict[str, Any]:
+        if not self._last_metrics:
+            self._record_metrics()
+        speed_values = list(self._speed_history)
+        height_values = list(self._min_height_history)
+        energy_values = list(self._energy_history)
+        contact_values = list(self._contact_history)
+        step_values = list(self._step_ms_history)
+        return {
+            "row": "rigid_body",
+            "solver": self._solver_label(),
+            "solver_enum": self._solver().name,
+            "time_step_ms": _TIME_STEP * 1000.0,
+            "world_time": float(self.world.time),
+            "dynamic_body_count": float(len(self.dynamic_bodies)),
+            "controls": {
+                "friction": float(self.friction),
+                "restitution": float(self.restitution),
+            },
+            "metrics": dict(self._last_metrics),
+            "history": {
+                "samples": float(len(speed_values)),
+                "max_speed": max(speed_values, default=0.0),
+                "min_height": min(height_values, default=0.0),
+                "max_energy": max(energy_values, default=0.0),
+                "max_contacts": max(contact_values, default=0.0),
+                "max_step_ms": max(step_values, default=0.0),
+            },
+        }
+
     def capture_replay_state(self) -> dict[str, Any]:
         return {
             "controls": {
@@ -337,6 +367,7 @@ def build() -> SceneSetup:
         info={
             "sx_world": baseline.world,
             "rigid_body_controller": baseline,
+            CAPTURE_METRICS_INFO_KEY: baseline.capture_metrics,
             "replay_capture_state": baseline.capture_replay_state,
             "replay_restore_state": baseline.restore_replay_state,
             "replay_sync": baseline.bridge.sync,
