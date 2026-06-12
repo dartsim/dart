@@ -75,10 +75,10 @@
 static_assert(dart::test::kLcpSolverManifest.size() == 24);
 static_assert(
     dart::test::countSolversSupporting(dart::test::LcpProblemSupport::Standard)
-    == 24);
+    == 23);
 static_assert(
     dart::test::countSolversSupporting(dart::test::LcpProblemSupport::Boxed)
-    == 16);
+    == 15);
 static_assert(
     dart::test::countSolversSupporting(
         dart::test::LcpProblemSupport::FrictionIndex)

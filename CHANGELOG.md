@@ -1457,6 +1457,12 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the solver manifest's native support metadata, so standard and boxed
     profiles no longer include delegated-only Staggering comparisons and
     acronym solver labels stay aligned with the C++ manifest.
+  - Updated LCP performance-profile regeneration to parse the current
+    `BM_LcpCompare/<problem-family>/<solver>/<size>` benchmark schema, expose
+    focused benchmark-filter/min-time options for smoke runs, and fail loudly
+    when full profile JSON is missing native solver coverage. The
+    `BM_LCP_COMPARE` benchmark target now asserts the same native support
+    counts as the solver manifest.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

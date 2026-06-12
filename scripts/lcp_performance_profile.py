@@ -35,6 +35,8 @@ except ImportError:
 
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 
+PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
+
 
 def canonical_solver_name(name: str) -> str:
     global _MANIFEST_NAME_BY_LOWER
@@ -45,10 +47,16 @@ def canonical_solver_name(name: str) -> str:
     return _MANIFEST_NAME_BY_LOWER.get(name.lower(), name)
 
 
-def run_benchmarks(benchmark_exe: Path, filter_pattern: str = "") -> dict:
+def run_benchmarks(
+    benchmark_exe: Path,
+    filter_pattern: str = "",
+    benchmark_min_time: str = "",
+) -> dict:
     cmd = [str(benchmark_exe), "--benchmark_format=json"]
     if filter_pattern:
         cmd.append(f"--benchmark_filter={filter_pattern}")
+    if benchmark_min_time:
+        cmd.append(f"--benchmark_min_time={benchmark_min_time}")
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if result.returncode != 0:
@@ -58,25 +66,56 @@ def run_benchmarks(benchmark_exe: Path, filter_pattern: str = "") -> dict:
     return json.loads(result.stdout)
 
 
+def _parse_problem_size(token: str) -> int | None:
+    try:
+        return int(token)
+    except ValueError:
+        return None
+
+
+def parse_benchmark_name(name: str) -> tuple[str, str, int] | None:
+    parts = name.split("/")
+
+    # Current benchmark schema from tests/benchmark/lcpsolver/bm_lcp_compare.cpp:
+    # BM_LcpCompare/<problem-family>/<solver>/<problem-size>
+    if len(parts) >= 4 and parts[0] == "BM_LcpCompare":
+        category = parts[1]
+        if category not in PROFILE_CATEGORIES:
+            return None
+        problem_size = _parse_problem_size(parts[3])
+        if problem_size is None:
+            return None
+        return category, canonical_solver_name(parts[2]), problem_size
+
+    # Historical cached profile schema kept for old benchmark JSON packets:
+    # BM_LcpCompare_<solver>_<problem-family>/<problem-size>
+    if len(parts) >= 2 and parts[0].startswith("BM_LcpCompare_"):
+        solver_category = parts[0].removeprefix("BM_LcpCompare_")
+        solver_parts = solver_category.rsplit("_", 1)
+        if len(solver_parts) != 2:
+            return None
+        solver_name, category = solver_parts
+        if category not in PROFILE_CATEGORIES:
+            return None
+        problem_size = _parse_problem_size(parts[1])
+        if problem_size is None:
+            return None
+        return category, canonical_solver_name(solver_name), problem_size
+
+    return None
+
+
 def parse_benchmark_results(data: dict) -> dict:
     results = defaultdict(lambda: defaultdict(dict))
 
     for bm in data.get("benchmarks", []):
-        name = bm["name"]
-        parts = name.split("/")
-        if len(parts) < 2:
+        if bm.get("run_type") == "aggregate":
             continue
 
-        solver_category = parts[0].replace("BM_LcpCompare_", "")
-        problem_size = int(parts[1])
-
-        solver_parts = solver_category.rsplit("_", 1)
-        if len(solver_parts) == 2:
-            solver_name, category = solver_parts
-        else:
-            solver_name = solver_category
-            category = "Unknown"
-        solver_name = canonical_solver_name(solver_name)
+        parsed = parse_benchmark_name(bm["name"])
+        if parsed is None:
+            continue
+        category, solver_name, problem_size = parsed
 
         time_ns = bm.get("cpu_time", bm.get("real_time", 0))
         contract_ok = bm.get("contract_ok", 0)
@@ -98,6 +137,39 @@ def load_native_support_by_category() -> dict[str, set[str]]:
         "Boxed": {entry.name for entry in manifest if entry.boxed},
         "FrictionIndex": {entry.name for entry in manifest if entry.findex},
     }
+
+
+def check_native_profile_coverage(
+    results: dict,
+    native_support_by_category: dict[str, set[str]],
+    allow_partial: bool = False,
+) -> None:
+    errors = []
+    manifest_names = set().union(*native_support_by_category.values())
+
+    for category in PROFILE_CATEGORIES:
+        observed = {solver for solver, _ in results.get(category, {})}
+        expected = native_support_by_category[category]
+        unknown = sorted(observed - manifest_names)
+        missing = sorted(expected - observed)
+
+        if unknown:
+            errors.append(
+                f"{category}: benchmark JSON contains unknown solvers {unknown}"
+            )
+        if missing:
+            errors.append(f"{category}: missing native solvers {missing}")
+
+    if not errors:
+        return
+
+    message = "LCP performance profile coverage is incomplete:\n  - " + "\n  - ".join(
+        errors
+    )
+    if allow_partial:
+        print(f"Warning: {message}", file=sys.stderr)
+        return
+    raise RuntimeError(message)
 
 
 def compute_performance_ratios(
@@ -255,6 +327,21 @@ def main():
         default=Path("build/benchmark_results.json"),
         help="Cache file for benchmark results",
     )
+    parser.add_argument(
+        "--benchmark-filter",
+        default="",
+        help="Optional Google Benchmark regex passed to BM_LCP_COMPARE",
+    )
+    parser.add_argument(
+        "--benchmark-min-time",
+        default="",
+        help="Optional --benchmark_min_time value for benchmark smoke runs",
+    )
+    parser.add_argument(
+        "--allow-partial",
+        action="store_true",
+        help="Allow incomplete native solver coverage in benchmark JSON",
+    )
     args = parser.parse_args()
 
     project_root = Path(__file__).parent.parent
@@ -269,7 +356,9 @@ def main():
             sys.exit(1)
 
         print("Running benchmarks (this may take a few minutes)...")
-        data = run_benchmarks(benchmark_exe)
+        data = run_benchmarks(
+            benchmark_exe, args.benchmark_filter, args.benchmark_min_time
+        )
 
         args.cache.parent.mkdir(parents=True, exist_ok=True)
         with open(args.cache, "w") as f:
@@ -284,10 +373,12 @@ def main():
 
     args.output.mkdir(parents=True, exist_ok=True)
 
-    categories = ["Standard", "Boxed", "FrictionIndex"]
     native_support_by_category = load_native_support_by_category()
+    check_native_profile_coverage(
+        results, native_support_by_category, allow_partial=args.allow_partial
+    )
 
-    for category in categories:
+    for category in PROFILE_CATEGORIES:
         ratios, solvers, problems = compute_performance_ratios(
             results, category, native_support_by_category[category]
         )

@@ -1,5 +1,209 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Performance Profile Regeneration Schema
+
+After the stop-only hand-off, work resumed on the broad DART 7 LCP objective.
+The latest slice fixed the profile-refresh path itself: the checked CSV headers
+already used native solver metadata, but the regeneration script still parsed
+the old benchmark naming scheme and the `BM_LCP_COMPARE` benchmark target still
+had stale native support count assertions.
+
+Latest implementation slice:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now asserts 24 total solvers,
+  23 standard-native solvers, 15 boxed-native solvers, and 16
+  friction-index-native solvers.
+- `scripts/lcp_performance_profile.py` now parses current benchmark names of
+  the form `BM_LcpCompare/<problem-family>/<solver>/<problem-size>`.
+- Historical cached JSON with
+  `BM_LcpCompare_<solver>_<problem-family>/<problem-size>` names still parses.
+- Full profile generation now fails when benchmark JSON is missing any native
+  solver for Standard, Boxed, or FrictionIndex. Use `--allow-partial` only for
+  deliberate smoke packets.
+- `--benchmark-filter` and `--benchmark-min-time` can now be passed through to
+  Google Benchmark for focused profile smoke runs.
+- Full current performance-profile artifacts were not regenerated in this
+  slice.
+
+Verification completed so far:
+
+```bash
+pixi run python - <<'PY'
+from scripts.lcp_performance_profile import (
+    check_native_profile_coverage,
+    load_native_support_by_category,
+    parse_benchmark_results,
+    parse_benchmark_name,
+)
+
+assert parse_benchmark_name('BM_LcpCompare/Standard/BGS/12') == ('Standard', 'BGS', 12)
+assert parse_benchmark_name('BM_LcpCompare/Boxed/NNCG/24') == ('Boxed', 'NNCG', 24)
+assert parse_benchmark_name('BM_LcpCompare_FischerBurmeisterNewton_Standard/12') == ('Standard', 'FischerBurmeisterNewton', 12)
+assert parse_benchmark_name('BM_LcpCompare_Dantzig_Scaled/12/0') is None
+parsed = parse_benchmark_results({
+    'benchmarks': [
+        {'name': 'BM_LcpCompare/Standard/Bgs/12', 'cpu_time': 2.0, 'contract_ok': 1.0},
+        {'name': 'BM_LcpCompare/Boxed/Nncg/24', 'cpu_time': 3.0, 'contract_ok': 1.0},
+        {'name': 'BM_LcpCompare/FrictionIndex/Mprgp/4', 'cpu_time': 4.0, 'contract_ok': 1.0},
+        {'name': 'BM_LcpCompare/Standard/BGS/12_mean', 'run_type': 'aggregate'},
+    ]
+})
+assert ('BGS', 12) in parsed['Standard']
+assert ('NNCG', 24) in parsed['Boxed']
+assert ('MPRGP', 4) in parsed['FrictionIndex']
+try:
+    check_native_profile_coverage(parsed, load_native_support_by_category())
+except RuntimeError as exc:
+    assert 'missing native solvers' in str(exc)
+else:
+    raise AssertionError('expected missing coverage failure')
+check_native_profile_coverage(parsed, load_native_support_by_category(), allow_partial=True)
+print('profile parser smoke passed')
+PY
+cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"
+pixi run python scripts/lcp_performance_profile.py --run \
+  --benchmark-filter='BM_LcpCompare/(Standard|Boxed)/(Dantzig|Pgs)/12$' \
+  --benchmark-min-time=0.001 \
+  --cache build/lcp_profile_smoke.json \
+  --output build/lcp_profile_smoke \
+  --allow-partial
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_smoke.json \
+  --output build/lcp_profile_smoke_failcheck
+pixi run python - <<'PY'
+import subprocess
+from scripts.lcp_performance_profile import (
+    check_native_profile_coverage,
+    load_native_support_by_category,
+    parse_benchmark_name,
+)
+
+completed = subprocess.run(
+    [
+        'build/default/cpp/Release/bin/BM_LCP_COMPARE',
+        '--benchmark_list_tests=true',
+        '--benchmark_filter=BM_LcpCompare/',
+    ],
+    check=True,
+    capture_output=True,
+    text=True,
+)
+results = {}
+for name in completed.stdout.splitlines():
+    parsed = parse_benchmark_name(name.strip())
+    if parsed is None:
+        continue
+    category, solver, problem_size = parsed
+    results.setdefault(category, {})[(solver, problem_size)] = {
+        'time_ns': 1.0,
+        'contract_ok': 1.0,
+    }
+check_native_profile_coverage(results, load_native_support_by_category())
+counts = {category: len({solver for solver, _ in rows}) for category, rows in results.items()}
+print(counts)
+PY
+pixi run python scripts/check_lcp_solver_roster.py
+git diff --check
+pixi run lint
+```
+
+Observed results:
+
+- Synthetic parser smoke passed and proved strict coverage fails on incomplete
+  benchmark JSON unless `--allow-partial` is set.
+- `BM_LCP_COMPARE` rebuilt successfully from current source.
+- Focused real benchmark smoke produced partial Standard and Boxed profile CSVs
+  under `build/lcp_profile_smoke`.
+- Strict mode rejected that partial smoke cache, as expected, with missing
+  native solver coverage diagnostics.
+- The rebuilt benchmark registration list covered exactly
+  `{'Standard': 23, 'Boxed': 15, 'FrictionIndex': 16}` native solvers.
+- LCP solver roster check passed:
+  `24 solvers, 23 standard, 15 boxed, 16 findex`.
+- `git diff --check` passed.
+- `pixi run lint` passed, including the LCP roster gate.
+
+## Immediate Next Step
+
+After this checkpoint, continue the broad objective with another concrete
+solver/interface/demo/performance gap. A likely next benchmark-focused slice is
+to run the full unfiltered performance-profile generation from the rebuilt
+benchmark target, review the current measurements, and update the checked
+profile artifacts if the run is representative enough. Do not push without
+explicit approval.
+
+Start by inspecting current branch state:
+
+```bash
+git status --short --branch
+git log --oneline --decorate --max-count=15
+git diff --stat
+```
+
+## Current Reality - 2026-06-12 Stop-Only Hand-Off After Performance Profile Metadata
+
+The user explicitly stopped further work again and requested only hand-off docs,
+with no further verification. After that instruction, do not infer that lint,
+tests, builds, benchmark listing, benchmark regeneration, commits, pushes, or
+implementation edits were performed. This stop-only update is limited to
+`docs/dev_tasks/lcp_solver_interface_demos/README.md` and this file.
+
+Observed repository state before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD: `7df9a018c31 Align LCP performance profile metadata`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 26]`.
+- Worktree: clean before this docs-only hand-off edit.
+- No PR was associated with this branch when the already-running GitHub status
+  command completed.
+- Push was not performed in this stop-only response.
+
+Latest completed local checkpoints:
+
+- `7df9a018c31 Align LCP performance profile metadata`
+- `00a58f7153e Align Staggering native capability metadata`
+- `1b4e3827618 Report Staggering native support precisely`
+- `0e75c5c3985 Validate remaining LCP solver parameters`
+- `e3535141c5d Show all LCP solver parameters in py demo`
+- `b60e20a8dc8 Expose LCP solver parameters in dartpy`
+
+Interrupted continuation slice:
+
+- No implementation files were edited after the stop request.
+- No lint, tests, builds, benchmark listing, benchmark regeneration, commit, or
+  push was run after the stop request.
+- The session had only reconstructed current context and closed out an
+  already-running `gh pr status` command. That command reported no PR
+  associated with `feature/lcp-solver-interface-demos`.
+- Do not treat the broad DART 7 LCP solver/interface/demo objective as
+  complete. The latest completed slice only aligned performance-profile
+  tooling and checked CSV headers with native solver support metadata.
+
+## Stop-Only Immediate Next Step
+
+Do nothing until the user explicitly resumes implementation. If resumed, first
+inspect the current branch state:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status --short --branch
+git log --oneline --decorate --max-count=15
+git diff --stat
+```
+
+Then read:
+
+- `docs/ai/principles.md`
+- `docs/dev_tasks/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- this file
+
+Continue only after selecting a concrete next solver/interface/demo/performance
+gap. A likely next gap remains regenerating performance-profile artifacts from
+current benchmark results rather than synthesizing missing solver columns from
+older cached data. Do not push without explicit approval.
+
 ## Current Reality - 2026-06-12 LCP Performance Profile Native Support
 
 After the stop-only hand-off and the Staggering capability-metadata checkpoint,
