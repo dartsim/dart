@@ -33,6 +33,7 @@
 #include "dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp"
 
 #include "dart/math/lcp/lcp_validation.hpp"
+#include "dart/math/lcp/projection/pgs_solver.hpp"
 
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
@@ -161,7 +162,75 @@ bool validateParameters(
     }
     return false;
   }
+  if (params.maxPgsWarmStartIterations < 0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton max_pgs_warm_start_iterations must be "
+            "non-negative";
+    }
+    return false;
+  }
+  if (!std::isfinite(params.pgsWarmStartRelaxation)
+      || params.pgsWarmStartRelaxation <= 0.0
+      || params.pgsWarmStartRelaxation > 2.0) {
+    if (message) {
+      *message
+          = "Boxed semi-smooth Newton pgs_warm_start_relaxation must be in "
+            "(0, 2]";
+    }
+    return false;
+  }
   return true;
+}
+
+double computeNaturalResidualForProblem(
+    const LcpProblem& problem, const Eigen::VectorXd& x)
+{
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string boundsMessage;
+  if (!detail::computeEffectiveBounds(
+          problem.lo,
+          problem.hi,
+          problem.findex,
+          x,
+          loEff,
+          hiEff,
+          &boundsMessage)) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  const Eigen::VectorXd w = problem.A * x - problem.b;
+  return detail::naturalResidualInfinityNorm(x, w, loEff, hiEff);
+}
+
+void runPgsWarmStart(
+    const LcpProblem& problem,
+    Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const BoxedSemiSmoothNewtonSolver::Parameters& params)
+{
+  if (params.maxPgsWarmStartIterations <= 0) {
+    return;
+  }
+
+  const double initialResidual = computeNaturalResidualForProblem(problem, x);
+  Eigen::VectorXd candidate = x;
+  LcpOptions pgsOptions = options;
+  pgsOptions.maxIterations = params.maxPgsWarmStartIterations;
+  pgsOptions.relaxation = params.pgsWarmStartRelaxation;
+  pgsOptions.warmStart = true;
+  pgsOptions.validateSolution = false;
+  pgsOptions.customOptions = nullptr;
+
+  PgsSolver pgs;
+  pgs.solve(problem, candidate, pgsOptions);
+
+  const double candidateResidual
+      = computeNaturalResidualForProblem(problem, candidate);
+  if (candidate.allFinite() && candidateResidual < initialResidual) {
+    x = candidate;
+  }
 }
 
 } // namespace
@@ -253,6 +322,7 @@ LcpResult BoxedSemiSmoothNewtonSolver::solve(
     x.setZero();
   }
   x = projectVector(x, loEff, hiEff);
+  runPgsWarmStart(problem, x, options, *params);
 
   Eigen::VectorXd w(n);
   Eigen::VectorXd H(n);

@@ -435,7 +435,13 @@ void defLcp(nb::module_& m)
       .def_rw("min_step", &BoxedSemiSmoothNewtonSolver::Parameters::minStep)
       .def_rw(
           "jacobian_regularization",
-          &BoxedSemiSmoothNewtonSolver::Parameters::jacobianRegularization);
+          &BoxedSemiSmoothNewtonSolver::Parameters::jacobianRegularization)
+      .def_rw(
+          "max_pgs_warm_start_iterations",
+          &BoxedSemiSmoothNewtonSolver::Parameters::maxPgsWarmStartIterations)
+      .def_rw(
+          "pgs_warm_start_relaxation",
+          &BoxedSemiSmoothNewtonSolver::Parameters::pgsWarmStartRelaxation);
 
   nb::class_<InteriorPointSolver::Parameters>(
       m, "InteriorPointSolverParameters")

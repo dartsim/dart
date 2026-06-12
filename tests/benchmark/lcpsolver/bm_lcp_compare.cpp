@@ -2913,6 +2913,10 @@ void AddBoxedSsnCounters(
   state.counters["boxed_ssn_min_step"] = params.minStep;
   state.counters["boxed_ssn_jacobian_regularization"]
       = params.jacobianRegularization;
+  state.counters["boxed_ssn_pgs_warm_start_iterations"]
+      = params.maxPgsWarmStartIterations;
+  state.counters["boxed_ssn_pgs_warm_start_relaxation"]
+      = params.pgsWarmStartRelaxation;
 }
 
 void AddSapCounters(
@@ -6009,6 +6013,15 @@ void ConfigureSolverBenchmarkOptions(
   } else if (solver.name == "PenalizedFischerBurmeisterNewton") {
     storage.penalizedFischerBurmeisterParams.lambda = 1.0;
     storage.options.customOptions = &storage.penalizedFischerBurmeisterParams;
+  } else if (solver.name == "BoxedSemiSmoothNewton") {
+    const bool hasFrictionIndex = (problem.findex.array() >= 0).any();
+    const bool hasBoxBounds = problem.hi.array().isFinite().any()
+                              || (problem.lo.array() < 0.0).any();
+    if (hasFrictionIndex || hasBoxBounds) {
+      storage.boxedSsnParams.maxPgsWarmStartIterations = 5;
+      storage.options.customOptions = &storage.boxedSsnParams;
+      storage.hasBoxedSsnParams = true;
+    }
   } else if (solver.name == "Sap") {
     storage.options.absoluteTolerance = 1e-5;
     storage.options.relativeTolerance = 1e-3;
@@ -7130,6 +7143,9 @@ void RunManifestBenchmark(
   if (storage.hasSapParams) {
     AddSapCounters(state, storage.sapParams);
   }
+  if (storage.hasBoxedSsnParams) {
+    AddBoxedSsnCounters(state, storage.boxedSsnParams);
+  }
 }
 
 void RunActiveSetTransitionBenchmark(
@@ -7343,6 +7359,10 @@ void RunBoxedSsnLineSearchSweepBenchmark(
                                                                          : 0.0;
   state.counters["boxed_ssn_gentle_reduction"]
       = params.stepReduction == 0.8 ? 1.0 : 0.0;
+  state.counters["boxed_ssn_pgs_warm_start_iterations"]
+      = params.maxPgsWarmStartIterations;
+  state.counters["boxed_ssn_pgs_warm_start_relaxation"]
+      = params.pgsWarmStartRelaxation;
   if (testCase.family == BenchmarkProblemFamily::FrictionIndex) {
     state.counters["contact_count"] = testCase.problemArg;
   }

@@ -865,6 +865,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "max_line_search_steps" in parameter_by_solver["BoxedSemiSmoothNewton"][
         "parameters"
     ]
+    assert "max_pgs_warm_start_iterations" in parameter_by_solver[
+        "BoxedSemiSmoothNewton"
+    ]["parameters"]
     assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
     assert parameter_by_solver["Apgd"]["benchmark_filter"] == (
         "BM_LcpApgdRestartSweep"
@@ -1044,30 +1047,29 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "FischerBurmeisterNewton" in profile_by_surface["Standard"][
         "current_laggards"
     ]
-    assert "Tgs" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "Pgs/Jacobi remain close" in profile_by_surface["Boxed"][
+    assert "Pgs/Tgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "SymmetricPsor next" in profile_by_surface["Boxed"][
         "current_leaders"
     ]
     assert "Admm" in profile_by_surface["Boxed"]["current_laggards"]
-    assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
-        "current_laggards"
-    ]
-    assert "Tgs/Sap/Pgs" in profile_by_surface["FrictionIndex"][
+    assert "ShockPropagation" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Nncg" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Pgs/Tgs/Sap" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
     assert "SymmetricPsor" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
     assert "Jacobi" in profile_by_surface["FrictionIndex"]["current_leaders"]
-    assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
-        "current_laggards"
-    ]
     assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert "Staggering" in profile_by_surface["FrictionIndex"]["current_laggards"]
     assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
     assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
+        "current_laggards"
+    ]
+    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (

@@ -3861,6 +3861,8 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   params.sufficientDecrease = 1e-3;
   params.minStep = 1e-6;
   params.jacobianRegularization = 1e-7;
+  params.maxPgsWarmStartIterations = 3;
+  params.pgsWarmStartRelaxation = 0.9;
   customSolver.setParameters(params);
   EXPECT_EQ(
       customSolver.getParameters().maxLineSearchSteps,
@@ -3874,6 +3876,12 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, DefaultCustomZeroRhsAndEdgeCases)
   EXPECT_DOUBLE_EQ(
       customSolver.getParameters().jacobianRegularization,
       params.jacobianRegularization);
+  EXPECT_EQ(
+      customSolver.getParameters().maxPgsWarmStartIterations,
+      params.maxPgsWarmStartIterations);
+  EXPECT_DOUBLE_EQ(
+      customSolver.getParameters().pgsWarmStartRelaxation,
+      params.pgsWarmStartRelaxation);
 
   LcpOptions options = customSolver.getDefaultOptions();
   options.customOptions = &params;
@@ -3929,6 +3937,24 @@ TEST(BoxedSemiSmoothNewtonSolverCoverage, ParameterAndValidationBranches)
   EXPECT_EQ(invalidResult.status, LcpSolverStatus::InvalidProblem);
   EXPECT_NE(
       invalidResult.message.find("max_line_search_steps"), std::string::npos);
+
+  invalidParams = {};
+  invalidParams.maxPgsWarmStartIterations = -1;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidWarmStartIterations = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidWarmStartIterations.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidWarmStartIterations.message.find("max_pgs_warm_start_iterations"),
+      std::string::npos);
+
+  invalidParams = {};
+  invalidParams.pgsWarmStartRelaxation = 0.0;
+  invalidOptions.customOptions = &invalidParams;
+  auto invalidWarmStartRelaxation = solver.solve(standard, x, invalidOptions);
+  EXPECT_EQ(invalidWarmStartRelaxation.status, LcpSolverStatus::InvalidProblem);
+  EXPECT_NE(
+      invalidWarmStartRelaxation.message.find("pgs_warm_start_relaxation"),
+      std::string::npos);
 
   LcpOptions validationOptions = solver.getDefaultOptions();
   validationOptions.validateSolution = true;

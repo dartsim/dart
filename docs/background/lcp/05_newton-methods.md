@@ -387,6 +387,10 @@ Newton system rather than treated as fixed boxes.
 The Newton step solves the semi-smooth Jacobian system directly and keeps a
 regularized least-squares solve as a fallback when the direct step fails the
 projected line search, avoiding normal-equation overhead on the common path.
+For bounded and friction-index comparison rows, the benchmark harness now
+enables a short PGS warm start before the Newton loop. The warm start is accepted
+only when it reduces the boxed natural residual, which keeps poor projection
+starts from displacing a better caller-provided initial guess.
 
 ```cpp
 #include <dart/math/lcp/newton/boxed_semi_smooth_newton_solver.hpp>
@@ -412,7 +416,10 @@ default, SIMD-enabled, and CUDA-enabled build-tree runs reported 9 rows with
 friction-index `contact_count=8`, observed solver iterations `2/7/8/9`, and
 backend build-state counters. The CUDA-enabled rows are CPU
 BoxedSemiSmoothNewton solver rows in a CUDA-enabled build, not CUDA LCP kernel
-execution. Additional `BM_LcpContactSolverComparisonSweep` rows run
+execution. The main `BM_LcpCompare/*/BoxedSemiSmoothNewton` profile records
+`boxed_ssn_pgs_warm_start_iterations` so the tuned bounded/findex rows remain
+self-describing in cached benchmark JSON. Additional
+`BM_LcpContactSolverComparisonSweep` rows run
 BoxedSemiSmoothNewton on DART 7 separated sphere-ground, coupled vertical-stack,
 and articulated unified-contact friction-index fixtures, so contact-derived
 evidence is reported separately from the synthetic line-search parameter sweep.

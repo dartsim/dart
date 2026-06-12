@@ -558,6 +558,8 @@ TEST(AdvancedBoxedSolvers, MetadataAndParametersCanBeCustomized)
   newtonParams.sufficientDecrease = 2e-4;
   newtonParams.minStep = 1e-10;
   newtonParams.jacobianRegularization = 1e-8;
+  newtonParams.maxPgsWarmStartIterations = 5;
+  newtonParams.pgsWarmStartRelaxation = 0.9;
   boxedNewton.setParameters(newtonParams);
   EXPECT_EQ(boxedNewton.getName(), "BoxedSemiSmoothNewton");
   EXPECT_EQ(boxedNewton.getCategory(), "Newton");
@@ -573,6 +575,12 @@ TEST(AdvancedBoxedSolvers, MetadataAndParametersCanBeCustomized)
   EXPECT_DOUBLE_EQ(
       boxedNewton.getParameters().jacobianRegularization,
       newtonParams.jacobianRegularization);
+  EXPECT_EQ(
+      boxedNewton.getParameters().maxPgsWarmStartIterations,
+      newtonParams.maxPgsWarmStartIterations);
+  EXPECT_DOUBLE_EQ(
+      boxedNewton.getParameters().pgsWarmStartRelaxation,
+      newtonParams.pgsWarmStartRelaxation);
 }
 
 TEST(AdvancedBoxedSolvers, MixedBoundsWorkflowHonorsWarmStartsAndCustomOptions)
@@ -622,6 +630,7 @@ TEST(AdvancedBoxedSolvers, MixedBoundsWorkflowHonorsWarmStartsAndCustomOptions)
   newtonParams.sufficientDecrease = 1e-4;
   newtonParams.minStep = 1e-10;
   newtonParams.jacobianRegularization = 1e-8;
+  newtonParams.maxPgsWarmStartIterations = 5;
   LcpOptions newtonOptions = boxedNewton.getDefaultOptions();
   newtonOptions.maxIterations = 80;
   newtonOptions.absoluteTolerance = 1e-8;
@@ -730,4 +739,11 @@ TEST(AdvancedBoxedSolvers, InvalidParametersAreRejectedBeforeIteration)
   newtonParams = {};
   newtonParams.jacobianRegularization = -1.0;
   expectInvalid(solveBoxedNewton(newtonParams), "jacobian_regularization");
+  newtonParams = {};
+  newtonParams.maxPgsWarmStartIterations = -1;
+  expectInvalid(
+      solveBoxedNewton(newtonParams), "max_pgs_warm_start_iterations");
+  newtonParams = {};
+  newtonParams.pgsWarmStartRelaxation = 0.0;
+  expectInvalid(solveBoxedNewton(newtonParams), "pgs_warm_start_relaxation");
 }

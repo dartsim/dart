@@ -504,7 +504,7 @@ def test_parameterized_lcp_solvers_expose_dartpy_parameters() -> None:
 def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     admm = dart.AdmmSolver()
     admm_params = dart.AdmmSolverParameters()
-    assert admm_params.rho_init == pytest.approx(1.0)
+    assert admm_params.rho_init == pytest.approx(4.0)
     assert admm_params.mu_prox == pytest.approx(1e-9)
     assert admm_params.adaptive_rho_tolerance == pytest.approx(5.0)
     assert admm_params.adaptive_rho
@@ -543,18 +543,24 @@ def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     assert newton_params.sufficient_decrease == pytest.approx(1e-4)
     assert newton_params.min_step == pytest.approx(1e-8)
     assert newton_params.jacobian_regularization == pytest.approx(1e-10)
+    assert newton_params.max_pgs_warm_start_iterations == 0
+    assert newton_params.pgs_warm_start_relaxation == pytest.approx(1.0)
 
     newton_params.max_line_search_steps = 12
     newton_params.step_reduction = 0.35
     newton_params.sufficient_decrease = 2e-4
     newton_params.min_step = 1e-10
     newton_params.jacobian_regularization = 1e-8
+    newton_params.max_pgs_warm_start_iterations = 5
+    newton_params.pgs_warm_start_relaxation = 0.9
     newton.parameters = newton_params
     assert newton.parameters.max_line_search_steps == 12
     assert newton.parameters.step_reduction == pytest.approx(0.35)
     assert newton.parameters.sufficient_decrease == pytest.approx(2e-4)
     assert newton.parameters.min_step == pytest.approx(1e-10)
     assert newton.parameters.jacobian_regularization == pytest.approx(1e-8)
+    assert newton.parameters.max_pgs_warm_start_iterations == 5
+    assert newton.parameters.pgs_warm_start_relaxation == pytest.approx(0.9)
 
 
 @pytest.mark.parametrize(
@@ -581,6 +587,7 @@ def test_customized_advanced_boxed_solvers_solve_boxed_problem(
     elif isinstance(params, dart.BoxedSemiSmoothNewtonSolverParameters):
         params.max_line_search_steps = 16
         params.jacobian_regularization = 1e-8
+        params.max_pgs_warm_start_iterations = 5
     solver.parameters = params
 
     problem = dart.LcpProblem(

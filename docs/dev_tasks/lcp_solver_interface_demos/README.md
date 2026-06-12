@@ -1,5 +1,113 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Boxed SSN Warm-Start Verified
+
+Current branch state for this checkpoint:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Latest local checkpoint: `Warm start boxed semi-smooth Newton profiles`.
+- The parent checkpoint is
+  `ec2d642c945 Update LCP solver handoff after SAP checkpoint`.
+- At this checkpoint and before pushing, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 38 commits.
+- No PR is associated with this branch yet.
+- No push has been performed in this continuation; pushes still require
+  explicit maintainer/user approval.
+
+Current implementation slice:
+
+- Added optional `BoxedSemiSmoothNewtonSolver::Parameters` fields:
+  `maxPgsWarmStartIterations` and `pgsWarmStartRelaxation`.
+- The solver now optionally runs a short `PgsSolver` warm start before Newton
+  iterations and accepts the candidate only when it is finite and reduces the
+  boxed natural residual.
+- `BM_LcpCompare` enables a 5-iteration PGS warm start for
+  `BoxedSemiSmoothNewton` only on bounded/findex comparison packets; standard
+  rows stay at the default zero warm-start iterations.
+- Benchmark counters now expose
+  `boxed_ssn_pgs_warm_start_iterations` and
+  `boxed_ssn_pgs_warm_start_relaxation`.
+- dartpy parameter bindings, C++ unit tests, Python tests, demo metadata,
+  background docs, profile CSV artifacts, and `CHANGELOG.md` were updated to
+  describe or cover the new parameters and refreshed profile summary.
+
+Focused benchmark evidence:
+
+- Focused pre-warm-start baseline for
+  `BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BoxedSemiSmoothNewton/` was
+  saved in `build/boxed_ssn_jacobian_copy_before.json`.
+- Focused after-run kept standard rows neutral and substantially improved
+  bounded/findex rows:
+  - Standard ratios stayed around neutral: `0.976`, `1.009`, `0.954`, `0.999`.
+  - Boxed ratios improved to `0.383`, `0.220`, `0.113` with 2 Newton
+    iterations and `pgs=5`.
+  - FrictionIndex ratios improved to `0.336`, `0.090`, `0.017` with 2 Newton
+    iterations and `pgs=5`.
+  - Focused mean ratio was `0.5096`; best `0.0174`; worst `1.0086`.
+  - All focused after rows reported `contract_ok=1.0`.
+- Full profile regeneration completed and refreshed the checked CSV artifacts.
+  Snapshot after warm-start:
+  - Standard: `BoxedSemiSmoothNewton` average ratio `3.24`.
+  - Boxed: `BoxedSemiSmoothNewton` average ratio `3.67`, down from about
+    `13.44`.
+  - FrictionIndex: `BoxedSemiSmoothNewton` average ratio `3.47`, down from
+    about `48.88`.
+
+Verification completed for this slice:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+pixi run build
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  python/tests/unit/math/test_lcp.py::test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math \
+  python/tests/unit/math/test_lcp.py::test_customized_advanced_boxed_solvers_solve_boxed_problem \
+  -q
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_validation_and_solvers|all_solvers_smoke)$' \
+  -j "$JOBS"
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Cached profile replay completed and wrote
+  `build/lcp_profile_full_check/performance_profile_*.csv`.
+- CSV shape check reported 15 Boxed solver columns, 16 FrictionIndex solver
+  columns, 23 Standard solver columns, and 200 rows per profile.
+- `pixi run build` passed and rebuilt the dartpy module.
+- Focused Python tests passed: `5 passed in 0.33s`.
+- Focused CTests passed:
+  `100% tests passed, 0 tests failed out of 2`.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step:
+
+1. Continue benchmark-driven optimization or interface audit from the refreshed
+   profile.
+2. Push only after explicit maintainer/user approval.
+
+Updated remaining profile targets after the warm-start evidence:
+
+- Standard: `Lemke`, `InteriorPoint`, `Baraff`, and Newton-family rows.
+- Boxed: `Admm`, `ShockPropagation`, `Nncg`, `BGS`, and `BlockedJacobi`.
+- FrictionIndex: `BlockedJacobi`, `Staggering`, `BGS`,
+  `ShockPropagation`, and `SubspaceMinimization`.
+
 ## 2026-06-12 Current Continuation - Post-SAP Checkpoint
 
 Current branch state after the SAP slice:

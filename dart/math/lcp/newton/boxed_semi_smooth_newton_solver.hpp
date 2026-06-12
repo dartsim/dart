@@ -46,6 +46,8 @@ public:
     double sufficientDecrease{1e-4};
     double minStep{1e-8};
     double jacobianRegularization{1e-10};
+    int maxPgsWarmStartIterations{0};
+    double pgsWarmStartRelaxation{1.0};
   };
 
   BoxedSemiSmoothNewtonSolver();

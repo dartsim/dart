@@ -1494,6 +1494,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     solver's default compliance regularization while standard and
     friction-index rows retain stricter regularization; boxed SAP profile rows
     now converge in 3 iterations in the refreshed comparison packet.
+  - Added optional PGS warm-start parameters to
+    `BoxedSemiSmoothNewtonSolver` and enabled a short warm start for bounded and
+    friction-index comparison rows, reducing current boxed/findex Newton
+    profile rows while preserving standard-row behavior.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

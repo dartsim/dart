@@ -236,13 +236,11 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Tgs; Pgs/Jacobi remain close",
-        "current_laggards": (
-            "Admm, BoxedSemiSmoothNewton, ShockPropagation"
-        ),
+        "current_leaders": "Pgs/Tgs/Jacobi; SymmetricPsor next",
+        "current_laggards": "Admm, ShockPropagation, Nncg, BGS",
         "takeaway": (
-            "Projection methods lead active-bound rows; ADMM, boxed "
-            "semi-smooth Newton, and layered rows remain tuning targets."
+            "Projection methods lead active-bound rows; ADMM, layered rows, "
+            "and second-order projection routes remain tuning targets."
         ),
     },
     {
@@ -251,14 +249,14 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Tgs/Sap/Pgs; SymmetricPsor and Jacobi next",
+        "current_leaders": "Pgs/Tgs/Sap; SymmetricPsor and Jacobi next",
         "current_laggards": (
-            "BoxedSemiSmoothNewton, BlockedJacobi, Staggering, BGS, "
-            "ShockPropagation"
+            "BlockedJacobi, Staggering, BGS, ShockPropagation, "
+            "SubspaceMinimization"
         ),
         "takeaway": (
-            "TGS/SAP/PGS lead current contact-scale rows; boxed semi-smooth "
-            "Newton and layered/block contact routes remain targets."
+            "PGS/TGS/SAP lead current contact-scale rows; layered/block "
+            "contact routes remain targets."
         ),
     },
 )
@@ -1559,6 +1557,8 @@ def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
                 "sufficient_decrease",
                 "min_step",
                 "jacobian_regularization",
+                "max_pgs_warm_start_iterations",
+                "pgs_warm_start_relaxation",
             ],
             "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep",
         ),
