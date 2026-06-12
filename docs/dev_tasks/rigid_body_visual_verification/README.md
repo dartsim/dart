@@ -58,6 +58,11 @@
       numeric ranges for contact counts, depths, world time, and shape indices.
       The focused workflow/doc drift guard reported `4 passed`; `pixi run lint`,
       bounded default `pixi run build`, and `git diff --check` all passed.
+- [x] Current handoff refresh: runtime-code checkpoint `274690aead7`
+      (`Expose rigid contact inspector capture metrics`) is followed by a
+      handoff-only docs commit. The latest operator instruction was to stop
+      implementation work, focus only on handoff, push the handoff state, and
+      run no additional verification.
 - [x] Solver/contact comparison capture-metrics follow-up:
       `rigid_solver_compare` and `rigid_contact_solver_compare` now publish the
       same capture hook so manifests preserve method-family/contact-policy case
@@ -555,15 +560,18 @@ and the no-tunneling scope decision.
 2. For that next slice, keep payloads to summary fields that users need in
    docked capture manifests; avoid raw replay dumps and preserve the selected
    row's scope caveat in the PLAN-103 sidecar.
-3. Refresh validation as needed, then use the local
+3. The branch was pushed for handoff only because the maintainer/user explicitly
+   requested it on 2026-06-11. Future pushes, PR creation, comments, review
+   replies, or other GitHub mutations still require explicit approval.
+4. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-4. Keep related-evidence routes synchronized between the runner-owned
+5. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-5. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+6. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-6. Keep fuller articulated arm/gripper manipulation deferred until the public
+7. Keep fuller articulated arm/gripper manipulation deferred until the public
    API/runtime can support it as an interactive verifier. The current audit
    found rigid-body joints are not IPC-supported, multibody link contacts lack
    material/friction controls, and scripted IPC two-jaw pinch settings that

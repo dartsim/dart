@@ -2,14 +2,21 @@
 
 ## Current Handoff Snapshot
 
-Expected branch after the local checkpoint:
-`feature/rigid-body-gui-visual-verification` is clean and ahead of
-`origin/feature/rigid-body-gui-visual-verification` by one unpushed local
-commit after `d5aceaeedbf` (`Refresh rigid visual verification handoff`). The
-latest runtime-code slice is the `rigid_contact_inspector` capture-metrics
-follow-up. A fresh Claude/Codex session should start by running
-`git status -sb` and `git log --oneline --decorate -5` to confirm that state
-before continuing.
+Expected branch after this handoff push:
+`feature/rigid-body-gui-visual-verification` is clean and aligned with
+`origin/feature/rigid-body-gui-visual-verification`. The runtime-code checkpoint
+immediately below this handoff-only docs commit is `274690aead7` (`Expose rigid
+contact inspector capture metrics`), which followed remote checkpoint
+`d5aceaeedbf` (`Refresh rigid visual verification handoff`). The latest
+runtime-code slice is the `rigid_contact_inspector` capture-metrics follow-up. A
+fresh Claude/Codex session should start by running `git status -sb` and
+`git log --oneline --decorate -5` to confirm that state before continuing.
+
+Latest operator instruction before this handoff: stop implementation work and
+focus only on handoff, with no further verification. This handoff-only docs
+commit was prepared for the requested push without running additional gates. Do
+not infer that any gate ran after this note unless a later session records it
+explicitly.
 
 As of the handoff refresh on 2026-06-11, `gh pr list --repo dartsim/dart
 --head feature/rigid-body-gui-visual-verification --json
