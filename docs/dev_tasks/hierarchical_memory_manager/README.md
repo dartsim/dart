@@ -1,5 +1,46 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Current Handoff
+
+Use one branch for resume/handoff: `pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean` and based on `origin/main` after PR
+#2956 landed. Other similarly named HMM follow-up branches are historical and
+should not be used by fresh sessions unless a maintainer explicitly redirects
+the work. The latest code checkpoint before this docs-only handoff is
+`13c4757e7b3` (`Skip empty multibody contact queries`); a handoff-doc commit
+should be on top after the final push.
+
+Fresh-session agents should start with
+`docs/dev_tasks/hierarchical_memory_manager/RESUME.md`, then verify the live
+checkout with:
+
+```bash
+git checkout pr/hmm-phase45-follow-up-clean
+git status -sb
+git log --oneline --decorate -5
+```
+
+The most recent proven Phase 4/5 slice keeps the semi-implicit external-force
+multibody path inside both World-base no-growth and global-heap no-allocation
+gates after bake. The body-Jacobian container now reuses
+`MultibodyDynamicsScratch::bodyJacobian`, and the remaining pure
+external-force global-heap allocations were removed by skipping split
+semi-implicit contact/unified collision queries when no relevant collision
+shapes exist.
+
+The last full local validation for the code checkpoint was:
+
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- Focused `test_world` no-growth/no-heap gates covering the forced-slider,
+  multibody/deformable, and boxed-LCP fallback shapes.
+
+Continue only with evidence-first Phase 4/5 work from the remaining follow-up
+items below. Do not add more scenes or scratch-reuse commits to PR #2956; that
+PR is already merged.
+
 ## Current Status
 
 - [x] Phase 1: Experimental `World` owns a memory manager and exposes

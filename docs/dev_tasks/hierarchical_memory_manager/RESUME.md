@@ -1,5 +1,62 @@
 # Resume: Hierarchical Memory Manager
 
+## Authoritative Handoff (2026-06-11)
+
+Last session summary: use exactly one branch for the post-#2956 HMM handoff:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`. Other similarly named HMM follow-up
+branches are historical/no-resume targets unless a maintainer explicitly
+redirects the work. The latest code checkpoint before this docs-only handoff is
+`13c4757e7b3` (`Skip empty multibody contact queries`); the final pushed branch
+should have one handoff-doc commit on top of that.
+
+Current branch state to expect:
+
+```bash
+git checkout pr/hmm-phase45-follow-up-clean
+git status -sb
+git log --oneline --decorate -5
+```
+
+Expected status after the handoff push: clean worktree, branch even with
+`origin/pr/hmm-phase45-follow-up-clean`.
+
+Immediate next step: choose the next remaining Phase 4/5 item from
+`README.md` and prove a real allocation source before editing. Do not continue
+adding scenes or scratch-reuse work to PR #2956; it is merged. The last closed
+gap was the pure semi-implicit external-force multibody path:
+
+- `computeUnconstrainedMultibodyVelocityInto()` now reuses
+  `MultibodyDynamicsScratch::bodyJacobian` for link body Jacobians.
+- Split semi-implicit multibody contact/unified stages skip collision queries
+  when no relevant collision shapes exist.
+- `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
+  `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` cover the
+  forced-slider external-force fixture after bake.
+
+Verification already run for the latest code checkpoint:
+
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run test-unit`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+
+Fresh-session reading order:
+
+1. This handoff block.
+2. `README.md` Current Handoff plus Remaining Phase 4/5 follow-up items.
+3. The latest code around
+   `dart/simulation/compute/multibody_dynamics.cpp`,
+   `dart/simulation/compute/world_step_stage.cpp`, and
+   `tests/unit/simulation/world/test_world.cpp` only if continuing nearby
+   allocation work.
+
+Historical notes below are retained for archaeology and evidence. Prefer the
+handoff block above when older sections use phrases such as "latest" or
+"current" for now-landed branches.
+
 ## Current Reality (2026-06-10)
 
 PR #2956 is wrapped and should stay frozen except for PR-management fixes. The
@@ -1911,6 +1968,7 @@ git status -sb
 git diff --stat
 ```
 
-Then continue the allocator correctness branch. Before committing after any new
-edits, run `pixi run lint` and rerun the six focused common allocator tests
-above if lint touches C++ files.
+Then read the Authoritative Handoff at the top of this file and the current
+follow-up items in `README.md`. Before committing after any new edits, run
+`pixi run lint` and the focused tests that cover the touched allocation path;
+use `pixi run build` and `pixi run test-unit` for broad C++ behavior changes.
