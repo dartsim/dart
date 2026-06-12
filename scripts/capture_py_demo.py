@@ -747,6 +747,16 @@ def _workflow_capture_specs(
     return tuple(specs)
 
 
+def _workflow_requested_include_flags(
+    args: argparse.Namespace,
+) -> dict[str, bool]:
+    return {
+        "include_related": bool(getattr(args, "include_related", False)),
+        "include_ipc_shelf": bool(getattr(args, "include_ipc_shelf", False)),
+        "include_packets": bool(getattr(args, "include_packets", False)),
+    }
+
+
 def _workflow_row_bounds(args: argparse.Namespace, total_count: int) -> tuple[int, int]:
     start = getattr(args, "workflow_start_row", None)
     end = getattr(args, "workflow_end_row", None)
@@ -1242,6 +1252,7 @@ def _write_workflow_manifest(
     status: str,
     captures: list[dict[str, object]],
     started_at: float,
+    requested_include_flags: dict[str, bool] | None = None,
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "manifest.json"
@@ -1254,15 +1265,20 @@ def _write_workflow_manifest(
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
-    include_related = any(
+    selected_include_related = any(
         capture.get("workflow_group") == "related_evidence" for capture in captures
     )
-    include_ipc_shelf = any(
+    selected_include_ipc_shelf = any(
         capture.get("workflow_group") == "rigid_ipc_shelf" for capture in captures
     )
-    include_packets = any(
+    selected_include_packets = any(
         capture.get("workflow_group") == "capture_first_packet" for capture in captures
     )
+    requested_include_flags = requested_include_flags or {
+        "include_related": selected_include_related,
+        "include_ipc_shelf": selected_include_ipc_shelf,
+        "include_packets": selected_include_packets,
+    }
     capture_orders = [
         int(capture["order"])
         for capture in captures
@@ -1282,9 +1298,12 @@ def _write_workflow_manifest(
         {
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
-            "include_related": include_related,
-            "include_ipc_shelf": include_ipc_shelf,
-            "include_packets": include_packets,
+            "include_related": requested_include_flags["include_related"],
+            "include_ipc_shelf": requested_include_flags["include_ipc_shelf"],
+            "include_packets": requested_include_flags["include_packets"],
+            "selected_include_related": selected_include_related,
+            "selected_include_ipc_shelf": selected_include_ipc_shelf,
+            "selected_include_packets": selected_include_packets,
             "workflow_total_count": workflow_total_count,
             "workflow_row_start": min(capture_orders) if capture_orders else None,
             "workflow_row_end": max(capture_orders) if capture_orders else None,
@@ -1325,6 +1344,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
     _validate_rigid_workflow_args(args)
     output_dir = _workflow_output_dir(args)
     started_at = time.monotonic()
+    requested_include_flags = _workflow_requested_include_flags(args)
     specs = _workflow_capture_specs(args)
     _workflow_row_bounds(args, len(specs))
     captures = _workflow_plan_entries(args, output_dir)
@@ -1335,6 +1355,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             status="planned",
             captures=captures,
             started_at=started_at,
+            requested_include_flags=requested_include_flags,
         )
         for capture in captures:
             print(capture["command"], flush=True)
@@ -1347,6 +1368,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         status="running",
         captures=captures,
         started_at=started_at,
+        requested_include_flags=requested_include_flags,
     )
     for capture in captures:
         order = int(capture["order"])
@@ -1372,6 +1394,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             status=status,
             captures=captures,
             started_at=started_at,
+            requested_include_flags=requested_include_flags,
         )
         if capture["status"] == "failed":
             print(f"manifest: {manifest}", flush=True)
@@ -1383,6 +1406,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         status="complete",
         captures=captures,
         started_at=started_at,
+        requested_include_flags=requested_include_flags,
     )
     print(f"workflow manifest: {manifest}", flush=True)
     return 0

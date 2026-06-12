@@ -317,6 +317,9 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["include_related"] is False
     assert manifest["include_ipc_shelf"] is False
     assert manifest["include_packets"] is False
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is False
+    assert manifest["selected_include_packets"] is False
     assert manifest["dry_run"] is True
     assert manifest["status"] == "planned"
     assert manifest["capture_count"] == len(specs)
@@ -380,6 +383,7 @@ def test_rigid_workflow_dry_run_can_include_related_evidence(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["include_related"] is True
+    assert manifest["selected_include_related"] is True
     assert manifest["capture_count"] == len(specs) + len(related_specs)
     assert [capture["scene"] for capture in manifest["captures"]] == [
         "rigid_body",
@@ -431,6 +435,7 @@ def test_rigid_workflow_dry_run_can_include_direct_ipc_shelf(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["include_ipc_shelf"] is True
+    assert manifest["selected_include_ipc_shelf"] is True
     assert manifest["capture_count"] == len(specs) + len(ipc_shelf_specs)
     assert [capture["scene"] for capture in manifest["captures"]] == [
         "rigid_body",
@@ -491,6 +496,9 @@ def test_rigid_workflow_dry_run_can_include_capture_first_packets(
     assert manifest["include_related"] is True
     assert manifest["include_ipc_shelf"] is True
     assert manifest["include_packets"] is True
+    assert manifest["selected_include_related"] is True
+    assert manifest["selected_include_ipc_shelf"] is True
+    assert manifest["selected_include_packets"] is True
     assert manifest["capture_count"] == (
         len(specs) + len(related_specs) + len(ipc_shelf_specs) + len(packet_specs)
     )
@@ -559,6 +567,68 @@ def test_rigid_workflow_dry_run_can_select_row_range(
     )
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "2/3 rigid_solver_compare" in review_html
+
+
+def test_rigid_workflow_row_range_preserves_requested_extra_groups(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("rigid_body", 24, 960, 540, True),)
+    related_specs = (("rigid_ipc_tunnel", 24, 960, 540, True),)
+    ipc_shelf_specs = (("rigid_ipc", 72, 960, 540, True),)
+    packet_specs = (("rigid_ipc_stack_packet", 24, 960, 540, True),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    monkeypatch.setattr(
+        capture_py_demo, "RIGID_WORKFLOW_RELATED_CAPTURE_SPECS", related_specs
+    )
+    monkeypatch.setattr(
+        capture_py_demo, "RIGID_WORKFLOW_IPC_SHELF_CAPTURE_SPECS", ipc_shelf_specs
+    )
+    monkeypatch.setattr(
+        capture_py_demo, "RIGID_WORKFLOW_PACKET_CAPTURE_SPECS", packet_specs
+    )
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--include-related",
+            "--include-ipc-shelf",
+            "--include-packets",
+            "--workflow-start-row",
+            "3",
+            "--workflow-end-row",
+            "4",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_related"] is True
+    assert manifest["include_ipc_shelf"] is True
+    assert manifest["include_packets"] is True
+    assert manifest["selected_include_related"] is False
+    assert manifest["selected_include_ipc_shelf"] is True
+    assert manifest["selected_include_packets"] is True
+    assert manifest["capture_count"] == 2
+    assert manifest["workflow_total_count"] == 4
+    assert manifest["workflow_row_start"] == 3
+    assert manifest["workflow_row_end"] == 4
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "rigid_ipc_shelf",
+        "capture_first_packet",
+    ]
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_ipc",
+        "rigid_ipc_stack_packet",
+    ]
 
 
 def test_rigid_workflow_run_aggregates_scene_manifests(

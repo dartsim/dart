@@ -308,6 +308,12 @@ pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-
 pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 47 --workflow-end-row 47 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
+When a row range selects only part of a larger packet, the top-level manifest
+keeps the requested packet shape in `include_related`, `include_ipc_shelf`, and
+`include_packets`. The selected slice is reported separately through
+`selected_include_related`, `selected_include_ipc_shelf`, and
+`selected_include_packets`.
+
 For motion evidence, add `--video --fps 24` to the same docked capture path.
 The helper encodes an MP4 when `ffmpeg` is available and still keeps the PNG
 frames as inspectable evidence:

@@ -75,7 +75,9 @@
     incline, pile, contact, and timing evidence while preserving shared replay
     controls. Add `--include-ipc-shelf` so the metric-backed direct Rigid IPC
     shelf scenes can be appended to the same workflow manifest and review
-    index without changing the default 36-row workflow.
+    index without changing the default 36-row workflow. Row-range workflow
+    manifests now preserve requested optional packet groups separately from the
+    optional groups present in the selected slice.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

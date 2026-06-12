@@ -727,6 +727,12 @@ pixi run py-demo-capture -- --rigid-workflow --include-related \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
+For row-range packets, manifest fields such as `include_related`,
+`include_ipc_shelf`, and `include_packets` record the requested packet shape;
+`selected_include_related`, `selected_include_ipc_shelf`, and
+`selected_include_packets` record which optional groups are present in the
+selected row range.
+
 Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash

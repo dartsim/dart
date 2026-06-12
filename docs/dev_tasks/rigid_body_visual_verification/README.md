@@ -2,11 +2,11 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint is a hand-off-only update after an explicit stop request. The
-latest implementation slice is committed as
-`d6ccdd38c4e Bundle direct rigid IPC shelf captures`: the direct metric-backed
-Rigid IPC shelf scenes can now be appended to the workflow capture/review
-packet with an explicit `--include-ipc-shelf` flag.
+This checkpoint adds a workflow-manifest semantics follow-up after the direct
+Rigid IPC shelf capture bundle. Row-range workflow manifests now keep the
+requested optional packet groups in `include_related`, `include_ipc_shelf`, and
+`include_packets`, while separate `selected_include_*` fields report which
+optional groups are present in the selected row range.
 
 Expected repository state after this hand-off:
 
@@ -17,10 +17,10 @@ Expected repository state after this hand-off:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
   `a95687dc628 Promote rigid IPC shelf metrics`.
   `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
+- This continuation adds a local follow-up commit for the manifest
+  requested-versus-selected optional-group split unless a future session has
+  not committed it yet.
 - There is no PR associated with this branch at checkpoint time.
-- The final hand-off docs commit follows the implementation commit and performs
-  no implementation work.
-- No verification was run after the explicit stop request.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -74,6 +74,9 @@ Expected repository state after this hand-off:
 - [x] `py-demo-capture -- --rigid-workflow --include-ipc-shelf` now appends the
       four direct metric-backed Rigid IPC shelf scenes to the workflow manifest
       and `review_index.html` without changing the default 36-row workflow.
+- [x] Row-range workflow manifests now preserve the requested optional packet
+      groups in `include_related`, `include_ipc_shelf`, and `include_packets`
+      while exposing `selected_include_*` fields for the selected slice.
 
 ## Goal
 
@@ -98,11 +101,9 @@ are easy to inspect, cycle, capture, and regression-test.
   `50e671590c8 Promote rigid IPC edge drop evidence`.
   `a95687dc628 Promote rigid IPC shelf metrics`.
   `d6ccdd38c4e Bundle direct rigid IPC shelf captures`.
-- This hand-off update should leave the branch pushed and aligned with
-  `origin/feature/rigid-body-gui-visual-verification`.
+- This continuation adds a local manifest-semantics follow-up commit. It has
+  not been pushed unless the user explicitly approves a push.
 - There is no PR associated with this branch at checkpoint time.
-- A final hand-off-only docs update was added after the explicit stop request
-  and intentionally did not run verification.
 
 ## What The Local Commit Changed
 
@@ -502,6 +503,34 @@ Observed results:
   absolute 47-50 and `rigid_ipc_stack_packet` as the explicit combined-mode
   row 51.
 
+## Verified In The Workflow Manifest Metadata Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_direct_ipc_shelf python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_capture_first_packets python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_select_row_range python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_range_preserves_requested_extra_groups python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_extra_groups_require_workflow python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_row_selection_validates_bounds -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 47 --workflow-end-row 51 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current
+jq -r '.include_related, .include_ipc_shelf, .include_packets, .selected_include_related, .selected_include_ipc_shelf, .selected_include_packets, .capture_count, .workflow_total_count, .workflow_row_start, .workflow_row_end, .captures[0].workflow_group, .captures[0].scene, .captures[4].workflow_group, .captures[4].scene' /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current/manifest.json
+rg -n "47/51 rigid_ipc|50/51 rigid_ipc_pile|51/51 rigid_ipc_stack_packet|rigid_ipc_shelf|capture_first_packet" /tmp/dart_capture_rigid_workflow_requested_groups_dry_run_current/review_index.html
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Focused pytest reported `16 passed`.
+- The public combined row-range dry-run selected rows 47-51 and wrote a
+  workflow manifest where requested flags were all true:
+  `include_related=true`, `include_ipc_shelf=true`, and
+  `include_packets=true`.
+- The same manifest reported the selected slice separately:
+  `selected_include_related=false`, `selected_include_ipc_shelf=true`, and
+  `selected_include_packets=true`, with `capture_count=5`,
+  `workflow_total_count=51`, `workflow_row_start=47`, and
+  `workflow_row_end=51`.
+- The generated review index contained the absolute `47/51 rigid_ipc`,
+  `50/51 rigid_ipc_pile`, and `51/51 rigid_ipc_stack_packet` rows.
+- `pixi run lint` passed.
+- `git diff --check` was clean.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -518,9 +547,10 @@ Observed results:
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`. Expect the
-   `--include-ipc-shelf` capture-bundle slice to be committed as
-   `d6ccdd38c4e Bundle direct rigid IPC shelf captures`, followed by this
-   hand-off docs commit.
+   direct Rigid IPC shelf capture-bundle slice to be committed as
+   `d6ccdd38c4e Bundle direct rigid IPC shelf captures`, followed by the
+   manifest requested-versus-selected optional-group follow-up if this
+   continuation was committed.
 2. Rerun the repository-mandated `pixi run lint` before any further commit.
 3. Choose the next bounded rigid visual-verification gap from the durable
    sidecar, or retire this dev-task folder only if the maintainer explicitly
