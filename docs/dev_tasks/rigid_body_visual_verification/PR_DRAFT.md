@@ -83,6 +83,28 @@
 
 ## Testing
 
+- Interrupted joint motor/limit capture-metrics follow-up:
+  - Local implementation/test edits in
+    `python/examples/demos/scenes/rigid_joint_motor_limits.py` and
+    `python/tests/integration/test_demos_cycle.py` add a scene-owned capture
+    hook for the row 29 multibody actuator verifier, but the normal
+    docs/validation/commit path was stopped by explicit user instruction.
+  - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
+    - `1 passed` before the critical stop instruction
+  - `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234018`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `rigid_joint_motor_limits`, solver `world_multibody_joint_actuators`,
+      constraint `velocity_motor_position_limit_effort_cap`, command speed
+      `0.55`, velocity limit `0.3`, position limit `0.35`, requested force
+      `16.0`, effort limit `4.0`, motor speed `0.3`, motor speed error `0`,
+      latest force-position gap about `0.3942`, latest limited/open
+      acceleration about `2.0/8.0`, acceleration gap about `6.0`, and manifest
+      ranges for motor, limit, force-gap, step-timing, time-step, and world-time
+      fields
+  - Not run after the user's explicit stop/no-further-verification instruction:
+    broader workflow/doc drift guard, `pixi run lint`, bounded
+    `pixi run build`, `git diff --check`, CHANGELOG/README/PLAN-103 updates,
+    or final implementation commit.
 - Previous contact-manipulation capture-metrics follow-up:
   - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_contact_manipulation_pushes_target_toward_goal -q`
     - `1 passed`

@@ -2,19 +2,23 @@
 
 ## Current Handoff Snapshot
 
-Latest continuation resumed the active DART 7 rigid-body visual-verification
-goal from pushed branch head `b68f216ebe9`. The next bounded row selected from
-this task state was `rigid_kinematic_driver`, because it already had live panel
-and replay diagnostics but did not export those signals into
-`py-demo-capture` manifests.
+Critical handoff state as of 2026-06-11: the user explicitly requested stopping
+implementation work and focusing only on handoff, with no further verification.
+No additional test, capture, lint, build, or diff-check commands should be
+assumed after that instruction.
 
-Expected branch after this local checkpoint:
-`feature/rigid-body-gui-visual-verification` should be clean and ahead of
-`origin/feature/rigid-body-gui-visual-verification` by one local completion
-commit on top of `b68f216ebe9` (`Expose rigid contact manipulation capture
-metrics`). Future pushes, PR creation, comments, review replies, CI retriggers,
-merges, or other GitHub mutations still require explicit maintainer/user
-approval.
+Expected branch/worktree state after the handoff-docs push:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Pushed branch content should include the verified kinematic-driver checkpoint
+  and this docs/dev-task handoff update.
+- The same workspace may still have uncommitted implementation/test edits in
+  `python/examples/demos/scenes/rigid_joint_motor_limits.py` and
+  `python/tests/integration/test_demos_cycle.py`. Those edits are intentionally
+  called out here as interrupted current work; do not assume a fresh clone from
+  the pushed branch contains them unless they were explicitly committed later.
+- Future pushes, PR creation, comments, review replies, CI retriggers, merges,
+  or other GitHub mutations still require explicit maintainer/user approval.
 
 Recent checkpoints:
 
@@ -25,10 +29,11 @@ Recent checkpoints:
 - `c2beab542e9` (`Expose rigid spin roll capture metrics`)
 - `dfef5306aac` (`Expose rigid stack stability capture metrics`)
 - `b68f216ebe9` (`Expose rigid contact manipulation capture metrics`)
-- the local checkpoint containing this file (`Expose rigid kinematic driver capture metrics`)
+- `9947ab1285a` (`Expose rigid kinematic driver capture metrics`)
+- the handoff-docs checkpoint containing this file
 
-Current local slice: `rigid_kinematic_driver` row capture metrics. The
-local checkpoint touches:
+Completed local checkpoint: `rigid_kinematic_driver` row capture metrics. The
+checkpoint touches:
 
 - `python/examples/demos/scenes/rigid_kinematic_driver.py`
 - `python/tests/integration/test_demos_cycle.py`
@@ -49,7 +54,7 @@ compact history ranges. The focused test now asserts the capture hook is
 present and that exported lane values and histories mirror the live controller
 state.
 
-Validation collected for this slice:
+Validation collected for the kinematic-driver slice:
 
 - `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_kinematic_driver_carries_box_with_ipc -q`
   reported `1 passed`.
@@ -90,12 +95,66 @@ Validation collected for this slice:
   scene-metrics events; `pixi run lint`, bounded build, and `git diff --check`
   passed.
 
-Immediate next step for a fresh session: verify the branch state with
-`git status -sb` and `git log --oneline --decorate -5`, then continue the
-capture-metrics hardening pass. The likely next missing row is
-`rigid_joint_motor_limits`, because rows 24-28 already expose capture hooks
-while row 29 still only has live panel/replay diagnostics for motor speed,
-limit error, acceleration gap, effort cap, and step-profile histories.
+Interrupted current slice: `rigid_joint_motor_limits` row capture metrics.
+Implementation/test edits were made but handoff was requested before the normal
+docs/validation/commit path could finish. The dirty patch adds:
+
+- `CAPTURE_METRICS_INFO_KEY` wiring in
+  `python/examples/demos/scenes/rigid_joint_motor_limits.py`.
+- Scene-owned payload fields for row identity, solver
+  `world_multibody_joint_actuators`, constraint
+  `velocity_motor_position_limit_effort_cap`, time step, world time,
+  user-facing controls, joint names, motor speed/position clamp metrics,
+  position-limit angle/error/speed, capped-vs-reference force travel and
+  acceleration gaps, step timing, the latest metrics snapshot, and compact
+  history ranges.
+- `_step_ms_history` replay capture/restore coverage and a panel line showing
+  force travel gap, step timing, and world time.
+- Focused assertions in
+  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort`
+  that the capture hook mirrors the controller state and exposes history maxima.
+
+Evidence collected for the interrupted motor-limit slice before the critical
+stop instruction:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
+  reported `1 passed` after fixing the assertions to compare latest top-level
+  fields against latest metrics and history fields against max histories.
+- `pixi run py-demo-capture -- --scene rigid_joint_motor_limits --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_joint_motor_limits_metrics_1781234018`
+  wrote a nonblank docked capture with 71 PNG frames, 72 scene-metrics events,
+  screenshot
+  `/tmp/dart_capture_joint_motor_limits_metrics_1781234018/rigid_joint_motor_limits.png`,
+  and manifest ranges for motor speed/position/error, position-limit angle and
+  error, capped/open force acceleration, acceleration gap, force-position gap,
+  step timing, time step, and world time.
+- Latest captured payload details: row `rigid_joint_motor_limits`, solver
+  `world_multibody_joint_actuators`, constraint
+  `velocity_motor_position_limit_effort_cap`, command speed `0.55`, velocity
+  limit `0.3`, position limit `0.35`, requested force `16.0`, effort limit
+  `4.0`, motor speed `0.3`, motor speed error `0`, latest position-limit angle
+  about `0.2633`, latest force-position gap about `0.3942`, latest
+  limited/open force acceleration about `2.0/8.0`, acceleration gap about `6.0`,
+  latest step time about `0.1055 ms`, and history sample count `73`.
+
+Not run after the critical stop instruction: broader workflow/doc drift guard,
+`pixi run lint`, bounded `pixi run build`, `git diff --check`, CHANGELOG update,
+README update, PLAN-103 sidecar update, or final commit of the motor-limit
+implementation/test patch.
+
+Immediate next step for a fresh session:
+
+1. Run `git status -sb` and inspect whether the motor-limit implementation/test
+   files are still dirty in this workspace.
+2. If resuming the interrupted slice, review that diff first, then finish the
+   normal docs updates in `CHANGELOG.md`, `python/examples/demos/README.md`,
+   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`, and
+   this dev-task packet.
+3. Re-run validation explicitly before committing the motor-limit code/test
+   patch. The previously intended guard included the motor-limit focused test,
+   the rigid workflow/doc drift tests, `pixi run lint`, bounded
+   `pixi run build`, and `git diff --check`.
+4. After row 29 is finished, the likely next missing capture-metrics row is
+   `rigid_joint_passive_parameters`.
 
 ## Last Session Summary
 
@@ -522,8 +581,11 @@ capture, `pixi run lint`, bounded `pixi run build`, and `git diff --check`.
 ## Immediate Next Step
 
 Use the current handoff snapshot at the top of this file for live branch state.
-For the next implementation slice, continue the capture-metrics hardening pass
-at `rigid_joint_motor_limits` unless a fresh audit finds a higher-priority
+Resume by inspecting the interrupted `rigid_joint_motor_limits` implementation
+and test diff if those files are still dirty in this workspace. Finish its
+normal docs updates and validation before committing that code/test patch.
+After row 29 is complete, continue the capture-metrics hardening pass with
+`rigid_joint_passive_parameters` unless a fresh audit finds a higher-priority
 missing rigid-body GUI evidence gap.
 
 ## Context That Would Be Lost

@@ -174,6 +174,19 @@
 - [x] Joint motor/limit slice: `rigid_joint_motor_limits` shows the stable
       World multibody joint-actuator path for rigid links with velocity motor,
       position stop, and effort-cap diagnostics.
+- [ ] Interrupted joint motor/limit capture-metrics follow-up:
+      `rigid_joint_motor_limits` has local implementation/test edits adding a
+      scene-owned capture hook for row identity, multibody actuator scope,
+      controls, joint names, motor clamp, position-stop, force/effort cap,
+      acceleration-gap, step-timing, latest-metric, and compact-history fields.
+      Before the critical stop instruction, the focused motor-limit guard
+      reported `1 passed` and a real docked 72-frame capture wrote
+      72 scene-metrics events under
+      `/tmp/dart_capture_joint_motor_limits_metrics_1781234018`. The broader
+      workflow/doc drift guard, `pixi run lint`, bounded build,
+      `git diff --check`, CHANGELOG/README/PLAN-103 updates, and final
+      implementation commit were not run after the user's explicit
+      no-further-verification instruction.
 - [x] Passive joint-parameter slice: `rigid_joint_passive_parameters` shows the
       World multibody spring/rest, damping, Coulomb friction, and armature paths
       in contact-free prismatic lanes with acceleration and energy diagnostics.
@@ -625,27 +638,33 @@ and the no-tunneling scope decision.
 ## Immediate Next Steps
 
 1. Confirm `git status -sb` on
-   `feature/rigid-body-gui-visual-verification`, then continue the
-   capture-metrics hardening pass one row at a time.
-2. The next likely missing capture-metrics row is `rigid_joint_motor_limits`,
-   because rows 24-28 already expose capture hooks while row 29 still only has
-   live panel/replay diagnostics for motor speed, limit error, acceleration gap,
-   effort cap, and step-profile histories.
-3. Keep payloads summary-oriented: row identity, solver/contact scope,
+   `feature/rigid-body-gui-visual-verification` and inspect whether
+   `python/examples/demos/scenes/rigid_joint_motor_limits.py` and
+   `python/tests/integration/test_demos_cycle.py` are still dirty. The pushed
+   handoff docs intentionally describe that interrupted patch, but a fresh
+   clone should not assume the implementation/test edits are present unless a
+   later commit added them.
+2. If resuming the interrupted motor-limit capture-metrics slice, finish the
+   normal docs updates (`CHANGELOG.md`, `python/examples/demos/README.md`,
+   PLAN-103 sidecar, and this dev-task packet), then re-run validation before
+   committing the code/test patch.
+3. After row 29 is finished, the next likely missing capture-metrics row is
+   `rigid_joint_passive_parameters`.
+4. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-4. The branch was pushed for handoff only because the maintainer/user explicitly
+5. The branch was pushed for handoff only because the maintainer/user explicitly
    requested it on 2026-06-11. Future pushes, PR creation, comments, review
    replies, or other GitHub mutations still require explicit approval.
-5. Refresh validation as needed, then use the local
+6. Refresh validation as needed, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-6. Keep related-evidence routes synchronized between the runner-owned
+7. Keep related-evidence routes synchronized between the runner-owned
    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
    non-numbered evidence shelves are added.
-7. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+8. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
    compliance deferrals when public dartpy APIs expose those surfaces.
-8. Keep fuller articulated arm/gripper manipulation deferred until the public
+9. Keep fuller articulated arm/gripper manipulation deferred until the public
    API/runtime can support it as an interactive verifier. The current audit
    found rigid-body joints are not IPC-supported, multibody link contacts lack
    material/friction controls, and scripted IPC two-jaw pinch settings that
