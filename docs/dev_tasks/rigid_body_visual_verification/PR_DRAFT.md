@@ -87,6 +87,36 @@
 
 ## Testing
 
+- Latest World related-route capture-metrics follow-up:
+  - `python/examples/demos/scenes/floating_base.py` and
+    `python/examples/demos/scenes/articulated.py` now publish scene-owned
+    capture metrics for the non-numbered World Rigid Body shelf routes linked
+    from `rigid_free_flight` and `rigid_multibody_dynamics_terms`.
+  - The payloads report related source row, floating-joint drift/spin speed and
+    position, compact two-link arm shoulder/wrist speed, forearm height,
+    damping controls, joint positions, and compact history extrema.
+  - `python/tests/integration/test_demos_cycle.py::test_world_related_evidence_routes_report_capture_metrics`
+    asserts both capture hooks and finite manifest-friendly fields.
+  - Focused World related-route guard with runner related-route and panel
+    related-route coverage
+    - `7 passed`
+  - `pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_floating_base_metrics_1781250001`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `floating_base`, related source row `rigid_free_flight`, linear speed
+      about `1.0145`, angular speed `2.0`, body x about `0.725`, and world
+      time about `0.72`
+  - `pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_articulated_metrics_1781250002`
+    - nonblank docked capture, 71 PNG frames, 72 scene-metrics events, row
+      `articulated`, related source row `rigid_multibody_dynamics_terms`,
+      shoulder speed about `0.643`, wrist speed about `0.583`, max joint speed
+      about `0.643`, forearm height about `-0.0257`, and world time about
+      `0.072`
+  - `pixi run lint`
+    - passed
+  - bounded default `pixi run build`
+    - passed, `ninja: no work to do`
+  - `git diff --check`
+    - passed
 - Handoff-only stop after the AVBD related-route checkpoint:
   - The user explicitly stopped further work and requested handoff-only docs
     with no further verification.

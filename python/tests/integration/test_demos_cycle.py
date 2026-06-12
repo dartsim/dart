@@ -1208,6 +1208,89 @@ def test_rigid_visual_capture_first_ipc_packets_are_documented() -> None:
         )
 
 
+def test_world_related_evidence_routes_report_capture_metrics() -> None:
+    import numpy as np
+
+    from examples.demos.scenes.articulated import (
+        SCENE as ARTICULATED_SCENE,
+        build as build_articulated,
+    )
+    from examples.demos.scenes.floating_base import (
+        SCENE as FLOATING_BASE_SCENE,
+        build as build_floating_base,
+    )
+
+    assert FLOATING_BASE_SCENE.category == "World Rigid Body"
+    assert FLOATING_BASE_SCENE.id == "floating_base"
+    floating_setup = build_floating_base()
+    assert callable(floating_setup.info[CAPTURE_METRICS_INFO_KEY])
+    assert floating_setup.pre_step is not None
+    for _ in range(8):
+        floating_setup.pre_step()
+        floating_setup.world.step()
+
+    floating_metrics = floating_setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert floating_metrics["row"] == "floating_base"
+    assert floating_metrics["related_source_row"] == "rigid_free_flight"
+    assert floating_metrics["solver"] == "floating_joint_se3"
+    assert floating_metrics["scope"] == "broader_floating_joint_drift_spin"
+    assert floating_metrics["dofs"] == pytest.approx(float(floating_setup.info["dofs"]))
+    assert floating_metrics["time_step_ms"] == pytest.approx(10.0)
+    assert floating_metrics["history"]["samples"] >= 9.0
+    assert floating_metrics["linear_speed"] == pytest.approx(1.0, abs=0.01)
+    assert floating_metrics["angular_speed"] == pytest.approx(2.0)
+    assert floating_metrics["world_time"] > 0.0
+    assert np.isfinite(
+        [
+            float(floating_metrics["body_x"]),
+            float(floating_metrics["body_y"]),
+            float(floating_metrics["body_z"]),
+            float(floating_metrics["spin_command"]),
+            float(floating_metrics["history"]["max_body_x"]),
+            float(floating_metrics["history"]["min_body_x"]),
+        ]
+    ).all()
+
+    assert ARTICULATED_SCENE.category == "World Rigid Body"
+    assert ARTICULATED_SCENE.id == "articulated"
+    articulated_setup = build_articulated()
+    assert callable(articulated_setup.info[CAPTURE_METRICS_INFO_KEY])
+    assert articulated_setup.pre_step is not None
+    for _ in range(8):
+        articulated_setup.pre_step()
+        articulated_setup.world.step()
+
+    articulated_metrics = articulated_setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert articulated_metrics["row"] == "articulated"
+    assert (
+        articulated_metrics["related_source_row"]
+        == "rigid_multibody_dynamics_terms"
+    )
+    assert articulated_metrics["solver"] == "articulated_sx_world"
+    assert articulated_metrics["scope"] == "broader_two_link_arm"
+    assert articulated_metrics["dofs"] == pytest.approx(
+        float(articulated_setup.info["dofs"])
+    )
+    assert articulated_metrics["link_count"] == pytest.approx(3.0)
+    assert articulated_metrics["history"]["samples"] >= 9.0
+    assert articulated_metrics["world_time"] > 0.0
+    assert np.isfinite(
+        [
+            float(articulated_metrics["time_step_ms"]),
+            float(articulated_metrics["shoulder_speed"]),
+            float(articulated_metrics["wrist_speed"]),
+            float(articulated_metrics["max_joint_speed"]),
+            float(articulated_metrics["forearm_height"]),
+            float(articulated_metrics["shoulder_damping"]),
+            float(articulated_metrics["wrist_damping"]),
+            float(articulated_metrics["shoulder_position"]),
+            float(articulated_metrics["wrist_position_norm"]),
+            float(articulated_metrics["history"]["max_joint_speed"]),
+            float(articulated_metrics["history"]["min_forearm_height"]),
+        ]
+    ).all()
+
+
 def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
     import numpy as np
 

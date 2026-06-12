@@ -198,11 +198,13 @@ expose `SceneSetup.info["capture_metrics"]`; `rigid_step_diagnostics` and
 `rigid_contact_scale_budget` summarize their profiling, memory, contact, and
 budget metrics into `manifest.json` as first/latest events, per-key presence
 counts, and top-level numeric ranges. The `contact` row uses the same hook for
-multibody-link drop/slide/pusher lane summaries, `rigid_ipc_tunnel` mirrors
-no-tunneling clearance, through-wall margin, velocity, contact, step-timing,
-and barrier-held status, and `rigid_ipc_stack_packet` mirrors clearance,
-contact, drift, height, wall-time, frame-budget, and benchmark values through
-the same schema. The related `diff_drone_liftoff` route uses the schema for
+multibody-link drop/slide/pusher lane summaries, the related World rows
+`floating_base` and `articulated` mirror floating-joint drift/spin and two-link
+arm speed/height/damping diagnostics, `rigid_ipc_tunnel` mirrors no-tunneling
+clearance, through-wall margin, velocity, contact, step-timing, and
+barrier-held status, and `rigid_ipc_stack_packet` mirrors clearance, contact,
+drift, height, wall-time, frame-budget, and benchmark values through the same
+schema. The related `diff_drone_liftoff` route uses the schema for
 contact-gradient mode outcome, target/rest height, analytic versus aware
 thrust/final-height/loss values, height/target-error gaps, fallback status, and
 history summaries. The related AVBD routes use the schema for fixed-joint
@@ -894,6 +896,23 @@ Evidence recorded for this slice:
   `0.8000000000000007` m/s with zero orthogonal drift. The focused AVBD plus
   related-route/docs guard reported `15 passed`; `pixi run lint`, bounded
   default `pixi run build`, and `git diff --check` passed.
+- Latest World related-route metrics follow-up: `floating_base` and
+  `articulated` now export scene-owned capture metrics for the non-numbered
+  World Rigid Body shelf routes linked from `rigid_free_flight` and
+  `rigid_multibody_dynamics_terms`. The payloads report row identity, related
+  source row, floating-joint drift/spin speed and position, compact two-link
+  arm shoulder/wrist speed, forearm height, damping controls, joint positions,
+  and compact history extrema. The focused World related-route guard with
+  runner/panel related-route coverage reported `7 passed`. Real docked
+  captures wrote 71 PNG frames and 72 scene-metrics events for each route under
+  `/tmp/dart_capture_floating_base_metrics_1781250001` and
+  `/tmp/dart_capture_articulated_metrics_1781250002`. Latest payloads included
+  `floating_base` linear speed about `1.0145`, angular speed `2.0`, body x
+  about `0.725`, and world time about `0.72`, plus `articulated` shoulder speed
+  about `0.643`, wrist speed about `0.583`, max joint speed about `0.643`,
+  forearm height about `-0.0257`, and world time about `0.072`.
+  `pixi run lint`, bounded default `pixi run build`, and `git diff --check`
+  passed.
 - Focused behavior tests across the packet cover the ordered rigid workflow:
   default front door, body modes, free flight, external and point loads,
   time-step sensitivity, step diagnostics, contact-scale frame-budget

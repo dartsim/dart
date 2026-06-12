@@ -9,8 +9,9 @@ no further verification. Fresh sessions should start from this boundary.
 - Worktree was clean before the docs handoff edit.
 - Local code checkpoint before this docs-only handoff: `4d63d2b24b0c`
   (`Expose AVBD related route capture metrics`).
-- Origin at that moment: `5f794e65d3f8` (`Document rigid visual verification
-  handoff`), so the branch was ahead of origin by one code/docs checkpoint.
+- Origin at that moment: `5f794e65d3f8`
+  (`Document rigid visual verification handoff`).
+- The branch was ahead of origin by one code/docs checkpoint.
 - Last checked GitHub state: no PR associated with this branch.
 - No tests, lint, build, captures, or `git diff --check` were run after this
   handoff-only docs edit. Do not infer fresh verification for the handoff docs
@@ -483,6 +484,22 @@ no further verification. Fresh sessions should start from this boundary.
       orthogonal drift. The focused AVBD plus related-route/docs guard later
       reported `15 passed`; `pixi run lint`, bounded default `pixi run build`,
       and `git diff --check` passed.
+- [x] World related-route metrics follow-up: keep `floating_base` and
+      `articulated` as non-numbered World Rigid Body related evidence, and add
+      scene-owned capture metrics so the routes linked from
+      `rigid_free_flight` and `rigid_multibody_dynamics_terms` are not
+      screenshot-only evidence. `floating_base` now reports related-source
+      identity, floating-joint SE(3) drift/spin speed, position, spin command,
+      and compact history extrema. `articulated` now reports related-source
+      identity, DOFs, link count, shoulder/wrist speeds, forearm height,
+      damping controls, joint positions, and compact history extrema. The
+      focused related-route guard reported `7 passed`; real docked captures for
+      both routes wrote 71 PNG frames and 72 scene-metrics events apiece.
+      Latest payloads reported `floating_base` linear speed about `1.0145`,
+      angular speed `2.0`, and body x about `0.725`, plus `articulated`
+      shoulder speed about `0.643`, wrist speed about `0.583`, and forearm
+      height about `-0.0257`. `pixi run lint`, bounded default
+      `pixi run build`, and `git diff --check` passed.
 - [x] Capture-first IPC stack packet: `rigid_ipc_stack_packet` lives in the
       non-numbered Rigid IPC shelf with frame-budget, wall-time, clearance,
       contact-count, drift, height-error, speed, and `bm_rigid_ipc_solver`
@@ -849,20 +866,23 @@ and the no-tunneling scope decision.
    `4d63d2b24b0c` for fixed-joint contact, spherical breakable joint, revolute
    motor, and prismatic motor. Keep these as non-numbered related shelf routes
    unless a distinct numbered workflow question appears.
-6. Keep payloads summary-oriented: row identity, solver/contact scope,
+6. The broader World related-route metrics slice is implemented locally for
+   `floating_base` and `articulated`; keep both as non-numbered related shelf
+   routes unless a distinct numbered workflow question appears.
+7. Keep payloads summary-oriented: row identity, solver/contact scope,
    user-facing controls, current lane metrics, compact history ranges, and
    enough top-level numeric fields for manifest range summaries.
-7. Future pushes after this handoff, PR creation, comments, review replies, or
+8. Future pushes after this handoff, PR creation, comments, review replies, or
    other GitHub mutations still require explicit approval.
-8. Refresh validation for any later code/docs changes, then use the local
+9. Refresh validation for any later code/docs changes, then use the local
    [`PR_DRAFT.md`](PR_DRAFT.md) when a maintainer approves opening a PR for the
    pushed branch.
-9. Keep related-evidence routes synchronized between the runner-owned
-   `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
-   non-numbered evidence shelves are added.
-10. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
-   compliance deferrals when public dartpy APIs expose those surfaces.
-11. Keep fuller articulated arm/gripper manipulation deferred until the public
+10. Keep related-evidence routes synchronized between the runner-owned
+    `Rigid Workflow` panel and the durable PLAN-103 sidecar if more
+    non-numbered evidence shelves are added.
+11. Revisit the direct impulse, sleep/deactivation/island, and loop-closure
+    compliance deferrals when public dartpy APIs expose those surfaces.
+12. Keep fuller articulated arm/gripper manipulation deferred until the public
     API/runtime can support it as an interactive verifier. The current audit
     found rigid-body joints are not IPC-supported, multibody link contacts lack
     material/friction controls, and scripted IPC two-jaw pinch settings that

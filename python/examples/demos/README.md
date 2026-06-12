@@ -188,7 +188,10 @@ The older **`floating_base`** and **`articulated`** rows stay in the broader
 **World Rigid Body** catalog outside the numbered verifier block. In the
 viewer, `Rigid Free Flight` routes to `floating_base` for the floating-joint
 SE(3) drift/spin example, and `Rigid Multibody Dynamics Terms` routes to
-`articulated` for the compact two-link arm example.
+`articulated` for the compact two-link arm example. Their capture metrics keep
+the related routes from being screenshot-only evidence by recording
+floating-joint speed/position histories and articulated arm speed, height, and
+damping diagnostics.
 
 For AVBD-specific rigid constraint variants, use the **AVBD Rigid Constraints
 (sx)** shelf. In the viewer, the `Contact`, `Rigid Joint Breakage`, and `Rigid

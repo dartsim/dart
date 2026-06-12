@@ -196,9 +196,10 @@
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. The baseline, contact-inspection, solver-comparison,
     contact-policy, multibody link-contact, link center-of-mass, link Jacobian,
-    multibody solver-family, loop-closure family, no-tunneling IPC,
-    differentiable contact-gradient route, AVBD fixed contact, AVBD spherical
-    breakage, and AVBD revolute/prismatic motor related routes,
+    multibody solver-family, loop-closure family, broader floating-base and
+    two-link arm related routes, no-tunneling IPC, differentiable
+    contact-gradient route, AVBD fixed contact, AVBD spherical breakage, and
+    AVBD revolute/prismatic motor related routes,
     step-diagnostics, contact-scale budget, and rigid IPC stack packet rows use
     it to make capture artifacts carry scene-owned physics/runtime evidence.
   - Added opt-in `replay_timeline` metadata for the shared Python `py-demos`
@@ -218,6 +219,11 @@
     the `Find row` filter indexes those related shelf targets without demoting
     broad row-intent searches. Related search results label the target scene,
     and the docs now include docked capture commands for every related route.
+  - Added scene-owned capture metrics to the broader World related-route
+    Python `py-demos` scenes `floating_base` and `articulated`, so the
+    non-numbered World shelf routes linked from `rigid_free_flight` and
+    `rigid_multibody_dynamics_terms` carry SE(3) drift/spin and two-link arm
+    speed/height/damping evidence in `py-demo-capture` manifests.
   - Added `rigid_ipc_stack_packet` to the non-numbered Rigid IPC shelf as a
     capture-first four-box stack stress scene with frame-budget, wall-time,
     clearance, contact-count, drift, height-error, speed, and benchmark-owner

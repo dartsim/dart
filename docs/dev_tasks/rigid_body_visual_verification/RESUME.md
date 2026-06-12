@@ -1,5 +1,62 @@
 # Resume: Rigid-Body Visual Verification
 
+## Current Handoff Snapshot - 2026-06-11 World Related Metrics
+
+The continuation resumed from pushed handoff commit `550b37d8b68` and hardened
+the remaining broad World related-evidence routes that were still
+screenshot-only evidence: `floating_base` and `articulated`. These remain
+non-numbered World Rigid Body shelf routes, not new numbered workflow rows.
+
+Current local slice: broader World related-route capture metrics. The
+checkpoint touches:
+
+- `python/examples/demos/scenes/floating_base.py`
+- `python/examples/demos/scenes/articulated.py`
+- `python/tests/integration/test_demos_cycle.py`
+- `CHANGELOG.md`
+- `python/examples/demos/README.md`
+- `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
+- `docs/dev_tasks/rigid_body_visual_verification/README.md`
+- `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+What changed in code/test:
+
+- `floating_base.py` now samples floating-joint SE(3) drift/spin metrics during
+  `pre_step` and exposes them through `SceneSetup.info["capture_metrics"]`:
+  related source row `rigid_free_flight`, linear speed, angular speed, body
+  position, spin command, time step, world time, and compact history extrema.
+- `articulated.py` now samples compact two-link arm metrics during `pre_step`
+  and exposes them through the same capture hook: related source row
+  `rigid_multibody_dynamics_terms`, DOFs, link count, shoulder/wrist speeds,
+  forearm height, damping controls, joint positions, world time, and compact
+  history extrema.
+- `python/tests/integration/test_demos_cycle.py::test_world_related_evidence_routes_report_capture_metrics`
+  asserts both related routes publish callable capture hooks, preserve
+  related-source identities, expose finite manifest-friendly top-level fields,
+  and accumulate history samples while stepping through the render bridge.
+
+Validation collected so far for this slice:
+
+- `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_world_related_evidence_routes_report_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_related_evidence_routes_are_valid python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_related_evidence_routes_to_other_shelves python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_route_rows_request_scene_switches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_labels_related_evidence_search_matches -q`
+  reported `7 passed`.
+- Real docked captures:
+  - `pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_floating_base_metrics_1781250001`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with row
+    `floating_base`, related source row `rigid_free_flight`, linear speed about
+    `1.0145`, angular speed `2.0`, body x about `0.725`, and world time about
+    `0.72`.
+  - `pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_articulated_metrics_1781250002`
+    wrote 71 PNG frames, 72 scene-metrics events, and latest metrics with row
+    `articulated`, related source row `rigid_multibody_dynamics_terms`,
+    shoulder speed about `0.643`, wrist speed about `0.583`, max joint speed
+    about `0.643`, forearm height about `-0.0257`, and world time about
+    `0.072`.
+- `pixi run lint` passed.
+- Bounded default `pixi run build` passed with `DART safe jobs: 4` and
+  `ninja: no work to do`.
+- `git diff --check` passed.
+
 ## Critical Stop Handoff - 2026-06-11 AVBD Related Metrics
 
 The user explicitly stopped further work and requested handoff-only docs with
@@ -9,10 +66,10 @@ State at the start of this handoff-only docs edit:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Worktree: clean before the docs handoff edit.
-- Local code checkpoint: `4d63d2b24b0c` (`Expose AVBD related route capture
-  metrics`).
-- Origin at that moment: `5f794e65d3f8` (`Document rigid visual verification
-  handoff`).
+- Local code checkpoint: `4d63d2b24b0c`.
+- Local code checkpoint title: `Expose AVBD related route capture metrics`.
+- Origin at that moment: `5f794e65d3f8`
+  (`Document rigid visual verification handoff`).
 - The local branch was ahead of origin by one code/docs checkpoint before this
   handoff-only docs commit.
 - Last checked GitHub state: no PR associated with this branch.
