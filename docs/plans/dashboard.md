@@ -282,7 +282,7 @@ its own line so status updates remain git-history friendly.
 - Next step: Continue the active
   [`../dev_tasks/unified_newton_barrier_multibody/`](../dev_tasks/unified_newton_barrier_multibody/)
   Phase 6 CPU corpus follow-up on
-  `simx/plan083-phase6-abd-runtime-evidence`. PR #2960 landed
+  `simx/plan083-phase-6-abd-comparison-packets`. PR #2960 landed
   implementation-roadmap Phases 3-8; PR #2961 measured the private GPU PSD
   projection packet, added the Fig. 17 barrier-force diagnostic, and aligned
   articulation-only figure rows with landed private diagnostics; PR #2970
@@ -292,15 +292,13 @@ its own line so status updates remain git-history friendly.
   terrain vehicle, ragdoll, nunchaku, nunchaku scaling, windmill, Candy,
   precession, reduced timing-breakdown, reduced Table 2, the sparse equality
   change-of-variable rigid IPC path, and the reduced affine point-triangle
-  micro-solve diagnostic. The current follow-up adds reduced ABD runtime-step
-  evidence for `abd-vs-rigid-cards` and reduced two-body ABD pair runtime-step
-  evidence for `abd-vs-rigid-wreck`, plus reduced ABD chain-net runtime-step
-  packets for `abd-chain-8`, `abd-chain-16`, and `abd-chain-96`, without
-  claiming card-stack, wrecking-ball, or chain-net assets, rigid IPC comparison
-  timing, GPU parity, or paper-scale parity. The completion audit still records
-  PLAN-083 as incomplete while
-  planned manifest, CPU corpus, and non-PSD GPU parity rows remain, so dev-task
-  retirement needs maintainer direction before deletion.
+  micro-solve diagnostic; PR #2974 added reduced ABD runtime-step evidence for
+  `abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
+  and `abd-chain-96`. The current follow-up adds reduced ABD gears/Bullet
+  comparison packets without claiming gear assets, Bullet/reference baselines,
+  GPU parity, or paper-scale parity. The completion audit still records
+  PLAN-083 as incomplete while planned manifest and non-PSD GPU parity rows
+  remain, so dev-task retirement needs maintainer direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

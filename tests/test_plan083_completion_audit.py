@@ -96,10 +96,6 @@ def test_plan083_completion_audit_requires_not_complete_when_rows_are_planned() 
 def test_plan083_completion_audit_requires_blocked_cpu_and_gpu_rows() -> None:
     module = _load_module()
     manifest_counts = module._manifest_status_counts(MANIFEST)
-    cpu_row_count, cpu_counts, _ = module._summary_status_counts(
-        module.DEFAULT_CPU_CORPUS,
-        "scenes",
-    )
     gpu_row_count, gpu_counts, _ = module._summary_status_counts(
         module.DEFAULT_GPU_PACKET,
         "rows",
@@ -118,9 +114,9 @@ def test_plan083_completion_audit_requires_blocked_cpu_and_gpu_rows() -> None:
     errors = module.validate_audit(
         audit_text,
         manifest_counts,
-        cpu_counts,
+        Counter({"planned": 1}),
         gpu_counts,
-        cpu_row_count,
+        1,
         gpu_row_count,
     )
 
