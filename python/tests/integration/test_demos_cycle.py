@@ -1604,19 +1604,8 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         / "103-examples-strategy"
         / "rigid-body-visual-verification.md"
     )
-    dev_task = (
-        root
-        / "docs"
-        / "dev_tasks"
-        / "rigid_body_visual_verification"
-        / "README.md"
-    )
-    text = "\n".join(
-        [
-            sidecar.read_text(encoding="utf-8"),
-            dev_task.read_text(encoding="utf-8"),
-        ]
-    )
+    text = sidecar.read_text(encoding="utf-8")
+    normalized_text = re.sub(r"\s+", " ", text)
 
     rigid_body_attrs = set(dir(sx.RigidBody))
     world_attrs = set(dir(sx.World))
@@ -1639,7 +1628,7 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         "Public RigidBody impulse API appeared; update the rigid-body visual "
         "workflow and revisit the direct-impulse row deferral."
     )
-    assert "no public direct rigid-body impulse surface" in text
+    assert "no public direct rigid-body impulse surface" in normalized_text
 
     activation_attrs = {
         name
@@ -1653,7 +1642,7 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         "Public sleep/wake/island activation API appeared; update the rigid-body "
         "visual workflow and revisit the activation-state row deferral."
     )
-    assert "no public sleep/wake or island activation surface" in text
+    assert "no public sleep/wake or island activation surface" in normalized_text
 
     compliance_attrs = {
         name
@@ -1664,7 +1653,7 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         "Public loop-closure compliance API appeared; update the rigid-body "
         "visual workflow and revisit the compliance row deferral."
     )
-    assert "no public loop-closure compliance surface" in text
+    assert "no public loop-closure compliance surface" in normalized_text
 
 
 def test_rigid_visual_verification_readme_matches_sidecar_order() -> None:
