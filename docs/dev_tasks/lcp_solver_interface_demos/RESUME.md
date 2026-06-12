@@ -1,5 +1,105 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Standard BGS/NNCG LLT Exact Paths
+
+This is the latest state. Older sections below are historical checkpoints and
+may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Last committed checkpoint:
+  `b57e03cdee1 Use LLT for standard Newton exact paths`.
+- Current checkpoint target:
+  `Use LLT for standard BGS and NNCG exact paths`.
+- Pre-commit state: the branch was ahead of
+  `origin/feature/lcp-solver-interface-demos` by 69 commits with this slice
+  uncommitted. After this checkpoint is committed, it should be ahead by 70
+  commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Do not push, open a PR, or
+  mutate GitHub state without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `NncgSolver` uses the validated LLT-first strict-interior Standard exact
+  helper for default non-warm-started Standard rows.
+- `BgsSolver` uses the same LLT-first Standard exact helper and raises its
+  Standard exact gate to 96 variables so the current 96-row Standard comparison
+  packet exits through the exact path.
+- Unit coverage adds a 96-row Standard exact-path regression for both solvers.
+- The regenerated profile now reports every Standard solver at or below
+  `1.50x` average. Boxed `ShockPropagation 2.18` and Boxed `BGS 2.12` are the
+  next profile-driven targets.
+
+Evidence:
+
+- Baseline:
+  `build/standard_nncg_bgs_baseline.json`.
+- Accepted focused probe:
+  `build/standard_nncg_bgs_llt_probe.json`.
+- Focused Standard timings moved approximately:
+  - `BGS/12`: `917.19ns -> 865.36ns`, `iterations 0 -> 0`.
+  - `BGS/24`: `3300.26ns -> 2380.74ns`, `iterations 0 -> 0`.
+  - `BGS/48`: `13747.08ns -> 9523.33ns`, `iterations 0 -> 0`.
+  - `BGS/96`: `74648.65ns -> 42148.97ns`, `iterations 5 -> 0`.
+  - `NNCG/12`: `1153.89ns -> 875.81ns`, `iterations 0 -> 0`.
+  - `NNCG/24`: `3267.90ns -> 2443.98ns`, `iterations 0 -> 0`.
+  - `NNCG/48`: `12084.66ns -> 10303.36ns`, `iterations 0 -> 0`.
+  - `NNCG/96`: `63547.04ns -> 45197.60ns`, `iterations 0 -> 0`.
+- Latest regenerated profile highlights:
+  - Standard: `BGS 1.12`, `NNCG 1.17`, and no Standard solver above `1.50x`.
+  - Boxed: `ShockPropagation 2.18` and `BGS 2.12` are above `2x`.
+  - FrictionIndex: no solver above `2x`; highest rows are `Admm 1.62`,
+    `ShockPropagation 1.55`, and `Sap 1.50`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+DART_PARALLEL_JOBS=3 CTEST_PARALLEL_LEVEL=3 CMAKE_BUILD_PARALLEL_LEVEL=3 \
+  pixi run lint
+git diff --check
+```
+
+CSV shape check showed 200 rows in each checked profile CSV, with 15 Boxed
+solver columns, 16 FrictionIndex solver columns, and 23 Standard solver
+columns.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+If this checkpoint is still uncommitted, review and checkpoint it with
+`Use LLT for standard BGS and NNCG exact paths`. If this checkpoint is already
+committed, continue with Boxed `ShockPropagation 2.18` and Boxed `BGS 2.12`.
+Do not push or mutate GitHub state without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Standard LLT Exact Paths
 
 This is the latest state. Older sections below are historical checkpoints and

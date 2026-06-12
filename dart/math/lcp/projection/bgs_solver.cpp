@@ -51,7 +51,7 @@ namespace dart::math {
 namespace {
 
 constexpr int kMaxDirectBlockSize = 3;
-constexpr int kMaxStrictInteriorFastPathSize = 48;
+constexpr int kMaxStrictInteriorFastPathSize = 96;
 
 struct BlockData
 {
@@ -351,7 +351,7 @@ LcpResult BgsSolver::solve(
     if (!options.warmStart && n <= kMaxStrictInteriorFastPathSize) {
       const double validationTolerance = std::max(absTol, compTolOpt);
       if (problem.isStandardLcp(absTol)) {
-        exactFastPath = detail::trySolveStrictInteriorStandardLcp(
+        exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
             problem, absTol, validationTolerance, x, &fastW);
       } else if (problem.isBoxedLcp()) {
         exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(

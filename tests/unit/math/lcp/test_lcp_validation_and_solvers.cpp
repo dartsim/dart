@@ -1866,6 +1866,34 @@ TEST(StandardStrictInteriorFastPath, ProjectionAndBlockSolversUseLinearSolve)
   }
 }
 
+TEST(StandardStrictInteriorFastPath, HighOverheadSolversUseLargeLinearSolve)
+{
+  auto problem = makeStandardProblem(96, 3.0, 0.35);
+  const Eigen::VectorXd expected = Eigen::VectorXd::Constant(96, 0.35);
+
+  {
+    BgsSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+
+  {
+    NncgSolver solver;
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(96);
+    LcpOptions options = solver.getDefaultOptions();
+    options.maxIterations = 1;
+    const auto result = solver.solve(problem, x, options);
+    EXPECT_EQ(result.status, LcpSolverStatus::Success);
+    EXPECT_EQ(result.iterations, 0);
+    EXPECT_TRUE(x.isApprox(expected, 1e-8));
+  }
+}
+
 TEST(StandardStrictInteriorFastPath, OtherSolversUseLinearSolve)
 {
   auto problem = makeStandardProblem(4, 3.0, 0.35);

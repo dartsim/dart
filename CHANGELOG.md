@@ -1538,6 +1538,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     friction-index solves to use the validated LLT-first exact helper through
     the current 64-contact comparison packet, moving both rows to zero
     iterations and below `1.3x` average in the refreshed FrictionIndex profile.
+  - Routed `BgsSolver` and `NncgSolver` standard strict-interior exact
+    shortcuts through the validated LLT-first helper and raised BGS's standard
+    exact gate through the current 96-row comparison packet, moving the
+    refreshed Standard profile below `1.5x` average for every solver.
   - Optimized `ShockPropagationSolver` to avoid friction-index block data
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving

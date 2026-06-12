@@ -51,12 +51,13 @@ BGS, Blocked Jacobi, NNCG, Subspace Minimization, and Shock Propagation when
 the unconstrained candidate is strictly positive and passes solution
 validation. Dense exact solves are only used on packet sizes where current
 profile evidence shows they are profitable; larger rows stay on the iterative
-projection path. Dense Newton and interior-point standard exact paths use an
-LLT-first variant of the shared helper and fall back to the original LU solve
-when the LLT candidate is unavailable or fails validation; the lower-overhead
-projection helpers keep the LU-based standard helper. The shared
-strict-interior friction-index exact helper tries an LLT solve first for SPD
-rows and falls back to the previous LU solve when the LLT candidate is
+projection path. Dense Newton, interior-point, NNCG, and BGS standard exact
+paths use an LLT-first variant of the shared helper and fall back to the
+original LU solve when the LLT candidate is unavailable or fails validation;
+the lower-overhead projection helpers keep the LU-based standard helper. BGS
+uses that standard exact path through the current 96-row comparison packet. The
+shared strict-interior friction-index exact helper tries an LLT solve first for
+SPD rows and falls back to the previous LU solve when the LLT candidate is
 unavailable or fails validation. APGD, Jacobi, Red-Black Gauss-Seidel, and
 Symmetric PSOR also use the friction-index exact helper on non-warm-started
 default solves at the packet sizes where refreshed profile evidence shows the
