@@ -1,5 +1,42 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-11 Current Continuation — Full dartpy Parameter Surface
+
+After checkpoint `748cef40ea0 Validate advanced LCP solver parameters`, the
+next interface-alignment gap is the Python surface for solver-specific tuning.
+C++ already exposes `setParameters()` / `getParameters()` on many projection,
+Newton, and other LCP solvers, but dartpy only exposed ADMM, SAP, and boxed
+semi-smooth Newton.
+
+Current slice:
+
+- Added dartpy parameter classes and `parameters` properties for the remaining
+  parameterized LCP solvers: PGS, symmetric PSOR, Jacobi, red-black
+  Gauss-Seidel, blocked Jacobi, BGS, NNCG, subspace minimization, APGD, TGS,
+  minimum-map Newton, Fischer-Burmeister Newton, penalized
+  Fischer-Burmeister Newton, interior-point, MPRGP, and shock propagation.
+- Kept Python names `snake_case`, including `lambda_` for the penalized
+  Fischer-Burmeister penalty field.
+- Updated manual dartpy stubs and Python tests so each exposed parameter object
+  can round-trip through the solver `parameters` property.
+- Recorded the surface expansion in `CHANGELOG.md`.
+
+Verification completed for this slice:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+pixi run lint
+```
+
+Observed results:
+
+- `pixi run build-py-dev` rebuilt and linked `dartpy`.
+- `python/tests/unit/math/test_lcp.py`: `70 passed`.
+- `pixi run lint` passed, including the LCP solver roster gate.
+
 ## 2026-06-11 Current Continuation — Advanced Parameter Validation
 
 The user resumed the broad LCP solver/interface/demo goal after the stop-only
@@ -403,6 +440,8 @@ That stop-only state is historical after the current continuation.
 - [x] Validate advanced ADMM, SAP, and boxed semi-smooth Newton parameter
       structs before numerical iteration and cover the behavior from C++ and
       dartpy.
+- [x] Expose the remaining parameterized C++ LCP solver tuning structs through
+      dartpy with matching stubs and Python round-trip tests.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 

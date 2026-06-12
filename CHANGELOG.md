@@ -1427,6 +1427,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `AdmmSolver`, `SapSolver`, and `BoxedSemiSmoothNewtonSolver`, allowing
     Python demos to tune the advanced boxed/friction-index solver settings used
     by the matching C++ benchmark sweeps.
+  - Expanded dartpy LCP solver parameter bindings to the remaining
+    parameterized projection, Newton, MPRGP, interior-point, and shock
+    propagation solvers so Python users can round-trip the same solver-specific
+    tuning structs exposed by C++.
   - Added an advanced-solver parameter table to the Python LCP demo metadata
     and panel, listing the exposed ADMM, SAP, and boxed semi-smooth Newton
     knobs next to their matching benchmark sweep filters.

@@ -253,6 +253,223 @@ def test_lcp_solver_capabilities_classify_problem_forms(solver_type: type) -> No
     assert solver.supports_problem(findex) is supports_findex
 
 
+def _assert_parameter_value(actual: object, expected: object) -> None:
+    if isinstance(expected, float):
+        assert actual == pytest.approx(expected)
+    else:
+        assert actual == expected
+
+
+def test_parameterized_lcp_solvers_expose_dartpy_parameters() -> None:
+    cases = (
+        (
+            dart.PgsSolver,
+            dart.PgsSolverParameters,
+            {"epsilon_for_division": 1e-9, "randomize_constraint_order": False},
+            {"epsilon_for_division": 2e-9, "randomize_constraint_order": True},
+        ),
+        (
+            dart.SymmetricPsorSolver,
+            dart.SymmetricPsorSolverParameters,
+            {"epsilon_for_division": 1e-9},
+            {"epsilon_for_division": 2e-9},
+        ),
+        (
+            dart.JacobiSolver,
+            dart.JacobiSolverParameters,
+            {"epsilon_for_division": 1e-9, "worker_threads": 1},
+            {"epsilon_for_division": 2e-9, "worker_threads": 2},
+        ),
+        (
+            dart.RedBlackGaussSeidelSolver,
+            dart.RedBlackGaussSeidelSolverParameters,
+            {"epsilon_for_division": 1e-9, "worker_threads": 1},
+            {"epsilon_for_division": 2e-9, "worker_threads": 2},
+        ),
+        (
+            dart.BlockedJacobiSolver,
+            dart.BlockedJacobiSolverParameters,
+            {"block_sizes": [], "worker_threads": 1},
+            {"block_sizes": [1, 1], "worker_threads": 2},
+        ),
+        (
+            dart.BgsSolver,
+            dart.BgsSolverParameters,
+            {"block_sizes": []},
+            {"block_sizes": [1, 1]},
+        ),
+        (
+            dart.NncgSolver,
+            dart.NncgSolverParameters,
+            {"pgs_iterations": 1, "restart_interval": 10, "restart_threshold": 1.0},
+            {"pgs_iterations": 2, "restart_interval": 4, "restart_threshold": 0.75},
+        ),
+        (
+            dart.SubspaceMinimizationSolver,
+            dart.SubspaceMinimizationSolverParameters,
+            {"pgs_iterations": 5, "active_set_tolerance": 0.0},
+            {"pgs_iterations": 3, "active_set_tolerance": 1e-8},
+        ),
+        (
+            dart.ApgdSolver,
+            dart.ApgdSolverParameters,
+            {
+                "epsilon_for_division": 1e-9,
+                "adaptive_restart": True,
+                "restart_check_interval": 5,
+            },
+            {
+                "epsilon_for_division": 2e-9,
+                "adaptive_restart": False,
+                "restart_check_interval": 3,
+            },
+        ),
+        (
+            dart.TgsSolver,
+            dart.TgsSolverParameters,
+            {"epsilon_for_division": 1e-9},
+            {"epsilon_for_division": 2e-9},
+        ),
+        (
+            dart.MinimumMapNewtonSolver,
+            dart.MinimumMapNewtonSolverParameters,
+            {
+                "max_line_search_steps": 8,
+                "step_reduction": 0.5,
+                "sufficient_decrease": 1e-4,
+                "min_step": 1e-6,
+                "max_gradient_descent_warm_start_steps": 0,
+                "max_gradient_descent_line_search_steps": 8,
+                "gradient_descent_step_reduction": 0.5,
+                "gradient_descent_sufficient_decrease": 1e-4,
+                "gradient_descent_min_step": 1e-8,
+                "max_pgs_warm_start_iterations": 0,
+                "pgs_warm_start_relaxation": 1.0,
+            },
+            {
+                "max_line_search_steps": 9,
+                "step_reduction": 0.4,
+                "sufficient_decrease": 2e-4,
+                "min_step": 1e-7,
+                "max_gradient_descent_warm_start_steps": 2,
+                "max_gradient_descent_line_search_steps": 6,
+                "gradient_descent_step_reduction": 0.4,
+                "gradient_descent_sufficient_decrease": 2e-4,
+                "gradient_descent_min_step": 2e-8,
+                "max_pgs_warm_start_iterations": 3,
+                "pgs_warm_start_relaxation": 0.9,
+            },
+        ),
+        (
+            dart.FischerBurmeisterNewtonSolver,
+            dart.FischerBurmeisterNewtonSolverParameters,
+            {
+                "smoothing_epsilon": 1e-8,
+                "max_line_search_steps": 8,
+                "step_reduction": 0.5,
+                "sufficient_decrease": 1e-4,
+                "min_step": 1e-6,
+                "max_gradient_descent_warm_start_steps": 0,
+                "max_gradient_descent_line_search_steps": 8,
+                "gradient_descent_step_reduction": 0.5,
+                "gradient_descent_sufficient_decrease": 1e-4,
+                "gradient_descent_min_step": 1e-8,
+                "max_pgs_warm_start_iterations": 0,
+                "pgs_warm_start_relaxation": 1.0,
+            },
+            {
+                "smoothing_epsilon": 2e-8,
+                "max_line_search_steps": 9,
+                "step_reduction": 0.4,
+                "sufficient_decrease": 2e-4,
+                "min_step": 1e-7,
+                "max_gradient_descent_warm_start_steps": 2,
+                "max_gradient_descent_line_search_steps": 6,
+                "gradient_descent_step_reduction": 0.4,
+                "gradient_descent_sufficient_decrease": 2e-4,
+                "gradient_descent_min_step": 2e-8,
+                "max_pgs_warm_start_iterations": 3,
+                "pgs_warm_start_relaxation": 0.9,
+            },
+        ),
+        (
+            dart.PenalizedFischerBurmeisterNewtonSolver,
+            dart.PenalizedFischerBurmeisterNewtonSolverParameters,
+            {
+                "smoothing_epsilon": 1e-8,
+                "lambda_": 0.5,
+                "max_line_search_steps": 8,
+                "step_reduction": 0.5,
+                "sufficient_decrease": 1e-4,
+                "min_step": 1e-6,
+                "max_gradient_descent_warm_start_steps": 0,
+                "max_gradient_descent_line_search_steps": 8,
+                "gradient_descent_step_reduction": 0.5,
+                "gradient_descent_sufficient_decrease": 1e-4,
+                "gradient_descent_min_step": 1e-8,
+                "max_pgs_warm_start_iterations": 0,
+                "pgs_warm_start_relaxation": 1.0,
+            },
+            {
+                "smoothing_epsilon": 2e-8,
+                "lambda_": 0.4,
+                "max_line_search_steps": 9,
+                "step_reduction": 0.4,
+                "sufficient_decrease": 2e-4,
+                "min_step": 1e-7,
+                "max_gradient_descent_warm_start_steps": 2,
+                "max_gradient_descent_line_search_steps": 6,
+                "gradient_descent_step_reduction": 0.4,
+                "gradient_descent_sufficient_decrease": 2e-4,
+                "gradient_descent_min_step": 2e-8,
+                "max_pgs_warm_start_iterations": 3,
+                "pgs_warm_start_relaxation": 0.9,
+            },
+        ),
+        (
+            dart.InteriorPointSolver,
+            dart.InteriorPointSolverParameters,
+            {"sigma": 0.1, "step_scale": 0.99},
+            {"sigma": 0.2, "step_scale": 0.9},
+        ),
+        (
+            dart.MprgpSolver,
+            dart.MprgpSolverParameters,
+            {
+                "symmetry_tolerance": 1e-9,
+                "epsilon_for_division": 1e-12,
+                "check_positive_definite": True,
+            },
+            {
+                "symmetry_tolerance": 1e-8,
+                "epsilon_for_division": 2e-12,
+                "check_positive_definite": False,
+            },
+        ),
+        (
+            dart.ShockPropagationSolver,
+            dart.ShockPropagationSolverParameters,
+            {"block_sizes": [], "layers": []},
+            {"block_sizes": [1, 1], "layers": [[0], [1]]},
+        ),
+    )
+
+    for solver_type, params_type, defaults, updated in cases:
+        solver = solver_type()
+        params = params_type()
+        assert isinstance(solver.parameters, params_type)
+        for name, expected in defaults.items():
+            _assert_parameter_value(getattr(params, name), expected)
+
+        for name, value in updated.items():
+            setattr(params, name, value)
+        solver.parameters = params
+        round_trip = solver.parameters
+
+        for name, expected in updated.items():
+            _assert_parameter_value(getattr(round_trip, name), expected)
+
+
 def test_advanced_boxed_solver_parameters_round_trip_from_dartpy_math() -> None:
     admm = dart.AdmmSolver()
     admm_params = dart.AdmmSolverParameters()

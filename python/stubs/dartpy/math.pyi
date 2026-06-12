@@ -5,17 +5,23 @@ __all__: list[str] = [
     "AdmmSolverParameters",
     "AngleAxis",
     "ApgdSolver",
+    "ApgdSolverParameters",
     "BaraffSolver",
     "BgsSolver",
+    "BgsSolverParameters",
     "BlockedJacobiSolver",
+    "BlockedJacobiSolverParameters",
     "BoxedSemiSmoothNewtonSolver",
     "BoxedSemiSmoothNewtonSolverParameters",
     "DantzigSolver",
     "DirectSolver",
     "FischerBurmeisterNewtonSolver",
+    "FischerBurmeisterNewtonSolverParameters",
     "InteriorPointSolver",
+    "InteriorPointSolverParameters",
     "Isometry3",
     "JacobiSolver",
+    "JacobiSolverParameters",
     "LcpOptions",
     "LcpProblem",
     "LcpProblemType",
@@ -24,13 +30,19 @@ __all__: list[str] = [
     "LcpSolverStatus",
     "LemkeSolver",
     "MinimumMapNewtonSolver",
+    "MinimumMapNewtonSolverParameters",
     "MprgpSolver",
+    "MprgpSolverParameters",
     "NncgSolver",
+    "NncgSolverParameters",
     "PenalizedFischerBurmeisterNewtonSolver",
+    "PenalizedFischerBurmeisterNewtonSolverParameters",
     "PgsSolver",
+    "PgsSolverParameters",
     "Quaternion",
     "Random",
     "RedBlackGaussSeidelSolver",
+    "RedBlackGaussSeidelSolverParameters",
     "SE3",
     "SE3Tangent",
     "SO3",
@@ -38,10 +50,14 @@ __all__: list[str] = [
     "SapSolver",
     "SapSolverParameters",
     "ShockPropagationSolver",
+    "ShockPropagationSolverParameters",
     "StaggeringSolver",
     "SubspaceMinimizationSolver",
+    "SubspaceMinimizationSolverParameters",
     "SymmetricPsorSolver",
+    "SymmetricPsorSolverParameters",
     "TgsSolver",
+    "TgsSolverParameters",
     "TriMesh",
     "deg2rad",
     "eps",
@@ -237,6 +253,113 @@ class LcpOptions:
     @staticmethod
     def real_time() -> LcpOptions: ...
 
+class PgsSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+    randomize_constraint_order: bool
+
+class SymmetricPsorSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+
+class JacobiSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+    worker_threads: int
+
+class RedBlackGaussSeidelSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+    worker_threads: int
+
+class BlockedJacobiSolverParameters:
+    def __init__(self) -> None: ...
+
+    block_sizes: list[int]
+    worker_threads: int
+
+class BgsSolverParameters:
+    def __init__(self) -> None: ...
+
+    block_sizes: list[int]
+
+class NncgSolverParameters:
+    def __init__(self) -> None: ...
+
+    pgs_iterations: int
+    restart_interval: int
+    restart_threshold: float
+
+class SubspaceMinimizationSolverParameters:
+    def __init__(self) -> None: ...
+
+    pgs_iterations: int
+    active_set_tolerance: float
+
+class ApgdSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+    adaptive_restart: bool
+    restart_check_interval: int
+
+class TgsSolverParameters:
+    def __init__(self) -> None: ...
+
+    epsilon_for_division: float
+
+class MinimumMapNewtonSolverParameters:
+    def __init__(self) -> None: ...
+
+    max_line_search_steps: int
+    step_reduction: float
+    sufficient_decrease: float
+    min_step: float
+    max_gradient_descent_warm_start_steps: int
+    max_gradient_descent_line_search_steps: int
+    gradient_descent_step_reduction: float
+    gradient_descent_sufficient_decrease: float
+    gradient_descent_min_step: float
+    max_pgs_warm_start_iterations: int
+    pgs_warm_start_relaxation: float
+
+class FischerBurmeisterNewtonSolverParameters:
+    def __init__(self) -> None: ...
+
+    smoothing_epsilon: float
+    max_line_search_steps: int
+    step_reduction: float
+    sufficient_decrease: float
+    min_step: float
+    max_gradient_descent_warm_start_steps: int
+    max_gradient_descent_line_search_steps: int
+    gradient_descent_step_reduction: float
+    gradient_descent_sufficient_decrease: float
+    gradient_descent_min_step: float
+    max_pgs_warm_start_iterations: int
+    pgs_warm_start_relaxation: float
+
+class PenalizedFischerBurmeisterNewtonSolverParameters:
+    def __init__(self) -> None: ...
+
+    smoothing_epsilon: float
+    lambda_: float
+    max_line_search_steps: int
+    step_reduction: float
+    sufficient_decrease: float
+    min_step: float
+    max_gradient_descent_warm_start_steps: int
+    max_gradient_descent_line_search_steps: int
+    gradient_descent_step_reduction: float
+    gradient_descent_sufficient_decrease: float
+    gradient_descent_min_step: float
+    max_pgs_warm_start_iterations: int
+    pgs_warm_start_relaxation: float
+
 class AdmmSolverParameters:
     def __init__(self) -> None: ...
 
@@ -261,6 +384,25 @@ class BoxedSemiSmoothNewtonSolverParameters:
     sufficient_decrease: float
     min_step: float
     jacobian_regularization: float
+
+class InteriorPointSolverParameters:
+    def __init__(self) -> None: ...
+
+    sigma: float
+    step_scale: float
+
+class MprgpSolverParameters:
+    def __init__(self) -> None: ...
+
+    symmetry_tolerance: float
+    epsilon_for_division: float
+    check_positive_definite: bool
+
+class ShockPropagationSolverParameters:
+    def __init__(self) -> None: ...
+
+    block_sizes: list[int]
+    layers: list[list[int]]
 
 class LcpProblem:
     @overload
@@ -333,42 +475,68 @@ class DirectSolver(LcpSolver):
     def __init__(self) -> None: ...
 
 class PgsSolver(LcpSolver):
+    parameters: PgsSolverParameters
+
     def __init__(self) -> None: ...
 
 class SymmetricPsorSolver(LcpSolver):
+    parameters: SymmetricPsorSolverParameters
+
     def __init__(self) -> None: ...
 
 class JacobiSolver(LcpSolver):
+    parameters: JacobiSolverParameters
+
     def __init__(self) -> None: ...
 
 class RedBlackGaussSeidelSolver(LcpSolver):
+    parameters: RedBlackGaussSeidelSolverParameters
+
     def __init__(self) -> None: ...
 
 class BlockedJacobiSolver(LcpSolver):
+    parameters: BlockedJacobiSolverParameters
+
     def __init__(self) -> None: ...
 
 class BgsSolver(LcpSolver):
+    parameters: BgsSolverParameters
+
     def __init__(self) -> None: ...
 
 class NncgSolver(LcpSolver):
+    parameters: NncgSolverParameters
+
     def __init__(self) -> None: ...
 
 class SubspaceMinimizationSolver(LcpSolver):
+    parameters: SubspaceMinimizationSolverParameters
+
     def __init__(self) -> None: ...
 
 class ApgdSolver(LcpSolver):
+    parameters: ApgdSolverParameters
+
     def __init__(self) -> None: ...
 
 class TgsSolver(LcpSolver):
+    parameters: TgsSolverParameters
+
     def __init__(self) -> None: ...
 
 class MinimumMapNewtonSolver(LcpSolver):
+    parameters: MinimumMapNewtonSolverParameters
+
     def __init__(self) -> None: ...
 
 class FischerBurmeisterNewtonSolver(LcpSolver):
+    parameters: FischerBurmeisterNewtonSolverParameters
+
     def __init__(self) -> None: ...
 
 class PenalizedFischerBurmeisterNewtonSolver(LcpSolver):
+    parameters: PenalizedFischerBurmeisterNewtonSolverParameters
+
     def __init__(self) -> None: ...
 
 class BoxedSemiSmoothNewtonSolver(LcpSolver):
@@ -377,12 +545,18 @@ class BoxedSemiSmoothNewtonSolver(LcpSolver):
     def __init__(self) -> None: ...
 
 class InteriorPointSolver(LcpSolver):
+    parameters: InteriorPointSolverParameters
+
     def __init__(self) -> None: ...
 
 class MprgpSolver(LcpSolver):
+    parameters: MprgpSolverParameters
+
     def __init__(self) -> None: ...
 
 class ShockPropagationSolver(LcpSolver):
+    parameters: ShockPropagationSolverParameters
+
     def __init__(self) -> None: ...
 
 class StaggeringSolver(LcpSolver):

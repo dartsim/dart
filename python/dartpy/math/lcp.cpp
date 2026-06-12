@@ -43,6 +43,7 @@
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/shared_ptr.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <memory>
 #include <optional>
@@ -199,6 +200,208 @@ void defLcp(nb::module_& m)
       .def_static("high_accuracy", &LcpOptions::highAccuracy)
       .def_static("real_time", &LcpOptions::realTime);
 
+  nb::class_<PgsSolver::Parameters>(m, "PgsSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division", &PgsSolver::Parameters::epsilonForDivision)
+      .def_rw(
+          "randomize_constraint_order",
+          &PgsSolver::Parameters::randomizeConstraintOrder);
+
+  nb::class_<SymmetricPsorSolver::Parameters>(
+      m, "SymmetricPsorSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division",
+          &SymmetricPsorSolver::Parameters::epsilonForDivision);
+
+  nb::class_<JacobiSolver::Parameters>(m, "JacobiSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division", &JacobiSolver::Parameters::epsilonForDivision)
+      .def_rw("worker_threads", &JacobiSolver::Parameters::workerThreads);
+
+  nb::class_<RedBlackGaussSeidelSolver::Parameters>(
+      m, "RedBlackGaussSeidelSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division",
+          &RedBlackGaussSeidelSolver::Parameters::epsilonForDivision)
+      .def_rw(
+          "worker_threads",
+          &RedBlackGaussSeidelSolver::Parameters::workerThreads);
+
+  nb::class_<BlockedJacobiSolver::Parameters>(
+      m, "BlockedJacobiSolverParameters")
+      .def(nb::init<>())
+      .def_rw("block_sizes", &BlockedJacobiSolver::Parameters::blockSizes)
+      .def_rw(
+          "worker_threads", &BlockedJacobiSolver::Parameters::workerThreads);
+
+  nb::class_<BgsSolver::Parameters>(m, "BgsSolverParameters")
+      .def(nb::init<>())
+      .def_rw("block_sizes", &BgsSolver::Parameters::blockSizes);
+
+  nb::class_<NncgSolver::Parameters>(m, "NncgSolverParameters")
+      .def(nb::init<>())
+      .def_rw("pgs_iterations", &NncgSolver::Parameters::pgsIterations)
+      .def_rw("restart_interval", &NncgSolver::Parameters::restartInterval)
+      .def_rw("restart_threshold", &NncgSolver::Parameters::restartThreshold);
+
+  nb::class_<SubspaceMinimizationSolver::Parameters>(
+      m, "SubspaceMinimizationSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "pgs_iterations",
+          &SubspaceMinimizationSolver::Parameters::pgsIterations)
+      .def_rw(
+          "active_set_tolerance",
+          &SubspaceMinimizationSolver::Parameters::activeSetTolerance);
+
+  nb::class_<ApgdSolver::Parameters>(m, "ApgdSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division", &ApgdSolver::Parameters::epsilonForDivision)
+      .def_rw("adaptive_restart", &ApgdSolver::Parameters::adaptiveRestart)
+      .def_rw(
+          "restart_check_interval",
+          &ApgdSolver::Parameters::restartCheckInterval);
+
+  nb::class_<TgsSolver::Parameters>(m, "TgsSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "epsilon_for_division", &TgsSolver::Parameters::epsilonForDivision);
+
+  nb::class_<MinimumMapNewtonSolver::Parameters>(
+      m, "MinimumMapNewtonSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "max_line_search_steps",
+          &MinimumMapNewtonSolver::Parameters::maxLineSearchSteps)
+      .def_rw(
+          "step_reduction", &MinimumMapNewtonSolver::Parameters::stepReduction)
+      .def_rw(
+          "sufficient_decrease",
+          &MinimumMapNewtonSolver::Parameters::sufficientDecrease)
+      .def_rw("min_step", &MinimumMapNewtonSolver::Parameters::minStep)
+      .def_rw(
+          "max_gradient_descent_warm_start_steps",
+          &MinimumMapNewtonSolver::Parameters::maxGradientDescentWarmStartSteps)
+      .def_rw(
+          "max_gradient_descent_line_search_steps",
+          &MinimumMapNewtonSolver::Parameters::
+              maxGradientDescentLineSearchSteps)
+      .def_rw(
+          "gradient_descent_step_reduction",
+          &MinimumMapNewtonSolver::Parameters::gradientDescentStepReduction)
+      .def_rw(
+          "gradient_descent_sufficient_decrease",
+          &MinimumMapNewtonSolver::Parameters::
+              gradientDescentSufficientDecrease)
+      .def_rw(
+          "gradient_descent_min_step",
+          &MinimumMapNewtonSolver::Parameters::gradientDescentMinStep)
+      .def_rw(
+          "max_pgs_warm_start_iterations",
+          &MinimumMapNewtonSolver::Parameters::maxPgsWarmStartIterations)
+      .def_rw(
+          "pgs_warm_start_relaxation",
+          &MinimumMapNewtonSolver::Parameters::pgsWarmStartRelaxation);
+
+  nb::class_<FischerBurmeisterNewtonSolver::Parameters>(
+      m, "FischerBurmeisterNewtonSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "smoothing_epsilon",
+          &FischerBurmeisterNewtonSolver::Parameters::smoothingEpsilon)
+      .def_rw(
+          "max_line_search_steps",
+          &FischerBurmeisterNewtonSolver::Parameters::maxLineSearchSteps)
+      .def_rw(
+          "step_reduction",
+          &FischerBurmeisterNewtonSolver::Parameters::stepReduction)
+      .def_rw(
+          "sufficient_decrease",
+          &FischerBurmeisterNewtonSolver::Parameters::sufficientDecrease)
+      .def_rw("min_step", &FischerBurmeisterNewtonSolver::Parameters::minStep)
+      .def_rw(
+          "max_gradient_descent_warm_start_steps",
+          &FischerBurmeisterNewtonSolver::Parameters::
+              maxGradientDescentWarmStartSteps)
+      .def_rw(
+          "max_gradient_descent_line_search_steps",
+          &FischerBurmeisterNewtonSolver::Parameters::
+              maxGradientDescentLineSearchSteps)
+      .def_rw(
+          "gradient_descent_step_reduction",
+          &FischerBurmeisterNewtonSolver::Parameters::
+              gradientDescentStepReduction)
+      .def_rw(
+          "gradient_descent_sufficient_decrease",
+          &FischerBurmeisterNewtonSolver::Parameters::
+              gradientDescentSufficientDecrease)
+      .def_rw(
+          "gradient_descent_min_step",
+          &FischerBurmeisterNewtonSolver::Parameters::gradientDescentMinStep)
+      .def_rw(
+          "max_pgs_warm_start_iterations",
+          &FischerBurmeisterNewtonSolver::Parameters::maxPgsWarmStartIterations)
+      .def_rw(
+          "pgs_warm_start_relaxation",
+          &FischerBurmeisterNewtonSolver::Parameters::pgsWarmStartRelaxation);
+
+  nb::class_<PenalizedFischerBurmeisterNewtonSolver::Parameters>(
+      m, "PenalizedFischerBurmeisterNewtonSolverParameters")
+      .def(nb::init<>())
+      .def_rw(
+          "smoothing_epsilon",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::smoothingEpsilon)
+      .def_rw(
+          "lambda_",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::lambda)
+      .def_rw(
+          "max_line_search_steps",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              maxLineSearchSteps)
+      .def_rw(
+          "step_reduction",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::stepReduction)
+      .def_rw(
+          "sufficient_decrease",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              sufficientDecrease)
+      .def_rw(
+          "min_step",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::minStep)
+      .def_rw(
+          "max_gradient_descent_warm_start_steps",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              maxGradientDescentWarmStartSteps)
+      .def_rw(
+          "max_gradient_descent_line_search_steps",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              maxGradientDescentLineSearchSteps)
+      .def_rw(
+          "gradient_descent_step_reduction",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              gradientDescentStepReduction)
+      .def_rw(
+          "gradient_descent_sufficient_decrease",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              gradientDescentSufficientDecrease)
+      .def_rw(
+          "gradient_descent_min_step",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              gradientDescentMinStep)
+      .def_rw(
+          "max_pgs_warm_start_iterations",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              maxPgsWarmStartIterations)
+      .def_rw(
+          "pgs_warm_start_relaxation",
+          &PenalizedFischerBurmeisterNewtonSolver::Parameters::
+              pgsWarmStartRelaxation);
+
   nb::class_<AdmmSolver::Parameters>(m, "AdmmSolverParameters")
       .def(nb::init<>())
       .def_rw("rho_init", &AdmmSolver::Parameters::rhoInit)
@@ -233,6 +436,27 @@ void defLcp(nb::module_& m)
       .def_rw(
           "jacobian_regularization",
           &BoxedSemiSmoothNewtonSolver::Parameters::jacobianRegularization);
+
+  nb::class_<InteriorPointSolver::Parameters>(
+      m, "InteriorPointSolverParameters")
+      .def(nb::init<>())
+      .def_rw("sigma", &InteriorPointSolver::Parameters::sigma)
+      .def_rw("step_scale", &InteriorPointSolver::Parameters::stepScale);
+
+  nb::class_<MprgpSolver::Parameters>(m, "MprgpSolverParameters")
+      .def(nb::init<>())
+      .def_rw("symmetry_tolerance", &MprgpSolver::Parameters::symmetryTolerance)
+      .def_rw(
+          "epsilon_for_division", &MprgpSolver::Parameters::epsilonForDivision)
+      .def_rw(
+          "check_positive_definite",
+          &MprgpSolver::Parameters::checkPositiveDefinite);
+
+  nb::class_<ShockPropagationSolver::Parameters>(
+      m, "ShockPropagationSolverParameters")
+      .def(nb::init<>())
+      .def_rw("block_sizes", &ShockPropagationSolver::Parameters::blockSizes)
+      .def_rw("layers", &ShockPropagationSolver::Parameters::layers);
 
   nb::class_<LcpProblem>(m, "LcpProblem")
       .def(
@@ -314,29 +538,35 @@ void defLcp(nb::module_& m)
   bindLcpSolverClass<BaraffSolver>(m, "BaraffSolver");
   bindLcpSolverClass<DirectSolver>(m, "DirectSolver");
 
-  bindLcpSolverClass<PgsSolver>(m, "PgsSolver");
-  bindLcpSolverClass<SymmetricPsorSolver>(m, "SymmetricPsorSolver");
-  bindLcpSolverClass<JacobiSolver>(m, "JacobiSolver");
-  bindLcpSolverClass<RedBlackGaussSeidelSolver>(m, "RedBlackGaussSeidelSolver");
-  bindLcpSolverClass<BlockedJacobiSolver>(m, "BlockedJacobiSolver");
-  bindLcpSolverClass<BgsSolver>(m, "BgsSolver");
-  bindLcpSolverClass<NncgSolver>(m, "NncgSolver");
-  bindLcpSolverClass<SubspaceMinimizationSolver>(
+  bindParameterizedLcpSolverClass<PgsSolver>(m, "PgsSolver");
+  bindParameterizedLcpSolverClass<SymmetricPsorSolver>(
+      m, "SymmetricPsorSolver");
+  bindParameterizedLcpSolverClass<JacobiSolver>(m, "JacobiSolver");
+  bindParameterizedLcpSolverClass<RedBlackGaussSeidelSolver>(
+      m, "RedBlackGaussSeidelSolver");
+  bindParameterizedLcpSolverClass<BlockedJacobiSolver>(
+      m, "BlockedJacobiSolver");
+  bindParameterizedLcpSolverClass<BgsSolver>(m, "BgsSolver");
+  bindParameterizedLcpSolverClass<NncgSolver>(m, "NncgSolver");
+  bindParameterizedLcpSolverClass<SubspaceMinimizationSolver>(
       m, "SubspaceMinimizationSolver");
-  bindLcpSolverClass<ApgdSolver>(m, "ApgdSolver");
-  bindLcpSolverClass<TgsSolver>(m, "TgsSolver");
+  bindParameterizedLcpSolverClass<ApgdSolver>(m, "ApgdSolver");
+  bindParameterizedLcpSolverClass<TgsSolver>(m, "TgsSolver");
 
-  bindLcpSolverClass<MinimumMapNewtonSolver>(m, "MinimumMapNewtonSolver");
-  bindLcpSolverClass<FischerBurmeisterNewtonSolver>(
+  bindParameterizedLcpSolverClass<MinimumMapNewtonSolver>(
+      m, "MinimumMapNewtonSolver");
+  bindParameterizedLcpSolverClass<FischerBurmeisterNewtonSolver>(
       m, "FischerBurmeisterNewtonSolver");
-  bindLcpSolverClass<PenalizedFischerBurmeisterNewtonSolver>(
+  bindParameterizedLcpSolverClass<PenalizedFischerBurmeisterNewtonSolver>(
       m, "PenalizedFischerBurmeisterNewtonSolver");
   bindParameterizedLcpSolverClass<BoxedSemiSmoothNewtonSolver>(
       m, "BoxedSemiSmoothNewtonSolver");
 
-  bindLcpSolverClass<InteriorPointSolver>(m, "InteriorPointSolver");
-  bindLcpSolverClass<MprgpSolver>(m, "MprgpSolver");
-  bindLcpSolverClass<ShockPropagationSolver>(m, "ShockPropagationSolver");
+  bindParameterizedLcpSolverClass<InteriorPointSolver>(
+      m, "InteriorPointSolver");
+  bindParameterizedLcpSolverClass<MprgpSolver>(m, "MprgpSolver");
+  bindParameterizedLcpSolverClass<ShockPropagationSolver>(
+      m, "ShockPropagationSolver");
   bindLcpSolverClass<StaggeringSolver>(m, "StaggeringSolver");
   bindParameterizedLcpSolverClass<AdmmSolver>(m, "AdmmSolver");
   bindParameterizedLcpSolverClass<SapSolver>(m, "SapSolver");

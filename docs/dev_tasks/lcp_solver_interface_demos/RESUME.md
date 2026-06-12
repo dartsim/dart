@@ -1,5 +1,46 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality — 2026-06-11 Full dartpy Parameter Surface
+
+Checkpoint `748cef40ea0 Validate advanced LCP solver parameters` is complete
+locally. The next in-progress slice expands dartpy from the three advanced
+solver parameter objects to the full set of C++ LCP solvers that already expose
+`setParameters()` / `getParameters()`.
+
+Latest implementation slice:
+
+- Added parameter classes and solver `parameters` properties for PGS, symmetric
+  PSOR, Jacobi, red-black Gauss-Seidel, blocked Jacobi, BGS, NNCG, subspace
+  minimization, APGD, TGS, minimum-map Newton, Fischer-Burmeister Newton,
+  penalized Fischer-Burmeister Newton, interior-point, MPRGP, and shock
+  propagation.
+- Updated `python/stubs/dartpy/math.pyi`, `python/tests/unit/math/test_lcp.py`,
+  `CHANGELOG.md`, and this dev-task state.
+- Used `snake_case` Python field names; the penalized Fischer-Burmeister
+  `lambda` field is exposed as `lambda_`.
+
+Verification completed:
+
+```bash
+DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS \
+  CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/math/test_lcp.py -q
+pixi run lint
+```
+
+Observed results:
+
+- `pixi run build-py-dev` rebuilt and linked `dartpy`.
+- `python/tests/unit/math/test_lcp.py`: 70 passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+
+Immediate next step:
+
+- Commit the full dartpy parameter-surface slice.
+- Then continue with the next concrete solver/interface/demo/performance gap;
+  the broad LCP objective is still open.
+
 ## Current Reality — 2026-06-11 Advanced Parameter Validation Resumed
 
 The user resumed the broad LCP solver/interface/demo goal after the previous
