@@ -2422,6 +2422,30 @@ void configureRigidIpcKinematicConveyorScene(dart::simulation::World& world)
   box.setFriction(1.0);
 }
 
+void configureRigidIpcKinematicTurntableScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions tableOptions;
+  tableOptions.position = Eigen::Vector3d(0.0, 0.0, -0.1);
+  tableOptions.angularVelocity = Eigen::Vector3d(0.0, 0.0, 1.0);
+  auto table = world.addRigidBody("ipc_turntable", tableOptions);
+  table.setCollisionShape(sx::CollisionShape::makeBox({0.6, 0.6, 0.1}));
+  table.setKinematic(true);
+  table.setFriction(1.0);
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.3, 0.0, 0.1 + 1e-3);
+  auto box = world.addRigidBody("ipc_turntable_rider", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.1, 0.1, 0.1}));
+  box.setFriction(1.0);
+}
+
 void configureDeformableKinematicRigidSurfaceCcdCrossingScene(
     dart::simulation::World& world)
 {
@@ -5273,6 +5297,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "dynamic rigid IPC kinematic conveyor contact",
       configureRigidIpcKinematicConveyorScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC kinematic turntable contact",
+      configureRigidIpcKinematicTurntableScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid body resting contact",
@@ -6563,6 +6590,9 @@ TEST(World, BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "dynamic rigid IPC kinematic conveyor contact",
       configureRigidIpcKinematicConveyorScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "dynamic rigid IPC kinematic turntable contact",
+      configureRigidIpcKinematicTurntableScene);
 }
 
 TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)

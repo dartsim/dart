@@ -12,11 +12,12 @@ Use exactly one continuation branch:
 Other HMM follow-up branches are historical/no-resume targets unless a
 maintainer explicitly redirects the work.
 
-The handoff commit preserves the current local work:
+The current branch preserves the post-PR #2956 continuation work:
 
 - `tests/unit/simulation/world/test_world.cpp` adds
-  `configureRigidIpcKinematicConveyorScene()` and wires the scene through both
-  baked allocator guards:
+  `configureRigidIpcKinematicConveyorScene()` and
+  `configureRigidIpcKinematicTurntableScene()` and wires both scenes through
+  both baked allocator guards:
   `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
   `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`.
 - `docs/dev_tasks/hierarchical_memory_manager/README.md` and this file record
@@ -25,12 +26,15 @@ The handoff commit preserves the current local work:
 
 Verification boundary:
 
-- No lint, build, test, benchmark, or additional validation command was run
-  after the critical stop request.
-- Before the stop request, the focused `test_world` gate pair was run once with
-  the new conveyor subcase and passed.
-- Treat the pushed branch head as a handoff snapshot, not a fully revalidated
-  checkpoint. A fresh agent should verify before adding more code.
+- The critical stop handoff commit intentionally skipped validation after the
+  stop request.
+- Work later resumed on this same branch. `pixi run lint`, `pixi run build`,
+  the existing `World.RigidIpcKinematicTurntableCarriesRestingBox` behavior
+  regression, and the focused baked allocator gate pair passed after adding the
+  turntable subcase.
+- `pixi run test-unit` passed all 161 tests for this checkpoint.
+- The branch still has no open PR. A fresh agent should verify current state
+  before adding more code.
 
 Fresh-session start:
 
@@ -51,13 +55,14 @@ gap before editing. Do not add more work to PR #2956; it is already merged.
 Work resumed after the prior critical stop handoff on the same authoritative
 branch, `pr/hmm-phase45-follow-up-clean`. The current slice adds baked
 World-base no-growth and global-heap no-allocation coverage for a dynamic rigid
-IPC mixed rigid/deformable surface-obstacle solve and a dynamic rigid IPC
-kinematic-conveyor contact solve. The first mirrors the existing
+IPC mixed rigid/deformable surface-obstacle solve and dynamic rigid IPC
+kinematic-conveyor and kinematic-turntable contact solves. The first mirrors
+the existing
 `RigidIpcContactStageUsesDeformableSurfaceObstacle` behavior shape but runs
-through the built-in `World` IPC solver after bake. The second mirrors the
-existing kinematic conveyor behavior shape while covering kinematic-trace
-storage, active dynamic contact, and lagged friction surface motion in the same
-baked loop.
+through the built-in `World` IPC solver after bake. The kinematic scenes mirror
+the existing conveyor and turntable behavior shapes while covering
+kinematic-trace storage, active dynamic contact, and linear plus angular
+lagged-friction surface motion in the same baked loop.
 
 No implementation scratch change was needed for these shapes. The focused gate
 pair passed with the new subcases:
@@ -65,14 +70,15 @@ pair passed with the new subcases:
 - `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`
 - `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`
 
-This closes those specific mixed rigid/deformable IPC and kinematic-conveyor
-IPC coverage gaps. Continue remaining rigid IPC follow-up only from newly
-measured larger mesh/contact-set, articulated-contact-stack, or other shapes
-that expose real allocator traffic.
+This closes those specific mixed rigid/deformable IPC, kinematic-conveyor IPC,
+and kinematic-turntable IPC coverage gaps. Continue remaining rigid IPC
+follow-up only from newly measured larger mesh/contact-set,
+articulated-contact-stack, or other shapes that expose real allocator traffic.
 
-Verification note for this slice: before the critical stop request, the focused
-`test_world` gate pair passed with the new subcases. No broader lint/build/test
-verification was completed for the final handoff commit after the stop request.
+Verification note for this slice: the focused `test_world` gate pair passed
+with the mixed rigid/deformable, conveyor, and turntable subcases. The current
+continuation also reran `pixi run lint`, `pixi run build`, and
+`pixi run test-unit`.
 
 ## Prior Critical Stop Handoff (2026-06-11)
 
@@ -108,8 +114,8 @@ What `e9b2014f3db` closed:
 - The baked dynamic rigid IPC no-heap gate now covers contact-free dynamics,
   active static/dynamic mesh barrier, fixed-joint and revolute-joint IPC
   constraints, the two-box stack, and a mixed rigid/deformable
-  surface-obstacle barrier solve, plus a kinematic-conveyor active contact with
-  lagged friction.
+  surface-obstacle barrier solve, plus kinematic-conveyor and
+  kinematic-turntable active contacts with lagged friction.
 
 Fresh-session start:
 
@@ -186,8 +192,8 @@ constructed through the World free-list allocator and covered by
 Measured open gap after the current slice: broader rigid IPC projected-Newton
 contact shapes remain evidence-first follow-up work beyond the current
 contact-free one-body, active two-mesh-barrier, stack/articulation, and mixed
-rigid/deformable surface-obstacle and kinematic-conveyor gates. Start from a
-measured failing shape before adding larger contact scenes.
+rigid/deformable surface-obstacle, kinematic-conveyor, and kinematic-turntable
+gates. Start from a measured failing shape before adding larger contact scenes.
 
 Current continuation note: the rigid contact stage now treats empty
 `CollisionGeometry` components like no collision geometry when deciding whether
