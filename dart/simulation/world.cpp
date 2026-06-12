@@ -2969,6 +2969,120 @@ Eigen::Isometry3d toIsometry(
   return transform;
 }
 
+template <typename Vector>
+void rebindLoadedVectorAllocator(
+    Vector& vector, common::MemoryAllocator& allocator)
+{
+  using Value = typename Vector::value_type;
+  common::StlAllocator<Value> targetAllocator{allocator};
+  if (vector.get_allocator() == targetAllocator) {
+    return;
+  }
+
+  Vector rebound{targetAllocator};
+  rebound.reserve(vector.size());
+  for (auto& value : vector) {
+    rebound.emplace_back(std::move(value));
+  }
+  vector = std::move(rebound);
+}
+
+void rebindLoadedBoundaryAllocator(
+    comps::DeformableDirichletBoundary& boundary,
+    common::MemoryAllocator& allocator)
+{
+  rebindLoadedVectorAllocator(boundary.nodes, allocator);
+  rebindLoadedVectorAllocator(boundary.referencePositions, allocator);
+}
+
+void rebindLoadedBoundaryAllocator(
+    comps::DeformableNeumannBoundary& boundary,
+    common::MemoryAllocator& allocator)
+{
+  rebindLoadedVectorAllocator(boundary.nodes, allocator);
+}
+
+void rebindLoadedWorldComponentAllocators(
+    detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
+{
+  auto multibodyView = registry.view<comps::MultibodyStructure>();
+  for (const auto entity : multibodyView) {
+    auto& structure = multibodyView.get<comps::MultibodyStructure>(entity);
+    rebindLoadedVectorAllocator(structure.links, allocator);
+    rebindLoadedVectorAllocator(structure.joints, allocator);
+  }
+
+  auto linkView = registry.view<comps::Link>();
+  for (const auto entity : linkView) {
+    auto& link = linkView.get<comps::Link>(entity);
+    rebindLoadedVectorAllocator(link.childJoints, allocator);
+  }
+
+  auto deformableNodeView = registry.view<comps::DeformableNodeState>();
+  for (const auto entity : deformableNodeView) {
+    auto& state = deformableNodeView.get<comps::DeformableNodeState>(entity);
+    rebindLoadedVectorAllocator(state.positions, allocator);
+    rebindLoadedVectorAllocator(state.previousPositions, allocator);
+    rebindLoadedVectorAllocator(state.velocities, allocator);
+    rebindLoadedVectorAllocator(state.masses, allocator);
+    rebindLoadedVectorAllocator(state.fixed, allocator);
+  }
+
+  auto springView = registry.view<comps::DeformableSpringModel>();
+  for (const auto entity : springView) {
+    auto& model = springView.get<comps::DeformableSpringModel>(entity);
+    rebindLoadedVectorAllocator(model.edges, allocator);
+  }
+
+  auto topologyView = registry.view<comps::DeformableMeshTopology>();
+  for (const auto entity : topologyView) {
+    auto& topology = topologyView.get<comps::DeformableMeshTopology>(entity);
+    rebindLoadedVectorAllocator(topology.restPositions, allocator);
+    rebindLoadedVectorAllocator(topology.surfaceTriangles, allocator);
+    rebindLoadedVectorAllocator(topology.tetrahedra, allocator);
+    rebindLoadedVectorAllocator(topology.tetrahedronRestVolumes, allocator);
+  }
+
+  auto boundaryView = registry.view<comps::DeformableBoundaryConditions>();
+  for (const auto entity : boundaryView) {
+    auto& boundaries
+        = boundaryView.get<comps::DeformableBoundaryConditions>(entity);
+    for (auto& boundary : boundaries.dirichlet) {
+      rebindLoadedBoundaryAllocator(boundary, allocator);
+    }
+    for (auto& boundary : boundaries.neumann) {
+      rebindLoadedBoundaryAllocator(boundary, allocator);
+    }
+    rebindLoadedVectorAllocator(boundaries.dirichlet, allocator);
+    rebindLoadedVectorAllocator(boundaries.neumann, allocator);
+  }
+
+  auto variationalStateView
+      = registry.view<compute::MultibodyVariationalState>();
+  for (const auto entity : variationalStateView) {
+    auto& state
+        = variationalStateView.get<compute::MultibodyVariationalState>(entity);
+    rebindLoadedVectorAllocator(state.previousDeltaTransform, allocator);
+    rebindLoadedVectorAllocator(state.previousMomentum, allocator);
+  }
+
+  auto variationalContactView = registry.view<comps::VariationalContact>();
+  for (const auto entity : variationalContactView) {
+    auto& contact
+        = variationalContactView.get<comps::VariationalContact>(entity);
+    rebindLoadedVectorAllocator(contact.pointLinkIndices, allocator);
+    rebindLoadedVectorAllocator(contact.pointLocalPositions, allocator);
+  }
+
+  auto variationalDualView
+      = registry.view<comps::VariationalContactDualState>();
+  for (const auto entity : variationalDualView) {
+    auto& state
+        = variationalDualView.get<comps::VariationalContactDualState>(entity);
+    rebindLoadedVectorAllocator(state.duals, allocator);
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -6614,6 +6728,8 @@ void World::loadBinary(std::istream& input)
   io::EntityMap entityMap;
   io::SerializerRegistry::instance().loadAllEntities(
       input, m_storage->registry, entityMap, formatVersion);
+  rebindLoadedWorldComponentAllocators(
+      m_storage->registry, getMemoryManager().getFreeAllocator());
 
   // World metadata (optional for forward-compatibility)
   if (input.peek() != std::char_traits<char>::eof()) {

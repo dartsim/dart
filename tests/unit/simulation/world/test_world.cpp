@@ -88,6 +88,7 @@
 #include <new>
 #include <numbers>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -3362,6 +3363,87 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
     }
   }
 #endif
+
+  const auto expectWorldAllocator
+      = []<typename Vector>(sx::World& owner, const Vector& vector) {
+          using Value = typename Vector::value_type;
+          EXPECT_EQ(
+              vector.get_allocator(),
+              dart::common::StlAllocator<Value>{
+                  owner.getMemoryManager().getFreeAllocator()});
+        };
+
+  std::stringstream loadedMultibodyBuffer;
+  liveJointStorageWorld.saveBinary(loadedMultibodyBuffer);
+  loadedMultibodyBuffer.seekg(0);
+  sx::World loadedMultibodyWorld;
+  loadedMultibodyWorld.loadBinary(loadedMultibodyBuffer);
+  {
+    const auto& registry = sx::detail::storageOf(loadedMultibodyWorld).registry;
+    auto structures = registry.view<sx::comps::MultibodyStructure>();
+    std::size_t structureCount = 0;
+    for (const auto entity : structures) {
+      ++structureCount;
+      const auto& structure
+          = structures.get<sx::comps::MultibodyStructure>(entity);
+      expectWorldAllocator(loadedMultibodyWorld, structure.links);
+      expectWorldAllocator(loadedMultibodyWorld, structure.joints);
+    }
+    ASSERT_EQ(structureCount, 1u);
+
+    auto links = registry.view<sx::comps::Link>();
+    std::size_t linkCount = 0;
+    for (const auto entity : links) {
+      ++linkCount;
+      const auto& link = links.get<sx::comps::Link>(entity);
+      expectWorldAllocator(loadedMultibodyWorld, link.childJoints);
+    }
+    ASSERT_GE(linkCount, 2u);
+  }
+
+  std::stringstream loadedDeformableBuffer;
+  deformableStorageWorld.saveBinary(loadedDeformableBuffer);
+  loadedDeformableBuffer.seekg(0);
+  sx::World loadedDeformableWorld;
+  loadedDeformableWorld.loadBinary(loadedDeformableBuffer);
+  {
+    const auto& registry
+        = sx::detail::storageOf(loadedDeformableWorld).registry;
+    auto view = registry.view<
+        sx::comps::DeformableNodeState,
+        sx::comps::DeformableSpringModel,
+        sx::comps::DeformableMeshTopology,
+        sx::comps::DeformableBoundaryConditions>();
+    ASSERT_EQ(view.size_hint(), 1u);
+    for (const auto entity : view) {
+      const auto& state = view.get<sx::comps::DeformableNodeState>(entity);
+      const auto& spring = view.get<sx::comps::DeformableSpringModel>(entity);
+      const auto& topology
+          = view.get<sx::comps::DeformableMeshTopology>(entity);
+      const auto& boundaries
+          = view.get<sx::comps::DeformableBoundaryConditions>(entity);
+      expectWorldAllocator(loadedDeformableWorld, state.positions);
+      expectWorldAllocator(loadedDeformableWorld, state.previousPositions);
+      expectWorldAllocator(loadedDeformableWorld, state.velocities);
+      expectWorldAllocator(loadedDeformableWorld, state.masses);
+      expectWorldAllocator(loadedDeformableWorld, state.fixed);
+      expectWorldAllocator(loadedDeformableWorld, spring.edges);
+      expectWorldAllocator(loadedDeformableWorld, topology.restPositions);
+      expectWorldAllocator(loadedDeformableWorld, topology.surfaceTriangles);
+      expectWorldAllocator(loadedDeformableWorld, topology.tetrahedra);
+      expectWorldAllocator(
+          loadedDeformableWorld, topology.tetrahedronRestVolumes);
+      expectWorldAllocator(loadedDeformableWorld, boundaries.dirichlet);
+      ASSERT_EQ(boundaries.dirichlet.size(), 1u);
+      expectWorldAllocator(
+          loadedDeformableWorld, boundaries.dirichlet[0].nodes);
+      expectWorldAllocator(
+          loadedDeformableWorld, boundaries.dirichlet[0].referencePositions);
+      expectWorldAllocator(loadedDeformableWorld, boundaries.neumann);
+      ASSERT_EQ(boundaries.neumann.size(), 1u);
+      expectWorldAllocator(loadedDeformableWorld, boundaries.neumann[0].nodes);
+    }
+  }
 
   sx::World surfaceStorageWorld;
   sx::DeformableBodyOptions surfaceStorageOptions;

@@ -1,12 +1,13 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, Live Joint and Multibody Adjacency Allocators)
+## Current Continuation (2026-06-12, Live Joint and Loaded Component Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
 fresh-session entry point unless a maintainer explicitly redirects the work.
-The branch currently has no open PR.
+The branch currently has no open PR and may be locally ahead of origin until a
+maintainer approves pushing.
 
 Latest local slice: live joint component payloads and multibody adjacency
 vectors have been moved off global-heap dynamic storage for the creation path.
@@ -15,7 +16,13 @@ live `comps::Joint` fields still owned `Eigen::VectorXd` storage and creating a
 floating joint still made three tiny global allocations from
 `Link::childJoints` and `MultibodyStructure::{links,joints}`.
 
-The fix has five parts:
+Follow-up in the same branch: binary load now rebinds serialized
+allocator-aware component vectors to the loaded `World` free allocator. The
+pre-fix gap was that serializer default construction left loaded multibody
+adjacency, deformable persistent payloads, and serialized variational state on
+the default allocator even when normal creation used the World hierarchy.
+
+The fix has six parts:
 
 - `comps::Joint` now stores runtime, passive-dynamics, command, and limit
   payloads in a bounded dynamic `JointVector` sized for DART's supported 0-6
@@ -32,6 +39,10 @@ The fix has five parts:
   `common::StlAllocator` and are rebound to each World's free allocator during
   normal creation while keeping the component structs aggregate-compatible for
   Boost.PFR serialization.
+- `World::loadBinary()` rebinds loaded allocator-aware component vectors for
+  multibody adjacency, deformable persistent payloads and boundaries,
+  variational multibody history, and variational contact state to the loaded
+  World's free allocator after entity remapping.
 
 New regression coverage:
 
@@ -39,6 +50,9 @@ New regression coverage:
   joint creation and direct assignment of every live joint payload/limit vector
   under the global heap counter. It also covers the multibody adjacency vectors
   that are appended during link/joint creation.
+- The same gate now saves/loads representative multibody and deformable worlds
+  and checks that loaded allocator-aware component vectors use the loaded
+  World's free allocator.
 
 Validation for this slice:
 
@@ -64,10 +78,6 @@ Immediate follow-up candidates:
   component storage gate. In particular, `setPosition()` still routes through
   subtree dirtying; audit that traversal scratch before adding a public setter
   no-heap claim.
-- Serialized/reloaded multibody adjacency vectors currently round-trip
-  correctly, but the generic serializer constructs components without a World
-  allocator. If no-heap gates start from deserialized Worlds, add an
-  allocator-rebind pass or serializer-owned World allocator construction.
 - Allocator comparative matrix: remaining standard/foonathan misses are still
   EnTT steady-state registry rows. Do not tune thresholds or keep allocator
   policy changes without a clean, apple-to-apples EnTT matrix improvement.

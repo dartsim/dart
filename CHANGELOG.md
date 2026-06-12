@@ -558,6 +558,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     multibody creation. The persistent-storage allocator gate now covers
     6-DOF floating-joint creation and live joint payload/limit assignment under
     the global heap counter.
+  - Rebound allocator-aware component vectors loaded by experimental
+    `World::loadBinary()` to the loaded World's free allocator so serialized
+    multibody adjacency, deformable persistent payloads, and variational state
+    continue through the World memory hierarchy after round-trip.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
