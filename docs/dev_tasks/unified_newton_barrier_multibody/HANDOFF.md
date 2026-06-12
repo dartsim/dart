@@ -1,5 +1,24 @@
 # Unified Newton-Barrier Handoff
 
+## Current Continuation Handoff (2026-06-12)
+
+Work has resumed after the prior maintainer stop-only handoff. Continue local
+PLAN-083 work from this consolidated branch/PR, but do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, or delete branches
+without explicit maintainer approval.
+
+Resume only from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated on this single branch/PR. The latest local
+checkpoint adds reduced scene-owned runtime candidate-buffer rows to the
+private GPU contact-candidate packet; runtime scene filtering, GPU
+`World::step`, and contact-candidate speedup-gate completion remain future
+work.
+
+Before continuing, inspect `git status -sb`, the local commit log, and this
+handoff file. Treat any local changes as intentional in-progress state unless
+the maintainer says otherwise.
+
 ## Resumed Continuation Handoff (2026-06-12)
 
 Work resumed after the prior stop-only handoff. Continue locally on
@@ -9,10 +28,48 @@ on this single branch/PR. Do not push, PR-comment, resolve review threads,
 trigger CI, open another PLAN-083 PR, or delete branches without explicit
 maintainer approval.
 
-The current local checkpoint is the validated swept broad-phase packet below.
-The workspace still has uncommitted CUDA/contact-candidate packet code, tests,
-benchmarks, generated packet docs, and handoff docs; inspect `git status -sb`
-before continuing.
+The current local work builds on
+`51b4e9a695b Add CUDA swept contact broad-phase packet` with reduced
+scene-owned runtime candidate-buffer packet rows. The local branch has
+unpublished work ahead of `origin/simx/plan083-gpu-contact-candidate-packet`;
+inspect `git status -sb` and the local commit log before continuing.
+
+## Scene-Owned Runtime Candidate-Buffer Checkpoint (2026-06-12)
+
+Continue from `simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this single branch/PR. Do not push, PR-comment,
+resolve review threads, trigger CI, open another PLAN-083 PR, or delete
+branches without explicit maintainer approval. Before any future push, merge
+latest `origin/main` into this published branch, rerun the required gates, and
+push only with explicit approval.
+
+This checkpoint adds reduced scene-owned runtime candidate-buffer rows to the
+private GPU contact-candidate packet. The benchmark builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, reuses the CPU motion-aware sweep builder for
+compact candidate keys, and evaluates point-triangle and edge-edge
+endpoint-distance buffers on CPU and CUDA.
+
+Fresh local packet evidence records one scene body, 512 point-triangle
+candidates over 2,560 points and 768 triangles, and 1,536 edge-edge candidates
+over 2,304 surface edges. CPU/GPU endpoint-distance parity remains exact within
+`5.551115123125783e-17`, but the top-level packet speedup is
+`0.017259032907863573x` (`meets_speedup_gate=false`). This is reduced
+scene-owned runtime-buffer evidence only. It does not claim runtime scene
+filtering, GPU `World::step`, or contact-candidate speedup-gate completion.
+
+Latest local gates:
+
+- focused contact-candidate packet pytest
+- focused contact-candidate/GPU-parity/audit pytest trio
+- `git diff --check`
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- `pixi run build`
+- `pixi run test-unit` (161/161)
 
 ## Validated Sweep Broad-Phase Checkpoint (2026-06-12)
 

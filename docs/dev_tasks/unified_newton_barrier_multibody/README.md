@@ -2,6 +2,14 @@
 
 ## Current Status
 
+Current continuation handoff (2026-06-12): work has resumed after the prior
+maintainer stop-only handoff. Continue only from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083 work
+consolidated on that branch/PR, and inspect `HANDOFF.md`, `git status -sb`,
+and the local commit log before doing anything else. Do not push,
+PR-comment, resolve review threads, trigger CI, open PRs, or delete branches
+without explicit maintainer approval.
+
 Resumed continuation handoff (2026-06-12): work resumed after the prior
 stop-only handoff. Continue locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978, keep all PLAN-083
@@ -27,14 +35,34 @@ points and 256 triangles, emits 256 compact candidates, and records
 only: scene-owned GPU candidate buffers, runtime scene filtering, and the
 speedup gate remain future work.
 
-Validation passed: `pixi run lint`; `git diff --check`; focused
-contact-candidate/GPU-parity/audit pytest trio (18 passed);
-`pixi run -e cuda build-cuda Release`; focused
-`test_contact_candidate_filter_cuda` CTest; `pixi run -e cuda test-cuda`
-(8/8, with the LCP CUDA test taking 231.80s);
-`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`; PLAN-083 GPU
-parity/completion-audit checkers; `pixi run build`; and
-`pixi run test-unit` (161/161).
+Scene-owned runtime candidate-buffer checkpoint (2026-06-12): work continued on
+the same consolidated branch/PR and added reduced scene-owned runtime
+candidate-buffer packet rows. The benchmark now builds one DART `World`
+deformable surface, extracts node start/end states and surface triangles from
+the `DeformableBody` handle, reuses the CPU motion-aware sweep builder for
+candidate keys, and evaluates the compact point-triangle and edge-edge
+candidate buffers on CPU and CUDA.
+
+Fresh packet evidence records one scene body, 512 point-triangle candidates
+over 2,560 points and 768 triangles, and 1,536 edge-edge candidates over 2,304
+surface edges. CPU/GPU endpoint-distance parity remains exact within
+`5.551115123125783e-17`, but the top-level packet speedup is
+`0.017259032907863573x` (`meets_speedup_gate=false`). This is reduced
+scene-owned runtime-buffer evidence only: runtime scene filtering, GPU
+`World::step`, and speedup-gate completion remain future work.
+
+Latest validation passed:
+
+- focused contact-candidate packet pytest
+- focused contact-candidate/GPU-parity/audit pytest trio (18 passed)
+- `git diff --check`
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda test-cuda` (8/8)
+- `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`
+- PLAN-083 GPU parity/completion-audit checkers
+- `pixi run build`
+- `pixi run test-unit` (161/161)
 
 Validated runtime sweep-buffer checkpoint (2026-06-12): work continued on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978, and added private CUDA
@@ -519,9 +547,9 @@ the same PR. Do not open another PLAN-083 PR.
         candidate-list packets with exact CPU/GPU parity and device-side
         compacted candidate ids plus distance metadata, and compact runtime
         sweep-buffer endpoint-distance packets that consume CPU sweep candidate
-        keys; keep the row in-progress because GPU sweep-and-prune broad-phase
-        sorting, scene-owned runtime candidate buffers, runtime scene
-        filtering, and speedup remain unproven.
+        keys plus reduced scene-owned runtime candidate-buffer packets from one
+        DART `World` deformable surface; keep the row in-progress because
+        runtime scene filtering and speedup remain unproven.
   - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
         packets with exact CPU/GPU step-bound parity; keep the row in-progress
         because rigid curved trajectories, runtime candidate sets, and
@@ -681,9 +709,9 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue GPU sweep-and-prune broad-phase construction, scene-owned runtime
-   candidate buffers, downstream Hessian/PSD/runtime contact evidence, or
-   assembly/solve evidence on the same PR.
+   continue runtime scene filtering, speedup-gate work, downstream
+   Hessian/PSD/runtime contact evidence, or assembly/solve evidence on the
+   same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

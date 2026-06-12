@@ -241,6 +241,7 @@ def _benchmark_data(**overrides):
         candidates=32,
         points=320,
         triangles=96,
+        scene_bodies=0,
         max_result_abs_error=0.0,
     )
     runtime_point_gpu = _row(
@@ -253,6 +254,7 @@ def _benchmark_data(**overrides):
         gpu_candidates=32,
         gpu_points=320,
         gpu_triangles=96,
+        scene_bodies=0,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -263,6 +265,7 @@ def _benchmark_data(**overrides):
         "BM_Plan083RuntimeEdgeEdgeCandidateBufferCpu/1024",
         candidates=16,
         edges=288,
+        scene_bodies=0,
         max_result_abs_error=0.0,
     )
     runtime_edge_gpu = _row(
@@ -273,6 +276,54 @@ def _benchmark_data(**overrides):
         edges=288,
         gpu_candidates=16,
         gpu_edges=288,
+        scene_bodies=0,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    scene_runtime_point_cpu = _row(
+        "BM_Plan083SceneRuntimePointTriangleCandidateBufferCpu/1024",
+        candidates=32,
+        points=320,
+        triangles=96,
+        scene_bodies=1,
+        max_result_abs_error=0.0,
+    )
+    scene_runtime_point_gpu = _row(
+        "BM_Plan083SceneRuntimePointTriangleCandidateBufferCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        candidates=32,
+        points=320,
+        triangles=96,
+        gpu_candidates=32,
+        gpu_points=320,
+        gpu_triangles=96,
+        scene_bodies=1,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    scene_runtime_edge_cpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCpu/1024",
+        candidates=16,
+        edges=288,
+        scene_bodies=1,
+        max_result_abs_error=0.0,
+    )
+    scene_runtime_edge_gpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        candidates=16,
+        edges=288,
+        gpu_candidates=16,
+        gpu_edges=288,
+        scene_bodies=1,
         max_result_abs_error=1e-14,
         host_setup_ns=1.0,
         host_to_device_ns=2.0,
@@ -302,6 +353,10 @@ def _benchmark_data(**overrides):
             runtime_point_gpu,
             runtime_edge_cpu,
             runtime_edge_gpu,
+            scene_runtime_point_cpu,
+            scene_runtime_point_gpu,
+            scene_runtime_edge_cpu,
+            scene_runtime_edge_gpu,
         ]
     }
 
@@ -333,6 +388,8 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         "edge_edge_sweep_broad_phase",
         "point_triangle_runtime_sweep_buffer",
         "edge_edge_runtime_sweep_buffer",
+        "point_triangle_scene_runtime_buffer",
+        "edge_edge_scene_runtime_buffer",
     }
     assert (
         row["candidate_construction"]["point_triangle_all_pairs_mask"]["accepted_count"]
@@ -411,6 +468,18 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
             "candidate_count"
         ]
         == 16
+    )
+    assert (
+        row["candidate_construction"]["point_triangle_scene_runtime_buffer"][
+            "scene_body_count"
+        ]
+        == 1
+    )
+    assert (
+        row["candidate_construction"]["edge_edge_scene_runtime_buffer"][
+            "scene_body_count"
+        ]
+        == 1
     )
 
 
