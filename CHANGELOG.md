@@ -215,6 +215,9 @@
     a sequential-impulse push lane, including target travel, analytic gap,
     penetration depth, contact count, speed ratio, capture metrics, and Replay
     timeline markers for contact/penetration/push/divergence frames.
+  - Added Replay timeline metadata to `rigid_fixed_joint`, using fixed-joint
+    offset error as the value track and marking pose-error or residual-motion
+    frames during recovery.
   - Made `rigid_body` the Python `py-demos` default launch scene and moved the
     curated rigid-body visual-verification workflow to the front of the World
     Rigid Body category, so first-run and cycle behavior match the documented

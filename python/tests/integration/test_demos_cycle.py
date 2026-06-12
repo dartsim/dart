@@ -4883,6 +4883,45 @@ def test_rigid_fixed_joint_verifier_restores_captured_transform() -> None:
     assert capture_metrics["history"]["samples"] > 1.0
     assert controller._translation_error_history
     assert controller._orientation_error_history
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    assert timeline["signal_label"] == "Fixed-joint offset error"
+    assert timeline["signal"](snapshot) == pytest.approx(
+        controller._translation_error_history[-1]
+    )
+    assert (
+        timeline["markers"]({"translation_error_history": [0.0, 0.011]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"orientation_error_history": [0.0, 0.021]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"speed_history": [0.0, 0.051]})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"]({"last_metrics": {"payload_angular_speed": 0.051}})
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "translation_error_history": [0.005],
+                "orientation_error_history": [0.005],
+                "speed_history": [0.010],
+                "angular_speed_history": [0.010],
+                "last_metrics": {
+                    "translation_error": 0.005,
+                    "orientation_error": 0.005,
+                    "payload_speed": 0.010,
+                    "payload_angular_speed": 0.010,
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:

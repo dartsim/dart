@@ -2,10 +2,10 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_kinematic_normal_push` Replay timeline
-slice after the kinematic-driver checkpoint. The normal-push row now uses
-target-travel divergence as its Replay value track and marks contact, IPC
-penetration, sequential-impulse push-progress, and solver-divergence frames.
+This checkpoint completes the `rigid_fixed_joint` Replay timeline slice after
+the normal-push checkpoint. The fixed-joint row now uses fixed-joint offset
+error as its Replay value track and marks pose-error or residual-motion frames
+during recovery.
 
 Expected repository state after this hand-off:
 
@@ -18,24 +18,30 @@ Expected repository state after this hand-off:
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command, stack Replay timeline, pushed hand-off, and contact
-  manipulation Replay timeline checkpoints.
+  live open-command, stack Replay timeline, pushed hand-off, contact
+  manipulation Replay timeline, kinematic-driver Replay timeline, and
+  normal-push Replay timeline checkpoints, followed by the fixed-joint Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
 - Local `HEAD` before this commit was
-  `98ec4175ccf Add kinematic driver replay timeline`; the branch was ahead of
-  `origin/feature/rigid-body-gui-visual-verification` by two commits before the
-  normal-push slice.
+  `3ea4d1fcd4e Add normal push replay timeline`; the branch was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by three commits before
+  the fixed-joint slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
   `IPC grip box travel`, with markers for IPC grip contact/carry progress,
   slip-lane slip, and static-like caveat frames.
-- The current `rigid_kinematic_normal_push` slice adds
+- The normal-push Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
   `Target travel divergence`, with markers for contact, IPC penetration, SI
   push-progress, and divergence frames.
+- The current fixed-joint Replay timeline slice adds `replay_timeline_signal(...)`,
+  `replay_timeline_marker(...)`, and `info["replay_timeline"]` metadata. The
+  intended value track label is `Fixed-joint offset error`, with markers for
+  pose-error and residual-motion recovery frames.
 - There is no PR associated with this branch at checkpoint time.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
@@ -55,8 +61,11 @@ Expected repository state after this hand-off:
 - The normal-push Replay timeline continuation added `replay_timeline` metadata
   to `rigid_kinematic_normal_push`, updated tests and docs, and ran focused
   tests plus a real docked capture.
-- Do not push this new implementation commit without explicit approval in a
-  future session.
+- The fixed-joint Replay timeline continuation added `replay_timeline` metadata
+  to `rigid_fixed_joint`, updated tests and docs, and ran focused tests plus a
+  real docked capture.
+- Do not push these local commits without explicit approval in a future
+  session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -206,10 +215,10 @@ its value track and marks overlap, low-clearance, top-drift, or
 solver-divergence frames for targeted visual debugging. Focused pytest and a
 real docked capture passed.
 
-The final action in this session is hand-off documentation only. The user
-explicitly instructed the agent to stop working further, ensure the hand-off
-docs, push them, and fully stop. No additional implementation or verification
-was performed after that instruction.
+That session then stopped at hand-off documentation only. That historical
+stop-only handoff was later superseded by the active-goal continuation; the
+contact-manipulation, kinematic-driver, normal-push, and fixed-joint timeline
+slices below are the current local continuation state.
 
 The current continuation adds replay-guided timeline metadata to
 `rigid_contact_manipulation`. The shared Replay panel now uses travel
@@ -228,8 +237,16 @@ The current continuation completes the next Replay timeline slice for
 `rigid_kinematic_normal_push`. The shared Replay panel now uses target-travel
 divergence as its value track and marks contact, IPC penetration, SI
 push-progress, and divergence frames for targeted visual debugging. Focused
-pytest, sidecar/README drift guards, and a real docked capture passed; lint and
-diff checks are still expected before committing this slice.
+pytest, sidecar/README drift guards, `pixi run lint`, `git diff --check`, and a
+real docked capture passed before the local commit
+`3ea4d1fcd4e Add normal push replay timeline`.
+
+The latest continuation completes the next Replay timeline slice for
+`rigid_fixed_joint`. The shared Replay panel now uses fixed-joint offset error
+as its value track and marks pose-error or residual-motion frames during
+recovery. Focused pytest, sidecar/README drift guards, `pixi run lint`,
+`git diff --check`, and a real docked capture passed before the local fixed-joint
+commit.
 
 ## Current Branch
 
@@ -245,24 +262,31 @@ Current snapshot:
   `d5c6de2bee1 Describe optional rigid workflow rows`,
   `5a4529f0083 Audit rigid workflow guidance coverage`, and
   `ad013e62069 Refresh rigid guidance audit handoff`, followed by the current
-  live open-command, stack Replay timeline, pushed hand-off, and current
-  contact-manipulation Replay timeline checkpoints.
+  live open-command, stack Replay timeline, pushed hand-off, contact
+  manipulation Replay timeline, kinematic-driver Replay timeline, and
+  normal-push Replay timeline checkpoints, followed by the fixed-joint Replay
+  timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
 - Local `HEAD` before this commit was
-  `98ec4175ccf Add kinematic driver replay timeline`; it was two commits ahead
-  of `origin/feature/rigid-body-gui-visual-verification` before the normal-push
+  `3ea4d1fcd4e Add normal push replay timeline`; it was three commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification` before the fixed-joint
   Replay timeline slice.
-- The current normal-push Replay timeline checkpoint is local and unpushed
-  until explicit future approval.
+- The contact-manipulation, kinematic-driver, normal-push, and fixed-joint
+  Replay timeline checkpoints are local and unpushed until explicit future
+  approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
 
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver, and
-normal-push Replay timeline slices after the pushed docs-only handoff. Do not
-push without explicit approval in that session.
+normal-push Replay timeline slices plus the fixed-joint Replay timeline slice
+after the pushed docs-only handoff. Re-evaluate the durable sidecar before
+selecting the next bounded rigid visual-verification slice; the next adjacent
+constraints row is likely `rigid_joint_breakage`, but do not assume it without
+inspecting current evidence. Do not push without explicit approval in that
+session.
 
 ## Context That Would Be Lost
 
@@ -367,6 +391,12 @@ push without explicit approval in that session.
   `python/examples/demos/scenes/rigid_kinematic_normal_push.py`, with tests and
   capture evidence for the `Target travel divergence` value track and contact,
   penetration, SI push, and divergence markers.
+- The completed fixed-joint Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata to
+  `python/examples/demos/scenes/rigid_fixed_joint.py`, with tests and capture
+  evidence for the `Fixed-joint offset error` value track and pose-error or
+  residual-motion recovery markers.
 
 ## How To Resume
 
@@ -748,3 +778,21 @@ reported row `rigid_kinematic_normal_push`, IPC normal status
 target travel, SI status `pushed`, SI target travel about `0.123` m, and SI
 analytic gap about `-0.00055` m. The sidecar/README/capture-command drift
 guard reported `4 passed`.
+
+Current fixed-joint Replay timeline validation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_fixed_joint_verifier_restores_captured_transform python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata -q
+pixi run py-demo-capture -- --scene rigid_fixed_joint --frames 24 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_fixed_joint_timeline_1781274052
+jq -r '.scene, .capture.converted_frames, .visual_evidence.screenshot.docked_workspace, .visual_evidence.screenshot.unique_rgb_count, .scene_metrics.event_count, .scene_metrics.latest.metrics.row, .scene_metrics.latest.metrics.metrics.translation_error, .scene_metrics.latest.metrics.metrics.orientation_error, .scene_metrics.latest.metrics.metrics.payload_speed, .scene_metrics.latest.metrics.history.max_translation_error, .scene_metrics.latest.metrics.history.max_orientation_error' /tmp/dart_capture_fixed_joint_timeline_1781274052/manifest.json
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+```
+
+The focused Replay/fixed-joint pytest reported `2 passed`. The real docked
+capture completed with exit code 0 and wrote a nonblank 960x540 screenshot with
+docked UI detected, 23 PNG frames, and 24 scene-metric events. The manifest
+reported row `rigid_fixed_joint`, final translation error about `2.17e-10` m,
+final orientation error `0.0` rad, final payload speed `0.0` m/s, historical
+maximum translation error about `1.09e-8` m, and historical maximum orientation
+error about `2.67e-7` rad. The sidecar/README/capture-command drift guard
+reported `4 passed`. `pixi run lint` passed and `git diff --check` was clean.

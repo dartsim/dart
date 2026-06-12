@@ -232,6 +232,55 @@ class _RigidFixedJointVerifier:
             "last_metrics": dict(self._last_metrics),
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        history = snapshot.get("translation_error_history", [])
+        if history:
+            try:
+                return float(history[-1])
+            except (TypeError, ValueError):
+                return 0.0
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                return float(metrics.get("translation_error", 0.0))
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        history_thresholds = (
+            ("translation_error_history", 0.010),
+            ("orientation_error_history", 0.020),
+            ("speed_history", 0.050),
+            ("angular_speed_history", 0.050),
+        )
+        for history_key, threshold in history_thresholds:
+            history = snapshot.get(history_key, [])
+            try:
+                if history and abs(float(history[-1])) >= threshold:
+                    return 1.0
+            except (TypeError, ValueError, IndexError):
+                continue
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            metric_thresholds = (
+                ("translation_error", 0.010),
+                ("orientation_error", 0.020),
+                ("payload_speed", 0.050),
+                ("payload_angular_speed", 0.050),
+            )
+            for metric_key, threshold in metric_thresholds:
+                try:
+                    if abs(float(metrics.get(metric_key, 0.0))) >= threshold:
+                        return 1.0
+                except (TypeError, ValueError):
+                    continue
+        return 0.0
+
     def restore_replay_state(self, state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         self.perturbation = float(controls.get("perturbation", self.perturbation))
@@ -322,6 +371,11 @@ def build() -> SceneSetup:
             "replay_capture_state": verifier.capture_replay_state,
             "replay_restore_state": verifier.restore_replay_state,
             "replay_sync": verifier._sync,
+            "replay_timeline": {
+                "signal_label": "Fixed-joint offset error",
+                "signal": verifier.replay_timeline_signal,
+                "markers": verifier.replay_timeline_marker,
+            },
         },
     )
 

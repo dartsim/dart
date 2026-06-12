@@ -196,7 +196,7 @@ plus a warning block if any selected row is missing those fields.
 | 22/36 | `rigid_contact_manipulation`     | Can a pusher move an object through contact?       | Executor, pusher speed, friction, pusher mass         | Target travel, pusher gap, contact/proximity, metrics          |
 | 23/36 | `rigid_kinematic_driver`         | Does prescribed motion carry objects by contact?   | Driver speed, grip friction, executor                 | Driver travel, box travel, slip, speed ratio, metrics          |
 | 24/36 | `rigid_kinematic_normal_push`    | Can prescribed normal motion push a target?        | Push speed, target mass, executor                     | Target travel, gap, depth, contact count                       |
-| 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed               |
+| 25/36 | `rigid_fixed_joint`              | Does a fixed joint preserve its captured pose?     | Perturbation, reset                                   | Relative offset/orientation error, payload speed, Replay marks |
 | 26/36 | `rigid_joint_breakage`           | What happens when a fixed joint breaks?            | Fixed AVBD break-force diagnostics                    | Broken state, connector color, offset error, reset             |
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, initial stretch, gravity, reset             | Soft/stiff stretch, off-center spin, step time                 |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Perturbation, reset                                   | Hinge radius/z error, slider xy error, free motion             |
@@ -557,6 +557,8 @@ The **`rigid_fixed_joint`** scene is a focused fixed-constraint verifier. Its
 panel can deliberately perturb the child body away from the captured relative
 transform, then plots relative offset error, orientation error, and residual
 payload speed as the constraint projects the payload back to the fixed pose.
+The shared Replay panel uses fixed-joint offset error as its value track and
+marks pose-error or residual-motion frames during recovery.
 
 The **`rigid_joint_breakage`** scene is the next fixed-joint lifecycle row. It
 is explicitly AVBD-pinned: a very weak fixed joint starts intact, crosses a
