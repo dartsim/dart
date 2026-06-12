@@ -858,6 +858,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["max_solution_error"] <= expected_case_tolerances.get(
             case_name, 2e-4
         )
+        assert summary_row["max_residual"] <= 1e-3
+        assert summary_row["max_complementarity"] <= 1e-3
         assert summary_row["fastest_solver"] in solver_by_name
         assert summary_row["fastest_elapsed_us"] >= 0.0
         assert summary_row["fastest_native_solver"] in solver_by_name
@@ -882,6 +884,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert profile_row["max_solution_error"] <= max(
             expected_case_tolerances.values(), default=2e-4
         )
+        assert profile_row["max_residual"] <= 1e-3
+        assert profile_row["max_complementarity"] <= 1e-3
         assert profile_row["total_elapsed_us"] >= 0.0
         assert profile_row["slowest_case"] in expected_problem_counts
     assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (
@@ -936,13 +940,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in builder.events
     )
     assert (
+        "table:lcp_representative_solver_suite:Problem,Type,Native,Delegated,"
+        "Max residual,Fastest native"
+        in builder.events
+    )
+    assert (
         "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
-        "Iterations,Error,us"
+        "Iterations,Error,Residual,Complementarity,us"
         in builder.events
     )
     assert (
         "table:lcp_solver_profile:Solver,Native surfaces,OK,Total us,Worst error,"
-        "Slowest case"
+        "Worst residual,Slowest case"
         in builder.events
     )
 

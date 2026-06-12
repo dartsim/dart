@@ -1134,6 +1134,10 @@ def _summarize_standalone_problem_suite(
         native_rows = [row for row in case_rows if row["native_supported"]]
         delegated_rows = [row for row in case_rows if not row["native_supported"]]
         max_error = max((row["solution_error"] for row in case_rows), default=0.0)
+        max_residual = max((row["residual"] for row in case_rows), default=0.0)
+        max_complementarity = max(
+            (row["complementarity"] for row in case_rows), default=0.0
+        )
         max_elapsed_us = max((row["elapsed_us"] for row in case_rows), default=0.0)
         fastest_row = min(case_rows, key=lambda row: row["elapsed_us"], default=None)
         fastest_native_row = min(
@@ -1157,6 +1161,8 @@ def _summarize_standalone_problem_suite(
                     1 for row in delegated_rows if row["contract_ok"]
                 ),
                 "max_solution_error": max_error,
+                "max_residual": max_residual,
+                "max_complementarity": max_complementarity,
                 "max_elapsed_us": max_elapsed_us,
                 "fastest_solver": fastest_row["solver"] if fastest_row else "",
                 "fastest_elapsed_us": (
@@ -1209,6 +1215,12 @@ def _summarize_standalone_solver_profiles(
                 ),
                 "max_solution_error": max(
                     (row["solution_error"] for row in solver_rows), default=0.0
+                ),
+                "max_residual": max(
+                    (row["residual"] for row in solver_rows), default=0.0
+                ),
+                "max_complementarity": max(
+                    (row["complementarity"] for row in solver_rows), default=0.0
                 ),
                 "total_elapsed_us": sum(row["elapsed_us"] for row in solver_rows),
                 "slowest_case": slowest_row["case"] if slowest_row else "",
@@ -1398,7 +1410,14 @@ def build() -> SceneSetup:
         if builder.collapsing_header("Representative solver suite", default_open=False):
             if builder.begin_table(
                 "lcp_representative_solver_suite",
-                ["Problem", "Type", "Native", "Delegated", "Fastest native"],
+                [
+                    "Problem",
+                    "Type",
+                    "Native",
+                    "Delegated",
+                    "Max residual",
+                    "Fastest native",
+                ],
             ):
                 for row in standalone_problem_summary_rows:
                     builder.table_next_row()
@@ -1415,6 +1434,7 @@ def build() -> SceneSetup:
                             f"{row['delegated_solver_count']}"
                         ),
                     )
+                    _write_table_cell(builder, f"{row['max_residual']:.2e}")
                     _write_table_cell(
                         builder,
                         (
@@ -1427,7 +1447,17 @@ def build() -> SceneSetup:
         if builder.collapsing_header("Representative solver details", default_open=False):
             if builder.begin_table(
                 "lcp_representative_solver_details",
-                ["Problem", "Solver", "Route", "Status", "Iterations", "Error", "us"],
+                [
+                    "Problem",
+                    "Solver",
+                    "Route",
+                    "Status",
+                    "Iterations",
+                    "Error",
+                    "Residual",
+                    "Complementarity",
+                    "us",
+                ],
             ):
                 for row in standalone_problem_rows:
                     builder.table_next_row()
@@ -1437,6 +1467,8 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["status"])
                     _write_table_cell(builder, str(row["iterations"]))
                     _write_table_cell(builder, f"{row['solution_error']:.2e}")
+                    _write_table_cell(builder, f"{row['residual']:.2e}")
+                    _write_table_cell(builder, f"{row['complementarity']:.2e}")
                     _write_table_cell(builder, f"{row['elapsed_us']:.1f}")
                 builder.end_table()
 
@@ -1449,6 +1481,7 @@ def build() -> SceneSetup:
                     "OK",
                     "Total us",
                     "Worst error",
+                    "Worst residual",
                     "Slowest case",
                 ],
             ):
@@ -1462,6 +1495,7 @@ def build() -> SceneSetup:
                     )
                     _write_table_cell(builder, f"{row['total_elapsed_us']:.1f}")
                     _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
+                    _write_table_cell(builder, f"{row['max_residual']:.2e}")
                     _write_table_cell(builder, row["slowest_case"])
                 builder.end_table()
 
