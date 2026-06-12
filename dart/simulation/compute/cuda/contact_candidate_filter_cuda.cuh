@@ -109,10 +109,10 @@ void filterPointTriangleContactStencilsCuda(
 ///
 /// This packet evaluates every supplied candidate point against every supplied
 /// triangle and writes a deterministic accepted mask plus a compact accepted
-/// point/triangle list after readback. Incident point-triangle pairs are masked
-/// out. It is stronger than a preassembled stencil filter, but it intentionally
-/// does not cover sweep broad-phase pruning, scene-level solver state, or a
-/// public GPU solver backend.
+/// point/triangle list produced on the device before readback. Incident
+/// point-triangle pairs are masked out. It is stronger than a preassembled
+/// stencil filter, but it intentionally does not cover sweep broad-phase
+/// pruning, scene-level solver state, or a public GPU solver backend.
 void buildPointTriangleContactCandidateMaskCuda(
     const std::vector<double>& positions,
     const std::vector<std::uint32_t>& pointIndices,

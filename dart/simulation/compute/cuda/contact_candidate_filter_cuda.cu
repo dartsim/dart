@@ -306,6 +306,34 @@ __global__ void buildPointTriangleContactCandidateMaskKernel(
   accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
 }
 
+__global__ void compactPointTriangleContactCandidateMaskKernel(
+    const std::uint32_t* pointIndices,
+    const std::uint8_t* accepted,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* compactedCount,
+    const std::size_t pointCount,
+    const std::size_t triangleCount)
+{
+  if (blockIdx.x != 0u || threadIdx.x != 0u) {
+    return;
+  }
+
+  std::uint32_t count = 0u;
+  const std::size_t pairCount = pointCount * triangleCount;
+  for (std::size_t index = 0; index < pairCount; ++index) {
+    if (accepted[index] == 0u) {
+      continue;
+    }
+    const std::size_t pointSlot = index / triangleCount;
+    const std::size_t triangle = index - pointSlot * triangleCount;
+    acceptedPointIndices[count] = pointIndices[pointSlot];
+    acceptedTriangleIndices[count] = static_cast<std::uint32_t>(triangle);
+    ++count;
+  }
+  *compactedCount = count;
+}
+
 __global__ void filterEdgeEdgeContactStencilKernel(
     const double* positions,
     const EdgeEdgeContactStencil* stencils,
@@ -372,6 +400,9 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     double activationDistance,
     double* squaredDistances,
     std::uint8_t* accepted,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* compactedCount,
     std::size_t pointCount,
     std::size_t triangleCount)
 {
@@ -389,6 +420,19 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
       activationDistance,
       squaredDistances,
       accepted,
+      pointCount,
+      triangleCount);
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    return error;
+  }
+
+  compactPointTriangleContactCandidateMaskKernel<<<1u, 1u>>>(
+      pointIndices,
+      accepted,
+      acceptedPointIndices,
+      acceptedTriangleIndices,
+      compactedCount,
       pointCount,
       triangleCount);
 

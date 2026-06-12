@@ -59,7 +59,7 @@ moves entirely into durable plan sidecars.
   projection local-kernel row is
   measured separately. The contact-stencil filter packet is in-progress because
   parity exists for preassembled point-triangle and edge-edge stencils plus a
-  brute-force all-pairs point-triangle candidate mask with readback
+  brute-force all-pairs point-triangle candidate mask with device-side
   compacted-pair metadata, but sweep broad-phase construction, compacted
   runtime scene filtering, and speedup remain unproven.
   The

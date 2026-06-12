@@ -2,7 +2,29 @@
 
 ## Current Reality (2026-06-09)
 
-Latest continuation handoff (2026-06-11): resume only from
+Latest continuation checkpoint (2026-06-11): implementation resumed on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this consolidated branch/PR; do not push,
+PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+The latest checkpoint moves point-triangle candidate-mask compaction from
+host-side scanning after GPU readback into a deterministic device-side
+compaction kernel. It tracks matching compacted point and triangle counts in
+the benchmark packet and rejects mismatches in the packet writer/test. This is
+still reduced private packet evidence only: sweep broad-phase construction,
+runtime candidate-list construction, and the speedup gate remain future work.
+Validation passed focused contact-candidate packet pytest (6 tests),
+`pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
+packet records `accepted_count=192`, `compacted_count=192`,
+`compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
+`speedup=0.23745924076090597x`, and top-level contact-candidate packet
+`speedup=0.23745924076090597x` (`meets_speedup_gate=false`).
+
+Previous readback-compaction checkpoint (2026-06-11): resume only from
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`), after reading
 `HANDOFF.md`, `git status -sb`, and the PR state. Keep all remaining PLAN-083
@@ -10,7 +32,7 @@ work on this consolidated branch/PR. Do not push, PR-comment, resolve review
 threads, trigger CI, or open another PLAN-083 PR without explicit maintainer
 approval.
 
-The latest checkpoint builds on
+That checkpoint builds on
 `bed8ab7569b Add point-triangle candidate mask packet parity` by adding
 compacted point-triangle candidate-pair metadata after GPU mask readback. The
 contact-candidate CUDA result records accepted point/triangle index lists, the
@@ -30,7 +52,7 @@ packet records `pair_count=65536`, `accepted_count=192`,
 push, merge latest `origin/main` into this published branch, rerun the required
 gates, and push only with explicit maintainer approval.
 
-Active continuation handoff (2026-06-11): implementation resumed after the
+Earlier continuation handoff (2026-06-11): implementation resumed after the
 stop-only handoff. Resume only from
 `simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
 (`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
@@ -70,7 +92,7 @@ off-diagonal row observed `pairs=4096`, `active_blocks=4096`,
 `block_entries=147456`, `max_result_abs_error=0`, and
 `speedup=0.4342273750294942x`.
 
-The current checkpoint adds a private CUDA point-triangle all-pairs candidate
+The earlier candidate-mask checkpoint adds a private CUDA point-triangle all-pairs candidate
 mask to the contact-candidate packet. It extends the preassembled stencil
 filter path with
 `buildPointTriangleContactCandidateMaskCuda()`, a CUDA mask kernel, focused
@@ -684,7 +706,7 @@ paper-scale assets, and accepted reference timings remain future evidence.
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
-sweep broad-phase/runtime compacted candidate lists and speedup-gate work; the
+sweep broad-phase/runtime candidate-list construction and speedup-gate work; the
 next barrier/friction packet gaps are runtime contact rows and speedup-gate
 work; the next assembly/solve gaps are equality reduction, global sparse
 factorization, runtime scene rows, and speedup-gate work. Do not mark these
@@ -779,9 +801,7 @@ sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md
 ```
 
-Then stop unless the maintainer explicitly resumes verification or
-implementation. When work resumes, sync `main` into the PR branch before any
-push, verify the audit sidecars, and start the next implementation slice from
-the planned CPU/GPU/scene rows only after #2978 is stable or the maintainer
-explicitly asks to keep implementing during CI. Do not describe planned GPU
-rows as speed claims or public backend promotion.
+Then continue on #2978 only. Before any push, sync `main` into the PR branch,
+verify the audit sidecars, and keep implementation slices tied to planned
+CPU/GPU/scene rows. Do not describe planned GPU rows as speed claims or public
+backend promotion.

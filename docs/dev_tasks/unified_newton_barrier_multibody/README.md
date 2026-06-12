@@ -2,14 +2,41 @@
 
 ## Current Status
 
-Latest continuation handoff (2026-06-11): implementation resumed on
+Latest continuation checkpoint (2026-06-11): implementation resumed on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). Keep all
 remaining PLAN-083 work on this consolidated branch/PR. Do not push,
 PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
 without explicit maintainer approval.
 
-The latest checkpoint builds on
+The latest checkpoint moves point-triangle candidate-mask compaction from
+host-side scanning after GPU readback into a deterministic device-side
+compaction kernel. The contact-candidate CUDA result still records accepted
+point/triangle index lists, the benchmark now emits both `gpu_compacted_count`
+and `gpu_compacted_triangle_count`, and the packet writer/test reject either
+compaction-count mismatch. This is reduced private packet evidence only: it
+does not claim sweep broad-phase construction, runtime candidate-list
+construction, or a contact-candidate speedup-gate completion.
+
+Validation for this checkpoint passed focused contact-candidate packet pytest
+(6 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8), and
+`pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The regenerated
+packet records `accepted_count=192`, `compacted_count=192`,
+`compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
+`speedup=0.23745924076090597x`, and top-level contact-candidate packet
+`speedup=0.23745924076090597x` (`meets_speedup_gate=false`). Before any future
+push, merge latest `origin/main` into this published branch, rerun required
+gates, and push only with explicit maintainer approval.
+
+Previous readback-compaction checkpoint (2026-06-11): implementation resumed on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work on this consolidated branch/PR. Do not push,
+PR-comment, resolve review threads, trigger CI, or open another PLAN-083 PR
+without explicit maintainer approval.
+
+That checkpoint builds on
 `bed8ab7569b Add point-triangle candidate mask packet parity` by adding
 compacted point-triangle candidate-pair metadata after GPU mask readback. The
 contact-candidate CUDA result now records accepted point/triangle index lists,
@@ -29,7 +56,7 @@ top-level contact-candidate packet `speedup=0.35669978298935295x`
 `origin/main` into this published branch, rerun required gates, and push only
 with explicit maintainer approval.
 
-Active continuation state (2026-06-11): implementation resumed after the
+Earlier continuation state (2026-06-11): implementation resumed after the
 stop-only handoff. Resume only from
 `simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
 (`Advance unified Newton-barrier runtime and parity evidence`). Do not push,
@@ -61,7 +88,7 @@ measured top-level `speedup=0.26051227540244215x` with
 `meets_speedup_gate=false`, so the row stays `in-progress`. `HANDOFF.md` is
 the authoritative fresh-session handoff.
 
-Focused evidence gathered for the current candidate-mask checkpoint passed the
+Focused evidence gathered for the earlier candidate-mask checkpoint passed the
 contact-candidate packet pytest, focused packet/audit pytest trio, lint, build,
 unit tests, CUDA build, `pixi run -e cuda test-cuda`, and
 `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`. The generated
@@ -486,7 +513,7 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue sweep broad-phase/runtime compacted candidate-list work,
+   continue sweep broad-phase/runtime candidate-list construction,
    downstream Hessian/PSD/runtime contact evidence, or assembly/solve evidence
    on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch

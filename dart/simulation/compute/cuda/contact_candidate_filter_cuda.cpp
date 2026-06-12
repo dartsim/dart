@@ -61,6 +61,9 @@ cudaError_t launchPointTriangleContactCandidateMaskKernel(
     double activationDistance,
     double* squaredDistances,
     std::uint8_t* accepted,
+    std::uint32_t* acceptedPointIndices,
+    std::uint32_t* acceptedTriangleIndices,
+    std::uint32_t* compactedCount,
     std::size_t pointCount,
     std::size_t triangleCount);
 
@@ -316,6 +319,9 @@ void buildPointTriangleContactCandidateMaskCuda(
   DeviceBuffer<std::uint32_t> deviceTriangles(triangleIndices.size());
   DeviceBuffer<double> deviceSquaredDistances(result.pairCount);
   DeviceBuffer<std::uint8_t> deviceAccepted(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedPointIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceAcceptedTriangleIndices(result.pairCount);
+  DeviceBuffer<std::uint32_t> deviceCompactedCount(1u);
   const auto setupEnd = Clock::now();
 
   const auto h2dStart = Clock::now();
@@ -335,6 +341,9 @@ void buildPointTriangleContactCandidateMaskCuda(
           std::max(0.0, activationDistance),
           deviceSquaredDistances.data(),
           deviceAccepted.data(),
+          deviceAcceptedPointIndices.data(),
+          deviceAcceptedTriangleIndices.data(),
+          deviceCompactedCount.data(),
           result.pointCount,
           result.triangleCount),
       "point-triangle contact candidate mask kernel");
@@ -349,6 +358,18 @@ void buildPointTriangleContactCandidateMaskCuda(
       "point-triangle candidate mask squared distances copy");
   deviceAccepted.copyFromDevice(
       result.accepted, "point-triangle candidate mask accepted copy");
+  std::vector<std::uint32_t> compactedCount(1u);
+  deviceCompactedCount.copyFromDevice(
+      compactedCount, "point-triangle candidate mask compacted count copy");
+  result.acceptedCount = compactedCount[0];
+  result.acceptedPointIndices.resize(result.acceptedCount);
+  result.acceptedTriangleIndices.resize(result.acceptedCount);
+  deviceAcceptedPointIndices.copyFromDevice(
+      result.acceptedPointIndices,
+      "point-triangle candidate mask compacted points copy");
+  deviceAcceptedTriangleIndices.copyFromDevice(
+      result.acceptedTriangleIndices,
+      "point-triangle candidate mask compacted triangles copy");
   const auto d2hEnd = Clock::now();
 
   result.timing.setupNs = elapsedNs(setupStart, setupEnd);
@@ -356,18 +377,10 @@ void buildPointTriangleContactCandidateMaskCuda(
   result.timing.kernelNs = elapsedNs(kernelStart, kernelEnd);
   result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
 
-  result.acceptedPointIndices.reserve(result.pairCount);
-  result.acceptedTriangleIndices.reserve(result.pairCount);
   for (std::size_t i = 0; i < result.accepted.size(); ++i) {
     if (result.accepted[i] != 0) {
-      ++result.acceptedCount;
       result.maxAcceptedSquaredDistance = std::max(
           result.maxAcceptedSquaredDistance, result.squaredDistances[i]);
-      const std::size_t pointSlot = i / result.triangleCount;
-      const std::size_t triangle = i - pointSlot * result.triangleCount;
-      result.acceptedPointIndices.push_back(pointIndices[pointSlot]);
-      result.acceptedTriangleIndices.push_back(
-          static_cast<std::uint32_t>(triangle));
     }
   }
 }

@@ -2,6 +2,63 @@
 
 ## Latest Continuation Handoff (2026-06-11)
 
+Implementation resumed on the consolidated PLAN-083 branch after the stop-only
+handoff. Continue locally on
+`simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
+PLAN-083 work on this consolidated branch/PR. Do not push, PR-comment, resolve
+review threads, or trigger CI without explicit maintainer approval.
+
+Current branch state:
+
+- Branch: `simx/plan083-gpu-contact-candidate-packet`
+- PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
+- Base: `main`
+- Current checkpoint: deterministic device-side compaction for the private
+  point-triangle all-pairs candidate-mask packet.
+- Last observed pushed origin head:
+  `6746b63973d Record point-point barrier Hessian packet evidence`
+- Local branch is ahead of origin by seven committed checkpoints. Keep all
+  remaining PLAN-083 work on this consolidated branch/PR; do not open another
+  PLAN-083 PR.
+
+This checkpoint moves compacted accepted point/triangle metadata production from
+host-side scanning after mask readback to a deterministic single-thread CUDA
+compaction kernel launched after the parallel mask kernel. It extends the
+packet writer/test to track `gpu_compacted_triangle_count` and reject
+point/triangle compaction-count mismatches.
+
+Touched surfaces:
+
+- `dart/simulation/compute/cuda/contact_candidate_filter_cuda.cpp`
+- `dart/simulation/compute/cuda/contact_candidate_filter_cuda.cu`
+- `dart/simulation/compute/cuda/contact_candidate_filter_cuda.cuh`
+- `tests/benchmark/simulation/bm_plan083_gpu_contact_candidates.cpp`
+- `scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `tests/test_plan083_gpu_contact_candidate_packet.py`
+
+This is still reduced private packet evidence only. It does not claim sweep
+broad-phase construction, runtime scene candidate-list construction, or
+contact-candidate speedup-gate completion. The regenerated packet reports
+`pair_count=65536`, `accepted_count=192`, `compacted_count=192`,
+`compacted_triangle_count=192`, `max_result_abs_error=0`, candidate-mask
+`speedup=0.23745924076090597x`, and top-level contact-candidate packet
+`speedup=0.23745924076090597x` (`meets_speedup_gate=false`).
+
+Validation for this checkpoint passed focused contact-candidate packet pytest
+(6 tests), `pixi run lint`, `pixi run build`, `pixi run test-unit` (161/161),
+`pixi run -e cuda build-cuda Release`, `pixi run -e cuda test-cuda` (8/8),
+and `pixi run -e cuda bm-plan083-gpu-contact-candidates-packet`.
+
+Before any future push to #2978, merge latest `origin/main` into this published
+branch, rerun the required gates for all accumulated changes, and push only
+with explicit maintainer approval.
+
+Historical note: the preceding handoff was stop-only and intentionally left
+this device-side compaction WIP unverified. That stop state has now been
+resumed and validated locally.
+
+## Previous Readback-Compaction Handoff (2026-06-11)
+
 Implementation resumed on the consolidated PLAN-083 branch. Continue locally on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
 PLAN-083 work on this consolidated branch/PR. Do not push, PR-comment, resolve
@@ -45,7 +102,7 @@ required gates, and push only with explicit maintainer approval. Keep all
 remaining PLAN-083 work consolidated on PR #2978; do not open another PLAN-083
 PR.
 
-## Active Continuation Handoff (2026-06-11)
+## Earlier Active Continuation Handoff (2026-06-11)
 
 Implementation resumed after the stop-only handoff. Continue locally on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all remaining
