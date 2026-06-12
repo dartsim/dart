@@ -53,6 +53,9 @@
 - [x] Added manifest-driven active friction-index contact benchmark rows to
       `lcp_compare` and retargeted the py-demo representative metadata from the
       older two-solver benchmark surface to that main comparison filter.
+- [x] Filtered active-set transition benchmark registrations through concrete
+      `supportsProblem(problem)` checks, replacing the Direct-only standard
+      packet special case with the shared native-route gate.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -92,8 +95,36 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is the active friction-index contact
-benchmark routing slice.
+The latest implementation checkpoint is the active-set transition benchmark
+routing slice.
+
+## Active-Set Transition Benchmark Routing Checkpoint
+
+The latest implementation checkpoint aligns active-set transition benchmark
+registration with concrete native solver support:
+
+- `RegisterActiveSetTransitionBenchmarks()` now builds the concrete generated
+  packet for each standard, boxed, and friction-index active-set family and
+  registers only solvers whose `supportsProblem(problem)` accepts that packet.
+- The previous Direct-only special case for the 16-row standard packet is gone;
+  Direct is excluded by its own concrete native-support predicate.
+- Baraff and MPRGP remain registered for the standard active-set transition
+  packet because the generated matrix is symmetric positive-definite and
+  satisfies their native predicates.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpActiveSetTransition/Standard/(Direct|Baraff|MPRGP)'
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check built `BM_LCP_COMPARE` and listed Baraff and MPRGP
+  standard active-set transition rows, with no Direct row.
+- `pixi run lint`: passed.
 
 ## Active Friction-Index Benchmark Routing Checkpoint
 

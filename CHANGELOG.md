@@ -1443,6 +1443,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     main LCP comparison benchmark and retargeted the Python LCP demo's
     representative benchmark metadata from the older two-solver microbenchmark
     rows to that runnable `lcp_compare` filter.
+  - Filtered active-set transition LCP benchmark registrations through each
+    generated packet's concrete solver support predicate, replacing the
+    standard-packet Direct special case with the same native-route gate used by
+    other representative rows.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

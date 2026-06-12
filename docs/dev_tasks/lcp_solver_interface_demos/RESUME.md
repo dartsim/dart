@@ -84,18 +84,25 @@ demo metadata now points its representative active-friction filter at that
 main comparison row family instead of the older two-solver microbenchmark
 surface.
 
+The follow-up continuation also replaces the active-set transition benchmark's
+hand-coded Direct skip with the same concrete `supportsProblem(problem)` gate.
+For the standard 16-row active-set transition packet, Baraff and MPRGP remain
+registered as native rows while Direct is excluded by its own native-support
+predicate instead of a benchmark-local size special case.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-Current reality after the active-friction-index slice:
+Current reality after the active-friction-index and active-set routing slices:
 
 - This checkpoint changes `CHANGELOG.md`,
   `python/examples/demos/scenes/lcp_physics.py`,
   `python/tests/unit/test_py_demo_panels.py`,
   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, and these dev-task docs.
-- After committing this slice, the local branch is expected to be one additive
-  commit ahead of `origin/feature/lcp-solver-interface-demos` at
+- After committing the active-friction-index slice and this active-set
+  transition follow-up, the local branch is expected to be two additive commits
+  ahead of `origin/feature/lcp-solver-interface-demos` at
   `d143d0dc355 Document latest LCP handoff state`.
 - Do not push without explicit maintainer/user approval. If pushing later,
   fetch and merge latest `origin/main` first.
@@ -186,6 +193,10 @@ as complete.
   `supportsProblem(problem)` checks. The benchmark-list check for
   `BM_LcpActiveFrictionIndexContact` lists 16 friction-index-capable rows, and
   the short execution check reports `contract_ok=1` for all 16.
+- Completed benchmark follow-up: active-set transition registration now checks
+  concrete generated packets before registering native rows. The list check for
+  `BM_LcpActiveSetTransition/Standard/(Direct|Baraff|MPRGP)` keeps Baraff and
+  MPRGP and excludes Direct through its concrete support predicate.
 - Final hand-off note: after the 2026-06-11 stop instruction, no additional
   verification was run, including `pixi run lint`. This intentionally follows
   the user's "without any further verification" instruction.

@@ -11973,14 +11973,10 @@ void RegisterActiveSetTransitionBenchmarks()
       BenchmarkProblemFamily::FrictionIndex};
 
   for (const auto family : families) {
+    const auto problem = MakeActiveSetTransitionBenchmarkProblem(family);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!dart::test::supportsProblem(solver, getProblemSupport(family))) {
-        continue;
-      }
-      if (family == BenchmarkProblemFamily::Standard
-          && solver.name == "Direct") {
-        // DirectSolver only enumerates n <= 3. The active-set transition
-        // standard packet is 16-row, so skip the Dantzig fallback.
+      if (!dart::test::supportsProblem(solver, getProblemSupport(family))
+          || !SolverSupportsConcreteProblem(solver, problem)) {
         continue;
       }
 
