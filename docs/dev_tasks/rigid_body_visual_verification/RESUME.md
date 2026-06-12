@@ -2,6 +2,15 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: fetched `origin/main` and merged it into
+`feature/rigid-body-gui-visual-verification`; Git reported the branch was
+already up to date with the PR #2986 DART 7 architecture/work-packet harness.
+The workflow review-index path now has a focused unit guard that each captured
+row card renders exactly one screenshot thumbnail instead of duplicating the
+same image in the static contact sheet. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
+reported `1 passed`.
+
 Latest local follow-up: the API-deferred gap audit still finds no public
 direct `RigidBody` impulse surface, no public sleep/wake or island activation
 surface, and no public loop-closure compliance/stiffness/damping surface. The

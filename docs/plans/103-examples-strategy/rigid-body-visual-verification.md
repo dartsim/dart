@@ -72,7 +72,8 @@ command, direct capture command, maintained user question, try-first guidance,
 healthy signal, scope note, and comparison/metrics summary so a reviewer can
 scan all 36 captures without opening each scene folder. When workflow captures
 request `--video`, the same review index links each row's MP4 motion artifact
-if `ffmpeg` is available.
+if `ffmpeg` is available. Unit coverage keeps captured row cards to one
+screenshot thumbnail per row so the static review sheet stays scan-friendly.
 Rows with scene-owned Replay timeline metadata also export a JSON-safe
 `scene_metadata.replay_timeline` summary, so the per-scene manifest and review
 card name the exact Replay value track and whether it has signal and marker
@@ -422,6 +423,13 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 ## Validation Snapshot
 
 Evidence recorded for this slice:
+
+- Latest review-index UX guard: after fetching `origin/main` and confirming the
+  feature branch was already up to date with the PR #2986 DART 7
+  architecture/work-packet harness, the focused unit guard
+  `python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests`
+  reported `1 passed`. The guard asserts that generated workflow review cards
+  render exactly one screenshot thumbnail for each captured row.
 
 - Latest full numbered workflow packet evidence: after the row-36
   loop-closure implementation commit, the real workflow packet

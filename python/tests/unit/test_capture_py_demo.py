@@ -1054,6 +1054,8 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert review_index.is_file()
     review_html = review_index.read_text()
     assert "scenes/01_rigid_body/rigid_body.png" in review_html
+    assert review_html.count('alt="rigid_body screenshot"') == 1
+    assert review_html.count('alt="rigid_executor_equivalence screenshot"') == 1
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
     assert "test_axis" in review_html
     assert "Diagnostic gap (signal, markers)" in review_html
