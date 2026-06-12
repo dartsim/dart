@@ -35,21 +35,57 @@
       "timing_policy": "Report setup, host_to_device, kernel, device_to_host, readback, and CPU baseline timing.",
       "speedup_policy": "Require >=1.25x over the DART CPU candidate path before recording a go claim.",
       "public_api_policy": "No public CUDA or backend exposure; private evidence stays under scripts, benchmarks, and detail/compute owners.",
-      "limitation_status": "Private point-triangle contact-stencil filter parity packet exists, but it covers preassembled stencils only and does not yet cover broad-phase construction, edge-edge candidates, runtime scene candidate filtering, or the speedup gate.",
-      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 stencils on 2026-06-11, but speedup was 0.563x against the CPU benchmark row, so this remains in-progress rather than measured.",
+      "limitation_status": "Private point-triangle and edge-edge contact-stencil filter parity packets exist, but they cover preassembled primitive stencils only and do not yet cover broad-phase construction, runtime scene candidate filtering, or the speedup gate.",
+      "notes_or_gap": "The packet measured exact squared-distance and accepted-count parity for 65536 point-triangle stencils plus 65536 edge-edge stencils on 2026-06-11, but minimum primitive-family speedup was 0.306x against the CPU benchmark row, so this remains in-progress rather than measured.",
       "same_scene_cpu_gpu": true,
-      "stencil_count": 65536,
-      "accepted_count": 49152,
+      "primitive_families": {
+        "point_triangle": {
+          "stencil_count": 65536,
+          "accepted_count": 49152,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.30612460530860414,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 495070.0,
+            "host_to_device": 1361184.0,
+            "kernel": 406795.0,
+            "solve": 0.0,
+            "device_to_host": 179997.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083ContactCandidateCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083ContactCandidateCuda/65536"
+        },
+        "edge_edge": {
+          "stencil_count": 65536,
+          "accepted_count": 49152,
+          "max_result_abs_error": 0.0,
+          "speedup": 0.7907497417926355,
+          "meets_speedup_gate": false,
+          "timing_ns": {
+            "setup": 177912.0,
+            "host_to_device": 1066078.0,
+            "kernel": 362291.0,
+            "solve": 0.0,
+            "device_to_host": 150442.0,
+            "readback": 0.0
+          },
+          "cpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCpu/65536",
+          "gpu_benchmark_row": "BM_Plan083EdgeEdgeContactCandidateCuda/65536"
+        }
+      },
+      "stencil_count": 131072,
+      "accepted_count": 98304,
       "max_result_abs_error": 0.0,
       "result_abs_error_tolerance": 1e-10,
-      "speedup": 0.5633208114255578,
+      "speedup": 0.30612460530860414,
       "min_speedup": 1.25,
       "timing_ns": {
-        "setup": 418764.0,
-        "host_to_device": 1373170.0,
-        "kernel": 418276.0,
+        "setup": 495070.0,
+        "host_to_device": 1361184.0,
+        "kernel": 406795.0,
         "solve": 0.0,
-        "device_to_host": 165409.0,
+        "device_to_host": 179997.0,
         "readback": 0.0
       }
     },

@@ -54,7 +54,14 @@ struct Fixture
   std::vector<cuda::PointTriangleContactStencil> stencils;
 };
 
-void appendPoint(Fixture& fixture, const Eigen::Vector3d& point)
+struct EdgeEdgeFixture
+{
+  std::vector<double> positions;
+  std::vector<cuda::EdgeEdgeContactStencil> stencils;
+};
+
+template <typename FixtureT>
+void appendPoint(FixtureT& fixture, const Eigen::Vector3d& point)
 {
   fixture.positions.push_back(point.x());
   fixture.positions.push_back(point.y());
@@ -85,6 +92,27 @@ Fixture makeFixture()
   return fixture;
 }
 
+EdgeEdgeFixture makeEdgeEdgeFixture()
+{
+  EdgeEdgeFixture fixture;
+  fixture.positions.reserve(24);
+  fixture.stencils.reserve(2);
+
+  appendPoint(fixture, {0.0, 0.0, 0.0});
+  appendPoint(fixture, {1.0, 0.0, 0.0});
+  appendPoint(fixture, {0.25, 0.02, -0.5});
+  appendPoint(fixture, {0.25, 0.02, 0.5});
+  fixture.stencils.push_back({0u, 1u, 2u, 3u});
+
+  appendPoint(fixture, {2.0, 0.0, 0.0});
+  appendPoint(fixture, {3.0, 0.0, 0.0});
+  appendPoint(fixture, {2.25, 0.08, -0.5});
+  appendPoint(fixture, {2.25, 0.08, 0.5});
+  fixture.stencils.push_back({4u, 5u, 6u, 7u});
+
+  return fixture;
+}
+
 Eigen::Vector3d pointAt(
     const std::vector<double>& positions, const std::size_t i)
 {
@@ -103,6 +131,21 @@ std::vector<double> cpuSquaredDistances(const Fixture& fixture)
         pointAt(fixture.positions, fixture.triangles[tri]),
         pointAt(fixture.positions, fixture.triangles[tri + 1u]),
         pointAt(fixture.positions, fixture.triangles[tri + 2u]));
+    distances.push_back(distance.squaredDistance);
+  }
+  return distances;
+}
+
+std::vector<double> cpuSquaredDistances(const EdgeEdgeFixture& fixture)
+{
+  std::vector<double> distances;
+  distances.reserve(fixture.stencils.size());
+  for (const auto& stencil : fixture.stencils) {
+    const auto distance = dc::edgeEdgeSquaredDistance(
+        pointAt(fixture.positions, stencil.edgeAStart),
+        pointAt(fixture.positions, stencil.edgeAEnd),
+        pointAt(fixture.positions, stencil.edgeBStart),
+        pointAt(fixture.positions, stencil.edgeBEnd));
     distances.push_back(distance.squaredDistance);
   }
   return distances;
@@ -163,6 +206,30 @@ TEST(ContactCandidateFilterCuda, KeepsSmallValidTriangleNondegenerate)
 }
 
 //==============================================================================
+TEST(ContactCandidateFilterCuda, MatchesCpuEdgeEdgeStencilFilter)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const EdgeEdgeFixture fixture = makeEdgeEdgeFixture();
+  const std::vector<double> expectedDistances = cpuSquaredDistances(fixture);
+
+  cuda::EdgeEdgeCandidateFilterResult result;
+  cuda::filterEdgeEdgeContactStencilsCuda(
+      fixture.positions, fixture.stencils, 0.05, result);
+
+  ASSERT_EQ(result.squaredDistances.size(), expectedDistances.size());
+  ASSERT_EQ(result.accepted.size(), expectedDistances.size());
+  ASSERT_EQ(result.acceptedCount, 1u);
+  EXPECT_NEAR(result.squaredDistances[0], expectedDistances[0], 1e-14);
+  EXPECT_NEAR(result.squaredDistances[1], expectedDistances[1], 1e-14);
+  EXPECT_EQ(result.accepted[0], 1u);
+  EXPECT_EQ(result.accepted[1], 0u);
+  EXPECT_GT(result.timing.kernelNs, 0.0);
+}
+
+//==============================================================================
 TEST(ContactCandidateFilterCuda, RejectsInvalidStencil)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -176,5 +243,22 @@ TEST(ContactCandidateFilterCuda, RejectsInvalidStencil)
   EXPECT_THROW(
       cuda::filterPointTriangleContactStencilsCuda(
           fixture.positions, fixture.triangles, fixture.stencils, 0.05, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ContactCandidateFilterCuda, RejectsInvalidEdgeEdgeStencil)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  EdgeEdgeFixture fixture = makeEdgeEdgeFixture();
+  fixture.stencils.push_back({0u, 1u, 99u, 3u});
+
+  cuda::EdgeEdgeCandidateFilterResult result;
+  EXPECT_THROW(
+      cuda::filterEdgeEdgeContactStencilsCuda(
+          fixture.positions, fixture.stencils, 0.05, result),
       dart::simulation::InvalidArgumentException);
 }

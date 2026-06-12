@@ -160,9 +160,9 @@
   - [x] Add the measured private PSD projection packet generator and benchmark
         row; keep it scoped to local-kernel evidence, not scene-level GPU
         parity.
-  - [x] Add a private point-triangle contact-stencil filter packet with exact
-        CPU/GPU parity for preassembled stencils; keep the row in-progress
-        because broad-phase construction, edge-edge candidates, runtime scene
+  - [x] Add private point-triangle and edge-edge contact-stencil filter packets
+        with exact CPU/GPU parity for preassembled primitive stencils; keep the
+        row in-progress because broad-phase construction, runtime scene
         filtering, and speedup remain unproven.
   - [x] Add a private endpoint-linear point-triangle CCD/line-search packet
         with exact CPU/GPU step-bound parity; keep the row in-progress because

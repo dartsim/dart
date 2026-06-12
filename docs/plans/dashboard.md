@@ -296,27 +296,20 @@ its own line so status updates remain git-history friendly.
   `abd-vs-rigid-cards`, `abd-vs-rigid-wreck`, `abd-chain-8`, `abd-chain-16`,
   and `abd-chain-96`; PR #2976 adds reduced ABD gears/Bullet comparison
   packets without claiming gear assets, Bullet/reference baselines, GPU parity,
-  or paper-scale parity. PR #2978 adds a private point-triangle
-  contact-stencil filter packet with exact CPU/GPU parity for preassembled
-  stencils, while keeping broad-phase, edge-edge, runtime scene filtering, and
-  speedup as future evidence. PR #2979 adds endpoint-linear
-  point-triangle CCD/line-search parity for static-triangle fixtures, while
-  keeping edge-edge CCD, rigid curved trajectories, runtime candidate sets, and
-  scene-level line-search feasibility as future evidence. PR #2980 adds scalar
-  barrier/friction local-kernel parity, while keeping primitive gradients,
-  tangent-basis construction, Hessian assembly, PSD coupling, runtime contact
-  rows, and speedup as future evidence. PR #2981 adds reduced diagonal
-  assembly/solve parity, while keeping off-diagonal sparse blocks, equality
-  reduction, global factorization, runtime scene rows, and speedup as future
-  evidence. The current follow-up adds reduced hanging-bridge scene state-batch
-  CPU/GPU parity and speedup, while keeping GPU `World::step`, contact
-  candidate construction, CCD, barrier/friction assembly, sparse equality
-  reduction, and global Newton solving as future evidence. The next follow-up
-  adds reduced ABD complex-geometry and ABD/FEM coupled micro-solve packets,
-  while keeping paper-scale assets, full runtime affine/FEM coupling, and
-  accepted reference timings as future evidence. The completion audit still records
-  PLAN-083 as incomplete while in-progress CPU/GPU/scene limitations remain, so
-  dev-task retirement needs maintainer direction before deletion.
+  or paper-scale parity. PR #2978 is the single consolidated follow-up for the
+  remaining private packet work: it adds point-triangle and edge-edge contact
+  stencil parity, endpoint-linear point-triangle CCD/line-search parity,
+  scalar barrier/friction local-kernel parity, reduced diagonal assembly/solve
+  parity, reduced hanging-bridge scene state-batch CPU/GPU parity and speedup,
+  reduced ABD complex-geometry packets, and an ABD/FEM coupled micro-solve
+  packet. It still keeps broad-phase/runtime GPU candidate construction,
+  edge-edge CCD, rigid curved trajectories, primitive gradients, tangent-basis
+  construction, Hessian assembly, PSD coupling, off-diagonal sparse assembly,
+  global factorization, GPU `World::step`, paper-scale assets, full runtime
+  affine/FEM coupling, and accepted reference timings as future evidence. The
+  completion audit still records PLAN-083 as incomplete while in-progress
+  CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
+  direction before deletion.
 - Gate: Unified Newton-barrier progress is not complete until every cited
   paper/deck figure, unit test, benchmark table, and comparison scene is mapped
   to DART-owned tests, py-demos examples, benchmark/profiling packets, CPU and

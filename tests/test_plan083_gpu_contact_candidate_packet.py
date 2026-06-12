@@ -33,13 +33,13 @@ def _row(name: str, **counters):
 
 
 def _benchmark_data(**overrides):
-    cpu = _row(
+    point_cpu = _row(
         "BM_Plan083ContactCandidateCpu/1024",
         stencils=1024,
         accepted_count=768,
         max_result_abs_error=0.0,
     )
-    gpu = _row(
+    point_gpu = _row(
         "BM_Plan083ContactCandidateCuda/1024",
         real_time=5.0,
         cpu_time=5.0,
@@ -52,8 +52,27 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
-    gpu.update(overrides)
-    return {"benchmarks": [cpu, gpu]}
+    edge_cpu = _row(
+        "BM_Plan083EdgeEdgeContactCandidateCpu/1024",
+        stencils=1024,
+        accepted_count=768,
+        max_result_abs_error=0.0,
+    )
+    edge_gpu = _row(
+        "BM_Plan083EdgeEdgeContactCandidateCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        stencils=1024,
+        accepted_count=768,
+        gpu_accepted_count=768,
+        max_result_abs_error=1e-14,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
+    point_gpu.update(overrides)
+    return {"benchmarks": [point_cpu, point_gpu, edge_cpu, edge_gpu]}
 
 
 def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
@@ -69,9 +88,10 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     row = packet["plan083_gpu_contact_candidate_packet"]
     assert row["row_id"] == "contact-stencils-candidate-filtering"
     assert row["same_scene_cpu_gpu"] is True
-    assert row["accepted_count"] == 768
+    assert row["accepted_count"] == 1536
     assert row["max_result_abs_error"] == 1e-14
     assert row["meets_speedup_gate"] is True
+    assert set(row["primitive_families"]) == {"point_triangle", "edge_edge"}
 
 
 def test_plan083_gpu_contact_candidate_packet_rejects_accuracy_failure() -> None:

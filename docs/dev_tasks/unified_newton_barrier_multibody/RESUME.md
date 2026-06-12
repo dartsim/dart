@@ -167,10 +167,10 @@ The follow-up PSD projection packet slice adds
 `pixi run -e cuda bm-plan083-gpu-psd-packet` measured the 4096-block 12x12 PSD
 row with max error `2.4868995751603507e-14` and `4.451557656446166x` speedup
 over the CPU reference. This moves only the local PSD projection row to
-`measured`; contact candidates, CCD/line search, barrier/friction kernels,
-assembly/solve, and reduced scene state-batch rollout now have in-progress
-private packets, while full scene-level GPU `World::step` speedups remain
-unproven.
+`measured`; contact candidates (point-triangle and edge-edge preassembled
+stencils), CCD/line search, barrier/friction kernels, assembly/solve, and
+reduced scene state-batch rollout now have in-progress private packets, while
+full scene-level GPU `World::step` speedups remain unproven.
 
 The follow-up barrier-force diagnostic slice adds
 `NewtonBarrierPrimitives.BarrierForceCurveCapturesKappaSensitivity`, which

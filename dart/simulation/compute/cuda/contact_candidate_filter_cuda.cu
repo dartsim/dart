@@ -77,6 +77,27 @@ __device__ double squaredNorm(const Vec3 value)
   return dot(value, value);
 }
 
+__device__ double clamp01(const double value)
+{
+  return fmin(1.0, fmax(0.0, value));
+}
+
+__device__ bool isDegenerateSegment(const double squaredLength)
+{
+  return squaredLength <= 2.2250738585072014e-308;
+}
+
+__device__ bool isParallelEdges(
+    const double denominator,
+    const double edgeASquaredNorm,
+    const double edgeBSquaredNorm)
+{
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double scale
+      = fmax(edgeASquaredNorm * edgeBSquaredNorm, 2.2250738585072014e-308);
+  return denominator <= kRelativeEpsilon * scale;
+}
+
 __device__ Vec3 loadPoint(const double* positions, const std::uint32_t point)
 {
   const std::size_t base = 3u * static_cast<std::size_t>(point);
@@ -158,6 +179,59 @@ __device__ double pointTriangleSquaredDistance(
   return squaredNorm(p - (a + v * ab + w * ac));
 }
 
+__device__ double edgeEdgeSquaredDistance(
+    const Vec3 a, const Vec3 b, const Vec3 c, const Vec3 d)
+{
+  const Vec3 edgeA = b - a;
+  const Vec3 edgeB = d - c;
+  const Vec3 r = a - c;
+  const double edgeASquaredNorm = squaredNorm(edgeA);
+  const double edgeBSquaredNorm = squaredNorm(edgeB);
+  const double edgeBDotR = dot(edgeB, r);
+
+  double s = 0.0;
+  double t = 0.0;
+
+  if (isDegenerateSegment(edgeASquaredNorm)
+      && isDegenerateSegment(edgeBSquaredNorm)) {
+    s = 0.0;
+    t = 0.0;
+  } else if (isDegenerateSegment(edgeASquaredNorm)) {
+    s = 0.0;
+    t = clamp01(edgeBDotR / edgeBSquaredNorm);
+  } else {
+    const double edgeADotR = dot(edgeA, r);
+    if (isDegenerateSegment(edgeBSquaredNorm)) {
+      t = 0.0;
+      s = clamp01(-edgeADotR / edgeASquaredNorm);
+    } else {
+      const double edgeADotB = dot(edgeA, edgeB);
+      const double denominator
+          = edgeASquaredNorm * edgeBSquaredNorm - edgeADotB * edgeADotB;
+      if (!isParallelEdges(denominator, edgeASquaredNorm, edgeBSquaredNorm)) {
+        s = clamp01(
+            (edgeADotB * edgeBDotR - edgeADotR * edgeBSquaredNorm)
+            / denominator);
+      } else {
+        s = 0.0;
+      }
+
+      t = (edgeADotB * s + edgeBDotR) / edgeBSquaredNorm;
+      if (t < 0.0) {
+        t = 0.0;
+        s = clamp01(-edgeADotR / edgeASquaredNorm);
+      } else if (t > 1.0) {
+        t = 1.0;
+        s = clamp01((edgeADotB - edgeADotR) / edgeASquaredNorm);
+      }
+    }
+  }
+
+  const Vec3 closestA = a + s * edgeA;
+  const Vec3 closestB = c + t * edgeB;
+  return squaredNorm(closestA - closestB);
+}
+
 __global__ void filterPointTriangleContactStencilKernel(
     const double* positions,
     const std::uint32_t* triangleIndices,
@@ -189,6 +263,34 @@ __global__ void filterPointTriangleContactStencilKernel(
   accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
 }
 
+__global__ void filterEdgeEdgeContactStencilKernel(
+    const double* positions,
+    const EdgeEdgeContactStencil* stencils,
+    const double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    const std::size_t stencilCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= stencilCount) {
+    return;
+  }
+
+  const EdgeEdgeContactStencil stencil = stencils[index];
+  const Vec3 a = loadPoint(positions, stencil.edgeAStart);
+  const Vec3 b = loadPoint(positions, stencil.edgeAEnd);
+  const Vec3 c = loadPoint(positions, stencil.edgeBStart);
+  const Vec3 d = loadPoint(positions, stencil.edgeBEnd);
+
+  const double squaredDistance = edgeEdgeSquaredDistance(a, b, c, d);
+  const double threshold = activationDistance * activationDistance;
+  constexpr double kRelativeEpsilon = 64.0 * 2.2204460492503131e-16;
+  const double tolerance = kRelativeEpsilon * fmax(1.0, threshold);
+  squaredDistances[index] = squaredDistance;
+  accepted[index] = squaredDistance <= threshold + tolerance ? 1u : 0u;
+}
+
 } // namespace
 
 //==============================================================================
@@ -210,6 +312,32 @@ cudaError_t launchPointTriangleContactStencilFilterKernel(
   filterPointTriangleContactStencilKernel<<<gridSize, blockSize>>>(
       positions,
       triangleIndices,
+      stencils,
+      activationDistance,
+      squaredDistances,
+      accepted,
+      stencilCount);
+
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchEdgeEdgeContactStencilFilterKernel(
+    const double* positions,
+    const EdgeEdgeContactStencil* stencils,
+    double activationDistance,
+    double* squaredDistances,
+    std::uint8_t* accepted,
+    std::size_t stencilCount)
+{
+  if (stencilCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(stencilCount, blockSize);
+  filterEdgeEdgeContactStencilKernel<<<gridSize, blockSize>>>(
+      positions,
       stencils,
       activationDistance,
       squaredDistances,

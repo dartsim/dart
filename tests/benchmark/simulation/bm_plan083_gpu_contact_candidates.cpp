@@ -59,8 +59,28 @@ struct CandidateFixture
   std::size_t acceptedCount = 0;
 };
 
+struct EdgeEdgeCandidateFixture
+{
+  std::vector<double> positions;
+  std::vector<cuda::EdgeEdgeContactStencil> stencils;
+  std::vector<double> cpuSquaredDistances;
+  std::vector<std::uint8_t> cpuAccepted;
+  std::size_t acceptedCount = 0;
+};
+
 void appendPoint(
     CandidateFixture& fixture, const double x, const double y, const double z)
+{
+  fixture.positions.push_back(x);
+  fixture.positions.push_back(y);
+  fixture.positions.push_back(z);
+}
+
+void appendPoint(
+    EdgeEdgeCandidateFixture& fixture,
+    const double x,
+    const double y,
+    const double z)
 {
   fixture.positions.push_back(x);
   fixture.positions.push_back(y);
@@ -121,9 +141,62 @@ CandidateFixture makeCandidateFixture(const int stencilCount)
   return fixture;
 }
 
+EdgeEdgeCandidateFixture makeEdgeEdgeCandidateFixture(const int stencilCount)
+{
+  EdgeEdgeCandidateFixture fixture;
+  fixture.positions.reserve(static_cast<std::size_t>(4 * stencilCount * 3));
+  fixture.stencils.reserve(static_cast<std::size_t>(stencilCount));
+  fixture.cpuSquaredDistances.reserve(static_cast<std::size_t>(stencilCount));
+  fixture.cpuAccepted.reserve(static_cast<std::size_t>(stencilCount));
+
+  for (int i = 0; i < stencilCount; ++i) {
+    const double x = static_cast<double>(i % 512) * 2.0;
+    const double y = static_cast<double>(i / 512) * 2.0;
+    const std::uint32_t base
+        = static_cast<std::uint32_t>(fixture.positions.size() / 3u);
+    const bool accepted = (i % 4) != 0;
+    const double offset = accepted ? 0.02 : 0.08;
+
+    appendPoint(fixture, x, y, 0.0);
+    appendPoint(fixture, x + 1.0, y, 0.0);
+    appendPoint(fixture, x + 0.25, y + offset, -0.5);
+    appendPoint(fixture, x + 0.25, y + offset, 0.5);
+    fixture.stencils.push_back({base, base + 1u, base + 2u, base + 3u});
+  }
+
+  for (const auto& stencil : fixture.stencils) {
+    const auto distance = dc::edgeEdgeSquaredDistance(
+        pointAt(fixture.positions, stencil.edgeAStart),
+        pointAt(fixture.positions, stencil.edgeAEnd),
+        pointAt(fixture.positions, stencil.edgeBStart),
+        pointAt(fixture.positions, stencil.edgeBEnd));
+    fixture.cpuSquaredDistances.push_back(distance.squaredDistance);
+    const bool accepted = dc::detail::withinActivationDistance(
+        distance.squaredDistance, kActivationDistance);
+    fixture.cpuAccepted.push_back(accepted ? 1u : 0u);
+    if (accepted) {
+      ++fixture.acceptedCount;
+    }
+  }
+
+  return fixture;
+}
+
 void recordSharedCounters(
     benchmark::State& state,
     const CandidateFixture& fixture,
+    const double maxError)
+{
+  state.counters["stencils"] = static_cast<double>(fixture.stencils.size());
+  state.counters["accepted_count"] = static_cast<double>(fixture.acceptedCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.stencils.size()));
+}
+
+void recordSharedCounters(
+    benchmark::State& state,
+    const EdgeEdgeCandidateFixture& fixture,
     const double maxError)
 {
   state.counters["stencils"] = static_cast<double>(fixture.stencils.size());
@@ -202,3 +275,74 @@ static void BM_Plan083ContactCandidateCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083ContactCandidateCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeContactCandidateCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeEdgeEdgeCandidateFixture(static_cast<int>(state.range(0)));
+
+  std::size_t acceptedCount = 0;
+  for (auto _ : state) {
+    acceptedCount = 0;
+    for (const auto& stencil : fixture.stencils) {
+      const auto distance = dc::edgeEdgeSquaredDistance(
+          pointAt(fixture.positions, stencil.edgeAStart),
+          pointAt(fixture.positions, stencil.edgeAEnd),
+          pointAt(fixture.positions, stencil.edgeBStart),
+          pointAt(fixture.positions, stencil.edgeBEnd));
+      acceptedCount += dc::detail::withinActivationDistance(
+                           distance.squaredDistance, kActivationDistance)
+                           ? 1u
+                           : 0u;
+      double squaredDistance = distance.squaredDistance;
+      benchmark::DoNotOptimize(squaredDistance);
+    }
+  }
+
+  benchmark::DoNotOptimize(acceptedCount);
+  recordSharedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083EdgeEdgeContactCandidateCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083EdgeEdgeContactCandidateCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeEdgeEdgeCandidateFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeCandidateFilterResult result;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::filterEdgeEdgeContactStencilsCuda(
+        fixture.positions, fixture.stencils, kActivationDistance, result);
+    benchmark::DoNotOptimize(result.squaredDistances.data());
+    benchmark::DoNotOptimize(result.accepted.data());
+  }
+
+  for (std::size_t i = 0; i < fixture.cpuSquaredDistances.size(); ++i) {
+    maxError = std::max(
+        maxError,
+        std::abs(result.squaredDistances[i] - fixture.cpuSquaredDistances[i]));
+  }
+
+  recordSharedCounters(state, fixture, maxError);
+  state.counters["gpu_accepted_count"]
+      = static_cast<double>(result.acceptedCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083EdgeEdgeContactCandidateCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();

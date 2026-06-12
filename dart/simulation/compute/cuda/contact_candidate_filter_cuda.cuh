@@ -44,6 +44,14 @@ struct PointTriangleContactStencil
   std::uint32_t triangle = 0;
 };
 
+struct EdgeEdgeContactStencil
+{
+  std::uint32_t edgeAStart = 0;
+  std::uint32_t edgeAEnd = 0;
+  std::uint32_t edgeBStart = 0;
+  std::uint32_t edgeBEnd = 0;
+};
+
 struct ContactCandidateFilterTiming
 {
   double setupNs = 0.0;
@@ -53,6 +61,15 @@ struct ContactCandidateFilterTiming
 };
 
 struct PointTriangleCandidateFilterResult
+{
+  std::vector<double> squaredDistances;
+  std::vector<std::uint8_t> accepted;
+  std::size_t acceptedCount = 0;
+  double maxAcceptedSquaredDistance = 0.0;
+  ContactCandidateFilterTiming timing;
+};
+
+struct EdgeEdgeCandidateFilterResult
 {
   std::vector<double> squaredDistances;
   std::vector<std::uint8_t> accepted;
@@ -73,5 +90,16 @@ void filterPointTriangleContactStencilsCuda(
     const std::vector<PointTriangleContactStencil>& stencils,
     double activationDistance,
     PointTriangleCandidateFilterResult& result);
+
+/// Filter preassembled edge-edge contact stencils on CUDA.
+///
+/// This is private evidence for the PLAN-083 GPU packet: it extends the
+/// deterministic primitive-stencil parity path beyond point-triangle rows. It
+/// does not build broad-phase AABBs or scene-level solver state.
+void filterEdgeEdgeContactStencilsCuda(
+    const std::vector<double>& positions,
+    const std::vector<EdgeEdgeContactStencil>& stencils,
+    double activationDistance,
+    EdgeEdgeCandidateFilterResult& result);
 
 } // namespace dart::simulation::compute::cuda
