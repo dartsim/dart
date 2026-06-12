@@ -479,6 +479,13 @@
       workflow/doc drift guard, `pixi run lint`, bounded `pixi run build`, and
       `git diff --check`. The next fresh session should inspect the next likely
       capture-metrics row, `rigid_multibody_dynamics_terms`.
+- [x] Stop/handoff checkpoint: after the row-31 checkpoint, feature work
+      stopped on user instruction. No row-32 implementation edits were made.
+      The next likely row was only inspected: `rigid_multibody_dynamics_terms`
+      already has replay hooks, controller controls, per-lane dynamics metrics,
+      and histories, but no capture-metrics hook yet. This docs-only handoff
+      was not followed by tests, captures, lint, build, or `git diff --check`
+      because the user explicitly requested no further verification.
 
 ## Goal
 

@@ -84,6 +84,15 @@
 
 ## Testing
 
+- Stop/handoff-only update:
+  - After commit `44354ed24c7` (`Expose rigid screw joint pitch capture
+    metrics`), the user explicitly requested handoff only and no further
+    verification.
+  - This final handoff updates only `docs/dev_tasks/rigid_body_visual_verification/`.
+    No tests, captures, lint, build, or `git diff --check` were run after that
+    instruction.
+  - The next likely row, `rigid_multibody_dynamics_terms`, was inspected but
+    not edited.
 - Latest screw-joint pitch capture-metrics follow-up:
   - `python/examples/demos/scenes/rigid_screw_joint_pitch.py` now publishes a
     scene-owned capture hook for the row 31 screw-pitch verifier: controls,

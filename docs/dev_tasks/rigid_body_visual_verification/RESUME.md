@@ -3,18 +3,23 @@
 ## Current Handoff Snapshot
 
 Latest continuation resumed from pushed commit `544d2b44a62`, verified the
-previous row-30 passive joint-parameter handoff gates, and started the row-31
-`rigid_screw_joint_pitch` capture-metrics slice. The branch had no associated
-GitHub PR at resume time.
+previous row-30 passive joint-parameter handoff gates, completed and committed
+the row-31 `rigid_screw_joint_pitch` capture-metrics slice as
+`44354ed24c7` (`Expose rigid screw joint pitch capture metrics`), then stopped
+feature work when the user explicitly requested handoff only and no further
+verification.
 
-Expected branch/worktree state after this local checkpoint:
+Expected branch/worktree state after this handoff:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- Pushed branch head remains `544d2b44a62` unless a maintainer/user explicitly
-  approves another push.
-- The completed local checkpoint should include row-31 screw-joint pitch
-  capture metrics, focused assertions, docs, docked capture evidence, and
-  refreshed handoff state.
+- Origin should include the row-31 screw-joint pitch metrics commit and the
+  docs-only stop/handoff commit that contains this file. If a fresh session
+  sees the branch still ahead of origin, push only after fresh
+  maintainer/user approval.
+- No code edits were made after `44354ed24c7`. The only post-stop work was
+  updating `docs/dev_tasks/rigid_body_visual_verification/` for handoff.
+- No tests, captures, lint, build, or `git diff --check` were run after the
+  user's explicit stop/no-further-verification instruction.
 - Future pushes, PR creation, comments, review replies, CI retriggers, merges,
   or other GitHub mutations require fresh explicit maintainer/user approval.
 
@@ -31,7 +36,8 @@ Recent checkpoints:
 - `30d65d4229c` (`Document rigid visual verification handoff`)
 - `8f2119d7cf1` (`Expose rigid joint motor limit capture metrics`)
 - `544d2b44a62` (`Hand off rigid passive joint parameter metrics`)
-- the local checkpoint containing this file (`Expose rigid screw joint pitch capture metrics`)
+- `44354ed24c7` (`Expose rigid screw joint pitch capture metrics`)
+- the docs-only stop/handoff checkpoint containing this file
 
 Previous local checkpoint: `rigid_kinematic_driver` row capture metrics. The
 checkpoint touches:
@@ -260,8 +266,22 @@ Validation collected for the screw-pitch slice so far:
 Immediate next step for a fresh session:
 
 1. Verify `git status -sb` and `git log --oneline --decorate -5`.
-2. Continue the capture-metrics hardening pass. A likely next row to inspect is
-   `rigid_multibody_dynamics_terms`.
+2. Continue the capture-metrics hardening pass from row 32,
+   `rigid_multibody_dynamics_terms`, unless the user redirects.
+
+Row-32 inspection context already gathered before the stop request:
+
+- `python/examples/demos/scenes/rigid_multibody_dynamics_terms.py` has replay
+  state hooks but no `SceneSetup.info["capture_metrics"]` hook yet.
+- The controller already tracks executor, target acceleration, joint impulse,
+  heavy distal mass scale, gravity scale, per-lane metrics for
+  `single_hinge`, `coupled_two_link`, and `heavy_distal`, plus residual,
+  response, torque, coupling, and step-time histories.
+- The focused guard
+  `test_rigid_multibody_dynamics_terms_expose_generalized_terms` already
+  asserts the generalized dynamics behavior and is the natural place to add
+  capture-hook assertions.
+- No row-32 files were edited in this stop/handoff pass.
 
 ## Last Session Summary
 
