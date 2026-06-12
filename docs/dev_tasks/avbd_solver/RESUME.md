@@ -7,40 +7,40 @@ deformable row coverage with evidence against the native source corpus. Do not
 count focused benchmark rows as CPU-win, GPU, paper-number, or full parameter
 sweep gates without benchmark JSON, plot data, and same-hardware comparisons.
 
-Current resumed slice: the paper-scale high-ratio articulated-chain benchmark
-now has a dashboard-selected iteration-count sweep row,
-`BM_AvbdPaperScaleHighRatioChainIterationSweep`, over 25, 50, 100, and
-200 max-iteration budgets. It uses the existing 50-link/50,000:1 fixture,
-replay-reset path, tolerance, and metadata counters, and it is wired into the
-dashboard display-name and dashboard-runner surfaces. This is only first
-parameter-sweep infrastructure; it does not provide a tracked packet, plot,
-same-hardware paper-number comparison, or GPU parity claim.
+Current resumed slice: the paper-scale high-ratio articulated-chain
+iteration-count sweep now has a tracked benchmark/plot-data packet,
+`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`, generated from a
+real `BM_AvbdPaperScaleHighRatioChainIterationSweep` run over 25, 50, 100, and
+200 max-iteration budgets. The packet validates the existing
+50-link/50,000:1 fixture, replay-reset path, tolerance, and metadata counters,
+and records sorted timing plot data for each budget. This does not provide a
+rendered convergence/stability plot, same-hardware paper-number comparison,
+broad articulated stability proof, or GPU parity claim.
 
 Validation for this slice:
 
+- `pixi run -- pytest python/tests/unit/test_write_avbd_paper_scale_high_ratio_iteration_sweep_packet.py -q`
+  passed, 4 tests.
 - `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
   passed.
-- `pixi run -- bash -lc "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_list_tests --benchmark_filter=BM_AvbdPaperScaleHighRatioChainIterationSweep"`
-  listed `/25`, `/50`, `/100`, and `/200`.
-- `pixi run -- pytest python/tests/unit/test_benchmark_display_names.py python/tests/unit/test_run_performance_dashboard_benchmarks.py -q`
-  passed, 9 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdPaperScaleHighRatioChainIterationSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-paper-scale-high-ratio-iteration-sweep.json --benchmark_out_format=json'`
+  passed and produced all four budget rows.
+- `pixi run -- python scripts/write_avbd_paper_scale_high_ratio_iteration_sweep_packet.py --benchmark-json /tmp/avbd-paper-scale-high-ratio-iteration-sweep.json`
+  passed and wrote the tracked packet.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `git diff --check` passed.
 
 Fresh-session state for this slice: branch
 `avbd/source-row-extraction-precheck`, upstream
-`origin/avbd/source-row-extraction-precheck`. The branch had the two previous
-stop-only handoff docs dirty before this implementation resumed. After this
-slice is committed, use the latest local HEAD as the resume point. Do not push,
-rerun hosted CI, mutate PRs, or clean/delete branches without explicit user
-approval.
+`origin/avbd/source-row-extraction-precheck`. After this slice is committed,
+use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
+mutate PRs, or clean/delete branches without explicit user approval.
 
-Next preferred local gap after this slice remains benchmark packet/plot
-generation for the new sweep, then broader articulated/fracture corpus
-coverage, rigid contact persistence completeness, and source-demo CPU/GPU
-parity. Keep all claims narrow unless corpus or benchmark evidence supports
-them.
+Next preferred local gap after this slice is a rendered convergence/stability
+plot for the sweep if useful, then broader articulated/fracture corpus coverage,
+rigid contact persistence completeness, and source-demo CPU/GPU parity. Keep
+all claims narrow unless corpus or benchmark evidence supports them.
 
 ## Final Stop Handoff (2026-06-12)
 
