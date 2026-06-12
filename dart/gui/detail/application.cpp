@@ -310,6 +310,23 @@ std::string demoSceneDisplayName(const dart::gui::DemoSceneEntry& scene)
   return scene.title.empty() ? scene.id : scene.title;
 }
 
+void printDemoCatalog(const std::vector<dart::gui::DemoSceneEntry>& scenes)
+{
+  std::string lastCategory;
+  for (const auto& scene : scenes) {
+    if (scene.category != lastCategory) {
+      std::cout << "\n[" << scene.category << "]\n";
+      lastCategory = scene.category;
+    }
+    std::cout << "  " << std::left << std::setw(28) << scene.id << " "
+              << demoSceneDisplayName(scene);
+    if (!scene.summary.empty()) {
+      std::cout << " - " << scene.summary;
+    }
+    std::cout << '\n';
+  }
+}
+
 std::string jsonEscape(std::string_view value)
 {
   std::string out;
@@ -1672,7 +1689,10 @@ int runDemos(int argc, char* argv[], std::vector<DemoSceneEntry> scenes)
 
   for (int i = 1; i < argc; ++i) {
     const std::string_view arg = argv[i] == nullptr ? "" : argv[i];
-    if (arg == "--cycle-scenes") {
+    if (arg == "--list") {
+      printDemoCatalog(scenes);
+      return 0;
+    } else if (arg == "--cycle-scenes") {
       cycleScenes = true;
     } else if (arg == "--frames" && i + 1 < argc && argv[i + 1] != nullptr) {
       cycleFramesPerScene = std::max(1, std::atoi(argv[i + 1]));

@@ -18,6 +18,7 @@ From inside the DART repo:
 
 ```bash
 pixi run demos                                  # launch the Demos app
+pixi run demos -- --list                        # list scenes without opening the GUI
 pixi run demos -- --scene rigid_body
 ```
 

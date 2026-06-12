@@ -2,8 +2,17 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: the C++ companion is brought back into sync with the
-completed py-demos collision-sandbox retirement. The stale
+Latest local slice: the C++ `dart-demos --list` path is now a non-graphics
+catalog command. `runDemos()` prints the registered C++ demo catalog before GUI
+backend initialization, `examples/demos/CMakeLists.txt` registers
+`EXAMPLE_dart_demos_list` as a normal non-graphics example/catalog test, and
+`examples/README.md` documents `pixi run demos -- --list` for listing scenes
+without opening the GUI.
+
+Previous checkpoint: commit
+`41186522838 Retire C++ collision sandbox placeholder` brings the C++
+companion back into sync with the completed py-demos collision-sandbox
+retirement. The stale
 `planned_collision_sandbox` row is removed from `examples/demos/registry.cpp`,
 and legacy C++ runner requests for `collision_sandbox`, `point_cloud`, and
 `polyhedron_visual` now route users to the concrete Python collision-debugging
@@ -53,13 +62,16 @@ Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Current continuation started with the branch clean at
-  `18c3750a7af Retire planned collision sandbox row`, seven commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification`, plus an uncommitted
-  docs-only stop hand-off that is superseded by this implementation slice.
+  `41186522838 Retire C++ collision sandbox placeholder`, eight commits ahead
+  of `origin/feature/rigid-body-gui-visual-verification`, then added the
+  non-graphics `dart-demos --list` follow-up in
+  `dart/gui/detail/application.cpp`, `examples/demos/CMakeLists.txt`,
+  `examples/README.md`, this file, and `RESUME.md`.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
   resumed work. Expect the latest completed implementation commit to be
-  the C++ companion collision-sandbox cleanup if it has already been committed;
-  otherwise inspect the uncommitted diff for the files named in this section.
+  `Make dart-demos list catalog without graphics` if this slice has been
+  committed; otherwise inspect the uncommitted diff for the same non-graphics
+  follow-up files named above.
 - Do not push without explicit approval in the session that performs the push.
 - Latest local slice updates `examples/demos/registry.cpp`,
   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
@@ -70,11 +82,19 @@ Observed repository state at this hand-off:
   after `pixi run lint`; `pixi run ex collision_sandbox` exits nonzero with
   the expected `pixi run py-demos -- --scene rigid_contact_inspector`,
   `rigid_collision_query_options`, and `rigid_collision_casts` guidance and no
-  `planned_collision_sandbox` text; `pixi run demos -- --list` compiled the
-  touched C++ registry and linked `dart-demos`, but the runtime list command
-  hung after Mesa/GLX driver errors on this host and was interrupted. Final
-  lint, docs-policy, spell, Markdown-format, and `git diff --check` gates
-  passed.
+  `planned_collision_sandbox` text.
+- Latest local follow-up makes `dart-demos --list` a non-graphics catalog path:
+  `runDemos()` now prints the registered C++ demo catalog before GUI backend
+  initialization, and CMake registers `EXAMPLE_dart_demos_list` as a normal
+  non-graphics example/catalog test. This removes the previous Mesa/GLX host
+  caveat for the list command while leaving launch/cycle behavior unchanged.
+- Verification for the latest `dart-demos --list` follow-up: the
+  `pixi run demos -- --list` command returned the catalog with `rigid_body` and
+  `planned_mobile_manipulation` present and `planned_collision_sandbox` absent.
+  The focused `EXAMPLE_dart_demos_list` CTest passed, the focused
+  `python/tests/unit/test_run_cpp_example.py` suite reported `66 passed`, and
+  `pixi run lint`, `pixi run check-lint-md`, `pixi run check-docs-policy`,
+  `pixi run check-lint-spell`, and `git diff --check` passed.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -1979,8 +1999,9 @@ passed and `git diff --check` was clean.
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
 2. Expect the latest completed local implementation commit to be
-   `Retire C++ collision sandbox placeholder` if this slice has been committed;
-   otherwise inspect the uncommitted diff for the same C++ companion cleanup.
+   `Make dart-demos list catalog without graphics` if this slice has been
+   committed; otherwise inspect the uncommitted diff for the same non-graphics
+   `dart-demos --list` follow-up.
 3. If the tree is clean with that slice present, return to the
    completion/retirement readiness audit: maintainer acceptance is the next
    decision before deleting this dev-task folder, or choose another bounded
