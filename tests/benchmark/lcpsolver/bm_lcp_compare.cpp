@@ -11742,7 +11742,8 @@ std::string MakeMildIllConditionedBatchParallelBenchmarkName(
 
 bool SolverShouldRunMildIllConditionedBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const MildIllConditionedBenchmarkCase testCase)
+    const MildIllConditionedBenchmarkCase testCase,
+    const LcpProblem& problem)
 {
   if (!dart::test::supportsProblem(
           solver, getMildIllConditionedProblemSupport(testCase))) {
@@ -11771,33 +11772,39 @@ bool SolverShouldRunMildIllConditionedBenchmark(
         "Dantzig",
         "Baraff",
     }};
-    return SolverNameIn(solver, kExactStandardSolvers)
-           || SolverNameIn(solver, kScopedSolvers);
+    return (SolverNameIn(solver, kExactStandardSolvers)
+            || SolverNameIn(solver, kScopedSolvers))
+           && SolverSupportsConcreteProblem(solver, problem);
   }
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
       && getMildIllConditionedCouplingScale(testCase) > 8.0) {
-    return SolverNameIn(solver, kScopedSolvers)
-           || solver.name == "BoxedSemiSmoothNewton";
+    return (SolverNameIn(solver, kScopedSolvers)
+            || solver.name == "BoxedSemiSmoothNewton")
+           && SolverSupportsConcreteProblem(solver, problem);
   }
 
   if (isMildIllConditionedCoupledFrictionIndexCase(testCase)
       && solver.name == "BoxedSemiSmoothNewton") {
-    return true;
+    return SolverSupportsConcreteProblem(solver, problem);
   }
 
-  return SolverNameIn(solver, kScopedSolvers);
+  return SolverNameIn(solver, kScopedSolvers)
+         && SolverSupportsConcreteProblem(solver, problem);
 }
 
 bool SolverShouldRunMildIllConditionedBatchBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const MildIllConditionedBenchmarkCase testCase)
+    const MildIllConditionedBenchmarkCase testCase,
+    const std::vector<LcpProblem>& problems)
 {
-  if (!SolverShouldRunMildIllConditionedBenchmark(solver, testCase)) {
+  if (problems.empty()) {
     return false;
   }
 
-  return true;
+  return SolverShouldRunMildIllConditionedBenchmark(
+             solver, testCase, problems.front())
+         && SolverSupportsConcreteProblemBatch(solver, problems);
 }
 
 std::string MakeNearSingularBenchmarkName(
@@ -11834,7 +11841,8 @@ std::string MakeNearSingularBatchParallelBenchmarkName(
 
 bool SolverShouldRunNearSingularBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const NearSingularBenchmarkCase testCase)
+    const NearSingularBenchmarkCase testCase,
+    const LcpProblem& problem)
 {
   if (!dart::test::supportsProblem(
           solver, getNearSingularProblemSupport(testCase))) {
@@ -11846,7 +11854,8 @@ bool SolverShouldRunNearSingularBenchmark(
         "Dantzig",
         "Baraff",
     }};
-    return SolverNameIn(solver, kStandardSolvers);
+    return SolverNameIn(solver, kStandardSolvers)
+           && SolverSupportsConcreteProblem(solver, problem);
   }
 
   if (testCase == NearSingularBenchmarkCase::Boxed8) {
@@ -11855,14 +11864,30 @@ bool SolverShouldRunNearSingularBenchmark(
         "ShockPropagation",
         "BoxedSemiSmoothNewton",
     }};
-    return SolverNameIn(solver, kBoxedSolvers);
+    return SolverNameIn(solver, kBoxedSolvers)
+           && SolverSupportsConcreteProblem(solver, problem);
   }
 
   constexpr std::array<std::string_view, 2> kFrictionIndexSolvers{{
       "Dantzig",
       "ShockPropagation",
   }};
-  return SolverNameIn(solver, kFrictionIndexSolvers);
+  return SolverNameIn(solver, kFrictionIndexSolvers)
+         && SolverSupportsConcreteProblem(solver, problem);
+}
+
+bool SolverShouldRunNearSingularBatchBenchmark(
+    const dart::test::LcpSolverManifestEntry& solver,
+    const NearSingularBenchmarkCase testCase,
+    const std::vector<LcpProblem>& problems)
+{
+  if (problems.empty()) {
+    return false;
+  }
+
+  return SolverShouldRunNearSingularBenchmark(
+             solver, testCase, problems.front())
+         && SolverSupportsConcreteProblemBatch(solver, problems);
 }
 
 bool SolverShouldRunLargerActiveSetTransitionBenchmark(
@@ -12571,8 +12596,10 @@ void RegisterMildIllConditionedBenchmarks()
       MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex256};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeMildIllConditionedBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunMildIllConditionedBenchmark(solver, testCase)) {
+      if (!SolverShouldRunMildIllConditionedBenchmark(
+              solver, testCase, problem)) {
         continue;
       }
 
@@ -12633,8 +12660,11 @@ void RegisterMildIllConditionedBatchBenchmarks()
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
+    const auto problems
+        = MakeMildIllConditionedBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunMildIllConditionedBatchBenchmark(solver, testCase)) {
+      if (!SolverShouldRunMildIllConditionedBatchBenchmark(
+              solver, testCase, problems)) {
         continue;
       }
 
@@ -12682,8 +12712,9 @@ void RegisterNearSingularBenchmarks()
       NearSingularBenchmarkCase::CoupledFrictionIndex256};
 
   for (const auto testCase : cases) {
+    const auto problem = MakeNearSingularBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunNearSingularBenchmark(solver, testCase)) {
+      if (!SolverShouldRunNearSingularBenchmark(solver, testCase, problem)) {
         continue;
       }
 
@@ -12717,8 +12748,10 @@ void RegisterNearSingularBatchBenchmarks()
   constexpr int batchSize = 4;
 
   for (const auto testCase : cases) {
+    const auto problems = MakeNearSingularBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunNearSingularBenchmark(solver, testCase)) {
+      if (!SolverShouldRunNearSingularBatchBenchmark(
+              solver, testCase, problems)) {
         continue;
       }
 

@@ -1463,6 +1463,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Filtered larger/stress/extreme/production active-set transition benchmark
     registrations through concrete generated problem support, including exact
     support checks for the production batch problem lists.
+  - Filtered mildly ill-conditioned and near-singular benchmark registrations
+    through concrete generated problem support, including exact support checks
+    for their serial/parallel batch problem lists.
   - Filtered separated world-contact, world stack-contact, and contact-solver
     comparison benchmark registrations through concrete contact packets, keeping
     representative DART 7 contact rows aligned with solver native support while

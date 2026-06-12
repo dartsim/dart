@@ -94,6 +94,9 @@
 - [x] Filtered larger, stress, extreme, and production active-set transition
       benchmark registrations through concrete generated-problem support,
       including exact production-batch problem-list checks.
+- [x] Filtered mildly ill-conditioned and near-singular benchmark
+      registrations through concrete generated-problem support, including exact
+      serial/parallel batch problem-list checks.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -133,11 +136,53 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is larger active-set transition benchmark
-concrete support-routing, following the Python demo concrete native-case
+The latest implementation checkpoint is mildly ill-conditioned and near-singular
+benchmark concrete support-routing, following the larger active-set transition
+benchmark concrete support-routing slice, Python demo concrete native-case
 profile slice, benchmark concrete-gate cleanup, grouped batch support-routing,
 generated coverage support-routing, and heavyweight contact benchmark
 support-gating slices.
+
+## Mild/Near-Singular Benchmark Support-Routing Checkpoint
+
+The latest implementation checkpoint aligns conditioning benchmark registration
+with concrete solver support:
+
+- `BM_LcpMildIllConditioned` and `BM_LcpNearSingular` registrations now build
+  the generated problem for each published case once and keep only solver rows
+  whose concrete `supportsProblem(problem)` predicate accepts that packet.
+- Mildly ill-conditioned and near-singular serial/parallel batch registrations
+  now build the exact four-problem batch used by each row and require every
+  concrete batch problem to be supported before publishing the row.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpMildIllConditioned/(Standard32|Boxed16|FrictionIndex8|ExtremeCoupledFrictionIndex256)/(Dantzig|Baraff|MPRGP|Pgs|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_LcpNearSingular/(Standard8|Boxed8|CoupledFrictionIndex3|CoupledFrictionIndex256)/(Dantzig|Baraff|MPRGP|Pgs|ShockPropagation|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(MildIllConditioned|NearSingular)Batch(Serial|Parallel)/(Standard32|Boxed16|FrictionIndex8|CoupledFrictionIndex8|ExtremeCoupledFrictionIndex256|Standard8|Boxed8|CoupledFrictionIndex3)/(Dantzig|Baraff|MPRGP|Pgs|ShockPropagation|BoxedSemiSmoothNewton)'
+pixi run bm lcp_compare -- \
+  --benchmark_filter='BM_LcpMildIllConditioned/Standard32/Baraff|BM_LcpMildIllConditionedBatchSerial/CoupledFrictionIndex8/BoxedSemiSmoothNewton|BM_LcpNearSingular/Boxed8/BoxedSemiSmoothNewton|BM_LcpNearSingularBatchSerial/CoupledFrictionIndex3/ShockPropagation' \
+  --benchmark_min_time=0.001s --benchmark_repetitions=1
+pixi run lint
+```
+
+Observed results:
+
+- The mild row-list check rebuilt `BM_LCP_COMPARE` and listed scoped concrete
+  rows for Standard32, Boxed16, FrictionIndex8, and
+  ExtremeCoupledFrictionIndex256; MPRGP and Direct were absent.
+- The near-singular row-list check listed scoped concrete rows for Standard8,
+  Boxed8, CoupledFrictionIndex3, and CoupledFrictionIndex256; MPRGP, PGS, and
+  Direct were absent.
+- The batch row-list check listed serial and parallel mild/near-singular rows
+  for the exact supported four-problem batches.
+- The short benchmark execution reported `contract_ok=1` for the sampled
+  mild/near-singular single and serial-batch rows.
+- `pixi run lint`: passed.
 
 ## Larger Active-Set Transition Benchmark Support-Routing Checkpoint
 
