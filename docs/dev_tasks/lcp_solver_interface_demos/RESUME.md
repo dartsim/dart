@@ -54,31 +54,36 @@ captures the next interrupted audit: benchmark/demo routing should be checked
 against the new concrete `supportsProblem(problem)` predicates for MPRGP and
 Baraff before any more solver-comparison rows are exposed as native.
 
+The next continuation completed the first benchmark-routing slice:
+singular-degenerate standard benchmark registration now intersects the scoped
+solver allowlist with each solver's concrete `supportsProblem(problem)`
+predicate. The generated standard packets are symmetric PSD but rank-deficient,
+so Baraff remains listed as native while MPRGP's default positive-definite
+native gate removes its fallback rows from the native benchmark list.
+
 ## Current Branch
 
 `feature/lcp-solver-interface-demos` — consolidated branch for this work.
 
-At the start of this final docs-only hand-off update:
+At the start of the singular-degenerate benchmark-routing slice:
 
-- Local HEAD was `b553a8ca444 Report Baraff native support precisely`.
+- Local HEAD was `f86a095ce9a Document final LCP handoff state`.
 - `origin/feature/lcp-solver-interface-demos` was
-  `f3436654bbd Document critical LCP handoff state`.
-- The local branch was clean and two commits ahead of the tracking branch.
-- `origin/main` was refreshed over HTTPS and `git merge --no-edit origin/main`
-  reported `Already up to date.`
+  `f86a095ce9a Document final LCP handoff state` after an HTTPS fetch refreshed
+  the tracking ref.
+- The local branch was clean and matched the tracking branch.
 
-The user has already approved pushing this consolidated branch. After the
-docs-only hand-off commit is created, the expected state is one pushed branch on
-`origin/feature/lcp-solver-interface-demos` containing the MPRGP, Baraff, and
-handoff checkpoints.
+After this slice is committed, the expected local state is one additive commit
+ahead of `origin/feature/lcp-solver-interface-demos` unless the maintainer/user
+explicitly approves another push.
 
 ## Immediate Next Step
 
-Audit benchmark and py-demo routing against the new concrete support
-predicates. Start in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` and check
-whether rows gated only by manifest-level standard support should instead use
-`solver.create()->supportsProblem(problem)` for MPRGP and Baraff on concrete
-singular, degenerate, or contact-normal standard packets.
+Continue the benchmark-routing audit in
+`tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, starting with contact-normal
+standard sweeps. Check whether MPRGP and Baraff rows should be gated or skipped
+by `supportsProblem(problem)` on the concrete normal-only contact packets
+rather than by manifest-level standard support.
 
 ## Context That Would Be Lost
 
@@ -112,22 +117,22 @@ singular, degenerate, or contact-normal standard packets.
   coverage binary removed the segfault.
 - The branch should remain one additive published branch. Merge latest `main`
   before future pushes; avoid rebasing unless explicitly requested.
-- No lint, build, test, benchmark listing, or solver execution was run after
-  the final user instruction to stop and focus on hand-off.
-- Current interrupted audit: `bm_lcp_compare.cpp` still contains registrations
+- Previous handoff note: no lint, build, test, benchmark listing, or solver
+  execution was run after the earlier user instruction to stop and focus on
+  hand-off.
+- Current benchmark-routing audit: `bm_lcp_compare.cpp` still contains
+  registrations
   that gate rows with manifest-level form support, for example
   `dart::test::supportsProblem(solverEntry, LcpProblemSupport::Standard)`.
   That is now too coarse for at least some MPRGP/Baraff rows because their
   concrete `supportsProblem(problem)` predicates report narrower native
   mathematical domains.
-- Likely first benchmark follow-up: inspect
-  `MakeSingularDegenerateStandardProblem`,
-  `MakeSingularDegenerateBenchmarkProblem`, and the singular-degenerate
-  registration helpers. The static standard solver list includes `Baraff` and
-  `MPRGP`; MPRGP should probably not be registered as native if the concrete
-  singular packet fails its positive-definite check. Baraff may still be native
-  if the packet is symmetric positive semidefinite.
-- Second benchmark follow-up: inspect
+- Completed benchmark follow-up: singular-degenerate standard registration now
+  calls a benchmark-local `SolverSupportsConcreteProblem(...)` helper after the
+  scoped solver allowlist. The benchmark-list check for
+  `BM_Lcp.*SingularDegenerate.*/(MPRGP|Baraff)` lists Baraff rows and no MPRGP
+  rows.
+- Remaining benchmark follow-up: inspect
   `RegisterContactNormalStandardSweepBenchmarks` and
   `RunContactNormalStandardSweepBenchmark`. The solver list includes `Baraff`
   and `MPRGP`, and the registration path currently appears to use form-level

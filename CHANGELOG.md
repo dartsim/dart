@@ -1431,6 +1431,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     standard packets matching its symmetric positive-semidefinite native path;
     boxed, friction-indexed, non-symmetric, and indefinite packets now delegate
     to Dantzig through the unified `solve()` path.
+  - Filtered singular-degenerate standard-LCP benchmark registrations through
+    each solver's concrete `supportsProblem(problem)` predicate so MPRGP's
+    Dantzig fallback is no longer listed as a native MPRGP comparison row while
+    Baraff's symmetric positive-semidefinite native rows remain.
   - Exposed a representative LCP benchmark-suite command in the Python LCP demo
     metadata by deriving one runnable filter from the demo's benchmark packet
     table while preserving the quick smoke benchmark command.

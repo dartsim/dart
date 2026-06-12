@@ -4939,6 +4939,14 @@ const dart::test::LcpSolverManifestEntry* FindSolverManifestEntry(
   return nullptr;
 }
 
+bool SolverSupportsConcreteProblem(
+    const dart::test::LcpSolverManifestEntry& solverEntry,
+    const LcpProblem& problem)
+{
+  const auto solver = solverEntry.create();
+  return solver != nullptr && solver->supportsProblem(problem);
+}
+
 bool isMildIllConditionedFrictionIndexCase(
     const MildIllConditionedBenchmarkCase testCase)
 {
@@ -11840,7 +11848,9 @@ bool SolverShouldRunSingularDegenerateBenchmark(
         "Admm",
         "Sap",
     }};
-    return SolverNameIn(solver, kStandardSolvers);
+    return SolverNameIn(solver, kStandardSolvers)
+           && SolverSupportsConcreteProblem(
+               solver, MakeSingularDegenerateBenchmarkProblem(testCase));
   }
 
   constexpr std::array<std::string_view, 3> kBoxedAndFindexSolvers{{
@@ -11848,7 +11858,9 @@ bool SolverShouldRunSingularDegenerateBenchmark(
       "Sap",
       "BoxedSemiSmoothNewton",
   }};
-  return SolverNameIn(solver, kBoxedAndFindexSolvers);
+  return SolverNameIn(solver, kBoxedAndFindexSolvers)
+         && SolverSupportsConcreteProblem(
+             solver, MakeSingularDegenerateBenchmarkProblem(testCase));
 }
 
 std::string MakeLargerSingularDegenerateBenchmarkName(

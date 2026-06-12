@@ -41,6 +41,9 @@
       native active-set loop.
 - [x] Refreshed the branch against `origin/main`, captured the final hand-off
       state, and stopped without running any further verification.
+- [x] Filtered singular-degenerate standard benchmark registrations through
+      concrete `supportsProblem(problem)` checks so MPRGP fallback rows are not
+      listed as native while Baraff PSD rows remain.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -79,6 +82,36 @@ rediscovering the current branch state.
   demo benchmark seed for Dantzig and friction-index-capable iterative solvers.
 
 ## Latest Code Checkpoint
+
+The latest implementation checkpoint aligns singular-degenerate benchmark
+registration with concrete native solver support:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now has a benchmark-local
+  `SolverSupportsConcreteProblem(...)` helper that instantiates the manifest
+  solver and asks `supportsProblem(problem)` on the generated packet.
+- `SolverShouldRunSingularDegenerateBenchmark(...)` still applies the scoped
+  solver allowlists, but now intersects them with concrete support for the
+  actual singular-degenerate packet.
+- The singular-degenerate standard packets are symmetric positive-semidefinite
+  but rank-deficient. Baraff remains registered as native; MPRGP no longer gets
+  native singular-degenerate standard rows that would run through its Dantzig
+  fallback.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp.*SingularDegenerate.*/(MPRGP|Baraff)'
+pixi run lint
+```
+
+Observed results:
+
+- The benchmark-list check built `BM_LCP_COMPARE` and listed Baraff
+  singular-degenerate standard and standard-batch rows, with no MPRGP rows.
+- `pixi run lint`: passed.
+
+## Baraff Support Predicate Checkpoint
 
 The latest implementation checkpoint makes Baraff's per-problem support
 predicate match its documented symmetric-PSD native path:
@@ -222,7 +255,10 @@ Interrupted next-slice audit, with no code changes made:
   as native for a concrete singular packet that fails its positive-definite
   check; Baraff may still be native if the packet is symmetric positive
   semidefinite.
-- Then inspect `RegisterContactNormalStandardSweepBenchmarks` and
+- The singular-degenerate standard registration gap was addressed by filtering
+  rows through `supportsProblem(problem)` for the concrete generated packet.
+- Remaining benchmark follow-up: inspect
+  `RegisterContactNormalStandardSweepBenchmarks` and
   `RunContactNormalStandardSweepBenchmark`. The current registration path
   appears to include `Baraff` and `MPRGP` through form-level standard support
   plus a `Direct` size exception, rather than checking each concrete generated
@@ -529,9 +565,9 @@ metadata, packet generation, or benchmark rows.
    maintainer/user approval is still in force.
 3. Fetch `origin/main`; if it moved, merge it into this branch before the next
    push.
-4. Audit benchmark routing in `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`
-   against concrete `supportsProblem(problem)` results, starting with
-   singular-degenerate standard rows and contact-normal standard sweeps for
-   MPRGP and Baraff.
+4. Continue the benchmark-routing audit in
+   `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` against concrete
+   `supportsProblem(problem)` results, starting with contact-normal standard
+   sweeps for MPRGP and Baraff.
 5. Prefer a bounded checkpoint: one benchmark/demo routing gap, focused tests,
    `pixi run lint`, then an additive commit.
