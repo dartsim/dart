@@ -106,6 +106,10 @@ constexpr std::size_t kAbdReducedCardCount = 8;
 constexpr std::size_t kAbdReducedChain8PairCount = 8;
 constexpr std::size_t kAbdReducedChain16PairCount = 16;
 constexpr std::size_t kAbdReducedChain96PairCount = 96;
+constexpr std::size_t kAbdReducedGearsPairCount = 28;
+constexpr std::size_t kAbdReducedBulletSmallPairCount = 16;
+constexpr std::size_t kAbdReducedBulletMediumPairCount = 48;
+constexpr std::size_t kAbdReducedBulletLargePairCount = 96;
 const std::array<Eigen::Vector3d, 4> kTerrainWheelOffsets{{
     Eigen::Vector3d(-0.16, -0.14, -0.10),
     Eigen::Vector3d(-0.16, 0.14, -0.10),
@@ -2110,6 +2114,68 @@ static void BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step(
       state, kAbdReducedChain96PairCount, "row_abd_chain_96");
 }
 BENCHMARK(BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void runAbdComparisonReducedPairRuntimeStep(
+    benchmark::State& state,
+    const std::size_t pairCount,
+    const char* rowCounterName,
+    const double paperBodyCount,
+    const double paperTriangleCount)
+{
+  runAbdChainNetReducedPairRuntimeStep(state, pairCount, rowCounterName);
+  state.counters["reduced_pair_count"] = static_cast<double>(pairCount);
+  state.counters["paper_body_count"] = paperBodyCount;
+  state.counters["paper_triangle_count"] = paperTriangleCount;
+  state.counters["reference_baseline_measured"] = 0.0;
+}
+
+static void BM_Plan083CpuScene_abd_gears_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state, kAbdReducedGearsPairCount, "row_abd_gears", 28.0, 2'500'000.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_gears_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_bullet_small_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state,
+      kAbdReducedBulletSmallPairCount,
+      "row_abd_bullet_small",
+      16.0,
+      1'200.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_bullet_small_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_bullet_medium_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state,
+      kAbdReducedBulletMediumPairCount,
+      "row_abd_bullet_medium",
+      142.0,
+      3'500.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_bullet_medium_reduced_pair_runtime_step)
+    ->Unit(benchmark::kMillisecond);
+
+static void BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step(
+    benchmark::State& state)
+{
+  runAbdComparisonReducedPairRuntimeStep(
+      state,
+      kAbdReducedBulletLargePairCount,
+      "row_abd_bullet_large",
+      562.0,
+      11'000.0);
+}
+BENCHMARK(BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step)
     ->Unit(benchmark::kMillisecond);
 
 //==============================================================================

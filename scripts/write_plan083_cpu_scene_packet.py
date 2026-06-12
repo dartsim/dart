@@ -78,10 +78,52 @@ ABD_CHAIN_SCENES = {
         "paper_gap": "12M-triangle chain-net assets, stress-machine policy, GPU packet, and paper-scale reproduction remain planned.",
     },
 }
+ABD_COMPARISON_SCENES = {
+    "abd_gears": {
+        "row_id": "abd-gears",
+        "scene_id": "plan083_abd_gears",
+        "pair_count": 28,
+        "paper_body_count": 28,
+        "paper_triangle_count": 2_500_000,
+        "paper_gap": "2.5M-triangle gear assets, contact-force visualization, GPU parity, and paper-scale reproduction remain planned.",
+        "reference_gap": "Deck GPU speedup is not measured; this packet records only reduced CPU ABD runtime-step evidence.",
+    },
+    "abd_bullet_small": {
+        "row_id": "abd-bullet-small",
+        "scene_id": "plan083_abd_bullet_small",
+        "pair_count": 16,
+        "paper_body_count": 16,
+        "paper_triangle_count": 1_200,
+        "paper_gap": "1.2k-triangle Bullet comparison asset and accepted Bullet/reference baseline command remain planned.",
+        "reference_gap": "Deck Bullet timings are not reproduced; this packet records only reduced CPU ABD runtime-step evidence.",
+    },
+    "abd_bullet_medium": {
+        "row_id": "abd-bullet-medium",
+        "scene_id": "plan083_abd_bullet_medium",
+        "pair_count": 48,
+        "paper_body_count": 142,
+        "paper_triangle_count": 3_500,
+        "paper_gap": "3.5k-triangle Bullet comparison asset and accepted Bullet/reference baseline command remain planned.",
+        "reference_gap": "Deck Bullet timings are not reproduced; this packet records only reduced CPU ABD runtime-step evidence.",
+    },
+    "abd_bullet_large": {
+        "row_id": "abd-bullet-large",
+        "scene_id": "plan083_abd_bullet_large",
+        "pair_count": 96,
+        "paper_body_count": 562,
+        "paper_triangle_count": 11_000,
+        "paper_gap": "11k-triangle Bullet comparison asset and accepted Bullet/reference baseline command remain planned.",
+        "reference_gap": "Deck Bullet timings are not reproduced; this packet records only reduced CPU ABD runtime-step evidence.",
+    },
+}
 SCENE_IDS = {
     "abd_chain_8": "plan083_abd_chain_8",
     "abd_chain_16": "plan083_abd_chain_16",
     "abd_chain_96": "plan083_abd_chain_96",
+    "abd_gears": "plan083_abd_gears",
+    "abd_bullet_small": "plan083_abd_bullet_small",
+    "abd_bullet_medium": "plan083_abd_bullet_medium",
+    "abd_bullet_large": "plan083_abd_bullet_large",
     "abd_house_of_cards": "plan083_abd_house_of_cards",
     "abd_wrecking_ball": "plan083_abd_wrecking_ball",
     "candy": "plan083_candy",
@@ -101,6 +143,10 @@ SCENE_ROW_IDS = {
     "abd_chain_8": "abd-chain-8",
     "abd_chain_16": "abd-chain-16",
     "abd_chain_96": "abd-chain-96",
+    "abd_gears": "abd-gears",
+    "abd_bullet_small": "abd-bullet-small",
+    "abd_bullet_medium": "abd-bullet-medium",
+    "abd_bullet_large": "abd-bullet-large",
     "abd_house_of_cards": "abd-vs-rigid-cards",
     "abd_wrecking_ball": "abd-vs-rigid-wreck",
     "candy": "unb-fig-22",
@@ -120,6 +166,10 @@ SCENE_ROWS = {
     "abd_chain_8": "BM_Plan083CpuScene_abd_chain_8_reduced_pair_runtime_step",
     "abd_chain_16": "BM_Plan083CpuScene_abd_chain_16_reduced_pair_runtime_step",
     "abd_chain_96": "BM_Plan083CpuScene_abd_chain_96_reduced_pair_runtime_step",
+    "abd_gears": "BM_Plan083CpuScene_abd_gears_reduced_pair_runtime_step",
+    "abd_bullet_small": "BM_Plan083CpuScene_abd_bullet_small_reduced_pair_runtime_step",
+    "abd_bullet_medium": "BM_Plan083CpuScene_abd_bullet_medium_reduced_pair_runtime_step",
+    "abd_bullet_large": "BM_Plan083CpuScene_abd_bullet_large_reduced_pair_runtime_step",
     "abd_house_of_cards": "BM_Plan083CpuScene_abd_house_of_cards_reduced_runtime_step",
     "abd_wrecking_ball": "BM_Plan083CpuScene_abd_wrecking_ball_reduced_pair_runtime_step",
     "candy": "BM_Plan083CpuScene_candy_reduced_world_step",
@@ -147,6 +197,18 @@ SCENE_BENCHMARK_OUTPUTS = {
     ),
     "abd_chain_96": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_96_benchmark.json"
+    ),
+    "abd_gears": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_gears_benchmark.json"
+    ),
+    "abd_bullet_small": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_small_benchmark.json"
+    ),
+    "abd_bullet_medium": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_medium_benchmark.json"
+    ),
+    "abd_bullet_large": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_large_benchmark.json"
     ),
     "abd_house_of_cards": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards_benchmark.json"
@@ -197,6 +259,16 @@ SCENE_PACKET_OUTPUTS = {
     ),
     "abd_chain_96": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_chain_96.json"
+    ),
+    "abd_gears": Path(".benchmark_results/plan083/cpu_scene_corpus/abd_gears.json"),
+    "abd_bullet_small": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_small.json"
+    ),
+    "abd_bullet_medium": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_medium.json"
+    ),
+    "abd_bullet_large": Path(
+        ".benchmark_results/plan083/cpu_scene_corpus/abd_bullet_large.json"
     ),
     "abd_house_of_cards": Path(
         ".benchmark_results/plan083/cpu_scene_corpus/abd_house_of_cards.json"
@@ -444,6 +516,8 @@ def make_packet(
         return _make_abd_wrecking_ball_packet(row, rows, timing_ns=timing_ns)
     if scene in ABD_CHAIN_SCENES:
         return _make_abd_chain_packet(scene, row, rows, timing_ns=timing_ns)
+    if scene in ABD_COMPARISON_SCENES:
+        return _make_abd_comparison_packet(scene, row, rows, timing_ns=timing_ns)
 
     final_residual = _finite_number(row, "final_equality_residual_norm")
     if final_residual > max_equality_residual:
@@ -1001,6 +1075,150 @@ def _make_abd_chain_packet(
                 f"Reduced {expected_pair_count}-pair affine chain-net "
                 f"runtime-step packet only; {config['paper_gap']}"
             ),
+        },
+        "benchmarks": rows,
+    }
+
+
+def _make_abd_comparison_packet(
+    scene: str,
+    row: Mapping[str, Any],
+    rows: list[Any],
+    *,
+    timing_ns: float,
+) -> dict[str, Any]:
+    config = ABD_COMPARISON_SCENES[scene]
+    expected_pair_count = int(config["pair_count"])
+    expected_paper_body_count = int(config["paper_body_count"])
+    expected_paper_triangle_count = int(config["paper_triangle_count"])
+    affine_body_count = int(_finite_number(row, "affine_body_count"))
+    dynamic_pair_count = int(_finite_number(row, "dynamic_pair_count"))
+    reduced_pair_count = int(_finite_number(row, "reduced_pair_count"))
+    paper_body_count = int(_finite_number(row, "paper_body_count"))
+    paper_triangle_count = int(_finite_number(row, "paper_triangle_count"))
+    reference_baseline_measured = _finite_number(row, "reference_baseline_measured")
+    valid_step_count = int(_finite_number(row, "valid_step_count"))
+    failed_steps = _finite_number(row, "failed_steps")
+    converged_solve_count = int(_finite_number(row, "converged_solve_count"))
+    barrier_active_count = int(_finite_number(row, "barrier_active_count"))
+    solver_iterations = int(_finite_number(row, "solver_iterations"))
+    total_objective_decrease = _finite_number(row, "total_objective_decrease")
+    max_final_gradient_norm = _finite_number(row, "max_final_gradient_norm")
+    min_target_squared_distance = _finite_number(row, "min_target_squared_distance")
+    min_final_squared_distance = _finite_number(row, "min_final_squared_distance")
+    squared_activation_distance = _finite_number(row, "squared_activation_distance")
+    max_linear_speed = _finite_number(row, "max_linear_speed_m_s")
+    max_affine_velocity_norm = _finite_number(row, "max_affine_velocity_norm")
+    max_displacement_norm = _finite_number(row, "max_displacement_norm_m")
+
+    expected_affine_body_count = 2 * expected_pair_count
+    if affine_body_count != expected_affine_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_affine_body_count} reduced ABD comparison bodies, "
+            f"got {affine_body_count}"
+        )
+    if (
+        dynamic_pair_count != expected_pair_count
+        or reduced_pair_count != expected_pair_count
+    ):
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} dynamic ABD comparison pairs, "
+            f"got dynamic={dynamic_pair_count}, reduced={reduced_pair_count}"
+        )
+    if paper_body_count != expected_paper_body_count:
+        raise Plan083CpuScenePacketError(
+            f"expected paper body count {expected_paper_body_count}, got {paper_body_count}"
+        )
+    if paper_triangle_count != expected_paper_triangle_count:
+        raise Plan083CpuScenePacketError(
+            "expected paper triangle count "
+            f"{expected_paper_triangle_count}, got {paper_triangle_count}"
+        )
+    if reference_baseline_measured != 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison packet must not claim a measured reference baseline"
+        )
+    if failed_steps != 0.0:
+        raise Plan083CpuScenePacketError(
+            f"reduced ABD comparison packet reported {failed_steps:g} failed steps"
+        )
+    if valid_step_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} valid ABD comparison steps, "
+            f"got {valid_step_count}"
+        )
+    if converged_solve_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} converged ABD comparison solves, "
+            f"got {converged_solve_count}"
+        )
+    if barrier_active_count != expected_pair_count:
+        raise Plan083CpuScenePacketError(
+            f"expected {expected_pair_count} active ABD comparison barriers, "
+            f"got {barrier_active_count}"
+        )
+    if solver_iterations <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison packet needs solver iterations"
+        )
+    if total_objective_decrease <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison packet needs positive objective decrease"
+        )
+    if max_final_gradient_norm > 1e-5:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison final gradient is too large: "
+            f"{max_final_gradient_norm:.3g}"
+        )
+    if min_final_squared_distance <= min_target_squared_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison must move farther from contact than the inertial target"
+        )
+    if min_final_squared_distance >= squared_activation_distance:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison should remain inside the activation distance"
+        )
+    if max_linear_speed <= 0.0 or max_affine_velocity_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison needs linear and affine velocity updates"
+        )
+    if max_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD comparison needs a nonzero runtime displacement"
+        )
+
+    return {
+        "plan083_cpu_scene_packet": {
+            "row_id": config["row_id"],
+            "scene_id": config["scene_id"],
+            "benchmark_row": _packet_row_name(row),
+            "paper_scale": False,
+            "runtime_path": "detail affine point-triangle pair runtime step",
+            "step_count": 1,
+            "wall_time_ns": timing_ns,
+            "affine_body_count": affine_body_count,
+            "dynamic_pair_count": dynamic_pair_count,
+            "reduced_pair_count": reduced_pair_count,
+            "paper_body_count": paper_body_count,
+            "paper_triangle_count": paper_triangle_count,
+            "reference_baseline_measured": False,
+            "valid_step_count": valid_step_count,
+            "converged_solve_count": converged_solve_count,
+            "barrier_active_count": barrier_active_count,
+            "solver_iterations": solver_iterations,
+            "total_objective_decrease": total_objective_decrease,
+            "max_final_gradient_norm": max_final_gradient_norm,
+            "min_target_squared_distance": min_target_squared_distance,
+            "min_final_squared_distance": min_final_squared_distance,
+            "squared_activation_distance": squared_activation_distance,
+            "max_linear_speed_m_s": max_linear_speed,
+            "max_affine_velocity_norm": max_affine_velocity_norm,
+            "max_displacement_norm_m": max_displacement_norm,
+            "limitation_status": (
+                f"Reduced {expected_pair_count}-pair ABD comparison "
+                f"runtime-step packet only; {config['paper_gap']}"
+            ),
+            "reference_baseline_status": config["reference_gap"],
         },
         "benchmarks": rows,
     }
