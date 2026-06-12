@@ -234,11 +234,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "surface": "Boxed",
         "artifact": "docs/background/lcp/figures/performance_profile_boxed.csv",
         "problem_sizes": "12, 24, 48",
-        "current_leaders": "Tgs; Pgs/Jacobi remain close",
-        "current_laggards": "Sap, BGS, Admm, BoxedSemiSmoothNewton",
+        "current_leaders": "Jacobi/Tgs; Pgs remains close",
+        "current_laggards": (
+            "Sap, Admm, BoxedSemiSmoothNewton, ShockPropagation"
+        ),
         "takeaway": (
-            "Projection methods lead active-bound rows; SAP, BGS, ADMM, and "
-            "boxed semi-smooth Newton remain tuning targets."
+            "Projection methods lead active-bound rows; SAP, ADMM, boxed "
+            "semi-smooth Newton, and layered rows remain tuning targets."
         ),
     },
     {
@@ -247,13 +249,13 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
             "docs/background/lcp/figures/performance_profile_frictionindex.csv"
         ),
         "problem_sizes": "4, 16, 64",
-        "current_leaders": "Pgs; Tgs remains close",
+        "current_leaders": "Tgs/Sap; ADMM and SymmetricPsor next",
         "current_laggards": (
-            "BoxedSemiSmoothNewton, BlockedJacobi, ShockPropagation, Staggering"
+            "BoxedSemiSmoothNewton, BlockedJacobi, BGS, SubspaceMinimization"
         ),
         "takeaway": (
-            "PGS/TGS lead current contact-scale rows; boxed semi-smooth "
-            "Newton and block/layered routes are optimization targets."
+            "TGS/SAP lead current contact-scale rows; boxed semi-smooth "
+            "Newton, BGS, BlockedJacobi, and subspace routes remain targets."
         ),
     },
 )

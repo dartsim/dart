@@ -1,5 +1,164 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 BGS Singleton Fast Path
+
+The goal was resumed after the stop-only hand-off below. Work continued on the
+next high-ratio profile target: `BgsSolver`.
+
+Latest implementation slice:
+
+- `dart/math/lcp/projection/bgs_solver.cpp` now detects singleton blocks with
+  no local `findex` coupling and solves the scalar fixed-bound subproblem with
+  a direct projected Gauss-Seidel update.
+- The fast path requires a finite positive diagonal and finite effective RHS.
+  Non-singleton blocks, local `findex` blocks, non-positive diagonals, invalid
+  scalar data, and coupled friction blocks still use the existing
+  `DirectSolver`/`DantzigSolver` local block fallback.
+- `tests/unit/math/lcp/test_lcp_validation_and_solvers.cpp` now covers BGS
+  singleton boxed blocks that clamp against both lower and upper bounds.
+- `docs/background/lcp/04_projection-methods.md` documents the singleton
+  scalar BGS path.
+- The checked performance-profile CSV artifacts under
+  `docs/background/lcp/figures` were regenerated from the optimized solver.
+- The Python demo profile summary and panel test were updated for the refreshed
+  Boxed and FrictionIndex leader/laggard text.
+- `CHANGELOG.md` records the `BgsSolver` optimization.
+
+Focused before/after `BM_LcpCompare` evidence for this slice:
+
+- Standard profile rows: runtime ratios `0.133`, `0.148`, `0.180`, and `0.292`
+  for sizes 12, 24, 48, and 96 relative to the pre-change focused run.
+- Boxed profile rows: runtime ratios `0.115`, `0.123`, and `0.098` for sizes
+  12, 24, and 48.
+- FrictionIndex profile rows: runtime ratios `0.623`, `0.815`, and `0.982` for
+  contact counts 4, 16, and 64.
+- Mean focused ratio was `0.351`; best `0.098`; worst `0.982`.
+- All focused after rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot:
+
+- Standard: `BGS` average ratio is now `2.42`. Current high-ratio targets remain
+  `Lemke`, `InteriorPoint`, `Baraff`, and `ShockPropagation`.
+- Boxed: `BGS` average ratio is now `4.22`, no longer in the top laggard set.
+  Current high-ratio targets are `Sap`, `Admm`, `BoxedSemiSmoothNewton`, and
+  `ShockPropagation`.
+- FrictionIndex: `BGS` average ratio is now `7.16`; current high-ratio targets
+  are `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, and
+  `SubspaceMinimization`.
+
+Verification completed so far:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE \
+           UNIT_math_lcp_math_lcp_lcp_projection_solvers \
+           UNIT_math_lcp_math_lcp_lcp_comparison_harness \
+           UNIT_math_lcp_math_lcp_lcp_generated_coverage \
+           UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_(lcp_projection_solvers|lcp_comparison_harness|lcp_generated_coverage|lcp_validation_and_solvers)$' \
+  -j "$JOBS"
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/(Standard|Boxed|FrictionIndex)/BGS/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/bgs_profile_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+pixi run python scripts/lcp_performance_profile.py \
+  --cache build/lcp_profile_full.json \
+  --output build/lcp_profile_full_check
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+pixi run build
+pixi run lint
+git diff --check
+```
+
+Observed results:
+
+- Affected C++ targets rebuilt successfully.
+- LCP projection, comparison, generated coverage, and validation solver tests
+  passed through CTest: `100% tests passed, 0 tests failed out of 4`.
+- Focused BGS after-run showed all Standard, Boxed, and FrictionIndex profile
+  rows passing contract checks.
+- Full `BM_LcpCompare/` profile regeneration completed and updated all checked
+  CSV artifacts.
+- Cached profile replay completed under `build/lcp_profile_full_check`.
+- Generated CSV shape check reported 23 Standard solver columns, 15 Boxed
+  solver columns, 16 FrictionIndex solver columns, and 200 rows per profile.
+- Focused Python LCP panel metadata test passed: `1 passed in 0.48s`.
+- `pixi run build` passed.
+- `pixi run lint` passed, including the LCP solver roster gate.
+- `git diff --check` passed.
+
+Immediate next step after this checkpoint:
+
+- Continue benchmark-driven optimization or interface audit from the refreshed
+  profile. The clearest remaining profile targets are Standard `Lemke`,
+  `InteriorPoint`, `Baraff`, `ShockPropagation`; Boxed `Sap`, `Admm`,
+  `BoxedSemiSmoothNewton`, `ShockPropagation`; and FrictionIndex
+  `BoxedSemiSmoothNewton`, `BlockedJacobi`, `BGS`, `SubspaceMinimization`.
+- Do not push without explicit approval.
+
+## Current Reality - 2026-06-12 Stop-Only Hand-Off After Snapshot Product
+
+The user explicitly stopped further work and requested only hand-off docs, with
+no further verification. Do not infer that lint, tests, builds, benchmarks,
+implementation edits, commits, pushes, or PR work should continue from this
+session. Resume implementation only after an explicit user request.
+
+Observed repository state before this docs-only hand-off edit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Local HEAD:
+  `4823706f0c9 Reuse BlockedJacobi fixed-bound snapshot products`.
+- Tracking state:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 32]`.
+- Worktree: clean before this docs-only hand-off edit.
+- Push was not performed in this stop-only response.
+- No lint, test, build, benchmark, or other verification command was run after
+  the stop request.
+
+Latest completed local checkpoints:
+
+- `4823706f0c9 Reuse BlockedJacobi fixed-bound snapshot products`
+- `e7ea201e258 Optimize BlockedJacobi singleton LCP blocks`
+- `3667401ad1f Optimize boxed semi-smooth Newton LCP step`
+- `d27a0232c37 Show LCP performance profiles in py demo`
+- `f857a380c20 Regenerate LCP performance profiles`
+- `dcf0d835c1b Refresh LCP performance profile tooling`
+- `7df9a018c31 Align LCP performance profile metadata`
+- `00a58f7153e Align Staggering native capability metadata`
+
+Immediate next step:
+
+- Stop. In a fresh session, first inspect the current branch/worktree state and
+  reread `AGENTS.md`, `docs/ai/principles.md`, `docs/dev_tasks/README.md`,
+  this file, and the task `README.md`.
+- The latest completed implementation slice is the BlockedJacobi snapshot
+  product section immediately below. Its verification evidence is historical
+  evidence from before this stop request, not work performed after it.
+- The broad LCP solver/interface/demo goal remains incomplete. Existing profile
+  data still suggests high-ratio future targets such as Standard `Lemke`,
+  `InteriorPoint`, `Baraff`, `ShockPropagation`; Boxed `Sap`, `Admm`, `BGS`,
+  `BoxedSemiSmoothNewton`; and FrictionIndex `BoxedSemiSmoothNewton`,
+  `BlockedJacobi`, `ShockPropagation`, `Staggering`, `BGS`. Do not start any
+  of that work until explicitly asked.
+- Do not push without explicit approval.
+
 ## Current Reality - 2026-06-12 BlockedJacobi Snapshot Product
 
 After the singleton fast path checkpoint, work continued on the same

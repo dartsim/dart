@@ -45,6 +45,8 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dart::math {
 namespace {
 
@@ -79,6 +81,24 @@ bool isStandardBlock(const BlockData& block, double absTol)
   return (block.lo.array().abs().maxCoeff() <= absTol)
          && (block.hi.array() == std::numeric_limits<double>::infinity()).all()
          && (block.findex.array() < 0).all();
+}
+
+bool solveSingletonBlock(
+    const BlockData& block, const double bEff, double& value)
+{
+  if (block.indices.size() != 1 || block.findex[0] >= 0) {
+    return false;
+  }
+
+  const double diagonal = block.A(0, 0);
+  if (!std::isfinite(diagonal)
+      || diagonal <= std::numeric_limits<double>::epsilon()
+      || !std::isfinite(bEff)) {
+    return false;
+  }
+
+  value = std::clamp(bEff / diagonal, block.lo[0], block.hi[0]);
+  return std::isfinite(value);
 }
 
 bool buildBlockData(
@@ -390,6 +410,19 @@ LcpResult BgsSolver::solve(
 
     for (const auto& block : blocks) {
       const auto m = std::ssize(block.indices);
+      if (m == 1) {
+        const int globalIndex = block.indices[0];
+        const double diagonal = block.A(0, 0);
+        const double bEff
+            = block.baseB[0]
+              - (A.row(globalIndex).dot(x) - diagonal * x[globalIndex]);
+        double value = x[globalIndex];
+        if (solveSingletonBlock(block, bEff, value)) {
+          x[globalIndex] = value;
+          continue;
+        }
+      }
+
       Eigen::VectorXd xBlock(m);
       for (int r = 0; r < m; ++r) {
         xBlock[r] = x[block.indices[r]];

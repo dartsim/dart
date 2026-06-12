@@ -332,7 +332,10 @@ solver.solve(problem, x, options);
 - **General**: Any LCP solver
 
 > Note: DART uses `DirectSolver` for standard blocks up to 3 variables and
-> falls back to `DantzigSolver` for boxed or larger blocks.
+> falls back to `DantzigSolver` for boxed or larger blocks. Singleton blocks
+> with fixed bounds and no local `findex` coupling use the scalar projected
+> update directly, preserving the Gauss-Seidel sweep while avoiding one-row
+> subproblem setup overhead.
 
 DART 7 benchmark evidence includes `BM_LcpBlockPartitionSweep`, which runs BGS
 on standard, boxed, and friction-index fixtures with full-block, 3-row block,

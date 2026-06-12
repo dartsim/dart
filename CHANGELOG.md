@@ -1479,6 +1479,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `A * x` once per Jacobi step and reusing it for block right-hand sides,
     while keeping coupled friction-index blocks on their previous row-product
     path.
+  - Optimized `BgsSolver` singleton fixed-bound blocks with the same scalar
+    projected update used by the Gauss-Seidel sweep, avoiding one-row local
+    solver setup while preserving the existing fallback for coupled
+    friction-index and larger blocks.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

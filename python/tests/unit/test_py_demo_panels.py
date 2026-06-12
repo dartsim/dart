@@ -1040,16 +1040,17 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "Lemke" in profile_by_surface["Standard"]["current_laggards"]
     assert "InteriorPoint" in profile_by_surface["Standard"]["current_laggards"]
     assert "ShockPropagation" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Tgs" in profile_by_surface["Boxed"]["current_leaders"]
-    assert "Pgs/Jacobi remain close" in profile_by_surface["Boxed"][
+    assert "Jacobi/Tgs" in profile_by_surface["Boxed"]["current_leaders"]
+    assert "Pgs remains close" in profile_by_surface["Boxed"][
         "current_leaders"
     ]
     assert "Sap" in profile_by_surface["Boxed"]["current_laggards"]
+    assert "Admm" in profile_by_surface["Boxed"]["current_laggards"]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["Boxed"][
         "current_laggards"
     ]
-    assert "Pgs" in profile_by_surface["FrictionIndex"]["current_leaders"]
-    assert "Tgs remains close" in profile_by_surface["FrictionIndex"][
+    assert "Tgs/Sap" in profile_by_surface["FrictionIndex"]["current_leaders"]
+    assert "SymmetricPsor" in profile_by_surface["FrictionIndex"][
         "current_leaders"
     ]
     assert "BoxedSemiSmoothNewton" in profile_by_surface["FrictionIndex"][
@@ -1058,10 +1059,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "BlockedJacobi" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
-    assert "ShockPropagation" in profile_by_surface["FrictionIndex"][
+    assert "BGS" in profile_by_surface["FrictionIndex"]["current_laggards"]
+    assert "SubspaceMinimization" in profile_by_surface["FrictionIndex"][
         "current_laggards"
     ]
-    assert "Staggering" in profile_by_surface["FrictionIndex"]["current_laggards"]
     assert benchmark_by_packet["world_billiards"]["benchmark_filter"] == (
         "BM_LcpWorldBilliardsStep_BoxedLcp"
     )
