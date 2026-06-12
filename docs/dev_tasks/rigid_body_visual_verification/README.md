@@ -2,52 +2,65 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 29 now gives the World multibody joint motor/limit row
-the same reviewable comparison shape as the surrounding rigid workflow rows
-while continuing to follow the DART 7 architecture harness from PR #2986.
-`rigid_joint_motor_limits` names `world_multibody_actuator_limit_family` as its
-comparison axis in the panel and capture metrics, records held-fixed
-World-joint/axis/mass/time-step context, exports top-level motor clamp,
-position-limit, and force-gap metrics, and feeds decisive latest signals into
-the workflow review index.
+Latest local slice: row 30 now gives the World multibody passive joint
+parameter row the same reviewable comparison shape as the surrounding rigid
+workflow rows while continuing to follow the DART 7 architecture harness from
+PR #2986. `rigid_joint_passive_parameters` names
+`passive_joint_parameter_family` as its comparison axis in the panel and capture
+metrics, records held-fixed contact-free World-prismatic/mass/time-step
+context, exports top-level energy, slip, and armature-gap metrics, and feeds
+decisive latest signals into the workflow review index.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-29 latest signals prioritize motor
-  speed, expected speed, speed error, limit angle/error, force travel gap, force
-  acceleration gap, and solver.
-- Real row-29 workflow capture completed under
-  `build/captures/rigid_joint_motor_limits_row_29_1781301981` with
+  sync check, and the unit guard that row-30 latest signals prioritize spring
+  energy, damped energy, energy ratio, slip speed, armature position gap,
+  armature acceleration gap, solver, and executor.
+- Real row-30 workflow capture completed under
+  `build/captures/rigid_joint_passive_parameters_row_30_1781302360` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 29 reported `comparison_axis=world_multibody_actuator_limit_family`,
-  held-fixed
-  `joint_axes=x-axis prismatic rails and y-axis revolute stop`,
-  `carriage_mass=2.0`, `limit_link_mass=1.0`,
-  `solver=World multibody joint actuators`, `time_step_ms=5.0`, controls
-  `command_speed=0.55`, `velocity_limit=0.3`, `position_limit=0.35`,
-  `force_command=16.0`, `effort_limit=4.0`,
-  `joint_lanes=[velocity_motor, position_limit, effort_limited, effort_reference]`,
-  `joint_motor_speed=0.3`, `joint_motor_expected_speed=0.3`,
-  `joint_motor_speed_error=0.0`,
-  `joint_motor_position_limit_angle=0.35`,
-  `joint_motor_position_limit_error=0.0`,
-  `joint_motor_force_position_gap=0.6984000000000006`,
-  `joint_motor_force_acceleration_gap=6.000000000000005`, and matching history
-  maxima for force position/acceleration gap.
-- `review_index.html` showed the row-29 card with `axis`, `held fixed`,
+- Row 30 reported `comparison_axis=passive_joint_parameter_family`, held-fixed
+  `joint_family=prismatic`, `gravity=off`, `contacts=off`, `link_mass=2.0`,
+  `solver=world_multibody_passive_joint_parameters`, `time_step_ms=4.0`,
+  controls `executor_index=0.0`, `spring_stiffness=16.0`,
+  `damping_coefficient=3.0`, `rest_position=0.0`,
+  `coulomb_friction=6.0`, `slip_force=9.0`, `armature=6.0`,
+  `joint_lanes=[spring_only, spring_damper, stiction, slip, armature_reference, armature_heavy]`,
+  `passive_joint_spring_energy=2.1582722857466807`,
+  `passive_joint_damped_energy=1.3403396049698901`,
+  `passive_joint_damped_energy_ratio=0.6210243322038411`,
+  `passive_joint_slip_speed=0.7200000000000005`,
+  `passive_joint_armature_position_gap=0.26136000000000015`,
+  `passive_joint_armature_acceleration_gap=2.2500000000000018`, history
+  `max_damped_energy=2.1632000000000002`, and history
+  `max_armature_position_gap=0.26136000000000015`.
+- `review_index.html` showed the row-30 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for motor speed, expected speed, speed error, limit angle/error,
-  force travel gap, force acceleration gap, and solver.
-- The per-scene capture wrote a nonblank docked screenshot and 95 PNG frames
-  for `rigid_joint_motor_limits` from the 96-frame workflow row capture. The
-  successful capture was written under `build/captures/` after a previous
-  `/tmp` attempt hit the host tmpfs quota.
+  ordering for spring energy, damped energy, energy ratio, slip speed, armature
+  position gap, armature acceleration gap, solver, and executor.
+- The per-scene capture wrote a nonblank docked screenshot and 119 PNG frames
+  for `rigid_joint_passive_parameters` from the 120-frame workflow row capture
+  under `build/captures/`.
+
+Previous completed and verified slice: row 29 gives the World multibody joint
+motor/limit row the same reviewable comparison shape as the surrounding rigid
+workflow rows. `rigid_joint_motor_limits` names
+`world_multibody_actuator_limit_family` as its comparison axis in the panel and
+capture metrics, records held-fixed World-joint/axis/mass/time-step context,
+exports top-level motor clamp, position-limit, and force-gap metrics, and feeds
+decisive latest signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-29 workflow capture completed under
+`build/captures/rigid_joint_motor_limits_row_29_1781301981` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 95 PNG frames.
 
 Previous completed and verified slice: row 28 gives the rigid-body one-DOF
 joint row the same reviewable comparison shape as the surrounding rigid
@@ -122,16 +135,16 @@ Repository state notes:
 - Branch: `feature/rigid-body-gui-visual-verification`; no PR is associated
   with this branch.
 - Latest completed implementation commit before this slice:
-  `b28a0d38c5f Surface one-DOF joint workflow signals`.
+  `ef9545ea8d1 Surface joint motor limit workflow signals`.
 - Do not push without explicit approval in the session that performs the push.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline`. If this
   slice has been committed, expect the latest local commit to describe the
-  joint motor/limit workflow signals; otherwise inspect the uncommitted diff for
-  the row-29 follow-up.
+  passive joint-parameter workflow signals; otherwise inspect the uncommitted
+  diff for the row-30 follow-up.
 
 Recommended next action: continue the rigid workflow from the next concrete
 user-facing gap found by a fresh audit, or ask for maintainer acceptance of the
-current row-15-through-row-29 review-index/evidence direction before broadening
+current row-15-through-row-30 review-index/evidence direction before broadening
 to another rigid branch.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable

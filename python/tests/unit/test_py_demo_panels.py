@@ -1267,7 +1267,7 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             rigid_joint_passive_parameters,
             (
                 "text:comparison axis: passive joint parameter family",
-                "text:held fixed: World prismatic joints | gravity off | contacts off",
+                "text:held fixed: World prismatic joints | gravity off | contacts off | link mass 2.0 | time step 4.0 ms",
             ),
         ),
     ]

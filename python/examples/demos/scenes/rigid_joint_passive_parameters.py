@@ -473,8 +473,14 @@ class _RigidJointPassiveParameterVerifier:
         }
         spring_energy = lane_value("spring_only", "energy")
         damped_energy = lane_value("spring_damper", "energy")
+        damped_energy_ratio = damped_energy / max(spring_energy, 1.0e-12)
         reference_acceleration = lane_value("armature_reference", "acceleration")
         armature_acceleration = lane_value("armature_heavy", "acceleration")
+        armature_acceleration_gap = reference_acceleration - armature_acceleration
+        armature_position_gap = lane_value(
+            "armature_reference", "position"
+        ) - lane_value("armature_heavy", "position")
+        lane_order = [lane.key for lane in self.lanes]
         payload: dict[str, Any] = {
             "row": "rigid_joint_passive_parameters",
             "comparison_axis": "passive_joint_parameter_family",
@@ -486,6 +492,8 @@ class _RigidJointPassiveParameterVerifier:
                 "joint_family": "prismatic",
                 "gravity": "off",
                 "contacts": "off",
+                "link_mass": _MASS,
+                "time_step_ms": _TIME_STEP * 1000.0,
             },
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
@@ -500,12 +508,19 @@ class _RigidJointPassiveParameterVerifier:
                 "armature_force": float(self.armature_force),
                 "armature": float(self.armature),
             },
-            "lane_order": [lane.key for lane in self.lanes],
+            "joint_lanes": lane_order,
+            "lane_order": lane_order,
             "lane_count": float(len(self.lanes)),
             "lanes": lanes,
+            "passive_joint_spring_energy": spring_energy,
+            "passive_joint_damped_energy": damped_energy,
+            "passive_joint_damped_energy_ratio": damped_energy_ratio,
+            "passive_joint_slip_speed": lane_value("slip", "speed"),
+            "passive_joint_armature_position_gap": armature_position_gap,
+            "passive_joint_armature_acceleration_gap": armature_acceleration_gap,
             "spring_energy": spring_energy,
             "damped_energy": damped_energy,
-            "damped_energy_ratio": damped_energy / max(spring_energy, 1.0e-12),
+            "damped_energy_ratio": damped_energy_ratio,
             "stiction_position": lane_value("stiction", "position"),
             "stiction_speed": lane_value("stiction", "speed"),
             "slip_position": lane_value("slip", "position"),
@@ -517,12 +532,8 @@ class _RigidJointPassiveParameterVerifier:
             "slip_acceleration_error": lane_value("slip", "acceleration_error"),
             "armature_reference_acceleration": reference_acceleration,
             "armature_heavy_acceleration": armature_acceleration,
-            "armature_acceleration_gap": reference_acceleration
-            - armature_acceleration,
-            "armature_position_gap": lane_value(
-                "armature_reference", "position"
-            )
-            - lane_value("armature_heavy", "position"),
+            "armature_acceleration_gap": armature_acceleration_gap,
+            "armature_position_gap": armature_position_gap,
             "step_ms": self._step_ms_history[-1] if self._step_ms_history else 0.0,
             "history": {
                 "samples": float(len(self._step_ms_history)),
@@ -814,7 +825,10 @@ class _RigidJointPassiveParameterVerifier:
 
         builder.separator()
         builder.text("comparison axis: passive joint parameter family")
-        builder.text("held fixed: World prismatic joints | gravity off | contacts off")
+        builder.text(
+            "held fixed: World prismatic joints | gravity off | contacts off | "
+            f"link mass {_MASS:.1f} | time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("solver: World multibody joints | gravity: off | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(

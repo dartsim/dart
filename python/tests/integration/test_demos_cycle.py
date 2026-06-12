@@ -5768,6 +5768,8 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
         "joint_family": "prismatic",
         "gravity": "off",
         "contacts": "off",
+        "link_mass": pytest.approx(2.0),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
     }
     assert (
         capture_metrics["executor"]
@@ -5791,7 +5793,9 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["controls"]["armature"] == pytest.approx(
         controller.armature
     )
-    assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
+    expected_lanes = [lane.key for lane in controller.lanes]
+    assert capture_metrics["joint_lanes"] == expected_lanes
+    assert capture_metrics["lane_order"] == expected_lanes
     assert capture_metrics["lane_count"] == pytest.approx(len(controller.lanes))
     assert set(capture_metrics["lanes"]) == {lane.key for lane in controller.lanes}
     assert capture_metrics["lanes"]["spring_only"]["kind"] == "spring"
@@ -5810,11 +5814,23 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["damped_energy_ratio"] == pytest.approx(
         float(damped["energy"]) / float(spring["energy"])
     )
+    assert capture_metrics["passive_joint_spring_energy"] == pytest.approx(
+        float(spring["energy"])
+    )
+    assert capture_metrics["passive_joint_damped_energy"] == pytest.approx(
+        float(damped["energy"])
+    )
+    assert capture_metrics["passive_joint_damped_energy_ratio"] == pytest.approx(
+        float(damped["energy"]) / float(spring["energy"])
+    )
     assert capture_metrics["stiction_position"] == pytest.approx(
         float(stiction["position"])
     )
     assert capture_metrics["stiction_speed"] == pytest.approx(float(stiction["speed"]))
     assert capture_metrics["slip_position"] == pytest.approx(float(slip["position"]))
+    assert capture_metrics["passive_joint_slip_speed"] == pytest.approx(
+        float(slip["speed"])
+    )
     assert capture_metrics["slip_acceleration"] == pytest.approx(
         float(slip["acceleration"])
     )
@@ -5831,7 +5847,14 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
         float(armature_reference["acceleration"])
         - float(armature_heavy["acceleration"])
     )
+    assert capture_metrics["passive_joint_armature_acceleration_gap"] == pytest.approx(
+        float(armature_reference["acceleration"])
+        - float(armature_heavy["acceleration"])
+    )
     assert capture_metrics["armature_position_gap"] == pytest.approx(
+        float(armature_reference["position"]) - float(armature_heavy["position"])
+    )
+    assert capture_metrics["passive_joint_armature_position_gap"] == pytest.approx(
         float(armature_reference["position"]) - float(armature_heavy["position"])
     )
     assert capture_metrics["history"]["samples"] == pytest.approx(

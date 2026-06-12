@@ -207,7 +207,7 @@ plus a warning block if any selected row is missing those fields.
 | 27/36 | `rigid_distance_spring`          | How do distance springs enforce rest length?       | Executor, rest length, initial stretch, gravity       | Distance-spring axis, lane stretch, offset spin               |
 | 28/36 | `rigid_limited_joints`           | Do one-DOF joints keep only their free axis?       | Sequential joints, static bases, z axis               | One-DOF axis, locked errors, free-axis motion                 |
 | 29/36 | `rigid_joint_motor_limits`       | Do joint motors and limits clamp commands?         | World joints, velocity/position/effort limits         | Actuator axis, motor clamp, force gap                         |
-| 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | Executor, spring/rest, damping, friction, armature    | Energy decay, stiction/slip, armature lag, Replay marks       |
+| 30/36 | `rigid_joint_passive_parameters` | Do passive joint parameters shape motion?          | World joints, gravity off, contacts off               | Passive axis, energy decay, slip, armature lag                |
 | 31/36 | `rigid_screw_joint_pitch`        | Does screw pitch couple rotation and translation?  | Pitch, gravity, mass, axial inertia, executor         | Travel gap, pitch ratio, reverse sign, Replay marks           |
 | 32/36 | `rigid_multibody_dynamics_terms` | What do generalized dynamics terms mean?           | Executor, target acceleration, impulse, mass, gravity | Response gap, coupling, torque load, Replay marks             |
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | COM offset, gravity, mass, inertia, executor          | Angle spread, torque sign, high-inertia lag, Replay marks     |
@@ -696,9 +696,14 @@ damping, Coulomb friction, drive force, armature, acceleration-versus-expected
 diagnostics, energy histories, and step timing.
 `py-demo-capture` records the same lane order, executor, spring/rest/damping,
 Coulomb friction, slip/stiction, armature, acceleration, energy, step-timing,
-and compact history metrics into the manifest sidecar.
-The shared Replay panel uses armature position gap as its value track and marks
-damping energy separation, Coulomb slip, and armature-lag frames.
+and compact history metrics into the manifest sidecar. The panel and capture
+metrics label the passive joint-parameter comparison axis, held-fixed
+World-prismatic/gravity-off/contact-free/mass/time-step context, lane names,
+and top-level review signals for spring energy, damped energy,
+damped-energy ratio, slip speed, armature position gap, and armature
+acceleration gap. The shared Replay panel uses armature position gap as its
+value track and marks damping energy separation, Coulomb slip, and
+armature-lag frames.
 
 The **`rigid_screw_joint_pitch`** scene shows the public screw-joint pitch
 semantics: pitch is axial translation per radian of rotation. Zero, fine,

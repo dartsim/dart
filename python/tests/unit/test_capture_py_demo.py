@@ -1286,6 +1286,32 @@ def test_rigid_workflow_latest_signals_prioritize_joint_motor_values() -> None:
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_passive_joint_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "passive_joint_armature_acceleration_gap": 2.4,
+            "passive_joint_armature_position_gap": 0.37,
+            "passive_joint_damped_energy": 0.52,
+            "passive_joint_damped_energy_ratio": 0.24,
+            "passive_joint_slip_speed": 0.73,
+            "passive_joint_spring_energy": 2.16,
+            "solver": "world_multibody_passive_joint_parameters",
+        }
+    )
+
+    assert highlights[:8] == [
+        "passive joint spring energy: 2.16",
+        "passive joint damped energy: 0.52",
+        "passive joint damped energy ratio: 0.24",
+        "passive joint slip speed: 0.73",
+        "passive joint armature position gap: 0.37",
+        "passive joint armature acceleration gap: 2.4",
+        "solver: world_multibody_passive_joint_parameters",
+        "executor: Sequential",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
