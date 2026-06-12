@@ -1529,6 +1529,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     construction before the validated exact shortcut when custom options are
     present but both `blockSizes` and `layers` are empty, while preserving
     eager block validation for non-empty custom partitions.
+  - Moved `ShockPropagationSolver`'s validated exact shortcut ahead of full
+    problem validation for non-empty standard, boxed, and friction-index forms,
+    while preserving zero-row validation and eager non-empty custom friction
+    block validation before shortcut acceptance.
   - Optimized `BoxedSemiSmoothNewtonSolver` to accept a line-search step that
     already reaches the natural residual tolerance, avoiding an extra Newton
     loop on warm-started or larger friction-index rows that converge directly

@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 ShockPropagation Exact Prevalidation
+
+This section is the latest state; older sections below are historical
+checkpoints.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Top local checkpoint target:
+  `Prevalidate ShockPropagation exact shortcuts`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 59 commits.
+- There is no associated PR yet.
+- No push has been performed for this continuation. Pushes still require
+  explicit maintainer/user approval.
+
+What this slice changes:
+
+- `ShockPropagationSolver` now attempts its validated exact shortcut before full
+  problem validation and layered block setup for non-empty standard, boxed, and
+  friction-index problem forms.
+- The shortcut still runs lightweight custom block/layer structure validation
+  first, keeps zero-row problem validation before zero-row success, and still
+  builds non-empty custom friction-index blocks before any exact acceptance so
+  invalid custom friction partitions fail as before.
+- The checked performance profile CSVs, Python demo profile summary,
+  other-methods background note, changelog, and this hand-off were refreshed.
+
+Evidence:
+
+- Focused `BM_LcpCompare/Boxed/(ShockPropagation|Dantzig|Pgs|Tgs|Jacobi)/`
+  wrote `build/boxed_shock_prevalidate_fast_path_after.json`.
+- Focused `ShockPropagation` boxed results were:
+  - rows 12: `1407.0ns`
+  - rows 24: `4137.6ns`
+  - rows 48: `16248.8ns`
+- Regenerated full profile reports Boxed averages:
+  `ShockPropagation 1.84`, `Apgd 1.69`, `Admm 1.64`, `BGS 1.64`,
+  `SubspaceMinimization 1.64`, `NNCG 1.58`, `BlockedJacobi 1.57`,
+  `BoxedSemiSmoothNewton 1.57`, `Sap 1.54`, `RedBlackGaussSeidel 1.49`,
+  `Dantzig 1.44`, `SymmetricPsor 1.36`, `Jacobi 1.10`, `Pgs 1.08`, and
+  `Tgs 1.00`.
+- The same regenerated profile reports FrictionIndex averages:
+  `BoxedSemiSmoothNewton 2.37`, `NNCG 2.02`, `BlockedJacobi 1.79`,
+  `ShockPropagation 1.75`, `Apgd 1.70`, `SubspaceMinimization 1.61`,
+  `Dantzig 1.59`, `Jacobi 1.56`, `Staggering 1.53`,
+  `RedBlackGaussSeidel 1.51`, `SymmetricPsor 1.47`, `BGS 1.45`,
+  `Admm 1.44`, `Sap 1.40`, `Pgs 1.28`, and `Tgs 1.01`.
+
+Verification completed:
+
+- `BM_LCP_COMPARE` and
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` rebuilt.
+- Focused validation CTest passed:
+  `100% tests passed, 0 tests failed out of 1`.
+- Focused benchmark JSON written to
+  `build/boxed_shock_prevalidate_fast_path_after.json`.
+- Full profile regenerated into `docs/background/lcp/figures`.
+- CSV shape check passed for 15 Boxed columns, 16 FrictionIndex columns, 23
+  Standard columns, and 200 rows per profile.
+- Focused Python panel metadata test passed.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -5
+git diff --stat
+```
+
+Continue from the refreshed profile. Do not push without explicit
+maintainer/user approval.
+
+Current next targets after this slice:
+
+- Boxed: no solver is above `2x`; `ShockPropagation` remains the largest
+  moderate row.
+- FrictionIndex: `BoxedSemiSmoothNewton` and `NNCG` are above `2x`.
+- Standard: moderate spread only; no standard row is above `2x`.
+
 ## Current Reality - 2026-06-12 ShockPropagation Empty-Custom Fast Path
 
 This section is the latest state; older sections below are historical

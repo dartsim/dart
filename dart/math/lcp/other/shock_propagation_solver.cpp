@@ -442,13 +442,6 @@ LcpResult ShockPropagationSolver::solve(
 {
   LcpResult result;
 
-  std::string problemMessage;
-  if (!detail::validateProblem(problem, &problemMessage)) {
-    result.status = LcpSolverStatus::InvalidProblem;
-    result.message = problemMessage;
-    return result;
-  }
-
   const auto& A = problem.A;
   const auto& b = problem.b;
   const auto& lo = problem.lo;
@@ -457,6 +450,13 @@ LcpResult ShockPropagationSolver::solve(
 
   const auto n = std::ssize(b);
   if (n == 0) {
+    std::string problemMessage;
+    if (!detail::validateProblem(problem, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+
     x.resize(0);
     result.status = LcpSolverStatus::Success;
     result.iterations = 0;
@@ -488,6 +488,10 @@ LcpResult ShockPropagationSolver::solve(
       = options.customOptions
             ? static_cast<const Parameters*>(options.customOptions)
             : &mParameters;
+  bool blockLayerStructureValidated = false;
+  std::string problemMessage;
+  std::vector<BlockData> blocks;
+  bool blocksBuilt = false;
 
   auto completeExactFastPath = [&](const Eigen::VectorXd& fastW) -> bool {
     Eigen::VectorXd loEff;
@@ -559,19 +563,20 @@ LcpResult ShockPropagationSolver::solve(
     return completeExactFastPath(fastW);
   };
 
-  if (!options.warmStart
-      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
-          || problem.hasFrictionIndex())
+  const bool canTryExactFastPath
+      = n > 0 && !options.warmStart
+        && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
+            || problem.hasFrictionIndex());
+  if (canTryExactFastPath
       && !validateBlockLayerStructure(
           static_cast<int>(n), *params, &problemMessage)) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = problemMessage;
     return result;
   }
+  blockLayerStructureValidated = canTryExactFastPath;
 
-  std::vector<BlockData> blocks;
-  bool blocksBuilt = false;
-  if (!options.warmStart && problem.hasFrictionIndex()
+  if (canTryExactFastPath && problem.hasFrictionIndex()
       && options.customOptions != nullptr
       && (!params->blockSizes.empty() || !params->layers.empty())) {
     if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
@@ -582,8 +587,35 @@ LcpResult ShockPropagationSolver::solve(
     blocksBuilt = true;
   }
 
-  if (tryExactFastPath()) {
+  if (canTryExactFastPath && tryExactFastPath()) {
     return result;
+  }
+
+  if (!detail::validateProblem(problem, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (!blockLayerStructureValidated && !options.warmStart
+      && (problem.isStandardLcp(absTol) || problem.isBoxedLcp()
+          || problem.hasFrictionIndex())
+      && !validateBlockLayerStructure(
+          static_cast<int>(n), *params, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  if (!options.warmStart && problem.hasFrictionIndex()
+      && options.customOptions != nullptr && !blocksBuilt
+      && (!params->blockSizes.empty() || !params->layers.empty())) {
+    if (!buildBlocks(A, b, lo, hi, findex, *params, blocks, &problemMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = problemMessage;
+      return result;
+    }
+    blocksBuilt = true;
   }
 
   if (!blocksBuilt

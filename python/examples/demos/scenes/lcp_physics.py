@@ -247,13 +247,17 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "current_leaders": (
             "Tgs/Pgs/Jacobi; SymmetricPsor/RedBlack next; "
             "BlockedJacobi/BGS/Dantzig/Admm/Nncg/"
-            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization close"
+            "BoxedSemiSmoothNewton/Sap/SubspaceMinimization/"
+            "ShockPropagation close"
         ),
-        "current_laggards": "ShockPropagation is above 2x in the refreshed profile",
+        "current_laggards": (
+            "No boxed solver is above 2x; ShockPropagation remains the "
+            "largest moderate row"
+        ),
         "takeaway": (
             "Projection methods and validated exact paths now lead or closely "
-            "trail most active-bound rows; the remaining boxed outlier is "
-            "ShockPropagation."
+            "trail active-bound rows; remaining boxed work is below the 2x "
+            "threshold."
         ),
     },
     {
@@ -264,19 +268,17 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         "problem_sizes": "4, 16, 64",
         "current_leaders": (
             "Tgs/Pgs; Sap/SymmetricPsor/RedBlackGaussSeidel/"
-            "BGS/Dantzig/Jacobi/Staggering/Admm/"
-            "SubspaceMinimization/NNCG close"
+            "BGS/Dantzig/Jacobi/Staggering/Admm/SubspaceMinimization close"
         ),
         "current_laggards": (
-            "BoxedSemiSmoothNewton and Apgd remain above 2x; "
-            "ShockPropagation is exactly at 2x"
+            "BoxedSemiSmoothNewton and NNCG remain above 2x; "
+            "Apgd and ShockPropagation are moderate"
         ),
         "takeaway": (
             "Validated interior friction-index fast paths removed most block, "
-            "staggering, NNCG, Dantzig, and subspace hot rows, and the boxed "
+            "staggering, Dantzig, and subspace hot rows, and the boxed "
             "semi-smooth line-search shortcut trims Newton iterations; remaining "
-            "targets are larger BoxedSemiSmoothNewton rows, Apgd, and the "
-            "borderline ShockPropagation path."
+            "targets are larger BoxedSemiSmoothNewton rows and NNCG rows."
         ),
     },
 )

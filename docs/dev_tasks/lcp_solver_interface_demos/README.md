@@ -1,5 +1,95 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - ShockPropagation Exact Prevalidation
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint target:
+  `Prevalidate ShockPropagation exact shortcuts`.
+- After this checkpoint, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 59 commits.
+- No PR is associated with this branch yet.
+- No push has been performed for this continuation.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `ShockPropagationSolver` now attempts its validated exact shortcut before full
+  problem validation and layered block setup for non-empty standard, boxed, and
+  friction-index problem forms.
+- Lightweight custom block/layer structure validation still runs before exact
+  acceptance, zero-row problems still validate before zero-row success, and
+  non-empty custom friction-index partitions still build/validate blocks before
+  the shortcut so invalid custom friction partitions fail as before.
+- The checked performance profile CSVs, Python demo profile summary,
+  other-methods background note, changelog, and this hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run:
+  `BM_LcpCompare/Boxed/(ShockPropagation|Dantzig|Pgs|Tgs|Jacobi)/`.
+- `build/boxed_shock_prevalidate_fast_path_after.json` reported:
+  - `ShockPropagation` rows 12: `1407.0ns`
+  - `ShockPropagation` rows 24: `4137.6ns`
+  - `ShockPropagation` rows 48: `16248.8ns`
+- All focused rows reported `contract_ok=1.0`.
+
+Final regenerated profile snapshot for this slice:
+
+- Boxed average ratios: `ShockPropagation 1.84`, `Apgd 1.69`, `Admm 1.64`,
+  `BGS 1.64`, `SubspaceMinimization 1.64`, `NNCG 1.58`,
+  `BlockedJacobi 1.57`, `BoxedSemiSmoothNewton 1.57`, `Sap 1.54`,
+  `RedBlackGaussSeidel 1.49`, `Dantzig 1.44`, `SymmetricPsor 1.36`,
+  `Jacobi 1.10`, `Pgs 1.08`, and `Tgs 1.00`.
+- FrictionIndex average ratios: `BoxedSemiSmoothNewton 2.37`, `NNCG 2.02`,
+  `BlockedJacobi 1.79`, `ShockPropagation 1.75`, `Apgd 1.70`,
+  `SubspaceMinimization 1.61`, `Dantzig 1.59`, `Jacobi 1.56`,
+  `Staggering 1.53`, `RedBlackGaussSeidel 1.51`, `SymmetricPsor 1.47`,
+  `BGS 1.45`, `Admm 1.44`, `Sap 1.40`, `Pgs 1.28`, and `Tgs 1.01`.
+- Standard has moderate spread only; no standard row is above `2x`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE \
+  --parallel "$JOBS"
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Boxed/(ShockPropagation|Dantzig|Pgs|Tgs|Jacobi)/' \
+  --benchmark_min_time=0.03s \
+  --benchmark_format=json > build/boxed_shock_prevalidate_fast_path_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue optimizing FrictionIndex `BoxedSemiSmoothNewton` and `NNCG`.
+   Boxed `ShockPropagation` is now below `2x` but remains the largest boxed
+   moderate row.
+2. Run `pixi run lint` before committing any further slice.
+3. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - ShockPropagation Empty-Custom Fast Path
 
 Current branch state:
