@@ -14,7 +14,9 @@ The latest continuation exposed the broader DART 7 contact-pipeline benchmark
 comparison sweeps in the LCP py-demo metadata while keeping the exact
 `active_friction_index_contact` row pointed at its two-solver regression
 benchmark. It then added `billiard_symmetry_error` to the live LCP py-demo so
-billiard symmetry is tracked alongside momentum and kinetic-energy error.
+billiard symmetry is tracked alongside momentum and kinetic-energy error. The
+high-mass-ratio stack benchmark metadata now points at
+`BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp`.
 
 ## Current Branch
 
@@ -92,6 +94,10 @@ solver/interface/demo gap at a time.
 - `billiard_symmetry_error` is the maximum lateral drift of either billiard
   ball from its initial collision line. The focused panel test passed 43 tests
   after adding the metric.
+- The stack benchmark metadata now includes the manifest-driven stack contact
+  benchmark across friction-index-capable solvers. The filter keeps the slash in
+  `BM_LcpWorldStackContact/` to avoid matching the separate boxed contact
+  assembly benchmark unintentionally.
 
 ## How to Resume
 

@@ -945,7 +945,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_LcpWorldBilliardsStep_BoxedLcp"
     )
     assert benchmark_by_packet["world_stack"]["benchmark_filter"] == (
-        "BM_LcpWorldStackStep_BoxedLcp"
+        "BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp"
     )
     assert benchmark_by_packet["world_card_pile"]["surface"] == "boxed contact"
     assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (

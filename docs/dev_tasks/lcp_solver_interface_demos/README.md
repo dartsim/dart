@@ -22,6 +22,8 @@
       benchmark metadata.
 - [x] Added a live billiard symmetry-error metric alongside momentum and energy
       error in the LCP py-demo.
+- [x] Pointed the high-mass-ratio stack demo metadata at solver-manifest stack
+      contact benchmarks as well as the boxed world-step benchmark.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -219,6 +221,29 @@ PYTHONPATH=build/default/cpp/Release/python:python \
 Observed result:
 
 - `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+
+## Stack Benchmark Filter Checkpoint
+
+The high-mass-ratio stack live packet previously pointed only at
+`BM_LcpWorldStackStep_BoxedLcp`. This checkpoint updates the demo benchmark row
+to include `BM_LcpWorldStackContact/`, which is the manifest-driven
+friction-index stack contact benchmark registered for the solver roster, while
+keeping the boxed world-step benchmark for the live rollout analog.
+
+Verification for this checkpoint:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run bm lcp_compare -- --benchmark_list_tests \
+  --benchmark_filter='BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp'
+```
+
+Observed results:
+
+- `python/tests/unit/test_py_demo_panels.py`: 43 tests passed.
+- Benchmark listing showed `BM_LcpWorldStackContact/FrictionIndex/<solver>`
+  rows and `BM_LcpWorldStackStep_BoxedLcp` rows.
 
 ## Verification Snapshot
 

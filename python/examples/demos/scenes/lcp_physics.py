@@ -129,8 +129,10 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "packet": "world_stack",
-        "surface": "boxed contact",
-        "benchmark_filter": "BM_LcpWorldStackStep_BoxedLcp",
+        "surface": "findex/boxed contact",
+        "benchmark_filter": (
+            "BM_LcpWorldStackContact/|BM_LcpWorldStackStep_BoxedLcp"
+        ),
         "coverage": "mass-ratio stack contact scaling",
     },
     {
