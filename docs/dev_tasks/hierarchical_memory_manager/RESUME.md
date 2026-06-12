@@ -13,11 +13,11 @@ The current checkpoint should be a clean, pushed
 `pr/hmm-phase45-follow-up-clean` branch tracking
 `origin/pr/hmm-phase45-follow-up-clean`. The latest slice routes the
 semi-implicit multibody external-force body-Jacobian container through
-`MultibodyDynamicsScratch::bodyJacobian`, adds a focused World-base no-growth
-forced-slider gate, and records the remaining global-heap gap below. The user
-explicitly asked to push this handoff checkpoint and stop; do not add more
-scratch reuse or no-growth scenes on this branch unless a later instruction
-resumes the work.
+`MultibodyDynamicsScratch::bodyJacobian` and covers the forced-slider shape
+with both World-base no-growth and global-heap no-allocation gates. The
+remaining four-allocation / 312-byte global-heap gap was the unconditional
+collision query in the split semi-implicit contact/unified stages for a world
+with no collision shapes, not the body-Jacobian multiply itself.
 
 To resume from a fresh session:
 
@@ -36,18 +36,15 @@ Then inspect:
   accumulates from `scratch.bodyJacobian[i]`.
 - `tests/unit/simulation/world/test_world.cpp`: the
   `configureSemiImplicitExternalForceMultibodyScene()` forced-slider fixture is
-  covered by `BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths`.
+  covered by `BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` and
+  `BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap`.
 - `docs/dev_tasks/hierarchical_memory_manager/README.md`: Phase 4/5 status
-  names this as World-base no-growth coverage only, not a global-heap win.
+  names this as both World-base and global-heap coverage.
 
-Immediate next technical step, if work resumes: investigate the forced-slider
-global-heap candidate before adding a no-heap gate. The attempted
-`World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` addition for
-`"semi-implicit external-force body Jacobian scratch"` failed locally with four
-allocations / 312 bytes during counted baked steps. Likely suspects are Eigen
-expression temporaries in `linkBodyJacobiansInto()` parent propagation and the
-`J^T * wrench` accumulation. Keep future work narrow: prove the remaining
-allocations are removed before restoring that gate.
+Immediate next technical step, if work resumes: pick the next remaining Phase
+4/5 item from `README.md` rather than continuing on this forced-slider path.
+The narrow forced-slider global-heap gate is now green locally after guarding
+no-shape contact/unified collision queries.
 
 The latest continuation closes a rigid AVBD row-staging allocator gap without
 adding production scenes. `AvbdScalarRowInventory` now keeps generated
@@ -70,11 +67,10 @@ The latest semi-implicit multibody continuation routes external-force
 body-Jacobian assembly through the baked `MultibodyDynamicsScratch`
 body-Jacobian vector instead of constructing a default-allocated local vector
 during `world.step()`. A focused semi-implicit forced-slider gate now covers
-World-base no-growth after bake. A candidate global-heap gate for the same
-shape was deliberately not kept because it still reported four allocations /
-312 bytes during the counted baked steps; next-session work should inspect the
-remaining Eigen expression temporaries in body-Jacobian propagation and
-`J^T * wrench` accumulation before adding that gate.
+both World-base no-growth and global-heap no-allocation after bake. The split
+semi-implicit multibody contact and unified stages now skip collision queries
+when no relevant collision shapes exist, which removed the last per-step heap
+allocation in that pure external-force shape.
 
 The latest post-merge pipeline/scratch slices add allocator-aware construction
 for `BatchedRigidBodyIntegrationStage` and allocator-aware

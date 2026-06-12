@@ -383,7 +383,7 @@
       link-contact paths after contact prewarm; a
       global heap guard covers the same baked kinematic IPC, rigid-body,
       multibody variational, compliant variational contact, deformable,
-      rigid-body resting-contact,
+      rigid-body resting-contact, semi-implicit external-force multibody,
       non-cross articulated resting-contact, and same-DOF cross-articulated
       contact paths. Mixed/different-DOF, stacked, and coupled multi-row
       cross-contact boxed-LCP fallback scenes now have base-allocator
@@ -812,12 +812,12 @@ Follow-up progress after PR #2956:
   stage. Its external-force body-Jacobian branch now fills the baked
   body-Jacobian scratch instead of constructing a default-allocated local
   Jacobian vector during `world.step()`, and a focused semi-implicit
-  external-force multibody gate covers World-base no-growth after bake. A
-  candidate global-heap gate for the same forced-slider shape still reported
-  four allocations / 312 bytes in the counted baked steps; keep that as the
-  next narrow Eigen-expression/scratch follow-up instead of treating the
-  external-force path as fully no-heap. Eigen-owned matrices/vectors remain
-  tracked as the solver-private storage limitation called out below.
+  external-force multibody gate covers both World-base no-growth and
+  global-heap no-allocation after bake. The remaining heap allocation was the
+  unconditional contact query in the split semi-implicit contact/unified stages
+  for a world with no collision shapes, not the body-Jacobian multiply itself.
+  Eigen-owned matrices/vectors remain tracked as the solver-private storage
+  limitation called out below.
 - `MemoryAllocatorDebugger` now records the requested alignment alongside live
   byte counts for aligned allocations and rejects mismatched aligned
   deallocations without forwarding them to the wrapped allocator, closing one

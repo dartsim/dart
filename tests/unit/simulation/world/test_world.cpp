@@ -6466,6 +6466,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
         world.setTimeStep(0.01);
       });
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "semi-implicit external-force body Jacobian scratch",
+      configureSemiImplicitExternalForceMultibodyScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "multibody variational compliant contact scratch",
       configureCompliantVariationalContactSliderScene);
 

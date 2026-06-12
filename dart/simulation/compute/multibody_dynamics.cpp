@@ -34,6 +34,7 @@
 
 #include "dart/simulation/body/contact.hpp"
 #include "dart/simulation/common/exceptions.hpp"
+#include "dart/simulation/comps/collision_geometry.hpp"
 #include "dart/simulation/comps/contact_material.hpp"
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/frame_types.hpp"
@@ -607,6 +608,41 @@ std::size_t linkIndexOf(
       InvalidArgumentException,
       "Link does not belong to this multibody");
   return static_cast<std::size_t>(it - linkEntities.begin());
+}
+
+//==============================================================================
+bool hasCollisionShapes(
+    const detail::WorldRegistry& registry, entt::entity entity)
+{
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+  return geometry != nullptr && geometry->hasShapes();
+}
+
+bool hasAnyCollisionShapes(const detail::WorldRegistry& registry)
+{
+  auto view = registry.view<comps::CollisionGeometry>();
+  for (auto entity : view) {
+    if (view.get<comps::CollisionGeometry>(entity).hasShapes()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename MultibodyView>
+bool hasAnyCollisionShapesForMultibodyContacts(
+    const detail::WorldRegistry& registry, const MultibodyView& view)
+{
+  for (auto entity : view) {
+    const auto& structure
+        = view.template get<comps::MultibodyStructure>(entity);
+    for (const auto linkEntity : structure.links) {
+      if (hasCollisionShapes(registry, linkEntity)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 //==============================================================================
@@ -2644,14 +2680,22 @@ void MultibodyForwardDynamicsStage::execute(
   // equal-and-opposite impulse (two-sided). Same-multibody link-vs-link
   // contacts use one relative-Jacobian row; cross-multibody link-vs-link
   // contacts remain a later unified-solve slice.
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const bool hasContactShapes
+      = hasAnyCollisionShapesForMultibodyContacts(registry, view);
+  const auto* contacts = hasContactShapes
+                             ? &world.queryContacts(CollisionQueryOptions{})
+                             : nullptr;
 
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
         = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
-    collectMultibodyLinkContactsInto(
-        registry, structure, contacts, scratch.linkContacts);
+    if (contacts != nullptr) {
+      collectMultibodyLinkContactsInto(
+          registry, structure, *contacts, scratch.linkContacts);
+    } else {
+      scratch.linkContacts.clear();
+    }
 
     simulateMultibody(
         registry, structure, gravity, timeStep, scratch.linkContacts, scratch);
@@ -2729,6 +2773,9 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const double timeStep = world.getTimeStep();
   auto view = registry.view<comps::MultibodyStructure>();
   if (view.begin() == view.end()) {
+    return;
+  }
+  if (!hasAnyCollisionShapesForMultibodyContacts(registry, view)) {
     return;
   }
 
@@ -3180,6 +3227,10 @@ void UnifiedConstraintStage::prepare(World& world)
   if (world.getContactSolverMethod() != ContactSolverMethod::BoxedLcp) {
     return;
   }
+  auto& registry = dart::simulation::detail::registryOf(world);
+  if (!hasAnyCollisionShapes(registry)) {
+    return;
+  }
 
   const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
@@ -3389,6 +3440,9 @@ void UnifiedConstraintStage::execute(
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
+  if (!hasAnyCollisionShapes(registry)) {
+    return;
+  }
   const auto& contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
