@@ -1,5 +1,78 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Concrete Benchmark Support Evidence
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS because SSH to GitHub port 22 was not
+  reachable in this environment; merging `origin/main` reported "Already up to
+  date." The recent DART 7 harness from PR #2986 is already in this branch via
+  the earlier `origin/main` merge.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 76]`
+- Last committed checkpoint:
+  `58dec3fd07a Record LCP post-APGD probe handoff`
+- Checkpoint target:
+  `Record concrete LCP benchmark support evidence`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 77 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` emits concrete solver/problem
+  support counters on `BM_LcpCompare` rows:
+  `solver_supports_standard`, `solver_supports_boxed`,
+  `solver_supports_friction_index`, `solver_supports_problem`, and one-hot
+  `problem_type_*` counters.
+- `scripts/lcp_performance_profile.py` preserves `solver_supports_problem` and
+  rejects current-schema rows where the solver reports no native support for
+  the concrete problem. Missing counters remain allowed for historical cached
+  benchmark JSON.
+- `python/tests/unit/test_lcp_performance_profile.py` covers parser retention,
+  current-schema rejection, and historical-cache compatibility.
+
+Verification completed:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"
+pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=build/lcp_support_counters_probe.json --benchmark_out_format=json
+pixi run lint
+git diff --check
+```
+
+Results:
+
+- Python profile parser tests: `3 passed`.
+- Focused benchmark target build: passed.
+- Focused JSON probe:
+  `BM_LcpCompare/Standard/Dantzig/12` emitted the new counters with
+  `solver_supports_problem=1.0` and `problem_type_standard=1.0`.
+- `pixi run lint`: passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Record concrete LCP benchmark support evidence`. Continue from a fresh bounded
+DART 7 harness gap; avoid retrying the rejected SAP FrictionIndex exact shortcut
+or ShockPropagation exact-path probe without a materially different hypothesis.
+
 ## Current Reality - 2026-06-12 Post-APGD Probe Triage
 
 This is the latest hand-off. Older sections below are historical checkpoints

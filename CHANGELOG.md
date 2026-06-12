@@ -1465,6 +1465,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     benchmark target now asserts the same native support counts as the solver
     manifest, and the checked Standard, Boxed, and FrictionIndex profile CSVs
     were regenerated from the current profile rows.
+  - Added concrete solver/problem support counters to current LCP benchmark
+    rows and made LCP performance-profile ingestion reject current-schema rows
+    whose solver does not natively support the concrete problem, while still
+    accepting historical cached benchmark JSON without those counters.
   - Surfaced the checked LCP performance-profile CSVs in the Python
     `lcp_physics` demo metadata and panel, with current leader/laggard summaries
     for Standard, Boxed, and FrictionIndex apples-to-apples solver profiles.

@@ -1,5 +1,76 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Concrete Benchmark Support Evidence
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS because SSH to GitHub port 22 was not
+  reachable in this environment; `git merge --no-edit origin/main` reported
+  "Already up to date." The recent DART 7 harness from PR #2986 is already in
+  this branch via the earlier `origin/main` merge.
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 76]`.
+- Last committed checkpoint:
+  `58dec3fd07a Record LCP post-APGD probe handoff`.
+- Checkpoint target:
+  `Record concrete LCP benchmark support evidence`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 77 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- The `BM_LcpCompare` benchmark rows now machine-record concrete support
+  evidence, not just benchmark-name identity:
+  `solver_supports_standard`, `solver_supports_boxed`,
+  `solver_supports_friction_index`, `solver_supports_problem`, and one-hot
+  `problem_type_*` counters.
+- `scripts/lcp_performance_profile.py` preserves `solver_supports_problem` and
+  rejects current-schema profile rows that report unsupported concrete
+  solver/problem pairs. Historical cached benchmark JSON without this counter
+  remains accepted so older evidence packets can still be inspected.
+- The new Python unit coverage guards both the strict current-schema rejection
+  and the historical-cache compatibility path.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `scripts/lcp_performance_profile.py`
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`
+- `python/tests/unit/test_lcp_performance_profile.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with `3 passed`.
+- `cmake --build build/default/cpp/Release --target BM_LCP_COMPARE --parallel "$JOBS"`
+  rebuilt the benchmark target.
+- `pixi run bm lcp_compare -- --benchmark_filter='BM_LcpCompare/Standard/Dantzig/12$' --benchmark_min_time=0.001s --benchmark_repetitions=1 --benchmark_out=build/lcp_support_counters_probe.json --benchmark_out_format=json`
+  emitted the new support counters; the parsed row reported
+  `solver_supports_problem=1.0` and `problem_type_standard=1.0`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with `Record concrete LCP benchmark support evidence`.
+3. Continue from a new bounded DART 7 harness gap; avoid retrying the rejected
+   SAP FrictionIndex exact shortcut or ShockPropagation exact-path probe
+   without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Post-APGD Probe Triage
 
 This is the latest hand-off state. Sections below are historical checkpoints

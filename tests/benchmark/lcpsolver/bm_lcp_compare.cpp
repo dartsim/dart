@@ -3090,6 +3090,33 @@ void AddBackendBuildCounters(benchmark::State& state)
       = DART_BM_LCP_COMPARE_HAS_SIMULATION ? 1.0 : 0.0;
 }
 
+void AddSolverProblemSupportCounters(
+    benchmark::State& state,
+    const dart::math::LcpSolver& solver,
+    const LcpProblem& problem)
+{
+  const auto problemType
+      = problem.getType(solver.getDefaultOptions().absoluteTolerance);
+
+  state.counters["solver_supports_standard"]
+      = solver.supportsStandardLcp() ? 1.0 : 0.0;
+  state.counters["solver_supports_boxed"]
+      = solver.supportsBoxedLcp() ? 1.0 : 0.0;
+  state.counters["solver_supports_friction_index"]
+      = solver.supportsFrictionIndex() ? 1.0 : 0.0;
+  state.counters["solver_supports_problem"]
+      = solver.supportsProblem(problem) ? 1.0 : 0.0;
+
+  state.counters["problem_type_standard"]
+      = problemType == dart::math::LcpProblemType::Standard ? 1.0 : 0.0;
+  state.counters["problem_type_boxed"]
+      = problemType == dart::math::LcpProblemType::Boxed ? 1.0 : 0.0;
+  state.counters["problem_type_friction_index"]
+      = problemType == dart::math::LcpProblemType::FrictionIndex ? 1.0 : 0.0;
+  state.counters["problem_type_invalid"]
+      = problemType == dart::math::LcpProblemType::Invalid ? 1.0 : 0.0;
+}
+
 int ChooseWorkerCount(Eigen::Index problemSize)
 {
   const auto hardwareWorkers = std::thread::hardware_concurrency();
@@ -3198,6 +3225,7 @@ void RunBenchmarkWithSolver(
   state.counters["bound_violation"] = check.boundViolation;
   state.counters["contract_ok"] = check.ok ? 1.0 : 0.0;
   state.counters["problem_size"] = problem.b.size();
+  AddSolverProblemSupportCounters(state, solver, problem);
   AddBackendBuildCounters(state);
   state.SetLabel(label);
 }

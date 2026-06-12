@@ -150,6 +150,7 @@ def parse_benchmark_results(data: dict) -> dict:
             "contract_ok": contract_ok,
             "residual": bm.get("residual", 0),
             "complementarity": bm.get("complementarity", 0),
+            "solver_supports_problem": bm.get("solver_supports_problem"),
         }
 
     return results
@@ -177,6 +178,12 @@ def check_native_profile_coverage(
         expected = native_support_by_category[category]
         unknown = sorted(observed - manifest_names)
         missing = sorted(expected - observed)
+        unsupported_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if data.get("solver_supports_problem") is not None
+            and data["solver_supports_problem"] <= 0.5
+        )
 
         if unknown:
             errors.append(
@@ -184,6 +191,11 @@ def check_native_profile_coverage(
             )
         if missing:
             errors.append(f"{category}: missing native solvers {missing}")
+        if unsupported_rows:
+            errors.append(
+                f"{category}: current-schema rows report "
+                f"solver_supports_problem=0 for {unsupported_rows}"
+            )
 
     if not errors:
         return
