@@ -1,12 +1,22 @@
 # Resume: Hierarchical Memory Manager
 
-## Current Continuation (2026-06-12, AVBD Rigid Writeback Dirty Stack)
+## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
 `origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
-HMM follow-up entry point unless a maintainer explicitly redirects the work.
+HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
+
+Current local stop state:
+
+- latest local commit: `01796e9dd1a`
+  (`Reuse AVBD writeback dirty-stack scratch`);
+- upstream tracking branch at this stop point:
+  `origin/pr/hmm-phase45-replay-snapshot-allocators` was `6ab47a5fb63`
+  (`Record HMM stop-state handoff`);
+- local branch is ahead of origin by 1 commit and has no uncommitted changes at
+  the start of this docs-only handoff edit.
 
 Latest local slice: AVBD rigid-world contact transform writeback now reuses an
 allocator-aware frame-dirty traversal stack owned by
@@ -47,10 +57,11 @@ pixi run build
 pixi run test-unit
 ```
 
-Immediate next step: continue evidence-first HMM work from this same branch.
-Prefer measured allocator/no-growth gaps in remaining solver-owned ECS storage
-or deformable/contact scratch paths. Do not push or open a PR without explicit
-maintainer approval.
+Do not continue optimization, add scenes, run verification, push, or open a PR
+from this stop state unless the maintainer explicitly resumes the work. The
+validation list above records the already-completed AVBD slice evidence; no
+lint, build, test, or benchmark command was run for this handoff update, by
+explicit maintainer instruction.
 
 ## Hard Stop Handoff (2026-06-12, Stop-on-Handoff)
 
