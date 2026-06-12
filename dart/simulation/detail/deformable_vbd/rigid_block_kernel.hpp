@@ -1495,6 +1495,13 @@ inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
   const Eigen::Matrix3d nnT = axis * axis.transpose();
   const Eigen::Matrix3d pointHessian
       = stiffness * (nnT + transverse * (Eigen::Matrix3d::Identity() - nnT));
+  if (worldPoint.x() == state.position.x()
+      && worldPoint.y() == state.position.y()
+      && worldPoint.z() == state.position.z()) {
+    block.hessian.topLeftCorner<3, 3>().noalias() += pointHessian;
+    return;
+  }
+
   const Matrix3x6d jacobian
       = avbdRigidWorldPointJacobianAtWorldPoint(state, worldPoint);
   block.hessian.noalias() += jacobian.transpose() * pointHessian * jacobian;

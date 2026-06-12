@@ -387,6 +387,45 @@ TEST(AvbdRigidBlock, PointPairDistanceSpringStampsRadialFiniteStiffness)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, DistanceSpringOriginAnchorHessianStaysTranslational)
+{
+  vbd::AvbdRigidBodyState state;
+  state.position = Vec3(1.0, -2.0, 0.5);
+  state.orientation = rotationY(0.25 * vbd::kAvbdRigidPi);
+
+  const Vec3 axis = Vec3(1.0, 2.0, 0.5).normalized();
+  const double length = 2.0;
+  const double restLength = 1.0;
+  const double stiffness = 6.0;
+
+  vbd::AvbdRigidBodyBlock block;
+  vbd::addAvbdRigidDistanceSpringHessianAtWorldPoint(
+      block,
+      state,
+      state.position,
+      axis,
+      length,
+      restLength,
+      stiffness,
+      /*clampToPsd=*/true);
+
+  const Eigen::Matrix3d nnT = axis * axis.transpose();
+  const Eigen::Matrix3d pointHessian
+      = stiffness
+        * (nnT
+           + (1.0 - restLength / length) * (Eigen::Matrix3d::Identity() - nnT));
+  vbd::Matrix6d expectedHessian = vbd::Matrix6d::Zero();
+  expectedHessian.topLeftCorner<3, 3>() = pointHessian;
+
+  EXPECT_NEAR((block.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  const double translationAngularNorm
+      = block.hessian.topRightCorner<3, 3>().norm();
+  const double angularNorm = block.hessian.bottomRightCorner<3, 3>().norm();
+  EXPECT_NEAR(translationAngularNorm, 0.0, 1e-12);
+  EXPECT_NEAR(angularNorm, 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, PointPairDistanceSpringUpdateRampsWithoutDual)
 {
   vbd::AvbdRigidBodyState stateA;

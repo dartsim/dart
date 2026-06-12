@@ -11,17 +11,19 @@ Latest critical stop note: on 2026-06-11 the user explicitly redirected the
 session to stop implementation and focus only on hand-off for all current work,
 without any further verification. No lint, build, test, CI refresh, PR refresh,
 branch deletion, or additional implementation should be inferred from this final
-handoff update. The update is docs-only and records the already-known local
-state so a fresh Claude/Codex session can resume without reconstructing the
-branch, PR, validation, stash, and cleanup context.
+handoff update. The handoff documentation records the already-known local state,
+and the final handoff commit is expected to preserve the already-written
+distance-spring Hessian code/test WIP, so a fresh Claude/Codex session can
+resume without reconstructing the branch, PR, validation, stash, and cleanup
+context.
 
 Historical stop note: an earlier session was also redirected to hand-off only
 and requested no further verification. The branch was then resumed for a narrow
 source-row prepare-overhead cleanup, redirected back to hand-off-only for a
 docs-only pushed checkpoint, and resumed again for the narrow origin-anchor
-helper fast path now committed at `2b1a0ef4489`. Use the validation section
-below for the current evidence, but do not treat either hand-off-only docs
-commit as lint/build/test/CI evidence.
+helper fast paths now captured on the consolidated branch. Use the validation
+section below for the current evidence, but do not treat hand-off commits as
+new lint/build/test/CI evidence.
 
 Current continuation state:
 
@@ -29,13 +31,15 @@ Current continuation state:
   next fresh Claude/Codex session. This branch is intended to be the single
   continuation branch for current AVBD source-row work; it contains the pushed
   #2977 parent changes, the stacked extraction-precheck changes, the current
-  handoff docs, the formerly stash-only quaternion normalization fast path, and
-  the origin-anchor rigid world-point fast path. The latest code commit before
-  this docs-only handoff is `2b1a0ef4489` (`Skip rigid world-point rotation for
-  origin anchors`). The handoff docs commit should sit on top of it after this
-  stop. Do not require a fresh session to inspect or apply local stashes before
-  continuing. Keep this as the one consolidated local continuation branch for
-  source-row cleanup until the user explicitly redirects or approves PR updates.
+  handoff docs, the formerly stash-only quaternion normalization fast path, the
+  origin-anchor rigid world-point fast path, and the latest origin-anchor
+  distance-spring Hessian fast path. The latest pushed parent before this final
+  handoff was `76fb8073421` (`Update AVBD solver handoff state`). The final
+  handoff commit should sit on top of it after this stop and is expected to
+  preserve both the docs update and the already-written Hessian/test WIP. Do not
+  require a fresh session to inspect or apply local stashes before continuing.
+  Keep this as the one consolidated local continuation branch for source-row
+  cleanup until the user explicitly redirects or approves PR updates.
 - The active PR is #2977,
   [`Trim AVBD source-row contact prep overhead`](https://github.com/dartsim/dart/pull/2977),
   on `avbd/source-row-perf-slice` at head `5297462d34b6118e600647cf18cdd7f13e0182b3`.
@@ -52,11 +56,14 @@ Current continuation state:
   current head at that time. Refresh this in a future session before making any
   PR decision.
 - The active local checkout is `avbd/source-row-extraction-precheck`. The
-  latest pushed head before the origin-anchor follow-up was
-  `31c159f4c02 Update AVBD solver handoff state`. The current local code
-  follow-up is committed as `2b1a0ef4489`; if this docs-only handoff has also
-  been committed and pushed, the branch tip will be the handoff docs commit on
-  top of `2b1a0ef4489`.
+  latest pushed head before this final handoff was
+  `76fb8073421 Update AVBD solver handoff state`. At the final stop, the
+  working tree held four modified files:
+  `dart/simulation/detail/deformable_vbd/rigid_block_kernel.hpp`,
+  `tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp`,
+  `docs/dev_tasks/avbd_solver/README.md`, and
+  `docs/dev_tasks/avbd_solver/RESUME.md`. The final handoff commit is expected
+  to capture all four so a fresh session has one branch to resume from.
 - The earlier no-verification stop applied only to the previous docs-only
   handoff commit. Work resumed afterward; the origin-anchor follow-up has fresh
   focused local validation recorded below. The latest stop again returned the
@@ -67,7 +74,25 @@ Current continuation state:
   needs fixes, keep them narrowly scoped to the PR branch and merge them back
   into the consolidated resume branch afterward.
 
-Latest consolidated local follow-up:
+Latest handoff-captured local follow-up:
+
+- `addAvbdRigidDistanceSpringHessianAtWorldPoint()` now detects the exact
+  body-origin anchor case (`worldPoint == state.position`) and directly stamps
+  the translational 3x3 distance-spring Hessian block. For this case the
+  rigid-world-point Jacobian is `[I, 0]`, so the generic
+  `avbdRigidWorldPointJacobianAtWorldPoint()` call and 6x3 Hessian multiply are
+  avoidable.
+- `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` verifies
+  a rotated body with a world-origin anchor receives only the translational
+  Hessian block and no angular/translation-angular coupling.
+- This targets center-anchor radial spring rows in the source Spring/Spring
+  Ratio packets and is only a narrow helper overhead cleanup. It does not close
+  any source CPU-win, GPU, or paper-number gate.
+- Focused and full `test_avbd_rigid_block` validation passed before the final
+  no-verification stop instruction. No lint/build/test/CI verification was run
+  after this handoff-doc update by explicit user request.
+
+Previous consolidated local follow-ups:
 
 - `avbdRigidBodyWorldPoint()` now returns `state.position` directly for exact
   origin anchors. This avoids quaternion normalization and rotation in rigid
@@ -147,11 +172,27 @@ Local validation already run for #2977 head `5297462d34b`:
 Local validation for the consolidated branch after the latest source-row
 cleanup:
 
-- No verification was run for this final handoff docs update because the user
+- No verification was run for this final handoff update because the user
   explicitly requested hand-off only without further verification. The entries
   below are historical validation from the preceding code slices and should be
-  treated as the current known evidence, not as evidence for the docs-only
+  treated as the current known evidence, not as fresh evidence for the final
   handoff commit itself.
+- Current resumed validation after the distance-spring Hessian origin-anchor
+  fast path, before the final no-verification stop:
+  `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- Current resumed validation after the distance-spring Hessian origin-anchor
+  fast path:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational:AvbdRigidBlock.PointPairDistanceSpringStampsRadialFiniteStiffness:AvbdRigidBlock.PointPairDistanceSpringStepReducesStretch:AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch:AvbdRigidBlock.RigidWorldDistanceSpringApiFeedsRadialRows:AvbdRigidBlock.BodyWorldPointKeepsOriginAnchorAtPosition' --gtest_brief=1"`
+  passed, 6 tests.
+- Current resumed validation after the distance-spring Hessian origin-anchor
+  fast path:
+  `pixi run -- bash -lc "build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1"`
+  passed, 92 tests.
+- Current resumed validation before the final handoff-doc edit:
+  `git diff --check` passed.
+- Current resumed validation before the final handoff-doc edit:
+  `pixi run lint` passed.
 - Current resumed validation after the origin-anchor world-point fast path:
   `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
   passed.
@@ -212,14 +253,14 @@ cleanup:
 
 Local branch inventory at this handoff:
 
-| Branch                                 | Upstream                                      | Local head at handoff | State and handling                                                                                                      |
-| -------------------------------------- | --------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `2b1a0ef4489` plus this docs commit | Current checkout and single resume branch. Fresh sessions should resume here after fetching the pushed handoff commit. |
-| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`         | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                                |
-| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`         | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                      |
-| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`         | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                      |
-| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`         | Unrelated local branch; do not touch during AVBD handoff.                                                               |
-| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`         | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.     |
+| Branch                                 | Upstream                                      | Local head at handoff               | State and handling                                                                                                     |
+| -------------------------------------- | --------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `avbd/source-row-extraction-precheck`  | `origin/avbd/source-row-extraction-precheck`  | `76fb8073421` plus final handoff commit | Current checkout and single resume branch. Fresh sessions should resume here after fetching the pushed handoff commit. |
+| `avbd/source-row-perf-slice`           | `origin/avbd/source-row-perf-slice`           | `5297462d34b`                       | Active #2977 branch; pushed, latest known state was waiting on hosted CI.                                              |
+| `avbd/articulated-stiffness-roundtrip` | `origin/avbd/articulated-stiffness-roundtrip` | `43787619654`                       | #2975-era branch; PR is reported merged. Candidate for cleanup after confirmation.                                     |
+| `feature/avbd-articulated-masked-rows` | `origin/feature/avbd-articulated-masked-rows` | `d25e5177d9c`                       | Raw 33-hour safety checkpoint. Keep until all split AVBD slices are safely landed.                                     |
+| `feature/free-joint-energy-benchmarks` | `origin/feature/free-joint-energy-benchmarks` | `d13c97b5f0c`                       | Unrelated local branch; do not touch during AVBD handoff.                                                              |
+| `main`                                 | `origin/main`                                 | `7d05d7b9ea7`                       | Local `main` matched fetched `origin/main` at the latest checked base. Refresh before using it in a future session.    |
 
 No local branch deletion or remote branch cleanup was performed during the
 latest handoff-only stop. Cleanup candidates remain documented here, but a

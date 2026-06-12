@@ -20,16 +20,26 @@ Corpus matrix:
   fresh Claude/Codex session and includes the #2977 source-row prep fix, the
   stacked source-row extraction precheck work, the current resume docs, the
   formerly stash-only `normalizeAvbdRigidOrientation()` squared-norm fast path,
-  and the origin-anchor `avbdRigidBodyWorldPoint()` fast path with focused
-  rigid-block coverage. Local stashes may still exist as historical recovery
-  points, but fresh work should not depend on them. The latest code commit
-  before this docs-only handoff is `2b1a0ef4489` (`Skip rigid world-point
-  rotation for origin anchors`); the handoff docs commit is expected to sit on
-  top of it if pushed. PR #2977 (`avbd/source-row-perf-slice`, head
-  `5297462d34b`) remains open in the latest known state and should only receive
-  CI-fix commits if a fresh status refresh reveals a concrete failure.
-  `RESUME.md` is the detailed source of truth for the current plan, branch
-  inventory, validation, and branch-cleanup rules.
+  the origin-anchor `avbdRigidBodyWorldPoint()` fast path, and the latest
+  origin-anchor distance-spring Hessian fast path with focused rigid-block
+  coverage. Local stashes may still exist as historical recovery points, but
+  fresh work should not depend on them. The latest pushed parent before this
+  final handoff was `76fb8073421` (`Update AVBD solver handoff state`); the
+  final handoff commit is expected to sit on top of it if pushed. PR #2977
+  (`avbd/source-row-perf-slice`, head `5297462d34b`) remains open in the latest
+  known state and should only receive CI-fix commits if a fresh status refresh
+  reveals a concrete failure. `RESUME.md` is the detailed source of truth for
+  the current plan, branch inventory, validation, and branch-cleanup rules.
+- Latest handoff-captured follow-up: `addAvbdRigidDistanceSpringHessianAtWorldPoint()`
+  now stamps the translational 3x3 Hessian block directly when the world anchor
+  is exactly the rigid body origin, avoiding the generic world-point Jacobian
+  multiply for center-anchor Spring/Spring Ratio source rows.
+  `AvbdRigidBlock.DistanceSpringOriginAnchorHessianStaysTranslational` covers
+  the behavior. Focused and full `test_avbd_rigid_block` validation had passed
+  before the final stop instruction, but no lint/build/test/CI verification was
+  run after this handoff-doc update by explicit user request. This is only a
+  narrow helper overhead cleanup; it does not close any source CPU-win, GPU, or
+  paper-number gate.
 - Prior handoff stop: the user previously redirected the session to hand-off
   only with no further verification, and that docs-only handoff was pushed.
   Work has since resumed on the same consolidated branch. Do not treat that
