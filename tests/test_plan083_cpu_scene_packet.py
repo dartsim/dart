@@ -717,7 +717,13 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
             affine_fem_mixed_active_barrier_count=4,
             affine_fem_mixed_min_squared_distance=1e-4,
             affine_fem_mixed_barrier_value=0.3,
-            affine_fem_coupled_contact_measured=0,
+            affine_fem_coupled_contact_measured=1,
+            affine_fem_coupled_solve_converged=1,
+            affine_fem_coupled_objective_decrease=0.2,
+            affine_fem_coupled_initial_gradient_norm=0.4,
+            affine_fem_coupled_final_gradient_norm=0.02,
+            affine_fem_coupled_affine_displacement_norm=0.01,
+            affine_fem_coupled_deformable_displacement_norm=0.002,
         ),
         max_equality_residual=1e-8,
         scene="abd_fem_coupling",
@@ -738,7 +744,8 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
     assert row["affine_fem_candidate_diagnostics_measured"] is True
     assert row["affine_fem_mixed_candidate_count"] == 12
     assert row["affine_fem_mixed_active_barrier_count"] == 4
-    assert row["affine_fem_coupled_contact_measured"] is False
+    assert row["affine_fem_coupled_contact_measured"] is True
+    assert row["affine_fem_coupled_solve_converged"] is True
     assert row["wall_time_ns"] == 6.0e6
 
 
@@ -1066,7 +1073,7 @@ def test_plan083_cpu_scene_packet_rejects_abd_comparison_wrong_pair_count() -> N
         )
 
 
-def test_plan083_cpu_scene_packet_rejects_abd_fem_coupling_contact_claim() -> None:
+def test_plan083_cpu_scene_packet_rejects_abd_fem_without_coupled_contact() -> None:
     module = _load_module()
 
     with pytest.raises(module.Plan083CpuScenePacketError, match="coupled"):
@@ -1085,7 +1092,13 @@ def test_plan083_cpu_scene_packet_rejects_abd_fem_coupling_contact_claim() -> No
                 affine_fem_mixed_active_barrier_count=4,
                 affine_fem_mixed_min_squared_distance=1e-4,
                 affine_fem_mixed_barrier_value=0.3,
-                affine_fem_coupled_contact_measured=1,
+                affine_fem_coupled_contact_measured=0,
+                affine_fem_coupled_solve_converged=1,
+                affine_fem_coupled_objective_decrease=0.2,
+                affine_fem_coupled_initial_gradient_norm=0.4,
+                affine_fem_coupled_final_gradient_norm=0.02,
+                affine_fem_coupled_affine_displacement_norm=0.01,
+                affine_fem_coupled_deformable_displacement_norm=0.002,
             ),
             max_equality_residual=1e-8,
             scene="abd_fem_coupling",

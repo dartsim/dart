@@ -130,8 +130,8 @@ ABD_COMPARISON_SCENES = {
         "pair_count": 27,
         "paper_body_count": 27,
         "paper_triangle_count": 1_100_000,
-        "paper_gap": "1.1M-triangle FEM-coupling assets, true affine/FEM mixed contact, and paper-scale reproduction remain planned.",
-        "reference_gap": "Deck 16.4 s/step timing is not reproduced; this packet records only reduced side-by-side ABD/FEM runtime evidence.",
+        "paper_gap": "1.1M-triangle FEM-coupling assets, full runtime affine/FEM coupling, and paper-scale reproduction remain planned.",
+        "reference_gap": "Deck 16.4 s/step timing is not reproduced; this packet records only reduced ABD/FEM micro-solve evidence.",
     },
 }
 SCENE_IDS = {
@@ -1295,6 +1295,22 @@ def _make_abd_fem_coupling_packet(
     coupled_contact_measured = _finite_number(
         row, "affine_fem_coupled_contact_measured"
     )
+    coupled_solve_converged = _finite_number(row, "affine_fem_coupled_solve_converged")
+    coupled_objective_decrease = _finite_number(
+        row, "affine_fem_coupled_objective_decrease"
+    )
+    coupled_initial_gradient_norm = _finite_number(
+        row, "affine_fem_coupled_initial_gradient_norm"
+    )
+    coupled_final_gradient_norm = _finite_number(
+        row, "affine_fem_coupled_final_gradient_norm"
+    )
+    coupled_affine_displacement_norm = _finite_number(
+        row, "affine_fem_coupled_affine_displacement_norm"
+    )
+    coupled_deformable_displacement_norm = _finite_number(
+        row, "affine_fem_coupled_deformable_displacement_norm"
+    )
 
     if deformable_body_count != 1:
         raise Plan083CpuScenePacketError(
@@ -1340,9 +1356,29 @@ def _make_abd_fem_coupling_packet(
         raise Plan083CpuScenePacketError(
             "reduced ABD/FEM mixed barrier value must be positive"
         )
-    if coupled_contact_measured != 0.0:
+    if coupled_contact_measured != 1.0:
         raise Plan083CpuScenePacketError(
-            "reduced ABD/FEM packet must not claim coupled affine/FEM contact"
+            "reduced ABD/FEM packet must measure coupled affine/FEM contact"
+        )
+    if coupled_solve_converged != 1.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM coupled micro-solve must converge"
+        )
+    if coupled_objective_decrease <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM coupled micro-solve must decrease the objective"
+        )
+    if coupled_final_gradient_norm > coupled_initial_gradient_norm:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM coupled micro-solve must reduce gradient norm"
+        )
+    if coupled_affine_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM coupled micro-solve must move the affine state"
+        )
+    if coupled_deformable_displacement_norm <= 0.0:
+        raise Plan083CpuScenePacketError(
+            "reduced ABD/FEM coupled micro-solve must move deformable vertices"
         )
 
     packet_row.update(
@@ -1362,11 +1398,17 @@ def _make_abd_fem_coupling_packet(
             "affine_fem_mixed_active_barrier_count": mixed_active_barrier_count,
             "affine_fem_mixed_min_squared_distance": mixed_min_squared_distance,
             "affine_fem_mixed_barrier_value": mixed_barrier_value,
-            "affine_fem_coupled_contact_measured": False,
+            "affine_fem_coupled_contact_measured": True,
+            "affine_fem_coupled_solve_converged": True,
+            "affine_fem_coupled_objective_decrease": coupled_objective_decrease,
+            "affine_fem_coupled_initial_gradient_norm": coupled_initial_gradient_norm,
+            "affine_fem_coupled_final_gradient_norm": coupled_final_gradient_norm,
+            "affine_fem_coupled_affine_displacement_norm": coupled_affine_displacement_norm,
+            "affine_fem_coupled_deformable_displacement_norm": coupled_deformable_displacement_norm,
             "limitation_status": (
                 "Reduced affine runtime-step, deformable IPC smoke, and "
-                "affine/deformable mixed candidate diagnostics only; true "
-                "coupled affine/FEM solve, 1.1M-triangle assets, and "
+                "affine/deformable coupled contact micro-solve evidence only; "
+                "full runtime affine/FEM coupling, 1.1M-triangle assets, and "
                 "paper-scale reproduction remain planned."
             ),
         }

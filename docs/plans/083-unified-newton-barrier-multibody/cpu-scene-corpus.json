@@ -465,9 +465,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/abd_fem_coupling/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-abd-fem-coupling-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/abd_fem_coupling.json",
-      "expected_invariant": "Reduced ABD/FEM packet reports valid affine pair runtime steps, a finite deformable IPC smoke step, and active affine/deformable mixed candidate diagnostics while explicitly not claiming a coupled affine/FEM solve.",
-      "limitation_status": "Reduced affine runtime-step, deformable IPC smoke, and affine/deformable mixed candidate diagnostics only; true coupled affine/FEM solve, 1.1M-triangle assets, and paper-scale reproduction remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-abd-fem-coupling-packet records bounded ABD/FEM candidate evidence but does not solve coupled affine/FEM contact or reproduce the deck timing."
+      "expected_invariant": "Reduced ABD/FEM packet reports valid affine pair runtime steps, a finite deformable IPC smoke step, active affine/deformable mixed candidate diagnostics, and a converged coupled affine/deformable contact micro-solve.",
+      "limitation_status": "Reduced affine runtime-step, deformable IPC smoke, and affine/deformable coupled contact micro-solve evidence only; full runtime affine/FEM coupling, 1.1M-triangle assets, and paper-scale reproduction remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-abd-fem-coupling-packet records bounded ABD/FEM micro-solve evidence but does not run a full runtime affine/FEM World::step path or reproduce the deck timing."
     },
     {
       "row_id": "abd-demo-suite",

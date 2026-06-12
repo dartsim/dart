@@ -239,9 +239,9 @@
         point-triangle pair runtime steps while keeping the 1.2M-triangle scene
         asset and contact-force visualization future work.
   - [x] Add a reduced ABD/FEM CPU packet that combines affine pair runtime
-        steps, a deformable IPC smoke step, and affine/deformable mixed
-        candidate diagnostics while keeping a true coupled affine/FEM solve
-        future work.
+        steps, a deformable IPC smoke step, mixed candidate diagnostics, and a
+        coupled affine/deformable contact micro-solve while keeping full
+        runtime affine/FEM coupling future work.
   - [ ] Add paper-scale CPU packets only after the corresponding scene assets,
         mixed-domain stepping, and comparison baselines exist.
 
@@ -312,10 +312,10 @@ storage, or backend resources as public API.
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
    equality reduction, and global Newton solving have concrete evidence.
-3. Use the reduced ABD runtime-step, ABD/FEM mixed-candidate, and GPU
+3. Use the reduced ABD runtime-step, ABD/FEM coupled micro-solve, and GPU
    contact-stencil packets only as internal runtime evidence; broader ABD CPU
-   packets still require scene-level runtime residuals, scene assets, a true
-   coupled affine/FEM solve, and comparison baselines.
+   packets still require scene-level runtime residuals, scene assets, full
+   runtime affine/FEM coupling, and comparison baselines.
 4. Get maintainer direction before retiring
    `docs/dev_tasks/unified_newton_barrier_multibody/`: the Phase 8 audit found
    that PLAN-083 still has in-progress CPU/GPU/scene rows and cannot honestly
