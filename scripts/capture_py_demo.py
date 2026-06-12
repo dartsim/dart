@@ -295,8 +295,27 @@ RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
 )
 
 
+RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
+    ("floating_base", 72, 960, 540, True),
+    ("articulated", 72, 960, 540, True),
+    ("rigid_ipc_tunnel", 24, 960, 540, True),
+    ("diff_drone_liftoff", 96, 960, 540, True),
+    ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
+    ("avbd_rigid_breakable_joint", 72, 960, 540, True),
+    ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),
+    ("avbd_rigid_revolute_motor", 72, 960, 540, True),
+    ("avbd_rigid_prismatic_motor", 72, 960, 540, True),
+)
+
+
 def rigid_workflow_capture_specs() -> tuple[tuple[str, int, int, int, bool], ...]:
     return RIGID_WORKFLOW_CAPTURE_SPECS
+
+
+def rigid_workflow_related_capture_specs() -> (
+    tuple[tuple[str, int, int, int, bool], ...]
+):
+    return RIGID_WORKFLOW_RELATED_CAPTURE_SPECS
 
 
 def _safe_stem(value: str) -> str:
@@ -555,6 +574,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Capture or plan the full PLAN-103 rigid visual workflow.",
     )
     parser.add_argument(
+        "--include-related",
+        action="store_true",
+        help=(
+            "With --rigid-workflow, also capture non-numbered related-evidence "
+            "shelf routes."
+        ),
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Write the rigid workflow capture plan without rendering.",
@@ -627,6 +654,15 @@ def _workflow_scene_output_dir(
     return output_dir / "scenes" / f"{order:02d}_{_safe_stem(scene)}"
 
 
+def _workflow_capture_specs(
+    args: argparse.Namespace,
+) -> tuple[tuple[str, int, int, int, bool], ...]:
+    specs = list(rigid_workflow_capture_specs())
+    if getattr(args, "include_related", False):
+        specs.extend(rigid_workflow_related_capture_specs())
+    return tuple(specs)
+
+
 def _workflow_scene_argv(
     args: argparse.Namespace,
     order: int,
@@ -664,15 +700,19 @@ def _workflow_plan_entries(
     args: argparse.Namespace, output_dir: pathlib.Path
 ) -> list[dict[str, object]]:
     entries: list[dict[str, object]] = []
-    count = len(rigid_workflow_capture_specs())
-    for order, spec in enumerate(rigid_workflow_capture_specs(), start=1):
+    specs = _workflow_capture_specs(args)
+    numbered_count = len(rigid_workflow_capture_specs())
+    count = len(specs)
+    for order, spec in enumerate(specs, start=1):
         scene, frames, width, height, show_ui = spec
         scene_output = _workflow_scene_output_dir(output_dir, order, scene)
         argv = _workflow_scene_argv(args, order, spec, output_dir)
+        workflow_group = "numbered" if order <= numbered_count else "related_evidence"
         entries.append(
             {
                 "order": order,
                 "count": count,
+                "workflow_group": workflow_group,
                 "scene": scene,
                 "frames": frames,
                 "width": width,
@@ -812,6 +852,7 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     link_html = " | ".join(links) if links else "manifest pending"
 
     details = [
+        _workflow_detail("group", capture.get("workflow_group", "")),
         _workflow_detail("frames", capture.get("frames", "")),
         _workflow_detail(
             "size",
@@ -1066,11 +1107,15 @@ def _write_workflow_manifest(
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
+    include_related = any(
+        capture.get("workflow_group") == "related_evidence" for capture in captures
+    )
     _write_json(
         manifest,
         {
             "schema_version": 1,
             "workflow": "rigid_visual_verification",
+            "include_related": include_related,
             "dry_run": dry_run,
             "status": status,
             "capture_count": len(captures),
@@ -1108,6 +1153,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
     _validate_rigid_workflow_args(args)
     output_dir = _workflow_output_dir(args)
     started_at = time.monotonic()
+    specs = _workflow_capture_specs(args)
     captures = _workflow_plan_entries(args, output_dir)
     if args.dry_run:
         manifest = _write_workflow_manifest(
@@ -1129,7 +1175,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         captures=captures,
         started_at=started_at,
     )
-    for order, spec in enumerate(rigid_workflow_capture_specs(), start=1):
+    for order, spec in enumerate(specs, start=1):
         capture = captures[order - 1]
         scene = str(capture["scene"])
         print(f"[{order}/{len(captures)}] capturing {scene}", flush=True)
@@ -1171,6 +1217,8 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     _apply_stable_linux_render_env()
     args = parse_args(sys.argv[1:] if argv is None else argv)
+    if args.include_related and not args.rigid_workflow:
+        raise SystemExit("--include-related requires --rigid-workflow")
     if args.rigid_workflow:
         return _run_rigid_workflow(args)
     if args.dry_run:

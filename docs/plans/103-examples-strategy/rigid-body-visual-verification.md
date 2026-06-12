@@ -181,6 +181,9 @@ non-numbered shelf only through this table. These scenes remain outside the
 
 Capture every non-numbered related-evidence route with the docked UI visible:
 
+These commands are also included after the numbered rows by
+`py-demo-capture -- --rigid-workflow --include-related`.
+
 ```bash
 pixi run py-demo-capture -- --scene floating_base --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height 540 --show-ui
@@ -244,6 +247,14 @@ pixi run py-demo-capture -- --rigid-workflow --dry-run
 pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow
 ```
 
+Add `--include-related` when the review packet should also capture the
+non-numbered related evidence routes after the 36-row workflow:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related --output-dir /tmp/dart_capture_rigid_workflow_with_related
+```
+
 For motion evidence, add `--video --fps 24` to the same docked capture path.
 The helper encodes an MP4 when `ffmpeg` is available and still keeps the PNG
 frames as inspectable evidence:
@@ -297,6 +308,15 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest related-evidence capture-bundle follow-up:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q`
+  reported `5 passed`. The public dry-run
+  `pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_dry_run`
+  wrote a workflow manifest with `include_related=true`, `capture_count=45`,
+  the first related-evidence row at `captures[36]` as `floating_base`, and the
+  final row as `avbd_rigid_prismatic_motor`. The generated
+  `review_index.html` contained related-evidence cards and the final
+  `45/45 avbd_rigid_prismatic_motor` row.
 - Latest full workflow-capture follow-up:
   `pixi run py-demo-capture -- --rigid-workflow --output-dir /tmp/dart_capture_rigid_workflow_full_review_index_1781259714`
   completed all 36 numbered rigid verifier captures. The workflow manifest

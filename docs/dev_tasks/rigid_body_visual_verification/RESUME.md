@@ -1,5 +1,22 @@
 # Resume: Rigid Body Visual Verification
 
+## Current Handoff (2026-06-12)
+
+This checkpoint resumes after the earlier stop-state hand-off and captures the
+related-evidence bundle as local work.
+
+Expected repository state after this checkpoint:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- The branch is two local commits ahead of origin unless a future session has
+  pushed it:
+  - `1e3fd63bc04 Route rigid related search directly`.
+  - `Capture rigid related evidence bundle`.
+- There is no PR associated with this branch at checkpoint time.
+- The latest checkpoint has not been pushed; do not push without explicit
+  maintainer/user approval in that session.
+- Before any further commit, rerun the repository-mandated `pixi run lint`.
+
 ## Last Session Summary
 
 The previous implementation session fixed `py-demos --cycle-scenes` so a
@@ -53,6 +70,11 @@ related-evidence `Find row` matches such as `avbd prismatic` now open the
 matched non-numbered shelf scene directly instead of landing on the numbered
 source row first.
 
+The newest continuation adds an opt-in related-evidence capture bundle:
+`py-demo-capture -- --rigid-workflow --include-related` appends the nine
+non-numbered related shelf routes after the 36 numbered rows and records them
+in the same manifest/review index with `workflow_group=related_evidence`.
+
 ## Current Branch
 
 `feature/rigid-body-gui-visual-verification`
@@ -64,16 +86,17 @@ Current snapshot:
 - Latest pushed commits:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current continuation work routes related-evidence search matches directly to
-  their related shelf scenes and refreshes this handoff snapshot. After the
-  local checkpoint commit, expect this branch to be one commit ahead of origin
-  unless it is pushed with explicit approval.
+- Current branch is expected to be two local commits ahead of origin after this
+  checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
+  `Capture rigid related evidence bundle`.
+- The latest checkpoint is local only and should not be pushed without explicit
+  maintainer/user approval.
 
 ## Immediate Next Step
 
-If the current continuation is already committed, inspect `git status -sb` and
-choose the next bounded rigid visual-verification gap. Do not push without
-explicit approval in that session.
+Inspect `git status -sb` and confirm whether the local checkpoint has been
+pushed or is still ahead of origin. Do not push without explicit approval in
+that session, and rerun `pixi run lint` before committing further changes.
 
 ## Context That Would Be Lost
 
@@ -113,6 +136,10 @@ explicit approval in that session.
   backend, solver, policy, and parameter changes.
 - The workflow review index is intentionally generated beside the manifest,
   not checked in. `manifest.json` records it under `artifacts.review_index`.
+- The related-evidence bundle is intentionally opt-in so default
+  `--rigid-workflow` still captures exactly the 36 numbered rows. The
+  `--include-related` variant appends the related routes as rows 37-45 in the
+  generated review packet.
 
 ## How To Resume
 
@@ -203,3 +230,17 @@ git diff --check
 
 The focused pytest reported `3 passed`. `pixi run lint` passed and
 `git diff --check` was clean.
+
+Current related-evidence capture-bundle validation already run:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_dry_run_current
+jq -r '.include_related, .capture_count, .captures[36].workflow_group, .captures[36].scene, .captures[44].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_related_dry_run_current/manifest.json
+rg -n "related_evidence|avbd_rigid_prismatic_motor|45/45" /tmp/dart_capture_rigid_workflow_related_dry_run_current/review_index.html
+```
+
+The focused pytest reported `5 passed`. The public dry-run completed with
+45 planned capture commands, the manifest reported `include_related=true` and
+`capture_count=45`, and the generated review index contained the final
+`45/45 avbd_rigid_prismatic_motor` related-evidence row.

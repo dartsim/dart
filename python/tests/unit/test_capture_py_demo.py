@@ -314,6 +314,7 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["workflow"] == "rigid_visual_verification"
+    assert manifest["include_related"] is False
     assert manifest["dry_run"] is True
     assert manifest["status"] == "planned"
     assert manifest["capture_count"] == len(specs)
@@ -334,6 +335,57 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "DART rigid workflow review index" in review_html
     assert "rigid_solver_compare" in review_html
     assert "scenes/01_rigid_body/manifest.json" in review_html
+
+
+def test_rigid_workflow_dry_run_can_include_related_evidence(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("rigid_body", 24, 960, 540, True),)
+    related_specs = (
+        ("floating_base", 72, 960, 540, True),
+        ("rigid_ipc_tunnel", 24, 960, 540, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+    monkeypatch.setattr(
+        capture_py_demo, "RIGID_WORKFLOW_RELATED_CAPTURE_SPECS", related_specs
+    )
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        [
+            "--rigid-workflow",
+            "--include-related",
+            "--dry-run",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["include_related"] is True
+    assert manifest["capture_count"] == len(specs) + len(related_specs)
+    assert [capture["scene"] for capture in manifest["captures"]] == [
+        "rigid_body",
+        "floating_base",
+        "rigid_ipc_tunnel",
+    ]
+    assert [capture["workflow_group"] for capture in manifest["captures"]] == [
+        "numbered",
+        "related_evidence",
+        "related_evidence",
+    ]
+    assert manifest["captures"][2]["manifest"].endswith(
+        "scenes/03_rigid_ipc_tunnel/manifest.json"
+    )
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "rigid_ipc_tunnel" in review_html
+    assert "related_evidence" in review_html
 
 
 def test_rigid_workflow_run_aggregates_scene_manifests(
@@ -467,6 +519,11 @@ def test_rigid_workflow_scene_capture_runs_in_child_process(
     assert command[0] == capture_py_demo.sys.executable
     assert command[1].endswith("scripts/capture_py_demo.py")
     assert command[2:] == ["--scene", "rigid_body"]
+
+
+def test_rigid_workflow_include_related_requires_workflow() -> None:
+    with pytest.raises(SystemExit, match="--include-related requires --rigid-workflow"):
+        capture_py_demo.main(["--include-related", "--dry-run"])
 
 
 def test_linux_render_env_defaults_to_software_gl(

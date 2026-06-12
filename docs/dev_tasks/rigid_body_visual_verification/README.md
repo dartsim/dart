@@ -1,5 +1,22 @@
 # Rigid Body Visual Verification - Dev Task
 
+## Current Handoff (2026-06-12)
+
+This checkpoint resumes after the earlier stop-state hand-off and captures the
+related-evidence bundle as local work.
+
+Expected repository state after this checkpoint:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- The branch is two local commits ahead of origin unless a future session has
+  pushed it:
+  - `1e3fd63bc04 Route rigid related search directly`.
+  - `Capture rigid related evidence bundle`.
+- There is no PR associated with this branch at checkpoint time.
+- The latest checkpoint has not been pushed; do not push without explicit
+  maintainer/user approval in that session.
+- Before any further commit, rerun the repository-mandated `pixi run lint`.
+
 ## Current Status
 
 - [x] Local branch contains the first rigid-body GUI reliability fix:
@@ -28,6 +45,9 @@
 - [x] Related-evidence `Find row` matches now open the matched non-numbered
       shelf scene directly instead of requiring an intermediate stop on the
       numbered source row.
+- [x] `py-demo-capture -- --rigid-workflow --include-related` now appends the
+      non-numbered related-evidence shelf routes to the same workflow manifest
+      and review index.
 
 ## Goal
 
@@ -54,10 +74,11 @@ are easy to inspect, cycle, capture, and regression-test.
 - The latest pushed commits are:
   `0e38e3e807d Fix py-demos cycle scene frame budget`.
   `e8278b6fb53 Improve rigid workflow capture evidence`.
-- Current continuation work routes related-evidence search matches directly to
-  their related shelf scenes and refreshes this handoff snapshot. After the
-  local checkpoint commit, expect this branch to be one commit ahead of origin
-  unless it is pushed with explicit approval.
+- Current branch is expected to be two local commits ahead of origin after this
+  checkpoint: `1e3fd63bc04 Route rigid related search directly` plus
+  `Capture rigid related evidence bundle`.
+- The latest checkpoint is local only and should not be pushed without explicit
+  maintainer/user approval.
 
 ## What The Local Commit Changed
 
@@ -292,6 +313,27 @@ Observed results:
 - `pixi run lint` passed.
 - `git diff --check` was clean.
 
+## Verified In The Related-Evidence Capture Bundle Continuation
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_include_related_requires_workflow python/tests/integration/test_demos_cycle.py::test_rigid_visual_related_evidence_capture_commands_are_documented -q
+pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run --output-dir /tmp/dart_capture_rigid_workflow_related_dry_run_current
+jq -r '.include_related, .capture_count, .captures[36].workflow_group, .captures[36].scene, .captures[44].scene, .artifacts.review_index' /tmp/dart_capture_rigid_workflow_related_dry_run_current/manifest.json
+rg -n "related_evidence|avbd_rigid_prismatic_motor|45/45" /tmp/dart_capture_rigid_workflow_related_dry_run_current/review_index.html
+```
+
+Observed results:
+
+- Focused pytest reported `5 passed`.
+- The public dry-run completed with exit code 0 and printed all 45 planned
+  capture commands: 36 numbered rows plus 9 related-evidence routes.
+- The dry-run manifest reported `include_related=true`, `capture_count=45`,
+  `captures[36].workflow_group=related_evidence`, first related scene
+  `floating_base`, final scene `avbd_rigid_prismatic_motor`, and a
+  `review_index.html` path.
+- The generated review index contained related-evidence cards and the final
+  `45/45 avbd_rigid_prismatic_motor` row.
+
 ## Key Context
 
 - The durable rigid workflow sidecar is
@@ -307,8 +349,8 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Resume from `git status -sb` and inspect whether the current continuation
-   commit has been pushed.
+1. Resume from `git status -sb` and confirm whether the local checkpoint has
+   been pushed or is still ahead of origin.
 2. If editing or committing after any further changes, rerun the
    repository-mandated
    `pixi run lint`; `git diff --check` is also a useful whitespace guard.

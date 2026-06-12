@@ -1840,6 +1840,8 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
 
     assert sidecar_specs == expected_specs
     assert readme_specs == expected_specs
+    capture_py_demo = _capture_py_demo_module()
+    assert list(capture_py_demo.rigid_workflow_related_capture_specs()) == expected_specs
 
 
 def test_rigid_contact_inspector_reports_contact_manifolds() -> None:

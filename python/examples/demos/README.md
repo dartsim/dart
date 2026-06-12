@@ -652,6 +652,15 @@ pixi run py-demo-capture -- --rigid-workflow \
     --output-dir /tmp/dart_capture_rigid_workflow
 ```
 
+Add `--include-related` when the review packet should also capture the
+non-numbered related evidence routes after the 36-row workflow:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --include-related --dry-run
+pixi run py-demo-capture -- --rigid-workflow --include-related \
+    --output-dir /tmp/dart_capture_rigid_workflow_with_related
+```
+
 Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash
@@ -783,6 +792,9 @@ pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
 ```
 
 Capture every non-numbered related-evidence route with the docked UI visible:
+
+These commands are also included after the numbered rows by
+`py-demo-capture -- --rigid-workflow --include-related`.
 
 ```bash
 pixi run py-demo-capture -- --scene floating_base --frames 72 \
