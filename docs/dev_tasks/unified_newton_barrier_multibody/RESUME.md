@@ -10,6 +10,25 @@ For the current remaining PLAN-083 follow-up work, use PR #2978 as the single
 consolidated review unit and keep additional packet/runtime slices on that
 branch.
 
+Fresh-session handoff (2026-06-11): resume only from
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). This branch is
+the consolidated PLAN-083 follow-up branch targeting `main`; do not open or
+revive per-packet/per-phase PRs. Former stack PRs #2979-#2983 were folded into
+this branch, and earlier runtime/corpus follow-ups #2970, #2971, #2974, and
+#2976 are already merged into `main`. Treat local branches/worktrees such as
+`feature/newton-barrier-runtime-wiring` as stale historical context unless a
+maintainer explicitly asks to inspect them; the active work and PR state live on
+PR #2978.
+
+Latest PR #2978 checkpoint: commit `8dc0571a1cd` fixes the Codex review finding
+that point-triangle CUDA CCD used signed plane distance. The CUDA packet now
+uses winding-independent absolute plane-distance band entry, and focused unit
+and benchmark fixtures include negative-side and reversed-winding cases. The
+review threads for the degenerate-triangle contact predicate and
+winding-independent point-triangle CCD are resolved without bot replies. Hosted
+CI restarted after the push and was still pending at handoff.
+
 Use this folder's `README.md`, PLAN-083, `docs/plans/dashboard.md`, and the
 current code as the live status. The branch-local "Current Branch" section below
 is historical handoff context, not current checkout state. Treat IPC as the
@@ -256,17 +275,12 @@ reference timings, or completion.
 
 ## Last Session Summary
 
-Current slice: the one-branch runtime wiring follow-up has five checkpoint
-commits, and the follow-on CPU corpus evidence branch adds reduced
-hanging-bridge, lying-flat, pulley, terrain vehicle, ragdoll, nunchaku,
-nunchaku scaling, umbrella, windmill, Candy, precession, timing-breakdown,
-Table 2 packets, the reduced affine point-triangle micro-solve diagnostic, and
-the sparse equality change-of-variable contract tests. The current follow-up
-adds reduced ABD complex-geometry and ABD/FEM coupled micro-solve packets so the
-remaining manifest rows become classified as in-progress without claiming
-paper-scale completion.
-The final docs pass should preserve that this is runtime smoke/correctness
-evidence, not paper-scale completion.
+Current slice: PR #2978 is the only active PLAN-083 follow-up PR. It contains
+the former private GPU packet stack plus reduced ABD packet work, with atomic
+commits for contact candidates, CCD/line-search, barrier/friction,
+assembly/solve, scene state-batch parity, ABD complex geometry, ABD/FEM
+coupling, and the latest CUDA CCD review fix. Preserve that this is runtime
+smoke/correctness evidence, not paper-scale completion.
 
 PLAN-083 was created for the unified Newton-barrier multibody solver family,
 covering the supplied unified Newton barrier paper, the ABD deck, existing
@@ -337,26 +351,29 @@ build/CTest entries.
 ## Current Branch
 
 `simx/plan083-gpu-contact-candidate-packet` - the single consolidated PLAN-083
-follow-up PR for the remaining private packet work. This branch now carries
-point-triangle and edge-edge contact-stencil filtering, endpoint-linear
-point-triangle and edge-edge CCD/line-search packets, scalar barrier/friction
-local kernels, reduced assembly/solve parity, reduced scene state-batch parity,
-and reduced ABD complex-geometry/FEM coupling evidence. Keep rows
-`in-progress` unless their full row policy is satisfied: broad-phase/runtime
-GPU candidate construction, rigid curved trajectories, runtime scene line
-search, primitive gradients/tangent/Hessian assembly, sparse global solving,
-GPU `World::step`, paper-scale assets, and accepted reference timings remain
-future evidence.
+follow-up PR for the remaining private packet work (#2978). This branch now
+carries point-triangle and edge-edge contact-stencil filtering,
+winding-independent endpoint-linear point-triangle CCD, edge-edge
+CCD/line-search packets, scalar barrier/friction local kernels, reduced
+assembly/solve parity, reduced scene state-batch parity, and reduced ABD
+complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless their
+full row policy is satisfied: broad-phase/runtime GPU candidate construction,
+rigid curved trajectories, runtime scene line search, primitive
+gradients/tangent/Hessian assembly, sparse global solving, GPU `World::step`,
+paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Keep all remaining PLAN-083 follow-up work on
 `simx/plan083-gpu-contact-candidate-packet` / PR #2978 instead of opening more
-small PRs. Continue with the next blocker from the completion audit, then keep
-the dev-task folder active because PLAN-083 acceptance criteria are still
-unmet. If the task later moves out of this folder, get maintainer direction
-before deleting it and keep the remaining planned manifest plus in-progress
-CPU/GPU/scene limitations in durable sidecars.
+small PRs. First, monitor PR #2978 after the latest handoff-doc push: confirm
+hosted CI and the fresh Codex review for the current head, then address only
+actionable failures on the same branch. After the PR is stable, continue with
+the next blocker from the completion audit on this branch. Keep the dev-task
+folder active because PLAN-083 acceptance criteria are still unmet. If the task
+later moves out of this folder, get maintainer direction before deleting it and
+keep the remaining planned manifest plus in-progress CPU/GPU/scene limitations
+in durable sidecars.
 
 ## Context That Would Be Lost
 
@@ -437,13 +454,18 @@ CPU/GPU/scene limitations in durable sidecars.
 
 ```bash
 git status --short --branch
+git switch simx/plan083-gpu-contact-candidate-packet
+gh pr view 2978 --repo dartsim/dart --json headRefName,headRefOid,mergeStateStatus,reviewDecision,statusCheckRollup
+gh pr checks 2978 --repo dartsim/dart
 sed -n '1,220p' docs/dev_tasks/unified_newton_barrier_multibody/README.md
 sed -n '1,220p' docs/plans/083-unified-newton-barrier-multibody/implementation-roadmap.md
 pixi run python scripts/check_plan083_cpu_scene_corpus.py
 pixi run python scripts/check_plan083_gpu_parity_packet.py
+pixi run python scripts/check_plan083_completion_audit.py
 ```
 
-Then sync `main`, verify the audit sidecars, and start the next implementation
-slice from the planned CPU/GPU/scene rows only after the maintainer confirms
-this dev-task folder remains the active tracker. Do not describe planned GPU
-rows as speed claims or public backend promotion.
+Then sync `main` into the PR branch before any push, verify the audit sidecars,
+and start the next implementation slice from the planned CPU/GPU/scene rows
+only after #2978 is stable or the maintainer explicitly asks to keep
+implementing during CI. Do not describe planned GPU rows as speed claims or
+public backend promotion.

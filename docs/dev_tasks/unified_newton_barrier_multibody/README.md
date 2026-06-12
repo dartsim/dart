@@ -2,6 +2,15 @@
 
 ## Current Status
 
+Fresh-session branch discipline: all remaining PLAN-083 follow-up work is
+consolidated on `simx/plan083-gpu-contact-candidate-packet` and PR #2978
+(`Advance unified Newton-barrier runtime and parity evidence`). Do not open or
+revive per-packet/per-phase PRs. Former stacked PRs #2979-#2983 were folded into
+#2978; earlier runtime/corpus follow-ups #2970, #2971, #2974, and #2976 are
+merged into `main`. A fresh Claude/Codex session should resume from #2978,
+check hosted CI/review state, and keep any remaining PLAN-083 commits on the
+same branch.
+
 - [x] Phase 1: promote shared world-primitive math into an internal
       Newton-barrier owner.
   - [x] Add `detail/newton_barrier` owners for primitive distances, clamped-log
@@ -279,6 +288,10 @@ storage, or backend resources as public API.
 - For the remaining PLAN-083 follow-up work, PR #2978 is the consolidated
   review unit; keep additional packet/runtime slices on that branch instead of
   opening per-packet PRs.
+- Current PR #2978 head includes the CUDA CCD review fix that makes the
+  point-triangle line-search packet winding-independent; its local evidence is
+  recorded in the validation section below. Continue monitoring CI/review on
+  the same branch before starting another implementation slice.
 - The old `deformable_contact` include paths remain as forwarding
   compatibility headers to avoid unnecessary PLAN-081 merge conflicts.
 - Rigid IPC should include the new Newton-barrier owner directly because it is
@@ -311,7 +324,8 @@ storage, or backend resources as public API.
 
 1. Use merged PRs #2960, #2961, #2970, #2971, #2974, and #2976 as the baseline,
    and keep remaining work in consolidated PR #2978 instead of reopening the
-   old phase-scoped stack.
+   old phase-scoped stack. Before further implementation, verify the current
+   #2978 CI and Codex review state after the latest handoff-doc push.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
@@ -376,6 +390,18 @@ Phase 7 CCD/line-search packet evidence:
 - `pixi run -e cuda build-cuda`
 - `pixi run -e cuda test-cuda`
 - `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
+
+Latest PR #2978 CUDA CCD review-fix evidence:
+
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_ccd_line_search_cuda$'`
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet` (point-triangle and
+  edge-edge parity for 131,072 total pairs; minimum primitive-family speedup
+  2.057x)
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py && pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_ccd_line_search_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+  (13 passed)
 
 Phase 7 barrier/friction local-kernel packet evidence:
 
