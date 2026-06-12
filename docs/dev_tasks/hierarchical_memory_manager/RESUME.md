@@ -1,10 +1,36 @@
 # Resume: Hierarchical Memory Manager
 
-## Critical Handoff Stop (2026-06-11, Authoritative)
+## Current Continuation (2026-06-11, Dynamic Rigid IPC No-Growth)
 
-Maintainer request: stop all optimization, scene expansion, and verification
-work immediately. This is the entry point for the next fresh Claude/Codex
-session.
+Work resumed from the prior stop handoff on the same branch:
+`pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`.
+
+The latest slice closes a dynamic rigid IPC coverage mismatch without adding a
+new scene. The global-heap gate already covered the dynamic IPC solve graph,
+active barrier, fixed/revolute joint constraints, two-box stack, mixed
+rigid/deformable surface obstacle, kinematic conveyor, and kinematic
+turntable. `test_world.cpp` now adds
+`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator` with that same
+existing scene-helper matrix, and removes the three duplicated IPC rows from
+the monolithic reserved-ECS no-growth gate.
+
+Verification for this slice:
+
+- `pixi run lint`
+- `pixi run build`
+- `cmake --build build/default/cpp/Release --target test_world --parallel 2`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator' --gtest_color=no`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator:World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+
+Immediate next step after this slice: checkpoint the verified branch, then
+continue any later Phase 4/5 work evidence-first from `README.md`.
+
+## Prior Critical Handoff Stop (2026-06-11, Historical)
+
+Maintainer request at that point: stop all optimization, scene expansion, and
+verification work immediately. This section is retained as history and is
+superseded by the current continuation section above.
 
 Use exactly one continuation branch:
 `pr/hmm-phase45-follow-up-clean`, tracking

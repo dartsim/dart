@@ -1,10 +1,37 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Critical Handoff Stop (2026-06-11, Authoritative)
+## Current Continuation (2026-06-11, Dynamic Rigid IPC No-Growth)
 
-Maintainer request: stop all optimization, scene expansion, and verification
-work immediately. This section is the authoritative handoff for a fresh
-Claude/Codex session.
+Work resumed from the prior stop handoff on the same single continuation
+branch: `pr/hmm-phase45-follow-up-clean`, tracking
+`origin/pr/hmm-phase45-follow-up-clean`.
+
+The latest Phase 4/5 slice closes a dynamic rigid IPC coverage mismatch without
+adding a new scene. `World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap`
+already covered the dynamic IPC solve graph, active barrier, fixed/revolute
+joint constraints, two-box stack, mixed rigid/deformable surface obstacle,
+kinematic conveyor, and kinematic turntable. The World-base no-growth side only
+covered the mixed rigid/deformable surface and the two kinematic-contact cases.
+
+`tests/unit/simulation/world/test_world.cpp` now adds the focused
+`World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator` gate using those
+same existing scene helpers. The three existing dynamic rigid IPC no-growth
+rows were moved out of the monolithic reserved-ECS no-growth test so the full
+dynamic rigid IPC matrix is owned by one focused test.
+
+Verification for this slice:
+
+- `pixi run lint`
+- `pixi run build`
+- `cmake --build build/default/cpp/Release --target test_world --parallel 2`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator' --gtest_color=no`
+- `build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator:World.BakedDynamicRigidIpcStepsDoNotAllocateGlobalHeap' --gtest_color=no`
+
+## Prior Critical Handoff Stop (2026-06-11, Historical)
+
+Maintainer request at that point: stop all optimization, scene expansion, and
+verification work immediately. This section is retained as history and is
+superseded by the current continuation section above.
 
 Use exactly one continuation branch:
 `pr/hmm-phase45-follow-up-clean`, tracking
@@ -1438,11 +1465,13 @@ Follow-up progress after PR #2956:
   two-box stack with zero global heap allocation after bake. The follow-up gate
   also covers a mixed rigid/deformable surface-obstacle barrier solve through
   both baked World-base no-growth and global-heap no-allocation guards. The
-  current continuation adds the same baked no-growth/no-heap coverage for
-  kinematic-conveyor and kinematic-turntable active contacts, covering
-  kinematic trace storage and both linear and angular lagged-friction surface
-  motion in the same IPC solve. Broader rigid IPC contact shapes remain
-  evidence-first follow-up work.
+  current continuation adds a focused World-base no-growth gate with the same
+  dynamic IPC scene matrix as the global-heap gate: solve graph, active
+  barrier, fixed/revolute joints, two-box stack, mixed rigid/deformable surface
+  obstacle, kinematic conveyor, and kinematic turntable. The three existing IPC
+  no-growth rows moved out of the monolithic reserved-ECS no-growth test so the
+  full dynamic rigid IPC allocation matrix is owned by one focused test.
+  Broader rigid IPC contact shapes remain evidence-first follow-up work.
 
 Remaining Phase 4/5 follow-up items for the next PR:
 

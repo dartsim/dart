@@ -5292,6 +5292,32 @@ TEST(World, BakedScriptedDeformableBoundaryStepsDoNotAllocateAfterPrewarm)
       configureScriptedDeformableBoundaryScene);
 }
 
+TEST(World, BakedDynamicRigidIpcStepsDoNotGrowWorldBaseAllocator)
+{
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC solve graph", configureDynamicRigidIpcMeshSolveScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC active barrier",
+      configureActiveRigidIpcMeshBarrierScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC fixed joint",
+      configureRigidIpcFixedJointConstraintScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC revolute joint",
+      configureRigidIpcRevoluteJointConstraintScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC two-box stack", configureRigidIpcTwoBoxStackScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC deformable surface obstacle",
+      configureRigidIpcDeformableSurfaceObstacleScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC kinematic conveyor contact",
+      configureRigidIpcKinematicConveyorScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "dynamic rigid IPC kinematic turntable contact",
+      configureRigidIpcKinematicTurntableScene);
+}
+
 TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
 {
 #ifdef DART_CODECOV
@@ -5318,15 +5344,6 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
             sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
         body.setLinearVelocity(Eigen::Vector3d(1.0, 0.0, 0.0));
       });
-  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
-      "dynamic rigid IPC deformable surface obstacle",
-      configureRigidIpcDeformableSurfaceObstacleScene);
-  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
-      "dynamic rigid IPC kinematic conveyor contact",
-      configureRigidIpcKinematicConveyorScene);
-  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
-      "dynamic rigid IPC kinematic turntable contact",
-      configureRigidIpcKinematicTurntableScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid body resting contact",
