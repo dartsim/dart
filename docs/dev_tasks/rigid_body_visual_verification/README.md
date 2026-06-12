@@ -10,12 +10,14 @@ capture metrics.
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is expected to be two local commits ahead of origin unless a
-  future session has pushed them:
+- The branch should be pushed to
+  `origin/feature/rigid-body-gui-visual-verification` with these latest
+  implementation commits:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `Promote rigid IPC shelf metrics`.
+  `a95687dc628 Promote rigid IPC shelf metrics`.
 - There is no PR associated with this branch at checkpoint time.
-- Nothing was pushed during this continuation.
+- This hand-off-only docs update was made after the user's explicit stop
+  request. No further implementation or verification was run for it.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Current Status
@@ -95,11 +97,11 @@ are easy to inspect, cycle, capture, and regression-test.
 - At the start of this continuation, the branch was aligned with
   `origin/feature/rigid-body-gui-visual-verification` at
   `226a5b99de9 Refresh rigid visual verification handoff`.
-- Current branch is expected to be two local commits ahead of origin after this
-  checkpoint:
+- Latest implementation commits being handed off and pushed:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `Promote rigid IPC shelf metrics`.
-- Nothing was pushed during this continuation.
+  `a95687dc628 Promote rigid IPC shelf metrics`.
+- A final hand-off-only docs update was added after the explicit stop request.
+  It intentionally did not run verification.
 
 ## What The Local Commit Changed
 
@@ -486,8 +488,10 @@ Observed results:
 
 ## Immediate Next Steps
 
-1. Resume from `git status -sb`. Expect two local commits ahead of origin
-   unless a future session has pushed them.
+1. Resume from `git status -sb`. After the final hand-off push, the branch
+   should be aligned with
+   `origin/feature/rigid-body-gui-visual-verification`; if it is still ahead,
+   the push was interrupted or not performed.
 2. Rerun the repository-mandated `pixi run lint` before any further commit.
 3. Choose the next bounded rigid visual-verification gap from the durable
    sidecar, or retire this dev-task folder only if the maintainer explicitly

@@ -10,12 +10,14 @@ capture metrics.
 Expected repository state after this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
-- The branch is expected to be two local commits ahead of origin unless a
-  future session has pushed them:
+- The branch should be pushed to
+  `origin/feature/rigid-body-gui-visual-verification` with these latest
+  implementation commits:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `Promote rigid IPC shelf metrics`.
+  `a95687dc628 Promote rigid IPC shelf metrics`.
 - There is no PR associated with this branch at checkpoint time.
-- Nothing was pushed during this continuation.
+- This hand-off-only docs update was made after the user's explicit stop
+  request. No further implementation or verification was run for it.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
 
 ## Last Session Summary
@@ -120,17 +122,19 @@ Current snapshot:
 - At the start of this continuation, the branch was aligned with
   `origin/feature/rigid-body-gui-visual-verification` at
   `226a5b99de9 Refresh rigid visual verification handoff`.
-- Current branch is expected to be two local commits ahead of origin after this
-  checkpoint:
+- Latest implementation commits being handed off and pushed:
   `50e671590c8 Promote rigid IPC edge drop evidence`.
-  `Promote rigid IPC shelf metrics`.
-- Nothing was pushed during this continuation.
+  `a95687dc628 Promote rigid IPC shelf metrics`.
+- A final hand-off-only docs update was added after the explicit stop request.
+  It intentionally did not run verification.
 
 ## Immediate Next Step
 
-Inspect `git status -sb` first. Expect two local commits ahead of origin unless
-a future session has pushed them. Do not push without explicit approval in that
-session, and rerun `pixi run lint` before committing further changes.
+Inspect `git status -sb` first. After the final hand-off push, the branch
+should be aligned with `origin/feature/rigid-body-gui-visual-verification`; if
+it is still ahead, the push was interrupted or not performed. Do not push new
+changes without explicit approval in that session, and rerun `pixi run lint`
+before committing further changes.
 
 ## Context That Would Be Lost
 
