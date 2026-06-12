@@ -12140,6 +12140,255 @@ TEST(
   EXPECT_LT(maxRotationError, 1e-6);
 }
 
+// PLAN-104 AVBD articulated bridge: generated current-pose revolute motor rows
+// must keep finite effort bounds across simulation-mode binary save/load. A
+// restored tiny torque limit should still prevent the free hinge axis from
+// becoming an unbounded hard velocity target.
+TEST(
+    VariationalIntegration,
+    AvbdRevolutePointJointCurrentPoseTinyTorqueLimitSurvivesSaveLoad)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setTimeStep(0.005);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
+  childPose.head<3>() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  pair.child.getParentJoint().setPosition(childPose);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  registry.emplace<sx::comps::Name>(
+      jointEntity, "serialized_generated_tiny_hinge");
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.name = "serialized_generated_tiny_hinge";
+  joint.type = sx::comps::JointType::Revolute;
+  joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
+  joint.hasAvbdStiffnessState = false;
+  const Eigen::Vector3d hingeAxis = Eigen::Vector3d(1.0, 2.0, 3.0).normalized();
+  joint.axis = hingeAxis;
+  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.4);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+
+  auto restoredRobot = restored.getMultibody("floating_pair");
+  ASSERT_TRUE(restoredRobot.has_value());
+  auto restoredParent = restoredRobot->getLink("parent");
+  ASSERT_TRUE(restoredParent.has_value());
+  auto restoredChild = restoredRobot->getLink("child");
+  ASSERT_TRUE(restoredChild.has_value());
+
+  auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
+  entt::entity restoredJointEntity = entt::null;
+  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  for (const entt::entity entity : jointView) {
+    if (jointView.get<sx::comps::Joint>(entity).name
+        == "serialized_generated_tiny_hinge") {
+      restoredJointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(restoredJointEntity != entt::null);
+  const auto& restoredJoint
+      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
+  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Revolute);
+  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], 0.4);
+  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1e-9);
+  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1e-9);
+  ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
+      restoredJointEntity));
+  const auto& restoredConfig
+      = restoredRegistry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+          restoredJointEntity);
+  EXPECT_EQ(restoredConfig.linearAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_EQ(
+      restoredConfig.angularAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_NEAR(restoredConfig.angularAxes.col(2).dot(hingeAxis), 1.0, 1e-12);
+
+  const Eigen::Vector3d parentAnchor = restoredConfig.localAnchorA;
+  const Eigen::Vector3d childAnchor = restoredConfig.localAnchorB;
+  const auto anchorResidual = [&]() {
+    const Eigen::Vector3d parentAnchorWorld
+        = restoredParent->getWorldTransform() * parentAnchor;
+    const Eigen::Vector3d childAnchorWorld
+        = restoredChild->getWorldTransform() * childAnchor;
+    return (childAnchorWorld - parentAnchorWorld).norm();
+  };
+  const auto axisTilt = [&]() {
+    return (restoredParent->getWorldTransform().linear() * hingeAxis
+            - restoredChild->getWorldTransform().linear() * hingeAxis)
+        .norm();
+  };
+  const auto relativeHingePosition = [&]() {
+    const Eigen::Matrix3d relativeRotation
+        = restoredParent->getWorldTransform().linear().transpose()
+          * restoredChild->getWorldTransform().linear();
+    return signedRotationAroundAxis(relativeRotation, hingeAxis);
+  };
+
+  double maxAnchorResidual = 0.0;
+  double maxAxisTilt = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    restored.step();
+    maxAnchorResidual = std::max(maxAnchorResidual, anchorResidual());
+    maxAxisTilt = std::max(maxAxisTilt, axisTilt());
+  }
+
+  EXPECT_LT(maxAnchorResidual, 1e-3);
+  EXPECT_LT(maxAxisTilt, 1e-6);
+  EXPECT_LT(std::abs(relativeHingePosition()), 1e-3);
+}
+
+// PLAN-104 AVBD articulated bridge: generated current-pose prismatic motor rows
+// must also keep finite effort bounds across simulation-mode binary save/load,
+// so a restored tiny force limit preserves the hard rows without sliding the
+// free axis like an unbounded velocity target.
+TEST(
+    VariationalIntegration,
+    AvbdPrismaticPointJointCurrentPoseTinyForceLimitSurvivesSaveLoad)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setMultibodyOptions({.integrationFamily = "variational integrator"});
+  world.setTimeStep(0.005);
+
+  FloatingLinkPair pair = addFloatingLinkPair(world);
+  Eigen::VectorXd childPose = Eigen::VectorXd::Zero(6);
+  childPose.head<3>() = Eigen::Vector3d(0.3, 0.0, 0.0);
+  pair.child.getParentJoint().setPosition(childPose);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  const entt::entity jointEntity = registry.create();
+  registry.emplace<sx::comps::Name>(
+      jointEntity, "serialized_generated_tiny_slider");
+  auto& joint = registry.emplace<sx::comps::Joint>(jointEntity);
+  joint.name = "serialized_generated_tiny_slider";
+  joint.type = sx::comps::JointType::Prismatic;
+  joint.parentLink = sx::detail::toRegistryEntity(pair.parent.getEntity());
+  joint.childLink = sx::detail::toRegistryEntity(pair.child.getEntity());
+  joint.hasAvbdStiffnessState = false;
+  const Eigen::Vector3d sliderAxis
+      = Eigen::Vector3d(1.0, 2.0, 0.5).normalized();
+  joint.axis = sliderAxis;
+  joint.actuatorType = sx::comps::ActuatorType::Velocity;
+  joint.commandVelocity = Eigen::VectorXd::Constant(1, 0.3);
+  joint.limits.effortLower = Eigen::VectorXd::Constant(1, -1e-9);
+  joint.limits.effortUpper = Eigen::VectorXd::Constant(1, 1e-9);
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(
+      registry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity));
+
+  std::stringstream data;
+  world.saveBinary(data);
+
+  sx::World restored;
+  restored.loadBinary(data);
+  restored.setMultibodyOptions({.integrationFamily = "variational integrator"});
+
+  auto restoredRobot = restored.getMultibody("floating_pair");
+  ASSERT_TRUE(restoredRobot.has_value());
+  auto restoredParent = restoredRobot->getLink("parent");
+  ASSERT_TRUE(restoredParent.has_value());
+  auto restoredChild = restoredRobot->getLink("child");
+  ASSERT_TRUE(restoredChild.has_value());
+
+  auto& restoredRegistry = dart::simulation::detail::registryOf(restored);
+  entt::entity restoredJointEntity = entt::null;
+  auto jointView = restoredRegistry.view<sx::comps::Joint>();
+  for (const entt::entity entity : jointView) {
+    if (jointView.get<sx::comps::Joint>(entity).name
+        == "serialized_generated_tiny_slider") {
+      restoredJointEntity = entity;
+      break;
+    }
+  }
+  ASSERT_TRUE(restoredJointEntity != entt::null);
+  const auto& restoredJoint
+      = restoredRegistry.get<sx::comps::Joint>(restoredJointEntity);
+  EXPECT_EQ(restoredJoint.type, sx::comps::JointType::Prismatic);
+  EXPECT_EQ(restoredJoint.actuatorType, sx::comps::ActuatorType::Velocity);
+  ASSERT_EQ(restoredJoint.commandVelocity.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJoint.commandVelocity[0], 0.3);
+  ASSERT_EQ(restoredJoint.limits.effortLower.size(), 1);
+  ASSERT_EQ(restoredJoint.limits.effortUpper.size(), 1);
+  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortLower[0], -1e-9);
+  EXPECT_DOUBLE_EQ(restoredJoint.limits.effortUpper[0], 1e-9);
+  ASSERT_TRUE(restoredRegistry.all_of<dvbd::AvbdRigidWorldPointJointConfig>(
+      restoredJointEntity));
+  const auto& restoredConfig
+      = restoredRegistry.get<dvbd::AvbdRigidWorldPointJointConfig>(
+          restoredJointEntity);
+  EXPECT_EQ(
+      restoredConfig.linearAxisMask, dvbd::avbdRigidJointAllButAxisMask(2u));
+  EXPECT_EQ(restoredConfig.angularAxisMask, dvbd::kAvbdRigidJointAllAxesMask);
+  EXPECT_NEAR(restoredConfig.linearAxes.col(2).dot(sliderAxis), 1.0, 1e-12);
+
+  const Eigen::Vector3d parentAnchor = restoredConfig.localAnchorA;
+  const Eigen::Vector3d childAnchor = restoredConfig.localAnchorB;
+  const auto anchorDelta = [&]() -> Eigen::Vector3d {
+    const Eigen::Vector3d parentAnchorWorld
+        = restoredParent->getWorldTransform() * parentAnchor;
+    const Eigen::Vector3d childAnchorWorld
+        = restoredChild->getWorldTransform() * childAnchor;
+    return childAnchorWorld - parentAnchorWorld;
+  };
+  const auto sliderAxisWorld = [&]() {
+    return restoredParent->getWorldTransform().linear() * sliderAxis;
+  };
+  const auto sliderPosition = [&]() {
+    const Eigen::Vector3d axis = sliderAxisWorld();
+    return anchorDelta().dot(axis);
+  };
+  const auto orthogonalAnchorResidual = [&]() {
+    const Eigen::Vector3d delta = anchorDelta();
+    const Eigen::Vector3d axis = sliderAxisWorld();
+    return (delta - delta.dot(axis) * axis).norm();
+  };
+  const auto relativeRotationError = [&]() {
+    return (restoredParent->getWorldTransform().linear().transpose()
+                * restoredChild->getWorldTransform().linear()
+            - Eigen::Matrix3d::Identity())
+        .norm();
+  };
+
+  const double capturedSliderPosition = sliderPosition();
+  double maxSliderDrift = 0.0;
+  double maxOrthogonalResidual = 0.0;
+  double maxRotationError = 0.0;
+  for (int k = 0; k < 20; ++k) {
+    restored.step();
+    maxSliderDrift = std::max(
+        maxSliderDrift, std::abs(sliderPosition() - capturedSliderPosition));
+    maxOrthogonalResidual
+        = std::max(maxOrthogonalResidual, orthogonalAnchorResidual());
+    maxRotationError = std::max(maxRotationError, relativeRotationError());
+  }
+
+  EXPECT_LT(maxSliderDrift, 1e-3);
+  EXPECT_LT(maxOrthogonalResidual, 1e-6);
+  EXPECT_LT(maxRotationError, 1e-6);
+}
+
 // PLAN-104 AVBD articulated bridge: current-pose extraction should also rebuild
 // a private fixed point-joint between two movable same-multibody links after a
 // break/reset round trip. Unlike spherical rows, fixed rows re-engage both the

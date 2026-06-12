@@ -4,6 +4,44 @@
 
 North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
 deformable row coverage with evidence against the native source corpus. Do not
+count focused articulated motor persistence tests as fracture-corpus,
+CPU-win, GPU, paper-number, or full parameter-sweep gates without corpus,
+benchmark JSON, plot data, and same-hardware comparisons.
+
+Current resumed slice: current-pose private movable-pair revolute and
+prismatic AVBD motor rows now have focused simulation-mode binary save/load
+regressions proving tiny restored effort limits remain effective after reload.
+The tests preserve the generated private `AvbdRigidWorldPointJointConfig`,
+command, effort-limit, mask, and non-cardinal basis state, then step the
+restored world to verify the hard anchor/hinge/masked rows stay active while
+the free-axis motor does not become an unbounded velocity target.
+
+Validation for this slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_variational_integration`
+  passed.
+- `pixi run -- bash -lc "build/default/cpp/Release/bin/test_variational_integration --gtest_filter='VariationalIntegration.AvbdRevolutePointJointCurrentPoseTinyTorqueLimitSurvivesSaveLoad:VariationalIntegration.AvbdPrismaticPointJointCurrentPoseTinyForceLimitSurvivesSaveLoad' --gtest_brief=1"`
+  passed, 2 tests.
+- `pixi run lint` passed.
+- Re-running the focused target/test filter after lint passed.
+- `pixi run build` passed.
+- `git diff --check` passed.
+
+Fresh-session state for this slice: branch
+`avbd/source-row-extraction-precheck`, upstream
+`origin/avbd/source-row-extraction-precheck`. After this slice is committed,
+use the latest local HEAD as the resume point. Do not push, rerun hosted CI,
+mutate PRs, or clean/delete branches without explicit user approval.
+
+Next preferred local gap after this slice remains broader articulated/fracture
+corpus coverage, then rigid contact persistence completeness and source-demo
+CPU/GPU parity. Keep all claims narrow unless corpus or benchmark evidence
+supports them.
+
+## Previous High-Ratio Sweep Checkpoint (2026-06-12)
+
+North star: continue PLAN-104 AVBD toward source-shaped articulated rigid and
+deformable row coverage with evidence against the native source corpus. Do not
 count focused benchmark rows as CPU-win, GPU, paper-number, or full parameter
 sweep gates without benchmark JSON, plot data, and same-hardware comparisons.
 

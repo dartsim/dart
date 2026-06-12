@@ -9,6 +9,19 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): current-pose private
+  movable-pair revolute and prismatic AVBD motor rows now have focused
+  simulation-mode binary save/load regressions proving tiny restored effort
+  limits remain effective after reload. The tests preserve the generated
+  private `AvbdRigidWorldPointJointConfig`, command, effort-limit, mask, and
+  non-cardinal basis state, then step the restored world to verify the hard
+  anchor/hinge/masked rows stay active while the free-axis motor does not
+  become an unbounded velocity target. Local validation passed the focused
+  `test_variational_integration` target build, the two-test restored
+  tiny-limit filter before and after lint, `pixi run lint`, `pixi run build`,
+  and `git diff --check`. This is narrow persistent private articulated motor
+  evidence only, not broad fracture/corpus, CPU-win, GPU, or paper-number
+  evidence.
 - Final stop handoff (2026-06-12): the user explicitly directed the session to
   stop working further, only ensure the hand-off docs, and then literally
   stop. Do not continue implementation, verification, hosted CI work, branch

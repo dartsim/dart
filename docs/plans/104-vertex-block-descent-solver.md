@@ -1033,7 +1033,9 @@ implementation work should prefer one of these gaps, in order:
    reset while relative orientation remains free. Current-pose movable-pair
    revolute/prismatic tiny-limit regressions now also prove generated free-axis
    motor rows honor finite effort caps while captured anchor/hinge/masked rows
-   remain active. Public articulated
+   remain active, and restored simulation-mode binary save/load regressions now
+   prove those tiny effort caps remain effective after reload. Public
+   articulated
    revolute/prismatic floating-endpoint plus selected off-origin-anchor facade
    drive regressions now also use non-cardinal axes and check the generated AVBD
    free-axis basis column before stepping, and public same-multibody
@@ -1070,8 +1072,9 @@ implementation work should prefer one of these gaps, in order:
    and captured current-pose anchors, and proves reset rebuilds only the
    generated linear rows while relative orientation remains free, but broader
    persistent private articulated motor coverage beyond the command-update,
-   movable link-pair, tiny-limit, one-DOF break/reset, spherical reset, and
-   movable-pair plus direct world-link save/load/reset checks remains open.
+   movable link-pair, tiny-limit, restored tiny-limit save/load, one-DOF
+   break/reset, spherical reset, and movable-pair plus direct world-link
+   save/load/reset checks remains open.
    Extend that bridge to those row families, then broaden fracture
    lifecycle/corpus coverage beyond the narrow hard point-joint threshold and
    the now-covered private fixed-row/world-fixed reset plus 2D Fracture/3D
