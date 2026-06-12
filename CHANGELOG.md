@@ -1458,6 +1458,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     solver's concrete `supportsProblem(problem)` predicate instead of a
     manifest-family support mapping, keeping smoke coverage aligned with
     solver-specific native-route limits.
+  - Removed redundant manifest-family prechecks from concrete benchmark-routing
+    helpers for active-set transition, mildly ill-conditioned, near-singular,
+    and singular-degenerate LCP packets now that those helpers receive exact
+    generated problems and use concrete solver support directly.
   - Filtered the manifest-generated `BM_LcpCompare` and
     serial/parallel `BM_LcpBatch` benchmark argument rows through concrete
     generated problem support, so solver rows and problem sizes stay tied to

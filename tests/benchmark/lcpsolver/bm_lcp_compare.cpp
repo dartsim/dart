@@ -4538,35 +4538,6 @@ std::string_view getLargerActiveSetTransitionCaseName(
   return "Unknown";
 }
 
-dart::test::LcpProblemSupport getLargerActiveSetTransitionProblemSupport(
-    const LargerActiveSetTransitionBenchmarkCase testCase)
-{
-  switch (testCase) {
-    case LargerActiveSetTransitionBenchmarkCase::Standard32:
-    case LargerActiveSetTransitionBenchmarkCase::Standard64:
-    case LargerActiveSetTransitionBenchmarkCase::Standard128:
-      return dart::test::LcpProblemSupport::Standard;
-    case LargerActiveSetTransitionBenchmarkCase::Boxed32:
-    case LargerActiveSetTransitionBenchmarkCase::Boxed64:
-    case LargerActiveSetTransitionBenchmarkCase::Boxed128:
-      return dart::test::LcpProblemSupport::Boxed;
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex8:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex12:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex16:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex24:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex32:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex48:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex64:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex96:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex128:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex192:
-    case LargerActiveSetTransitionBenchmarkCase::CoupledFrictionIndex256:
-      return dart::test::LcpProblemSupport::FrictionIndex;
-  }
-
-  return dart::test::LcpProblemSupport::Standard;
-}
-
 bool isLargerActiveSetTransitionFrictionIndexCase(
     const LargerActiveSetTransitionBenchmarkCase testCase)
 {
@@ -4857,60 +4828,6 @@ std::string_view getMildIllConditionedCaseName(
   }
 
   return "Unknown";
-}
-
-dart::test::LcpProblemSupport getMildIllConditionedProblemSupport(
-    const MildIllConditionedBenchmarkCase testCase)
-{
-  switch (testCase) {
-    case MildIllConditionedBenchmarkCase::Standard32:
-      return dart::test::LcpProblemSupport::Standard;
-    case MildIllConditionedBenchmarkCase::Boxed16:
-      return dart::test::LcpProblemSupport::Boxed;
-    case MildIllConditionedBenchmarkCase::FrictionIndex8:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex6:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex8:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex12:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex16:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex24:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex32:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex48:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex64:
-    case MildIllConditionedBenchmarkCase::CoupledFrictionIndex96:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex6:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex8:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex12:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex16:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex24:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex32:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex48:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex64:
-    case MildIllConditionedBenchmarkCase::StrongCoupledFrictionIndex96:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex6:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex8:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex12:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex16:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex24:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex32:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex48:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex64:
-    case MildIllConditionedBenchmarkCase::StrongerCoupledFrictionIndex96:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex6:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex8:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex12:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex16:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex24:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex32:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex48:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex64:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex96:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex128:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex192:
-    case MildIllConditionedBenchmarkCase::ExtremeCoupledFrictionIndex256:
-      return dart::test::LcpProblemSupport::FrictionIndex;
-  }
-
-  return dart::test::LcpProblemSupport::Standard;
 }
 
 template <std::size_t N>
@@ -5407,33 +5324,6 @@ std::string_view getNearSingularCaseName(
   return "Unknown";
 }
 
-dart::test::LcpProblemSupport getNearSingularProblemSupport(
-    const NearSingularBenchmarkCase testCase)
-{
-  switch (testCase) {
-    case NearSingularBenchmarkCase::Standard8:
-      return dart::test::LcpProblemSupport::Standard;
-    case NearSingularBenchmarkCase::Boxed8:
-      return dart::test::LcpProblemSupport::Boxed;
-    case NearSingularBenchmarkCase::CoupledFrictionIndex3:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex6:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex9:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex12:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex16:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex24:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex32:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex48:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex64:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex96:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex128:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex192:
-    case NearSingularBenchmarkCase::CoupledFrictionIndex256:
-      return dart::test::LcpProblemSupport::FrictionIndex;
-  }
-
-  return dart::test::LcpProblemSupport::Standard;
-}
-
 bool isNearSingularFrictionIndexCase(const NearSingularBenchmarkCase testCase)
 {
   return testCase == NearSingularBenchmarkCase::CoupledFrictionIndex3
@@ -5761,38 +5651,6 @@ std::string_view getSingularDegenerateCaseName(
   }
 
   return "Unknown";
-}
-
-dart::test::LcpProblemSupport getSingularDegenerateProblemSupport(
-    const SingularDegenerateBenchmarkCase testCase)
-{
-  switch (testCase) {
-    case SingularDegenerateBenchmarkCase::Standard16:
-    case SingularDegenerateBenchmarkCase::Standard32:
-    case SingularDegenerateBenchmarkCase::Standard64:
-    case SingularDegenerateBenchmarkCase::Standard128:
-      return dart::test::LcpProblemSupport::Standard;
-    case SingularDegenerateBenchmarkCase::Boxed16:
-    case SingularDegenerateBenchmarkCase::Boxed32:
-    case SingularDegenerateBenchmarkCase::Boxed64:
-    case SingularDegenerateBenchmarkCase::Boxed128:
-      return dart::test::LcpProblemSupport::Boxed;
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex6:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex8:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex12:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex16:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex24:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex32:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex48:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex64:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex96:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex128:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex192:
-    case SingularDegenerateBenchmarkCase::CoupledFrictionIndex256:
-      return dart::test::LcpProblemSupport::FrictionIndex;
-  }
-
-  return dart::test::LcpProblemSupport::Standard;
 }
 
 bool isSingularDegenerateFrictionIndexCase(
@@ -11731,11 +11589,6 @@ bool SolverShouldRunMildIllConditionedBenchmark(
     const MildIllConditionedBenchmarkCase testCase,
     const LcpProblem& problem)
 {
-  if (!dart::test::supportsProblem(
-          solver, getMildIllConditionedProblemSupport(testCase))) {
-    return false;
-  }
-
   constexpr std::array<std::string_view, 14> kScopedSolvers{{
       "Pgs",
       "SymmetricPsor",
@@ -11830,11 +11683,6 @@ bool SolverShouldRunNearSingularBenchmark(
     const NearSingularBenchmarkCase testCase,
     const LcpProblem& problem)
 {
-  if (!dart::test::supportsProblem(
-          solver, getNearSingularProblemSupport(testCase))) {
-    return false;
-  }
-
   if (testCase == NearSingularBenchmarkCase::Standard8) {
     constexpr std::array<std::string_view, 2> kStandardSolvers{{
         "Dantzig",
@@ -11877,15 +11725,8 @@ bool SolverShouldRunNearSingularBatchBenchmark(
 }
 
 bool SolverShouldRunLargerActiveSetTransitionBenchmark(
-    const dart::test::LcpSolverManifestEntry& solver,
-    const LargerActiveSetTransitionBenchmarkCase testCase,
-    const LcpProblem& problem)
+    const dart::test::LcpSolverManifestEntry& solver, const LcpProblem& problem)
 {
-  if (!dart::test::supportsProblem(
-          solver, getLargerActiveSetTransitionProblemSupport(testCase))) {
-    return false;
-  }
-
   constexpr std::array<std::string_view, 17> kScalableSolvers{{
       "Dantzig",
       "Pgs",
@@ -11912,7 +11753,6 @@ bool SolverShouldRunLargerActiveSetTransitionBenchmark(
 
 bool SolverShouldRunProductionActiveSetTransitionBatchBenchmark(
     const dart::test::LcpSolverManifestEntry& solver,
-    const LargerActiveSetTransitionBenchmarkCase testCase,
     const std::vector<LcpProblem>& problems)
 {
   if (problems.empty()) {
@@ -11920,7 +11760,7 @@ bool SolverShouldRunProductionActiveSetTransitionBatchBenchmark(
   }
 
   return SolverShouldRunLargerActiveSetTransitionBenchmark(
-             solver, testCase, problems.front())
+             solver, problems.front())
          && SolverSupportsConcreteProblemBatch(solver, problems);
 }
 
@@ -11983,11 +11823,6 @@ bool SolverShouldRunSingularDegenerateBenchmark(
     const SingularDegenerateBenchmarkCase testCase,
     const LcpProblem& problem)
 {
-  if (!dart::test::supportsProblem(
-          solver, getSingularDegenerateProblemSupport(testCase))) {
-    return false;
-  }
-
   if (testCase == SingularDegenerateBenchmarkCase::Standard16
       || testCase == SingularDegenerateBenchmarkCase::Standard32
       || testCase == SingularDegenerateBenchmarkCase::Standard64
@@ -12383,8 +12218,7 @@ void RegisterLargerActiveSetTransitionBenchmarks()
     const auto problem
         = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase, problem)) {
+      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(solver, problem)) {
         continue;
       }
 
@@ -12414,8 +12248,7 @@ void RegisterStressActiveSetTransitionBenchmarks()
     const auto problem
         = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase, problem)) {
+      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(solver, problem)) {
         continue;
       }
 
@@ -12445,8 +12278,7 @@ void RegisterExtremeActiveSetTransitionBenchmarks()
     const auto problem
         = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase, problem)) {
+      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(solver, problem)) {
         continue;
       }
 
@@ -12481,8 +12313,7 @@ void RegisterProductionActiveSetTransitionBenchmarks()
     const auto problem
         = MakeLargerActiveSetTransitionBenchmarkProblem(testCase);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
-      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(
-              solver, testCase, problem)) {
+      if (!SolverShouldRunLargerActiveSetTransitionBenchmark(solver, problem)) {
         continue;
       }
 
@@ -12528,7 +12359,7 @@ void RegisterProductionActiveSetTransitionBatchBenchmarks()
         = MakeProductionActiveSetTransitionBatchProblems(testCase, batchSize);
     for (const auto& solver : dart::test::kLcpSolverManifest) {
       if (!SolverShouldRunProductionActiveSetTransitionBatchBenchmark(
-              solver, testCase, problems)) {
+              solver, problems)) {
         continue;
       }
 

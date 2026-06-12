@@ -3,21 +3,64 @@
 ## Current Reality — 2026-06-11 Active Continuation
 
 The current continuation builds on
+`38266f484e2 Route LCP smoke tests through concrete support` on
+`feature/lcp-solver-interface-demos`.
+
+The latest implementation slice removes redundant manifest-family prechecks
+from concrete benchmark-routing helpers:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` no longer keeps
+  `getMildIllConditionedProblemSupport(...)`,
+  `getNearSingularProblemSupport(...)`,
+  `getLargerActiveSetTransitionProblemSupport(...)`, or
+  `getSingularDegenerateProblemSupport(...)`.
+- The corresponding `SolverShouldRun...Benchmark(...)` helpers now rely on
+  explicit solver scopes plus `SolverSupportsConcreteProblem(...)` for exact
+  generated problems.
+- The production active-set transition batch helper now uses the same simplified
+  concrete-problem helper signature.
+- `CHANGELOG.md` and
+  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
+
+Verification completed for this slice:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(MildIllConditioned|NearSingular|LargerActiveSetTransition|ProductionActiveSetTransitionBatchSerial|SingularDegenerate|SingularDegenerateFrictionIndexBatchSerial|SingularDegenerateStandardBoxedBatchSerial)/(Standard32|Boxed16|FrictionIndex8|Standard8|Boxed8|CoupledFrictionIndex3|Standard16|CoupledFrictionIndex6|CoupledFrictionIndex8)/(Direct|MPRGP|Baraff|Dantzig|Pgs|ShockPropagation|BoxedSemiSmoothNewton)'
+pixi run lint
+```
+
+Observed results:
+
+- The first benchmark-list attempt caught an unused `testCase` parameter after
+  the precheck removal; the helper signature and callers were simplified.
+- The rerun rebuilt and linked `BM_LCP_COMPARE`, then listed concrete active
+  set, production batch, mild/near-singular, and singular-degenerate rows for
+  the scoped solver/problem combinations.
+- `pixi run lint` passed, including the LCP solver roster check.
+
+Resume status:
+
+- The broader LCP solver/interface/demo objective is not complete. Resume from
+  the next concrete support-routing, solver-domain, demo, benchmark, or
+  performance gap after this slice lands.
+
+## Previous Reality — 2026-06-11 All-Solvers Smoke Checkpoint
+
+That continuation built on
 `29ece871105 Filter pivoting LCP sweeps concretely` on
 `feature/lcp-solver-interface-demos`.
 
-The latest implementation slice routes the generated all-solvers smoke-test
-skip helper through concrete per-problem support:
+The implementation slice routed the generated all-solvers smoke-test skip
+helper through concrete per-problem support:
 
 - `tests/unit/math/lcp/test_all_solvers_smoke.cpp` removes the local
   `ProblemCategory` to `LcpProblemSupport` manifest-family mapping.
 - `canSolve(...)` now constructs the solver instance and calls
   `instance->supportsProblem(problem.problem)`, returning false when solver
   creation fails.
-- `CHANGELOG.md` and
-  `docs/dev_tasks/lcp_solver_interface_demos/README.md` describe the slice.
 
-Verification completed for this slice:
+Verification completed for that slice:
 
 ```bash
 pixi run test-lcpsolver
@@ -30,12 +73,6 @@ Observed results:
   `100% tests passed, 0 tests failed out of 17`.
 - `UNIT_math_lcp_math_lcp_all_solvers_smoke` passed.
 - `pixi run lint` passed, including the LCP solver roster check.
-
-Resume status:
-
-- The broader LCP solver/interface/demo objective is not complete. Resume from
-  the next concrete support-routing, solver-domain, demo, benchmark, or
-  performance gap after this slice lands.
 
 ## Previous Reality — 2026-06-11 Pivoting Checkpoint
 

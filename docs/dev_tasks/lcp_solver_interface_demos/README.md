@@ -108,6 +108,9 @@
 - [x] Routed the all-solvers LCP smoke-test skip helper through concrete
       `supportsProblem(problem)` predicates and verified the focused LCP test
       suite.
+- [x] Removed redundant manifest-family prechecks from concrete
+      benchmark-routing helpers for active-set transition, mildly
+      ill-conditioned, near-singular, and singular-degenerate packets.
 - [ ] Continue the remaining DART 7 audit of LCP solver/problem interfaces and
       py-demo coverage from a fresh session.
 
@@ -147,12 +150,49 @@ rediscovering the current branch state.
 
 ## Latest Code Checkpoint
 
-The latest implementation checkpoint is all-solvers smoke-test concrete
-support-routing, following pivoting scale sweep concrete support-routing,
-singular-degenerate batch, conditioning, active set scale, Python demo concrete
-native-case profile, benchmark concrete-gate cleanup, grouped batch
-support-routing, generated coverage support-routing, and heavyweight contact
-benchmark support-gating slices.
+The latest implementation checkpoint removes the remaining manifest-family
+prechecks from concrete benchmark-routing helpers that already receive exact
+generated problems, following all-solvers smoke-test concrete support-routing,
+pivoting scale sweep concrete support-routing, singular-degenerate batch,
+conditioning, active set scale, Python demo concrete native-case profile,
+benchmark concrete-gate cleanup, grouped batch support-routing, generated
+coverage support-routing, and heavyweight contact benchmark support-gating
+slices.
+
+## Concrete Benchmark Helper Cleanup Checkpoint
+
+The latest implementation checkpoint removes redundant manifest-family gates
+from helper predicates that already have concrete generated problems:
+
+- `SolverShouldRunMildIllConditionedBenchmark(...)`,
+  `SolverShouldRunNearSingularBenchmark(...)`,
+  `SolverShouldRunLargerActiveSetTransitionBenchmark(...)`, and
+  `SolverShouldRunSingularDegenerateBenchmark(...)` now rely on their explicit
+  solver scopes plus `SolverSupportsConcreteProblem(...)`.
+- The now-unused
+  `getMildIllConditionedProblemSupport(...)`,
+  `getNearSingularProblemSupport(...)`,
+  `getLargerActiveSetTransitionProblemSupport(...)`, and
+  `getSingularDegenerateProblemSupport(...)` helpers were removed.
+- The production active-set transition batch helper now shares the simpler
+  concrete-problem helper signature.
+
+Verification for this checkpoint:
+
+```bash
+pixi run bm lcp_compare -- --benchmark_list_tests=true \
+  --benchmark_filter='BM_Lcp(MildIllConditioned|NearSingular|LargerActiveSetTransition|ProductionActiveSetTransitionBatchSerial|SingularDegenerate|SingularDegenerateFrictionIndexBatchSerial|SingularDegenerateStandardBoxedBatchSerial)/(Standard32|Boxed16|FrictionIndex8|Standard8|Boxed8|CoupledFrictionIndex3|Standard16|CoupledFrictionIndex6|CoupledFrictionIndex8)/(Direct|MPRGP|Baraff|Dantzig|Pgs|ShockPropagation|BoxedSemiSmoothNewton)'
+pixi run lint
+```
+
+Observed results:
+
+- The first benchmark-list attempt caught an unused `testCase` parameter after
+  the precheck removal; the helper signature and callers were simplified.
+- The rerun rebuilt and linked `BM_LCP_COMPARE`, then listed concrete active
+  set, production batch, mild/near-singular, and singular-degenerate rows for
+  the scoped solver/problem combinations.
+- `pixi run lint` passed, including the LCP solver roster check.
 
 ## All-Solvers Smoke Test Support-Routing Checkpoint
 
