@@ -9,11 +9,13 @@ from examples.demos.runner import (
     DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
+    REPLAY_TIMELINE_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     ScenePanel,
     SceneSetup,
     _attach_replay_controls,
+    _capture_metadata_mapping,
     _default_initial_scene_args,
     _has_world_replay_api,
     _make_world_factory,
@@ -188,6 +190,42 @@ def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> No
     assert replay_world.replay_frame_count == 2
     assert bridge.sync_calls == 2
     assert captured_setup["value"].info["replay_panel_title"] == "Replay"
+
+
+def test_capture_metadata_projects_replay_timeline_for_manifests() -> None:
+    replay_world = _FakeReplayWorld()
+    bridge = _FakeReplayBridge(replay_world)
+    setup = SceneSetup(
+        world=bridge.render_world,
+        pre_step=bridge.pre_step,
+        info={
+            "sx_world": replay_world,
+            REPLAY_TIMELINE_INFO_KEY: {
+                "signal_label": "Diagnostic gap",
+                "signal": lambda snapshot: 1.0,
+                "markers": lambda snapshot: 0.0,
+            },
+        },
+    )
+    scene = PythonDemoScene(
+        id="replayable",
+        title="Replayable",
+        category="Tests",
+        summary="Uses a scene-owned Replay timeline.",
+        build=lambda: setup,
+    )
+
+    setup = _attach_replay_controls(scene, setup)
+    metadata = _capture_metadata_mapping(setup)
+
+    assert metadata == {
+        "replay_timeline": {
+            "has_markers": True,
+            "has_signal": True,
+            "panel": "Replay",
+            "signal_label": "Diagnostic gap",
+        }
+    }
 
 
 def test_shared_replay_panel_scrubs_and_replays_saved_world_states() -> None:

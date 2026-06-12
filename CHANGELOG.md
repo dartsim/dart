@@ -95,7 +95,11 @@
     in-viewer panel and generated review cards now also separate live
     `py-demos --scene` open commands from reproducible `py-demo-capture`
     commands, so users can jump from a packet row back into interactive
-    debugging without reconstructing the scene command by hand.
+    debugging without reconstructing the scene command by hand. Per-scene
+    capture manifests and workflow review cards now also expose JSON-safe
+    Replay timeline metadata for rows that publish scene-owned value tracks,
+    so the generated evidence packet names the scrubber signal and marker
+    availability without serializing Python callables.
     Add scene-owned Replay timeline metadata to the multibody dynamics-terms
     row so saved-state scrubbing can track coupled-versus-heavy response gap
     and jump to off-diagonal-coupling or heavy-load torque frames.

@@ -2,13 +2,50 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_loop_closure` Replay timeline slice after
+This checkpoint adds reviewer-facing Replay timeline metadata to the capture
+packet after the numbered 36-row Replay timeline pass completed. Single-scene
+`py-demo-capture` manifests now include a JSON-safe
+`scene_metadata.replay_timeline` summary with the Replay panel name, value-track
+label, and signal/marker availability; workflow `review_index.html` cards show
+that Replay track next to the existing row guidance and metric summaries.
+
+Expected repository state after this hand-off:
+
+- Branch: `feature/rigid-body-gui-visual-verification`.
+- Local `HEAD` before this implementation work:
+  `2e3b1c0d4fc Add loop closure replay timeline`.
+- The branch had no associated PR and was ahead of
+  `origin/feature/rigid-body-gui-visual-verification` by fifteen commits before
+  this slice.
+- The latest implementation checkpoint covered by this hand-off is the Replay
+  timeline capture-metadata slice: `python/examples/demos/runner.py` emits
+  `scene_capture_metadata` through the existing capture metrics JSONL path,
+  `scripts/capture_py_demo.py` stores it as `scene_metadata` and surfaces the
+  Replay track in workflow review cards, and tests now guard the projection,
+  manifest, review index, and sidecar-documented Replay rows.
+- A real row-36 workflow capture under
+  `/tmp/dart_capture_rigid_workflow_replay_metadata_row36_1781289001` completed
+  with `status=complete`, `capture_count=1`, `completed_count=1`, and
+  `failed_count=0`; the per-scene manifest recorded
+  `Max closure residual ratio`, `has_signal=true`, `has_markers=true`, and
+  panel `Replay`; the review card showed
+  `Max closure residual ratio (signal, markers)`.
+- This checkpoint remains local until explicitly pushed in a future approved
+  session.
+- Before any future commit, rerun the repository-mandated `pixi run lint`.
+- Historical note: immediately before this continuation resumed, the user had
+  requested a stop-only hand-off. That stop state left these same
+  implementation files local and uncommitted; this continuation supersedes that
+  pause by completing the slice and recording verification below.
+
+Previous loop-closure checkpoint context: it completed the
+`rigid_loop_closure` Replay timeline slice after
 the multibody solver-family checkpoint. The variational rigid multibody
 loop-closure row now uses max closure residual ratio as its Replay value track
 and marks solve-advantage, residual-versus-solved separation, distance-family
 tip drift, and rigid-orientation frames.
 
-Expected repository state after this hand-off:
+Expected repository state for that earlier checkpoint:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
 - Local `HEAD` before the loop-closure implementation work:
@@ -448,6 +485,10 @@ recorded below.
 
 Current snapshot:
 
+- Local `HEAD` before the Replay capture-metadata implementation work was
+  `2e3b1c0d4fc Add loop closure replay timeline`. The branch was fifteen
+  commits ahead of `origin/feature/rigid-body-gui-visual-verification`, clean,
+  and had no associated PR before this slice.
 - Local `HEAD` before the loop-closure implementation work was
   `1add2036097 Add multibody solver family replay timeline`, which is local
   until explicitly pushed in a future approved session. `git status -sb` before
@@ -494,6 +535,8 @@ Current snapshot:
   center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
   Replay timeline checkpoints are local and unpushed until explicit future
   approval.
+- The Replay timeline capture-metadata checkpoint is also local and unpushed
+  until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 - This checkpoint remains local. Do not push without explicit future approval.
 
@@ -504,11 +547,28 @@ local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
 motor-limits, passive-parameters, screw-joint pitch, multibody dynamics-terms,
 link center-of-mass, link-Jacobian, multibody solver-family, and loop-closure
-Replay timeline slices after the pushed docs-only handoff. Re-evaluate the
-durable sidecar and dashboard before selecting the next bounded rigid
-visual-verification slice. The numbered Replay timeline pass now covers all 36
-current rigid workflow rows. Do not push without explicit approval in that
-session.
+Replay timeline slices, plus the Replay capture-metadata checkpoint, after the
+pushed docs-only handoff. Re-evaluate the durable sidecar and dashboard before
+selecting the next bounded rigid visual-verification slice. A useful next
+evidence step is a full workflow capture refresh so all numbered review cards
+carry Replay labels, but do not retire the task without maintainer approval. Do
+not push without explicit approval in that session.
+
+Replay capture-metadata checks for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_capture_metadata_projects_replay_timeline_for_manifests python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/integration/test_demos_cycle.py::test_rigid_visual_replay_timeline_rows_publish_scene_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_loop_closure_replay_metadata_1781289000
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 36 --workflow-end-row 36 --output-dir /tmp/dart_capture_rigid_workflow_replay_metadata_row36_1781289001
+pixi run lint
+git diff --check
+```
+
+The post-lint focused suite reported `10 passed`. The real single-scene
+capture recorded `scene_metadata.replay_timeline.signal_label` as
+`Max closure residual ratio` with both signal and markers enabled; the one-row
+workflow capture completed row 36 and the generated `review_index.html` showed
+`Max closure residual ratio (signal, markers)`.
 
 Passive-parameters checks for this slice:
 
@@ -598,6 +658,15 @@ max world/body gap about `0.2055`, and historical max absolute torques about
 
 ## Context That Would Be Lost
 
+- The Replay capture-metadata slice deliberately serializes only a JSON-safe
+  projection of `info["replay_timeline"]`: `signal_label`, `has_signal`,
+  `has_markers`, and panel name. Do not try to serialize the `signal` or
+  `markers` callables in manifests.
+- The capture helper cannot inspect `SceneSetup.info` from the parent workflow
+  process because each row capture runs as a child process. The runner emits
+  `scene_capture_metadata` through the existing `scene_metrics.jsonl` path, and
+  `scripts/capture_py_demo.py` stores the latest metadata event in
+  `manifest.json` as `scene_metadata`.
 - The completed multibody solver-family Replay timeline slice adds
   `_last_float(...)`,
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and

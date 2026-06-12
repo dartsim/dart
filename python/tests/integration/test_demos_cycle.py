@@ -33,6 +33,7 @@ import pytest
 from examples.demos import make_demo_scenes, run  # noqa: E402
 from examples.demos.runner import (  # noqa: E402
     CAPTURE_METRICS_INFO_KEY,
+    REPLAY_TIMELINE_INFO_KEY,
     RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS,
     RIGID_VISUAL_WORKFLOW_GUIDES,
     RIGID_VISUAL_WORKFLOW_LABELS,
@@ -1095,6 +1096,28 @@ def test_rigid_visual_workflow_guidance_matches_sidecar() -> None:
         assert guide.next_scene_id == (
             workflow_ids[index + 1] if index + 1 < len(workflow_ids) else None
         )
+
+
+def test_rigid_visual_replay_timeline_rows_publish_scene_metadata() -> None:
+    _require_simulation_symbols("World")
+    sidecar_docs = _read_rigid_visual_workflow_capture_metric_docs()
+    replay_rows = [
+        scene_id
+        for scene_id, evidence_text in sidecar_docs.items()
+        if "Replay timeline coverage" in evidence_text
+    ]
+    scene_by_id = {scene.id: scene for scene in make_demo_scenes()}
+
+    assert replay_rows
+    assert replay_rows[-1] == "rigid_loop_closure"
+    for scene_id in replay_rows:
+        setup = scene_by_id[scene_id].build()
+        metadata = setup.info.get(REPLAY_TIMELINE_INFO_KEY)
+        assert isinstance(metadata, dict), scene_id
+        label = metadata.get("signal_label", metadata.get("label"))
+        assert isinstance(label, str) and label.strip(), scene_id
+        assert label != "Saved states", scene_id
+        assert "signal" in metadata or "value" in metadata, scene_id
 
 
 def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:

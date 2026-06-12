@@ -657,6 +657,30 @@ def _read_scene_metrics_summary(path: pathlib.Path) -> dict[str, object] | None:
     }
 
 
+def _read_scene_metadata(path: pathlib.Path) -> dict[str, object] | None:
+    if not path.is_file():
+        return None
+
+    latest_metadata: dict[str, object] | None = None
+    with path.open(encoding="utf-8") as stream:
+        for line_number, line in enumerate(stream, start=1):
+            text = line.strip()
+            if not text:
+                continue
+            try:
+                payload = json.loads(text)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"{path}:{line_number} is not valid JSON") from exc
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("event") != "scene_capture_metadata":
+                continue
+            metadata = payload.get("metadata")
+            if isinstance(metadata, dict):
+                latest_metadata = metadata
+    return latest_metadata
+
+
 def _ffmpeg_path() -> str | None:
     found = shutil.which("ffmpeg")
     if found is not None:
@@ -1118,6 +1142,20 @@ def _workflow_scene_manifest_summary(
                         key for key in held_fixed if isinstance(key, str)
                     )
 
+    scene_metadata = payload.get("scene_metadata")
+    if isinstance(scene_metadata, dict):
+        replay_timeline = scene_metadata.get("replay_timeline")
+        if isinstance(replay_timeline, dict):
+            label = replay_timeline.get("signal_label", replay_timeline.get("label"))
+            if isinstance(label, str) and label:
+                summary["replay_timeline_label"] = label
+            summary["replay_timeline_has_signal"] = bool(
+                replay_timeline.get("has_signal")
+            )
+            summary["replay_timeline_has_markers"] = bool(
+                replay_timeline.get("has_markers")
+            )
+
     return summary
 
 
@@ -1323,6 +1361,17 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     held_fixed_keys = summary.get("held_fixed_keys")
     if isinstance(held_fixed_keys, list) and held_fixed_keys:
         details.append(_workflow_detail("held fixed", ", ".join(held_fixed_keys)))
+    replay_timeline_label = summary.get("replay_timeline_label")
+    if isinstance(replay_timeline_label, str):
+        replay_tracks: list[str] = []
+        if summary.get("replay_timeline_has_signal"):
+            replay_tracks.append("signal")
+        if summary.get("replay_timeline_has_markers"):
+            replay_tracks.append("markers")
+        replay_detail = replay_timeline_label
+        if replay_tracks:
+            replay_detail = f"{replay_detail} ({', '.join(replay_tracks)})"
+        details.append(_workflow_detail("replay", replay_detail))
     metric_keys = summary.get("metric_keys")
     if isinstance(metric_keys, list) and metric_keys:
         shown = ", ".join(str(key) for key in metric_keys[:8])
@@ -1897,6 +1946,7 @@ def main(argv: list[str] | None = None) -> int:
         },
         "capture": capture_metadata,
         "scene_metrics": None,
+        "scene_metadata": None,
         "show_ui": args.show_ui,
         "ui_ready": None,
         "visual_evidence": visual_evidence,
@@ -1933,6 +1983,7 @@ def main(argv: list[str] | None = None) -> int:
     manifest_payload["scene_metrics"] = _read_scene_metrics_summary(
         scene_metrics_events
     )
+    manifest_payload["scene_metadata"] = _read_scene_metadata(scene_metrics_events)
     manifest_payload["artifacts"]["scene_metrics_events"] = (
         str(scene_metrics_events) if scene_metrics_events.is_file() else None
     )

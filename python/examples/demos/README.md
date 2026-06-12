@@ -159,7 +159,10 @@ parameter-family changes are not conflated.
 The full workflow capture writes a top-level `review_index.html` contact sheet
 next to `manifest.json` so all numbered screenshots, per-scene manifests,
 frame directories, live open commands, capture commands, and metric summaries
-can be reviewed from one page. The panel also includes a current-row motion
+can be reviewed from one page. Rows with scene-owned Replay timeline metadata
+also write a JSON-safe `scene_metadata.replay_timeline` summary into each
+per-scene manifest, and the review card names the Replay track plus whether it
+has signal and marker tracks. The panel also includes a current-row motion
 packet command; workflow packets pass `--video --fps` through to the selected
 row captures and the review index links MP4 artifacts when `ffmpeg` is
 available.

@@ -188,6 +188,22 @@ def test_visual_capture_manifest_records_image_evidence(
                 [
                     json.dumps(
                         {
+                            "event": "scene_capture_metadata",
+                            "metadata": {
+                                "replay_timeline": {
+                                    "has_markers": True,
+                                    "has_signal": True,
+                                    "panel": "Replay",
+                                    "signal_label": "Diagnostic gap",
+                                }
+                            },
+                            "scene": "rigid_body",
+                            "source": "py-demo-scene",
+                        },
+                        sort_keys=True,
+                    ),
+                    json.dumps(
+                        {
                             "event": "scene_capture_metrics",
                             "frame": 1,
                             "metrics": {
@@ -236,6 +252,14 @@ def test_visual_capture_manifest_records_image_evidence(
 
     assert rc == 0
     manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["scene_metadata"] == {
+        "replay_timeline": {
+            "has_markers": True,
+            "has_signal": True,
+            "panel": "Replay",
+            "signal_label": "Diagnostic gap",
+        }
+    }
     assert manifest["capture"] == {
         "converted_frames": 2,
         "height": height,
@@ -933,6 +957,14 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
                             "held_fixed": 1,
                         },
                     },
+                    "scene_metadata": {
+                        "replay_timeline": {
+                            "has_markers": True,
+                            "has_signal": True,
+                            "panel": "Replay",
+                            "signal_label": "Diagnostic gap",
+                        }
+                    },
                 },
                 sort_keys=True,
             )
@@ -963,6 +995,7 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "scenes/01_rigid_body/rigid_body.png" in review_html
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
     assert "test_axis" in review_html
+    assert "Diagnostic gap (signal, markers)" in review_html
     assert "comparison_axis, held_fixed" in review_html
 
 

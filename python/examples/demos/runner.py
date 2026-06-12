@@ -51,6 +51,7 @@ DEFAULT_REPLAY_MAX_FRAMES = 900
 REPLAY_TIMELINE_INFO_KEY = "replay_timeline"
 REPLAY_WORLD_INFO_KEYS = ("sx_world", "physics_world")
 CAPTURE_METRICS_INFO_KEY = "capture_metrics"
+CAPTURE_METADATA_EVENT_NAME = "scene_capture_metadata"
 CAPTURE_METRICS_EVENT_NAME = "scene_capture_metrics"
 _REPLAY_RATE_LABELS = (
     "1 frame/tick",
@@ -895,7 +896,8 @@ class SceneSetup:
 
     ``info`` carries scene-specific metadata for tests and panels. Scenes may
     expose ``info["capture_metrics"]`` as a zero-argument callable returning a
-    JSON-like mapping for ``py-demo-capture`` manifests.
+    JSON-like mapping for ``py-demo-capture`` manifests, or
+    ``info["replay_timeline"]`` metadata for the shared Replay timeline.
     """
 
     world: Any | None = None
@@ -1584,6 +1586,59 @@ def _append_capture_metrics_event(
         stream.write(json.dumps(payload, sort_keys=True) + "\n")
 
 
+def _replay_timeline_capture_metadata(
+    setup: SceneSetup,
+) -> dict[str, Any] | None:
+    metadata = setup.info.get(REPLAY_TIMELINE_INFO_KEY)
+    if not isinstance(metadata, Mapping):
+        return None
+    replay_panel_title = setup.info.get("replay_panel_title")
+    if not isinstance(replay_panel_title, str) or not replay_panel_title:
+        return None
+    signal = metadata.get("signal", metadata.get("value"))
+    markers = metadata.get("markers", metadata.get("marker"))
+    return {
+        "has_markers": markers is not None,
+        "has_signal": signal is not None,
+        "panel": replay_panel_title,
+        "signal_label": _timeline_label(metadata),
+    }
+
+
+def _capture_metadata_mapping(setup: SceneSetup) -> dict[str, Any]:
+    metadata: dict[str, Any] = {}
+    replay_timeline = _replay_timeline_capture_metadata(setup)
+    if replay_timeline is not None:
+        metadata[REPLAY_TIMELINE_INFO_KEY] = replay_timeline
+    skipped_reason = setup.info.get("shared_replay_skipped_reason")
+    if isinstance(skipped_reason, str) and skipped_reason:
+        metadata["shared_replay_skipped_reason"] = skipped_reason
+    return metadata
+
+
+def _append_capture_metadata_event(
+    event_log_path: str,
+    scene_id: str,
+    setup: SceneSetup,
+) -> None:
+    if not event_log_path:
+        return
+    metadata = _capture_metadata_mapping(setup)
+    if not metadata:
+        return
+    parent = os.path.dirname(os.path.abspath(event_log_path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    payload = {
+        "event": CAPTURE_METADATA_EVENT_NAME,
+        "metadata": metadata,
+        "scene": scene_id,
+        "source": "py-demo-scene",
+    }
+    with open(event_log_path, "a", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload, sort_keys=True) + "\n")
+
+
 def _attach_capture_metrics_recording(
     scene: PythonDemoScene,
     setup: SceneSetup,
@@ -2089,6 +2144,7 @@ def _make_world_factory(
         with _bounded_scene_build(scene.id):
             setup = scene.build()
         setup = _attach_replay_controls(scene, setup)
+        _append_capture_metadata_event(capture_metrics_event_log, scene.id, setup)
         setup = _attach_capture_metrics_recording(
             scene, setup, capture_metrics_event_log
         )
