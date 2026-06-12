@@ -6004,6 +6004,67 @@ def test_rigid_multibody_dynamics_terms_expose_generalized_terms() -> None:
         assert capture_metrics["history"][f"{lane_key}_max_tau_norm"] == pytest.approx(
             max(controller._tau_history[lane_key])
         )
+    timeline = setup.info["replay_timeline"]
+    snapshot = controller.capture_replay_state()
+    latest_response_gap = max(
+        0.0,
+        controller._response_history["coupled_two_link"][-1]
+        - controller._response_history["heavy_distal"][-1],
+    )
+    assert timeline["signal_label"] == "Response norm gap"
+    assert timeline["signal"](snapshot) == pytest.approx(latest_response_gap)
+    assert (
+        timeline["markers"](
+            {
+                "response_history": {
+                    "coupled_two_link": [2.0],
+                    "heavy_distal": [0.5],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert timeline["markers"]({"coupling_history": [0.12]}) == pytest.approx(
+        1.0
+    )
+    assert (
+        timeline["markers"](
+            {
+                "tau_history": {
+                    "coupled_two_link": [3.0],
+                    "heavy_distal": [5.5],
+                }
+            }
+        )
+        == pytest.approx(1.0)
+    )
+    assert (
+        timeline["markers"](
+            {
+                "response_history": {
+                    "coupled_two_link": [1.2],
+                    "heavy_distal": [0.9],
+                },
+                "coupling_history": [0.05],
+                "tau_history": {
+                    "coupled_two_link": [3.0],
+                    "heavy_distal": [4.0],
+                },
+                "last_metrics": {
+                    "coupled_two_link": {
+                        "response_norm": 1.2,
+                        "coupling": 0.05,
+                        "tau_norm": 3.0,
+                    },
+                    "heavy_distal": {
+                        "response_norm": 0.9,
+                        "tau_norm": 4.0,
+                    },
+                },
+            }
+        )
+        == pytest.approx(0.0)
+    )
 
 
 def test_rigid_link_center_of_mass_offsets_gravity_torque() -> None:

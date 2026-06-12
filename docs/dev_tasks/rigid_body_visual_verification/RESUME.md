@@ -2,11 +2,12 @@
 
 ## Current Handoff (2026-06-12)
 
-This checkpoint completes the `rigid_screw_joint_pitch` Replay timeline slice
-after the passive-parameters checkpoint. The World multibody screw-pitch row
-now uses coarse/fine travel gap as its Replay value track and marks
-pitch-spread, zero-pitch contrast, or reverse-sign frames so saved-state
-scrubbing can jump to the pitch-coupling behavior users need to inspect.
+This checkpoint completes the `rigid_multibody_dynamics_terms` Replay timeline
+slice after the screw-joint pitch checkpoint. The World multibody generalized
+dynamics row now uses coupled-versus-heavy response gap as its Replay value
+track and marks response separation, off-diagonal coupling, or heavy-load
+torque frames so saved-state scrubbing can jump to the joint-space dynamics
+behavior users need to inspect.
 
 Expected repository state after this hand-off:
 
@@ -24,14 +25,18 @@ Expected repository state after this hand-off:
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
-  passive-parameters Replay timeline, followed by the screw-joint pitch Replay
-  timeline checkpoint.
+  passive-parameters Replay timeline, screw-joint pitch Replay timeline, and
+  multibody dynamics-terms Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a docs-only pushed
   checkpoint after the stack Replay timeline slice.
-- Local `HEAD` before this commit was
+- Local `HEAD` before the multibody dynamics-terms implementation commit was
+  `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
+  and ahead of `origin/feature/rigid-body-gui-visual-verification` by ten
+  commits before this slice.
+- Local `HEAD` before the screw-joint pitch implementation commit was
   `6f307966524 Add passive joint replay timeline`; the branch was ahead of
   `origin/feature/rigid-body-gui-visual-verification` by nine commits before
-  the screw-joint pitch slice.
+  that slice.
 - The kinematic-driver Replay timeline slice adds
   `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
   `info["replay_timeline"]` metadata. The intended value track label is
@@ -77,10 +82,16 @@ Expected repository state after this hand-off:
   `info["replay_timeline"]` metadata. The intended value track label is
   `Coarse/fine travel gap`, with markers for pitch-spread, zero-pitch
   contrast, or reverse-sign frames.
+- The current multibody dynamics-terms Replay timeline slice adds
+  `replay_timeline_signal(...)`, `replay_timeline_marker(...)`, and
+  `info["replay_timeline"]` metadata. The intended value track label is
+  `Response norm gap`, with markers for response separation, off-diagonal
+  coupling, or heavy-load torque frames.
 - There is no PR associated with this branch at checkpoint time.
 - The next adjacent durable sidecar row appears to be
-  `rigid_screw_joint_pitch`, but a future session should inspect the
-  sidecar and scene/test internals before implementing it.
+  `rigid_link_center_of_mass`, but a future session should inspect the
+  sidecar and scene/test internals before implementing it. No thresholds or
+  marker semantics have been finalized.
 - The current continuation resumed implementation from the active persistent
   goal and finished the pending guidance-audit checks after the previous
   hand-off-only stop checkpoint.
@@ -127,6 +138,10 @@ Expected repository state after this hand-off:
   metadata to `rigid_screw_joint_pitch`, updated tests and docs, and ran
   focused tests, drift guards, a real docked capture, `pixi run lint`, and
   `git diff --check`.
+- The multibody dynamics-terms Replay timeline continuation added
+  `replay_timeline` metadata to `rigid_multibody_dynamics_terms`, updated tests
+  and docs, and ran focused tests, drift guards, a real docked capture,
+  `pixi run lint`, and `git diff --check`.
 - Do not push these local commits without explicit approval in a future
   session.
 - Before any future commit, rerun the repository-mandated `pixi run lint`.
@@ -373,18 +388,21 @@ Current snapshot:
   normal-push Replay timeline, fixed-joint Replay timeline, and
   joint-breakage Replay timeline, distance-spring Replay timeline,
   limited-joints Replay timeline, motor-limits Replay timeline,
-  passive-parameters Replay timeline, followed by the screw-joint pitch Replay
-  timeline checkpoint.
+  passive-parameters Replay timeline, screw-joint pitch Replay timeline, and
+  multibody dynamics-terms Replay timeline checkpoint.
 - `d98abdde973 Refresh rigid visual verification handoff` is a pushed
   docs-only checkpoint.
-- Local `HEAD` before this commit was
+- Local `HEAD` before the multibody dynamics-terms implementation commit was
+  `29ab458fc01 Add screw joint replay timeline`; the branch was observed clean
+  and ten commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification` before this slice.
+- Local `HEAD` before the screw-joint pitch implementation commit was
   `6f307966524 Add passive joint replay timeline`; it was nine commits ahead
-  of `origin/feature/rigid-body-gui-visual-verification` before the screw-joint
-  pitch Replay timeline slice.
+  of `origin/feature/rigid-body-gui-visual-verification` before that slice.
 - The contact-manipulation, kinematic-driver, normal-push, fixed-joint,
   joint-breakage, distance-spring, limited-joints, motor-limits,
-  passive-parameters, and screw-joint pitch Replay timeline checkpoints are
-  local and unpushed until explicit future approval.
+  passive-parameters, screw-joint pitch, and multibody dynamics-terms Replay
+  timeline checkpoints are local and unpushed until explicit future approval.
 - There is no PR associated with this branch at checkpoint time.
 
 ## Immediate Next Step
@@ -392,11 +410,12 @@ Current snapshot:
 Inspect `git status -sb` and `git log -5 --oneline` first. Expect the latest
 local checkpoints to include contact-manipulation, kinematic-driver,
 normal-push, fixed-joint, joint-breakage, distance-spring, limited-joints,
-motor-limits, passive-parameters, and screw-joint pitch Replay timeline slices
-after the pushed docs-only handoff. Re-evaluate the durable sidecar before
-selecting the next bounded rigid visual-verification slice; the next adjacent
-constraints row is likely `rigid_multibody_dynamics_terms`. Do not push without
-explicit approval in that session.
+motor-limits, passive-parameters, screw-joint pitch, and multibody
+dynamics-terms Replay timeline slices after the pushed docs-only handoff.
+Re-evaluate the durable sidecar before selecting the next bounded rigid
+visual-verification slice; the next adjacent constraints row is likely
+`rigid_link_center_of_mass`. Do not push without explicit approval in that
+session.
 
 Passive-parameters checks for this slice:
 
@@ -434,6 +453,22 @@ the real docked capture wrote a nonblank 960x540 screenshot with docked UI,
 `-0.2329` m, coarse/fine travel gap about `0.1122` m, and travel-per-radian
 values `0.28`, `0.56`, and `-0.28`. `pixi run lint` passed and
 `git diff --check` was clean.
+
+Multibody dynamics-terms checks for this slice:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_dynamics_terms_expose_generalized_terms python/tests/unit/test_py_demo_panels.py::test_shared_replay_panel_uses_scene_replay_timeline_metadata python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_guidance_matches_sidecar python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_capture_commands_match_workflow -q
+pixi run py-demo-capture -- --scene rigid_multibody_dynamics_terms --frames 96 --width 960 --height 540 --show-ui --output-dir /tmp/dart_capture_multibody_dynamics_terms_timeline_1781279136
+```
+
+The focused Replay/multibody-dynamics pytest plus drift guards reported
+`6 passed`; the real docked capture wrote a nonblank 960x540 screenshot with
+docked UI, 95 PNG frames, and 96 scene-metric events. The manifest recorded row
+`rigid_multibody_dynamics_terms`, coupled response norm about `15.46`, heavy
+response norm about `8.63`, heavy/coupled response ratio about `0.558`,
+heavy-minus-coupled torque norm about `18.14`, coupled/heavy off-diagonal
+coupling about `0.357`/`1.427`, max impulse residual about `2.7e-14`, and
+historical max coupling about `0.373`.
 
 ## Context That Would Be Lost
 

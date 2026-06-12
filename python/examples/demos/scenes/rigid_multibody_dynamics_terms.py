@@ -39,6 +39,15 @@ def _joint_scalar(value: object) -> float:
     return float(values[0]) if values.size else 0.0
 
 
+def _last_float(values: Any) -> float | None:
+    try:
+        if values:
+            return float(values[-1])
+    except (IndexError, TypeError, ValueError):
+        return None
+    return None
+
+
 def _bar_inertia(mass: float) -> tuple[tuple[float, float, float], ...]:
     transverse = float(mass) * (_LINK_LENGTH**2) / 12.0
     axial = 0.5 * float(mass) * (0.035**2)
@@ -629,6 +638,78 @@ class _RigidMultibodyDynamicsTerms:
             },
         }
 
+    def replay_timeline_signal(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+
+        responses = snapshot.get("response_history", {})
+        if isinstance(responses, dict):
+            coupled = _last_float(responses.get("coupled_two_link", []))
+            heavy = _last_float(responses.get("heavy_distal", []))
+            if coupled is not None and heavy is not None:
+                return max(0.0, coupled - heavy)
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            coupled_metrics = metrics.get("coupled_two_link", {})
+            heavy_metrics = metrics.get("heavy_distal", {})
+            if isinstance(coupled_metrics, dict) and isinstance(
+                heavy_metrics, dict
+            ):
+                try:
+                    return max(
+                        0.0,
+                        float(coupled_metrics.get("response_norm", 0.0))
+                        - float(heavy_metrics.get("response_norm", 0.0)),
+                    )
+                except (TypeError, ValueError):
+                    return 0.0
+        return 0.0
+
+    def replay_timeline_marker(self, snapshot: dict[str, Any] | None) -> float:
+        if not isinstance(snapshot, dict):
+            return 0.0
+        if self.replay_timeline_signal(snapshot) >= 1.0:
+            return 1.0
+
+        coupling = _last_float(snapshot.get("coupling_history", []))
+        if coupling is not None and abs(coupling) >= 0.10:
+            return 1.0
+
+        tau_histories = snapshot.get("tau_history", {})
+        if isinstance(tau_histories, dict):
+            coupled_tau = _last_float(tau_histories.get("coupled_two_link", []))
+            heavy_tau = _last_float(tau_histories.get("heavy_distal", []))
+            if coupled_tau is not None and heavy_tau is not None:
+                if heavy_tau - coupled_tau >= 2.0:
+                    return 1.0
+
+        metrics = snapshot.get("last_metrics", {})
+        if isinstance(metrics, dict):
+            try:
+                coupled_metrics = metrics.get("coupled_two_link", {})
+                heavy_metrics = metrics.get("heavy_distal", {})
+                if isinstance(coupled_metrics, dict) and isinstance(
+                    heavy_metrics, dict
+                ):
+                    if (
+                        float(coupled_metrics.get("response_norm", 0.0))
+                        - float(heavy_metrics.get("response_norm", 0.0))
+                        >= 1.0
+                    ):
+                        return 1.0
+                    if abs(float(coupled_metrics.get("coupling", 0.0))) >= 0.10:
+                        return 1.0
+                    if (
+                        float(heavy_metrics.get("tau_norm", 0.0))
+                        - float(coupled_metrics.get("tau_norm", 0.0))
+                        >= 2.0
+                    ):
+                        return 1.0
+            except (TypeError, ValueError):
+                return 0.0
+        return 0.0
+
     def restore_replay_state(self, snapshot: dict[str, Any]) -> None:
         controls = snapshot.get("controls", {})
         self.executor_index = int(controls.get("executor_index", self.executor_index))
@@ -767,6 +848,11 @@ def build() -> SceneSetup:
             CAPTURE_METRICS_INFO_KEY: controller.capture_metrics,
             "replay_capture_state": controller.capture_replay_state,
             "replay_restore_state": controller.restore_replay_state,
+            "replay_timeline": {
+                "signal_label": "Response norm gap",
+                "signal": controller.replay_timeline_signal,
+                "markers": controller.replay_timeline_marker,
+            },
             "replay_sync": controller._sync,
         },
     )

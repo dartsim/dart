@@ -96,6 +96,9 @@
     `py-demos --scene` open commands from reproducible `py-demo-capture`
     commands, so users can jump from a packet row back into interactive
     debugging without reconstructing the scene command by hand.
+    Add scene-owned Replay timeline metadata to the multibody dynamics-terms
+    row so saved-state scrubbing can track coupled-versus-heavy response gap
+    and jump to off-diagonal-coupling or heavy-load torque frames.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,
