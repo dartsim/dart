@@ -2,34 +2,34 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: row 35 now gives the World multibody solver-family routing
-row the same reviewable comparison shape as the surrounding rigid workflow rows
-while continuing to follow the DART 7 architecture/work-packet harness from PR
-#2986. `rigid_multibody_solver_family` names
-`multibody_integration_solve_policy_family` as its comparison axis in the panel
-and capture metrics, records held-fixed contact-free World
-point-closure/three-link-chain/gravity/time-step context, exports top-level
-residual-only residual, solved residual, residual solve ratio, lane residuals,
-solved tip error, and maximum step-time metrics, and feeds decisive latest
-signals into the workflow review index.
+Latest local slice: row 36 now gives the variational rigid multibody
+loop-closure family row the same reviewable comparison shape as the surrounding
+rigid workflow rows while continuing to follow the DART 7
+architecture/work-packet harness from PR #2986. `rigid_loop_closure` names
+`loop_closure_family_policy_selection` as its comparison axis in the panel and
+capture metrics, records held-fixed contact-free variational rigid
+multibody/four-link-chain/gravity/time-step context, exports top-level
+POINT/DISTANCE/RIGID residual ratios, distance-family distance/tip error,
+RIGID orientation error, and maximum step-time metrics, and feeds decisive
+latest signals into the workflow review index.
 
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
   Latest completed implementation commit before this slice was
-  `a585d05f23d Surface link Jacobian workflow signals`; if this slice has been
-  committed, expect one additional local commit for multibody solver-family
+  `0308ec62d8b Surface multibody solver family workflow signals`; if this
+  slice has been committed, expect one additional local commit for loop closure
   workflow signals.
 - Do not push without explicit approval in the session that performs the push.
-- If this slice is still uncommitted, inspect the row-35 diff first. If it is
-  committed, continue from a fresh audit for the next concrete rigid
-  GUI-verification gap, or maintainer acceptance of the current
-  row-15-through-row-35 evidence direction before broadening further.
+- If this slice is still uncommitted, inspect the row-36 diff first. If it is
+  committed, ask for maintainer acceptance of the current row-15-through-row-36
+  evidence direction before broadening further, or run a fresh audit if the
+  maintainer requests another bounded follow-up.
 
-Files touched by this row-35 slice:
+Files touched by this row-36 slice:
 
-- `python/examples/demos/scenes/rigid_multibody_solver_family.py`
+- `python/examples/demos/scenes/rigid_loop_closure.py`
 - `scripts/capture_py_demo.py`
 - `python/tests/integration/test_demos_cycle.py`
 - `python/tests/unit/test_capture_py_demo.py`
@@ -39,56 +39,71 @@ Files touched by this row-35 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 
-Row-35 multibody solver-family slice:
+Row-36 loop-closure slice:
 
-- `rigid_multibody_solver_family` now exports
-  `comparison_axis=multibody_integration_solve_policy_family`, held-fixed
-  contact-free World point-closure/three-link-chain/gravity/time-step context,
-  controls, solver-family lane names, and top-level capture metrics for
-  residual-only residual, solved residual, residual solve ratio, lane residuals,
-  solved tip error, and max step time.
-- The multibody solver-family panel labels the comparison axis and held-fixed
-  context before the existing residual diagnostics.
-- `scripts/capture_py_demo.py` prioritizes row-35 latest-signal keys so the
-  review card orders residual-only residual, solved residual, solve ratio, lane
-  residuals, solved tip error, maximum step time, and solver signals before
-  generic metrics.
+- `rigid_loop_closure` now exports
+  `comparison_axis=loop_closure_family_policy_selection`, held-fixed
+  contact-free variational rigid multibody/four-link-chain/gravity/time-step
+  context, controls, closure family/policy lane names, and top-level capture
+  metrics for POINT/DISTANCE/RIGID residual ratios, distance-family
+  distance/tip error, RIGID orientation error, and max step time.
+- The loop-closure panel labels the comparison axis and held-fixed context
+  before the existing family diagnostics.
+- `scripts/capture_py_demo.py` prioritizes row-36 latest-signal keys so the
+  review card orders closure family ratios, distance-family distance/tip error,
+  RIGID orientation error, and solver signals before generic metrics.
 - `python/examples/demos/README.md`, PLAN-103, and this dev-task hand-off
-  document the multibody integration solve-policy axis and held-fixed context.
+  document the loop-closure family/policy axis and held-fixed context.
 
 Evidence for this slice:
 
 - Focused row/panel/docs-order/review-index pytest subset reported `6 passed`.
   It included
-  `python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures`,
+  `python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families`,
   the comparison-axis panel coverage, docs/sidecar order checks, capture-command
-  sync check, and the unit guard that row-35 latest signals prioritize
-  residual-only residual, solved residual, solve ratio, lane residuals, solved
-  tip error, maximum step time, and solver.
-- Real row-35 workflow capture completed under
-  `build/captures/rigid_multibody_solver_family_row_35_1781304535` with
+  sync check, and the unit guard that row-36 latest signals prioritize closure
+  family ratios, distance-family distance/tip error, RIGID orientation error,
+  and solver.
+- Real row-36 workflow capture completed under
+  `build/captures/rigid_loop_closure_row_36_1781304923` with
   `status=complete`, `capture_count=1`, `completed_count=1`,
   `failed_count=0`, `workflow_total_count=36`, and
   `guidance_complete=true`.
-- Row 35 reported
-  `comparison_axis=multibody_integration_solve_policy_family`, held-fixed
-  `contacts=off`, `closure_family=point`,
-  `joint_family=three_revolute_links`, `chain_links=3`, `link_length=0.55`,
-  `link_mass=0.55`, `initial_bend=0.28`, `gravity_scale=1.0`,
-  `solver=world_multibody_integration_family`, `time_step_ms=5.0`, controls
-  `executor_index=0.0`, `gravity_scale=1.0`,
-  `solver_family_lanes=[semi_residual, variational_residual, variational_solved]`,
-  residual-only residual about `0.7642`, solved residual clamped at `1e-12`,
-  residual solve ratio about `7.642e11`, semi-implicit residual about
-  `0.7631`, variational residual about `0.7642`, solved tip error about
-  `6.66e-16`, and max step time about `0.0982 ms`.
-- `review_index.html` showed the row-35 card with `axis`, `held fixed`,
+- Row 36 reported `comparison_axis=loop_closure_family_policy_selection`,
+  held-fixed `contacts=off`, `integration_family=variational integrator`,
+  `joint_family=four_revolute_links`, `chain_links=4`, `link_length=0.56`,
+  `link_mass=0.55`, `initial_bend=0.18`, `gravity_scale=1.0`,
+  `solver=variational_rigid_multibody_loop_closure`, `time_step_ms=5.0`,
+  controls `executor_index=0.0`, `gravity_scale=1.0`,
+  `closure_family_lanes=[POINT, DISTANCE, RIGID]`,
+  `closure_policy_lanes=[residual, solved]`, POINT/DISTANCE/RIGID residual
+  ratios about `7.595e11`/`7.458e11`/`7.740e11`, rigid residual orientation
+  error about `0.149`, solved orientation error near `2.8e-17`, distance
+  solved distance error near `9.4e-15`, distance solved tip error about
+  `0.439`, and max step time about `0.483 ms`.
+- `review_index.html` showed the row-36 card with `axis`, `held fixed`,
   `controls`, Replay signal/markers, metric-key summary, and latest-signal
-  ordering for residual-only residual, solved residual, solve ratio, lane
-  residuals, solved tip error, maximum step time, and solver. The per-scene
-  capture wrote a nonblank docked screenshot with 3410 unique colors and
+  ordering for POINT/DISTANCE/RIGID residual ratios, distance-family
+  distance/tip error, RIGID orientation error, and solver. The per-scene
+  capture wrote a nonblank docked screenshot with 2446 unique colors and
   71 PNG frames from the 72-frame workflow row capture under
   `build/captures/`.
+
+Previous completed and verified slice: row 35 gives the World multibody
+solver-family routing row the same reviewable comparison shape as the
+surrounding rigid workflow rows. `rigid_multibody_solver_family` names
+`multibody_integration_solve_policy_family` as its comparison axis in the panel
+and capture metrics, records held-fixed contact-free World
+point-closure/three-link-chain/gravity/time-step context, exports top-level
+residual-only residual, solved residual, residual solve ratio, lane residuals,
+solved tip error, and maximum step-time metrics, and feeds decisive latest
+signals into the workflow review index. Evidence: focused
+row/panel/docs-order/review-index pytest subset reported `6 passed`; the real
+row-35 workflow capture completed under
+`build/captures/rigid_multibody_solver_family_row_35_1781304535` with
+`status=complete`, `capture_count=1`, `completed_count=1`, `failed_count=0`,
+`workflow_total_count=36`, `guidance_complete=true`, a nonblank docked
+screenshot, and 71 PNG frames.
 
 Previous completed and verified slice: row 34 gives the World multibody link
 Jacobian row the same reviewable comparison shape as the surrounding rigid

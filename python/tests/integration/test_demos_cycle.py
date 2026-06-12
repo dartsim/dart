@@ -7223,11 +7223,24 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_loop_closure"
+    assert capture_metrics["comparison_axis"] == "loop_closure_family_policy_selection"
     assert capture_metrics["solver"] == "variational_rigid_multibody_loop_closure"
     assert (
         capture_metrics["scope"]
         == "point_distance_rigid_closure_family_selection"
     )
+    assert capture_metrics["held_fixed"] == {
+        "solver": "variational_rigid_multibody_loop_closure",
+        "contacts": "off",
+        "integration_family": "variational integrator",
+        "joint_family": "four_revolute_links",
+        "chain_links": 4,
+        "link_length": pytest.approx(0.56),
+        "link_mass": pytest.approx(0.55),
+        "initial_bend": pytest.approx(0.18),
+        "gravity_scale": pytest.approx(controller.gravity_scale),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert capture_metrics["executor"] == controller._executors[
         controller.executor_index
     ][0]
@@ -7246,6 +7259,12 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
     )
     assert capture_metrics["family_order"] == ["POINT", "DISTANCE", "RIGID"]
     assert capture_metrics["policy_order"] == ["residual", "solved"]
+    assert capture_metrics["closure_family_lanes"] == [
+        "POINT",
+        "DISTANCE",
+        "RIGID",
+    ]
+    assert capture_metrics["closure_policy_lanes"] == ["residual", "solved"]
     assert capture_metrics["case_order"] == [case.key for case in controller.cases]
     assert capture_metrics["case_count"] == pytest.approx(len(controller.cases))
     assert set(capture_metrics["cases"]) == {case.key for case in controller.cases}
@@ -7300,6 +7319,30 @@ def test_rigid_loop_closure_compares_closure_families() -> None:
         assert capture_metrics["history"]["families"][family_label][
             "max_residual_ratio"
         ] == pytest.approx(max(controller._residual_ratio_history[family_label]))
+    assert capture_metrics["loop_closure_point_residual_ratio"] == pytest.approx(
+        capture_metrics["families"]["POINT"]["residual_ratio"]
+    )
+    assert capture_metrics["loop_closure_distance_residual_ratio"] == pytest.approx(
+        capture_metrics["families"]["DISTANCE"]["residual_ratio"]
+    )
+    assert capture_metrics["loop_closure_rigid_residual_ratio"] == pytest.approx(
+        capture_metrics["families"]["RIGID"]["residual_ratio"]
+    )
+    assert capture_metrics[
+        "loop_closure_distance_solved_distance_error"
+    ] == pytest.approx(float(metrics["DISTANCE solved"]["distance_error"]))
+    assert capture_metrics["loop_closure_distance_solved_tip_error"] == pytest.approx(
+        float(metrics["DISTANCE solved"]["tip_error"])
+    )
+    assert capture_metrics[
+        "loop_closure_rigid_residual_orientation_error"
+    ] == pytest.approx(float(metrics["RIGID residual"]["orientation_error"]))
+    assert capture_metrics[
+        "loop_closure_rigid_solved_orientation_error"
+    ] == pytest.approx(float(metrics["RIGID solved"]["orientation_error"]))
+    assert capture_metrics["loop_closure_max_step_ms"] == pytest.approx(
+        capture_metrics["history"]["max_step_ms"]
+    )
 
     assert capture_metrics["history"]["samples"] == pytest.approx(
         max(len(history) for history in controller._residual_ratio_history.values())

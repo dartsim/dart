@@ -213,7 +213,7 @@ plus a warning block if any selected row is missing those fields.
 | 33/36 | `rigid_link_center_of_mass`      | How do COM offsets change gravity torque?          | World links, COM offset, mass, gravity                | COM axis, torque sign, mirror sum, inertia lag                |
 | 34/36 | `rigid_link_jacobian`            | What does a link Jacobian map?                     | World Jacobian motion, elbow phase, wrench controls   | Jacobian axis, link speed, gap, torque, residual              |
 | 35/36 | `rigid_multibody_solver_family`  | Which multibody solver family supports solves?     | Multibody solve policy, gravity, executor             | Solver-family axis, residual ratio, lane errors               |
-| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Executor, gravity scale, reset                        | Closure residual ratio, family drift, Replay marks            |
+| 36/36 | `rigid_loop_closure`             | Which loop-closure family should I use?            | Closure family/policy, gravity, executor              | Closure axis, ratios, family-specific residuals               |
 
 For the focused IPC no-tunneling capability view, use
 **`rigid_ipc_tunnel`** from the **Rigid IPC** shelf. It is kept outside the
@@ -814,6 +814,11 @@ choose the narrowest closure family that matches the model.
 per-case family/policy labels, residuals, tip/distance/orientation errors,
 joint speeds, step timing, solved ratios, and compact history metrics into the
 manifest sidecar.
+The panel and capture metrics label the loop-closure family/policy comparison
+axis, held-fixed contact-free variational rigid-multibody/four-link-chain/
+gravity/time-step context, closure family and policy lane names, and top-level
+review signals for POINT/DISTANCE/RIGID residual ratios, distance-family
+distance/tip error, RIGID orientation error, and maximum step profile time.
 The shared Replay panel uses max closure residual ratio as its value track and
 marks solve-advantage, residual-versus-solved separation, distance-family tip
 drift, and rigid-orientation frames.

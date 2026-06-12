@@ -1445,6 +1445,33 @@ def test_rigid_workflow_latest_signals_prioritize_multibody_solver_values() -> N
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_loop_closure_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "loop_closure_distance_residual_ratio": 7.0,
+            "loop_closure_distance_solved_distance_error": 0.0,
+            "loop_closure_distance_solved_tip_error": 0.2,
+            "loop_closure_max_step_ms": 0.04,
+            "loop_closure_point_residual_ratio": 9.0,
+            "loop_closure_rigid_residual_orientation_error": 0.12,
+            "loop_closure_rigid_residual_ratio": 11.0,
+            "loop_closure_rigid_solved_orientation_error": 0.0,
+            "solver": "variational_rigid_multibody_loop_closure",
+        }
+    )
+
+    assert highlights[:8] == [
+        "loop closure point residual ratio: 9",
+        "loop closure distance residual ratio: 7",
+        "loop closure rigid residual ratio: 11",
+        "loop closure distance solved distance error: 0",
+        "loop closure distance solved tip error: 0.2",
+        "loop closure rigid residual orientation error: 0.12",
+        "loop closure rigid solved orientation error: 0",
+        "solver: variational_rigid_multibody_loop_closure",
+    ]
+
+
 def test_rigid_workflow_run_links_scene_videos(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

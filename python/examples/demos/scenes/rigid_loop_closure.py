@@ -462,11 +462,32 @@ class _RigidLoopClosureVerifier:
                 "solved_residual": solved,
                 "residual_ratio": ratio,
             }
+        family_order = [
+            family_label for family_label, _family, _description in self._families
+        ]
+        policy_order = ["residual", "solved"]
+        max_step_ms = max(
+            (max_history(history) for history in self._step_ms_history.values()),
+            default=0.0,
+        )
 
         payload: dict[str, Any] = {
             "row": "rigid_loop_closure",
+            "comparison_axis": "loop_closure_family_policy_selection",
             "solver": "variational_rigid_multibody_loop_closure",
             "scope": "point_distance_rigid_closure_family_selection",
+            "held_fixed": {
+                "solver": "variational_rigid_multibody_loop_closure",
+                "contacts": "off",
+                "integration_family": "variational integrator",
+                "joint_family": "four_revolute_links",
+                "chain_links": _NUM_LINKS,
+                "link_length": _LINK_LENGTH,
+                "link_mass": _LINK_MASS,
+                "initial_bend": _INITIAL_BEND,
+                "gravity_scale": float(self.gravity_scale),
+                "time_step_ms": _TIME_STEP * 1000.0,
+            },
             "executor": self._executors[executor_index][0],
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.primary_world.time),
@@ -475,14 +496,36 @@ class _RigidLoopClosureVerifier:
                 "executor_index": float(executor_index),
                 "gravity_scale": float(self.gravity_scale),
             },
-            "family_order": [
-                family_label for family_label, _family, _description in self._families
-            ],
-            "policy_order": ["residual", "solved"],
+            "family_order": family_order,
+            "policy_order": policy_order,
+            "closure_family_lanes": family_order,
+            "closure_policy_lanes": policy_order,
             "case_order": [case.key for case in self.cases],
             "case_count": float(len(self.cases)),
             "cases": cases,
             "families": families,
+            "loop_closure_point_residual_ratio": float(
+                families["POINT"]["residual_ratio"]
+            ),
+            "loop_closure_distance_residual_ratio": float(
+                families["DISTANCE"]["residual_ratio"]
+            ),
+            "loop_closure_rigid_residual_ratio": float(
+                families["RIGID"]["residual_ratio"]
+            ),
+            "loop_closure_distance_solved_distance_error": metric_value(
+                "DISTANCE solved", "distance_error"
+            ),
+            "loop_closure_distance_solved_tip_error": metric_value(
+                "DISTANCE solved", "tip_error"
+            ),
+            "loop_closure_rigid_residual_orientation_error": metric_value(
+                "RIGID residual", "orientation_error"
+            ),
+            "loop_closure_rigid_solved_orientation_error": metric_value(
+                "RIGID solved", "orientation_error"
+            ),
+            "loop_closure_max_step_ms": max_step_ms,
             "history": {
                 "samples": float(
                     max(
@@ -493,6 +536,7 @@ class _RigidLoopClosureVerifier:
                         default=0,
                     )
                 ),
+                "max_step_ms": max_step_ms,
                 "families": {
                     family_label: {
                         "max_residual_ratio": max_history(
@@ -821,6 +865,13 @@ class _RigidLoopClosureVerifier:
             self.reset(clear_replay=True)
 
         builder.separator()
+        builder.text("comparison axis: loop-closure family and solve policy")
+        builder.text(
+            "held fixed: Variational rigid multibody | contacts off | "
+            f"four revolute links | link length {_LINK_LENGTH:.2f} | "
+            f"gravity scale {self.gravity_scale:.1f} | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text("families: POINT endpoint, DISTANCE tether, RIGID weld")
         builder.text("solver path: variational rigid multibody")

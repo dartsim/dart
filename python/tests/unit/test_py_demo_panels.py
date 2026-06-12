@@ -1305,6 +1305,13 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
                 "text:held fixed: World multibody point closure | contacts off | three revolute links | link length 0.55 | gravity scale 1.0 | time step 5.0 ms",
             ),
         ),
+        (
+            rigid_loop_closure,
+            (
+                "text:comparison axis: loop-closure family and solve policy",
+                "text:held fixed: Variational rigid multibody | contacts off | four revolute links | link length 0.56 | gravity scale 1.0 | time step 5.0 ms",
+            ),
+        ),
     ]
 
     for scene_module, expected_events in cases:
