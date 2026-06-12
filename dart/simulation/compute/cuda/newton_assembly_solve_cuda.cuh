@@ -40,12 +40,20 @@
 namespace dart::simulation::compute::cuda {
 
 constexpr std::size_t kNewtonAssemblySolveDofsPerBody = 6;
+constexpr std::size_t kNewtonAssemblySolveBlockEntries
+    = kNewtonAssemblySolveDofsPerBody * kNewtonAssemblySolveDofsPerBody;
 
 struct NewtonAssemblySolveRowInput
 {
   std::uint32_t bodyIndex = 0;
   double hessianDiagonal[kNewtonAssemblySolveDofsPerBody] = {};
   double gradient[kNewtonAssemblySolveDofsPerBody] = {};
+};
+
+struct NewtonOffDiagonalAssemblyRowInput
+{
+  std::uint32_t pairIndex = 0;
+  double hessianBlock[kNewtonAssemblySolveBlockEntries] = {};
 };
 
 struct NewtonAssemblySolveTiming
@@ -73,6 +81,16 @@ struct NewtonAssemblySolveResult
   NewtonAssemblySolveTiming timing;
 };
 
+struct NewtonOffDiagonalAssemblyResult
+{
+  std::vector<double> assembledBlocks;
+  std::size_t pairCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t activeBlockCount = 0;
+  double maxBlockAbs = 0.0;
+  NewtonAssemblySolveTiming timing;
+};
+
 /// Evaluate a private reduced Newton assembly/solve packet on CUDA.
 ///
 /// The packet scatters diagonal 6-DOF row contributions into per-body
@@ -85,5 +103,16 @@ void evaluateNewtonAssemblySolveCuda(
     std::size_t bodyCount,
     double regularization,
     NewtonAssemblySolveResult& result);
+
+/// Evaluate a private reduced off-diagonal sparse-block assembly packet.
+///
+/// The packet scatters 6x6 off-diagonal Hessian contributions into
+/// preallocated sparse pair slots. It intentionally does not cover sparse graph
+/// construction, equality reduction, global sparse factorization, runtime scene
+/// assembly, or a public GPU solver backend.
+void evaluateNewtonOffDiagonalAssemblyCuda(
+    const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
+    std::size_t pairCount,
+    NewtonOffDiagonalAssemblyResult& result);
 
 } // namespace dart::simulation::compute::cuda

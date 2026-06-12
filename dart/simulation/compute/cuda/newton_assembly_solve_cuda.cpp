@@ -53,6 +53,11 @@ cudaError_t launchNewtonAssemblyRowsKernel(
     double* assembledGradient,
     std::size_t rowCount);
 
+cudaError_t launchNewtonOffDiagonalAssemblyRowsKernel(
+    const NewtonOffDiagonalAssemblyRowInput* rows,
+    double* assembledBlocks,
+    std::size_t rowCount);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -115,6 +120,39 @@ void validateRows(
           "evaluateNewtonAssemblySolveCuda row {} has an invalid dof {}",
           row,
           dof);
+    }
+  }
+}
+
+void validateOffDiagonalRows(
+    const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
+    const std::size_t pairCount)
+{
+  DART_SIMULATION_THROW_T_IF(
+      pairCount == 0 && !rows.empty(),
+      sx::InvalidArgumentException,
+      "evaluateNewtonOffDiagonalAssemblyCuda requires at least one pair for "
+      "rows");
+
+  for (std::size_t row = 0; row < rows.size(); ++row) {
+    const auto& input = rows[row];
+    DART_SIMULATION_THROW_T_IF(
+        input.pairIndex >= pairCount,
+        sx::InvalidArgumentException,
+        "evaluateNewtonOffDiagonalAssemblyCuda row {} pair index {} is outside "
+        "{} pairs",
+        row,
+        input.pairIndex,
+        pairCount);
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(input.hessianBlock[entry]),
+          sx::InvalidArgumentException,
+          "evaluateNewtonOffDiagonalAssemblyCuda row {} has an invalid block "
+          "entry {}",
+          row,
+          entry);
     }
   }
 }
@@ -221,6 +259,73 @@ void evaluateNewtonAssemblySolveCuda(
   }
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+//==============================================================================
+void evaluateNewtonOffDiagonalAssemblyCuda(
+    const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
+    const std::size_t pairCount,
+    NewtonOffDiagonalAssemblyResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateOffDiagonalRows(rows, pairCount);
+
+  result = NewtonOffDiagonalAssemblyResult{};
+  result.pairCount = pairCount;
+  result.rowCount = rows.size();
+  const std::size_t entryCount = pairCount * kNewtonAssemblySolveBlockEntries;
+  result.assembledBlocks.assign(entryCount, 0.0);
+
+  if (entryCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonOffDiagonalAssemblyRowInput> deviceRows(rows.size());
+  DeviceBuffer<double> deviceBlocks(entryCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton off-diagonal assembly rows copy");
+  throwIfCudaError(
+      cudaMemset(deviceBlocks.data(), 0, deviceBlocks.byteSize()),
+      "newton off-diagonal assembly blocks zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonOffDiagonalAssemblyRowsKernel(
+          deviceRows.data(), deviceBlocks.data(), rows.size()),
+      "newton off-diagonal assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton off-diagonal assembly rows synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceBlocks.copyFromDevice(
+      result.assembledBlocks, "newton off-diagonal assembled blocks copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.solveKernelNs = 0.0;
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (std::size_t pair = 0; pair < pairCount; ++pair) {
+    bool active = false;
+    const std::size_t offset = pair * kNewtonAssemblySolveBlockEntries;
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const double value = std::abs(result.assembledBlocks[offset + entry]);
+      result.maxBlockAbs = std::max(result.maxBlockAbs, value);
+      active = active || value > 0.0;
+    }
+    if (active) {
+      ++result.activeBlockCount;
+    }
+  }
 }
 
 } // namespace dart::simulation::compute::cuda

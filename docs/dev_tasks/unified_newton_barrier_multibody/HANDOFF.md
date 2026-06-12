@@ -1,5 +1,76 @@
 # Unified Newton-Barrier Handoff
 
+## Active Continuation Handoff (2026-06-11)
+
+Implementation resumed from the earlier no-verification handoff. Continue only
+on `simx/plan083-gpu-contact-candidate-packet` / PR #2978, and keep all
+remaining PLAN-083 work on this consolidated branch/PR.
+
+Authoritative current state for a fresh session:
+
+- Branch: `simx/plan083-gpu-contact-candidate-packet`
+- PR: #2978, `Advance unified Newton-barrier runtime and parity evidence`
+- Base: `main`
+- Consolidation rule: keep all remaining PLAN-083 work on this branch/PR. Do
+  not open another PLAN-083 PR or revive former stack branches.
+- Latest pushed origin head observed before this handoff:
+  `6746b63973d Record point-point barrier Hessian packet evidence`.
+- Local committed checkpoints ahead of origin:
+  - `48dcfb515cf Add point-edge barrier Hessian packet parity`
+  - `1dfb21b24da Add point-triangle barrier Hessian packet parity`
+  - `1022b609f8c Add point-triangle Hessian PSD packet parity`
+  - `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`
+
+The current checkpoint adds reduced off-diagonal sparse-block assembly evidence
+on the same branch. A fresh session should inspect `git status -sb` and the
+local diff before deciding whether to continue from this checkpoint.
+
+Checkpoint surfaces:
+
+- `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cuh`
+- `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cpp`
+- `dart/simulation/compute/cuda/newton_assembly_solve_cuda.cu`
+- `tests/unit/simulation/cuda/test_newton_assembly_solve_cuda.cpp`
+- `tests/benchmark/simulation/bm_newton_assembly_solve_cuda.cpp`
+- `scripts/write_newton_assembly_solve_packet.py`
+- `tests/test_newton_assembly_solve_packet.py`
+- local generated packet:
+  `.benchmark_results/plan083/gpu/assembly_linear_solve_parity.json`
+
+The checkpoint adds a reduced pair-slot off-diagonal sparse-block assembly packet:
+private CUDA input/result plumbing, a kernel/launcher, CPU/CUDA unit parity
+coverage, benchmark rows, and packet-writer synthetic coverage. It is not a
+full sparse global factorization, not runtime scene assembly, and not a
+completion claim for `assembly-linear-solve`.
+
+Focused evidence gathered for this checkpoint:
+
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+  passed.
+- `pixi run -e cuda build-cuda Release` passed.
+- Focused CTest `^test_newton_assembly_solve_cuda$` passed.
+- `pixi run -e cuda bm-newton-assembly-solve-packet` passed and wrote the
+  generated assembly packet.
+
+The generated benchmark output reported
+`Newton assembly/solve packet OK: rows=65536 dofs=49152
+max_error=1.7763568394002505e-15 residual=3.0267237170020088e-15
+speedup=0.26051227540244215x meets_gate=False`. The observed
+off-diagonal row had `pairs=4096`, `active_blocks=4096`,
+`block_entries=147456`, `max_result_abs_error=0`, and
+`speedup=0.4342273750294942x`.
+
+Likely next steps:
+
+1. Finish the required local gates for this checkpoint if they have not run in
+   the current session.
+2. Commit this checkpoint locally after the gates pass.
+3. Continue with equality reduction, global sparse factorization, runtime scene
+   rows, or speedup-gate work only as honest `in-progress` evidence.
+4. Before any push, merge latest
+   `origin/main` into this published branch, rerun required gates, then push
+   only with explicit maintainer approval.
+
 ## Current Continuation State
 
 This is the current fresh-session entry point for PR #2978. The earlier

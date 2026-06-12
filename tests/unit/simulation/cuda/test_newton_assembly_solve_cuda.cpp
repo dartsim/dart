@@ -88,6 +88,36 @@ void evaluateExpected(
   }
 }
 
+cuda::NewtonOffDiagonalAssemblyRowInput makeOffDiagonalRow(
+    const std::uint32_t pair, const double base)
+{
+  cuda::NewtonOffDiagonalAssemblyRowInput row;
+  row.pairIndex = pair;
+  for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+       ++entry) {
+    const auto signedOffset = static_cast<int>(entry % 11) - 5;
+    row.hessianBlock[entry] = base + 0.01 * static_cast<double>(signedOffset);
+  }
+  return row;
+}
+
+std::vector<double> evaluateExpectedOffDiagonalBlocks(
+    const std::vector<cuda::NewtonOffDiagonalAssemblyRowInput>& rows,
+    const std::size_t pairCount)
+{
+  std::vector<double> blocks(
+      pairCount * cuda::kNewtonAssemblySolveBlockEntries, 0.0);
+  for (const auto& row : rows) {
+    const std::size_t offset = static_cast<std::size_t>(row.pairIndex)
+                               * cuda::kNewtonAssemblySolveBlockEntries;
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      blocks[offset + entry] += row.hessianBlock[entry];
+    }
+  }
+  return blocks;
+}
+
 } // namespace
 
 //==============================================================================
@@ -156,5 +186,54 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidRows)
   rows.front().gradient[0] = std::numeric_limits<double>::infinity();
   EXPECT_THROW(
       cuda::evaluateNewtonAssemblySolveCuda(rows, 1, 0.1, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuOffDiagonalSparseBlockAssembly)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeOffDiagonalRow(0, 0.5),
+      makeOffDiagonalRow(1, -0.25),
+      makeOffDiagonalRow(0, 0.125),
+      makeOffDiagonalRow(2, 0.75),
+  };
+  constexpr std::size_t pairCount = 3;
+
+  cuda::NewtonOffDiagonalAssemblyResult result;
+  cuda::evaluateNewtonOffDiagonalAssemblyCuda(rows, pairCount, result);
+
+  const auto expected = evaluateExpectedOffDiagonalBlocks(rows, pairCount);
+  ASSERT_EQ(result.assembledBlocks.size(), expected.size());
+  EXPECT_EQ(result.pairCount, pairCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.activeBlockCount, pairCount);
+
+  for (std::size_t entry = 0; entry < expected.size(); ++entry) {
+    EXPECT_NEAR(result.assembledBlocks[entry], expected[entry], 1e-12) << entry;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidOffDiagonalRows)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::vector rows = {makeOffDiagonalRow(2, 1.0)};
+  cuda::NewtonOffDiagonalAssemblyResult result;
+  EXPECT_THROW(
+      cuda::evaluateNewtonOffDiagonalAssemblyCuda(rows, 2, result),
+      dart::simulation::InvalidArgumentException);
+
+  rows = {makeOffDiagonalRow(0, 1.0)};
+  rows.front().hessianBlock[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(
+      cuda::evaluateNewtonOffDiagonalAssemblyCuda(rows, 1, result),
       dart::simulation::InvalidArgumentException);
 }

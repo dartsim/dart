@@ -2,6 +2,32 @@
 
 ## Current Status
 
+Active continuation state (2026-06-11): implementation has resumed on
+`simx/plan083-gpu-contact-candidate-packet`, the single consolidated #2978 PR
+(`Advance unified Newton-barrier runtime and parity evidence`). Keep all
+remaining PLAN-083 work consolidated there.
+
+Current branch shape for a fresh session:
+
+- Last observed pushed head:
+  `6746b63973d Record point-point barrier Hessian packet evidence`.
+- Local committed checkpoints ahead of origin:
+  `48dcfb515cf Add point-edge barrier Hessian packet parity`,
+  `1dfb21b24da Add point-triangle barrier Hessian packet parity`,
+  `1022b609f8c Add point-triangle Hessian PSD packet parity`, and
+  `c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`.
+- The current checkpoint adds a reduced pair-slot off-diagonal sparse-block
+  assembly packet under the private Newton assembly/solve CUDA packet. It is
+  not full sparse global factorization or runtime scene assembly, and it
+  remains an `in-progress` evidence claim.
+
+Focused evidence gathered for the current assembly checkpoint passed packet
+pytest, CUDA build, focused `test_newton_assembly_solve_cuda` CTest, and
+`pixi run -e cuda bm-newton-assembly-solve-packet`. The generated packet
+measured top-level `speedup=0.26051227540244215x` with
+`meets_speedup_gate=false`, so the row stays `in-progress`. `HANDOFF.md` is
+the authoritative fresh-session handoff.
+
 Fresh-session branch discipline: all remaining PLAN-083 follow-up work is
 consolidated on `simx/plan083-gpu-contact-candidate-packet` and PR #2978
 (`Advance unified Newton-barrier runtime and parity evidence`). Do not open or
@@ -270,10 +296,10 @@ the same PR. Do not open another PLAN-083 PR.
         local-output parity; keep the
         row in-progress because broader sparse Hessian assembly, runtime
         contact rows, and runtime speedup remain unproven.
-  - [x] Add a private reduced diagonal assembly/solve packet with exact
-        CPU/GPU step parity; keep the row in-progress because off-diagonal
-        sparse blocks, equality reduction, global factorization, runtime scene
-        rows, and speedup remain unproven.
+  - [x] Add private reduced diagonal assembly/solve and pair-slot off-diagonal
+        sparse-block assembly packets with exact CPU/GPU local-output parity;
+        keep the row in-progress because equality reduction, global sparse
+        factorization, runtime scene rows, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,

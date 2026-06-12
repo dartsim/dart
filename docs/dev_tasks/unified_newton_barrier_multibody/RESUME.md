@@ -2,6 +2,51 @@
 
 ## Current Reality (2026-06-09)
 
+Active continuation handoff (2026-06-11): implementation has resumed from the
+earlier no-verification handoff on `simx/plan083-gpu-contact-candidate-packet`,
+the single consolidated #2978 PR (`Advance unified Newton-barrier runtime and
+parity evidence`). Keep all remaining PLAN-083 work consolidated on this
+branch/PR; do not open another PLAN-083 PR or revive former stack branches.
+
+The branch has four local committed checkpoints ahead of the last observed
+origin head `6746b63973d Record point-point barrier Hessian packet evidence`:
+`48dcfb515cf Add point-edge barrier Hessian packet parity`,
+`1dfb21b24da Add point-triangle barrier Hessian packet parity`,
+`1022b609f8c Add point-triangle Hessian PSD packet parity`, and
+`c1e6e73b2cf Add point-point and point-edge Hessian PSD packet parity`.
+
+The current checkpoint adds reduced off-diagonal sparse-block assembly evidence
+on the same branch. Expected implementation and packet surfaces are
+`dart/simulation/compute/cuda/newton_assembly_solve_cuda.cuh`,
+`dart/simulation/compute/cuda/newton_assembly_solve_cuda.cpp`,
+`dart/simulation/compute/cuda/newton_assembly_solve_cuda.cu`,
+`tests/unit/simulation/cuda/test_newton_assembly_solve_cuda.cpp`,
+`tests/benchmark/simulation/bm_newton_assembly_solve_cuda.cpp`,
+`scripts/write_newton_assembly_solve_packet.py`,
+`tests/test_newton_assembly_solve_packet.py`, and generated local packet
+`.benchmark_results/plan083/gpu/assembly_linear_solve_parity.json`. This
+checkpoint adds private pair-slot off-diagonal sparse-block assembly parity,
+not full sparse global factorization or runtime scene assembly. It should
+remain an `in-progress` evidence claim after commit.
+
+Focused evidence for this checkpoint passed packet pytest, CUDA build, focused
+`test_newton_assembly_solve_cuda` CTest, and
+`pixi run -e cuda bm-newton-assembly-solve-packet`. The generated benchmark
+reported `rows=65536`, `dofs=49152`,
+`max_result_abs_error=1.7763568394002505e-15`,
+`residual_norm=3.0267237170020088e-15`,
+`speedup=0.26051227540244215x`, and `meets_speedup_gate=false`; the
+off-diagonal row observed `pairs=4096`, `active_blocks=4096`,
+`block_entries=147456`, `max_result_abs_error=0`, and
+`speedup=0.4342273750294942x`.
+
+Fresh-session next step: inspect `HANDOFF.md`, `git status -sb`, and the local
+diff. Continue with equality reduction, global sparse factorization, runtime
+scene rows, or speedup-gate work only after this checkpoint is committed with
+required gates. Before any future push to #2978, merge latest `origin/main`
+into the published branch, run required gates, and push only with explicit
+maintainer approval.
+
 PR granularity: default to one branch and PR per implementation-roadmap phase,
 but consolidate adjacent small internal phases into one PR when that keeps
 review clearer. Keep commits atomic within the branch. Split only for
@@ -579,22 +624,22 @@ point-triangle/point-point/point-edge primitive barrier-Hessian PSD-projection
 parity, reduced assembly/solve parity, reduced scene state-batch parity, and
 reduced ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress`
 unless their full row policy is satisfied: broad-phase/runtime GPU candidate
-construction, rigid curved trajectories, runtime scene line search, broader
-sparse Hessian assembly, sparse global solving, GPU `World::step`, paper-scale
-assets, and accepted reference timings remain future evidence.
+construction, rigid curved trajectories, runtime scene line search,
+equality-reduced/global sparse assembly and solving, GPU `World::step`,
+paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
 Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next barrier/friction packet gaps are
-downstream sparse Hessian assembly, runtime contact rows, and speedup-gate
-work. Do not mark the row measured until the top-level speed gate and runtime
-evidence are proven. Keep the dev-task folder active because PLAN-083
-acceptance criteria are still unmet. If the task later moves out of this
-folder, get maintainer direction before deleting it and keep the remaining
-planned manifest plus in-progress CPU/GPU/scene limitations in durable
-sidecars.
+runtime contact rows and speedup-gate work; the next assembly/solve gaps are
+equality reduction, global sparse factorization, runtime scene rows, and
+speedup-gate work. Do not mark either row measured until the top-level speed
+gate and runtime evidence are proven. Keep the dev-task folder active because
+PLAN-083 acceptance criteria are still unmet. If the task later moves out of
+this folder, get maintainer direction before deleting it and keep the remaining
+planned manifest plus in-progress CPU/GPU/scene limitations in durable sidecars.
 
 ## Context That Would Be Lost
 

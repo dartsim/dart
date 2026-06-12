@@ -63,6 +63,27 @@ __global__ void newtonAssemblyRowsKernel(
   atomicAdd(&assembledGradient[outputIndex], input.gradient[dof]);
 }
 
+__global__ void newtonOffDiagonalAssemblyRowsKernel(
+    const NewtonOffDiagonalAssemblyRowInput* rows,
+    double* assembledBlocks,
+    const std::size_t rowCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t totalEntries = rowCount * kNewtonAssemblySolveBlockEntries;
+  if (index >= totalEntries) {
+    return;
+  }
+
+  const std::size_t row = index / kNewtonAssemblySolveBlockEntries;
+  const std::size_t entry = index - row * kNewtonAssemblySolveBlockEntries;
+  const NewtonOffDiagonalAssemblyRowInput input = rows[row];
+  const std::size_t outputIndex = static_cast<std::size_t>(input.pairIndex)
+                                      * kNewtonAssemblySolveBlockEntries
+                                  + entry;
+  atomicAdd(&assembledBlocks[outputIndex], input.hessianBlock[entry]);
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -106,6 +127,24 @@ cudaError_t launchNewtonAssemblyRowsKernel(
   const unsigned int gridSize = launchGrid1D(totalDofs, blockSize);
   newtonAssemblyRowsKernel<<<gridSize, blockSize>>>(
       rows, assembledDiagonal, assembledGradient, rowCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonOffDiagonalAssemblyRowsKernel(
+    const NewtonOffDiagonalAssemblyRowInput* rows,
+    double* assembledBlocks,
+    const std::size_t rowCount)
+{
+  if (rowCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const std::size_t totalEntries = rowCount * kNewtonAssemblySolveBlockEntries;
+  const unsigned int gridSize = launchGrid1D(totalEntries, blockSize);
+  newtonOffDiagonalAssemblyRowsKernel<<<gridSize, blockSize>>>(
+      rows, assembledBlocks, rowCount);
   return cudaGetLastError();
 }
 

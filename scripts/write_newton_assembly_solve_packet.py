@@ -112,7 +112,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
-    filter_expr = "^BM_NewtonAssemblySolve(Cpu|Cuda)" f"/{args.row_count}(/real_time)?$"
+    filter_expr = (
+        "^BM_Newton(AssemblySolve|OffDiagonalAssembly)(Cpu|Cuda)"
+        f"/{args.row_count}(/real_time)?$"
+    )
     command = [
         sys.executable,
         "scripts/run_cpp_benchmark.py",
@@ -167,9 +170,14 @@ def _packet_row_name(row: Mapping[str, Any]) -> str:
 
 def _representative_rows(
     rows: list[Mapping[str, Any]], row_count: int
-) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
-    cpu_name = f"BM_NewtonAssemblySolveCpu/{row_count}"
-    gpu_name = f"BM_NewtonAssemblySolveCuda/{row_count}"
+) -> dict[str, Mapping[str, Any]]:
+    expected_names = {
+        "diagonal_cpu": f"BM_NewtonAssemblySolveCpu/{row_count}",
+        "diagonal_gpu": f"BM_NewtonAssemblySolveCuda/{row_count}",
+        "off_diagonal_cpu": f"BM_NewtonOffDiagonalAssemblyCpu/{row_count}",
+        "off_diagonal_gpu": f"BM_NewtonOffDiagonalAssemblyCuda/{row_count}",
+    }
+    expected_by_name = {name: key for key, name in expected_names.items()}
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
 
@@ -179,21 +187,21 @@ def _representative_rows(
             errors.append("benchmark row is missing a name")
             continue
         canonical = _packet_row_name(row)
-        if canonical not in {cpu_name, gpu_name}:
+        if canonical not in expected_by_name:
             errors.append(f"unexpected benchmark row: {name}")
             continue
         if row.get("aggregate_name") == "median":
-            found[canonical] = row
+            found[expected_by_name[canonical]] = row
         errors.extend(benchmark_timing_field_errors(row, name))
 
-    for expected in (cpu_name, gpu_name):
-        if expected not in found:
+    for key, expected in expected_names.items():
+        if key not in found:
             errors.append(f"missing median benchmark row: {expected}")
 
     if errors:
         raise NewtonAssemblySolvePacketError("\n".join(errors))
 
-    return found[cpu_name], found[gpu_name]
+    return found
 
 
 def _matching_int_counter(
@@ -226,15 +234,31 @@ def make_packet(
     if len(typed_rows) != len(rows):
         raise NewtonAssemblySolvePacketError("benchmark JSON has non-object rows")
 
-    cpu_row, gpu_row = _representative_rows(typed_rows, row_count)
+    representative_rows = _representative_rows(typed_rows, row_count)
+    cpu_row = representative_rows["diagonal_cpu"]
+    gpu_row = representative_rows["diagonal_gpu"]
+    off_diagonal_cpu_row = representative_rows["off_diagonal_cpu"]
+    off_diagonal_gpu_row = representative_rows["off_diagonal_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
+    off_diagonal_cpu_ns = benchmark_timing_ns(off_diagonal_cpu_row)
+    off_diagonal_gpu_ns = benchmark_timing_ns(off_diagonal_gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError("CPU benchmark timing is not positive")
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError("GPU benchmark timing is not positive")
+    if not math.isfinite(off_diagonal_cpu_ns) or off_diagonal_cpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "off-diagonal CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(off_diagonal_gpu_ns) or off_diagonal_gpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "off-diagonal GPU benchmark timing is not positive"
+        )
 
-    max_error = _counter(gpu_row, "max_result_abs_error")
+    diagonal_max_error = _counter(gpu_row, "max_result_abs_error")
+    off_diagonal_max_error = _counter(off_diagonal_gpu_row, "max_result_abs_error")
+    max_error = max(diagonal_max_error, off_diagonal_max_error)
     if max_error > tolerance:
         raise NewtonAssemblySolvePacketError(
             f"assembly/solve max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
@@ -258,7 +282,26 @@ def make_packet(
     dofs = int(_counter(cpu_row, "dofs"))
 
     step_norm = _counter(gpu_row, "gpu_step_norm")
-    speedup = cpu_ns / gpu_ns
+    off_diagonal_rows = _matching_int_counter(
+        off_diagonal_cpu_row, off_diagonal_gpu_row, "rows", "gpu_rows"
+    )
+    if off_diagonal_rows != row_count:
+        raise NewtonAssemblySolvePacketError(
+            f"expected {row_count} off-diagonal rows, got {off_diagonal_rows}"
+        )
+    pair_count = _matching_int_counter(
+        off_diagonal_cpu_row, off_diagonal_gpu_row, "pairs", "gpu_pairs"
+    )
+    active_blocks = _matching_int_counter(
+        off_diagonal_cpu_row,
+        off_diagonal_gpu_row,
+        "active_blocks",
+        "gpu_active_blocks",
+    )
+    block_entries = int(_counter(off_diagonal_cpu_row, "block_entries"))
+    off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
+    diagonal_speedup = cpu_ns / gpu_ns
+    speedup = min(diagonal_speedup, off_diagonal_speedup)
     timing_ns = {
         "setup": _counter(gpu_row, "host_setup_ns"),
         "host_to_device": _counter(gpu_row, "host_to_device_ns"),
@@ -271,6 +314,19 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"packet timing is missing {sorted(missing)}"
+        )
+    off_diagonal_timing_ns = {
+        "setup": _counter(off_diagonal_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(off_diagonal_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(off_diagonal_gpu_row, "assembly_kernel_ns"),
+        "solve": _counter(off_diagonal_gpu_row, "solve_kernel_ns"),
+        "device_to_host": _counter(off_diagonal_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = REQUIRED_TIMING_KEYS - off_diagonal_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"off-diagonal packet timing is missing {sorted(missing)}"
         )
 
     return {
@@ -292,6 +348,33 @@ def make_packet(
             "timing_ns": timing_ns,
             "cpu_benchmark_row": _packet_row_name(cpu_row),
             "gpu_benchmark_row": _packet_row_name(gpu_row),
+            "diagonal_assembly_solve": {
+                "row_count": row_count,
+                "body_count": body_count,
+                "dof_count": dofs,
+                "active_dof_count": active_dofs,
+                "max_result_abs_error": diagonal_max_error,
+                "residual_norm": residual_norm,
+                "step_norm": step_norm,
+                "speedup": diagonal_speedup,
+                "meets_speedup_gate": diagonal_speedup >= speedup_gate,
+                "timing_ns": timing_ns,
+                "cpu_benchmark_row": _packet_row_name(cpu_row),
+                "gpu_benchmark_row": _packet_row_name(gpu_row),
+            },
+            "off_diagonal_sparse_block_assembly": {
+                "row_count": row_count,
+                "pair_count": pair_count,
+                "block_entry_count": block_entries,
+                "active_block_count": active_blocks,
+                "max_block_abs": _counter(off_diagonal_gpu_row, "gpu_max_block_abs"),
+                "max_result_abs_error": off_diagonal_max_error,
+                "speedup": off_diagonal_speedup,
+                "meets_speedup_gate": off_diagonal_speedup >= speedup_gate,
+                "timing_ns": off_diagonal_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(off_diagonal_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(off_diagonal_gpu_row),
+            },
         },
         "benchmarks": rows,
     }

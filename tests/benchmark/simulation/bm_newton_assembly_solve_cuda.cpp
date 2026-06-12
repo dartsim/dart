@@ -68,6 +68,22 @@ struct AssemblySolveFixture
   CpuAssemblySolveResult cpu;
 };
 
+struct CpuOffDiagonalAssemblyResult
+{
+  std::vector<double> assembledBlocks;
+  std::size_t pairCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t activeBlockCount = 0;
+  double maxBlockAbs = 0.0;
+};
+
+struct OffDiagonalAssemblyFixture
+{
+  std::vector<cuda::NewtonOffDiagonalAssemblyRowInput> rows;
+  std::size_t pairCount = 0;
+  CpuOffDiagonalAssemblyResult cpu;
+};
+
 cuda::NewtonAssemblySolveRowInput makeRow(
     const int rowIndex, const std::size_t bodyCount)
 {
@@ -81,6 +97,22 @@ cuda::NewtonAssemblySolveRowInput makeRow(
         = 0.5 + 0.01 * static_cast<double>((rowIndex + dof) % 17)
           + 0.05 * static_cast<double>(dof + 1);
     row.gradient[dof] = 0.025 * static_cast<double>(signedBucket);
+  }
+  return row;
+}
+
+cuda::NewtonOffDiagonalAssemblyRowInput makeOffDiagonalRow(
+    const int rowIndex, const std::size_t pairCount)
+{
+  cuda::NewtonOffDiagonalAssemblyRowInput row;
+  row.pairIndex = static_cast<std::uint32_t>(
+      static_cast<std::size_t>(rowIndex) % pairCount);
+  for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+       ++entry) {
+    const auto signedBucket
+        = static_cast<int>((rowIndex + 7 * entry) % 31) - 15;
+    row.hessianBlock[entry] = 0.0025 * static_cast<double>(signedBucket)
+                              + 0.0001 * static_cast<double>((entry % 6) + 1);
   }
   return row;
 }
@@ -132,6 +164,41 @@ void evaluateCpu(
   result.residualNorm = std::sqrt(residualNormSquared);
 }
 
+void evaluateCpuOffDiagonalAssembly(
+    const std::vector<cuda::NewtonOffDiagonalAssemblyRowInput>& rows,
+    const std::size_t pairCount,
+    CpuOffDiagonalAssemblyResult& result)
+{
+  result = CpuOffDiagonalAssemblyResult{};
+  result.pairCount = pairCount;
+  result.rowCount = rows.size();
+  result.assembledBlocks.assign(
+      pairCount * cuda::kNewtonAssemblySolveBlockEntries, 0.0);
+
+  for (const auto& row : rows) {
+    const std::size_t offset = static_cast<std::size_t>(row.pairIndex)
+                               * cuda::kNewtonAssemblySolveBlockEntries;
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.assembledBlocks[offset + entry] += row.hessianBlock[entry];
+    }
+  }
+
+  for (std::size_t pair = 0; pair < pairCount; ++pair) {
+    bool active = false;
+    const std::size_t offset = pair * cuda::kNewtonAssemblySolveBlockEntries;
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const double value = std::abs(result.assembledBlocks[offset + entry]);
+      result.maxBlockAbs = std::max(result.maxBlockAbs, value);
+      active = active || value > 0.0;
+    }
+    if (active) {
+      ++result.activeBlockCount;
+    }
+  }
+}
+
 AssemblySolveFixture makeFixture(const int rowCount)
 {
   AssemblySolveFixture fixture;
@@ -142,6 +209,19 @@ AssemblySolveFixture makeFixture(const int rowCount)
     fixture.rows.push_back(makeRow(row, fixture.bodyCount));
   }
   evaluateCpu(fixture.rows, fixture.bodyCount, fixture.cpu);
+  return fixture;
+}
+
+OffDiagonalAssemblyFixture makeOffDiagonalFixture(const int rowCount)
+{
+  OffDiagonalAssemblyFixture fixture;
+  fixture.pairCount
+      = std::max<std::size_t>(1, static_cast<std::size_t>(rowCount) / 16);
+  fixture.rows.reserve(static_cast<std::size_t>(rowCount));
+  for (int row = 0; row < rowCount; ++row) {
+    fixture.rows.push_back(makeOffDiagonalRow(row, fixture.pairCount));
+  }
+  evaluateCpuOffDiagonalAssembly(fixture.rows, fixture.pairCount, fixture.cpu);
   return fixture;
 }
 
@@ -172,6 +252,13 @@ double maxOutputError(
   return maxError;
 }
 
+double maxOffDiagonalOutputError(
+    const CpuOffDiagonalAssemblyResult& expected,
+    const cuda::NewtonOffDiagonalAssemblyResult& actual)
+{
+  return maxAbsDifference(expected.assembledBlocks, actual.assembledBlocks);
+}
+
 void recordCounters(
     benchmark::State& state,
     const AssemblySolveFixture& fixture,
@@ -187,6 +274,23 @@ void recordCounters(
   state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
   state.counters["step_norm"] = fixture.cpu.stepNorm;
   state.counters["residual_norm"] = fixture.cpu.residualNorm;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordOffDiagonalCounters(
+    benchmark::State& state,
+    const OffDiagonalAssemblyFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["block_entries"] = static_cast<double>(
+      fixture.pairCount * cuda::kNewtonAssemblySolveBlockEntries);
+  state.counters["active_blocks"]
+      = static_cast<double>(fixture.cpu.activeBlockCount);
+  state.counters["max_block_abs"] = fixture.cpu.maxBlockAbs;
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
@@ -240,5 +344,58 @@ static void BM_NewtonAssemblySolveCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonAssemblySolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonOffDiagonalAssemblyCpu(benchmark::State& state)
+{
+  const auto fixture = makeOffDiagonalFixture(static_cast<int>(state.range(0)));
+  CpuOffDiagonalAssemblyResult result;
+
+  for (auto _ : state) {
+    evaluateCpuOffDiagonalAssembly(fixture.rows, fixture.pairCount, result);
+    benchmark::DoNotOptimize(result.assembledBlocks.data());
+  }
+
+  recordOffDiagonalCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonOffDiagonalAssemblyCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonOffDiagonalAssemblyCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeOffDiagonalFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonOffDiagonalAssemblyResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonOffDiagonalAssemblyCuda(
+        fixture.rows, fixture.pairCount, result);
+    benchmark::DoNotOptimize(result.assembledBlocks.data());
+  }
+
+  recordOffDiagonalCounters(
+      state, fixture, maxOffDiagonalOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_active_blocks"]
+      = static_cast<double>(result.activeBlockCount);
+  state.counters["gpu_max_block_abs"] = result.maxBlockAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["solve_kernel_ns"] = result.timing.solveKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonOffDiagonalAssemblyCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
 
 BENCHMARK_MAIN();
