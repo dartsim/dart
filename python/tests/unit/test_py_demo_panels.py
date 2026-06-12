@@ -1044,9 +1044,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "projection" in profile_by_surface["Standard"]["current_leaders"]
     assert "block" in profile_by_surface["Standard"]["current_leaders"]
     assert "Admm" in profile_by_surface["Standard"]["current_laggards"]
-    assert "Dantzig" in profile_by_surface["Standard"]["current_laggards"]
+    assert "Dantzig" not in profile_by_surface["Standard"]["current_laggards"]
     assert "MPRGP" in profile_by_surface["Standard"]["current_laggards"]
-    assert "RedBlackGaussSeidel" in profile_by_surface["Standard"][
+    assert "SymmetricPsor" in profile_by_surface["Standard"][
         "current_laggards"
     ]
     assert "Tgs/Pgs/Jacobi" in profile_by_surface["Boxed"]["current_leaders"]

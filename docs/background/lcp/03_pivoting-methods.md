@@ -145,6 +145,11 @@ DantzigSolver solver;
 LcpResult result = solver.solve(problem, x, solver.getDefaultOptions());
 ```
 
+Strictly interior standard LCPs without a warm start take the shared validated
+linear-solve fast path through the `LcpProblem` solver interface before
+allocating the ODE-derived pivot workspace. Boxed, friction-index, warm-started,
+and low-level matrix/scratch calls keep the legacy Dantzig pivoting path.
+
 The underlying ODE-derived implementation is also available directly:
 
 ```cpp

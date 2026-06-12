@@ -1,5 +1,89 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Strict-Interior Dantzig Fast Path
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Top local checkpoint: `Fast path strict-interior Dantzig LCPs`.
+- After this checkpoint, the branch is ahead of
+  `origin/feature/lcp-solver-interface-demos` by 45 commits.
+- No PR is associated with this branch yet.
+- Pushes still require explicit maintainer/user approval.
+
+Current implementation slice:
+
+- `DantzigSolver` now tries the shared validated strict-interior standard-LCP
+  fast path through the `LcpProblem` solver interface before allocating the
+  ODE-derived pivot workspace.
+- The fast path runs after problem validation and only when callers are not
+  warm-starting.
+- Boxed, friction-index, warm-started, and low-level matrix/scratch Dantzig
+  calls stay on the existing pivoting path.
+- The strict-interior pivot/barrier unit coverage now includes `DantzigSolver`
+  with `warmStart=false`.
+- The checked LCP performance profile CSVs, Python demo metadata, background
+  docs, changelog, and this dev-task hand-off were refreshed.
+
+Focused benchmark evidence:
+
+- Focused after-run: `BM_LcpCompare/Standard/Dantzig/`.
+- Current focused rerun reported `contract_ok=1.0` and `iterations=0` for
+  12-, 24-, 48-, and 96-row Standard Dantzig packets.
+
+Final regenerated profile snapshot for this slice:
+
+- Standard: `Dantzig` average ratio `1.24`; it is no longer a Standard profile
+  laggard.
+- Current Standard high-ratio targets are `MPRGP`, `Admm`, plus moderate
+  `Jacobi`, `RedBlackGaussSeidel`, `Apgd`, and `SymmetricPsor` rows.
+- Boxed/FrictionIndex targets remain unchanged in kind: Boxed `Admm`,
+  `ShockPropagation`, `Dantzig`, `Nncg`, and `BlockedJacobi`; FrictionIndex
+  `BlockedJacobi`, `BGS`, `Staggering`, `ShockPropagation`, and
+  `SubspaceMinimization`.
+
+Verification completed for this slice:
+
+```bash
+cmake --build build/default/cpp/Release \
+  --target BM_LCP_COMPARE UNIT_math_lcp_math_lcp_lcp_validation_and_solvers \
+  --parallel 1
+ctest --test-dir build/default/cpp/Release --output-on-failure \
+  -R 'UNIT_math_lcp_math_lcp_lcp_validation_and_solvers$' \
+  -j 1
+build/default/cpp/Release/bin/BM_LCP_COMPARE \
+  --benchmark_filter='BM_LcpCompare/Standard/Dantzig/' \
+  --benchmark_min_time=0.01s \
+  --benchmark_format=json > build/dantzig_strict_interior_after.json
+pixi run python scripts/lcp_performance_profile.py --run \
+  --cache build/lcp_profile_full.json \
+  --output docs/background/lcp/figures
+python - <<'PY'
+import csv
+from pathlib import Path
+for path in sorted(Path('docs/background/lcp/figures').glob('performance_profile_*.csv')):
+    with path.open(newline='') as f:
+        header = next(csv.reader(f))
+        rows = sum(1 for _ in f)
+    print(path.name, len(header) - 1, rows)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python \
+  pixi run python -m pytest \
+  python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata \
+  -q
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run build
+DART_PARALLEL_JOBS=1 CTEST_PARALLEL_LEVEL=1 CMAKE_BUILD_PARALLEL_LEVEL=1 \
+  pixi run lint
+git diff --check
+```
+
+Immediate next step:
+
+1. Continue from the refreshed profile and target `Admm` or `MPRGP` on
+   Standard rows, or one of the remaining boxed/friction-index high-ratio rows.
+   Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Strict-Interior Boxed Semi-Smooth Newton Fast Path
 
 Current branch state:

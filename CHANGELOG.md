@@ -1518,6 +1518,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     `BoxedSemiSmoothNewtonSolver` standard rows after parameter validation,
     leaving warm-started boxed and friction-index Newton solves on the existing
     residual-reducing PGS warm-start and semi-smooth line-search path.
+  - Extended the validated strict-interior standard-LCP fast path to
+    `DantzigSolver` through the `LcpProblem` solver interface, preserving the
+    ODE-derived boxed and friction-index pivoting path and the low-level
+    matrix/scratch entry point.
   - Tightened `LcpSolver::supportsProblem()` to allow solver-specific
     per-problem native limits, starting with `DirectSolver` reporting only its
     tiny standard-LCP enumeration window as native while larger standard

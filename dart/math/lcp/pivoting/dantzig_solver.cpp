@@ -82,6 +82,45 @@ LcpResult DantzigSolver::solve(
     Scratch& scratch,
     const LcpOptions& options)
 {
+  LcpResult result;
+
+  const double absTol = (options.absoluteTolerance > 0)
+                            ? options.absoluteTolerance
+                            : mDefaultOptions.absoluteTolerance;
+  const double compTol = (options.complementarityTolerance > 0)
+                             ? options.complementarityTolerance
+                             : mDefaultOptions.complementarityTolerance;
+
+  Eigen::VectorXd fastW;
+  if (problem.size() > 0 && !options.warmStart
+      && detail::trySolveStrictInteriorStandardLcp(
+          problem, absTol, std::max(absTol, compTol), x, &fastW)) {
+    Eigen::VectorXd loEffFast;
+    Eigen::VectorXd hiEffFast;
+    std::string boundsMessage;
+    if (!detail::computeEffectiveBounds(
+            problem.lo,
+            problem.hi,
+            problem.findex,
+            x,
+            loEffFast,
+            hiEffFast,
+            &boundsMessage)) {
+      result.status = LcpSolverStatus::InvalidProblem;
+      result.message = boundsMessage;
+      return result;
+    }
+
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual
+        = detail::naturalResidualInfinityNorm(x, fastW, loEffFast, hiEffFast);
+    result.complementarity = detail::complementarityInfinityNorm(
+        x, fastW, loEffFast, hiEffFast, compTol);
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   return solve(
       problem.A,
       problem.b,
