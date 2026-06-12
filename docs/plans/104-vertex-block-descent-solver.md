@@ -762,7 +762,12 @@ The same dashboard slice also tracks public spherical break/reset rows through
 `BM_AvbdRigidSphericalBreakableJointStep`,
 `BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
 `BM_AvbdArticulatedSphericalPairBreakableJointStep`, each backed by tracked
-packet evidence.
+packet evidence. The companion
+[`avbd-breakable-joint-scale-packet.json`](104-vertex-block-descent-solver/avbd-breakable-joint-scale-packet.json)
+now validates those five public fixed/spherical breakable point-joint
+benchmark rows over 1, 8, and 32 joints with finite timing rows and exact
+`breakable_joints` counters; this remains benchmark-only scale evidence rather
+than a broad fracture-corpus, breakable-wall, GPU, or paper-number claim.
 Public free-rigid-body AVBD point joints now also expose a narrow break-force
 and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`

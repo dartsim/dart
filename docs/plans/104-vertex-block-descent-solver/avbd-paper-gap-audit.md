@@ -427,8 +427,11 @@ articulated spherical break/reset scenes' headless visual captures plus
 `BM_AvbdArticulatedWorldSphericalBreakableJointStep/1`, and
 `BM_AvbdArticulatedSphericalPairBreakableJointStep/1` benchmark evidence.
 Focused demo regressions also verify weak re-arm breaks again after high-force
-reset for all three spherical paths. Broad
-fracture-constraint, GPU parity, and paper-number gates remain open.
+reset for all three spherical paths.
+[`avbd-breakable-joint-scale-packet.json`](avbd-breakable-joint-scale-packet.json)
+now validates the five public fixed/spherical breakable point-joint benchmark
+rows over 1, 8, and 32 joints. Broad fracture-constraint, breakable-wall, GPU
+parity, and paper-number gates remain open.
 
 Note: `avbd_demo2d_net`, `BM_AvbdDemo2dNetStep`, and
 `avbd-demo2d-net-packet.json` now cover the source Net row shape/count,

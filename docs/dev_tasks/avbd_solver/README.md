@@ -9,6 +9,19 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the public fixed/spherical
+  breakable point-joint benchmark surface now has a validated scale packet,
+  [`avbd-breakable-joint-scale-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-breakable-joint-scale-packet.json),
+  generated from a real `BM_AvbdRigidBreakableJointStep`,
+  `BM_AvbdRigidSphericalBreakableJointStep`,
+  `BM_AvbdArticulatedBreakableJointStep`,
+  `BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
+  `BM_AvbdArticulatedSphericalPairBreakableJointStep` run over 1, 8, and 32
+  breakable joints. The packet validates finite timing rows and exact
+  `breakable_joints` counters for each fixed/spherical public row family.
+  This is benchmark-only scale evidence for existing public break/reset rows;
+  it is not a broad breakable-wall/fracture corpus, breakable-motor scale,
+  CPU-win, GPU, or paper-number claim.
 - Latest resumed checkpoint (2026-06-12): current-pose private
   movable-pair revolute and prismatic AVBD motor rows now have focused
   simulation-mode binary save/load regressions proving tiny restored effort

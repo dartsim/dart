@@ -132,6 +132,7 @@ paper/source-demo corpus:
 | `avbd-articulated-spherical-breakable-joint-packet.json`        | Visual/benchmark packet for the public world-link articulated spherical point-joint break/reset row                          | Partial  |
 | `avbd_articulated_spherical_pair_breakable_joint` py-demo       | Public same-multibody articulated spherical break/reset and weak re-arm breakage while orientation stays free                | Partial  |
 | `avbd-articulated-spherical-pair-breakable-joint-packet.json`   | Visual/benchmark packet for the public same-multibody articulated spherical point-joint break/reset row                      | Partial  |
+| `avbd-breakable-joint-scale-packet.json`                        | Benchmark-only scale packet for five public fixed/spherical breakable point-joint rows over 1/8/32 joints                    | Partial  |
 | `avbd_articulated_high_ratio_chain` py-demo                     | Five-link articulated variational-chain smoke with a 200:1 heavy tip                                                         | Partial  |
 | `BM_AvbdArticulatedHighRatioChainStep` dashboard row            | Narrow CPU dashboard row for the five-link 200:1 articulated high-ratio chain smoke                                          | Partial  |
 | `avbd_paper_scale_high_ratio_chain` py-demo                     | 50-link articulated variational-chain smoke with a 50,000:1 heavy tip                                                        | Partial  |
@@ -273,6 +274,9 @@ and `BM_AvbdRigidRevoluteMotorStep/1` benchmark.
 [`avbd-rigid-prismatic-motor-packet.json`](avbd-rigid-prismatic-motor-packet.json)
 now records the public free-rigid prismatic motor row's headless visual capture
 and `BM_AvbdRigidPrismaticMotorStep/1` benchmark.
+[`avbd-breakable-joint-scale-packet.json`](avbd-breakable-joint-scale-packet.json)
+now records finite benchmark rows for the public fixed/spherical breakable
+point-joint scale surface over 1, 8, and 32 breakable joints.
 [`avbd-articulated-revolute-motor-packet.json`](avbd-articulated-revolute-motor-packet.json)
 now records the public articulated revolute motor row's headless visual capture
 and `BM_AvbdArticulatedRevoluteMotorStep/1` benchmark.
