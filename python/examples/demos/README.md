@@ -465,6 +465,18 @@ pose divergence, and per-step timing. Its capture metrics record the same
 comparison axis, contact-policy pair, case order, executor selection, controls,
 per-policy response metrics, and divergence ranges.
 
+Capture rows 15-17 together when reviewing the core solver decision path:
+
+```bash
+pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 \
+    --workflow-end-row 17 --output-dir /tmp/dart_capture_rigid_solver_contact
+```
+
+That packet keeps the solver-family, executor-only, and contact-policy axes
+adjacent in `review_index.html`, while each row card preserves its live open
+command, workflow rerun command, direct capture command, guidance, Replay track,
+and scene-owned metrics.
+
 ## Rigid link contact
 
 The **`contact`** scene is the articulated-link contact row in the numbered

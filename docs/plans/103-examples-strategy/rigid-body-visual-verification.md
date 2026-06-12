@@ -419,6 +419,23 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest solver/contact-policy mini-packet evidence refresh:
+  the real workflow packet
+  `/tmp/dart_capture_rigid_workflow_solver_contact_rows_15_17_1781294600`
+  captured rows 15-17 with `status=complete`, `capture_count=3`,
+  `completed_count=3`, `failed_count=0`, `workflow_total_count=36`,
+  `guidance_complete=true`, and `guidance_missing_count=0`. The review index
+  links the three adjacent comparison rows and exposes their maintained
+  questions, live open commands, workflow row rerun commands, direct capture
+  commands, Replay tracks, and metric summaries. Per-scene manifests recorded
+  docked nonblank screenshots, 23 PNG frames each for `rigid_solver_compare`
+  and `rigid_executor_equivalence`, 71 PNG frames for
+  `rigid_contact_solver_compare`, and scene-metric streams showing the
+  `rigid_body_solver_family`, `executor`, and `contact_solver_method`
+  comparison axes. The latest metrics reported sequential-impulse-vs-IPC
+  solver pair, same-solver sequential-vs-parallel executor pair with max pose
+  divergence about `2.22e-16`, and sequential-impulse-vs-boxed-LCP contact
+  policy pair.
 - Latest direct-capture workflow-guidance slice:
   direct `py-demo-capture -- --scene ...` manifests for maintained rigid
   workflow rows now include a `workflow_guidance` block with row number, role,

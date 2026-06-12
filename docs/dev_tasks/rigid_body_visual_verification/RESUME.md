@@ -2,7 +2,13 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local slice: direct single-scene `py-demo-capture -- --scene ...`
+Latest local slice: refreshed the core solver/contact-policy visual evidence
+packet for rows 15-17. The real workflow capture completed
+`rigid_solver_compare`, `rigid_executor_equivalence`, and
+`rigid_contact_solver_compare` together, keeping solver-family,
+executor-only, and contact-policy decisions adjacent in `review_index.html`.
+
+Previous checkpoint: direct single-scene `py-demo-capture -- --scene ...`
 manifests for maintained rigid workflow rows now include a `workflow_guidance`
 block with row number, role, user question, try-first action, inspect signals,
 healthy signal, and scope note. This keeps a one-row capture self-describing
@@ -73,17 +79,25 @@ ensured. That note was superseded by later active-goal continuations.
 Observed repository state at this hand-off:
 
 - Branch: `feature/rigid-body-gui-visual-verification`.
+- Prior stop-state instruction: the user explicitly requested no further
+  implementation and no further verification; only hand-off docs were ensured
+  in that turn. This was later superseded by a continuation request for the
+  active goal.
 - Current continuation started with the branch clean at
-  `4987c22130c Expose rigid workflow row reruns in review index`, ten commits
-  ahead of `origin/feature/rigid-body-gui-visual-verification`, then added the
-  direct-manifest workflow-guidance follow-up in `scripts/capture_py_demo.py`,
-  `python/tests/unit/test_capture_py_demo.py`, `python/examples/demos/README.md`,
-  PLAN-103's rigid sidecar, this file, and `README.md`.
+  `867c5f5d8a5 Add rigid workflow guidance to capture manifests`, eleven
+  commits ahead of `origin/feature/rigid-body-gui-visual-verification`, then
+  captured the rows 15-17 solver/contact-policy mini packet and updated
+  `python/examples/demos/README.md`, PLAN-103's rigid sidecar, this file, and
+  `README.md`.
+- At the stop-state hand-off, those docs updates were uncommitted local
+  modifications and no push was performed. The resumed continuation verified
+  this evidence-docs slice locally before choosing the next bounded
+  GUI-verification improvement; push still requires explicit approval.
 - Resume check: inspect `git status -sb` and `git log -8 --oneline` before any
   resumed work. Expect the latest completed implementation commit to be
-  `Add rigid workflow guidance to capture manifests` if this slice has been
-  committed; otherwise inspect the uncommitted diff for the same direct-manifest
-  workflow-guidance follow-up files named above.
+  `Record solver contact workflow packet evidence` if this slice has been
+  committed; otherwise inspect the uncommitted diff for the same rows 15-17
+  solver/contact-policy evidence refresh.
 - Do not push without explicit approval in the session that performs the push.
 - Latest local slice updates `examples/demos/registry.cpp`,
   `scripts/run_cpp_example.py`, `python/tests/unit/test_run_cpp_example.py`,
@@ -125,6 +139,19 @@ Observed repository state at this hand-off:
   suite reported `26 passed, 13 deselected` with the built `dartpy` PYTHONPATH.
   The final lint, Markdown-format, docs-policy, spelling, and `git diff --check`
   gates passed.
+- Latest local solver/contact-policy mini-packet evidence updates
+  `python/examples/demos/README.md`, PLAN-103's rigid sidecar, and this handoff
+  with the current row 15-17 capture command and artifact summary.
+- Verification for the latest solver/contact-policy mini-packet evidence: the
+  row-range workflow capture completed rows 15-17 under
+  `/tmp/dart_capture_rigid_workflow_solver_contact_rows_15_17_1781294600` with
+  `capture_count=3`, `completed_count=3`, `failed_count=0`,
+  `guidance_complete=true`, docked nonblank screenshots, PNG frame sequences,
+  review-index row cards, and scene metrics for solver-family, executor, and
+  contact-policy comparison axes. Post-resume `pixi run lint`,
+  `pixi run check-lint-md`, `pixi run check-docs-policy`,
+  `pixi run check-lint-spell`, and `git diff --check` passed for this
+  evidence-docs slice.
 - Latest local slices update `python/examples/demos/registry.py`,
   `python/examples/demos/scenes/planned.py`,
   `python/tests/unit/test_py_demo_panels.py`,
@@ -699,9 +726,9 @@ Current snapshot:
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
 first. Expect the latest completed local implementation commit to be
-`Add rigid workflow guidance to capture manifests` if this slice has been
-committed; otherwise inspect the uncommitted diff for the same direct-manifest
-workflow-guidance follow-up.
+`Record solver contact workflow packet evidence` if this slice has been
+committed; otherwise inspect the uncommitted diff for the same rows 15-17
+solver/contact-policy evidence refresh.
 
 If the tree is clean with that slice present, return to maintainer acceptance
 for the current scoped rigid visual workflow. If accepted, prepare the
