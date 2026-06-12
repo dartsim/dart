@@ -204,6 +204,27 @@ struct ScenePointTriangleBarrierFixture
   std::size_t sceneTriangleCount = 0;
 };
 
+struct ScenePointEdgeBarrierFixture
+{
+  std::vector<cuda::PointEdgeBarrierInput> inputs;
+  CpuPointEdgeBarrierResult cpu;
+  std::size_t sourcePointTriangleCandidateCount = 0;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+};
+
+struct SceneRuntimeBarrierSurface
+{
+  std::vector<Eigen::Vector3d> start;
+  std::vector<Eigen::Vector3d> end;
+  std::vector<sx::DeformableSurfaceTriangle> triangles;
+  dc::ContactCandidateSet candidates;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+};
+
 cuda::BarrierFrictionLocalInput makeInput(const int i)
 {
   const bool activeBarrier = (i % 5) != 0;
@@ -958,8 +979,7 @@ PointPointTangentFixture makePointPointTangentFixture(const int sampleCount)
   return fixture;
 }
 
-ScenePointTriangleBarrierFixture makeSceneRuntimePointTriangleBarrierFixture(
-    const int sampleCount)
+SceneRuntimeBarrierSurface makeSceneRuntimeBarrierSurface(const int sampleCount)
 {
   sx::World world;
   world.setTimeStep(kSceneRuntimeBarrierTimeStep);
@@ -967,46 +987,96 @@ ScenePointTriangleBarrierFixture makeSceneRuntimePointTriangleBarrierFixture(
       "plan083_scene_runtime_barrier",
       makeSceneRuntimeBarrierBodyOptions(sampleCount));
 
-  std::vector<Eigen::Vector3d> start;
-  std::vector<Eigen::Vector3d> end;
-  std::vector<sx::DeformableSurfaceTriangle> triangles;
-  start.reserve(body.getNodeCount());
-  end.reserve(body.getNodeCount());
-  triangles.reserve(body.getSurfaceTriangleCount());
+  SceneRuntimeBarrierSurface surface;
+  surface.sceneBodyCount = world.getDeformableBodyCount();
+  surface.sceneNodeCount = body.getNodeCount();
+  surface.sceneTriangleCount = body.getSurfaceTriangleCount();
+  surface.start.reserve(body.getNodeCount());
+  surface.end.reserve(body.getNodeCount());
+  surface.triangles.reserve(body.getSurfaceTriangleCount());
 
   for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
-    start.push_back(body.getPosition(node));
-    end.push_back(start.back() + world.getTimeStep() * body.getVelocity(node));
+    surface.start.push_back(body.getPosition(node));
+    surface.end.push_back(
+        surface.start.back() + world.getTimeStep() * body.getVelocity(node));
   }
   for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
        ++triangle) {
-    triangles.push_back(body.getSurfaceTriangle(triangle));
+    surface.triangles.push_back(body.getSurfaceTriangle(triangle));
   }
 
   dc::ContactCandidateOptions options;
   options.activationDistance = kSceneRuntimeCandidateActivationDistance;
-  const dc::ContactCandidateSet candidates
-      = dc::buildMotionAwareContactCandidatesSweep(
-          start, end, triangles, options);
+  surface.candidates = dc::buildMotionAwareContactCandidatesSweep(
+      surface.start, surface.end, surface.triangles, options);
+  return surface;
+}
+
+ScenePointTriangleBarrierFixture makeSceneRuntimePointTriangleBarrierFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeBarrierSurface surface
+      = makeSceneRuntimeBarrierSurface(sampleCount);
 
   ScenePointTriangleBarrierFixture fixture;
-  fixture.sceneBodyCount = world.getDeformableBodyCount();
-  fixture.sceneNodeCount = body.getNodeCount();
-  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
-  fixture.inputs.reserve(candidates.pointTriangleCandidates.size());
+  fixture.sceneBodyCount = surface.sceneBodyCount;
+  fixture.sceneNodeCount = surface.sceneNodeCount;
+  fixture.sceneTriangleCount = surface.sceneTriangleCount;
+  fixture.inputs.reserve(surface.candidates.pointTriangleCandidates.size());
 
-  for (std::size_t i = 0; i < candidates.pointTriangleCandidates.size(); ++i) {
-    const auto& candidate = candidates.pointTriangleCandidates[i];
-    const auto& triangle = triangles[candidate.triangle];
+  for (std::size_t i = 0; i < surface.candidates.pointTriangleCandidates.size();
+       ++i) {
+    const auto& candidate = surface.candidates.pointTriangleCandidates[i];
+    const auto& triangle = surface.triangles[candidate.triangle];
     cuda::PointTriangleBarrierInput input;
-    writeVec3(input.point, end[candidate.point]);
-    writeVec3(input.triangleA, end[triangle.nodeA]);
-    writeVec3(input.triangleB, end[triangle.nodeB]);
-    writeVec3(input.triangleC, end[triangle.nodeC]);
+    writeVec3(input.point, surface.end[candidate.point]);
+    writeVec3(input.triangleA, surface.end[triangle.nodeA]);
+    writeVec3(input.triangleB, surface.end[triangle.nodeB]);
+    writeVec3(input.triangleC, surface.end[triangle.nodeC]);
     input.squaredActivationDistance = kSceneRuntimeBarrierActivationDistance
                                       * kSceneRuntimeBarrierActivationDistance;
     input.stiffness = 1.0 + 0.125 * static_cast<double>(i % 13);
     fixture.inputs.push_back(input);
+  }
+
+  evaluateCpu(fixture.inputs, fixture.cpu);
+  return fixture;
+}
+
+ScenePointEdgeBarrierFixture makeSceneRuntimePointEdgeBarrierFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeBarrierSurface surface
+      = makeSceneRuntimeBarrierSurface(sampleCount);
+
+  ScenePointEdgeBarrierFixture fixture;
+  fixture.sceneBodyCount = surface.sceneBodyCount;
+  fixture.sceneNodeCount = surface.sceneNodeCount;
+  fixture.sceneTriangleCount = surface.sceneTriangleCount;
+  fixture.sourcePointTriangleCandidateCount
+      = surface.candidates.pointTriangleCandidates.size();
+  fixture.inputs.reserve(3 * surface.candidates.pointTriangleCandidates.size());
+
+  const auto appendInput = [&fixture, &surface](
+                               const std::size_t point,
+                               const std::size_t edgeA,
+                               const std::size_t edgeB) {
+    cuda::PointEdgeBarrierInput input;
+    writeVec3(input.point, surface.end[point]);
+    writeVec3(input.edgeA, surface.end[edgeA]);
+    writeVec3(input.edgeB, surface.end[edgeB]);
+    input.squaredActivationDistance = kSceneRuntimeBarrierActivationDistance
+                                      * kSceneRuntimeBarrierActivationDistance;
+    input.stiffness
+        = 1.0 + 0.125 * static_cast<double>(fixture.inputs.size() % 13u);
+    fixture.inputs.push_back(input);
+  };
+
+  for (const auto& candidate : surface.candidates.pointTriangleCandidates) {
+    const auto& triangle = surface.triangles[candidate.triangle];
+    appendInput(candidate.point, triangle.nodeA, triangle.nodeB);
+    appendInput(candidate.point, triangle.nodeB, triangle.nodeC);
+    appendInput(candidate.point, triangle.nodeC, triangle.nodeA);
   }
 
   evaluateCpu(fixture.inputs, fixture.cpu);
@@ -1347,6 +1417,28 @@ void recordCounters(
       static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
 }
 
+void recordCounters(
+    benchmark::State& state,
+    const ScenePointEdgeBarrierFixture& fixture,
+    const double maxError)
+{
+  state.counters["samples"] = static_cast<double>(fixture.inputs.size());
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["source_point_triangle_candidates"]
+      = static_cast<double>(fixture.sourcePointTriangleCandidateCount);
+  state.counters["runtime_point_edge_candidates"]
+      = static_cast<double>(fixture.inputs.size());
+  state.counters["active_barriers"]
+      = static_cast<double>(fixture.cpu.activeBarrierCount);
+  state.counters["max_barrier_value"] = fixture.cpu.maxBarrierValue;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.inputs.size()));
+}
+
 } // namespace
 
 //==============================================================================
@@ -1552,6 +1644,57 @@ static void BM_Plan083SceneRuntimePointTriangleBarrierHessianCuda(
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083SceneRuntimePointTriangleBarrierHessianCuda)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointEdgeBarrierHessianCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimePointEdgeBarrierFixture(
+      static_cast<int>(state.range(0)));
+  CpuPointEdgeBarrierResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimePointEdgeBarrierHessianCpu)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimePointEdgeBarrierHessianCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimePointEdgeBarrierFixture(
+      static_cast<int>(state.range(0)));
+  cuda::PointEdgeBarrierHessianResult result;
+
+  for (auto _ : state) {
+    cuda::evaluatePointEdgeBarrierHessiansCuda(fixture.inputs, result);
+    benchmark::DoNotOptimize(result.barrierValues.data());
+    benchmark::DoNotOptimize(result.barrierHessians.data());
+  }
+
+  recordCounters(state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_active_barriers"]
+      = static_cast<double>(result.activeBarrierCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = result.timing.kernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimePointEdgeBarrierHessianCuda)
     ->Arg(65536)
     ->UseRealTime();
 
