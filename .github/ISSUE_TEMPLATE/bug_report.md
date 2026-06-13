@@ -18,7 +18,7 @@ assignees: ""
 - DART version: [e.g., main, 6.17.x]
 - OS: [e.g., Ubuntu 24.04, macOS Sequoia, Windows 11]
 - Installation: [e.g., pixi, conda, apt, homebrew, vcpkg, source]
-- Compiler (if source): [e.g., GCC 13.2.0, Clang 18.0.0, MSVC 2022]
+- Compiler (if source): [e.g., GCC 13.2.0, Clang 18.0.0, MSVC 2026]
 
 > **Note:** Bug fixes are only accepted for `main` and `release-6.17`. If using 6.16 or older, please upgrade to 6.17.x first and verify the issue still exists.
 

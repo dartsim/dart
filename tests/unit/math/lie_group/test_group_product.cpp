@@ -461,6 +461,10 @@ TYPED_TEST(GroupProductTest, RealWorldHumanoidConfigurationIsComponentwise)
   static_assert(std::is_same_v<
                 typename Humanoid::template Component<kHumanoidScalarStart>,
                 R1<S>>);
+  static_assert(
+      Humanoid::ParamSize
+      == SE3<S>::ParamSize + 2 * SO3<S>::ParamSize
+             + static_cast<int>(kHumanoidScalarJointCount));
 
   EXPECT_EQ(
       Humanoid::ProductSize, kHumanoidScalarStart + kHumanoidScalarJointCount);

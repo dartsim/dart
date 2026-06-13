@@ -12,11 +12,11 @@ This guide describes how to build DART from source, including both the C++ libra
 
 DART is supported on the following operating systems and compilers:
 
-| Operating System      | Compiler           |
-| --------------------- | ------------------ |
-| Ubuntu 22.04 or later | GCC 11.2 or later  |
-| Windows 2022 or later | Visual Studio 2022 |
-| macOS 13 or later     | Clang 13 or later  |
+| Operating System             | Compiler           |
+| ---------------------------- | ------------------ |
+| Ubuntu 22.04 or later        | GCC 11.2 or later  |
+| Windows Server 2025 or later | Visual Studio 2026 |
+| macOS 13 or later            | Clang 13 or later  |
 
 > **Note:** DART requires C++20. See [Compatibility Policy](compatibility-policy.md) for details on how platform requirements are determined.
 
@@ -77,6 +77,10 @@ for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
 require per-engine collision dependencies or OctoMap.
 
 ### Windows
+
+Install Visual Studio 2026 and CMake 4.2 or later. CMake 4.2 is the first
+release that recognizes the `Visual Studio 18 2026` generator; the Pixi
+environments already use a newer CMake.
 
 Install required dependencies using `vcpkg`:
 
@@ -154,6 +158,12 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
    DART_FETCH_FILAMENT_OVERRIDE=ON pixi run config
    ```
+
+   On Windows, Pixi configure tasks use the Visual Studio multi-config
+   generator and default to `Visual Studio 18 2026`, matching DART's
+   Visual Studio 2026 compiler floor enforced by CMake. Advanced users can set
+   `DART_WINDOWS_CMAKE_GENERATOR` explicitly for a newer compatible generator,
+   but older Visual Studio generators are rejected by CMake.
 
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
    `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
@@ -331,8 +341,8 @@ and Raylib smoke path are no longer buildable renderer options.
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio 2022 (multi-config; pick configuration at build-time)
-cmake .. -G "Visual Studio 17 2022" -A x64
+# Visual Studio 2026 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 18 2026" -A x64
 
 # Xcode (multi-config; pick configuration at build-time)
 cmake .. -G "Xcode"
