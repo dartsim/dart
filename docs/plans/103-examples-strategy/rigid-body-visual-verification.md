@@ -491,15 +491,25 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
-- Latest pre-contact surrogate related-route guard: `diff_pre_contact_surrogate`
-  now covers the public approaching-but-not-touching
-  `ContactGradientMode.PRE_CONTACT_SURROGATE` diagnostic in the Differentiable
-  shelf and is included in the optional related-evidence packet. Focused guards
-  reported `8 passed, 1 skipped` for the new scene, related route, metrics,
-  panel, and public diff-path tests in the default diff-OFF build, plus
-  `6 passed` for capture-plan/docs drift guards. The next full optional visual
-  packet should be regenerated as a 53-row packet before final maintainer
-  review because the older optional artifact predates this route.
+- Latest optional 53-row packet refresh:
+  `diff_pre_contact_surrogate` now covers the public
+  approaching-but-not-touching `ContactGradientMode.PRE_CONTACT_SURROGATE`
+  diagnostic in the Differentiable shelf and is included in the optional
+  related-evidence packet. The current optional packet
+  `build/captures/rigid_workflow_optional_rows_37_53_1781321474` selected rows
+  37-53 with related evidence, direct Rigid IPC shelf, and capture-first packet
+  groups requested and selected. It reported `status=complete`,
+  `capture_count=17`, `completed_count=17`, `failed_count=0`,
+  `workflow_total_count=53`, `workflow_row_start=37`,
+  `workflow_row_end=53`, `continue_on_failure=true`,
+  `guidance_complete=true`, `scene_metrics_complete=true`,
+  `scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
+  `resolved_solver_identity_count=17`, `failed_rows=[]`, and 17 captured
+  manifests. A read-only static review audit checked 86 local `href`/`src`
+  targets in `review_index.html` with 0 missing links. Focused guards reported
+  `8 passed, 1 skipped` for the new scene, related route, metrics, panel, and
+  public diff-path tests in the default diff-OFF build, plus `6 passed` for
+  capture-plan/docs drift guards.
 
 - Historical pre-surrogate packet refresh: after the workflow-command provenance and
   review-index link-normalization fix, the full numbered workflow packet
@@ -516,7 +526,9 @@ Evidence recorded for this slice:
   `guidance_complete=true`, `guidance_missing_count=0`, and `failed_rows=[]`.
   The generated review indexes include top-level workflow commands and a
   read-only HTML asset audit found 0 missing local assets: 181/181 links for
-  rows 01-36 and 81/81 links for rows 37-52.
+  rows 01-36 and 81/81 links for rows 37-52. This packet is retained as
+  historical pre-surrogate evidence only; the rows 37-53 packet above is the
+  current optional maintainer-review artifact.
 
 - Latest DART 7 harness alignment: `py-demo-capture` now writes validated
   `resolved_solver_identity` into successful per-scene manifests, requires
@@ -528,10 +540,10 @@ Evidence recorded for this slice:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_resolved_solver_identity_requires_solver_family_and_context python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_scene_metrics_are_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
   reported `11 passed`. A full GUI packet regeneration attempt under
   `build/captures/rigid_workflow_rows_01_36_1781311276` failed at row 1 with
-  `return_code=-7` before scene metrics were written, so the complete packet
-  paths above remain the latest successful visual artifacts and should be
-  regenerated on a working GUI capture host before claiming the explicit
-  identity-complete packet field.
+  `return_code=-7` before scene metrics were written; after the scoped
+  headless engine-creation fix, the rows 01-36 packet and the current rows
+  37-53 optional packet both regenerated successfully with explicit
+  identity-complete and scene-metrics-complete fields.
 
 - Latest review-index provenance/link guard: the workflow manifest and
   `review_index.html` now record the exact top-level workflow packet command,
@@ -550,7 +562,7 @@ Evidence recorded for this slice:
 
 - Latest full numbered workflow packet evidence: after the row-36
   loop-closure implementation commit, the current-HEAD workflow packet
-  `build/captures/rigid_workflow_rows_01_36_1781309127` captured rows 01-36
+  `build/captures/rigid_workflow_rows_01_36_1781312968` captured rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, and `failed_rows=[]`. The packet wrote

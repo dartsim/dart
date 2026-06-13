@@ -96,17 +96,17 @@ rigid-body visual verification surface for the current cycle.
   (`status=complete`, `capture_count=36`, `failed_count=0`,
   `guidance_complete=true`, `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=36`, 2388 PNG frames).
-- Historical optional rows 37-52 packet before `diff_pre_contact_surrogate` was
-  added; regenerate the full optional 53-row packet before final maintainer
-  review:
-  `build/captures/rigid_workflow_optional_rows_37_52_1781313357`
-  (`status=complete`, `capture_count=16`, `failed_count=0`,
-  `guidance_complete=true`, `resolved_solver_identity_complete=true`,
-  `resolved_solver_identity_count=16`, 1004 PNG frames).
+- Current optional rows 37-53 packet after `diff_pre_contact_surrogate` was
+  added:
+  `build/captures/rigid_workflow_optional_rows_37_53_1781321474`
+  (`status=complete`, `capture_count=17`, `failed_count=0`,
+  `guidance_complete=true`, `scene_metrics_complete=true`,
+  `resolved_solver_identity_complete=true`,
+  `resolved_solver_identity_count=17`, 1027 PNG frames).
 - Read-only per-scene metrics audit: both current packet directories have
-  latest scene metrics for every captured row (36/36 and 16/16).
+  latest scene metrics for every captured row (36/36 and 17/17).
 - Static review-index asset audit: 0 missing local assets for both current
-  review indexes.
+  review indexes (181/181 links for rows 01-36, 86/86 links for rows 37-53).
 - Historical stopped broad validation attempt, superseded by the green broad
   runs above: after a first wrapper attempt was interrupted during Release test
   build, direct

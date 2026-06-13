@@ -4,7 +4,7 @@
 
 Remote publication checkpoint: after the explicit `push to origin` instruction,
 `origin/feature/rigid-body-gui-visual-verification` points to
-`0618f6f167d Tighten rigid workflow evidence contract`. Fresh
+`6bafd605907 Add pre-contact surrogate visual demo`. Fresh
 `gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
 still report no PR for the branch. The latest pre-push `git fetch origin main
 && git merge --no-edit origin/main` reported `Already up to date`, so the
@@ -14,18 +14,21 @@ local continuation commits may be unpushed. The approved push did not approve PR
 creation, milestone mutation, CI reruns, review comments, thread resolution, or
 other GitHub review-state changes.
 
-Latest unpublished local continuation: added `diff_pre_contact_surrogate` as a
-Differentiable shelf scene and related-evidence route from
-`rigid_contact_solver_compare`. The scene shows identical forward motion for an
-approaching-but-not-touching sphere while
-`ContactGradientMode.PRE_CONTACT_SURROGATE` adds a backward-only pre-contact
-Jacobian block. The optional extended workflow now has 53 rows when
-related-evidence, direct Rigid IPC shelf, and capture-first packet groups are
-all selected; the older rows 37-52 packet remains useful historical evidence
-but predates this route and should be regenerated before final maintainer
-review. Focused guards reported `8 passed, 1 skipped` for the new scene,
-related-route, metrics, panel, and public diff-path tests in the default
-diff-OFF build, plus `6 passed` for capture-plan/docs drift guards.
+Latest local evidence refresh: the optional extended workflow packet was
+regenerated after `diff_pre_contact_surrogate` landed in the related-evidence
+set. `build/captures/rigid_workflow_optional_rows_37_53_1781321474` selected
+rows 37-53 from the fully extended 53-row packet with related evidence, direct
+Rigid IPC shelf rows, and capture-first packet groups requested and selected.
+Its manifest reports `status=complete`, `capture_count=17`,
+`completed_count=17`, `failed_count=0`, `workflow_total_count=53`,
+`workflow_row_start=37`, `workflow_row_end=53`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=17`, `failed_rows=[]`, and 17 captured
+manifests. A read-only static review audit checked 86 local `href`/`src`
+targets in `review_index.html` with 0 missing links. Use this rows 37-53
+packet as current optional maintainer-review evidence; the older rows 37-52
+packet is historical.
 
 Latest pushed continuation: the rigid workflow evidence contract is
 being tightened to match the DART 7 work-packet harness. Workflow manifests and
@@ -43,10 +46,10 @@ review packet manifests and static review indexes. The full rows 01-36 packet
 still reports `status=complete`, `capture_count=36`, `failed_count=0`,
 `guidance_complete=true`, `resolved_solver_identity_complete=true`,
 `resolved_solver_identity_count=36`, and 181/181 local review-index assets
-present. The optional rows 37-52 packet still reports `status=complete`,
-`capture_count=16`, `failed_count=0`, `guidance_complete=true`,
-`resolved_solver_identity_complete=true`,
-`resolved_solver_identity_count=16`, and 81/81 local review-index assets
+present. The current optional rows 37-53 packet reports `status=complete`,
+`capture_count=17`, `failed_count=0`, `guidance_complete=true`,
+`scene_metrics_complete=true`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=17`, and 86/86 local review-index assets
 present.
 
 Latest local harness hardening: workflow review indexes now show a solver
@@ -95,7 +98,7 @@ Historical publication state before the latest approved push: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
 ahead of `origin/feature/rigid-body-gui-visual-verification`, and
 `gh pr list --head "$(git branch --show-current)"` returned no PR. That is now
-superseded by the pushed `0618f6f167d` state above. Future sessions must rerun
+superseded by the pushed `6bafd605907` state above. Future sessions must rerun
 `git status -sb` and must get explicit approval before pushing newer local
 commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
 mutating GitHub review state.
@@ -146,21 +149,21 @@ with `status=complete`, `capture_count=36`, `completed_count=36`,
 `workflow_row_end=36`, `guidance_complete=true`, `guidance_missing_count=0`,
 `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`,
 `resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 2388 frame
-PNGs. The optional rows 37-52 packet
-`build/captures/rigid_workflow_optional_rows_37_52_1781313357` mirrors the
-original `/dev/shm/dart_rigid_workflow_optional_rows_37_52_1781313357` run and
-completed with `status=complete`, `capture_count=16`, `completed_count=16`,
-`failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,
-`workflow_row_end=52`, `include_related=true`, `include_ipc_shelf=true`,
+PNGs. The current optional rows 37-53 packet
+`build/captures/rigid_workflow_optional_rows_37_53_1781321474` completed with
+`status=complete`, `capture_count=17`, `completed_count=17`,
+`failed_count=0`, `workflow_total_count=53`, `workflow_row_start=37`,
+`workflow_row_end=53`, `include_related=true`, `include_ipc_shelf=true`,
 `include_packets=true`, `selected_include_related=true`,
 `selected_include_ipc_shelf=true`, `selected_include_packets=true`,
 `guidance_complete=true`, `guidance_missing_count=0`,
-`resolved_solver_identity_complete=true`, `resolved_solver_identity_count=16`,
-`resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 1004 frame
+`scene_metrics_complete=true`, `scene_metrics_count=17`,
+`resolved_solver_identity_complete=true`, `resolved_solver_identity_count=17`,
+`resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 1027 frame
 PNGs. A read-only HTML asset audit found 0 missing local assets in both copied
-review indexes: 181/181 links for rows 01-36 and 81/81 links for rows 37-52.
+review indexes: 181/181 links for rows 01-36 and 86/86 links for rows 37-53.
 The copied `review_index.html` files use relative asset links; the JSON
-manifests preserve the original `/dev/shm` command/output paths as capture
+manifests preserve the top-level workflow command and per-scene capture
 provenance.
 
 Latest local follow-up: regenerated the current-HEAD review packets after the
@@ -183,7 +186,7 @@ It wrote `manifest.json`, `review_index.html`, 16 docked row screenshots, and
 1004 frame PNGs; the first selected scene was `floating_base` and the last was
 `rigid_ipc_heavy_stack_packet`. A read-only HTML asset audit found 0 missing
 local assets in both review indexes: 181/181 links for rows 01-36 and 81/81
-links for rows 37-52. These packets supersede the older
+links for rows 37-52. At that checkpoint, those packets superseded the older
 `1781305407`/`1781305860` packet paths as review-index scan artifacts; keep the
 older packet paths only as historical completion evidence.
 
@@ -221,7 +224,7 @@ one `py-demo-capture -- --rigid-workflow` run. That packet exercises the same
 docked Filament/ImGui capture path, per-row manifests, screenshots, frame
 directories, workflow guidance, and `review_index.html` contact sheet that a
 maintainer would use to review the row-15-through-row-36 DART 7 harness pass.
-The current optional extended packet has also been rechecked for rows 37-52,
+The current optional extended packet has also been rechecked for rows 37-53,
 covering related evidence, direct Rigid IPC shelf routes, and capture-first IPC
 stress packets.
 
@@ -242,12 +245,12 @@ Resume from this state:
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR and
   possibly unpublished local continuation commits ahead of origin.
 - Latest pushed checkpoint is
-  `0618f6f167d Tighten rigid workflow evidence contract`.
+  `6bafd605907 Add pre-contact surrogate visual demo`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
   and
-  `build/captures/rigid_workflow_optional_rows_37_52_1781313357/review_index.html`
+  `build/captures/rigid_workflow_optional_rows_37_53_1781321474/review_index.html`
   as the current identity-complete review-index scan artifacts. Treat older
   packet directories as historical completion or failure evidence only.
 - Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
