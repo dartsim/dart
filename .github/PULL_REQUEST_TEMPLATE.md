@@ -2,13 +2,13 @@
 
 -
 
-<!-- Describe this pull request. Link to relevant GitHub issues, if any. -->
+<!-- Outcome first for reviewers: what changed and who is affected. If the problem context is necessary, fold it into the first sentence and expand it below. Link relevant GitHub issues, if any. -->
 
 ## Motivation / Problem
 
 -
 
-<!-- Why is this change needed? What problem does it solve? -->
+<!-- Why is this change needed? What problem does it solve? Keep the fuller rationale here, after the skimmable Summary. -->
 
 ## Changes / Key Changes
 

@@ -44,3 +44,18 @@ Before implementation starts, the owner plan or dev task should record:
    focused tests prove default `World::step()` and custom-final-stage stepping
    share the same dynamics schedule without exceeding the built-in inline stage
    capacity.
+9. **Solver-contract conformance.** Record how the family enters through the
+   internal solver contract and the single method-selection idiom owned by
+   PLAN-091 (typed per-domain policy value objects resolved at finalize, with
+   capability validation and a resolved-configuration report). While a
+   contract piece is still landing, record explicitly which interim mechanism
+   the family uses and the migration step that retires it — silent scene- or
+   content-dependent method substitution is not acceptable in any new family.
+10. **Solver-identity and metrics evidence.** Every benchmark or evidence
+    packet the family produces must machine-record the resolved solver
+    configuration (no packet is valid without it), populate the shared
+    cross-family step-metrics fields once they exist, and register its
+    comparison scenes in the shared scene corpus rather than hand-building
+    bespoke scenes. A performance or parity claim whose packet cannot prove
+    which solver actually ran is not evidence. See the standing rule in
+    [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md).
