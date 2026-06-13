@@ -2435,7 +2435,9 @@ def build() -> SceneSetup:
             builder.text(
                 "solver manifest: "
                 f"{summary['solver_count']} solvers, "
-                f"{summary['boxed_count']} boxed/findex-capable"
+                f"{summary['standard_count']} standard, "
+                f"{summary['boxed_count']} boxed, "
+                f"{summary['findex_count']} friction-index"
             )
             builder.text(f"benchmark smoke: {_BENCHMARK_COMMAND}")
             if builder.begin_table(
