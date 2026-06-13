@@ -473,6 +473,56 @@ __global__ void newtonSceneNonlinearEqualityPostResidualKernel(
       = residuals[constraintIndex] + linearizedCorrection;
 }
 
+__global__ void newtonSceneDistanceEqualityResidualKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    double* residuals,
+    const std::size_t constraintCount)
+{
+  const auto constraintIndex
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (constraintIndex >= constraintCount) {
+    return;
+  }
+
+  const NewtonSceneDistanceEqualityConstraintInput constraint
+      = constraints[constraintIndex];
+  const NewtonSceneNodeInput nodeA = nodes[constraint.nodeA];
+  const NewtonSceneNodeInput nodeB = nodes[constraint.nodeB];
+
+  double lengthSquared = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    const double delta = nodeB.position[axis] - nodeA.position[axis];
+    lengthSquared += delta * delta;
+  }
+
+  const double length = fmax(sqrt(lengthSquared), 1e-9);
+  residuals[constraintIndex] = length - constraint.restLength;
+}
+
+__global__ void newtonSceneNonlinearEqualityApplyStepKernel(
+    NewtonSceneNodeInput* nodes,
+    const double* iterationStep,
+    double* totalStep,
+    const std::size_t nodeCount,
+    const double stepScale)
+{
+  const auto nodeIndex
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (nodeIndex >= nodeCount) {
+    return;
+  }
+
+  const std::size_t offset = nodeIndex * kNewtonAssemblySolveDofsPerBody;
+  for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+    const double correction = stepScale * iterationStep[offset + dof];
+    totalStep[offset + dof] += correction;
+    if (dof < 3u) {
+      nodes[nodeIndex].position[dof] += correction;
+    }
+  }
+}
+
 __global__ void newtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -838,6 +888,43 @@ cudaError_t launchNewtonSceneNonlinearEqualityPostResidualKernel(
       step,
       postSolveLinearizedResiduals,
       constraintCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSceneDistanceEqualityResidualKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    double* residuals,
+    const std::size_t constraintCount)
+{
+  if (constraintCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(constraintCount, blockSize);
+  newtonSceneDistanceEqualityResidualKernel<<<gridSize, blockSize>>>(
+      nodes, constraints, residuals, constraintCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSceneNonlinearEqualityApplyStepKernel(
+    NewtonSceneNodeInput* nodes,
+    const double* iterationStep,
+    double* totalStep,
+    const std::size_t nodeCount,
+    const double stepScale)
+{
+  if (nodeCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(nodeCount, blockSize);
+  newtonSceneNonlinearEqualityApplyStepKernel<<<gridSize, blockSize>>>(
+      nodes, iterationStep, totalStep, nodeCount, stepScale);
   return cudaGetLastError();
 }
 

@@ -46,6 +46,8 @@ namespace cuda = dart::simulation::compute::cuda;
 
 namespace {
 
+constexpr double kExpectedSceneNonlinearEqualityConvergenceStepScale = 0.25;
+
 struct ExpectedSparseCgSolve
 {
   std::vector<double> assembledDiagonal;
@@ -57,6 +59,24 @@ struct ExpectedSparseCgSolve
   double residualNorm = 0.0;
   double stepNorm = 0.0;
   double maxResidualAbs = 0.0;
+  bool converged = false;
+};
+
+struct ExpectedSceneNonlinearEqualityConvergence
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::vector<double> initialResiduals;
+  std::vector<double> finalResiduals;
+  std::vector<double> step;
+  std::size_t completedIterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double initialMaxConstraintResidualAbs = 0.0;
+  double finalMaxConstraintResidualAbs = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  double stepNorm = 0.0;
   bool converged = false;
 };
 
@@ -563,6 +583,118 @@ void evaluateExpectedSceneNonlinearEqualitySolve(
     postSolveLinearizedResiduals[constraintIndex]
         = residuals[constraintIndex] + linearizedCorrection;
   }
+}
+
+double maxAbs(const std::vector<double>& values)
+{
+  double maxValue = 0.0;
+  for (const auto value : values) {
+    maxValue = std::max(maxValue, std::abs(value));
+  }
+  return maxValue;
+}
+
+ExpectedSceneNonlinearEqualityConvergence
+evaluateExpectedSceneNonlinearEqualityConvergence(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::vector<cuda::NewtonSceneDistanceEqualityConstraintInput>&
+        constraints,
+    const double regularization,
+    const std::size_t maxIterationCount,
+    const double residualTolerance)
+{
+  ExpectedSceneNonlinearEqualityConvergence result;
+  std::vector<cuda::NewtonSceneNodeInput> currentNodes = nodes;
+  std::vector<cuda::NewtonAssemblySolveRowInput> ignoredRows;
+  std::vector<cuda::NewtonSparseBlockEntry> ignoredBlocks;
+  evaluateExpectedSceneNonlinearEqualityAssembly(
+      currentNodes,
+      constraints,
+      ignoredRows,
+      ignoredBlocks,
+      result.initialResiduals);
+
+  result.step.assign(nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody, 0.0);
+  double currentMaxResidual = maxAbs(result.initialResiduals);
+  result.initialMaxConstraintResidualAbs = currentMaxResidual;
+
+  for (std::size_t iteration = 0;
+       currentMaxResidual > residualTolerance && iteration < maxIterationCount;
+       ++iteration) {
+    std::vector<cuda::NewtonAssemblySolveRowInput> iterationRows;
+    std::vector<cuda::NewtonSparseBlockEntry> iterationBlocks;
+    std::vector<double> iterationResiduals;
+    std::vector<double> iterationStep;
+    std::vector<double> ignoredPostSolveResiduals;
+    evaluateExpectedSceneNonlinearEqualitySolve(
+        currentNodes,
+        constraints,
+        regularization,
+        iterationRows,
+        iterationBlocks,
+        iterationResiduals,
+        iterationStep,
+        ignoredPostSolveResiduals);
+
+    for (std::size_t node = 0; node < currentNodes.size(); ++node) {
+      const std::size_t offset = node * cuda::kNewtonAssemblySolveDofsPerBody;
+      for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+           ++dof) {
+        const double correction
+            = kExpectedSceneNonlinearEqualityConvergenceStepScale
+              * iterationStep[offset + dof];
+        result.step[offset + dof] += correction;
+        if (dof < 3u) {
+          currentNodes[node].position[dof] += correction;
+        }
+      }
+    }
+
+    evaluateExpectedSceneNonlinearEqualityAssembly(
+        currentNodes,
+        constraints,
+        result.rows,
+        result.blocks,
+        result.finalResiduals);
+    ++result.completedIterationCount;
+    currentMaxResidual = maxAbs(result.finalResiduals);
+  }
+
+  evaluateExpectedSceneNonlinearEqualityAssembly(
+      currentNodes,
+      constraints,
+      result.rows,
+      result.blocks,
+      result.finalResiduals);
+  result.finalMaxConstraintResidualAbs = maxAbs(result.finalResiduals);
+  result.converged = result.finalMaxConstraintResidualAbs <= residualTolerance;
+
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+
+  double stepNormSquared = 0.0;
+  for (const auto value : result.step) {
+    if (std::abs(value) > 0.0) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += value * value;
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  return result;
 }
 
 void evaluateExpectedSparseResidual(
@@ -1200,6 +1332,128 @@ TEST(NewtonAssemblySolveCuda, MatchesCpuSceneNonlinearEqualitySolve)
 }
 
 //==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSceneNonlinearEqualityConvergence)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector nodes = {
+      makeSceneNode(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0),
+      makeSceneNode(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5),
+  };
+  const std::vector constraints = {
+      makeDistanceEqualityConstraint(0, 1, 0.8, 2.0, 0.0),
+  };
+  constexpr double regularization = 0.1;
+  constexpr std::size_t maxIterationCount = 8;
+  constexpr double residualTolerance = 1e-3;
+
+  cuda::NewtonSceneNonlinearEqualityConvergenceResult result;
+  cuda::evaluateNewtonSceneNonlinearEqualityConvergenceCuda(
+      nodes,
+      constraints,
+      regularization,
+      maxIterationCount,
+      residualTolerance,
+      result);
+
+  const auto expected = evaluateExpectedSceneNonlinearEqualityConvergence(
+      nodes, constraints, regularization, maxIterationCount, residualTolerance);
+
+  EXPECT_EQ(result.nodeCount, nodes.size());
+  EXPECT_EQ(result.constraintCount, constraints.size());
+  EXPECT_EQ(result.rowCount, expected.rows.size());
+  EXPECT_EQ(result.bodyCount, nodes.size());
+  EXPECT_EQ(
+      result.dofCount, nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody);
+  EXPECT_EQ(result.blockCount, expected.blocks.size());
+  EXPECT_EQ(
+      result.blockEntryCount,
+      expected.blocks.size() * cuda::kNewtonAssemblySolveBlockEntries);
+  EXPECT_EQ(result.maxIterationCount, maxIterationCount);
+  EXPECT_EQ(result.completedIterationCount, expected.completedIterationCount);
+  EXPECT_EQ(result.activeDofCount, expected.activeDofCount);
+  EXPECT_EQ(result.regularization, regularization);
+  EXPECT_EQ(result.residualTolerance, residualTolerance);
+  EXPECT_EQ(result.converged, expected.converged);
+  EXPECT_GT(result.completedIterationCount, 0u);
+  EXPECT_LT(
+      result.finalMaxConstraintResidualAbs,
+      result.initialMaxConstraintResidualAbs);
+  EXPECT_NEAR(
+      result.initialMaxConstraintResidualAbs,
+      expected.initialMaxConstraintResidualAbs,
+      1e-12);
+  EXPECT_NEAR(
+      result.finalMaxConstraintResidualAbs,
+      expected.finalMaxConstraintResidualAbs,
+      1e-12);
+  EXPECT_NEAR(result.maxDiagonal, expected.maxDiagonal, 1e-12);
+  EXPECT_NEAR(result.maxGradientAbs, expected.maxGradientAbs, 1e-12);
+  EXPECT_NEAR(result.maxBlockAbs, expected.maxBlockAbs, 1e-12);
+  EXPECT_NEAR(result.stepNorm, expected.stepNorm, 1e-12);
+
+  ASSERT_EQ(result.initialResiduals.size(), expected.initialResiduals.size());
+  ASSERT_EQ(result.finalResiduals.size(), expected.finalResiduals.size());
+  ASSERT_EQ(result.step.size(), expected.step.size());
+  ASSERT_EQ(result.rows.size(), expected.rows.size());
+  ASSERT_EQ(result.blocks.size(), expected.blocks.size());
+
+  for (std::size_t constraint = 0;
+       constraint < expected.initialResiduals.size();
+       ++constraint) {
+    EXPECT_NEAR(
+        result.initialResiduals[constraint],
+        expected.initialResiduals[constraint],
+        1e-12)
+        << constraint;
+    EXPECT_NEAR(
+        result.finalResiduals[constraint],
+        expected.finalResiduals[constraint],
+        1e-12)
+        << constraint;
+  }
+
+  for (std::size_t dof = 0; dof < expected.step.size(); ++dof) {
+    EXPECT_NEAR(result.step[dof], expected.step[dof], 1e-12) << dof;
+  }
+
+  for (std::size_t row = 0; row < expected.rows.size(); ++row) {
+    EXPECT_EQ(result.rows[row].bodyIndex, expected.rows[row].bodyIndex);
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      EXPECT_NEAR(
+          result.rows[row].hessianDiagonal[dof],
+          expected.rows[row].hessianDiagonal[dof],
+          1e-12)
+          << row << "/" << dof;
+      EXPECT_NEAR(
+          result.rows[row].gradient[dof],
+          expected.rows[row].gradient[dof],
+          1e-12)
+          << row << "/" << dof;
+    }
+  }
+
+  for (std::size_t block = 0; block < expected.blocks.size(); ++block) {
+    EXPECT_EQ(
+        result.blocks[block].rowBodyIndex, expected.blocks[block].rowBodyIndex);
+    EXPECT_EQ(
+        result.blocks[block].columnBodyIndex,
+        expected.blocks[block].columnBodyIndex);
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      EXPECT_NEAR(
+          result.blocks[block].hessianBlock[entry],
+          expected.blocks[block].hessianBlock[entry],
+          1e-12)
+          << block << "/" << entry;
+    }
+  }
+}
+
+//==============================================================================
 TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneNonlinearEqualityInputs)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -1212,6 +1466,7 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneNonlinearEqualityInputs)
   };
   cuda::NewtonSceneNonlinearEqualityAssemblyResult result;
   cuda::NewtonSceneNonlinearEqualitySolveResult solveResult;
+  cuda::NewtonSceneNonlinearEqualityConvergenceResult convergenceResult;
 
   EXPECT_THROW(
       cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
@@ -1238,6 +1493,24 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneNonlinearEqualityInputs)
           {makeDistanceEqualityConstraint(0, 1, 1.0, 2.0, 0.1)},
           -0.1,
           solveResult),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityConvergenceCuda(
+          nodes,
+          {makeDistanceEqualityConstraint(0, 1, 1.0, 2.0, 0.1)},
+          0.1,
+          0,
+          1e-6,
+          convergenceResult),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityConvergenceCuda(
+          nodes,
+          {makeDistanceEqualityConstraint(0, 1, 1.0, 2.0, 0.1)},
+          0.1,
+          4,
+          -1e-6,
+          convergenceResult),
       dart::simulation::InvalidArgumentException);
 
   nodes.front().velocity[0] = std::numeric_limits<double>::quiet_NaN();

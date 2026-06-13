@@ -339,6 +339,83 @@ def _benchmark_data(**overrides):
         post_residual_kernel_ns=4.0,
         device_to_host_ns=5.0,
     )
+    scene_nonlinear_equality_convergence_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityConvergenceCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        max_iterations=8,
+        completed_iterations=5,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        residual_tolerance=1e-5,
+        converged=1,
+        initial_max_constraint_residual_abs=0.05,
+        final_max_constraint_residual_abs=5e-6,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        step_norm=2.75,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_convergence_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityConvergenceCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        max_iterations=8,
+        completed_iterations=5,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        residual_tolerance=1e-5,
+        converged=1,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_active_dofs=960,
+        gpu_max_iterations=8,
+        gpu_completed_iterations=5,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_regularization=0.05,
+        gpu_residual_tolerance=1e-5,
+        gpu_converged=1,
+        gpu_initial_max_constraint_residual_abs=0.05,
+        gpu_final_max_constraint_residual_abs=5e-6,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        gpu_step_norm=2.75,
+        max_result_abs_error=8e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        iteration_kernel_ns=3.0,
+        residual_kernel_ns=4.0,
+        convergence_readback_ns=5.0,
+        final_assembly_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     sparse_residual_cpu = _row(
         "BM_NewtonSparseResidualCpu/1024",
         rows=1024,
@@ -711,6 +788,8 @@ def _benchmark_data(**overrides):
             scene_nonlinear_equality_gpu,
             scene_nonlinear_equality_solve_cpu,
             scene_nonlinear_equality_solve_gpu,
+            scene_nonlinear_equality_convergence_cpu,
+            scene_nonlinear_equality_convergence_gpu,
             sparse_residual_cpu,
             sparse_residual_gpu,
             scene_sparse_residual_cpu,
@@ -837,6 +916,45 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert scene_nonlinear_equality_solve["step_norm"] == 2.5
     assert scene_nonlinear_equality_solve["timing_ns"]["solve"] == 3.0
     assert scene_nonlinear_equality_solve["timing_ns"]["post_residual"] == 4.0
+    scene_nonlinear_equality_convergence = row[
+        "scene_runtime_nonlinear_equality_convergence"
+    ]
+    assert scene_nonlinear_equality_convergence["row_count"] == 576
+    assert scene_nonlinear_equality_convergence["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality_convergence["scene_body_count"] == 1
+    assert scene_nonlinear_equality_convergence["scene_node_count"] == 320
+    assert scene_nonlinear_equality_convergence["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality_convergence["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality_convergence["body_count"] == 320
+    assert scene_nonlinear_equality_convergence["dof_count"] == 1920
+    assert scene_nonlinear_equality_convergence["constraint_count"] == 288
+    assert scene_nonlinear_equality_convergence["block_count"] == 288
+    assert scene_nonlinear_equality_convergence["block_entry_count"] == 10368
+    assert scene_nonlinear_equality_convergence["active_dof_count"] == 960
+    assert scene_nonlinear_equality_convergence["regularization"] == 0.05
+    assert scene_nonlinear_equality_convergence["residual_tolerance"] == 1e-5
+    assert scene_nonlinear_equality_convergence["max_iteration_count"] == 8
+    assert scene_nonlinear_equality_convergence["completed_iteration_count"] == 5
+    assert scene_nonlinear_equality_convergence["converged"] is True
+    assert (
+        scene_nonlinear_equality_convergence["initial_max_constraint_residual_abs"]
+        == 0.05
+    )
+    assert (
+        scene_nonlinear_equality_convergence["final_max_constraint_residual_abs"]
+        == 5e-6
+    )
+    assert scene_nonlinear_equality_convergence["max_result_abs_error"] == 8e-12
+    assert scene_nonlinear_equality_convergence["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality_convergence["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality_convergence["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality_convergence["step_norm"] == 2.75
+    assert scene_nonlinear_equality_convergence["timing_ns"]["iterations"] == 3.0
+    assert scene_nonlinear_equality_convergence["timing_ns"]["residuals"] == 4.0
+    assert (
+        scene_nonlinear_equality_convergence["timing_ns"]["convergence_readback"] == 5.0
+    )
+    assert scene_nonlinear_equality_convergence["timing_ns"]["final_assembly"] == 6.0
     sparse = row["sparse_block_residual"]
     assert sparse["body_count"] == 128
     assert sparse["dof_count"] == 768

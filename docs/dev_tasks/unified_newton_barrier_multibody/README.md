@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Latest scene-owned nonlinear equality solve checkpoint (2026-06-12): work continued
+Latest scene-owned nonlinear equality convergence checkpoint (2026-06-13): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -10,18 +10,19 @@ branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned nonlinear distance-equality solve row on top of the existing
-scene-owned nonlinear equality assembly row. The benchmark builds one DART
-`World` with a deformable surface, extracts scene-owned nodes and surface
-triangles, creates one distance-equality constraint per oriented surface-edge
-slot, linearizes each constraint on the GPU, emits two local Newton rows plus
-one 6x6 sparse block per constraint, accumulates one deterministic Jacobi-style
-correction step into scene-node generalized coordinates, and recomputes
-post-step linearized residuals. This is reduced packet evidence only; it does
-not prove production nonlinear equality convergence policy/solving, production
-constraint graph ownership, direct/global sparse factorization, full runtime
-sparse Hessian construction/assembly, GPU `World::step` assembly/solve
-integration, or a top-level speedup claim.
+scene-owned capped nonlinear distance-equality convergence row on top of the
+existing scene-owned nonlinear equality assembly and one-step solve rows. The
+benchmark builds one DART `World` with a deformable surface, extracts
+scene-owned nodes and surface triangles, creates one distance-equality
+constraint per oriented surface-edge slot, zeros velocity damping for the
+geometric convergence fixture, runs up to eight damped Jacobi-style correction
+iterations in scene-node generalized coordinates, reports initial/final
+nonlinear distance residuals, and assembles final endpoint rows/blocks on the
+GPU. This is reduced packet evidence only; it does not prove production
+nonlinear equality convergence policy/solving, production constraint graph
+ownership, direct/global sparse factorization, full runtime sparse Hessian
+construction/assembly, GPU `World::step` assembly/solve integration, or a
+top-level speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
 surface-edge equality constraints, 4,608 local constraint rows, 2,304 sparse
@@ -32,15 +33,22 @@ equality assembly row records
 `max_diagonal=1001.9679687500002`,
 `max_gradient_abs=1.2260273625132818`,
 `max_block_abs=1001.9674687500002`, and
-`speedup=0.27832216643971974x`. The scene-owned nonlinear equality solve row
+`speedup=0.11643289378198905x`. The scene-owned nonlinear equality solve row
 records `regularization=0.05`, `active_dof_count=9215`,
 `max_post_solve_linearized_residual_abs=0.07899550902133222`,
 `step_norm=0.3288379160439768`,
 `max_result_abs_error=2.8421709430404007e-13`, and
-`speedup=1.5938172957931693x`. The top-level assembly/solve packet records
-`max_result_abs_error=2.8421709430404007e-13`,
-`residual_norm=3.709208856718387e-13`, and
-`speedup=0.236734157798895x` (`meets_speedup_gate=false`), so the durable GPU
+`speedup=0.07249443690039502x`. The scene-owned nonlinear equality convergence
+row records `regularization=0.05`, `residual_tolerance=1e-05`,
+`completed_iteration_count=8`, `converged=false`, `active_dof_count=9216`,
+`initial_max_constraint_residual_abs=0.023006792475267046`,
+`final_max_constraint_residual_abs=0.022842203667180705`,
+`step_norm=0.28479436450197887`,
+`max_result_abs_error=4.547473508864641e-13`, and
+`speedup=0.09527533471087142x`. The top-level assembly/solve packet records
+`max_result_abs_error=4.547473508864641e-13`,
+`residual_norm=3.705385775963348e-13`, and
+`speedup=0.012632667834780719x` (`meets_speedup_gate=false`), so the durable GPU
 packet row remains `in-progress`.
 
 Latest validation passed:
@@ -50,12 +58,13 @@ Latest validation passed:
 - `pixi run python scripts/check_plan083_gpu_parity_packet.py`
 - `pixi run python scripts/check_plan083_completion_audit.py`
 - `git diff --check`
-- `pixi run lint`
-- `pixi run -e cuda build-cuda Release`
-- focused `test_newton_assembly_solve_cuda` CTest
-- `pixi run -e cuda bm-newton-assembly-solve-packet`
 - `pixi run build`
 - `pixi run test-unit`
+- `pixi run -e cuda build-cuda Release`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_newton_assembly_solve_cuda$'`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+- `pixi run lint`
+- `pixi run -e cuda test-all`
 
 Previous scene-owned sparse graph assembly checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.

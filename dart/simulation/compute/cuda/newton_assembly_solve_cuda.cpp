@@ -101,6 +101,19 @@ cudaError_t launchNewtonSceneNonlinearEqualityPostResidualKernel(
     double* postSolveLinearizedResiduals,
     std::size_t constraintCount);
 
+cudaError_t launchNewtonSceneDistanceEqualityResidualKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    double* residuals,
+    std::size_t constraintCount);
+
+cudaError_t launchNewtonSceneNonlinearEqualityApplyStepKernel(
+    NewtonSceneNodeInput* nodes,
+    const double* iterationStep,
+    double* totalStep,
+    std::size_t nodeCount,
+    double stepScale);
+
 cudaError_t launchNewtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -173,6 +186,8 @@ cudaError_t launchNewtonExpandEqualityReducedStepKernel(
 namespace {
 
 using Clock = std::chrono::steady_clock;
+
+constexpr double kSceneNonlinearEqualityConvergenceStepScale = 0.25;
 
 double elapsedNs(const Clock::time_point start, const Clock::time_point end)
 {
@@ -1034,6 +1049,252 @@ void evaluateNewtonSceneNonlinearEqualitySolveCuda(
     stepNormSquared += value * value;
   }
   result.stepNorm = std::sqrt(stepNormSquared);
+}
+
+//==============================================================================
+void evaluateNewtonSceneNonlinearEqualityConvergenceCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    const double regularization,
+    const std::size_t maxIterationCount,
+    const double residualTolerance,
+    NewtonSceneNonlinearEqualityConvergenceResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateSceneNonlinearEqualityInputs(nodes, constraints);
+  validateRegularization(
+      regularization, "evaluateNewtonSceneNonlinearEqualityConvergenceCuda");
+  validateIterationCount(
+      maxIterationCount, "evaluateNewtonSceneNonlinearEqualityConvergenceCuda");
+  validateResidualTolerance(
+      residualTolerance, "evaluateNewtonSceneNonlinearEqualityConvergenceCuda");
+
+  result = NewtonSceneNonlinearEqualityConvergenceResult{};
+  result.nodeCount = nodes.size();
+  result.constraintCount = constraints.size();
+  result.rowCount = 2u * constraints.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = constraints.size();
+  result.blockEntryCount = result.blockCount * kNewtonAssemblySolveBlockEntries;
+  result.maxIterationCount = maxIterationCount;
+  result.regularization = regularization;
+  result.residualTolerance = residualTolerance;
+  result.rows.assign(result.rowCount, {});
+  result.blocks.assign(result.blockCount, {});
+  result.initialResiduals.assign(result.constraintCount, 0.0);
+  result.finalResiduals.assign(result.constraintCount, 0.0);
+  result.step.assign(result.dofCount, 0.0);
+
+  if (constraints.empty()) {
+    result.converged = true;
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonSceneNodeInput> deviceCurrentNodes(nodes.size());
+  DeviceBuffer<NewtonSceneDistanceEqualityConstraintInput> deviceConstraints(
+      constraints.size());
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(result.rowCount);
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(result.blockCount);
+  DeviceBuffer<double> deviceInitialResiduals(result.constraintCount);
+  DeviceBuffer<double> deviceFinalResiduals(result.constraintCount);
+  DeviceBuffer<double> deviceIterationResiduals(result.constraintCount);
+  DeviceBuffer<double> deviceIterationStep(result.dofCount);
+  DeviceBuffer<double> deviceTotalStep(result.dofCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceCurrentNodes.copyToDevice(
+      nodes, "newton scene nonlinear equality convergence nodes copy");
+  deviceConstraints.copyToDevice(
+      constraints,
+      "newton scene nonlinear equality convergence constraints copy");
+  throwIfCudaError(
+      cudaMemset(deviceTotalStep.data(), 0, deviceTotalStep.byteSize()),
+      "newton scene nonlinear equality convergence total step zero");
+  const auto h2dEnd = Clock::now();
+
+  double iterationKernelNs = 0.0;
+  double residualKernelNs = 0.0;
+  double convergenceReadbackNs = 0.0;
+  std::vector<double> residualScratch(result.constraintCount, 0.0);
+  const auto maxResidualAbs = [](const std::vector<double>& residuals) {
+    double value = 0.0;
+    for (const auto residual : residuals) {
+      value = std::max(value, std::abs(residual));
+    }
+    return value;
+  };
+
+  const auto initialResidualStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneDistanceEqualityResidualKernel(
+          deviceCurrentNodes.data(),
+          deviceConstraints.data(),
+          deviceInitialResiduals.data(),
+          constraints.size()),
+      "newton scene nonlinear equality convergence initial residual kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene nonlinear equality convergence initial residual "
+      "synchronize");
+  const auto initialResidualEnd = Clock::now();
+  residualKernelNs += elapsedNs(initialResidualStart, initialResidualEnd);
+
+  const auto initialReadbackStart = Clock::now();
+  deviceInitialResiduals.copyFromDevice(
+      residualScratch,
+      "newton scene nonlinear equality convergence initial residuals copy");
+  const auto initialReadbackEnd = Clock::now();
+  convergenceReadbackNs += elapsedNs(initialReadbackStart, initialReadbackEnd);
+
+  double currentMaxResidualAbs = maxResidualAbs(residualScratch);
+  throwIfCudaError(
+      cudaMemcpy(
+          deviceFinalResiduals.data(),
+          deviceInitialResiduals.data(),
+          deviceFinalResiduals.byteSize(),
+          cudaMemcpyDeviceToDevice),
+      "newton scene nonlinear equality convergence initial final residual "
+      "copy");
+
+  for (std::size_t iteration = 0; currentMaxResidualAbs > residualTolerance
+                                  && iteration < maxIterationCount;
+       ++iteration) {
+    const auto iterationStart = Clock::now();
+    throwIfCudaError(
+        cudaMemset(
+            deviceIterationStep.data(), 0, deviceIterationStep.byteSize()),
+        "newton scene nonlinear equality convergence iteration step zero");
+    throwIfCudaError(
+        detail::launchNewtonSceneNonlinearEqualitySolveKernel(
+            deviceCurrentNodes.data(),
+            deviceConstraints.data(),
+            deviceRows.data(),
+            deviceBlocks.data(),
+            deviceIterationResiduals.data(),
+            deviceIterationStep.data(),
+            constraints.size(),
+            regularization),
+        "newton scene nonlinear equality convergence iteration solve kernel");
+    throwIfCudaError(
+        cudaDeviceSynchronize(),
+        "newton scene nonlinear equality convergence iteration solve "
+        "synchronize");
+    throwIfCudaError(
+        detail::launchNewtonSceneNonlinearEqualityApplyStepKernel(
+            deviceCurrentNodes.data(),
+            deviceIterationStep.data(),
+            deviceTotalStep.data(),
+            nodes.size(),
+            kSceneNonlinearEqualityConvergenceStepScale),
+        "newton scene nonlinear equality convergence apply step kernel");
+    throwIfCudaError(
+        cudaDeviceSynchronize(),
+        "newton scene nonlinear equality convergence apply step synchronize");
+    const auto iterationEnd = Clock::now();
+    iterationKernelNs += elapsedNs(iterationStart, iterationEnd);
+
+    const auto residualStart = Clock::now();
+    throwIfCudaError(
+        detail::launchNewtonSceneDistanceEqualityResidualKernel(
+            deviceCurrentNodes.data(),
+            deviceConstraints.data(),
+            deviceFinalResiduals.data(),
+            constraints.size()),
+        "newton scene nonlinear equality convergence final residual kernel");
+    throwIfCudaError(
+        cudaDeviceSynchronize(),
+        "newton scene nonlinear equality convergence final residual "
+        "synchronize");
+    const auto residualEnd = Clock::now();
+    residualKernelNs += elapsedNs(residualStart, residualEnd);
+
+    const auto readbackStart = Clock::now();
+    deviceFinalResiduals.copyFromDevice(
+        residualScratch,
+        "newton scene nonlinear equality convergence final residuals copy");
+    const auto readbackEnd = Clock::now();
+    convergenceReadbackNs += elapsedNs(readbackStart, readbackEnd);
+
+    ++result.completedIterationCount;
+    currentMaxResidualAbs = maxResidualAbs(residualScratch);
+  }
+
+  const auto finalAssemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneNonlinearEqualityAssemblyKernel(
+          deviceCurrentNodes.data(),
+          deviceConstraints.data(),
+          deviceRows.data(),
+          deviceBlocks.data(),
+          deviceFinalResiduals.data(),
+          constraints.size()),
+      "newton scene nonlinear equality convergence final assembly kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene nonlinear equality convergence final assembly synchronize");
+  const auto finalAssemblyEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceRows.copyFromDevice(
+      result.rows, "newton scene nonlinear equality convergence rows copy");
+  deviceBlocks.copyFromDevice(
+      result.blocks, "newton scene nonlinear equality convergence blocks copy");
+  deviceInitialResiduals.copyFromDevice(
+      result.initialResiduals,
+      "newton scene nonlinear equality convergence initial residuals copy");
+  deviceFinalResiduals.copyFromDevice(
+      result.finalResiduals,
+      "newton scene nonlinear equality convergence final residuals copy");
+  deviceTotalStep.copyFromDevice(
+      result.step, "newton scene nonlinear equality convergence step copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.iterationKernelNs = iterationKernelNs;
+  result.timing.residualKernelNs = residualKernelNs;
+  result.timing.convergenceReadbackNs = convergenceReadbackNs;
+  result.timing.finalAssemblyKernelNs
+      = elapsedNs(finalAssemblyStart, finalAssemblyEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const auto residual : result.initialResiduals) {
+    result.initialMaxConstraintResidualAbs
+        = std::max(result.initialMaxConstraintResidualAbs, std::abs(residual));
+  }
+  for (const auto residual : result.finalResiduals) {
+    result.finalMaxConstraintResidualAbs
+        = std::max(result.finalMaxConstraintResidualAbs, std::abs(residual));
+  }
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+
+  double stepNormSquared = 0.0;
+  for (const auto value : result.step) {
+    if (std::abs(value) > 0.0) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += value * value;
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.converged = result.finalMaxConstraintResidualAbs <= residualTolerance;
 }
 
 //==============================================================================

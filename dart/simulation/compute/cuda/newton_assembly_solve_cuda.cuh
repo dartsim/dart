@@ -131,6 +131,17 @@ struct NewtonSceneNonlinearEqualitySolveTiming
   double deviceToHostNs = 0.0;
 };
 
+struct NewtonSceneNonlinearEqualityConvergenceTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double iterationKernelNs = 0.0;
+  double residualKernelNs = 0.0;
+  double convergenceReadbackNs = 0.0;
+  double finalAssemblyKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
 struct NewtonSparseResidualTiming
 {
   double setupNs = 0.0;
@@ -247,6 +258,35 @@ struct NewtonSceneNonlinearEqualitySolveResult
   double maxBlockAbs = 0.0;
   double stepNorm = 0.0;
   NewtonSceneNonlinearEqualitySolveTiming timing;
+};
+
+struct NewtonSceneNonlinearEqualityConvergenceResult
+{
+  std::vector<NewtonAssemblySolveRowInput> rows;
+  std::vector<NewtonSparseBlockEntry> blocks;
+  std::vector<double> initialResiduals;
+  std::vector<double> finalResiduals;
+  std::vector<double> step;
+  std::size_t nodeCount = 0;
+  std::size_t constraintCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  std::size_t maxIterationCount = 0;
+  std::size_t completedIterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double regularization = 0.0;
+  double residualTolerance = 0.0;
+  double initialMaxConstraintResidualAbs = 0.0;
+  double finalMaxConstraintResidualAbs = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  double stepNorm = 0.0;
+  bool converged = false;
+  NewtonSceneNonlinearEqualityConvergenceTiming timing;
 };
 
 struct NewtonSparseResidualResult
@@ -395,6 +435,23 @@ void evaluateNewtonSceneNonlinearEqualitySolveCuda(
     const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
     double regularization,
     NewtonSceneNonlinearEqualitySolveResult& result);
+
+/// Evaluate a private reduced scene nonlinear equality convergence packet.
+///
+/// The packet repeats the scene-owned distance-equality Jacobi-style
+/// correction on a mutable reduced node state for a capped iteration count,
+/// reports initial/final nonlinear residuals, and stops early when the reduced
+/// residual tolerance is reached. It intentionally does not cover production
+/// constraint graph ownership, direct or global sparse factorization,
+/// production nonlinear solve policy, runtime World::step integration, or a
+/// public GPU solver backend.
+void evaluateNewtonSceneNonlinearEqualityConvergenceCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    double regularization,
+    std::size_t maxIterationCount,
+    double residualTolerance,
+    NewtonSceneNonlinearEqualityConvergenceResult& result);
 
 /// Evaluate a private sparse block residual packet.
 ///
