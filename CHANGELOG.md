@@ -2806,9 +2806,9 @@ Capsule Rod (IPC)` py-demos scene.
     including a mixed reduced `World::step` witness that activates all three
     external families in one step. The reduced lying-flat benchmark packet now
     also carries nonzero inter-body, static-rigid, and moving-rigid surface CCD
-    witnesses, and the reduced Candy benchmark packet now carries a nonzero
-    static-rigid surface CCD witness, while keeping paper-scale mixed-scene and
-    GPU parity claims deferred.
+    witnesses, and the reduced Candy benchmark packet now carries nonzero
+    static-rigid and moving-rigid surface CCD witnesses, while keeping
+    paper-scale mixed-scene and GPU parity claims deferred.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`

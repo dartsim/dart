@@ -929,17 +929,17 @@ def _make_candy_packet(
     deformable_node_count = int(_finite_number(row, "deformable_node_count"))
     deformable_edge_count = int(_finite_number(row, "deformable_edge_count"))
     surface_triangle_count = int(_finite_number(row, "surface_triangle_count"))
-    if rigid_obstacle_count != 2:
+    if rigid_obstacle_count != 3:
         raise Plan083CpuScenePacketError(
-            f"expected 2 rigid obstacles, got {rigid_obstacle_count}"
+            f"expected 3 rigid obstacles, got {rigid_obstacle_count}"
         )
-    if deformable_body_count != 2:
+    if deformable_body_count != 3:
         raise Plan083CpuScenePacketError(
-            f"expected 2 deformable bodies, got {deformable_body_count}"
+            f"expected 3 deformable bodies, got {deformable_body_count}"
         )
-    if deformable_node_count != 26:
+    if deformable_node_count != 27:
         raise Plan083CpuScenePacketError(
-            f"expected 26 deformable nodes, got {deformable_node_count}"
+            f"expected 27 deformable nodes, got {deformable_node_count}"
         )
     if deformable_edge_count < 70:
         raise Plan083CpuScenePacketError(
@@ -977,6 +977,23 @@ def _make_candy_packet(
                 "reduced candy packet needs positive static-rigid "
                 f"surface CCD witness counter {key}"
             )
+    if counters["moving_rigid_surface_ccd_box_count"] <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced candy packet needs a moving-rigid surface CCD witness box"
+        )
+    for key in (
+        "moving_rigid_surface_ccd_sample_count",
+        "moving_rigid_surface_ccd_candidate_builds",
+        "moving_rigid_surface_ccd_point_triangle_candidates",
+        "moving_rigid_surface_ccd_point_triangle_checks",
+        "moving_rigid_surface_ccd_hits",
+        "moving_rigid_surface_ccd_limited_steps",
+    ):
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced candy packet needs positive moving-rigid "
+                f"surface CCD witness counter {key}"
+            )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -1003,8 +1020,9 @@ def _make_candy_packet(
             "cloth_span_x_m": cloth_span_x,
             "limitation_status": (
                 "Reduced deformable-cloth/static-shell packet with a "
-                "static-rigid surface CCD witness only; affine body packing, "
-                "twisted shell, cloth self-contact parity, and paper scale "
+                "static-rigid and moving-rigid surface CCD witness only; "
+                "affine body packing, twisted shell, cloth self-contact parity, "
+                "and paper scale "
                 "remain planned."
             ),
         },

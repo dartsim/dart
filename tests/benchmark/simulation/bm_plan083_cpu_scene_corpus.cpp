@@ -93,6 +93,7 @@ constexpr std::size_t kLyingFlatGridRows = 4;
 constexpr double kLyingFlatGridSpacing = 0.055;
 const Eigen::Vector3d kCandyShellHalfExtents(0.24, 0.16, 0.025);
 const Eigen::Vector3d kCandyStaticCcdWitnessHalfExtents(0.010, 0.040, 0.040);
+const Eigen::Vector3d kCandyMovingCcdWitnessHalfExtents(0.010, 0.040, 0.040);
 constexpr std::size_t kCandyGridColumns = 5;
 constexpr std::size_t kCandyGridRows = 5;
 constexpr double kCandyGridSpacing = 0.055;
@@ -922,18 +923,40 @@ struct CandyFixture
         makePlan083SingleNodeBodyOptions(
             staticCcdPointInitialPosition, staticCcdPointInitialVelocity)));
 
+    movingCcdWitness.emplace(addPlan083MovingSurfaceCcdBox(
+        world,
+        "plan083_candy_moving_ccd_witness",
+        Eigen::Vector3d(0.040, 0.48, 0.075),
+        kCandyMovingCcdWitnessHalfExtents,
+        Eigen::Vector3d(-10.0, 0.0, 0.0)));
+    snapshotBody(obstacleSnapshots, *movingCcdWitness);
+
+    movingCcdPointInitialPosition = Eigen::Vector3d(-0.040, 0.48, 0.075);
+    movingCcdPointInitialVelocity = Eigen::Vector3d(30.0, 0.0, 0.0);
+    movingCcdPoint.emplace(world.addDeformableBody(
+        "plan083_candy_moving_ccd_point",
+        makePlan083SingleNodeBodyOptions(
+            movingCcdPointInitialPosition, movingCcdPointInitialVelocity)));
+
     world.enterSimulationMode();
   }
 
   void reset()
   {
     world.setTime(0.0);
+    for (auto& snapshot : obstacleSnapshots) {
+      snapshot.body.setTransform(snapshot.transform);
+      snapshot.body.setLinearVelocity(snapshot.linearVelocity);
+      snapshot.body.setAngularVelocity(snapshot.angularVelocity);
+    }
     for (std::size_t node = 0; node < initialPositions.size(); ++node) {
       cloth->setPosition(node, initialPositions[node]);
       cloth->setVelocity(node, initialVelocities[node]);
     }
     staticCcdPoint->setPosition(0, staticCcdPointInitialPosition);
     staticCcdPoint->setVelocity(0, staticCcdPointInitialVelocity);
+    movingCcdPoint->setPosition(0, movingCcdPointInitialPosition);
+    movingCcdPoint->setVelocity(0, movingCcdPointInitialVelocity);
   }
 
   double minClothHeight() const
@@ -960,10 +983,15 @@ struct CandyFixture
   sx::World world;
   std::optional<sx::RigidBody> shell;
   std::optional<sx::RigidBody> staticCcdWitness;
+  std::optional<sx::RigidBody> movingCcdWitness;
+  std::vector<BodySnapshot> obstacleSnapshots;
   std::optional<sx::DeformableBody> cloth;
   std::optional<sx::DeformableBody> staticCcdPoint;
+  std::optional<sx::DeformableBody> movingCcdPoint;
   Eigen::Vector3d staticCcdPointInitialPosition = Eigen::Vector3d::Zero();
   Eigen::Vector3d staticCcdPointInitialVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d movingCcdPointInitialPosition = Eigen::Vector3d::Zero();
+  Eigen::Vector3d movingCcdPointInitialVelocity = Eigen::Vector3d::Zero();
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
 };
@@ -2380,7 +2408,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
     fixture.world.step(executor);
     lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
-    if (lastDiagnostics.bodyCount != 2u || lastDiagnostics.nodeCount != 26u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount != 27u
         || !std::isfinite(fixture.minClothHeight())) {
       ++failedSteps;
     }
@@ -2394,7 +2422,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
   state.counters["row_unb_fig_22"] = 1.0;
   state.counters["paper_scale"] = 0.0;
-  state.counters["rigid_obstacle_count"] = 2.0;
+  state.counters["rigid_obstacle_count"] = 3.0;
   state.counters["deformable_body_count"]
       = static_cast<double>(lastDiagnostics.bodyCount);
   state.counters["deformable_node_count"]
