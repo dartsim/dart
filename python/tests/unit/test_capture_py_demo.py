@@ -513,6 +513,24 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert manifest["scene_metrics_count"] == 0
     assert manifest["scene_metrics_missing_count"] == 0
     assert manifest["scene_metrics_missing_rows"] == []
+    assert manifest["workflow_phase_summary"] == [
+        {
+            "phase": "1. Foundations: state, frames, and loads",
+            "focus_axes": ["DART 7 World rigid-body baseline"],
+            "row_count": 1,
+            "row_span": "1",
+            "rows": [1],
+            "scenes": ["rigid_body"],
+        },
+        {
+            "phase": "4. Solver decision path",
+            "focus_axes": ["rigid-body solver family"],
+            "row_count": 1,
+            "row_span": "2",
+            "rows": [2],
+            "scenes": ["rigid_solver_compare"],
+        },
+    ]
     assert pathlib.Path(manifest["artifacts"]["review_index"]).is_file()
     assert [capture["scene"] for capture in manifest["captures"]] == [
         "rigid_body",
@@ -559,6 +577,13 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "<strong>guidance</strong> complete" in review_html
     assert "<strong>solver identity</strong> not required" in review_html
     assert "<strong>scene metrics</strong> not required" in review_html
+    assert "<strong>phases</strong> 2" in review_html
+    assert "Workflow Phase Map" in review_html
+    assert "<th>Rows</th><th>Phase</th><th>Count</th>" in review_html
+    assert "<td>1</td><td>1. Foundations: state, frames, and loads</td>" in (
+        review_html
+    )
+    assert "<td>2</td><td>4. Solver decision path</td>" in review_html
     assert "Rows Missing Guidance" not in review_html
     assert "Rows Missing Scene Metrics" not in review_html
     assert "1-2 / 2" in review_html

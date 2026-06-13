@@ -5,15 +5,24 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`8f589fc1c99 Show rigid workflow focus axes` and adds local workflow-phase
-panel/search plus review-packet metadata follow-ups. Fresh sessions should
+`6de636c2881 Merge remote-tracking branch 'origin/main' into feature/rigid-body-gui-visual-verification`
+and adds a local static-review phase-map follow-up. Fresh sessions should
 verify the exact local and remote state with `git status -sb` and
 `git log -5 --oneline`. There is still no PR for this branch. Do not push new
 commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
 threads, or mutate any other GitHub state without explicit maintainer/user
 approval.
 
-Latest local continuation: numbered workflow captures now export
+Latest local continuation: workflow manifests now record
+`workflow_phase_summary` for selected numbered rows, and `review_index.html`
+shows a top-level `Workflow Phase Map` with row ranges, phase counts, and
+scene ids before the per-row cards. This makes full and row-range static
+review packets easier to scan after the phase/focus metadata export. Focused
+guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
+reported `3 passed`. This local slice is not pushed yet.
+
+Previous local continuation: numbered workflow captures now export
 `workflow_phase` and `focus_axis` into single-scene `workflow_guidance`,
 workflow manifests, and static review cards, matching the live `Rigid Workflow`
 panel. Missing numbered-row phase or focus metadata now fails the workflow

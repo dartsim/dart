@@ -111,10 +111,14 @@ healthy signal, scope note, and comparison/metrics summary so a reviewer can
 scan all 36 captures without opening each scene folder. When workflow captures
 request `--video`, the same review index links each row's MP4 motion artifact
 if `ffmpeg` is available. The top-level manifest and review header also record
-the exact workflow packet command that produced the artifact, and unit coverage
-keeps captured row cards to one screenshot thumbnail per row while checking
-that manifest, screenshot, frame, and video links resolve from the static
-review sheet.
+the exact workflow packet command that produced the artifact, and the manifest
+publishes `workflow_phase_summary` for selected numbered rows. The review
+header mirrors that summary as a `Workflow Phase Map` with row ranges, phase
+counts, and selected scene ids, so full and row-range packets expose their
+logical route before the reviewer opens individual cards. Unit coverage keeps
+captured row cards to one screenshot thumbnail per row while checking that
+manifest, screenshot, frame, and video links resolve from the static review
+sheet.
 Rows with scene-owned Replay timeline metadata also export a JSON-safe
 `scene_metadata.replay_timeline` summary, so the per-scene manifest and review
 card name the exact Replay value track and whether it has signal and marker
@@ -979,6 +983,12 @@ workflow rows` line before the selectable results. This keeps the navigator
   reported `workflow_phase=4. Solver decision path` and
   `focus_axis=rigid-body solver family`, and its review card contained
   `<dt>phase</dt>` plus `<dt>focus axis</dt>`.
+- Latest static review phase-map follow-up: workflow manifests now record
+  `workflow_phase_summary` for selected numbered rows, and the review index
+  header shows a `Workflow Phase Map` with row ranges, phase counts, and scene
+  ids before the per-row cards. This keeps full and targeted row-range packets
+  reviewable by logical phase after the phase/focus metadata export. The
+  focused capture-helper guard reported `3 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure

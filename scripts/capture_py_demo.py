@@ -2477,6 +2477,110 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
 """
 
 
+def _workflow_row_span(rows: list[int]) -> str:
+    if not rows:
+        return "none"
+    sorted_rows = sorted(set(rows))
+    ranges: list[str] = []
+    start = sorted_rows[0]
+    previous = sorted_rows[0]
+    for row in sorted_rows[1:]:
+        if row == previous + 1:
+            previous = row
+            continue
+        ranges.append(str(start) if start == previous else f"{start}-{previous}")
+        start = previous = row
+    ranges.append(str(start) if start == previous else f"{start}-{previous}")
+    return ", ".join(ranges)
+
+
+def _workflow_phase_summary(
+    captures: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    phases: dict[str, dict[str, object]] = {}
+    for capture in captures:
+        if capture.get("workflow_group") != "numbered":
+            continue
+        phase = capture.get("workflow_phase")
+        if not isinstance(phase, str) or not phase:
+            continue
+        entry = phases.setdefault(
+            phase,
+            {
+                "phase": phase,
+                "row_count": 0,
+                "rows": [],
+                "row_span": "",
+                "scenes": [],
+                "focus_axes": [],
+            },
+        )
+        rows = entry["rows"]
+        if isinstance(rows, list) and isinstance(capture.get("order"), int):
+            rows.append(int(capture["order"]))
+            entry["row_span"] = _workflow_row_span(rows)
+        scenes = entry["scenes"]
+        scene = capture.get("scene")
+        if isinstance(scenes, list) and isinstance(scene, str):
+            scenes.append(scene)
+        focus_axes = entry["focus_axes"]
+        focus_axis = capture.get("focus_axis")
+        if (
+            isinstance(focus_axes, list)
+            and isinstance(focus_axis, str)
+            and focus_axis
+            and focus_axis not in focus_axes
+        ):
+            focus_axes.append(focus_axis)
+        if isinstance(entry["row_count"], int):
+            entry["row_count"] += 1
+    return list(phases.values())
+
+
+def _workflow_phase_map(summary: list[dict[str, object]]) -> str:
+    if not summary:
+        return ""
+
+    rows: list[str] = []
+    for entry in summary:
+        phase = str(entry.get("phase", ""))
+        row_span = str(entry.get("row_span", "none"))
+        row_count = int(entry.get("row_count", 0))
+        scenes = entry.get("scenes")
+        scene_values = (
+            [scene for scene in scenes if isinstance(scene, str)]
+            if isinstance(scenes, list)
+            else []
+        )
+        if len(scene_values) > 5:
+            scene_text = (
+                ", ".join(scene_values[:5]) + f", +{len(scene_values) - 5} more"
+            )
+        else:
+            scene_text = ", ".join(scene_values)
+        rows.append(
+            "      <tr>"
+            f"<td>{html.escape(row_span)}</td>"
+            f"<td>{html.escape(phase)}</td>"
+            f"<td>{row_count}</td>"
+            f"<td>{html.escape(scene_text)}</td>"
+            "</tr>"
+        )
+
+    return f"""
+    <section class="phase-map">
+      <h2>Workflow Phase Map</h2>
+      <table>
+        <thead>
+          <tr><th>Rows</th><th>Phase</th><th>Count</th><th>Selected scenes</th></tr>
+        </thead>
+        <tbody>
+{chr(10).join(rows)}
+        </tbody>
+      </table>
+    </section>"""
+
+
 def _write_workflow_review_index(
     output_dir: pathlib.Path,
     *,
@@ -2513,6 +2617,8 @@ def _write_workflow_review_index(
     scene_metrics_warning = _workflow_scene_metrics_warning(scene_metrics_missing)
     failed_rows = _workflow_failed_rows(captures)
     failure_summary = _workflow_failure_summary(failed_rows)
+    phase_summary = _workflow_phase_summary(captures)
+    phase_map = _workflow_phase_map(phase_summary)
     workflow_command_html = (
         "<p><strong>workflow command</strong><br>"
         f"<code>{html.escape(workflow_command)}</code></p>"
@@ -2545,6 +2651,7 @@ def _write_workflow_review_index(
             _workflow_badge("rows", row_span),
             _workflow_badge("requested groups", requested_groups),
             _workflow_badge("selected groups", selected_groups),
+            _workflow_badge("phases", len(phase_summary)),
             _workflow_badge("guidance", _workflow_guidance_status(guidance_missing)),
             _workflow_badge(
                 "solver identity",
@@ -2613,6 +2720,29 @@ def _write_workflow_review_index(
       border-radius: 6px;
       background: #f6f8fa;
       font-size: 12px;
+    }}
+    .phase-map {{
+      margin-top: 16px;
+    }}
+    .phase-map h2 {{
+      margin: 0 0 8px;
+    }}
+    .phase-map table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }}
+    .phase-map th,
+    .phase-map td {{
+      padding: 6px 8px;
+      border: 1px solid #d0d7de;
+      text-align: left;
+      vertical-align: top;
+    }}
+    .phase-map th {{
+      background: #f6f8fa;
+      color: #57606a;
+      font-weight: 650;
     }}
     .guidance-warning {{
       margin: 0 0 16px;
@@ -2774,6 +2904,7 @@ def _write_workflow_review_index(
     rigid visual-verification captures from one page.</p>
     {workflow_command_html}
     <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
+    {phase_map}
   </header>
   <main>
     {failure_summary}
@@ -2865,6 +2996,7 @@ def _write_workflow_manifest(
         for capture in captures
         if isinstance(capture.get("scene_metrics_evidence"), dict)
     )
+    phase_summary = _workflow_phase_summary(captures)
     _write_json(
         manifest,
         {
@@ -2879,6 +3011,7 @@ def _write_workflow_manifest(
             "workflow_total_count": workflow_total_count,
             "workflow_row_start": min(capture_orders) if capture_orders else None,
             "workflow_row_end": max(capture_orders) if capture_orders else None,
+            "workflow_phase_summary": phase_summary,
             "continue_on_failure": continue_on_failure,
             "dry_run": dry_run,
             "status": status,
