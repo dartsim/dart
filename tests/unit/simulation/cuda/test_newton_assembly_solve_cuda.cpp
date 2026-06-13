@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -358,6 +359,49 @@ void evaluateExpectedSceneSparseGraphAssembly(
         makeExpectedSceneSparseBlock(nodes, triangle.nodeB, triangle.nodeC));
     blocks.push_back(
         makeExpectedSceneSparseBlock(nodes, triangle.nodeC, triangle.nodeA));
+  }
+}
+
+void evaluateExpectedSceneSparseGraphUniqueAssembly(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::vector<cuda::NewtonSceneSurfaceTriangleInput>& triangles,
+    std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    std::vector<cuda::NewtonSparseBlockEntry>& blocks)
+{
+  std::vector<std::uint32_t> incidentTriangleCounts(nodes.size(), 0u);
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> edges;
+  edges.reserve(3u * triangles.size());
+  const auto appendEdge = [&edges](std::uint32_t nodeA, std::uint32_t nodeB) {
+    if (nodeB < nodeA) {
+      std::swap(nodeA, nodeB);
+    }
+    edges.emplace_back(nodeA, nodeB);
+  };
+
+  for (const auto& triangle : triangles) {
+    ++incidentTriangleCounts[triangle.nodeA];
+    ++incidentTriangleCounts[triangle.nodeB];
+    ++incidentTriangleCounts[triangle.nodeC];
+    appendEdge(triangle.nodeA, triangle.nodeB);
+    appendEdge(triangle.nodeB, triangle.nodeC);
+    appendEdge(triangle.nodeC, triangle.nodeA);
+  }
+  std::sort(edges.begin(), edges.end());
+  edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+
+  rows.clear();
+  rows.reserve(nodes.size());
+  for (std::size_t node = 0; node < nodes.size(); ++node) {
+    rows.push_back(makeExpectedSceneRow(
+        nodes[node],
+        static_cast<std::uint32_t>(node),
+        incidentTriangleCounts[node]));
+  }
+
+  blocks.clear();
+  blocks.reserve(edges.size());
+  for (const auto& [nodeA, nodeB] : edges) {
+    blocks.push_back(makeExpectedSceneSparseBlock(nodes, nodeA, nodeB));
   }
 }
 
@@ -1269,6 +1313,86 @@ TEST(NewtonAssemblySolveCuda, MatchesCpuSceneSparseGraphAssembly)
 }
 
 //==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSceneSparseGraphUniqueAssembly)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector nodes = {
+      makeSceneNode(0.0, 0.0, 0.0, 0.10, -0.20, 0.30, 1.0),
+      makeSceneNode(1.0, 0.0, 0.2, -0.10, 0.40, -0.15, 1.5),
+      makeSceneNode(0.0, 1.0, -0.1, 0.20, 0.05, -0.25, 2.0),
+      makeSceneNode(1.0, 1.0, 0.3, -0.35, 0.15, 0.45, 2.5),
+  };
+  const std::vector<cuda::NewtonSceneSurfaceTriangleInput> triangles = {
+      {0, 1, 2},
+      {2, 1, 3},
+      {2, 1, 0},
+  };
+
+  cuda::NewtonSceneSparseGraphUniqueAssemblyResult result;
+  cuda::evaluateNewtonSceneSparseGraphUniqueAssemblyCuda(
+      nodes, triangles, result);
+
+  std::vector<cuda::NewtonAssemblySolveRowInput> expectedRows;
+  std::vector<cuda::NewtonSparseBlockEntry> expectedBlocks;
+  evaluateExpectedSceneSparseGraphUniqueAssembly(
+      nodes, triangles, expectedRows, expectedBlocks);
+
+  EXPECT_EQ(result.nodeCount, nodes.size());
+  EXPECT_EQ(result.triangleCount, triangles.size());
+  EXPECT_EQ(result.edgeSlotCount, 3u * triangles.size());
+  EXPECT_EQ(result.uniqueEdgeCount, expectedBlocks.size());
+  EXPECT_EQ(
+      result.duplicateEdgeSlotCount,
+      3u * triangles.size() - expectedBlocks.size());
+  EXPECT_EQ(result.rowCount, expectedRows.size());
+  EXPECT_EQ(result.bodyCount, nodes.size());
+  EXPECT_EQ(
+      result.dofCount, nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody);
+  EXPECT_EQ(result.blockCount, expectedBlocks.size());
+  EXPECT_EQ(
+      result.blockEntryCount,
+      expectedBlocks.size() * cuda::kNewtonAssemblySolveBlockEntries);
+  ASSERT_EQ(result.rows.size(), expectedRows.size());
+  ASSERT_EQ(result.blocks.size(), expectedBlocks.size());
+
+  for (std::size_t row = 0; row < expectedRows.size(); ++row) {
+    EXPECT_EQ(result.rows[row].bodyIndex, expectedRows[row].bodyIndex);
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      EXPECT_NEAR(
+          result.rows[row].hessianDiagonal[dof],
+          expectedRows[row].hessianDiagonal[dof],
+          1e-12)
+          << row << "/" << dof;
+      EXPECT_NEAR(
+          result.rows[row].gradient[dof],
+          expectedRows[row].gradient[dof],
+          1e-12)
+          << row << "/" << dof;
+    }
+  }
+
+  for (std::size_t block = 0; block < expectedBlocks.size(); ++block) {
+    EXPECT_EQ(
+        result.blocks[block].rowBodyIndex, expectedBlocks[block].rowBodyIndex);
+    EXPECT_EQ(
+        result.blocks[block].columnBodyIndex,
+        expectedBlocks[block].columnBodyIndex);
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      EXPECT_NEAR(
+          result.blocks[block].hessianBlock[entry],
+          expectedBlocks[block].hessianBlock[entry],
+          1e-12)
+          << block << "/" << entry;
+    }
+  }
+}
+
+//==============================================================================
 TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneSparseGraphInputs)
 {
   if (!cuda::isCudaRuntimeAvailable()) {
@@ -1281,10 +1405,15 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneSparseGraphInputs)
       makeSceneNode(0.0, 1.0, -0.1, 0.20, 0.05, -0.25, 2.0),
   };
   cuda::NewtonSceneSparseGraphAssemblyResult result;
+  cuda::NewtonSceneSparseGraphUniqueAssemblyResult uniqueResult;
 
   EXPECT_THROW(
       cuda::evaluateNewtonSceneSparseGraphAssemblyCuda(
           nodes, {{0, 1, 3}}, result),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneSparseGraphUniqueAssemblyCuda(
+          nodes, {{0, 1, 3}}, uniqueResult),
       dart::simulation::InvalidArgumentException);
   EXPECT_THROW(
       cuda::evaluateNewtonSceneSparseGraphAssemblyCuda(

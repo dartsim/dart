@@ -1328,22 +1328,64 @@ barrier/friction benchmark packet. It measured
 `point_edge_barrier_hessian.speedup = 1.278816738709317`, and top-level
 `speedup = 0.36913439757406363` with `meets_speedup_gate = false`.
 
+## Scene Sparse Graph Edge-Dedup Checkpoint (2026-06-13)
+
+Work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978,
+without pushing or mutating GitHub. The latest local slice adds a reduced
+scene-owned sparse graph unique-edge assembly row to the private Newton
+assembly/solve packet. The benchmark builds the same DART `World` deformable
+surface as the scene sparse graph row, appends one reversed duplicate triangle,
+marks canonical surface-edge keys on GPU, and emits one 6x6 sparse block per
+unique canonical edge in deterministic order.
+
+The generated packet records `scene_node_count=2560`,
+`scene_triangle_count=769`, `edge_slot_count=2307`,
+`unique_edge_count=2304`, `duplicate_edge_slot_count=3`,
+`block_count=2304`, `block_entry_count=82944`,
+`max_result_abs_error=4.440892098500626e-16`, and
+`speedup=0.0010437835446294721x` for the reduced unique-edge row. The top-level
+assembly/solve row records `max_result_abs_error=3.637978807091713e-11`,
+`residual_norm=3.70262388185975e-13`, and
+`speedup=0.0010437835446294721x`, so `assembly-linear-solve` remains
+`in-progress`.
+
+Validation passed for this checkpoint:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda bash -lc 'build/cuda/cpp/Release/bin/test_newton_assembly_solve_cuda --gtest_filter=NewtonAssemblySolveCuda.MatchesCpuSceneSparseGraphAssembly:NewtonAssemblySolveCuda.MatchesCpuSceneSparseGraphUniqueAssembly:NewtonAssemblySolveCuda.RejectsInvalidSceneSparseGraphInputs'`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+
+This reduces the sparse graph dedup evidence gap only for a private reduced
+packet. Production sparse Hessian graph construction/assembly, unbounded
+production direct/global sparse factorization, production nonlinear equality
+convergence policy/solving, GPU `World::step`, paper-scale assets, and speedup
+gates remain future evidence.
+
 ## Resume Guidance
 
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
 2. Inspect local status before editing, committing, or pushing. The current
    branch is the single consolidated #2978 branch and now includes the reduced
    sampled rigid-curved CCD/line-search rows, scene-owned runtime CCD rows, and
-   scene-owned sparse graph assembly/solve rows on top of the earlier
+   scene-owned sparse graph assembly/solve rows, including the reduced
+   unique-edge dedup row, on top of the earlier
    contact-candidate, barrier/friction, assembly/solve, and scene-parity packet
    checkpoints.
 3. Check hosted CI and new review comments before editing. Do not reply to bot
    comments.
 4. Continue on the same PR with the remaining runtime/parity gaps: runtime
    scene filtering, analytic curved CCD, full scene-level line search, broader
-   sparse Hessian assembly, direct/global sparse factorization, nonlinear
-   equality constraints, GPU `World::step` integration, additional runtime
-   contact rows, and packet speedup gates.
+   production sparse Hessian graph construction/assembly, direct/global sparse
+   factorization, nonlinear equality constraints, GPU `World::step`
+   integration, additional runtime contact rows, and packet speedup gates.
 5. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

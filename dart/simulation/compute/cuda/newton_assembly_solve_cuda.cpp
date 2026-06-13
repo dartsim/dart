@@ -75,6 +75,19 @@ cudaError_t launchNewtonSceneSparseBlocksKernel(
     NewtonSparseBlockEntry* blocks,
     std::size_t triangleCount);
 
+cudaError_t launchNewtonSceneUniqueEdgeMarkKernel(
+    const NewtonSceneSurfaceTriangleInput* triangles,
+    std::uint32_t* edgeFlags,
+    std::size_t nodeCount,
+    std::size_t triangleCount);
+
+cudaError_t launchNewtonSceneUniqueSparseBlocksKernel(
+    const NewtonSceneNodeInput* nodes,
+    const std::uint32_t* edgeFlags,
+    NewtonSparseBlockEntry* blocks,
+    std::uint32_t* uniqueEdgeCount,
+    std::size_t nodeCount);
+
 cudaError_t launchNewtonSceneNonlinearEqualityAssemblyKernel(
     const NewtonSceneNodeInput* nodes,
     const NewtonSceneDistanceEqualityConstraintInput* constraints,
@@ -826,6 +839,155 @@ void evaluateNewtonSceneSparseGraphAssemblyCuda(
   result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
   result.timing.incidenceKernelNs = elapsedNs(incidenceStart, incidenceEnd);
   result.timing.diagonalKernelNs = elapsedNs(diagonalStart, diagonalEnd);
+  result.timing.sparseBlockKernelNs
+      = elapsedNs(sparseBlockStart, sparseBlockEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+}
+
+//==============================================================================
+void evaluateNewtonSceneSparseGraphUniqueAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
+    NewtonSceneSparseGraphUniqueAssemblyResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateSceneSparseGraphInputs(nodes, triangles);
+
+  result = NewtonSceneSparseGraphUniqueAssemblyResult{};
+  result.nodeCount = nodes.size();
+  result.triangleCount = triangles.size();
+  result.edgeSlotCount = 3u * triangles.size();
+  result.rowCount = nodes.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * kNewtonAssemblySolveDofsPerBody;
+  result.rows.assign(result.rowCount, {});
+
+  if (nodes.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonSceneNodeInput> deviceNodes(nodes.size());
+  DeviceBuffer<NewtonSceneSurfaceTriangleInput> deviceTriangles(
+      triangles.size());
+  DeviceBuffer<std::uint32_t> deviceIncidentTriangleCounts(nodes.size());
+  DeviceBuffer<std::uint32_t> deviceUniqueEdgeFlags(
+      nodes.size() * nodes.size());
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(result.rowCount);
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(result.edgeSlotCount);
+  DeviceBuffer<std::uint32_t> deviceUniqueEdgeCount(1u);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceNodes.copyToDevice(nodes, "newton scene unique graph nodes copy");
+  deviceTriangles.copyToDevice(
+      triangles, "newton scene unique graph triangles copy");
+  throwIfCudaError(
+      cudaMemset(
+          deviceIncidentTriangleCounts.data(),
+          0,
+          deviceIncidentTriangleCounts.byteSize()),
+      "newton scene unique graph incidence zero");
+  throwIfCudaError(
+      cudaMemset(
+          deviceUniqueEdgeFlags.data(), 0, deviceUniqueEdgeFlags.byteSize()),
+      "newton scene unique graph edge flags zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto incidenceStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneTriangleIncidenceKernel(
+          deviceTriangles.data(),
+          deviceIncidentTriangleCounts.data(),
+          triangles.size()),
+      "newton scene unique graph incidence kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene unique graph incidence synchronize");
+  const auto incidenceEnd = Clock::now();
+
+  const auto diagonalStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneDiagonalRowsKernel(
+          deviceNodes.data(),
+          deviceIncidentTriangleCounts.data(),
+          deviceRows.data(),
+          nodes.size()),
+      "newton scene unique graph diagonal rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene unique graph diagonal rows synchronize");
+  const auto diagonalEnd = Clock::now();
+
+  const auto edgeMarkStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneUniqueEdgeMarkKernel(
+          deviceTriangles.data(),
+          deviceUniqueEdgeFlags.data(),
+          nodes.size(),
+          triangles.size()),
+      "newton scene unique graph edge mark kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene unique graph edge mark synchronize");
+  const auto edgeMarkEnd = Clock::now();
+
+  const auto sparseBlockStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneUniqueSparseBlocksKernel(
+          deviceNodes.data(),
+          deviceUniqueEdgeFlags.data(),
+          deviceBlocks.data(),
+          deviceUniqueEdgeCount.data(),
+          nodes.size()),
+      "newton scene unique graph block kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton scene unique graph block synchronize");
+  const auto sparseBlockEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceRows.copyFromDevice(result.rows, "newton scene unique graph rows copy");
+  std::vector<std::uint32_t> uniqueEdgeCount(1u, 0u);
+  deviceUniqueEdgeCount.copyFromDevice(
+      uniqueEdgeCount, "newton scene unique graph edge count copy");
+  result.uniqueEdgeCount = uniqueEdgeCount.front();
+  if (result.uniqueEdgeCount > result.edgeSlotCount) {
+    throw sx::InvalidOperationException(
+        "evaluateNewtonSceneSparseGraphUniqueAssemblyCuda unique edge count "
+        "exceeds edge slot count");
+  }
+  result.blockCount = result.uniqueEdgeCount;
+  result.duplicateEdgeSlotCount = result.edgeSlotCount - result.uniqueEdgeCount;
+  result.blockEntryCount = result.blockCount * kNewtonAssemblySolveBlockEntries;
+  result.blocks.assign(result.edgeSlotCount, {});
+  deviceBlocks.copyFromDevice(
+      result.blocks, "newton scene unique graph blocks copy");
+  result.blocks.resize(result.blockCount);
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.incidenceKernelNs = elapsedNs(incidenceStart, incidenceEnd);
+  result.timing.diagonalKernelNs = elapsedNs(diagonalStart, diagonalEnd);
+  result.timing.uniqueEdgeMarkKernelNs = elapsedNs(edgeMarkStart, edgeMarkEnd);
   result.timing.sparseBlockKernelNs
       = elapsedNs(sparseBlockStart, sparseBlockEnd);
   result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);

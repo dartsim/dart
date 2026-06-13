@@ -360,12 +360,14 @@ its own line so status updates remain git-history friendly.
   solve plus a reduced scene-owned sparse Jacobi row plus capped sparse CG solve
   plus a reduced scene-owned sparse CG row plus bounded reduced direct sparse
   factor solve plus reduced scene-owned bounded direct sparse factor solve plus
-  sparse equality-reduced diagonal solve parity plus a reduced
-  scene-owned diagonal assembly/solve row, reduced hanging-bridge scene
+  sparse equality-reduced diagonal solve parity plus a reduced scene-owned
+  sparse graph unique-edge dedup row plus a reduced scene-owned diagonal
+  assembly/solve row, reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, analytic curved CCD, full scene-level
-  line search, full runtime sparse Hessian graph construction and assembly,
+  line search, full runtime sparse Hessian graph construction and assembly
+  beyond the reduced dedup row,
   unbounded production direct/global sparse factorization, production nonlinear equality convergence
   policy/solving, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The

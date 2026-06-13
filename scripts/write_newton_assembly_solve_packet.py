@@ -63,6 +63,9 @@ SCENE_SPARSE_GRAPH_TIMING_KEYS = {
     "device_to_host",
     "readback",
 }
+SCENE_SPARSE_GRAPH_UNIQUE_TIMING_KEYS = SCENE_SPARSE_GRAPH_TIMING_KEYS | {
+    "edge_mark",
+}
 SCENE_NONLINEAR_EQUALITY_TIMING_KEYS = {
     "setup",
     "host_to_device",
@@ -182,6 +185,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "^BM_Newton(AssemblySolve|SceneRuntimeAssemblySolve|"
         "OffDiagonalAssembly|SceneRuntimeOffDiagonalAssembly|"
         "SceneRuntimeSparseGraphAssembly|"
+        "SceneRuntimeSparseGraphUniqueAssembly|"
         "SceneRuntimeNonlinearEqualityAssembly|"
         "SceneRuntimeNonlinearEqualitySolve|"
         "SceneRuntimeNonlinearEqualityConvergence|SparseResidual|"
@@ -263,6 +267,12 @@ def _representative_rows(
         ),
         "scene_sparse_graph_gpu": (
             f"BM_NewtonSceneRuntimeSparseGraphAssemblyCuda/{row_count}"
+        ),
+        "scene_sparse_graph_unique_cpu": (
+            f"BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCpu/{row_count}"
+        ),
+        "scene_sparse_graph_unique_gpu": (
+            f"BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCuda/{row_count}"
         ),
         "scene_nonlinear_equality_cpu": (
             f"BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu/{row_count}"
@@ -381,6 +391,12 @@ def make_packet(
     scene_off_diagonal_gpu_row = representative_rows["scene_off_diagonal_gpu"]
     scene_sparse_graph_cpu_row = representative_rows["scene_sparse_graph_cpu"]
     scene_sparse_graph_gpu_row = representative_rows["scene_sparse_graph_gpu"]
+    scene_sparse_graph_unique_cpu_row = representative_rows[
+        "scene_sparse_graph_unique_cpu"
+    ]
+    scene_sparse_graph_unique_gpu_row = representative_rows[
+        "scene_sparse_graph_unique_gpu"
+    ]
     scene_nonlinear_equality_cpu_row = representative_rows[
         "scene_nonlinear_equality_cpu"
     ]
@@ -427,6 +443,12 @@ def make_packet(
     scene_off_diagonal_gpu_ns = benchmark_timing_ns(scene_off_diagonal_gpu_row)
     scene_sparse_graph_cpu_ns = benchmark_timing_ns(scene_sparse_graph_cpu_row)
     scene_sparse_graph_gpu_ns = benchmark_timing_ns(scene_sparse_graph_gpu_row)
+    scene_sparse_graph_unique_cpu_ns = benchmark_timing_ns(
+        scene_sparse_graph_unique_cpu_row
+    )
+    scene_sparse_graph_unique_gpu_ns = benchmark_timing_ns(
+        scene_sparse_graph_unique_gpu_row
+    )
     scene_nonlinear_equality_cpu_ns = benchmark_timing_ns(
         scene_nonlinear_equality_cpu_row
     )
@@ -498,6 +520,20 @@ def make_packet(
     if not math.isfinite(scene_sparse_graph_gpu_ns) or scene_sparse_graph_gpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
             "scene runtime sparse graph GPU benchmark timing is not positive"
+        )
+    if (
+        not math.isfinite(scene_sparse_graph_unique_cpu_ns)
+        or scene_sparse_graph_unique_cpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph CPU benchmark timing is not positive"
+        )
+    if (
+        not math.isfinite(scene_sparse_graph_unique_gpu_ns)
+        or scene_sparse_graph_unique_gpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph GPU benchmark timing is not positive"
         )
     if (
         not math.isfinite(scene_nonlinear_equality_cpu_ns)
@@ -645,6 +681,9 @@ def make_packet(
     scene_sparse_graph_max_error = _counter(
         scene_sparse_graph_gpu_row, "max_result_abs_error"
     )
+    scene_sparse_graph_unique_max_error = _counter(
+        scene_sparse_graph_unique_gpu_row, "max_result_abs_error"
+    )
     scene_nonlinear_equality_max_error = _counter(
         scene_nonlinear_equality_gpu_row, "max_result_abs_error"
     )
@@ -679,6 +718,7 @@ def make_packet(
         off_diagonal_max_error,
         scene_off_diagonal_max_error,
         scene_sparse_graph_max_error,
+        scene_sparse_graph_unique_max_error,
         scene_nonlinear_equality_max_error,
         scene_nonlinear_equality_solve_max_error,
         scene_nonlinear_equality_convergence_max_error,
@@ -935,6 +975,124 @@ def make_packet(
     )
     scene_sparse_graph_max_block_abs = _counter(
         scene_sparse_graph_gpu_row, "gpu_max_block_abs"
+    )
+    scene_sparse_graph_unique_rows = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "rows",
+        "gpu_rows",
+    )
+    if scene_sparse_graph_unique_rows <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph row count is zero"
+        )
+    scene_sparse_graph_unique_bodies = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "bodies",
+        "gpu_bodies",
+    )
+    scene_sparse_graph_unique_dofs = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "dofs",
+        "gpu_dofs",
+    )
+    scene_sparse_graph_unique_blocks = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "blocks",
+        "gpu_blocks",
+    )
+    scene_sparse_graph_unique_block_entries = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "block_entries",
+        "gpu_block_entries",
+    )
+    scene_sparse_graph_unique_edge_slots = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "edge_slots",
+        "gpu_edge_slots",
+    )
+    scene_sparse_graph_unique_unique_edges = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "unique_edges",
+        "gpu_unique_edges",
+    )
+    scene_sparse_graph_unique_duplicate_edge_slots = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "duplicate_edge_slots",
+        "gpu_duplicate_edge_slots",
+    )
+    scene_sparse_graph_unique_scene_bodies = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "scene_bodies",
+        "gpu_scene_bodies",
+    )
+    scene_sparse_graph_unique_scene_nodes = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "scene_nodes",
+        "gpu_scene_nodes",
+    )
+    scene_sparse_graph_unique_scene_triangles = _matching_int_counter(
+        scene_sparse_graph_unique_cpu_row,
+        scene_sparse_graph_unique_gpu_row,
+        "scene_triangles",
+        "gpu_scene_triangles",
+    )
+    if scene_sparse_graph_unique_scene_nodes != scene_sparse_graph_unique_bodies:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph node count "
+            f"{scene_sparse_graph_unique_scene_nodes} != bodies "
+            f"{scene_sparse_graph_unique_bodies}"
+        )
+    if scene_sparse_graph_unique_edge_slots != (
+        scene_sparse_graph_unique_scene_triangles * 3
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph edge slots do not match three "
+            "oriented edges per triangle"
+        )
+    if (
+        scene_sparse_graph_unique_duplicate_edge_slots
+        != scene_sparse_graph_unique_edge_slots - scene_sparse_graph_unique_unique_edges
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph duplicate edge slots do not match "
+            "edge slots minus unique edges"
+        )
+    if scene_sparse_graph_unique_unique_edges != scene_sparse_graph_unique_blocks:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph unique edge count "
+            f"{scene_sparse_graph_unique_unique_edges} != blocks "
+            f"{scene_sparse_graph_unique_blocks}"
+        )
+    if scene_sparse_graph_unique_block_entries != (
+        scene_sparse_graph_unique_blocks * 36
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph block entries do not match "
+            "36 entries per 6x6 block"
+        )
+    if scene_sparse_graph_unique_blocks >= scene_sparse_graph_unique_edge_slots:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph row did not deduplicate any "
+            "oriented edge slots"
+        )
+    scene_sparse_graph_unique_max_diagonal = _counter(
+        scene_sparse_graph_unique_gpu_row, "gpu_max_diagonal"
+    )
+    scene_sparse_graph_unique_max_gradient_abs = _counter(
+        scene_sparse_graph_unique_gpu_row, "gpu_max_gradient_abs"
+    )
+    scene_sparse_graph_unique_max_block_abs = _counter(
+        scene_sparse_graph_unique_gpu_row, "gpu_max_block_abs"
     )
     scene_nonlinear_equality_rows = _matching_int_counter(
         scene_nonlinear_equality_cpu_row,
@@ -2037,6 +2195,9 @@ def make_packet(
     off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
     scene_off_diagonal_speedup = scene_off_diagonal_cpu_ns / scene_off_diagonal_gpu_ns
     scene_sparse_graph_speedup = scene_sparse_graph_cpu_ns / scene_sparse_graph_gpu_ns
+    scene_sparse_graph_unique_speedup = (
+        scene_sparse_graph_unique_cpu_ns / scene_sparse_graph_unique_gpu_ns
+    )
     scene_nonlinear_equality_speedup = (
         scene_nonlinear_equality_cpu_ns / scene_nonlinear_equality_gpu_ns
     )
@@ -2070,6 +2231,7 @@ def make_packet(
         off_diagonal_speedup,
         scene_off_diagonal_speedup,
         scene_sparse_graph_speedup,
+        scene_sparse_graph_unique_speedup,
         scene_nonlinear_equality_speedup,
         scene_nonlinear_equality_solve_speedup,
         scene_nonlinear_equality_convergence_speedup,
@@ -2148,6 +2310,33 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"scene runtime sparse graph packet timing is missing {sorted(missing)}"
+        )
+    scene_sparse_graph_unique_timing_ns = {
+        "setup": _counter(scene_sparse_graph_unique_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(
+            scene_sparse_graph_unique_gpu_row, "host_to_device_ns"
+        ),
+        "incidence": _counter(scene_sparse_graph_unique_gpu_row, "incidence_kernel_ns"),
+        "diagonal": _counter(scene_sparse_graph_unique_gpu_row, "diagonal_kernel_ns"),
+        "edge_mark": _counter(
+            scene_sparse_graph_unique_gpu_row, "unique_edge_mark_kernel_ns"
+        ),
+        "sparse_blocks": _counter(
+            scene_sparse_graph_unique_gpu_row, "sparse_block_kernel_ns"
+        ),
+        "device_to_host": _counter(
+            scene_sparse_graph_unique_gpu_row, "device_to_host_ns"
+        ),
+        "readback": 0.0,
+    }
+    missing = (
+        SCENE_SPARSE_GRAPH_UNIQUE_TIMING_KEYS
+        - scene_sparse_graph_unique_timing_ns.keys()
+    )
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime unique sparse graph packet timing is missing "
+            f"{sorted(missing)}"
         )
     scene_nonlinear_equality_timing_ns = {
         "setup": _counter(scene_nonlinear_equality_gpu_row, "host_setup_ns"),
@@ -2471,6 +2660,37 @@ def make_packet(
                 "timing_ns": scene_sparse_graph_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(scene_sparse_graph_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(scene_sparse_graph_gpu_row),
+            },
+            "scene_runtime_sparse_graph_unique_assembly": {
+                "row_count": scene_sparse_graph_unique_rows,
+                "nominal_row_count": row_count,
+                "scene_body_count": scene_sparse_graph_unique_scene_bodies,
+                "scene_node_count": scene_sparse_graph_unique_scene_nodes,
+                "scene_triangle_count": scene_sparse_graph_unique_scene_triangles,
+                "edge_slot_count": scene_sparse_graph_unique_edge_slots,
+                "unique_edge_count": scene_sparse_graph_unique_unique_edges,
+                "duplicate_edge_slot_count": (
+                    scene_sparse_graph_unique_duplicate_edge_slots
+                ),
+                "body_count": scene_sparse_graph_unique_bodies,
+                "dof_count": scene_sparse_graph_unique_dofs,
+                "block_count": scene_sparse_graph_unique_blocks,
+                "block_entry_count": scene_sparse_graph_unique_block_entries,
+                "max_diagonal": scene_sparse_graph_unique_max_diagonal,
+                "max_gradient_abs": scene_sparse_graph_unique_max_gradient_abs,
+                "max_block_abs": scene_sparse_graph_unique_max_block_abs,
+                "max_result_abs_error": scene_sparse_graph_unique_max_error,
+                "speedup": scene_sparse_graph_unique_speedup,
+                "meets_speedup_gate": (
+                    scene_sparse_graph_unique_speedup >= speedup_gate
+                ),
+                "timing_ns": scene_sparse_graph_unique_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(
+                    scene_sparse_graph_unique_cpu_row
+                ),
+                "gpu_benchmark_row": _packet_row_name(
+                    scene_sparse_graph_unique_gpu_row
+                ),
             },
             "scene_runtime_nonlinear_equality_assembly": {
                 "row_count": scene_nonlinear_equality_rows,

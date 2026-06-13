@@ -224,6 +224,62 @@ def _benchmark_data(**overrides):
         sparse_block_kernel_ns=5.0,
         device_to_host_ns=6.0,
     )
+    scene_sparse_graph_unique_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=240,
+        block_entries=8640,
+        edge_slots=288,
+        unique_edges=240,
+        duplicate_edge_slots=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        max_block_abs=0.25,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_graph_unique_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=240,
+        block_entries=8640,
+        edge_slots=288,
+        unique_edges=240,
+        duplicate_edge_slots=48,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=240,
+        gpu_block_entries=8640,
+        gpu_edge_slots=288,
+        gpu_unique_edges=240,
+        gpu_duplicate_edge_slots=48,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_max_diagonal=10.0,
+        gpu_max_gradient_abs=1.0,
+        gpu_max_block_abs=0.25,
+        max_result_abs_error=5e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        incidence_kernel_ns=3.0,
+        diagonal_kernel_ns=4.0,
+        unique_edge_mark_kernel_ns=5.0,
+        sparse_block_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     scene_nonlinear_equality_cpu = _row(
         "BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu/1024",
         rows=576,
@@ -897,6 +953,8 @@ def _benchmark_data(**overrides):
             scene_off_diagonal_gpu,
             scene_sparse_graph_cpu,
             scene_sparse_graph_gpu,
+            scene_sparse_graph_unique_cpu,
+            scene_sparse_graph_unique_gpu,
             scene_nonlinear_equality_cpu,
             scene_nonlinear_equality_gpu,
             scene_nonlinear_equality_solve_cpu,
@@ -990,6 +1048,27 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert scene_sparse_graph["timing_ns"]["incidence"] == 3.0
     assert scene_sparse_graph["timing_ns"]["diagonal"] == 4.0
     assert scene_sparse_graph["timing_ns"]["sparse_blocks"] == 5.0
+    scene_sparse_graph_unique = row["scene_runtime_sparse_graph_unique_assembly"]
+    assert scene_sparse_graph_unique["row_count"] == 320
+    assert scene_sparse_graph_unique["nominal_row_count"] == 1024
+    assert scene_sparse_graph_unique["scene_body_count"] == 1
+    assert scene_sparse_graph_unique["scene_node_count"] == 320
+    assert scene_sparse_graph_unique["scene_triangle_count"] == 96
+    assert scene_sparse_graph_unique["edge_slot_count"] == 288
+    assert scene_sparse_graph_unique["unique_edge_count"] == 240
+    assert scene_sparse_graph_unique["duplicate_edge_slot_count"] == 48
+    assert scene_sparse_graph_unique["body_count"] == 320
+    assert scene_sparse_graph_unique["dof_count"] == 1920
+    assert scene_sparse_graph_unique["block_count"] == 240
+    assert scene_sparse_graph_unique["block_entry_count"] == 8640
+    assert scene_sparse_graph_unique["max_result_abs_error"] == 5e-12
+    assert scene_sparse_graph_unique["max_diagonal"] == 10.0
+    assert scene_sparse_graph_unique["max_gradient_abs"] == 1.0
+    assert scene_sparse_graph_unique["max_block_abs"] == 0.25
+    assert scene_sparse_graph_unique["timing_ns"]["incidence"] == 3.0
+    assert scene_sparse_graph_unique["timing_ns"]["diagonal"] == 4.0
+    assert scene_sparse_graph_unique["timing_ns"]["edge_mark"] == 5.0
+    assert scene_sparse_graph_unique["timing_ns"]["sparse_blocks"] == 6.0
     scene_nonlinear_equality = row["scene_runtime_nonlinear_equality_assembly"]
     assert scene_nonlinear_equality["row_count"] == 576
     assert scene_nonlinear_equality["nominal_row_count"] == 1024

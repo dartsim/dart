@@ -222,6 +222,74 @@ __global__ void newtonSceneSparseBlocksKernel(
   blocks[edge] = makeSceneSparseBlockEntry(nodes, nodeA, nodeB);
 }
 
+__device__ std::size_t canonicalSceneEdgeKey(
+    std::uint32_t nodeA, std::uint32_t nodeB, const std::size_t nodeCount)
+{
+  if (nodeB < nodeA) {
+    const std::uint32_t temporary = nodeA;
+    nodeA = nodeB;
+    nodeB = temporary;
+  }
+  return static_cast<std::size_t>(nodeA) * nodeCount
+         + static_cast<std::size_t>(nodeB);
+}
+
+__global__ void newtonSceneUniqueEdgeMarkKernel(
+    const NewtonSceneSurfaceTriangleInput* triangles,
+    std::uint32_t* edgeFlags,
+    const std::size_t nodeCount,
+    const std::size_t triangleCount)
+{
+  const auto edge
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t edgeCount = 3u * triangleCount;
+  if (edge >= edgeCount) {
+    return;
+  }
+
+  const std::size_t triangleIndex = edge / 3u;
+  const std::size_t localEdge = edge - triangleIndex * 3u;
+  const NewtonSceneSurfaceTriangleInput triangle = triangles[triangleIndex];
+
+  std::uint32_t nodeA = triangle.nodeA;
+  std::uint32_t nodeB = triangle.nodeB;
+  if (localEdge == 1u) {
+    nodeA = triangle.nodeB;
+    nodeB = triangle.nodeC;
+  } else if (localEdge == 2u) {
+    nodeA = triangle.nodeC;
+    nodeB = triangle.nodeA;
+  }
+
+  atomicExch(&edgeFlags[canonicalSceneEdgeKey(nodeA, nodeB, nodeCount)], 1u);
+}
+
+__global__ void newtonSceneUniqueSparseBlocksKernel(
+    const NewtonSceneNodeInput* nodes,
+    const std::uint32_t* edgeFlags,
+    NewtonSparseBlockEntry* blocks,
+    std::uint32_t* uniqueEdgeCount,
+    const std::size_t nodeCount)
+{
+  if (blockIdx.x != 0u || threadIdx.x != 0u) {
+    return;
+  }
+
+  std::uint32_t count = 0;
+  for (std::uint32_t nodeA = 0; nodeA < nodeCount; ++nodeA) {
+    for (std::uint32_t nodeB = nodeA + 1u; nodeB < nodeCount; ++nodeB) {
+      const std::size_t key
+          = static_cast<std::size_t>(nodeA) * nodeCount + nodeB;
+      if (edgeFlags[key] == 0u) {
+        continue;
+      }
+      blocks[count] = makeSceneSparseBlockEntry(nodes, nodeA, nodeB);
+      ++count;
+    }
+  }
+  *uniqueEdgeCount = count;
+}
+
 __device__ void makeSceneDistanceEqualityBasis(
     const NewtonSceneNodeInput& node,
     const double normal[3],
@@ -929,6 +997,37 @@ cudaError_t launchNewtonSceneSparseBlocksKernel(
   const unsigned int gridSize = launchGrid1D(3u * triangleCount, blockSize);
   newtonSceneSparseBlocksKernel<<<gridSize, blockSize>>>(
       nodes, triangles, blocks, triangleCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSceneUniqueEdgeMarkKernel(
+    const NewtonSceneSurfaceTriangleInput* triangles,
+    std::uint32_t* edgeFlags,
+    const std::size_t nodeCount,
+    const std::size_t triangleCount)
+{
+  if (triangleCount == 0 || nodeCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(3u * triangleCount, blockSize);
+  newtonSceneUniqueEdgeMarkKernel<<<gridSize, blockSize>>>(
+      triangles, edgeFlags, nodeCount, triangleCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSceneUniqueSparseBlocksKernel(
+    const NewtonSceneNodeInput* nodes,
+    const std::uint32_t* edgeFlags,
+    NewtonSparseBlockEntry* blocks,
+    std::uint32_t* uniqueEdgeCount,
+    const std::size_t nodeCount)
+{
+  newtonSceneUniqueSparseBlocksKernel<<<1u, 1u>>>(
+      nodes, edgeFlags, blocks, uniqueEdgeCount, nodeCount);
   return cudaGetLastError();
 }
 

@@ -143,12 +143,39 @@ struct CpuSceneSparseGraphAssemblyResult
   double maxBlockAbs = 0.0;
 };
 
+struct CpuSceneSparseGraphUniqueAssemblyResult
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::size_t nodeCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t edgeSlotCount = 0;
+  std::size_t uniqueEdgeCount = 0;
+  std::size_t duplicateEdgeSlotCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+};
+
 struct SceneRuntimeSparseGraphAssemblyFixture
 {
   std::vector<cuda::NewtonSceneNodeInput> nodes;
   std::vector<cuda::NewtonSceneSurfaceTriangleInput> triangles;
   std::size_t sceneBodyCount = 0;
   CpuSceneSparseGraphAssemblyResult cpu;
+};
+
+struct SceneRuntimeSparseGraphUniqueAssemblyFixture
+{
+  std::vector<cuda::NewtonSceneNodeInput> nodes;
+  std::vector<cuda::NewtonSceneSurfaceTriangleInput> triangles;
+  std::size_t sceneBodyCount = 0;
+  CpuSceneSparseGraphUniqueAssemblyResult cpu;
 };
 
 struct CpuSceneNonlinearEqualityAssemblyResult
@@ -825,6 +852,73 @@ void evaluateCpuSceneSparseGraphAssembly(
         makeSceneRuntimeSparseBlock(nodes, triangle.nodeB, triangle.nodeC));
     result.blocks.push_back(
         makeSceneRuntimeSparseBlock(nodes, triangle.nodeC, triangle.nodeA));
+  }
+
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+}
+
+void evaluateCpuSceneSparseGraphUniqueAssembly(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::vector<cuda::NewtonSceneSurfaceTriangleInput>& triangles,
+    CpuSceneSparseGraphUniqueAssemblyResult& result)
+{
+  result = CpuSceneSparseGraphUniqueAssemblyResult{};
+  result.nodeCount = nodes.size();
+  result.triangleCount = triangles.size();
+  result.edgeSlotCount = 3u * triangles.size();
+  result.rowCount = nodes.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody;
+
+  std::vector<std::size_t> incidentTriangleCounts(nodes.size(), 0u);
+  std::vector<std::pair<std::uint32_t, std::uint32_t>> edges;
+  edges.reserve(result.edgeSlotCount);
+  const auto appendEdge = [&edges](std::uint32_t nodeA, std::uint32_t nodeB) {
+    if (nodeB < nodeA) {
+      std::swap(nodeA, nodeB);
+    }
+    edges.emplace_back(nodeA, nodeB);
+  };
+  for (const auto& triangle : triangles) {
+    ++incidentTriangleCounts[triangle.nodeA];
+    ++incidentTriangleCounts[triangle.nodeB];
+    ++incidentTriangleCounts[triangle.nodeC];
+    appendEdge(triangle.nodeA, triangle.nodeB);
+    appendEdge(triangle.nodeB, triangle.nodeC);
+    appendEdge(triangle.nodeC, triangle.nodeA);
+  }
+  std::sort(edges.begin(), edges.end());
+  edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+  result.uniqueEdgeCount = edges.size();
+  result.duplicateEdgeSlotCount = result.edgeSlotCount - result.uniqueEdgeCount;
+  result.blockCount = result.uniqueEdgeCount;
+  result.blockEntryCount
+      = result.blockCount * cuda::kNewtonAssemblySolveBlockEntries;
+
+  result.rows.reserve(nodes.size());
+  for (std::size_t node = 0; node < nodes.size(); ++node) {
+    result.rows.push_back(makeSceneRuntimeAssemblyRow(
+        nodes[node], node, incidentTriangleCounts[node]));
+  }
+
+  result.blocks.reserve(result.blockCount);
+  for (const auto& [nodeA, nodeB] : edges) {
+    result.blocks.push_back(makeSceneRuntimeSparseBlock(nodes, nodeA, nodeB));
   }
 
   for (const auto& row : result.rows) {
@@ -1922,6 +2016,38 @@ makeSceneRuntimeSparseGraphAssemblyFixture(const int rowCount)
   return fixture;
 }
 
+SceneRuntimeSparseGraphUniqueAssemblyFixture
+makeSceneRuntimeSparseGraphUniqueAssemblyFixture(const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_sparse_graph_unique_assembly",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeSparseGraphUniqueAssemblyFixture fixture;
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.nodes.reserve(body.getNodeCount());
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    fixture.nodes.push_back(makeSceneRuntimeNodeInput(body, node));
+  }
+
+  fixture.triangles.reserve(body.getSurfaceTriangleCount());
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    fixture.triangles.push_back(makeSceneRuntimeTriangleInput(body, triangle));
+  }
+  if (!fixture.triangles.empty()) {
+    auto duplicateTriangle = fixture.triangles.front();
+    std::swap(duplicateTriangle.nodeA, duplicateTriangle.nodeC);
+    fixture.triangles.push_back(duplicateTriangle);
+  }
+
+  evaluateCpuSceneSparseGraphUniqueAssembly(
+      fixture.nodes, fixture.triangles, fixture.cpu);
+  return fixture;
+}
+
 SceneRuntimeNonlinearEqualityAssemblyFixture
 makeSceneRuntimeNonlinearEqualityAssemblyFixture(const int rowCount)
 {
@@ -2273,6 +2399,55 @@ double maxOffDiagonalOutputError(
 double maxSceneSparseGraphAssemblyOutputError(
     const CpuSceneSparseGraphAssemblyResult& expected,
     const cuda::NewtonSceneSparseGraphAssemblyResult& actual)
+{
+  double maxError = 0.0;
+  for (std::size_t row = 0; row < expected.rows.size(); ++row) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.rows[row].bodyIndex)
+            - static_cast<double>(actual.rows[row].bodyIndex)));
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.rows[row].hessianDiagonal[dof]
+              - actual.rows[row].hessianDiagonal[dof]));
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.rows[row].gradient[dof]
+              - actual.rows[row].gradient[dof]));
+    }
+  }
+
+  for (std::size_t block = 0; block < expected.blocks.size(); ++block) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.blocks[block].rowBodyIndex)
+            - static_cast<double>(actual.blocks[block].rowBodyIndex)));
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.blocks[block].columnBodyIndex)
+            - static_cast<double>(actual.blocks[block].columnBodyIndex)));
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.blocks[block].hessianBlock[entry]
+              - actual.blocks[block].hessianBlock[entry]));
+    }
+  }
+  return maxError;
+}
+
+double maxSceneSparseGraphUniqueAssemblyOutputError(
+    const CpuSceneSparseGraphUniqueAssemblyResult& expected,
+    const cuda::NewtonSceneSparseGraphUniqueAssemblyResult& actual)
 {
   double maxError = 0.0;
   for (std::size_t row = 0; row < expected.rows.size(); ++row) {
@@ -2683,6 +2858,36 @@ void recordSceneRuntimeSparseGraphAssemblyCounters(
       static_cast<std::int64_t>(
           state.iterations()
           * (fixture.cpu.rowCount + fixture.cpu.blockCount)));
+}
+
+void recordSceneRuntimeSparseGraphUniqueAssemblyCounters(
+    benchmark::State& state,
+    const SceneRuntimeSparseGraphUniqueAssemblyFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.cpu.rowCount);
+  state.counters["bodies"] = static_cast<double>(fixture.cpu.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.dofCount);
+  state.counters["blocks"] = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["block_entries"]
+      = static_cast<double>(fixture.cpu.blockEntryCount);
+  state.counters["edge_slots"] = static_cast<double>(fixture.cpu.edgeSlotCount);
+  state.counters["unique_edges"]
+      = static_cast<double>(fixture.cpu.uniqueEdgeCount);
+  state.counters["duplicate_edge_slots"]
+      = static_cast<double>(fixture.cpu.duplicateEdgeSlotCount);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.cpu.nodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.cpu.triangleCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["max_block_abs"] = fixture.cpu.maxBlockAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations()
+          * (fixture.cpu.rowCount + fixture.cpu.edgeSlotCount)));
 }
 
 void recordSceneRuntimeNonlinearEqualityAssemblyCounters(
@@ -3285,6 +3490,85 @@ static void BM_NewtonSceneRuntimeSparseGraphAssemblyCuda(
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSceneRuntimeSparseGraphAssemblyCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeSparseGraphUniqueAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  CpuSceneSparseGraphUniqueAssemblyResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSceneSparseGraphUniqueAssembly(
+        fixture.nodes, fixture.triangles, result);
+    benchmark::DoNotOptimize(result.rows.data());
+    benchmark::DoNotOptimize(result.blocks.data());
+  }
+
+  recordSceneRuntimeSparseGraphUniqueAssemblyCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeSparseGraphUniqueAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  cuda::NewtonSceneSparseGraphUniqueAssemblyResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSceneSparseGraphUniqueAssemblyCuda(
+        fixture.nodes, fixture.triangles, result);
+    benchmark::DoNotOptimize(result.rows.data());
+    benchmark::DoNotOptimize(result.blocks.data());
+  }
+
+  recordSceneRuntimeSparseGraphUniqueAssemblyCounters(
+      state,
+      fixture,
+      maxSceneSparseGraphUniqueAssemblyOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_block_entries"]
+      = static_cast<double>(result.blockEntryCount);
+  state.counters["gpu_edge_slots"] = static_cast<double>(result.edgeSlotCount);
+  state.counters["gpu_unique_edges"]
+      = static_cast<double>(result.uniqueEdgeCount);
+  state.counters["gpu_duplicate_edge_slots"]
+      = static_cast<double>(result.duplicateEdgeSlotCount);
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"] = static_cast<double>(result.nodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(result.triangleCount);
+  state.counters["gpu_max_diagonal"] = result.maxDiagonal;
+  state.counters["gpu_max_gradient_abs"] = result.maxGradientAbs;
+  state.counters["gpu_max_block_abs"] = result.maxBlockAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["incidence_kernel_ns"] = result.timing.incidenceKernelNs;
+  state.counters["diagonal_kernel_ns"] = result.timing.diagonalKernelNs;
+  state.counters["unique_edge_mark_kernel_ns"]
+      = result.timing.uniqueEdgeMarkKernelNs;
+  state.counters["sparse_block_kernel_ns"] = result.timing.sparseBlockKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseGraphUniqueAssemblyCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

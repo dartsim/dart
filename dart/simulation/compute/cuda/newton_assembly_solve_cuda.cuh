@@ -111,6 +111,7 @@ struct NewtonSceneSparseGraphAssemblyTiming
   double hostToDeviceNs = 0.0;
   double incidenceKernelNs = 0.0;
   double diagonalKernelNs = 0.0;
+  double uniqueEdgeMarkKernelNs = 0.0;
   double sparseBlockKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
@@ -217,6 +218,26 @@ struct NewtonSceneSparseGraphAssemblyResult
   std::vector<NewtonSparseBlockEntry> blocks;
   std::size_t nodeCount = 0;
   std::size_t triangleCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  NewtonSceneSparseGraphAssemblyTiming timing;
+};
+
+struct NewtonSceneSparseGraphUniqueAssemblyResult
+{
+  std::vector<NewtonAssemblySolveRowInput> rows;
+  std::vector<NewtonSparseBlockEntry> blocks;
+  std::size_t nodeCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t edgeSlotCount = 0;
+  std::size_t uniqueEdgeCount = 0;
+  std::size_t duplicateEdgeSlotCount = 0;
   std::size_t rowCount = 0;
   std::size_t bodyCount = 0;
   std::size_t dofCount = 0;
@@ -442,6 +463,19 @@ void evaluateNewtonSceneSparseGraphAssemblyCuda(
     const std::vector<NewtonSceneNodeInput>& nodes,
     const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
     NewtonSceneSparseGraphAssemblyResult& result);
+
+/// Evaluate a private reduced scene sparse graph deduplication packet.
+///
+/// The packet consumes scene-owned node state and surface triangles, counts
+/// triangle incidence, marks canonical surface-edge keys, and emits one 6x6
+/// sparse block for each unique canonical surface edge. It intentionally does
+/// not cover production sparse graph ownership, global sparse factorization,
+/// nonlinear equality constraints, runtime World::step integration, or a
+/// public GPU solver backend.
+void evaluateNewtonSceneSparseGraphUniqueAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
+    NewtonSceneSparseGraphUniqueAssemblyResult& result);
 
 /// Evaluate a private reduced scene nonlinear equality assembly packet.
 ///

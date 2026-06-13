@@ -2,6 +2,50 @@
 
 ## Current Status
 
+Latest scene-owned sparse graph edge-dedup checkpoint (2026-06-13): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned sparse graph unique-edge assembly row. The benchmark builds the same
+DART `World` deformable surface used by the existing scene-owned sparse graph
+packet, appends one reversed duplicate surface triangle for deterministic
+deduplication evidence, marks canonical surface-edge keys on GPU, and emits one
+6x6 sparse block per unique canonical scene edge in deterministic order. This is
+reduced packet evidence only; it does not prove full production sparse Hessian
+graph construction/assembly, unbounded production direct/global sparse
+factorization, production nonlinear equality convergence policy/solving, GPU
+`World::step` assembly/solve integration, or a top-level speedup claim.
+
+Fresh packet evidence records a scene sparse graph unique-edge row with
+`scene_node_count=2560`, `scene_triangle_count=769`, `edge_slot_count=2307`,
+`unique_edge_count=2304`, `duplicate_edge_slot_count=3`, `block_count=2304`,
+`block_entry_count=82944`, `max_result_abs_error=4.440892098500626e-16`,
+`max_diagonal=3.8525`, `max_gradient_abs=7.6674999999999995`,
+`max_block_abs=0.0014150000000000002`, and
+`speedup=0.0010437835446294721x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records `max_result_abs_error=3.637978807091713e-11`,
+`residual_norm=3.70262388185975e-13`, and
+`speedup=0.0010437835446294721x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda bash -lc 'build/cuda/cpp/Release/bin/test_newton_assembly_solve_cuda --gtest_filter=NewtonAssemblySolveCuda.MatchesCpuSceneSparseGraphAssembly:NewtonAssemblySolveCuda.MatchesCpuSceneSparseGraphUniqueAssembly:NewtonAssemblySolveCuda.RejectsInvalidSceneSparseGraphInputs'`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+
 Latest scene-derived bounded direct sparse factor solve checkpoint (2026-06-13):
 work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
 #2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
@@ -1241,13 +1285,14 @@ storage, or backend resources as public API.
    first, check hosted #2978 CI/review state for actionable failures, then
    continue runtime scene filtering, speedup-gate work, downstream
    additional primitive-family/runtime contact evidence, runtime sparse
-   Hessian assembly, direct/global sparse factorization, or analytic/runtime
-   CCD line-search evidence on the same PR.
+   Hessian graph construction/assembly beyond the reduced dedup row,
+   direct/global sparse factorization, or analytic/runtime CCD line-search
+   evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
-   direct/global sparse factorization, and global Newton solving have concrete
-   evidence.
+   Hessian graph construction/assembly, direct/global sparse factorization,
+   and global Newton solving have concrete evidence.
 3. Use the reduced ABD runtime-step, ABD/FEM coupled micro-solve, and GPU
    contact-stencil packets only as internal runtime evidence; broader ABD CPU
    packets still require scene-level runtime residuals, scene assets, full
