@@ -38,6 +38,12 @@ def _benchmark_packet(**overrides):
         "final_equality_residual_norm": 1e-10,
         "traveler_height_m": 0.81,
         "max_board_sag_m": 0.01,
+        "external_surface_ccd_sidecar_scene_count": 1,
+        "deformable_sidecar_body_count": 3,
+        "deformable_sidecar_node_count": 31,
+        "deformable_sidecar_edge_count": 68,
+        "deformable_sidecar_surface_triangle_count": 32,
+        **_external_surface_ccd_sidecar_counters(),
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -92,7 +98,7 @@ def _surface_contact_counters() -> dict[str, object]:
     }
 
 
-def _abd_fem_surface_contact_counters() -> dict[str, object]:
+def _external_surface_ccd_sidecar_counters() -> dict[str, object]:
     counters = _surface_contact_counters()
     counters.update(
         {
@@ -137,6 +143,10 @@ def _abd_fem_surface_contact_counters() -> dict[str, object]:
         }
     )
     return counters
+
+
+def _abd_fem_surface_contact_counters() -> dict[str, object]:
+    return _external_surface_ccd_sidecar_counters()
 
 
 def _nunchaku_packet(**overrides):
@@ -734,6 +744,34 @@ def test_plan083_cpu_scene_packet_accepts_reduced_hanging_bridge() -> None:
     assert row["fixed_joint_count"] == 4
     assert row["active_articulation_constraints"] == 12
     assert row["wall_time_ns"] == 2.0e6
+    assert (
+        row["runtime_path"]
+        == "rigid IPC World::step plus deformable IPC World::step external surface CCD sidecar"
+    )
+    assert row["external_surface_ccd_sidecar_scene_count"] == 1
+    assert row["inter_body_surface_contact_ccd_hits"] == 33
+    assert row["static_rigid_surface_ccd_hits"] == 34
+    assert row["moving_rigid_surface_ccd_hits"] == 1
+
+
+def test_plan083_cpu_scene_packet_rejects_hanging_bridge_without_sidecar() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _benchmark_packet(external_surface_ccd_sidecar_scene_count=0),
+            max_equality_residual=1e-8,
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_hanging_bridge_without_external_ccd() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _benchmark_packet(inter_body_surface_contact_ccd_hits=0),
+            max_equality_residual=1e-8,
+        )
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_nunchaku() -> None:

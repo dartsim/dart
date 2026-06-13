@@ -1601,34 +1601,52 @@ struct AbdChainNetFixture
 
 } // namespace
 
+void recordDeformableRuntimeContactCounters(
+    benchmark::State& state,
+    const sx::DeformableSolverDiagnostics& diagnostics);
+
 //==============================================================================
 static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
     benchmark::State& state)
 {
-  HangingBridgeFixture fixture;
+  HangingBridgeFixture bridgeFixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
-    fixture.reset();
+    bridgeFixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
     state.ResumeTiming();
 
-    fixture.world.step(executor, pipeline);
+    bridgeFixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 2u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
-    benchmark::DoNotOptimize(fixture.traveler->getTranslation().data());
+    benchmark::DoNotOptimize(bridgeFixture.traveler->getTranslation().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -1638,7 +1656,7 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["dynamic_body_count"]
       = static_cast<double>(lastStats.dynamicBodyCount);
   state.counters["fixed_joint_count"]
-      = static_cast<double>(fixture.boards.size());
+      = static_cast<double>(bridgeFixture.boards.size());
   state.counters["active_articulation_constraints"]
       = static_cast<double>(lastStats.activeArticulationConstraints);
   state.counters["solver_iterations"]
@@ -1646,8 +1664,21 @@ static void BM_Plan083CpuScene_hanging_bridge_reduced_world_step(
   state.counters["failed_steps"] = static_cast<double>(failedSteps);
   state.counters["final_equality_residual_norm"]
       = lastStats.finalEqualityResidualNorm;
-  state.counters["traveler_height_m"] = fixture.traveler->getTranslation().z();
-  state.counters["max_board_sag_m"] = fixture.maxBoardSag();
+  state.counters["traveler_height_m"]
+      = bridgeFixture.traveler->getTranslation().z();
+  state.counters["max_board_sag_m"] = bridgeFixture.maxBoardSag();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_hanging_bridge_reduced_world_step)
     ->Unit(benchmark::kMillisecond);

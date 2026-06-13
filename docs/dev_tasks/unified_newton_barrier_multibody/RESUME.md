@@ -2,6 +2,46 @@
 
 ## Current Reality (2026-06-13)
 
+Latest hanging-bridge external surface CCD sidecar CPU packet checkpoint
+(2026-06-13): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint upgrades the reduced `unb-fig-02` hanging-bridge CPU benchmark
+row from a rigid-only runtime smoke packet to a rigid IPC `World::step` bridge
+step plus a deformable IPC `World::step` external surface CCD sidecar. The
+bridge row still validates 7 rigid bodies, 5 dynamic bodies, 4 point-connection
+joints, and 12 active articulation constraints, while
+`scripts/write_plan083_cpu_scene_packet.py` now requires a 3-body/31-node
+external CCD sidecar with positive inter-body, static-rigid, and moving-rigid
+surface CCD witness counters for `scene=hanging_bridge`. The latest median
+packet records 68 self-surface candidate builds, 660 point-triangle CCD checks,
+1,224 edge-edge CCD checks, 67 inter-body candidate builds, 33 inter-body hits
+and one limited step, 35 static-rigid candidate builds, 68 point-triangle
+checks, 102 edge-edge checks, 34 static-rigid hits and one limited step, plus
+3 moving-rigid candidate builds, 2 point-triangle checks, 41 edge-edge checks,
+1 moving-rigid hit, and one limited step with `failed_steps=0`.
+
+This is still a reduced rigid bridge smoke packet plus sidecar evidence only.
+It does not prove bridge-owned deformable contact, 10 elastic rods, 40 rigid
+boards, codimensional paper-scale coupling, accepted Table 2 counts, production
+runtime scene filtering, analytic curved CCD, GPU `World::step`, accepted
+reference timings, or any speedup gate.
+
+Current validation passed:
+
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run bm-plan083-cpu-hanging-bridge-packet`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py tests/test_plan083_cpu_scene_corpus.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-all`
+
 Latest ABD/FEM external surface CCD sidecar CPU packet checkpoint
 (2026-06-13): work continued locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining

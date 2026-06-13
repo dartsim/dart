@@ -1800,6 +1800,52 @@ def _make_hanging_bridge_packet(
         raise Plan083CpuScenePacketError(
             "expected fixed-joint articulation rows for the reduced bridge"
         )
+    external_sidecar_scene_count = int(
+        _finite_number(row, "external_surface_ccd_sidecar_scene_count")
+    )
+    deformable_sidecar_body_count = int(
+        _finite_number(row, "deformable_sidecar_body_count")
+    )
+    deformable_sidecar_node_count = int(
+        _finite_number(row, "deformable_sidecar_node_count")
+    )
+    deformable_sidecar_edge_count = int(
+        _finite_number(row, "deformable_sidecar_edge_count")
+    )
+    deformable_sidecar_surface_triangle_count = int(
+        _finite_number(row, "deformable_sidecar_surface_triangle_count")
+    )
+    if external_sidecar_scene_count != 1:
+        raise Plan083CpuScenePacketError(
+            "reduced hanging-bridge packet needs one external surface CCD sidecar"
+        )
+    if deformable_sidecar_body_count != 3:
+        raise Plan083CpuScenePacketError(
+            "expected reduced hanging-bridge external surface CCD sidecar to "
+            f"step 3 deformable bodies, got {deformable_sidecar_body_count}"
+        )
+    if deformable_sidecar_node_count != 31:
+        raise Plan083CpuScenePacketError(
+            "expected reduced hanging-bridge external surface CCD sidecar to "
+            f"step 31 deformable nodes, got {deformable_sidecar_node_count}"
+        )
+    if deformable_sidecar_edge_count < 68:
+        raise Plan083CpuScenePacketError(
+            "expected reduced hanging-bridge external surface CCD sidecar to "
+            "include structural and shear spring edges"
+        )
+    if deformable_sidecar_surface_triangle_count != 32:
+        raise Plan083CpuScenePacketError(
+            "expected reduced hanging-bridge external surface CCD sidecar to "
+            "carry 32 surface triangles"
+        )
+    counters = _surface_contact_runtime_counters(row)
+    for key in EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS:
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced hanging-bridge packet needs positive external surface "
+                f"CCD sidecar counter {key}"
+            )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -1807,7 +1853,10 @@ def _make_hanging_bridge_packet(
             "scene_id": "plan083_hanging_bridge",
             "benchmark_row": _packet_row_name(row),
             "paper_scale": False,
-            "runtime_path": "rigid IPC World::step",
+            "runtime_path": (
+                "rigid IPC World::step plus deformable IPC World::step "
+                "external surface CCD sidecar"
+            ),
             "step_count": 1,
             "wall_time_ns": timing_ns,
             "body_count": body_count,
@@ -1818,9 +1867,19 @@ def _make_hanging_bridge_packet(
             "max_equality_residual": max_equality_residual,
             "traveler_height_m": _finite_number(row, "traveler_height_m"),
             "max_board_sag_m": _finite_number(row, "max_board_sag_m"),
+            "external_surface_ccd_sidecar_scene_count": external_sidecar_scene_count,
+            "deformable_sidecar_body_count": deformable_sidecar_body_count,
+            "deformable_sidecar_node_count": deformable_sidecar_node_count,
+            "deformable_sidecar_edge_count": deformable_sidecar_edge_count,
+            "deformable_sidecar_surface_triangle_count": (
+                deformable_sidecar_surface_triangle_count
+            ),
+            **counters,
             "limitation_status": (
-                "Reduced runtime smoke packet only; paper-scale rods, "
-                "codimensional deformables, and full Table 2 counts remain planned."
+                "Reduced rigid runtime smoke packet plus external surface CCD "
+                "sidecar only; paper-scale rods, codimensional deformables, "
+                "bridge-owned deformable contact, and full Table 2 counts "
+                "remain planned."
             ),
         },
         "benchmarks": rows,
