@@ -129,6 +129,23 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   bytes untouched. Gates: `pixi run lint`, `pixi run check-docs-policy`,
   `pixi run check-avbd-packets`, and
   `pixi run python -m pytest tests/test_check_avbd_packets.py` green.
+  Writer-migration scope: per packet Scope (b) ("do not sweep all writer
+  scripts here"), this packet establishes the shared schema contract
+  (`scripts/avbd_packet_schema.py`), the enforcing checker, and the relabel
+  only. The `scripts/write_avbd_*_packet.py` scripts still emit
+  `schema_version: 1` and do not yet import the shared schema module or write
+  `resolved_solver_identity`; the 48 committed v1 packets stay valid through
+  the checker's legacy allowlist. Wiring the writer family to emit schema
+  version 2 with a machine-captured identity (which requires running each
+  scene under instrumentation and regenerating its packet bytes) is deferred
+  follow-up work, not done here — track it as a follow-up packet before the
+  next AVBD evidence refresh; until then, the contract binds new packet files
+  via the checker rather than via the writers. Acceptance status: implemented
+  by this session with the focused gates above green; per
+  `docs/ai/orchestration.md` the implementing session does not self-approve,
+  so the packet stays `[claimed]` awaiting an independent/maintainer
+  acceptance pass (a critic subagent self-review run this session found no
+  blocking issues but is not the independent acceptance check).
 
 #### WP-091.2 Golden trajectories for the default step
 

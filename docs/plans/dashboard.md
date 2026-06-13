@@ -22,11 +22,20 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Execute all five WS0 evidence-integrity packets first, in plan
-  document order (WP-091.1 solver-identity recording and AVBD relabel,
-  WP-091.2 golden trajectories, WP-091.3 architecture-claim lint, WP-091.4
-  legacy freeze, WP-091.5 plan-ID renumber), then open WS1 with WP-091.10
-  (virtual finalize/prepare on the stage contract). Packets are
+- Next step: WP-091.1 (solver-identity recording and AVBD relabel) is
+  `[claimed]` — implemented and awaiting an independent/maintainer acceptance
+  pass. The AVBD packet family now has a shared schema contract that
+  machine-records resolved solver identity at schema version 2, enforced for
+  new packet files by `pixi run check-avbd-packets` in the `check-lint`
+  aggregate, and the six mirrored contact-scene claim sites are relabeled;
+  writer-script migration to emit the new field is a recorded follow-up (see
+  the packet Evidence bullet). After WP-091.1 is accepted, execute the
+  remaining four WS0 evidence-integrity packets in plan document order:
+  WP-091.2 golden trajectories (next; behavior-lock guardrail that hard-gates
+  the refactor-heavy packets), WP-091.3 architecture-claim lint, WP-091.4
+  legacy freeze (blocked on maintainer Decision 5 direction), WP-091.5
+  plan-ID renumber. Then open WS1 with WP-091.10 (virtual finalize/prepare on
+  the stage contract). Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
   and picked up via `dart-execute-packet`; availability follows each packet's
   own Dependencies line. The standing rule applies now: new solver-family
