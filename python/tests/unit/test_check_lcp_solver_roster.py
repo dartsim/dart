@@ -660,6 +660,45 @@ def test_lcp_solver_roster_rejects_stale_requirement_benchmark_packet(
         module.check_demo_representative_requirements()
 
 
+def test_lcp_solver_roster_reads_demo_standalone_smoke_metadata() -> None:
+    module = _load_module()
+
+    metadata = module.parse_demo_standalone_smoke_metadata()
+
+    assert metadata["_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY"] is True
+    assert metadata["_STANDALONE_SMOKE_EXPECTED"] == (1.0, 0.5, 2.0)
+    assert metadata["_STANDALONE_SUCCESS_STATUSES"] == {"Success", "MaxIterations"}
+    module.check_demo_standalone_smoke_metadata()
+
+
+def test_lcp_solver_roster_rejects_stale_standalone_smoke_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_metadata = {
+        "_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY": False,
+        "_STANDALONE_SMOKE_EXPECTED": (1.0, 0.5, 3.0),
+        "_STANDALONE_SUCCESS_STATUSES": {"Failure", "Success"},
+    }
+    monkeypatch.setattr(
+        module,
+        "parse_demo_standalone_smoke_metadata",
+        lambda: stale_metadata,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="standalone smoke metadata is out of sync",
+    ) as exc_info:
+        module.check_demo_standalone_smoke_metadata()
+
+    message = str(exc_info.value)
+    assert "_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY must be True" in message
+    assert "_STANDALONE_SMOKE_EXPECTED is stale" in message
+    assert "_STANDALONE_SUCCESS_STATUSES is stale" in message
+    assert "Failure" in message
+
+
 def test_lcp_solver_roster_reads_demo_solver_guidance_links() -> None:
     module = _load_module()
     manifest = module.parse_cpp_manifest()

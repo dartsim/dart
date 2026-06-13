@@ -229,6 +229,8 @@ def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
             else:
                 values.append(_evaluate_demo_expression(element, env))
         return values
+    if isinstance(node, ast.Set):
+        return {_evaluate_demo_expression(element, env) for element in node.elts}
     if isinstance(node, ast.Dict):
         return {
             _evaluate_demo_expression(key, env): _evaluate_demo_expression(value, env)
@@ -254,6 +256,16 @@ def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
         ):
             rows = _evaluate_demo_expression(node.args[0], env)
             return _demo_benchmark_filter_union(rows)
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "np"
+        and node.func.attr == "array"
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return tuple(_evaluate_demo_expression(node.args[0], env))
     if (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
@@ -495,6 +507,46 @@ def parse_demo_performance_profile_rows() -> list[dict[str, str]]:
         env,
     )
     return list(rows)
+
+
+def parse_demo_standalone_smoke_metadata() -> dict[str, Any]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    targets = {
+        "_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY",
+        "_STANDALONE_SMOKE_EXPECTED",
+        "_STANDALONE_SUCCESS_STATUSES",
+    }
+    env: dict[str, Any] = {}
+    for node in module.body:
+        target_name: str | None = None
+        value: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            target_names = [
+                target.id
+                for target in node.targets
+                if isinstance(target, ast.Name) and target.id in targets
+            ]
+            if target_names:
+                target_name = target_names[0]
+                value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id in targets
+            and node.value is not None
+        ):
+            target_name = node.target.id
+            value = node.value
+
+        if target_name is not None and value is not None:
+            env[target_name] = _evaluate_demo_expression(value, env)
+
+    missing = sorted(targets - set(env))
+    if missing:
+        raise AssertionError(
+            f"{LCP_DEMO_PATH} is missing standalone smoke assignments: {missing}"
+        )
+    return env
 
 
 def parse_demo_standalone_problem_suite_label() -> str:
@@ -814,6 +866,47 @@ def check_demo_representative_requirements() -> None:
     if errors:
         raise AssertionError(
             "lcp_physics representative requirement rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
+def check_demo_standalone_smoke_metadata() -> None:
+    metadata = parse_demo_standalone_smoke_metadata()
+    expected_solution = (1.0, 0.5, 2.0)
+    expected_statuses = {"Success", "MaxIterations"}
+
+    errors: list[str] = []
+    if metadata["_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY"] is not True:
+        errors.append("_STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY must be True")
+
+    try:
+        smoke_expected = tuple(
+            float(value) for value in metadata["_STANDALONE_SMOKE_EXPECTED"]
+        )
+    except (TypeError, ValueError):
+        smoke_expected = ()
+    if smoke_expected != expected_solution:
+        errors.append(
+            "_STANDALONE_SMOKE_EXPECTED is stale: expected "
+            f"{expected_solution}, got {smoke_expected}"
+        )
+    elif any(not math.isfinite(value) for value in smoke_expected):
+        errors.append("_STANDALONE_SMOKE_EXPECTED contains non-finite values")
+
+    raw_statuses = metadata["_STANDALONE_SUCCESS_STATUSES"]
+    if isinstance(raw_statuses, (set, list, tuple)):
+        statuses = {str(status) for status in raw_statuses}
+    else:
+        statuses = {str(raw_statuses)}
+    if statuses != expected_statuses:
+        errors.append(
+            "_STANDALONE_SUCCESS_STATUSES is stale: expected "
+            f"{sorted(expected_statuses)}, got {sorted(statuses)}"
+        )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics standalone smoke metadata is out of sync:\n  - "
             + "\n  - ".join(errors)
         )
 
@@ -1797,6 +1890,7 @@ def check_roster() -> None:
     check_demo_benchmark_filters()
     check_demo_live_packets()
     check_demo_representative_requirements()
+    check_demo_standalone_smoke_metadata()
     check_demo_standalone_problem_cases()
     check_demo_solver_guidance(manifest)
     check_demo_advanced_solver_parameters(manifest)
