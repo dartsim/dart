@@ -1,9 +1,77 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality - 2026-06-12 Python Demo Profile Support Validation
+## Current Reality - 2026-06-12 Python Demo Profile Numeric Validation
 
 This is the latest hand-off. Older sections below are historical checkpoints
 and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `761f4f967a6 Validate LCP demo profile support flags`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   Python demo numeric guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `761f4f967a6 Validate LCP demo profile support flags`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by eight commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` validates the numeric profile
+  evidence fields consumed by the LCP demo summary before displaying them.
+- The rejected cases now include invalid problem size, dimension, contact
+  count, timing, contract, iteration, residual, complementarity, and bound
+  violation rows, including FrictionIndex dimension/contact mismatches and
+  non-finite metrics.
+- `python/tests/unit/test_py_demo_panels.py` covers invalid numeric evidence
+  rows alongside the category, identity, support, and problem-type guards.
+- No checked profile CSVs, benchmark registrations, solver predicates, public
+  APIs, or performance timings were intentionally changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_non_native_evidence_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_support_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_invalid_numeric_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q
+```
+
+Result:
+
+- Focused py-demo panel tests: 24 tests passed.
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused py-demo panel tests, `pixi run lint`, and `git diff --check`, then
+commit the focused demo/test/docs change. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
+## Current Reality - 2026-06-12 Python Demo Profile Support Validation
+
+Historical checkpoint section. It was the latest hand-off before the Python
+demo profile numeric validation continuation.
 
 Fresh AI session start here:
 

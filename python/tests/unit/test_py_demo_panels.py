@@ -974,6 +974,74 @@ def test_lcp_physics_profile_summary_rejects_stale_support_rows(
         lcp_physics._performance_profile_evidence_summary_rows()
 
 
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"problem_size": "0"},
+            "Standard/Dantzig has problem_size='0'",
+        ),
+        (
+            {"lcp_dimension": "11"},
+            "Standard/Dantzig has lcp_dimension=11; expected 12",
+        ),
+        (
+            {"contact_count": "-1"},
+            "Standard/Dantzig has contact_count='-1'",
+        ),
+        (
+            {
+                "category": "FrictionIndex",
+                "problem_size": "4",
+                "lcp_dimension": "12",
+                "contact_count": "3",
+                "problem_type_standard": "0",
+                "problem_type_friction_index": "1",
+            },
+            "FrictionIndex/Dantzig has contact_count=3; expected 4",
+        ),
+        (
+            {"time_ns": "0"},
+            "Standard/Dantzig has time_ns='0'",
+        ),
+        (
+            {"contract_ok": "0"},
+            "Standard/Dantzig has contract_ok='0'",
+        ),
+        (
+            {"iterations": "-1"},
+            "Standard/Dantzig has iterations='-1'",
+        ),
+        (
+            {"residual": "nan"},
+            "Standard/Dantzig has residual='nan'",
+        ),
+        (
+            {"complementarity": "-1"},
+            "Standard/Dantzig has complementarity='-1'",
+        ),
+        (
+            {"bound_violation": "inf"},
+            "Standard/Dantzig has bound_violation='inf'",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_invalid_numeric_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     _require_simulation_symbols("World", "ContactSolverMethod")
 

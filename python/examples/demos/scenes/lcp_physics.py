@@ -426,14 +426,63 @@ def _as_int_counter(row: dict[str, str], name: str) -> int | None:
     value = row.get(name, "")
     if not value:
         return None
-    return int(float(value))
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return int(numeric)
+
+
+def _as_finite_float_counter(row: dict[str, str], name: str) -> float | None:
+    value = row.get(name, "")
+    if not value:
+        return None
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return numeric
 
 
 def _as_float_counter(row: dict[str, str], name: str) -> float:
-    value = row.get(name, "")
-    if not value:
+    value = _as_finite_float_counter(row, name)
+    if value is None:
         return 0.0
-    return float(value)
+    return value
+
+
+def _validate_positive_evidence_int(
+    row: dict[str, str],
+    surface: str,
+    solver: str,
+    field: str,
+) -> int:
+    value = _as_int_counter(row, field)
+    if value is None or value <= 0:
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has {field}={row.get(field, '')!r}"
+        )
+    return value
+
+
+def _validate_finite_nonnegative_evidence_float(
+    row: dict[str, str],
+    surface: str,
+    solver: str,
+    field: str,
+) -> float:
+    value = _as_finite_float_counter(row, field)
+    if value is None or value < 0.0:
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has {field}={row.get(field, '')!r}"
+        )
+    return value
 
 
 def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
@@ -534,6 +583,62 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
             "mismatched LCP performance profile evidence row: "
             f"{surface}/{solver} problem type counters are not one-hot"
         )
+    problem_size = _validate_positive_evidence_int(
+        row, surface, solver, "problem_size"
+    )
+    lcp_dimension = _validate_positive_evidence_int(
+        row, surface, solver, "lcp_dimension"
+    )
+    if surface == "FrictionIndex":
+        expected_dimension = 3 * problem_size
+        if lcp_dimension != expected_dimension:
+            raise RuntimeError(
+                "mismatched LCP performance profile evidence row: "
+                f"{surface}/{solver} has lcp_dimension={lcp_dimension}; "
+                f"expected {expected_dimension}"
+            )
+    elif lcp_dimension != problem_size:
+        raise RuntimeError(
+            "mismatched LCP performance profile evidence row: "
+            f"{surface}/{solver} has lcp_dimension={lcp_dimension}; "
+            f"expected {problem_size}"
+        )
+    contact_count = _as_int_counter(row, "contact_count")
+    if surface == "FrictionIndex":
+        if contact_count != problem_size:
+            raise RuntimeError(
+                "mismatched LCP performance profile evidence row: "
+                f"{surface}/{solver} has contact_count={contact_count}; "
+                f"expected {problem_size}"
+            )
+    elif row.get("contact_count", "") and (
+        contact_count is None or contact_count < 0
+    ):
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has contact_count="
+            f"{row.get('contact_count', '')!r}"
+        )
+    time_ns = _as_finite_float_counter(row, "time_ns")
+    if time_ns is None or time_ns <= 0.0:
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has time_ns={row.get('time_ns', '')!r}"
+        )
+    contract_ok = _as_int_counter(row, "contract_ok")
+    if contract_ok != 1:
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has contract_ok={row.get('contract_ok', '')!r}"
+        )
+    iterations = _as_int_counter(row, "iterations")
+    if iterations is None or iterations < 0:
+        raise RuntimeError(
+            "invalid LCP performance profile evidence row: "
+            f"{surface}/{solver} has iterations={row.get('iterations', '')!r}"
+        )
+    for metric in ("residual", "complementarity", "bound_violation"):
+        _validate_finite_nonnegative_evidence_float(row, surface, solver, metric)
 
 
 def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
