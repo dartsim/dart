@@ -360,6 +360,7 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "planned_operational_space_control",
         "planned_collision_sandbox",
         "planned_mobile_manipulation",
+        "gui_fidelity_debug_visuals",
         "plan083_abd_complex_geometry",
         "plan083_abd_fem_coupling",
         "diff_throw_to_target",
