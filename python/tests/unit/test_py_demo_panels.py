@@ -720,35 +720,6 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "checkbox:Enable external force" in builder.events
 
 
-_LCP_PROFILE_EVIDENCE_COLUMNS = (
-    "category",
-    "solver",
-    "problem_size",
-    "lcp_dimension",
-    "contact_count",
-    "solver_identity_schema_version",
-    "solver_manifest_index",
-    "solver_family_pivoting",
-    "solver_family_projection",
-    "solver_family_newton",
-    "solver_family_other",
-    "time_ns",
-    "contract_ok",
-    "iterations",
-    "residual",
-    "complementarity",
-    "bound_violation",
-    "solver_supports_standard",
-    "solver_supports_boxed",
-    "solver_supports_friction_index",
-    "solver_supports_problem",
-    "problem_type_standard",
-    "problem_type_boxed",
-    "problem_type_friction_index",
-    "problem_type_invalid",
-)
-
-
 def _write_lcp_profile_evidence(
     evidence_path, columns: tuple[str, ...] | None = None, **overrides: str
 ) -> None:
@@ -780,7 +751,9 @@ def _write_lcp_profile_evidence(
         "problem_type_invalid": "0",
     }
     row.update(overrides)
-    output_columns = columns or _LCP_PROFILE_EVIDENCE_COLUMNS
+    output_columns = (
+        columns or lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+    )
     evidence_path.write_text(
         ",".join(output_columns)
         + "\n"
@@ -1054,7 +1027,7 @@ def test_lcp_physics_profile_summary_rejects_missing_evidence_columns(
         evidence_path,
         columns=tuple(
             column
-            for column in _LCP_PROFILE_EVIDENCE_COLUMNS
+            for column in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
             if column != "time_ns"
         ),
     )
@@ -1075,7 +1048,8 @@ def test_lcp_physics_profile_summary_rejects_empty_evidence_file(
 ) -> None:
     evidence_path = tmp_path / "performance_profile_evidence.csv"
     evidence_path.write_text(
-        ",".join(_LCP_PROFILE_EVIDENCE_COLUMNS) + "\n",
+        ",".join(lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS)
+        + "\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(

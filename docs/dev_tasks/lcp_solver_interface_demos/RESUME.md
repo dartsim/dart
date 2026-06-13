@@ -1,5 +1,76 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Demo Test Schema Reuse
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `a948e32d42e Guard LCP demo profile schema`; if this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   test-schema reuse does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `a948e32d42e Guard LCP demo profile schema`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixteen commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/tests/unit/test_py_demo_panels.py` no longer duplicates the LCP
+  performance-profile evidence required-column tuple for test fixtures.
+- The panel-test evidence writer and missing/empty-column checks now use
+  `lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS`, matching the
+  demo runtime validator and roster-guarded schema source.
+- No checked profile CSVs, benchmark registrations, solver predicates, demo
+  runtime behavior, public APIs, or performance timings were intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_non_native_evidence_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_support_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_invalid_numeric_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_missing_evidence_columns python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_empty_evidence_file python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_missing_evidence_surfaces python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- Focused LCP demo panel tests: 27 tests passed.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused panel tests, `scripts/check_lcp_solver_roster.py`, `pixi run lint`,
+and `git diff --check`, then commit the focused test/docs change. Then continue
+the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Demo Profile Schema Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
