@@ -391,6 +391,11 @@ _PROFILE_CATEGORY_SUPPORT_FIELDS = {
     "Boxed": "solver_supports_boxed",
     "FrictionIndex": "solver_supports_friction_index",
 }
+_PROFILE_SOLVER_SUPPORT_FIELDS = {
+    "solver_supports_standard": "standard",
+    "solver_supports_boxed": "boxed",
+    "solver_supports_friction_index": "findex",
+}
 _PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS = {
     "Standard": "problem_type_standard",
     "Boxed": "problem_type_boxed",
@@ -441,7 +446,9 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
             "unknown LCP performance profile evidence category: "
             f"{surface!r}"
         )
-    solver_support_rows_by_name = {row["name"]: row for row in _SOLVER_SUPPORT_ROWS}
+    solver_support_rows_by_name = {
+        support_row["name"]: support_row for support_row in _SOLVER_SUPPORT_ROWS
+    }
     solver_support_row = solver_support_rows_by_name.get(solver)
     if solver_support_row is None:
         raise RuntimeError(
@@ -449,7 +456,8 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
             f"{solver!r}"
         )
     solver_manifest_index_by_name = {
-        row["name"]: index for index, row in enumerate(_SOLVER_SUPPORT_ROWS, start=1)
+        support_row["name"]: index
+        for index, support_row in enumerate(_SOLVER_SUPPORT_ROWS, start=1)
     }
     identity_version = _as_int_counter(row, "solver_identity_schema_version")
     if identity_version != _SOLVER_IDENTITY_SCHEMA_VERSION:
@@ -492,6 +500,14 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
             "mismatched LCP performance profile evidence row: "
             f"{surface}/{solver} solver family counters are not one-hot"
         )
+    for field, solver_support_key in _PROFILE_SOLVER_SUPPORT_FIELDS.items():
+        value = _as_int_counter(row, field)
+        expected = 1 if solver_support_row[solver_support_key] else 0
+        if value != expected:
+            raise RuntimeError(
+                "mismatched LCP performance profile evidence row: "
+                f"{surface}/{solver} has {field}={value}; expected {expected}"
+            )
     if _as_int_counter(row, support_field) != 1:
         raise RuntimeError(
             "non-native LCP performance profile evidence row: "

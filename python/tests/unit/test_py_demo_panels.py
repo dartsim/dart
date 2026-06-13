@@ -788,24 +788,40 @@ def _write_lcp_profile_evidence(evidence_path, **overrides: str) -> None:
 
 
 @pytest.mark.parametrize(
-    ("solver_supports_boxed", "solver_supports_problem", "expected_error"),
+    (
+        "solver",
+        "solver_manifest_index",
+        "solver_supports_boxed",
+        "solver_supports_friction_index",
+        "solver_supports_problem",
+        "expected_error",
+    ),
     [
         (
+            "Lemke",
+            "2",
+            "0",
             "0",
             "0",
             "non-native LCP performance profile evidence row: Boxed/Lemke",
         ),
         (
+            "Dantzig",
+            "1",
+            "1",
             "1",
             "0",
-            "unsupported LCP performance profile evidence row: Boxed/Lemke",
+            "unsupported LCP performance profile evidence row: Boxed/Dantzig",
         ),
     ],
 )
 def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
+    solver: str,
+    solver_manifest_index: str,
     solver_supports_boxed: str,
+    solver_supports_friction_index: str,
     solver_supports_problem: str,
     expected_error: str,
 ) -> None:
@@ -813,9 +829,10 @@ def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
     _write_lcp_profile_evidence(
         evidence_path,
         category="Boxed",
-        solver="Lemke",
-        solver_manifest_index="2",
+        solver=solver,
+        solver_manifest_index=solver_manifest_index,
         solver_supports_boxed=solver_supports_boxed,
+        solver_supports_friction_index=solver_supports_friction_index,
         solver_supports_problem=solver_supports_problem,
         problem_type_standard="0",
         problem_type_boxed="1",
@@ -908,6 +925,40 @@ def test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows(
     ],
 )
 def test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"solver_supports_standard": "0"},
+            "Standard/Dantzig has solver_supports_standard=0; expected 1",
+        ),
+        (
+            {"solver_supports_boxed": "0"},
+            "Standard/Dantzig has solver_supports_boxed=0; expected 1",
+        ),
+        (
+            {"solver_supports_friction_index": "0"},
+            "Standard/Dantzig has solver_supports_friction_index=0; "
+            "expected 1",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_stale_support_rows(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,
     overrides: dict[str, str],
