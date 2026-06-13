@@ -177,6 +177,7 @@ def parse_benchmark_name(name: str) -> tuple[str, str, int] | None:
 
 def parse_benchmark_results(data: dict) -> dict:
     results = defaultdict(lambda: defaultdict(dict))
+    observed_keys: set[tuple[str, str, int]] = set()
 
     for bm in data.get("benchmarks", []):
         if bm.get("run_type") == "aggregate":
@@ -186,6 +187,13 @@ def parse_benchmark_results(data: dict) -> dict:
         if parsed is None:
             continue
         category, solver_name, problem_size = parsed
+        result_key = (category, solver_name, problem_size)
+        if result_key in observed_keys:
+            raise RuntimeError(
+                "duplicate LCP performance profile benchmark row for "
+                f"{category}/{solver_name}/{problem_size}"
+            )
+        observed_keys.add(result_key)
 
         time_ns = bm.get("cpu_time", bm.get("real_time", 0))
         contract_ok = bm.get("contract_ok", 0)

@@ -70,6 +70,22 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
     assert row["problem_type_standard"] == 1.0
 
 
+def test_lcp_profile_parser_rejects_duplicate_result_keys() -> None:
+    module = _load_module()
+    benchmark = {
+        "name": "BM_LcpCompare/Standard/Dantzig/12",
+        "run_type": "iteration",
+        "cpu_time": 10.0,
+        "contract_ok": 1.0,
+    }
+
+    with pytest.raises(
+        RuntimeError,
+        match="duplicate LCP performance profile benchmark row for Standard/Dantzig/12",
+    ):
+        module.parse_benchmark_results({"benchmarks": [benchmark, benchmark]})
+
+
 def test_lcp_profile_coverage_rejects_current_schema_unsupported_rows() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
