@@ -59,8 +59,9 @@
     `review_index.html` contact sheet for scanning every screenshot, command,
     workflow phase, focus axis, user question, scope note, and metric summary
     from one page. Workflow manifests also include a selected-row phase
-    summary, and the review index shows a phase map for quick row-range review.
-    The in-viewer rigid workflow panel now shows each row's
+    summary, and the review index shows a phase map with per-phase status and
+    focus axes for quick row-range review. The in-viewer rigid workflow panel
+    now shows each row's
     capture command, and the rigid
     workflow search recognizes DART 7 user terminology such as
     `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and

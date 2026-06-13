@@ -210,8 +210,9 @@ tracks. The top-level manifest and review header record the exact workflow
 packet command that produced the artifact, so a reviewer can rerun the same
 selected packet. Workflow manifests also record `workflow_phase_summary`, and
 the review header shows a `Workflow Phase Map` with selected numbered row
-ranges, phase count, and scene ids so row-range packets remain readable at a
-glance. Successful scene captures also promote a machine-readable
+ranges, phase count, per-phase status, focus axes, and scene ids so row-range
+packets remain readable at a glance. Successful scene captures also promote a
+machine-readable
 `resolved_solver_identity` block from the latest scene metrics into the
 per-scene manifest; workflow manifests count those identities and list any
 captured row missing one, while the review cards show the resolved solver

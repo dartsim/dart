@@ -517,18 +517,34 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         {
             "phase": "1. Foundations: state, frames, and loads",
             "focus_axes": ["DART 7 World rigid-body baseline"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": 1,
             "row_count": 1,
             "row_span": "1",
             "rows": [1],
             "scenes": ["rigid_body"],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": 1,
+            },
         },
         {
             "phase": "4. Solver decision path",
             "focus_axes": ["rigid-body solver family"],
+            "captured_count": 0,
+            "failed_count": 0,
+            "planned_count": 1,
             "row_count": 1,
             "row_span": "2",
             "rows": [2],
             "scenes": ["rigid_solver_compare"],
+            "status_counts": {
+                "captured": 0,
+                "failed": 0,
+                "planned": 1,
+            },
         },
     ]
     assert pathlib.Path(manifest["artifacts"]["review_index"]).is_file()
@@ -580,10 +596,15 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "<strong>phases</strong> 2" in review_html
     assert "Workflow Phase Map" in review_html
     assert "<th>Rows</th><th>Phase</th><th>Count</th>" in review_html
+    assert "<th>Status</th><th>Focus axes</th><th>Selected scenes</th>" in review_html
     assert "<td>1</td><td>1. Foundations: state, frames, and loads</td>" in (
         review_html
     )
+    assert "<td>planned 1</td><td>DART 7 World rigid-body baseline</td>" in (
+        review_html
+    )
     assert "<td>2</td><td>4. Solver decision path</td>" in review_html
+    assert "<td>planned 1</td><td>rigid-body solver family</td>" in review_html
     assert "Rows Missing Guidance" not in review_html
     assert "Rows Missing Scene Metrics" not in review_html
     assert "1-2 / 2" in review_html
@@ -1199,6 +1220,20 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert manifest["scene_metrics_complete"] is True
     assert manifest["scene_metrics_count"] == len(specs)
     assert manifest["scene_metrics_missing_rows"] == []
+    assert manifest["workflow_phase_summary"][0]["focus_axes"] == [
+        "DART 7 World rigid-body baseline"
+    ]
+    assert manifest["workflow_phase_summary"][0]["status_counts"] == {
+        "captured": 1,
+        "failed": 0,
+        "planned": 0,
+    }
+    assert manifest["workflow_phase_summary"][1]["focus_axes"] == ["executor only"]
+    assert manifest["workflow_phase_summary"][1]["status_counts"] == {
+        "captured": 1,
+        "failed": 0,
+        "planned": 0,
+    }
     assert [capture["status"] for capture in manifest["captures"]] == [
         "captured",
         "captured",
@@ -1225,6 +1260,11 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert html.escape(manifest["command"]) in review_html
     assert review_html.count('alt="rigid_body screenshot"') == 1
     assert review_html.count('alt="rigid_executor_equivalence screenshot"') == 1
+    assert "Workflow Phase Map" in review_html
+    assert "<td>captured 1</td><td>DART 7 World rigid-body baseline</td>" in (
+        review_html
+    )
+    assert "<td>captured 1</td><td>executor only</td>" in review_html
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
     assert "test_axis" in review_html
     assert "Diagnostic gap (signal, markers)" in review_html

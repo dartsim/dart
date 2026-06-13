@@ -6,7 +6,7 @@ Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
 `6de636c2881 Merge remote-tracking branch 'origin/main' into feature/rigid-body-gui-visual-verification`
-and adds a local static-review phase-map follow-up. Fresh sessions should
+and includes static-review phase-map follow-ups. Fresh sessions should
 verify the exact local and remote state with `git status -sb` and
 `git log -5 --oneline`. There is still no PR for this branch. Do not push new
 commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
@@ -15,12 +15,14 @@ approval.
 
 Latest local continuation: workflow manifests now record
 `workflow_phase_summary` for selected numbered rows, and `review_index.html`
-shows a top-level `Workflow Phase Map` with row ranges, phase counts, and
-scene ids before the per-row cards. This makes full and row-range static
-review packets easier to scan after the phase/focus metadata export. Focused
-guard:
+shows a top-level `Workflow Phase Map` with row ranges, phase counts,
+per-phase status, focus axes, and scene ids before the per-row cards. This
+makes full and row-range static review packets easier to scan after the
+phase/focus metadata export. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
-reported `3 passed`. This local slice is not pushed yet.
+reported `3 passed`; the follow-up guard covering per-phase status and
+focus-axis display reported `4 passed`. This slice is included in the current
+branch history; verify remote state before resuming.
 
 Previous local continuation: numbered workflow captures now export
 `workflow_phase` and `focus_axis` into single-scene `workflow_guidance`,
@@ -33,7 +35,8 @@ reported `4 passed`. Dry-run evidence:
 reported `capture_count=1`, `workflow_total_count=36`, selected row 15,
 `workflow_label=Solver family`, `workflow_phase=4. Solver decision path`,
 `focus_axis=rigid-body solver family`, and review-card `<dt>phase</dt>` /
-`<dt>focus axis</dt>` entries. This local slice is not pushed yet.
+`<dt>focus axis</dt>` entries. This slice is included in the current branch
+history; verify remote state before resuming.
 
 Previous local continuation: every numbered `Rigid Workflow` row now exposes a
 front-door `Workflow phase` before the focus axis and try/inspect checklist.
@@ -47,7 +50,7 @@ single-token query ordering. Focused guard:
 reported `4 passed`; the broader panel/search/docs-order guard across workflow
 phase, focus-axis, capped search, existing aliases, deferred API routes,
 related evidence, and README sidecar order reported `17 passed`. This local
-slice is not pushed yet.
+slice is now represented in branch history.
 
 Latest pushed continuation: every numbered `Rigid Workflow` row now exposes a
 front-door `Focus axis` before the try/inspect checklist. The axis names the

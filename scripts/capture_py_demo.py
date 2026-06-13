@@ -2513,6 +2513,14 @@ def _workflow_phase_summary(
                 "row_span": "",
                 "scenes": [],
                 "focus_axes": [],
+                "status_counts": {
+                    "planned": 0,
+                    "captured": 0,
+                    "failed": 0,
+                },
+                "planned_count": 0,
+                "captured_count": 0,
+                "failed_count": 0,
             },
         )
         rows = entry["rows"]
@@ -2534,7 +2542,48 @@ def _workflow_phase_summary(
             focus_axes.append(focus_axis)
         if isinstance(entry["row_count"], int):
             entry["row_count"] += 1
+        status = capture.get("status")
+        status_key = status if isinstance(status, str) and status else "unknown"
+        status_counts = entry["status_counts"]
+        if isinstance(status_counts, dict):
+            status_counts[status_key] = int(status_counts.get(status_key, 0)) + 1
+        count_key = f"{status_key}_count"
+        if isinstance(entry.get(count_key), int):
+            entry[count_key] = int(entry[count_key]) + 1
     return list(phases.values())
+
+
+def _workflow_limited_list_text(values: object, *, limit: int = 5) -> str:
+    if not isinstance(values, list):
+        return ""
+    string_values = [value for value in values if isinstance(value, str)]
+    if len(string_values) > limit:
+        return (
+            ", ".join(string_values[:limit]) + f", +{len(string_values) - limit} more"
+        )
+    return ", ".join(string_values)
+
+
+def _workflow_phase_status_text(entry: dict[str, object]) -> str:
+    status_counts = entry.get("status_counts")
+    if not isinstance(status_counts, dict):
+        return ""
+    parts: list[str] = []
+    for status in ("captured", "failed", "planned"):
+        count = status_counts.get(status)
+        if isinstance(count, int) and count:
+            parts.append(f"{status} {count}")
+    extra_statuses = sorted(
+        status
+        for status, count in status_counts.items()
+        if status not in {"captured", "failed", "planned"}
+        and isinstance(status, str)
+        and isinstance(count, int)
+        and count
+    )
+    for status in extra_statuses:
+        parts.append(f"{status} {status_counts[status]}")
+    return ", ".join(parts) if parts else "none"
 
 
 def _workflow_phase_map(summary: list[dict[str, object]]) -> str:
@@ -2546,23 +2595,16 @@ def _workflow_phase_map(summary: list[dict[str, object]]) -> str:
         phase = str(entry.get("phase", ""))
         row_span = str(entry.get("row_span", "none"))
         row_count = int(entry.get("row_count", 0))
-        scenes = entry.get("scenes")
-        scene_values = (
-            [scene for scene in scenes if isinstance(scene, str)]
-            if isinstance(scenes, list)
-            else []
-        )
-        if len(scene_values) > 5:
-            scene_text = (
-                ", ".join(scene_values[:5]) + f", +{len(scene_values) - 5} more"
-            )
-        else:
-            scene_text = ", ".join(scene_values)
+        status_text = _workflow_phase_status_text(entry)
+        focus_axis_text = _workflow_limited_list_text(entry.get("focus_axes"))
+        scene_text = _workflow_limited_list_text(entry.get("scenes"))
         rows.append(
             "      <tr>"
             f"<td>{html.escape(row_span)}</td>"
             f"<td>{html.escape(phase)}</td>"
             f"<td>{row_count}</td>"
+            f"<td>{html.escape(status_text)}</td>"
+            f"<td>{html.escape(focus_axis_text)}</td>"
             f"<td>{html.escape(scene_text)}</td>"
             "</tr>"
         )
@@ -2572,7 +2614,7 @@ def _workflow_phase_map(summary: list[dict[str, object]]) -> str:
       <h2>Workflow Phase Map</h2>
       <table>
         <thead>
-          <tr><th>Rows</th><th>Phase</th><th>Count</th><th>Selected scenes</th></tr>
+          <tr><th>Rows</th><th>Phase</th><th>Count</th><th>Status</th><th>Focus axes</th><th>Selected scenes</th></tr>
         </thead>
         <tbody>
 {chr(10).join(rows)}

@@ -114,11 +114,11 @@ if `ffmpeg` is available. The top-level manifest and review header also record
 the exact workflow packet command that produced the artifact, and the manifest
 publishes `workflow_phase_summary` for selected numbered rows. The review
 header mirrors that summary as a `Workflow Phase Map` with row ranges, phase
-counts, and selected scene ids, so full and row-range packets expose their
-logical route before the reviewer opens individual cards. Unit coverage keeps
-captured row cards to one screenshot thumbnail per row while checking that
-manifest, screenshot, frame, and video links resolve from the static review
-sheet.
+counts, per-phase status, focus axes, and selected scene ids, so full and
+row-range packets expose their logical route and capture state before the
+reviewer opens individual cards. Unit coverage keeps captured row cards to one
+screenshot thumbnail per row while checking that manifest, screenshot, frame,
+and video links resolve from the static review sheet.
 Rows with scene-owned Replay timeline metadata also export a JSON-safe
 `scene_metadata.replay_timeline` summary, so the per-scene manifest and review
 card name the exact Replay value track and whether it has signal and marker
@@ -985,10 +985,12 @@ workflow rows` line before the selectable results. This keeps the navigator
   `<dt>phase</dt>` plus `<dt>focus axis</dt>`.
 - Latest static review phase-map follow-up: workflow manifests now record
   `workflow_phase_summary` for selected numbered rows, and the review index
-  header shows a `Workflow Phase Map` with row ranges, phase counts, and scene
-  ids before the per-row cards. This keeps full and targeted row-range packets
-  reviewable by logical phase after the phase/focus metadata export. The
-  focused capture-helper guard reported `3 passed`.
+  header shows a `Workflow Phase Map` with row ranges, phase counts,
+  per-phase status, focus axes, and scene ids before the per-row cards. This
+  keeps full and targeted row-range packets reviewable by logical phase and
+  capture state after the phase/focus metadata export. The focused
+  capture-helper guard reported `3 passed`; a follow-up focused guard covering
+  phase status/focus-axis display reported `4 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure

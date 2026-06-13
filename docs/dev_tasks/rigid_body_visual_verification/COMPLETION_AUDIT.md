@@ -9,12 +9,13 @@ completion PR cleanup happen.
 
 Latest implementation slice: workflow manifests now record
 `workflow_phase_summary` for selected numbered rows, and `review_index.html`
-shows a top-level `Workflow Phase Map` with row ranges, phase counts, and
-scene ids before the per-row cards. This keeps full and targeted row-range
-packets reviewable at the phase level after the phase/focus metadata export.
-Focused validation:
+shows a top-level `Workflow Phase Map` with row ranges, phase counts,
+per-phase status, focus axes, and scene ids before the per-row cards. This
+keeps full and targeted row-range packets reviewable at the phase level and
+capture-state level after the phase/focus metadata export. Focused validation:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
-reported `3 passed`.
+reported `3 passed`; the follow-up guard covering per-phase status and
+focus-axis display reported `4 passed`.
 
 Previous implementation slice: every numbered `Rigid Workflow` row now exposes a
 matching review-packet metadata path: `workflow_phase` and `focus_axis` are

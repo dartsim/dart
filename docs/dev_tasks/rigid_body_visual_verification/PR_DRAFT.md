@@ -132,8 +132,8 @@ rigid-body visual verification surface for the current cycle.
   failure for numbered rows.
 - Adds a manifest-level `workflow_phase_summary` and a review-index
   `Workflow Phase Map`, so full and row-range packets show selected numbered
-  row ranges, phase counts, and scene ids before reviewers open individual
-  cards.
+  row ranges, phase counts, per-phase status, focus axes, and scene ids before
+  reviewers open individual cards.
 - Adds search-result tooltip explanations for maintained aliases, row numbers,
   user questions, related evidence, and scope caveats, plus no-result guidance
   that suggests row numbers, scene ids, solver, contact, backend, or API names.
@@ -327,7 +327,8 @@ rigid-body visual verification surface for the current cycle.
   reported `4 passed`.
 - Focused workflow phase-map manifest/review-index guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
-  reported `3 passed`.
+  reported `3 passed`; the follow-up guard covering per-phase status and
+  focus-axis display reported `4 passed`.
 - Row-15 workflow phase/focus dry-run:
   `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_phase_review_dry_run_current`
   reported `capture_count=1`, `workflow_total_count=36`, selected row 15,
