@@ -881,8 +881,16 @@ def test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows(
             "Standard/Dantzig has solver_identity_schema_version=2; expected 1",
         ),
         (
+            {"solver_identity_schema_version": "1.25"},
+            "Standard/Dantzig has solver_identity_schema_version=None; expected 1",
+        ),
+        (
             {"solver_manifest_index": "2"},
             "Standard/Dantzig has solver_manifest_index=2; expected 1",
+        ),
+        (
+            {"solver_manifest_index": "1.25"},
+            "Standard/Dantzig has solver_manifest_index=None; expected 1",
         ),
         (
             {"solver_family_pivoting": "0"},
@@ -958,6 +966,10 @@ def test_lcp_physics_profile_summary_rejects_stale_support_rows(
             "Standard/Dantzig has problem_size='0'",
         ),
         (
+            {"problem_size": "12.5"},
+            "Standard/Dantzig has problem_size='12.5'",
+        ),
+        (
             {"lcp_dimension": "11"},
             "Standard/Dantzig has lcp_dimension=11; expected 12",
         ),
@@ -987,6 +999,10 @@ def test_lcp_physics_profile_summary_rejects_stale_support_rows(
         (
             {"iterations": "-1"},
             "Standard/Dantzig has iterations='-1'",
+        ),
+        (
+            {"iterations": "1.25"},
+            "Standard/Dantzig has iterations='1.25'",
         ),
         (
             {"residual": "nan"},

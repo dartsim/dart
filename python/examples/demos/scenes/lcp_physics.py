@@ -455,7 +455,10 @@ def _as_int_counter(row: dict[str, str], name: str) -> int | None:
         return None
     if not math.isfinite(numeric):
         return None
-    return int(numeric)
+    rounded = int(round(numeric))
+    if abs(numeric - rounded) > 1e-9:
+        return None
+    return rounded
 
 
 def _as_finite_float_counter(row: dict[str, str], name: str) -> float | None:

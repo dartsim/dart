@@ -1,5 +1,64 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-13 Current Continuation - Demo Fractional Counter Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `ba85115c4c2 Normalize LCP support counters` as the latest completed
+   local tip before this checkpoint. If this section is committed, inspect
+   `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `ba85115c4c2 Normalize LCP support counters`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by thirty-three commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Demo fractional counter status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now rejects fractional
+  integer counters in performance-profile evidence rows instead of truncating
+  them with `int(...)`.
+- `python/tests/unit/test_py_demo_panels.py` covers fractional problem sizes,
+  iterations, solver identity schema versions, and solver manifest indices.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, and benchmark generator code were not intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k lcp_physics_profile_summary`
+  passed with 32 tests and 43 deselected.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   focused demo evidence tests above, `scripts/check_lcp_solver_roster.py`,
+   `pixi run lint`, and `git diff --check`, then commit the focused
+   demo/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-13 Current Continuation - Support Counter Normalization
 
 This is the latest hand-off state. Sections below are historical checkpoints
