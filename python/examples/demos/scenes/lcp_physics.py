@@ -268,6 +268,14 @@ _PERFORMANCE_PROFILE_EVIDENCE_PATH = (
 )
 _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
     {
+        "fields": "category, solver, problem_size",
+        "meaning": "Profile surface, solver name, and benchmark problem size.",
+    },
+    {
+        "fields": "lcp_dimension, contact_count",
+        "meaning": "Linear system dimension plus FrictionIndex contact count.",
+    },
+    {
         "fields": "solver_identity_schema_version, solver_manifest_index",
         "meaning": "Roster-stable solver identity emitted by the C++ benchmark.",
     },
@@ -277,6 +285,18 @@ _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
             "solver_family_newton, solver_family_other"
         ),
         "meaning": "One-hot solver family identity for apples-to-apples grouping.",
+    },
+    {
+        "fields": "time_ns",
+        "meaning": "Measured benchmark time used for profile ratios.",
+    },
+    {
+        "fields": "contract_ok, iterations",
+        "meaning": "Per-row solver contract result and iteration count.",
+    },
+    {
+        "fields": "residual, complementarity, bound_violation",
+        "meaning": "Numerical feasibility metrics required by the roster guard.",
     },
     {
         "fields": (
@@ -291,18 +311,6 @@ _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
             "problem_type_friction_index, problem_type_invalid"
         ),
         "meaning": "Problem-form counters checked against the benchmark category.",
-    },
-    {
-        "fields": "lcp_dimension, contact_count",
-        "meaning": "Linear system dimension plus FrictionIndex contact count.",
-    },
-    {
-        "fields": "contract_ok, iterations",
-        "meaning": "Per-row solver contract result and iteration count.",
-    },
-    {
-        "fields": "residual, complementarity, bound_violation",
-        "meaning": "Numerical feasibility metrics required by the roster guard.",
     },
 )
 _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (

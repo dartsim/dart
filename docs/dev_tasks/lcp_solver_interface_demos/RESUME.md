@@ -1,5 +1,89 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Demo Evidence Schema Coverage
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `142e164ac90 Guard LCP plot CSV export`; if this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   demo evidence schema coverage guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `142e164ac90 Guard LCP plot CSV export`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by forty-three commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` now documents every required
+  `performance_profile_evidence.csv` column in its user-facing performance
+  profile evidence schema table, including the base identity fields
+  `category`, `solver`, `problem_size`, and the timing field `time_ns`.
+- The schema rows are ordered to flatten to
+  `_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS`, so the demo-facing
+  explanation stays tied to the actual CSV contract.
+- `python/tests/unit/test_py_demo_panels.py` now verifies that the schema rows
+  cover exactly the required columns with no duplicates or extras.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and C++ solver code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k 'lcp_physics_profile_evidence_schema_rows_cover_required_columns or lcp_physics_exposes_solver_manifest_and_benchmark_metadata'
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused LCP demo evidence schema tests: passed with 2 tests.
+- Full demo-panel unit test file: passed with 76 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- `pixi run lint`: passed, including the LCP solver roster and generated AI
+  command checks.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- `pixi run -e cuda test-all`: passed. The CUDA gate included lint, build,
+  unit, simulation, Python, documentation, CUDA simulation tests, and CUDA
+  benchmark smoke; the final report was 7/7 tests passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the full
+demo-panel unit test, roster check, `pixi run lint`, `git diff --check`,
+`pixi run build`, and `pixi run -e cuda test-all`, then commit the focused
+demo/test/docs change. Then continue the broader LCP interface/demo audit from
+the next concrete gap.
+
 ## Current Reality - 2026-06-13 Plot CSV Export Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

@@ -1141,6 +1141,20 @@ def test_lcp_physics_profile_summary_rejects_missing_evidence_surfaces(
         lcp_physics._performance_profile_evidence_summary_rows()
 
 
+def test_lcp_physics_profile_evidence_schema_rows_cover_required_columns() -> None:
+    documented_fields: list[str] = []
+    for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
+        fields = [field.strip() for field in row["fields"].split(",")]
+        assert all(fields)
+        assert row["meaning"]
+        documented_fields.extend(fields)
+
+    assert documented_fields == list(
+        lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+    )
+    assert len(documented_fields) == len(set(documented_fields))
+
+
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     _require_simulation_symbols("World", "ContactSolverMethod")
 
