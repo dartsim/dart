@@ -240,6 +240,14 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "assembled contact packets from simulation worlds",
     },
     {
+        "packet": "world_contact_step",
+        "surface": "boxed contact",
+        "benchmark_filter": (
+            "BM_LcpWorldSeparatedStep_BoxedLcp|BM_LcpWorldBoxStep_BoxedLcp"
+        ),
+        "coverage": "separated-contact and dense-box world step invariants",
+    },
+    {
         "packet": "world_billiards",
         "surface": "boxed contact",
         "benchmark_filter": "BM_LcpWorldBilliardsStep_BoxedLcp",

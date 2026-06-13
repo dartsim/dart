@@ -122,6 +122,8 @@ def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
     assert "BM_LcpNearSingularBatchParallel" in tokens
     assert "BM_LcpValidation_Serial_FrictionIndex" in tokens
     assert "BM_LcpValidation_Threaded_FrictionIndex" in tokens
+    assert "BM_LcpWorldSeparatedStep_BoxedLcp" in tokens
+    assert "BM_LcpWorldBoxStep_BoxedLcp" in tokens
     assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
     assert "BM_LcpArticulatedUnifiedContact" in tokens
 

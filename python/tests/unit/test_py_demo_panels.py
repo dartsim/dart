@@ -1857,6 +1857,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["world_card_pile"]["benchmark_filter"] == (
         "BM_LcpWorldCardPileStep_BoxedLcp"
     )
+    assert benchmark_by_packet["world_contact_step"]["benchmark_filter"] == (
+        "BM_LcpWorldSeparatedStep_BoxedLcp|BM_LcpWorldBoxStep_BoxedLcp"
+    )
     assert benchmark_by_packet["active_set_transition"]["benchmark_filter"] == (
         "BM_LcpActiveSetTransition|"
         "BM_LcpNewtonWarmStart|"
