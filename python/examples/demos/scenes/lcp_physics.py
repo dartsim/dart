@@ -1930,13 +1930,15 @@ def _run_standalone_solver_smoke() -> list[dict[str, Any]]:
         solver_type = getattr(dart, _SOLVER_CLASS_NAMES[support_row["name"]])
         solver = solver_type()
         result, solution = solver.solve(problem, options=options)
+        native_standard = bool(solver.supports_standard_lcp())
         rows.append(
             {
                 "name": support_row["name"],
                 "family": support_row["family"],
-                "native_standard": bool(solver.supports_standard_lcp()),
+                "native_standard": native_standard,
                 "native_boxed": bool(solver.supports_boxed_lcp()),
                 "native_findex": bool(solver.supports_friction_index()),
+                "solve_route": "native" if native_standard else "delegated",
                 "status": dart.lcp_solver_status_to_string(result.status),
                 "iterations": int(result.iterations),
                 "residual": float(result.residual),
@@ -2606,15 +2608,19 @@ def build() -> SceneSetup:
 
         if builder.collapsing_header("Standalone solver smoke", default_open=False):
             if builder.begin_table(
-                "lcp_standalone_solver_smoke", ["Solver", "Status", "Error"]
+                "lcp_standalone_solver_smoke",
+                ["Solver", "Route", "Status", "Error", "Residual", "Complementarity"],
             ):
                 for row in standalone_solver_rows:
                     builder.table_next_row()
                     _write_table_cell(builder, row["name"])
+                    _write_table_cell(builder, row["solve_route"])
                     _write_table_cell(
                         builder, f"{row['status']} ({row['iterations']} it)"
                     )
                     _write_table_cell(builder, f"{row['solution_error']:.2e}")
+                    _write_table_cell(builder, f"{row['residual']:.2e}")
+                    _write_table_cell(builder, f"{row['complementarity']:.2e}")
                 builder.end_table()
 
         if builder.collapsing_header(

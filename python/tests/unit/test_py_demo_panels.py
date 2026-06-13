@@ -1261,7 +1261,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert smoke_row["native_standard"] is manifest_row["standard"]
         assert smoke_row["native_boxed"] is manifest_row["boxed"]
         assert smoke_row["native_findex"] is manifest_row["findex"]
+        assert smoke_row["solve_route"] == (
+            "native" if manifest_row["standard"] else "delegated"
+        )
     assert max(row["solution_error"] for row in info["standalone_solver_rows"]) < 1e-4
+    assert max(row["residual"] for row in info["standalone_solver_rows"]) < 1e-3
+    assert (
+        max(row["complementarity"] for row in info["standalone_solver_rows"])
+        < 1e-3
+    )
     assert {row["status"] for row in info["standalone_solver_rows"]} <= {
         "Success",
         "MaxIterations",
@@ -2103,6 +2111,17 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
+    assert (
+        "table:lcp_standalone_solver_smoke:Solver,Route,Status,Error,Residual,"
+        "Complementarity"
+        in builder.events
+    )
+    assert "text:delegated" in builder.events
+    assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
+    assert (
+        f"text:{smoke_by_name['Dantzig']['complementarity']:.2e}"
+        in builder.events
+    )
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
         "Challenge,Native,Delegated,Max residual,Fastest native"
