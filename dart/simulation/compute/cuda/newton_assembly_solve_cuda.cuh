@@ -42,6 +42,7 @@ namespace dart::simulation::compute::cuda {
 constexpr std::size_t kNewtonAssemblySolveDofsPerBody = 6;
 constexpr std::size_t kNewtonAssemblySolveBlockEntries
     = kNewtonAssemblySolveDofsPerBody * kNewtonAssemblySolveDofsPerBody;
+constexpr std::size_t kNewtonDirectSparseSolveMaxDofs = 48;
 
 struct NewtonAssemblySolveRowInput
 {
@@ -169,6 +170,17 @@ struct NewtonSparseCgSolveTiming
   double hostToDeviceNs = 0.0;
   double assemblyKernelNs = 0.0;
   double iterationKernelNs = 0.0;
+  double finalResidualKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
+struct NewtonDirectSparseSolveTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double assemblyKernelNs = 0.0;
+  double denseMatrixKernelNs = 0.0;
+  double factorSolveKernelNs = 0.0;
   double finalResidualKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
@@ -350,6 +362,28 @@ struct NewtonSparseCgSolveResult
   NewtonSparseCgSolveTiming timing;
 };
 
+struct NewtonDirectSparseSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> factorMatrixLower;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t activeDofCount = 0;
+  double regularization = 0.0;
+  double minimumFactorPivot = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  NewtonDirectSparseSolveTiming timing;
+};
+
 struct NewtonEqualityReducedSolveResult
 {
   std::vector<double> assembledDiagonal;
@@ -499,6 +533,21 @@ void evaluateNewtonSparseCgSolveCuda(
     double residualTolerance,
     double regularization,
     NewtonSparseCgSolveResult& result);
+
+/// Evaluate a private bounded direct sparse solve packet.
+///
+/// The packet assembles full-space diagonal rows and symmetric 6x6 sparse
+/// blocks into a small dense global matrix, runs an in-kernel Cholesky solve,
+/// and checks the solved step with the sparse residual kernels. It
+/// intentionally does not cover production sparse factorization, unbounded
+/// systems, nonlinear equality constraints, runtime scene assembly, or a
+/// public GPU solver backend.
+void evaluateNewtonDirectSparseSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    double regularization,
+    NewtonDirectSparseSolveResult& result);
 
 /// Evaluate a private reduced equality-projected diagonal solve packet.
 ///

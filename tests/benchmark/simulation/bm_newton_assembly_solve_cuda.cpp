@@ -55,11 +55,16 @@ constexpr double kRegularization = 0.25;
 constexpr std::size_t kSparseJacobiIterations = 16;
 constexpr std::size_t kSparseCgMaxIterations = 32;
 constexpr double kSparseCgResidualTolerance = 1e-12;
+constexpr std::size_t kDirectSparseBodyCount = 4;
 constexpr double kSceneRuntimeAssemblyTimeStep = 1.0;
 constexpr double kSceneNonlinearEqualitySolveRegularization = 0.05;
 constexpr std::size_t kSceneNonlinearEqualityConvergenceMaxIterations = 8;
 constexpr double kSceneNonlinearEqualityConvergenceResidualTolerance = 1e-5;
 constexpr double kSceneNonlinearEqualityConvergenceStepScale = 0.25;
+
+static_assert(
+    kDirectSparseBodyCount * cuda::kNewtonAssemblySolveDofsPerBody
+    <= cuda::kNewtonDirectSparseSolveMaxDofs);
 
 struct CpuAssemblySolveResult
 {
@@ -343,6 +348,35 @@ struct SceneRuntimeSparseCgSolveFixture : SparseCgSolveFixture
   std::size_t sceneNodeCount = 0;
   std::size_t sceneTriangleCount = 0;
   std::size_t sceneEdgePairCount = 0;
+};
+
+struct CpuDirectSparseSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> factorMatrixLower;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t activeDofCount = 0;
+  double minimumFactorPivot = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  bool factorized = false;
+};
+
+struct DirectSparseSolveFixture
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::size_t bodyCount = 0;
+  CpuDirectSparseSolveResult cpu;
 };
 
 struct CpuEqualityReducedSolveResult
@@ -1639,6 +1673,153 @@ void evaluateCpuSparseCgSolve(
   result.converged = result.residualNorm <= result.residualTolerance;
 }
 
+std::vector<double> assembleDenseSparseMatrix(
+    const std::vector<double>& assembledDiagonal,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks)
+{
+  const std::size_t dofCount = assembledDiagonal.size();
+  std::vector<double> matrix(dofCount * dofCount, 0.0);
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    matrix[dof * dofCount + dof] = assembledDiagonal[dof] + kRegularization;
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      matrix[rowDof * dofCount + columnDof] += block.hessianBlock[entry];
+      matrix[columnDof * dofCount + rowDof] += block.hessianBlock[entry];
+    }
+  }
+
+  return matrix;
+}
+
+bool solveDenseCholesky(
+    std::vector<double>& matrix,
+    const std::vector<double>& assembledGradient,
+    std::vector<double>& step,
+    double& minimumFactorPivot)
+{
+  constexpr double kPivotEpsilon = 1e-14;
+  const std::size_t dofCount = assembledGradient.size();
+  minimumFactorPivot = 1e300;
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = 0; column < row; ++column) {
+      double sum = matrix[row * dofCount + column];
+      for (std::size_t inner = 0; inner < column; ++inner) {
+        sum -= matrix[row * dofCount + inner]
+               * matrix[column * dofCount + inner];
+      }
+      const double pivot = matrix[column * dofCount + column];
+      if (!std::isfinite(pivot) || std::abs(pivot) <= kPivotEpsilon) {
+        minimumFactorPivot = 0.0;
+        return false;
+      }
+      matrix[row * dofCount + column] = sum / pivot;
+    }
+
+    double diagonal = matrix[row * dofCount + row];
+    for (std::size_t inner = 0; inner < row; ++inner) {
+      const double value = matrix[row * dofCount + inner];
+      diagonal -= value * value;
+    }
+    if (!std::isfinite(diagonal) || diagonal <= kPivotEpsilon) {
+      minimumFactorPivot = 0.0;
+      return false;
+    }
+
+    const double pivot = std::sqrt(diagonal);
+    matrix[row * dofCount + row] = pivot;
+    minimumFactorPivot = std::min(minimumFactorPivot, pivot);
+  }
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      matrix[row * dofCount + column] = 0.0;
+    }
+  }
+
+  step.assign(dofCount, 0.0);
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    double value = -assembledGradient[row];
+    for (std::size_t column = 0; column < row; ++column) {
+      value -= matrix[row * dofCount + column] * step[column];
+    }
+    step[row] = value / matrix[row * dofCount + row];
+  }
+
+  for (std::size_t reverse = 0; reverse < dofCount; ++reverse) {
+    const std::size_t row = dofCount - 1u - reverse;
+    double value = step[row];
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      value -= matrix[column * dofCount + row] * step[column];
+    }
+    step[row] = value / matrix[row * dofCount + row];
+  }
+
+  return true;
+}
+
+void evaluateCpuDirectSparseSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    CpuDirectSparseSolveResult& result)
+{
+  CpuAssemblySolveResult diagonal;
+  evaluateCpu(rows, bodyCount, diagonal);
+
+  result = CpuDirectSparseSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = blocks.size();
+  result.assembledDiagonal = diagonal.assembledDiagonal;
+  result.assembledGradient = diagonal.assembledGradient;
+  result.factorMatrixLower
+      = assembleDenseSparseMatrix(result.assembledDiagonal, blocks);
+  result.factorized = solveDenseCholesky(
+      result.factorMatrixLower,
+      result.assembledGradient,
+      result.step,
+      result.minimumFactorPivot);
+  if (!result.factorized) {
+    result.step.assign(result.dofCount, 0.0);
+  }
+  result.residual = computeSparseResidualFromAssembled(
+      result.assembledDiagonal, result.assembledGradient, blocks, result.step);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + kRegularization > 1e-14) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+}
+
 AssemblySolveFixture makeFixture(const int rowCount)
 {
   AssemblySolveFixture fixture;
@@ -1932,6 +2113,25 @@ SparseCgSolveFixture makeSparseCgSolveFixture(const int rowCount)
         makeSparseBlock(static_cast<int>(block), fixture.bodyCount));
   }
   evaluateCpuSparseCgSolve(
+      fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
+  return fixture;
+}
+
+DirectSparseSolveFixture makeDirectSparseSolveFixture(const int rowCount)
+{
+  DirectSparseSolveFixture fixture;
+  fixture.bodyCount = kDirectSparseBodyCount;
+  fixture.rows.reserve(static_cast<std::size_t>(rowCount));
+  for (int row = 0; row < rowCount; ++row) {
+    fixture.rows.push_back(makeRow(row, fixture.bodyCount));
+  }
+
+  fixture.blocks.reserve(fixture.bodyCount);
+  for (std::size_t block = 0; block < fixture.bodyCount; ++block) {
+    fixture.blocks.push_back(
+        makeSparseBlock(static_cast<int>(block), fixture.bodyCount));
+  }
+  evaluateCpuDirectSparseSolve(
       fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
   return fixture;
 }
@@ -2256,6 +2456,26 @@ double maxSparseCgSolveOutputError(
   maxError = std::max(
       maxError,
       maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(maxError, maxAbsDifference(expected.step, actual.step));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.residual, actual.residual));
+  return maxError;
+}
+
+double maxDirectSparseSolveOutputError(
+    const CpuDirectSparseSolveResult& expected,
+    const cuda::NewtonDirectSparseSolveResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledDiagonal, actual.assembledDiagonal));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.factorMatrixLower, actual.factorMatrixLower));
   maxError = std::max(maxError, maxAbsDifference(expected.step, actual.step));
   maxError = std::max(
       maxError, maxAbsDifference(expected.residual, actual.residual));
@@ -2622,6 +2842,35 @@ void recordSceneRuntimeSparseCgSolveCounters(
       = static_cast<double>(fixture.sceneTriangleCount);
   state.counters["scene_edge_pairs"]
       = static_cast<double>(fixture.sceneEdgePairCount);
+}
+
+void recordDirectSparseSolveCounters(
+    benchmark::State& state,
+    const DirectSparseSolveFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["bodies"] = static_cast<double>(fixture.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.dofCount);
+  state.counters["blocks"] = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["block_entries"] = static_cast<double>(
+      fixture.cpu.blockCount * cuda::kNewtonAssemblySolveBlockEntries);
+  state.counters["active_dofs"]
+      = static_cast<double>(fixture.cpu.activeDofCount);
+  state.counters["regularization"] = kRegularization;
+  state.counters["factorized"] = fixture.cpu.factorized ? 1.0 : 0.0;
+  state.counters["min_factor_pivot"] = fixture.cpu.minimumFactorPivot;
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["step_norm"] = fixture.cpu.stepNorm;
+  state.counters["residual_norm"] = fixture.cpu.residualNorm;
+  state.counters["max_residual_abs"] = fixture.cpu.maxResidualAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations()
+          * (fixture.rows.size() + fixture.cpu.blockCount
+             + fixture.cpu.dofCount)));
 }
 
 void recordEqualityReducedCounters(
@@ -3642,6 +3891,69 @@ BENCHMARK(BM_NewtonSceneRuntimeSparseCgSolveCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonDirectSparseSolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeDirectSparseSolveFixture(static_cast<int>(state.range(0)));
+  CpuDirectSparseSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuDirectSparseSolve(
+        fixture.rows, fixture.bodyCount, fixture.blocks, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordDirectSparseSolveCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonDirectSparseSolveCpu)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonDirectSparseSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeDirectSparseSolveFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonDirectSparseSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonDirectSparseSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.blocks,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordDirectSparseSolveCounters(
+      state, fixture, maxDirectSparseSolveOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_regularization"] = result.regularization;
+  state.counters["gpu_min_factor_pivot"] = result.minimumFactorPivot;
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["gpu_max_residual_abs"] = result.maxResidualAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["dense_matrix_kernel_ns"] = result.timing.denseMatrixKernelNs;
+  state.counters["factor_solve_kernel_ns"] = result.timing.factorSolveKernelNs;
+  state.counters["final_residual_kernel_ns"]
+      = result.timing.finalResidualKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonDirectSparseSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonEqualityReducedSolveCpu(benchmark::State& state)

@@ -2,6 +2,55 @@
 
 ## Current Status
 
+Latest bounded direct sparse factor solve checkpoint (2026-06-13): work continued
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
+remaining PLAN-083 follow-up work consolidated there; do not push, PR-comment,
+resolve review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a bounded
+reduced direct sparse factor solve row. The CUDA packet assembles full-space
+6-DOF diagonal rows and symmetric 6x6 sparse block entries into a small dense
+global matrix, runs an in-kernel Cholesky factor/solve, and checks the solved
+step with the existing sparse residual kernels. The benchmark keeps the direct
+factorization capped at 24 DOFs (`max_supported_dof_count=48`) while scaling the
+assembly row load to 65,536 rows. This is reduced packet evidence only; it does
+not prove production sparse Hessian graph deduplication, full runtime sparse
+Hessian construction/assembly, unbounded production direct/global sparse
+factorization, production nonlinear equality convergence policy/solving, GPU
+`World::step` assembly/solve integration, or a top-level speedup claim.
+
+Fresh packet evidence records a direct sparse factor row with `row_count=65536`,
+`body_count=4`, `dof_count=24`, `block_count=4`, `block_entry_count=144`,
+`minimum_factor_pivot=101.59768698037762`,
+`max_result_abs_error=3.092281986027956e-11`,
+`residual_norm=5.378686498871594e-16`,
+`max_residual_abs=2.8327584905843623e-16`,
+`step_norm=0.00012707425595729184`, and
+`speedup=0.14347114847141065x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records `max_result_abs_error=3.092281986027956e-11`,
+`residual_norm=3.706539707094154e-13`, and
+`speedup=0.1234547960729924x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda bash -lc 'build/cuda/cpp/Release/bin/test_newton_assembly_solve_cuda --gtest_filter=NewtonAssemblySolveCuda.*DirectSparseSolve*:NewtonAssemblySolveCuda.MatchesCpuSparseCgSolve:NewtonAssemblySolveCuda.MatchesCpuEqualityReducedSolve'`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+
+A broad `pixi run -e cuda test-cuda` attempt was interrupted after it stalled in
+unrelated `test_lcp_jacobi_batch_cuda`; do not count that broad suite as passed
+for this checkpoint.
+
 Latest scene-owned nonlinear equality convergence checkpoint (2026-06-13): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,

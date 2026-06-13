@@ -167,6 +167,23 @@ cudaError_t launchNewtonSparseCgDirectionKernel(
     std::size_t dofCount,
     double beta);
 
+cudaError_t launchNewtonDirectDenseMatrixKernel(
+    const double* assembledDiagonal,
+    const NewtonSparseBlockEntry* blocks,
+    double* denseMatrix,
+    std::size_t dofCount,
+    std::size_t blockCount,
+    double regularization);
+
+cudaError_t launchNewtonDirectDenseCholeskySolveKernel(
+    double* denseMatrix,
+    const double* assembledGradient,
+    double* step,
+    int* factorStatus,
+    double* minimumFactorPivot,
+    std::size_t dofCount,
+    double epsilonForPivot);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -474,6 +491,18 @@ void validateResidualTolerance(const double tolerance, const char* caller)
       sx::InvalidArgumentException,
       "{} residual tolerance must be non-negative",
       caller);
+}
+
+void validateDirectSparseSolveDofCount(
+    const std::size_t dofCount, const char* caller)
+{
+  DART_SIMULATION_THROW_T_IF(
+      dofCount > kNewtonDirectSparseSolveMaxDofs,
+      sx::InvalidArgumentException,
+      "{} supports at most {} dofs in the reduced direct packet, got {}",
+      caller,
+      kNewtonDirectSparseSolveMaxDofs,
+      dofCount);
 }
 
 void validateEqualityReduction(
@@ -1846,6 +1875,200 @@ void evaluateNewtonSparseCgSolveCuda(
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
   result.converged = result.residualNorm <= residualTolerance;
+}
+
+//==============================================================================
+void evaluateNewtonDirectSparseSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const double regularization,
+    NewtonDirectSparseSolveResult& result)
+{
+  constexpr double kFactorPivotEpsilon = 1e-14;
+
+  const auto setupStart = Clock::now();
+  validateRows(rows, bodyCount, regularization);
+  validateSparseBlocks(blocks, bodyCount);
+  const std::size_t dofCount = bodyCount * kNewtonAssemblySolveDofsPerBody;
+  validateDirectSparseSolveDofCount(
+      dofCount, "evaluateNewtonDirectSparseSolveCuda");
+
+  result = NewtonDirectSparseSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = dofCount;
+  result.blockCount = blocks.size();
+  result.regularization = regularization;
+  result.assembledDiagonal.assign(dofCount, 0.0);
+  result.assembledGradient.assign(dofCount, 0.0);
+  result.factorMatrixLower.assign(dofCount * dofCount, 0.0);
+  result.step.assign(dofCount, 0.0);
+  result.residual.assign(dofCount, 0.0);
+
+  if (dofCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(rows.size());
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(blocks.size());
+  DeviceBuffer<double> deviceDiagonal(dofCount);
+  DeviceBuffer<double> deviceGradient(dofCount);
+  DeviceBuffer<double> deviceDenseMatrix(dofCount * dofCount);
+  DeviceBuffer<double> deviceStep(dofCount);
+  DeviceBuffer<double> deviceResidual(dofCount);
+  DeviceBuffer<int> deviceFactorStatus(1);
+  DeviceBuffer<double> deviceMinimumFactorPivot(1);
+  std::vector<int> hostFactorStatus(1, 0);
+  std::vector<double> hostMinimumFactorPivot(1, 0.0);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton direct sparse rows copy");
+  deviceBlocks.copyToDevice(blocks, "newton direct sparse blocks copy");
+  throwIfCudaError(
+      cudaMemset(deviceDiagonal.data(), 0, deviceDiagonal.byteSize()),
+      "newton direct sparse diagonal zero");
+  throwIfCudaError(
+      cudaMemset(deviceGradient.data(), 0, deviceGradient.byteSize()),
+      "newton direct sparse gradient zero");
+  throwIfCudaError(
+      cudaMemset(deviceDenseMatrix.data(), 0, deviceDenseMatrix.byteSize()),
+      "newton direct sparse dense matrix zero");
+  throwIfCudaError(
+      cudaMemset(deviceStep.data(), 0, deviceStep.byteSize()),
+      "newton direct sparse step zero");
+  throwIfCudaError(
+      cudaMemset(deviceResidual.data(), 0, deviceResidual.byteSize()),
+      "newton direct sparse residual zero");
+  deviceFactorStatus.copyToDevice(
+      hostFactorStatus, "newton direct sparse status seed");
+  deviceMinimumFactorPivot.copyToDevice(
+      hostMinimumFactorPivot, "newton direct sparse pivot seed");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonAssemblyRowsKernel(
+          deviceRows.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          rows.size()),
+      "newton direct sparse assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton direct sparse assembly synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto denseMatrixStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonDirectDenseMatrixKernel(
+          deviceDiagonal.data(),
+          deviceBlocks.data(),
+          deviceDenseMatrix.data(),
+          dofCount,
+          blocks.size(),
+          regularization),
+      "newton direct sparse dense matrix kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton direct sparse dense matrix synchronize");
+  const auto denseMatrixEnd = Clock::now();
+
+  const auto factorSolveStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonDirectDenseCholeskySolveKernel(
+          deviceDenseMatrix.data(),
+          deviceGradient.data(),
+          deviceStep.data(),
+          deviceFactorStatus.data(),
+          deviceMinimumFactorPivot.data(),
+          dofCount,
+          kFactorPivotEpsilon),
+      "newton direct sparse Cholesky solve kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton direct sparse Cholesky synchronize");
+  deviceFactorStatus.copyFromDevice(
+      hostFactorStatus, "newton direct sparse status copy");
+  deviceMinimumFactorPivot.copyFromDevice(
+      hostMinimumFactorPivot, "newton direct sparse pivot copy");
+  const auto factorSolveEnd = Clock::now();
+
+  DART_SIMULATION_THROW_T_IF(
+      hostFactorStatus[0] != 0,
+      sx::InvalidArgumentException,
+      "evaluateNewtonDirectSparseSolveCuda dense Cholesky failed at pivot {}",
+      hostFactorStatus[0] - 1);
+
+  const auto finalResidualStart = Clock::now();
+  throwIfCudaError(
+      cudaMemcpy(
+          deviceResidual.data(),
+          deviceGradient.data(),
+          deviceResidual.byteSize(),
+          cudaMemcpyDeviceToDevice),
+      "newton direct sparse final residual seed");
+  throwIfCudaError(
+      detail::launchNewtonSparseDiagonalResidualKernel(
+          deviceDiagonal.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          dofCount,
+          regularization),
+      "newton direct sparse final diagonal residual kernel");
+  throwIfCudaError(
+      detail::launchNewtonSparseBlockResidualKernel(
+          deviceBlocks.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          blocks.size()),
+      "newton direct sparse final block residual kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton direct sparse final residual synchronize");
+  const auto finalResidualEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceDiagonal.copyFromDevice(
+      result.assembledDiagonal, "newton direct sparse diagonal copy");
+  deviceGradient.copyFromDevice(
+      result.assembledGradient, "newton direct sparse gradient copy");
+  deviceDenseMatrix.copyFromDevice(
+      result.factorMatrixLower, "newton direct sparse factor copy");
+  deviceStep.copyFromDevice(result.step, "newton direct sparse step copy");
+  deviceResidual.copyFromDevice(
+      result.residual, "newton direct sparse residual copy");
+  const auto d2hEnd = Clock::now();
+
+  result.minimumFactorPivot = hostMinimumFactorPivot[0];
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.denseMatrixKernelNs
+      = elapsedNs(denseMatrixStart, denseMatrixEnd);
+  result.timing.factorSolveKernelNs
+      = elapsedNs(factorSolveStart, factorSolveEnd);
+  result.timing.finalResidualKernelNs
+      = elapsedNs(finalResidualStart, finalResidualEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + regularization > kFactorPivotEpsilon) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
 }
 
 //==============================================================================

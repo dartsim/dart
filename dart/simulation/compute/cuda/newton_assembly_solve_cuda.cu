@@ -682,6 +682,121 @@ __global__ void newtonSparseCgDirectionKernel(
   direction[index] = residual[index] + beta * direction[index];
 }
 
+__global__ void newtonDirectDenseMatrixKernel(
+    const double* assembledDiagonal,
+    const NewtonSparseBlockEntry* blocks,
+    double* denseMatrix,
+    const std::size_t dofCount,
+    const std::size_t blockCount,
+    const double regularization)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t totalEntries
+      = dofCount + blockCount * kNewtonAssemblySolveBlockEntries;
+  if (index >= totalEntries) {
+    return;
+  }
+
+  if (index < dofCount) {
+    denseMatrix[index * dofCount + index]
+        = assembledDiagonal[index] + regularization;
+    return;
+  }
+
+  const std::size_t sparseIndex = index - dofCount;
+  const std::size_t block = sparseIndex / kNewtonAssemblySolveBlockEntries;
+  const std::size_t entry
+      = sparseIndex - block * kNewtonAssemblySolveBlockEntries;
+  const std::size_t localRow = entry / kNewtonAssemblySolveDofsPerBody;
+  const std::size_t localColumn
+      = entry - localRow * kNewtonAssemblySolveDofsPerBody;
+  const NewtonSparseBlockEntry input = blocks[block];
+  const double value = input.hessianBlock[entry];
+  const std::size_t rowDof = static_cast<std::size_t>(input.rowBodyIndex)
+                                 * kNewtonAssemblySolveDofsPerBody
+                             + localRow;
+  const std::size_t columnDof = static_cast<std::size_t>(input.columnBodyIndex)
+                                    * kNewtonAssemblySolveDofsPerBody
+                                + localColumn;
+  atomicAdd(&denseMatrix[rowDof * dofCount + columnDof], value);
+  atomicAdd(&denseMatrix[columnDof * dofCount + rowDof], value);
+}
+
+__global__ void newtonDirectDenseCholeskySolveKernel(
+    double* denseMatrix,
+    const double* assembledGradient,
+    double* step,
+    int* factorStatus,
+    double* minimumFactorPivot,
+    const std::size_t dofCount,
+    const double epsilonForPivot)
+{
+  if (blockIdx.x != 0 || threadIdx.x != 0) {
+    return;
+  }
+
+  factorStatus[0] = 0;
+  double minimumPivot = 1e300;
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = 0; column < row; ++column) {
+      double sum = denseMatrix[row * dofCount + column];
+      for (std::size_t inner = 0; inner < column; ++inner) {
+        sum -= denseMatrix[row * dofCount + inner]
+               * denseMatrix[column * dofCount + inner];
+      }
+      const double pivot = denseMatrix[column * dofCount + column];
+      if (!isfinite(pivot) || fabs(pivot) <= epsilonForPivot) {
+        factorStatus[0] = static_cast<int>(column + 1u);
+        minimumFactorPivot[0] = 0.0;
+        return;
+      }
+      denseMatrix[row * dofCount + column] = sum / pivot;
+    }
+
+    double diagonal = denseMatrix[row * dofCount + row];
+    for (std::size_t inner = 0; inner < row; ++inner) {
+      const double value = denseMatrix[row * dofCount + inner];
+      diagonal -= value * value;
+    }
+    if (!isfinite(diagonal) || diagonal <= epsilonForPivot) {
+      factorStatus[0] = static_cast<int>(row + 1u);
+      minimumFactorPivot[0] = 0.0;
+      return;
+    }
+
+    const double pivot = sqrt(diagonal);
+    denseMatrix[row * dofCount + row] = pivot;
+    minimumPivot = fmin(minimumPivot, pivot);
+  }
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      denseMatrix[row * dofCount + column] = 0.0;
+    }
+  }
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    double value = -assembledGradient[row];
+    for (std::size_t column = 0; column < row; ++column) {
+      value -= denseMatrix[row * dofCount + column] * step[column];
+    }
+    step[row] = value / denseMatrix[row * dofCount + row];
+  }
+
+  for (std::size_t reverse = 0; reverse < dofCount; ++reverse) {
+    const std::size_t row = dofCount - 1u - reverse;
+    double value = step[row];
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      value -= denseMatrix[column * dofCount + row] * step[column];
+    }
+    step[row] = value / denseMatrix[row * dofCount + row];
+  }
+
+  minimumFactorPivot[0] = minimumPivot == 1e300 ? 0.0 : minimumPivot;
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -1088,6 +1203,58 @@ cudaError_t launchNewtonSparseCgDirectionKernel(
   const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
   newtonSparseCgDirectionKernel<<<gridSize, blockSize>>>(
       residual, direction, dofCount, beta);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonDirectDenseMatrixKernel(
+    const double* assembledDiagonal,
+    const NewtonSparseBlockEntry* blocks,
+    double* denseMatrix,
+    const std::size_t dofCount,
+    const std::size_t blockCount,
+    const double regularization)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const std::size_t totalEntries
+      = dofCount + blockCount * kNewtonAssemblySolveBlockEntries;
+  const unsigned int gridSize = launchGrid1D(totalEntries, blockSize);
+  newtonDirectDenseMatrixKernel<<<gridSize, blockSize>>>(
+      assembledDiagonal,
+      blocks,
+      denseMatrix,
+      dofCount,
+      blockCount,
+      regularization);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonDirectDenseCholeskySolveKernel(
+    double* denseMatrix,
+    const double* assembledGradient,
+    double* step,
+    int* factorStatus,
+    double* minimumFactorPivot,
+    const std::size_t dofCount,
+    const double epsilonForPivot)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  newtonDirectDenseCholeskySolveKernel<<<1, 1>>>(
+      denseMatrix,
+      assembledGradient,
+      step,
+      factorStatus,
+      minimumFactorPivot,
+      dofCount,
+      epsilonForPivot);
   return cudaGetLastError();
 }
 

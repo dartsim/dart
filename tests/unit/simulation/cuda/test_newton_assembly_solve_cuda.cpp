@@ -62,6 +62,20 @@ struct ExpectedSparseCgSolve
   bool converged = false;
 };
 
+struct ExpectedDirectSparseSolve
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> factorMatrixLower;
+  std::vector<double> step;
+  std::vector<double> residual;
+  double minimumFactorPivot = 0.0;
+  double residualNorm = 0.0;
+  double stepNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  bool factorized = false;
+};
+
 struct ExpectedSceneNonlinearEqualityConvergence
 {
   std::vector<cuda::NewtonAssemblySolveRowInput> rows;
@@ -767,6 +781,106 @@ std::vector<double> evaluateExpectedSparseMatrixVector(
   return product;
 }
 
+std::vector<double> assembleExpectedDenseSparseMatrix(
+    const std::vector<double>& diagonal,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const double regularization)
+{
+  const std::size_t dofCount = diagonal.size();
+  std::vector<double> matrix(dofCount * dofCount, 0.0);
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    matrix[dof * dofCount + dof] = diagonal[dof] + regularization;
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      matrix[rowDof * dofCount + columnDof] += block.hessianBlock[entry];
+      matrix[columnDof * dofCount + rowDof] += block.hessianBlock[entry];
+    }
+  }
+
+  return matrix;
+}
+
+bool factorAndSolveExpectedDenseCholesky(
+    std::vector<double>& matrix,
+    const std::vector<double>& gradient,
+    std::vector<double>& step,
+    double& minimumFactorPivot)
+{
+  constexpr double kPivotEpsilon = 1e-14;
+  const std::size_t dofCount = gradient.size();
+  minimumFactorPivot = std::numeric_limits<double>::infinity();
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = 0; column < row; ++column) {
+      double sum = matrix[row * dofCount + column];
+      for (std::size_t inner = 0; inner < column; ++inner) {
+        sum -= matrix[row * dofCount + inner]
+               * matrix[column * dofCount + inner];
+      }
+      const double pivot = matrix[column * dofCount + column];
+      if (!std::isfinite(pivot) || std::abs(pivot) <= kPivotEpsilon) {
+        minimumFactorPivot = 0.0;
+        return false;
+      }
+      matrix[row * dofCount + column] = sum / pivot;
+    }
+
+    double diagonal = matrix[row * dofCount + row];
+    for (std::size_t inner = 0; inner < row; ++inner) {
+      const double value = matrix[row * dofCount + inner];
+      diagonal -= value * value;
+    }
+    if (!std::isfinite(diagonal) || diagonal <= kPivotEpsilon) {
+      minimumFactorPivot = 0.0;
+      return false;
+    }
+
+    const double pivot = std::sqrt(diagonal);
+    matrix[row * dofCount + row] = pivot;
+    minimumFactorPivot = std::min(minimumFactorPivot, pivot);
+  }
+
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      matrix[row * dofCount + column] = 0.0;
+    }
+  }
+
+  step.assign(dofCount, 0.0);
+  for (std::size_t row = 0; row < dofCount; ++row) {
+    double value = -gradient[row];
+    for (std::size_t column = 0; column < row; ++column) {
+      value -= matrix[row * dofCount + column] * step[column];
+    }
+    step[row] = value / matrix[row * dofCount + row];
+  }
+
+  for (std::size_t reverse = 0; reverse < dofCount; ++reverse) {
+    const std::size_t row = dofCount - 1u - reverse;
+    double value = step[row];
+    for (std::size_t column = row + 1u; column < dofCount; ++column) {
+      value -= matrix[column * dofCount + row] * step[column];
+    }
+    step[row] = value / matrix[row * dofCount + row];
+  }
+
+  return true;
+}
+
 double dotVectors(
     const std::vector<double>& lhs, const std::vector<double>& rhs)
 {
@@ -865,6 +979,56 @@ ExpectedSparseCgSolve evaluateExpectedSparseCgSolve(
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
   result.converged = result.residualNorm <= residualTolerance;
+  return result;
+}
+
+ExpectedDirectSparseSolve evaluateExpectedDirectSparseSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const double regularization)
+{
+  ExpectedDirectSparseSolve result;
+  std::vector<double> ignoredStep;
+  evaluateExpected(
+      rows,
+      bodyCount,
+      regularization,
+      result.assembledDiagonal,
+      result.assembledGradient,
+      ignoredStep);
+
+  result.factorMatrixLower = assembleExpectedDenseSparseMatrix(
+      result.assembledDiagonal, blocks, regularization);
+  result.factorized = factorAndSolveExpectedDenseCholesky(
+      result.factorMatrixLower,
+      result.assembledGradient,
+      result.step,
+      result.minimumFactorPivot);
+  if (!result.factorized) {
+    return result;
+  }
+
+  evaluateExpectedSparseResidual(
+      rows,
+      bodyCount,
+      blocks,
+      result.step,
+      regularization,
+      result.assembledDiagonal,
+      result.assembledGradient,
+      result.residual);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < result.step.size(); ++dof) {
+    stepNormSquared += result.step[dof] * result.step[dof];
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
   return result;
 }
 
@@ -1831,6 +1995,106 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseCgSolveInputs)
           std::numeric_limits<double>::quiet_NaN(),
           regularization,
           result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuDirectSparseSolve)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeRow(0, 6.0, -0.5),
+      makeRow(1, 7.0, 0.25),
+      makeRow(0, 2.5, 0.75),
+  };
+  constexpr std::size_t bodyCount = 2;
+  constexpr double regularization = 1.0;
+  const std::vector blocks = {
+      makeSparseBlock(0, 1, 0.0125),
+      makeSparseBlock(0, 1, -0.004),
+  };
+
+  cuda::NewtonDirectSparseSolveResult result;
+  cuda::evaluateNewtonDirectSparseSolveCuda(
+      rows, bodyCount, blocks, regularization, result);
+
+  const ExpectedDirectSparseSolve expected = evaluateExpectedDirectSparseSolve(
+      rows, bodyCount, blocks, regularization);
+  ASSERT_TRUE(expected.factorized);
+
+  ASSERT_EQ(result.assembledDiagonal.size(), expected.assembledDiagonal.size());
+  ASSERT_EQ(result.assembledGradient.size(), expected.assembledGradient.size());
+  ASSERT_EQ(result.factorMatrixLower.size(), expected.factorMatrixLower.size());
+  ASSERT_EQ(result.step.size(), expected.step.size());
+  ASSERT_EQ(result.residual.size(), expected.residual.size());
+  EXPECT_EQ(result.bodyCount, bodyCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.dofCount, expected.step.size());
+  EXPECT_EQ(result.blockCount, blocks.size());
+  EXPECT_EQ(result.activeDofCount, expected.step.size());
+  EXPECT_DOUBLE_EQ(result.regularization, regularization);
+  EXPECT_NEAR(result.minimumFactorPivot, expected.minimumFactorPivot, 1e-12);
+  EXPECT_NEAR(result.stepNorm, expected.stepNorm, 1e-10);
+  EXPECT_NEAR(result.residualNorm, expected.residualNorm, 1e-10);
+  EXPECT_NEAR(result.maxResidualAbs, expected.maxResidualAbs, 1e-10);
+  EXPECT_LT(result.residualNorm, 1e-10);
+
+  for (std::size_t dof = 0; dof < expected.step.size(); ++dof) {
+    EXPECT_NEAR(
+        result.assembledDiagonal[dof], expected.assembledDiagonal[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(
+        result.assembledGradient[dof], expected.assembledGradient[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.step[dof], expected.step[dof], 1e-10) << dof;
+    EXPECT_NEAR(result.residual[dof], expected.residual[dof], 1e-10) << dof;
+  }
+
+  for (std::size_t entry = 0; entry < expected.factorMatrixLower.size();
+       ++entry) {
+    EXPECT_NEAR(
+        result.factorMatrixLower[entry],
+        expected.factorMatrixLower[entry],
+        1e-10)
+        << entry;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidDirectSparseSolveInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {makeRow(0, 1.0, 0.0)};
+  const std::vector blocks = {makeSparseBlock(0, 1, 0.125)};
+  cuda::NewtonDirectSparseSolveResult result;
+
+  const std::size_t tooManyBodies = cuda::kNewtonDirectSparseSolveMaxDofs
+                                        / cuda::kNewtonAssemblySolveDofsPerBody
+                                    + 1u;
+  EXPECT_THROW(
+      cuda::evaluateNewtonDirectSparseSolveCuda(
+          rows, tooManyBodies, {}, 0.1, result),
+      dart::simulation::InvalidArgumentException);
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonDirectSparseSolveCuda(rows, 2, blocks, -0.1, result),
+      dart::simulation::InvalidArgumentException);
+
+  auto singularRow = makeRow(0, 0.0, 0.0);
+  singularRow.hessianDiagonal[0] = 0.0;
+  for (std::size_t dof = 1; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++dof) {
+    singularRow.hessianDiagonal[dof] = 1.0;
+  }
+  EXPECT_THROW(
+      cuda::evaluateNewtonDirectSparseSolveCuda(
+          {singularRow}, 1, {}, 0.0, result),
       dart::simulation::InvalidArgumentException);
 }
 

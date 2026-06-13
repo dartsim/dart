@@ -358,14 +358,14 @@ its own line so status updates remain git-history friendly.
   distance-equality convergence row plus sparse block residual matvec plus a
   reduced scene-owned sparse residual row plus fixed-iteration sparse Jacobi
   solve plus a reduced scene-owned sparse Jacobi row plus capped sparse CG solve
-  plus a reduced scene-owned sparse CG row plus sparse equality-reduced diagonal solve
-  parity plus a reduced scene-owned
-  diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
-  parity and speedup, reduced ABD complex-geometry packets,
+  plus a reduced scene-owned sparse CG row plus bounded reduced direct sparse
+  factor solve plus sparse equality-reduced diagonal solve parity plus a reduced
+  scene-owned diagonal assembly/solve row, reduced hanging-bridge scene
+  state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, analytic curved CCD, full scene-level
   line search, full runtime sparse Hessian graph construction and assembly,
-  direct/global sparse factorization, production nonlinear equality convergence
+  unbounded production direct/global sparse factorization, production nonlinear equality convergence
   policy/solving, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
