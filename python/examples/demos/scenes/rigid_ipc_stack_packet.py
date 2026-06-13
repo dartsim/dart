@@ -193,6 +193,7 @@ class _RigidIpcStackPacket:
             history.clear()
         self._last_metrics.clear()
         self.bridge.sync()
+        self._record_metrics()
 
     def _step_profile_ms(self) -> float:
         try:
@@ -255,12 +256,16 @@ class _RigidIpcStackPacket:
         self._drift_history.append(float(metrics["top_drift"]))
         self._contact_history.append(float(metrics["contact_count"]))
 
-    def capture_metrics(self) -> dict[str, float | str | bool]:
+    def capture_metrics(self) -> dict[str, Any]:
         metrics = dict(self._last_metrics or self._sample())
         metrics.update(
             {
                 "benchmark": "bm_rigid_ipc_solver",
                 "capture_first": True,
+                "controls": {
+                    "friction": float(self.friction),
+                    "frame_budget_ms": float(self.frame_budget_ms),
+                },
                 "frame_budget_ms": float(self.frame_budget_ms),
                 "friction": float(self.friction),
                 "row": self.spec.scene_id,

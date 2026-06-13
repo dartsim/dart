@@ -154,6 +154,9 @@ def build() -> SceneSetup:
             "scope": "tilted_face_friction_slide",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),
+            "controls": {
+                "friction": float(box.friction),
+            },
             "friction": float(box.friction),
             "tilt_deg": math.degrees(_TILT_RAD),
             **metrics,

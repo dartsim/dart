@@ -146,6 +146,9 @@ def build() -> SceneSetup:
             "scope": "multi_box_barrier_pile",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),
+            "controls": {
+                "friction": float(ground.friction),
+            },
             "friction": float(ground.friction),
             **metrics,
             "history_samples": float(len(speeds)),

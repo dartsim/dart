@@ -80,6 +80,7 @@ from examples.demos.scenes import (
     rigid_ipc,
     rigid_ipc_edge_drop,
     rigid_ipc_incline,
+    rigid_ipc_slide,
     rigid_ipc_stack_packet,
     rigid_joint_breakage,
     rigid_joint_motor_limits,
@@ -1525,6 +1526,23 @@ def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
     assert capture_metrics["ignored_contact_count"] == 1
 
 
+@pytest.mark.parametrize(
+    "scene_module",
+    [rigid_ipc, rigid_ipc_slide, rigid_ipc_incline, rigid_ipc_pile],
+)
+def test_rigid_ipc_shelf_panel_edits_capture_controls(scene_module: object) -> None:
+    _require_simulation_symbols("RigidBodySolver")
+
+    setup = scene_module.build()
+    builder = _ScriptedPanelBuilder(slider_values={"Friction": 0.23})
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Friction:0.0:1.0" in builder.events
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["controls"]["friction"] == pytest.approx(0.23)
+    assert capture_metrics["friction"] == pytest.approx(0.23)
+
+
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 
@@ -1545,7 +1563,12 @@ def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
         controller = setup.info[f"{scene_id}_controller"]
         setup.pre_step()
 
-        builder = _ScriptedPanelBuilder()
+        builder = _ScriptedPanelBuilder(
+            slider_values={
+                "Friction": 0.42,
+                "Frame budget ms": 44.0,
+            }
+        )
         setup.panels[0].build(builder, _FakePanelContext())
 
         assert setup.info[f"{scene_id}_capture_first"] is True
@@ -1558,6 +1581,9 @@ def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
         assert any(event.startswith("plot:Step wall ms:") for event in builder.events)
         assert any(event.startswith("plot:Min clearance:") for event in builder.events)
         assert any(event.startswith("plot:Contact count:") for event in builder.events)
+        capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+        assert capture_metrics["controls"]["friction"] == pytest.approx(0.42)
+        assert capture_metrics["controls"]["frame_budget_ms"] == pytest.approx(44.0)
         assert controller._last_metrics
 
 

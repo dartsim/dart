@@ -1567,6 +1567,10 @@ def test_rigid_ipc_shelf_scenes_report_capture_metrics() -> None:
                 *(float(capture_metrics[key]) for key in numeric_keys),
             ]
         ).all()
+        assert capture_metrics["controls"]["friction"] == pytest.approx(
+            capture_metrics["friction"]
+        )
+
 
 def test_rigid_ipc_tunnel_reports_no_tunneling_metrics() -> None:
     import numpy as np
@@ -1880,6 +1884,12 @@ def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
         assert capture_metrics["solver"] == "ipc"
         assert float(capture_metrics["box_count"]) == pytest.approx(box_count)
         assert float(capture_metrics["frame_budget_ms"]) > 0.0
+        assert capture_metrics["controls"]["friction"] == pytest.approx(
+            capture_metrics["friction"]
+        )
+        assert capture_metrics["controls"]["frame_budget_ms"] == pytest.approx(
+            capture_metrics["frame_budget_ms"]
+        )
         assert float(capture_metrics["top_mass"]) > 0.0
         assert float(capture_metrics["world_time"]) > 0.0
         assert callable(setup.info["replay_capture_state"])

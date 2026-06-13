@@ -135,6 +135,9 @@ def build() -> SceneSetup:
             "scope": "friction_braked_tangential_slide",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),
+            "controls": {
+                "friction": float(box.friction),
+            },
             "friction": float(box.friction),
             "initial_speed": float(_INITIAL_SPEED),
             **metrics,

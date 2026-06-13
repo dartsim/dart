@@ -3,15 +3,26 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and two
-local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Capture rigid query option controls` after
-`Guard rigid solver panel controls`. The pushed origin branch is at
-`Complete rigid executor panel guard`. There is still no PR for this branch. Do
+`feature/rigid-body-gui-visual-verification` is expected to be clean and one
+local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Capture rigid IPC shelf controls` after
+`Capture rigid query option controls`. The pushed origin branch is at
+`Capture rigid query option controls`. There is still no PR for this branch. Do
 not push, create a PR, set a milestone, rerun CI, or mutate review state
 without explicit maintainer/user approval.
 
-Latest local continuation: row 13, `rigid_collision_query_options`, now
+Latest local continuation: optional Rigid IPC shelf and capture-first packet
+rows now publish their user-editable controls in capture metrics. The direct
+Rigid IPC shelf rows (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
+`rigid_ipc_pile`) record `controls.friction`, and the capture-first stack
+packet variants record `controls.friction` plus `controls.frame_budget_ms`.
+`rigid_ipc_stack_packet` also records a fresh initial metrics sample after a
+friction-triggered reset, so the panel/controller state stays self-describing.
+Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_shelf_panel_edits_capture_controls python/tests/unit/test_py_demo_panels.py::test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals python/tests/integration/test_demos_cycle.py::test_rigid_ipc_shelf_scenes_report_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_ipc_stack_packet_reports_capture_first_metrics -q`
+reported `7 passed`. No new visual packet was generated in this slice.
+
+Previous local continuation: row 13, `rigid_collision_query_options`, now
 publishes a proper capture-metrics `controls` block for its query toggles and
 ignored-pair selector. This matches the row's replay state and makes review
 packets identify the active `World.collide(options)` body-kind filter instead

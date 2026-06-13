@@ -120,6 +120,9 @@ def build() -> SceneSetup:
             "scope": "basic_box_ground_barrier_settle",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),
+            "controls": {
+                "friction": float(box.friction),
+            },
             "friction": float(box.friction),
             **metrics,
             "history_samples": float(len(heights)),

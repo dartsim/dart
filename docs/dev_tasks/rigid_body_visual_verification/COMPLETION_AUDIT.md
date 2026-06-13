@@ -7,6 +7,16 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: optional Rigid IPC shelf and capture-first
+packet rows now publish user-editable control metadata in capture metrics. The
+direct shelf routes (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
+`rigid_ipc_pile`) record `controls.friction`; the capture-first stack packet
+variants record `controls.friction` and `controls.frame_budget_ms`; and the
+stack packet reset path records a fresh initial metrics sample after a
+friction-triggered reset. Focused shelf/packet guards reported `7 passed`.
+This slice does not add a new visual packet; the existing rows 01-36 and
+optional rows 37-53 packets remain the latest broad static review artifacts.
+
 Latest local implementation slice: row 13,
 `rigid_collision_query_options`, now records its body-kind query toggles and
 ignored-pair selector under capture-metrics `controls`, matching the replay
