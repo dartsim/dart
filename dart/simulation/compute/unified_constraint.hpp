@@ -238,6 +238,10 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   using CharAllocator = common::StlAllocator<char>;
   using DoubleAllocator = common::StlAllocator<double>;
   using SizeAllocator = common::StlAllocator<std::size_t>;
+  using IndexVector = std::vector<Eigen::Index, IndexAllocator>;
+  using CharVector = std::vector<char, CharAllocator>;
+  using DoubleVector = std::vector<double, DoubleAllocator>;
+  using SizeVector = std::vector<std::size_t, SizeAllocator>;
 
   UnifiedConstraintSolveScratch() = default;
 
@@ -264,11 +268,11 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXd generalizedImpulse;
   Eigen::VectorXd velocityDelta;
 
-  std::vector<Eigen::Index, IndexAllocator> islandRows;
-  std::vector<Eigen::Index, IndexAllocator> islandOffsets;
-  std::vector<char, CharAllocator> visitedRows;
-  std::vector<Eigen::Index, IndexAllocator> rowStack;
-  std::vector<Eigen::Index, IndexAllocator> localIndex;
+  IndexVector islandRows;
+  IndexVector islandOffsets;
+  CharVector visitedRows;
+  IndexVector rowStack;
+  IndexVector localIndex;
 
   Eigen::MatrixXd islandDelassus;
   Eigen::VectorXd islandRhs;
@@ -276,7 +280,7 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXd islandHi;
   Eigen::VectorXi islandFindex;
 
-  std::vector<Eigen::Index, IndexAllocator> normalRows;
+  IndexVector normalRows;
   Eigen::MatrixXd normalA;
   Eigen::VectorXd normalB;
   Eigen::VectorXd normalLo;
@@ -284,11 +288,11 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   Eigen::VectorXi normalFindex;
   Eigen::VectorXd normalLambda;
 
-  std::vector<double, DoubleAllocator> rigidTangent1;
-  std::vector<double, DoubleAllocator> rigidTangent2;
-  std::vector<std::size_t, SizeAllocator> linkTangentOffsets;
-  std::vector<double, DoubleAllocator> linkTangent1;
-  std::vector<double, DoubleAllocator> linkTangent2;
+  DoubleVector rigidTangent1;
+  DoubleVector rigidTangent2;
+  SizeVector linkTangentOffsets;
+  DoubleVector linkTangent1;
+  DoubleVector linkTangent2;
 
   void clear() noexcept;
 };

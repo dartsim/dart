@@ -1,5 +1,44 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Unified Constraint Scratch Vector Aliases)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR. It includes `origin/main` at
+`a122e8e0f3e` via local merge commit `57c8b1cd608`; a fresh resume recon found
+the branch clean and still ahead of its remote tracking branch.
+
+Latest local slice: `UnifiedConstraintSolveScratch` now gives its allocator
+backed scratch vectors local `IndexVector`, `CharVector`, `DoubleVector`, and
+`SizeVector` aliases instead of repeating `std::vector<T, Allocator>` for each
+field. This keeps future unified-scratch allocator spelling changes localized
+while preserving the existing field names and allocator provenance.
+
+This is a mechanical maintainability slice. It does not change solve behavior,
+public APIs, allocator provenance, or the existing unified-constraint
+no-growth/no-heap claims.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_unified_constraint -j 8
+pixi run build/default/cpp/Release/bin/test_unified_constraint \
+  --gtest_filter=UnifiedConstraint.SolveScratchVectorsUseProvidedAllocator
+pixi run lint
+git diff --check
+```
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Replay Scratch Vector Aliases)
 
 Resume from exactly one branch:
