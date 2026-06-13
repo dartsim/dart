@@ -540,9 +540,22 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
             continue
 
         solvers = header[1:]
+        duplicate_solvers: list[str] = []
+        seen_solvers: set[str] = set()
+        seen_duplicates: set[str] = set()
+        for solver in solvers:
+            if solver in seen_solvers and solver not in seen_duplicates:
+                duplicate_solvers.append(solver)
+                seen_duplicates.add(solver)
+            seen_solvers.add(solver)
         unknown = sorted(set(solvers) - set(manifest_by_name))
         missing = sorted(supported_by_profile[profile] - set(solvers))
         unsupported = sorted(set(solvers) & unsupported_by_profile[profile])
+        if duplicate_solvers:
+            errors.append(
+                f"{_display_path(path)} contains duplicate solver columns: "
+                f"{duplicate_solvers}"
+            )
         if unknown:
             errors.append(f"{_display_path(path)} contains unknown solvers: {unknown}")
         if missing:

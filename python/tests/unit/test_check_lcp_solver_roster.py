@@ -327,6 +327,22 @@ def test_lcp_profile_headers_reject_unknown_solver(
         module.check_performance_profile_headers(manifest)
 
 
+def test_lcp_profile_headers_reject_duplicate_solver_column(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    path = tmp_path / "performance_profile_standard.csv"
+    path.write_text("tau,Dantzig,Dantzig\n1,1.0,1.1\n", encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"standard": path})
+
+    with pytest.raises(AssertionError, match="contains duplicate solver columns"):
+        module.check_performance_profile_headers(manifest)
+
+
 def test_lcp_profile_headers_reject_non_native_solver(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
