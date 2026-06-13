@@ -616,7 +616,25 @@ its own line so status updates remain git-history friendly.
   fields with
   [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
   visual/benchmark evidence, while keeping the same-hardware comparison and GPU
-  gates open. Public
+  gates open. Solver-identity relabel (PLAN-091 WP-091.1): no
+  `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene emplaces the internal
+  AVBD rigid-contact opt-in config (`comps::RigidAvbdContactConfig`), because
+  AVBD contact is not facade-selectable, so every rigid contact in the
+  source-row scenes below ran DART's default sequential-impulse contact path.
+  The native-runner timing ratios for contact scenes are whole-pipeline
+  `World::step` comparisons, not AVBD-contact-solver comparisons: the
+  pure-contact rows (2D Dynamic Friction, Static Friction, Pyramid, Cards,
+  Stack, and Stack Ratio; 3D Ground, Dynamic Friction, Static Friction,
+  Pyramid, Stack, and Stack Ratio) timed no AVBD rows at all; the
+  joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and Net; 3D
+  Soft Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows
+  while their ordinary contacts ran sequential impulse; and incidental
+  link-link contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging
+  Rope; 3D Rope and Heavy Rope) also ran sequential impulse. This relabel
+  changes no committed packet bytes and neither closes nor reopens any
+  PLAN-104 completion gate; new AVBD evidence packets must machine-record
+  `resolved_solver_identity` at AVBD packet schema version 2, enforced by
+  `pixi run check-avbd-packets`. Public
   empty-scene corpus baseline coverage is now visible through
   `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
   default source parameters, and the `sceneEmpty` zero-count invariant, and

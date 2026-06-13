@@ -58,7 +58,7 @@ contracts this plan is landing.
 
 ### WS0 — Evidence integrity and guardrails
 
-#### WP-091.1 Solver-identity recording and AVBD evidence relabel
+#### WP-091.1 Solver-identity recording and AVBD evidence relabel [claimed]
 
 - Objective: every benchmark evidence packet machine-records the resolved
   solver configuration, and the AVBD contact-scene rows that timed the
@@ -95,6 +95,40 @@ contracts this plan is landing.
   all six sites; some warm-started AVBD contact paths do run through the
   default step, so classify rows by config-component presence, not by scene
   name.
+- Evidence: affected rows were classified by config-component presence —
+  `tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp` and the py-demo
+  scenes never emplace `comps::RigidAvbdContactConfig` (the benchmark TU's
+  only internal-AVBD use is `classifyAvbdRigidWorldEndpoint`), and
+  `dart/simulation/compute/world_step_stage.cpp` routes every contact set
+  without that config to the sequential-impulse path while keeping AVBD
+  joint rows active. Affected contact rows: pure-contact (no AVBD code in
+  the timed solve) — `avbd-demo2d-{dynamic-friction, static-friction,
+pyramid, cards, stack, stack-ratio}` and `avbd-demo3d-{ground,
+dynamic-friction, static-friction, pyramid, stack, stack-ratio}`;
+  joint-plus-contact (AVBD point-joint/motor/spring rows with
+  sequential-impulse contacts) — `avbd-demo2d-{fracture, soft-body,
+joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
+  rows whose edge-touching links' incidental contacts also ran sequential
+  impulse — `avbd-demo2d-{rod, rope, heavy-rope, hanging-rope}` and
+  `avbd-demo3d-{rope, heavy-rope}`. Fifteen of these carried "faster than
+  native" claims (2D Fracture, Dynamic Friction, Static Friction, Pyramid,
+  Stack, Stack Ratio; 3D Ground, Dynamic Friction, Static Friction, Pyramid,
+  Stack, Stack Ratio, Soft Body, Bridge, Breakable). Schema:
+  `scripts/avbd_packet_schema.py` bumps the AVBD packet family to schema
+  version 2 with the required `resolved_solver_identity` field contract;
+  `scripts/check_avbd_packets.py` (`pixi run check-avbd-packets`, in the
+  `check-lint` aggregate) rejects identity-less packets at version >= 2 and
+  new packet files below version 2 while the 48 committed v1 packets stay
+  readable; `tests/test_check_avbd_packets.py` (9 pytest cases via
+  `pixi run python -m pytest`) proves the rejection and acceptance paths,
+  including the avbd-claim-without-emplaced-config consistency rule. All six
+  mirrored claim sites relabeled consistently (dashboard PLAN-104 entry,
+  `104-vertex-block-descent-solver.md`, the demo-corpus sidecar, the AVBD
+  paper-gap audit, and the dev-task `README.md`/`RESUME.md` status entries
+  with the does-not-close-gates disclaimer); committed `avbd-*-packet.json`
+  bytes untouched. Gates: `pixi run lint`, `pixi run check-docs-policy`,
+  `pixi run check-avbd-packets`, and
+  `pixi run python -m pytest tests/test_check_avbd_packets.py` green.
 
 #### WP-091.2 Golden trajectories for the default step
 
