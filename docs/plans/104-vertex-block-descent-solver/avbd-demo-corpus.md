@@ -32,6 +32,28 @@ Status values:
 - `Complete`: all evidence in the contract above exists and is linked from this
   matrix.
 
+## Solver-Identity Relabel (PLAN-091 WP-091.1)
+
+No `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene in this matrix
+emplaces the internal AVBD rigid-contact opt-in config
+(`comps::RigidAvbdContactConfig`), because AVBD contact is not
+facade-selectable, so every rigid contact in those scenes ran DART's default
+sequential-impulse contact path. The native-runner timing ratios for contact
+scenes are whole-pipeline `World::step` comparisons, not AVBD-contact-solver
+comparisons: the pure-contact rows (2D Dynamic Friction, Static Friction,
+Pyramid, Cards, Stack, and Stack Ratio; 3D Ground, Dynamic Friction, Static
+Friction, Pyramid, Stack, and Stack Ratio) timed no AVBD rows at all; the
+joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and Net; 3D Soft
+Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows while
+their ordinary contacts ran sequential impulse; and incidental link-link
+contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging Rope; 3D
+Rope and Heavy Rope) also ran sequential impulse. A `Complete` status below
+covers the row's evidence contract, not an AVBD-contact-solver claim. This
+relabel changes no committed packet bytes and neither closes nor reopens any
+PLAN-104 completion gate; new AVBD evidence packets must machine-record
+`resolved_solver_identity` at AVBD packet schema version 2, enforced by
+`pixi run check-avbd-packets`.
+
 ## Current Narrow DART Surfaces
 
 These surfaces are useful foundations, but they do not complete the overall

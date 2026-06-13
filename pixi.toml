@@ -275,6 +275,7 @@ lint-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+lint-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -304,6 +305,7 @@ lint = { depends-on = [
   "lint-plan083-cpu-scene-corpus",
   "lint-plan083-gpu-parity-packet",
   "lint-plan083-completion-audit",
+  "lint-avbd-packets",
   "sync-ai-commands",
 ] }
 
@@ -372,6 +374,7 @@ check-plan083-completion-audit = { cmd = [
   "python",
   "scripts/check_plan083_completion_audit.py",
 ] }
+check-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -410,6 +413,7 @@ check-lint = { depends-on = [
   "check-phase5-cuda-workflow",
   "check-plan083-gpu-parity-packet",
   "check-plan083-completion-audit",
+  "check-avbd-packets",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
