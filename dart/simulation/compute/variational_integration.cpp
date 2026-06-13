@@ -4116,21 +4116,38 @@ VariationalConstraintLinearization computeVariationalConstraintLinearization(
     const std::vector<VariationalLoopConstraint>& constraints)
 {
   VariationalConstraintLinearization result;
+  MultibodyVariationalTreeScratch treeScratch;
+  VariationalConstraintProjectionScratch projectionScratch;
+  computeVariationalConstraintLinearizationInto(
+      registry, structure, constraints, treeScratch, projectionScratch, result);
+  return result;
+}
+
+//==============================================================================
+void computeVariationalConstraintLinearizationInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalConstraintProjectionScratch& projectionScratch,
+    VariationalConstraintLinearization& result)
+{
   if (structure.links.empty() || constraints.empty()) {
-    return result;
+    result.residual.resize(0);
+    result.jacobian.resize(0, 0);
+    return;
   }
-  const VarTree tree = buildVarTree(registry, structure);
-  VariationalConstraintProjectionScratch scratch;
-  bodyJacobiansInto(tree, scratch.jacobians);
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
+  bodyJacobiansInto(tree, projectionScratch.jacobians);
   constraintResidualAndJacobianInto(
       structure,
       tree,
-      scratch.jacobians,
+      projectionScratch.jacobians,
       variationalLoopConstraintSpan(constraints),
-      scratch);
-  result.residual = std::move(scratch.residual);
-  result.jacobian = std::move(scratch.jacobian);
-  return result;
+      projectionScratch);
+  result.residual = projectionScratch.residual;
+  result.jacobian = projectionScratch.jacobian;
 }
 
 //==============================================================================

@@ -3931,6 +3931,119 @@ TEST(World, VariationalInverseMassProductScratchUsesProvidedAllocator)
   EXPECT_EQ(heapCounter.allocationBytes(), 0u);
 }
 
+TEST(World, VariationalConstraintLinearizationScratchUsesProvidedAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("constraint_linearization_scratch_chain");
+  auto parent = robot.addLink("constraint_linearization_scratch_base");
+  constexpr std::size_t kJointCount = 96u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.03, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+  world.updateKinematics();
+
+  auto& registry = sx::detail::registryOf(world);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  const sx::comps::MultibodyStructure* structure = nullptr;
+  std::size_t structureCount = 0;
+  for (const auto entity : structures) {
+    structure = &structures.get<sx::comps::MultibodyStructure>(entity);
+    ++structureCount;
+  }
+  ASSERT_EQ(structureCount, 1u);
+  ASSERT_NE(structure, nullptr);
+  ASSERT_GT(structure->links.size(), kJointCount / 2u);
+
+  std::vector<sx::compute::VariationalLoopConstraint> constraints;
+  sx::compute::VariationalLoopConstraint distance;
+  distance.linkA = structure->links.back();
+  distance.pointA = Eigen::Vector3d(0.02, 0.0, 0.0);
+  distance.linkB = entt::null;
+  distance.pointB = Eigen::Vector3d(1.0, 0.1, 0.0);
+  distance.distance = true;
+  distance.length = 0.5;
+  constraints.push_back(distance);
+
+  sx::compute::VariationalLoopConstraint point;
+  point.linkA = structure->links.back();
+  point.pointA = Eigen::Vector3d::Zero();
+  point.linkB = structure->links[kJointCount / 2u];
+  point.pointB = Eigen::Vector3d(0.02, 0.0, 0.0);
+  point.distance = false;
+  constraints.push_back(point);
+
+  sx::compute::MultibodyVariationalTreeScratch treeScratch(allocator);
+  sx::compute::VariationalConstraintProjectionScratch projectionScratch(
+      allocator);
+  sx::compute::VariationalConstraintLinearization result;
+
+  const auto allocationsBeforeFirstCall = allocator.allocationCount;
+  sx::compute::computeVariationalConstraintLinearizationInto(
+      registry,
+      *structure,
+      constraints,
+      treeScratch,
+      projectionScratch,
+      result);
+  const auto reference = sx::compute::computeVariationalConstraintLinearization(
+      registry, *structure, constraints);
+
+  EXPECT_EQ(result.residual.size(), reference.residual.size());
+  EXPECT_EQ(result.jacobian.rows(), reference.jacobian.rows());
+  EXPECT_EQ(result.jacobian.cols(), reference.jacobian.cols());
+  EXPECT_TRUE(result.residual.isApprox(reference.residual, 1e-12));
+  EXPECT_TRUE(result.jacobian.isApprox(reference.jacobian, 1e-12));
+  EXPECT_EQ(result.residual.size(), 4);
+  EXPECT_EQ(result.jacobian.cols(), static_cast<Eigen::Index>(kJointCount));
+  EXPECT_GT(allocator.allocationCount, allocationsBeforeFirstCall)
+      << "constraint-linearization tree and projection scratch should "
+         "allocate through the provided allocator on the first direct helper "
+         "call";
+
+  const auto allocationsAfterFirstCall = allocator.allocationCount;
+  ScopedHeapAllocationCounter heapCounter;
+  sx::compute::computeVariationalConstraintLinearizationInto(
+      registry,
+      *structure,
+      constraints,
+      treeScratch,
+      projectionScratch,
+      result);
+  heapCounter.stop();
+
+  EXPECT_TRUE(result.residual.isApprox(reference.residual, 1e-12));
+  EXPECT_TRUE(result.jacobian.isApprox(reference.jacobian, 1e-12));
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstCall)
+      << "same-shape variational constraint-linearization diagnostics should "
+         "reuse retained tree and projection scratch capacity";
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "same-shape variational constraint-linearization diagnostics should "
+         "not fall back to global heap allocation after scratch and output "
+         "warmup";
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
 {
   namespace sx = dart::simulation;

@@ -766,6 +766,18 @@ computeVariationalConstraintLinearization(
     const comps::MultibodyStructure& structure,
     const std::vector<VariationalLoopConstraint>& constraints);
 
+/// Scratch-aware loop-closure linearization for repeated diagnostics on the
+/// same multibody shape. The caller retains tree, projection-scratch, and
+/// result payload capacity across calls; the no-scratch overload remains
+/// source-compatible.
+DART_SIMULATION_API void computeVariationalConstraintLinearizationInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const std::vector<VariationalLoopConstraint>& constraints,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalConstraintProjectionScratch& projectionScratch,
+    VariationalConstraintLinearization& result);
+
 /// Classification of one public loop closure (`comps::LoopClosure`) for the
 /// variational loop-closure solver. Point closures whose endpoints are links of
 /// a single multibody and/or a fixed world anchor are `Supported`; everything

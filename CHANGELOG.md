@@ -294,6 +294,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Variational inverse-mass product helpers can now write into caller-owned
     output while reusing caller-owned variational tree and linear-solve scratch,
     avoiding repeated same-shape direct-helper heap traffic after warmup.
+    Variational loop-constraint linearization helpers can now reuse
+    caller-owned variational tree and projection scratch while retaining output
+    payload capacity across same-shape diagnostic calls.
     The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the
