@@ -710,6 +710,51 @@ def test_lcp_profile_coverage_rejects_solver_family_mismatches() -> None:
         )
 
 
+def test_lcp_profile_csv_writer_records_valid_profile_rows(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "profile.csv"
+
+    module.save_profile_csv(
+        module.np.array([1.0, 2.0]),
+        {"Dantzig": module.np.array([1.0, 0.5])},
+        path,
+    )
+
+    assert path.read_text(encoding="utf-8").splitlines() == [
+        "tau,Dantzig",
+        "1.0000,1.0000",
+        "2.0000,0.5000",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("tau_values", "profiles", "message"),
+    [
+        ([1.0], {}, "no solver columns"),
+        ([], {"Dantzig": []}, "no rows"),
+        ([0.5], {"Dantzig": [1.0]}, "invalid tau"),
+        ([1.0, 1.0], {"Dantzig": [1.0, 1.0]}, "non-increasing tau"),
+        ([1.0, 2.0], {"Dantzig": [1.0]}, "mismatched profile length"),
+        ([1.0], {"Dantzig": [1.5]}, "invalid profile value"),
+    ],
+)
+def test_lcp_profile_csv_writer_rejects_invalid_profiles_before_write(
+    tmp_path: Path,
+    tau_values: list[float],
+    profiles: dict[str, list[float]],
+    message: str,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "profile.csv"
+
+    with pytest.raises(RuntimeError, match=message):
+        module.save_profile_csv(module.np.array(tau_values), profiles, path)
+
+    assert not path.exists()
+
+
 def test_lcp_profile_evidence_constants_match_roster_schema() -> None:
     module = _load_module()
     roster = sys.modules["check_lcp_solver_roster"]

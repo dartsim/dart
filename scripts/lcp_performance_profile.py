@@ -585,15 +585,61 @@ def save_profile_csv(
     profiles: dict,
     output_path: Path,
 ):
+    solvers = sorted(profiles.keys())
+    if not solvers:
+        raise RuntimeError(
+            "Cannot write LCP performance profile CSV with no solver columns"
+        )
+
+    tau_list = [float(tau) for tau in tau_values]
+    if not tau_list:
+        raise RuntimeError("Cannot write LCP performance profile CSV with no rows")
+
+    previous_tau: float | None = None
+    for tau in tau_list:
+        if not math.isfinite(tau) or tau < 1.0:
+            raise RuntimeError(
+                f"Cannot write LCP performance profile CSV with invalid tau {tau!r}"
+            )
+        if previous_tau is not None and tau <= previous_tau:
+            raise RuntimeError(
+                "Cannot write LCP performance profile CSV with non-increasing "
+                f"tau {tau!r}"
+            )
+        previous_tau = tau
+
+    for solver in solvers:
+        try:
+            profile_length = len(profiles[solver])
+        except TypeError as exc:
+            raise RuntimeError(
+                "Cannot write LCP performance profile CSV with non-sequence "
+                f"profile for {solver}"
+            ) from exc
+        if profile_length != len(tau_list):
+            raise RuntimeError(
+                "Cannot write LCP performance profile CSV with mismatched "
+                f"profile length for {solver}: expected {len(tau_list)}, "
+                f"got {profile_length}"
+            )
+
+    rows = []
+    for i, tau in enumerate(tau_list):
+        row = [f"{tau:.4f}"]
+        for solver in solvers:
+            value = _finite_float(profiles[solver][i])
+            if value is None or value < 0.0 or value > 1.0:
+                raise RuntimeError(
+                    "Cannot write LCP performance profile CSV with invalid "
+                    f"profile value for {solver} at tau {tau:.4f}"
+                )
+            row.append(f"{value:.4f}")
+        rows.append(row)
+
     with open(output_path, "w", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
-        solvers = sorted(profiles.keys())
         writer.writerow(["tau"] + solvers)
-        for i, tau in enumerate(tau_values):
-            row = [f"{tau:.4f}"]
-            for solver in solvers:
-                row.append(f"{profiles[solver][i]:.4f}")
-            writer.writerow(row)
+        writer.writerows(rows)
     print(f"Saved CSV: {output_path}")
 
 
