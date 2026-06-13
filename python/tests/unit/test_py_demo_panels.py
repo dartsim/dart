@@ -1543,6 +1543,40 @@ def test_rigid_ipc_shelf_panel_edits_capture_controls(scene_module: object) -> N
     assert capture_metrics["friction"] == pytest.approx(0.23)
 
 
+def test_world_related_shelf_panel_edits_capture_controls() -> None:
+    _require_simulation_symbols("World")
+
+    floating_setup = floating_base.build()
+    floating_builder = _ScriptedPanelBuilder(
+        slider_values={"Spin command": 4.5}
+    )
+    floating_setup.panels[0].build(floating_builder, object())
+    floating_metrics = floating_setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert "slider:Spin command:-6.0:6.0" in floating_builder.events
+    assert floating_metrics["controls"]["spin_command"] == pytest.approx(4.5)
+    assert floating_metrics["spin_command"] == pytest.approx(4.5)
+
+    articulated_setup = articulated.build()
+    articulated_builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Shoulder damping": 1.25,
+            "Wrist damping": 1.5,
+        }
+    )
+    articulated_setup.panels[0].build(articulated_builder, object())
+    articulated_metrics = articulated_setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert "slider:Shoulder damping:0.0:2.0" in articulated_builder.events
+    assert "slider:Wrist damping:0.0:2.0" in articulated_builder.events
+    assert articulated_metrics["controls"]["shoulder_damping"] == pytest.approx(
+        1.25
+    )
+    assert articulated_metrics["controls"]["wrist_damping"] == pytest.approx(
+        1.5
+    )
+    assert articulated_metrics["shoulder_damping"] == pytest.approx(1.25)
+    assert articulated_metrics["wrist_damping"] == pytest.approx(1.5)
+
+
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 

@@ -1425,6 +1425,9 @@ def test_world_related_evidence_routes_report_capture_metrics() -> None:
     assert floating_metrics["linear_speed"] == pytest.approx(1.0, abs=0.01)
     assert floating_metrics["angular_speed"] == pytest.approx(2.0)
     assert floating_metrics["world_time"] > 0.0
+    assert floating_metrics["controls"]["spin_command"] == pytest.approx(
+        floating_metrics["spin_command"]
+    )
     assert np.isfinite(
         [
             float(floating_metrics["body_x"]),
@@ -1459,6 +1462,12 @@ def test_world_related_evidence_routes_report_capture_metrics() -> None:
     assert articulated_metrics["link_count"] == pytest.approx(3.0)
     assert articulated_metrics["history"]["samples"] >= 9.0
     assert articulated_metrics["world_time"] > 0.0
+    assert articulated_metrics["controls"]["shoulder_damping"] == pytest.approx(
+        articulated_metrics["shoulder_damping"]
+    )
+    assert articulated_metrics["controls"]["wrist_damping"] == pytest.approx(
+        articulated_metrics["wrist_damping"]
+    )
     assert np.isfinite(
         [
             float(articulated_metrics["time_step_ms"]),

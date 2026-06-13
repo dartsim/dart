@@ -3,15 +3,23 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and one
-local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Capture rigid IPC shelf controls` after
-`Capture rigid query option controls`. The pushed origin branch is at
+`feature/rigid-body-gui-visual-verification` is expected to be clean and two
+local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Capture world related shelf controls` after
+`Capture rigid IPC shelf controls`. The pushed origin branch is at
 `Capture rigid query option controls`. There is still no PR for this branch. Do
 not push, create a PR, set a milestone, rerun CI, or mutate review state
 without explicit maintainer/user approval.
 
-Latest local continuation: optional Rigid IPC shelf and capture-first packet
+Latest local continuation: non-numbered World related shelf rows now publish
+their user-editable controls in capture metrics. `floating_base` records
+`controls.spin_command` from the live floating-joint velocity, and
+`articulated` records `controls.shoulder_damping` plus
+`controls.wrist_damping` from the live two-link arm joints. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_world_related_shelf_panel_edits_capture_controls python/tests/integration/test_demos_cycle.py::test_world_related_evidence_routes_report_capture_metrics -q`
+reported `2 passed`. No new visual packet was generated in this slice.
+
+Previous local continuation: optional Rigid IPC shelf and capture-first packet
 rows now publish their user-editable controls in capture metrics. The direct
 Rigid IPC shelf rows (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
 `rigid_ipc_pile`) record `controls.friction`, and the capture-first stack

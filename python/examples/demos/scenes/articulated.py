@@ -125,6 +125,7 @@ def build() -> SceneSetup:
     def capture_metrics() -> dict[str, object]:
         if not _last_metrics:
             record_metrics()
+        metrics = sample_metrics()
         speed_values = list(joint_speed_history)
         height_values = list(forearm_height_history)
         return {
@@ -138,15 +139,19 @@ def build() -> SceneSetup:
             "world_time": float(world.time),
             "dofs": float(robot.num_dofs),
             "link_count": 3.0,
-            "shoulder_speed": float(_last_metrics["shoulder_speed"]),
-            "wrist_speed": float(_last_metrics["wrist_speed"]),
-            "max_joint_speed": float(_last_metrics["max_joint_speed"]),
-            "forearm_height": float(_last_metrics["forearm_height"]),
-            "shoulder_damping": float(_last_metrics["shoulder_damping"]),
-            "wrist_damping": float(_last_metrics["wrist_damping"]),
-            "shoulder_position": float(_last_metrics["shoulder_position"]),
-            "wrist_position_norm": float(_last_metrics["wrist_position_norm"]),
-            "metrics": dict(_last_metrics),
+            "controls": {
+                "shoulder_damping": float(metrics["shoulder_damping"]),
+                "wrist_damping": float(metrics["wrist_damping"]),
+            },
+            "shoulder_speed": float(metrics["shoulder_speed"]),
+            "wrist_speed": float(metrics["wrist_speed"]),
+            "max_joint_speed": float(metrics["max_joint_speed"]),
+            "forearm_height": float(metrics["forearm_height"]),
+            "shoulder_damping": float(metrics["shoulder_damping"]),
+            "wrist_damping": float(metrics["wrist_damping"]),
+            "shoulder_position": float(metrics["shoulder_position"]),
+            "wrist_position_norm": float(metrics["wrist_position_norm"]),
+            "metrics": dict(metrics),
             "history": {
                 "samples": float(len(speed_values)),
                 "max_joint_speed": max(speed_values, default=0.0),

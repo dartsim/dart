@@ -78,6 +78,7 @@ def build() -> SceneSetup:
     def capture_metrics() -> dict[str, object]:
         if not _last_metrics:
             record_metrics()
+        metrics = sample_metrics()
         linear_values = list(linear_speed_history)
         angular_values = list(angular_speed_history)
         x_values = list(x_position_history)
@@ -92,13 +93,16 @@ def build() -> SceneSetup:
             "world_time": float(world.time),
             "dofs": float(robot.num_dofs),
             "gravity_z": float(world.gravity[2]),
-            "linear_speed": float(_last_metrics["linear_speed"]),
-            "angular_speed": float(_last_metrics["angular_speed"]),
-            "body_x": float(_last_metrics["body_x"]),
-            "body_y": float(_last_metrics["body_y"]),
-            "body_z": float(_last_metrics["body_z"]),
-            "spin_command": float(_last_metrics["spin_command"]),
-            "metrics": dict(_last_metrics),
+            "controls": {
+                "spin_command": float(metrics["spin_command"]),
+            },
+            "linear_speed": float(metrics["linear_speed"]),
+            "angular_speed": float(metrics["angular_speed"]),
+            "body_x": float(metrics["body_x"]),
+            "body_y": float(metrics["body_y"]),
+            "body_z": float(metrics["body_z"]),
+            "spin_command": float(metrics["spin_command"]),
+            "metrics": dict(metrics),
             "history": {
                 "samples": float(len(linear_values)),
                 "max_linear_speed": max(linear_values, default=0.0),

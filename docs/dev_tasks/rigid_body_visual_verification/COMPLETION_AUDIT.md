@@ -7,6 +7,15 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: non-numbered World related shelf rows now
+publish user-editable control metadata in capture metrics. `floating_base`
+records `controls.spin_command` from the live floating-joint velocity, while
+`articulated` records `controls.shoulder_damping` and
+`controls.wrist_damping` from the live two-link arm joints. Focused
+World-related shelf guards reported `2 passed`. This slice does not add a new
+visual packet; the existing rows 01-36 and optional rows 37-53 packets remain
+the latest broad static review artifacts.
+
 Latest local implementation slice: optional Rigid IPC shelf and capture-first
 packet rows now publish user-editable control metadata in capture metrics. The
 direct shelf routes (`rigid_ipc`, `rigid_ipc_slide`, `rigid_ipc_incline`, and
