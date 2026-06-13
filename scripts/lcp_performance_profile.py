@@ -15,7 +15,8 @@ Options:
     --benchmark-timeout SECONDS
                     Benchmark subprocess timeout (default: 600)
     --allow-partial
-                    Allow incomplete native solver coverage for smoke runs
+                    Allow incomplete native solver coverage for smoke runs.
+                    Partial runs must use a scratch --output directory.
 """
 
 import argparse
@@ -61,6 +62,7 @@ _NATIVE_SUPPORT_BY_CATEGORY: dict[str, set[str]] | None = None
 
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
+DEFAULT_OUTPUT_DIR = Path("docs/background/lcp/figures")
 PROFILE_EVIDENCE_CSV_NAME = "performance_profile_evidence.csv"
 QUALITY_METRIC_FIELDS = ("residual", "complementarity", "bound_violation")
 
@@ -137,6 +139,33 @@ def run_benchmarks(
         sys.exit(1)
 
     return json.loads(result.stdout)
+
+
+def _actual_output_dir(output: Path, cwd: Path) -> Path:
+    if output.is_absolute():
+        return output.resolve()
+    return (cwd / output).resolve()
+
+
+def validate_partial_output_target(
+    allow_partial: bool,
+    output: Path,
+    project_root: Path,
+    cwd: Path | None = None,
+) -> None:
+    if not allow_partial:
+        return
+
+    actual_output = _actual_output_dir(output, cwd or Path.cwd())
+    checked_output = (project_root / DEFAULT_OUTPUT_DIR).resolve()
+    if actual_output != checked_output:
+        return
+
+    raise RuntimeError(
+        "Refusing to write partial LCP performance profiles to "
+        f"{DEFAULT_OUTPUT_DIR}. Use --output build/<scratch-dir> with "
+        "--allow-partial smoke runs."
+    )
 
 
 def _parse_problem_size(token: str) -> int | None:
@@ -909,7 +938,7 @@ def main():
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("docs/background/lcp/figures"),
+        default=DEFAULT_OUTPUT_DIR,
         help="Output directory",
     )
     parser.add_argument(
@@ -949,6 +978,11 @@ def main():
 
     project_root = Path(__file__).parent.parent
     benchmark_exe = project_root / "build/default/cpp/Release/bin/BM_LCP_COMPARE"
+    try:
+        validate_partial_output_target(args.allow_partial, args.output, project_root)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)
 
     if args.run or not args.cache.exists():
         if not benchmark_exe.exists():

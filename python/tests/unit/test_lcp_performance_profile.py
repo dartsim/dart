@@ -517,6 +517,26 @@ def test_lcp_profile_coverage_rejects_invalid_rows_even_when_partial() -> None:
         )
 
 
+def test_lcp_profile_rejects_partial_checked_output_target() -> None:
+    module = _load_module()
+
+    with pytest.raises(RuntimeError, match="Refusing to write partial"):
+        module.validate_partial_output_target(
+            True, module.DEFAULT_OUTPUT_DIR, ROOT, cwd=ROOT
+        )
+
+
+def test_lcp_profile_allows_partial_scratch_output_target() -> None:
+    module = _load_module()
+
+    module.validate_partial_output_target(
+        True, Path("build/lcp_profile_smoke"), ROOT, cwd=ROOT
+    )
+    module.validate_partial_output_target(
+        False, module.DEFAULT_OUTPUT_DIR, ROOT, cwd=ROOT
+    )
+
+
 def test_lcp_profile_coverage_rejects_historical_non_native_rows() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(

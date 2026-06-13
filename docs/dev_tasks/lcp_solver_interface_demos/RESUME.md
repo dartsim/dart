@@ -1,5 +1,87 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Partial Profile Output Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `58630f0e824 Guard rendered LCP evidence schema rows`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   partial profile output guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `58630f0e824 Guard rendered LCP evidence schema rows`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by forty-five commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/lcp_performance_profile.py` now refuses `--allow-partial` when the
+  output target resolves to the checked `docs/background/lcp/figures` artifact
+  directory. Partial smoke profile runs must choose an explicit scratch output
+  such as `build/lcp_profile_smoke`.
+- The guard runs before benchmark/cache loading or output-directory creation,
+  so a partial smoke invocation cannot overwrite the durable
+  `performance_profile_evidence.csv` or `performance_profile_<category>.csv`
+  artifacts.
+- `python/tests/unit/test_lcp_performance_profile.py` covers the rejected
+  checked-output target and the accepted scratch-output path.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and C++ solver code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+PYTHONPATH=python pixi run python scripts/lcp_performance_profile.py --allow-partial --cache build/lcp_partial_guard_missing.json
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+pixi run build
+```
+
+Result:
+
+- LCP performance profile generator tests: passed with 67 tests.
+- Direct partial-output CLI check: exited with status 1 before output work and
+  printed the checked-output refusal.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- `pixi run lint`: passed, including the LCP solver roster and generated AI
+  command checks.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+profile-generator unit test, direct partial-output CLI check, roster check,
+`pixi run lint`, `git diff --check`, `pixi run build`, and any broader gate
+warranted by the final diff, then commit the focused script/test/docs change.
+Then continue the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Rendered Evidence Schema Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
