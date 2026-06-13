@@ -2723,6 +2723,7 @@ def build() -> SceneSetup:
                     "Worst error",
                     "Worst residual",
                     "Slowest case",
+                    "Slowest us",
                 ],
             ):
                 for row in standalone_solver_profile_rows:
@@ -2737,6 +2738,7 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
                     _write_table_cell(builder, f"{row['max_residual']:.2e}")
                     _write_table_cell(builder, row["slowest_case"])
+                    _write_table_cell(builder, f"{row['slowest_elapsed_us']:.1f}")
                 builder.end_table()
 
             if builder.begin_table(

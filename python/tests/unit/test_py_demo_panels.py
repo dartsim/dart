@@ -2135,7 +2135,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert any(guidance_text in event for event in builder.events)
     assert (
         "table:lcp_solver_profile:Solver,Native cases,OK,Total us,Worst error,"
-        "Worst residual,Slowest case"
+        "Worst residual,Slowest case,Slowest us"
+        in builder.events
+    )
+    assert (
+        f"text:{solver_profile_by_name['Dantzig']['slowest_elapsed_us']:.1f}"
         in builder.events
     )
     assert (
