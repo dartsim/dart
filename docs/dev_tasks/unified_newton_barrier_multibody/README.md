@@ -2,7 +2,30 @@
 
 ## Current Status
 
-Latest built-in World-step surface-contact diagnostics checkpoint (2026-06-13):
+Latest external World-step surface-contact diagnostics checkpoint (2026-06-13):
+work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
+#2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
+push, PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends public `DeformableSolverDiagnostics`
+(`World::getLastDeformableSolverDiagnostics` and dartpy
+`last_deformable_solver_diagnostics`) with existing default deformable
+`World::step` inter-body deformable, deformable-vs-static-rigid, and
+deformable-vs-moving-rigid surface CCD activity counters. Focused built-in
+`World::step` C++ tests now cover all three external families at the public
+diagnostics boundary. This is CPU observability only; it does not change the
+reduced CPU scene packet rows, prove GPU `World::step`, production scene-level
+GPU contact candidate construction, production runtime scene filtering,
+analytic curved CCD, full runtime affine/FEM coupling, or any speedup gate.
+
+Current validation passed:
+
+- `pixi run cmake --build build/default/cpp/Release --target test_deformable_body`
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_deformable_body$'`
+
+Previous built-in World-step self-surface diagnostics checkpoint (2026-06-13):
 work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
 #2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
 push, PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -28,9 +51,10 @@ claiming paper-scale reproduction. Fresh packet evidence records:
 
 This is CPU observability and reduced packet evidence only. It does not prove
 GPU `World::step`, production scene-level GPU contact candidate construction,
-production runtime scene filtering, analytic curved CCD, inter-body/static or
-moving-rigid surface-contact diagnostics, full runtime affine/FEM coupling, or
-any speedup gate.
+production runtime scene filtering, analytic curved CCD, full runtime
+affine/FEM coupling, or any speedup gate. External inter-body, static-rigid,
+and moving-rigid surface-contact diagnostics are covered by the later public
+diagnostics checkpoint above.
 
 Current validation passed:
 

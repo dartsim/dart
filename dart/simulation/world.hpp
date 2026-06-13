@@ -108,8 +108,8 @@ struct CollisionQueryOptions
 /// A read-only snapshot of the deformable solver's per-step diagnostics, folded
 /// across all deformable bodies on the most recent ``World::step``. This is a
 /// curated, stable subset of the internal ``compute::DeformableSolverStats``
-/// (mesh sizes, projected-Newton convergence, self-contact activity,
-/// self-surface candidate/CCD counters, and the contact closest-approach
+/// (mesh sizes, projected-Newton convergence, self-contact activity, surface
+/// contact candidate/CCD counters, and the contact closest-approach
 /// diagnostic), surfaced for observability from tools and bindings without
 /// exposing the full internal counter set. All counters are zero before the
 /// first step that runs a deformable solve.
@@ -163,6 +163,47 @@ struct DeformableSolverDiagnostics
   std::size_t surfaceContactCcdHits = 0;
   std::size_t surfaceContactCcdLimitedSteps = 0;
   std::size_t surfaceContactCcdZeroStepCount = 0;
+  /// Runtime inter-body deformable surface-contact candidate and CCD activity
+  /// produced inside the default deformable ``World::step`` line search.
+  std::size_t interBodySurfaceContactCandidateBuilds = 0;
+  std::size_t interBodySurfaceContactPointTriangleCandidates = 0;
+  std::size_t interBodySurfaceContactEdgeEdgeCandidates = 0;
+  std::size_t interBodySurfaceContactCcdPointTriangleChecks = 0;
+  std::size_t interBodySurfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t interBodySurfaceContactCcdHits = 0;
+  std::size_t interBodySurfaceContactCcdLimitedSteps = 0;
+  std::size_t interBodySurfaceContactCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-static-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t staticRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t staticRigidSurfaceCcdBoxCount = 0;
+  std::size_t staticRigidSurfaceCcdSphereCount = 0;
+  std::size_t staticRigidSurfaceCcdTriangleCount = 0;
+  std::size_t staticRigidSurfaceCcdEdgeCount = 0;
+  std::size_t staticRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t staticRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t staticRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t staticRigidSurfaceCcdHits = 0;
+  std::size_t staticRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t staticRigidSurfaceCcdZeroStepCount = 0;
+  /// Runtime deformable-vs-moving-rigid surface CCD activity produced inside
+  /// the default deformable ``World::step`` line search.
+  std::size_t movingRigidSurfaceCcdSnapshotBuilds = 0;
+  std::size_t movingRigidSurfaceCcdBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdSampleCount = 0;
+  std::size_t movingRigidSurfaceCcdInflatedBoxCount = 0;
+  std::size_t movingRigidSurfaceCcdTriangleCount = 0;
+  std::size_t movingRigidSurfaceCcdEdgeCount = 0;
+  std::size_t movingRigidSurfaceCcdCandidateBuilds = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleCandidates = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeCandidates = 0;
+  std::size_t movingRigidSurfaceCcdPointTriangleChecks = 0;
+  std::size_t movingRigidSurfaceCcdEdgeEdgeChecks = 0;
+  std::size_t movingRigidSurfaceCcdHits = 0;
+  std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
+  std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
   /// Coulomb friction energy dissipated at the converged iterate.
   double frictionDissipation = 0.0;
   /// Contact closest-approach diagnostic at the converged iterate: the smallest

@@ -854,6 +854,9 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(before.surfaceContactCandidateBuilds, 0u);
   EXPECT_EQ(before.surfaceContactCcdHits, 0u);
   EXPECT_EQ(before.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(before.interBodySurfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(before.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(before.movingRigidSurfaceCcdCandidateBuilds, 0u);
 
   world.step(5);
 
@@ -879,6 +882,9 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(reset.surfaceContactCandidateBuilds, 0u);
   EXPECT_EQ(reset.surfaceContactCcdHits, 0u);
   EXPECT_EQ(reset.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(reset.interBodySurfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(reset.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_EQ(reset.movingRigidSurfaceCcdCandidateBuilds, 0u);
 }
 
 //==============================================================================
@@ -2088,6 +2094,31 @@ TEST(DeformableBody, SurfaceContactCcdReportsBuiltInWorldDiagnostics)
 }
 
 //==============================================================================
+TEST(DeformableBody, InterBodySurfaceContactCcdReportsBuiltInWorldDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto moving
+      = world.addDeformableBody("moving", makeInterBodyMovingPointOptions());
+  world.addDeformableBody("obstacle", makeStationaryTriangleObstacleOptions());
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_GT(moving.getPosition(3).z(), 0.0);
+  EXPECT_LT(moving.getPosition(3).z(), 1.0);
+  EXPECT_GT(diagnostics.interBodySurfaceContactCandidateBuilds, 0u);
+  EXPECT_GT(diagnostics.interBodySurfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(diagnostics.interBodySurfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(diagnostics.interBodySurfaceContactCcdHits, 0u);
+  EXPECT_GT(diagnostics.interBodySurfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.movingRigidSurfaceCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, InterBodySurfaceContactCcdLimitsMovingPoint)
 {
   sx::World world;
@@ -2231,6 +2262,42 @@ TEST(DeformableBody, StaticRigidSurfaceCcdLimitsPointOnlySideCrossing)
   EXPECT_GT(stats.staticRigidSurfaceCcdLimitedSteps, 0u);
   EXPECT_EQ(stats.surfaceContactCcdLimitedSteps, 0u);
   EXPECT_EQ(stats.interBodySurfaceContactCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticRigidSurfaceCcdReportsBuiltInWorldDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  addStaticSurfaceCcdBox(
+      world,
+      "static_box",
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 1.0, 1.0));
+
+  auto body = world.addDeformableBody(
+      "fast_point",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_LT(body.getPosition(0).x(), -0.05);
+  EXPECT_GT(body.getPosition(0).x(), -1.0);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdSnapshotBuilds, 0u);
+  EXPECT_EQ(diagnostics.staticRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_EQ(diagnostics.staticRigidSurfaceCcdTriangleCount, 12u);
+  EXPECT_EQ(diagnostics.staticRigidSurfaceCcdEdgeCount, 12u);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(diagnostics.staticRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.surfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.interBodySurfaceContactCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.movingRigidSurfaceCcdBoxCount, 0u);
 }
 
 //==============================================================================
@@ -3255,6 +3322,23 @@ TEST(DeformableBody, MovingRigidSurfaceCcdMatchesRealizedMotionInFullPipeline)
           Eigen::Vector3d(-0.5, 0.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
 
   world.step(); // default pipeline: integrates the obstacle at stage 5
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdSnapshotBuilds, 0u);
+  EXPECT_EQ(diagnostics.movingRigidSurfaceCcdBoxCount, 1u);
+  EXPECT_GE(diagnostics.movingRigidSurfaceCcdSampleCount, 2u);
+  EXPECT_EQ(
+      diagnostics.movingRigidSurfaceCcdTriangleCount,
+      12u * diagnostics.movingRigidSurfaceCcdSampleCount);
+  EXPECT_EQ(
+      diagnostics.movingRigidSurfaceCcdEdgeCount,
+      12u * diagnostics.movingRigidSurfaceCcdSampleCount);
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdCandidateBuilds, 0u);
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdPointTriangleCandidates, 0u);
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdPointTriangleChecks, 0u);
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdHits, 0u);
+  EXPECT_GT(diagnostics.movingRigidSurfaceCcdLimitedSteps, 0u);
+  EXPECT_EQ(diagnostics.staticRigidSurfaceCcdBoxCount, 0u);
 
   // Obstacle velocity is unchanged (no gravity, no rigid contacts), so the
   // predicted end pose equals the realized one: center = 1.0 + (-1.0) * 0.1.

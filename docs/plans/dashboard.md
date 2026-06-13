@@ -370,9 +370,10 @@ its own line so status updates remain git-history friendly.
   unique-edge dedup row plus a reduced scene-owned diagonal assembly/solve row,
   reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
-  an ABD/FEM coupled micro-solve packet, and built-in deformable `World::step`
+  an ABD/FEM coupled micro-solve packet, built-in deformable `World::step`
   self-surface candidate/CCD diagnostics in the reduced lying-flat, Candy, and
-  ABD/FEM CPU scene packets. It still keeps runtime scene
+  ABD/FEM CPU scene packets, and public built-in inter-body/static-rigid/
+  moving-rigid surface CCD diagnostics. It still keeps runtime scene
   filtering, analytic curved CCD, production scene-level line search inside
   `World::step`, full runtime
   sparse Hessian graph construction and assembly beyond the reduced dedup row,
