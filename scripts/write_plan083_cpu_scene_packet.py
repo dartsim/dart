@@ -473,26 +473,92 @@ SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
     "surface_contact_ccd_zero_step_count",
 )
 
+EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
+    "inter_body_surface_contact_candidate_builds",
+    "inter_body_surface_contact_point_triangle_candidates",
+    "inter_body_surface_contact_edge_edge_candidates",
+    "inter_body_surface_contact_ccd_point_triangle_checks",
+    "inter_body_surface_contact_ccd_edge_edge_checks",
+    "inter_body_surface_contact_ccd_hits",
+    "inter_body_surface_contact_ccd_limited_steps",
+    "inter_body_surface_contact_ccd_zero_step_count",
+    "static_rigid_surface_ccd_snapshot_builds",
+    "static_rigid_surface_ccd_box_count",
+    "static_rigid_surface_ccd_sphere_count",
+    "static_rigid_surface_ccd_triangle_count",
+    "static_rigid_surface_ccd_edge_count",
+    "static_rigid_surface_ccd_candidate_builds",
+    "static_rigid_surface_ccd_point_triangle_candidates",
+    "static_rigid_surface_ccd_edge_edge_candidates",
+    "static_rigid_surface_ccd_point_triangle_checks",
+    "static_rigid_surface_ccd_edge_edge_checks",
+    "static_rigid_surface_ccd_hits",
+    "static_rigid_surface_ccd_limited_steps",
+    "static_rigid_surface_ccd_zero_step_count",
+    "moving_rigid_surface_ccd_snapshot_builds",
+    "moving_rigid_surface_ccd_box_count",
+    "moving_rigid_surface_ccd_sample_count",
+    "moving_rigid_surface_ccd_inflated_box_count",
+    "moving_rigid_surface_ccd_triangle_count",
+    "moving_rigid_surface_ccd_edge_count",
+    "moving_rigid_surface_ccd_candidate_builds",
+    "moving_rigid_surface_ccd_point_triangle_candidates",
+    "moving_rigid_surface_ccd_edge_edge_candidates",
+    "moving_rigid_surface_ccd_point_triangle_checks",
+    "moving_rigid_surface_ccd_edge_edge_checks",
+    "moving_rigid_surface_ccd_hits",
+    "moving_rigid_surface_ccd_limited_steps",
+    "moving_rigid_surface_ccd_zero_step_count",
+)
+
+DEFORMABLE_RUNTIME_CONTACT_COUNTER_KEYS = (
+    SURFACE_CONTACT_RUNTIME_COUNTER_KEYS + EXTERNAL_SURFACE_CONTACT_RUNTIME_COUNTER_KEYS
+)
+
 
 def _surface_contact_runtime_counters(row: Mapping[str, Any]) -> dict[str, int]:
     counters = {
         key: int(_finite_number(row, key))
-        for key in SURFACE_CONTACT_RUNTIME_COUNTER_KEYS
+        for key in DEFORMABLE_RUNTIME_CONTACT_COUNTER_KEYS
     }
     for key, value in counters.items():
         if value < 0:
             raise Plan083CpuScenePacketError(
                 f"{benchmark_row_name(row)} has negative counter {key}"
             )
-    ccd_checks = (
-        counters["surface_contact_ccd_point_triangle_checks"]
-        + counters["surface_contact_ccd_edge_edge_checks"]
-    )
-    if counters["surface_contact_ccd_hits"] > ccd_checks:
-        raise Plan083CpuScenePacketError(
-            f"{benchmark_row_name(row)} has more surface-contact CCD hits "
-            "than CCD checks"
-        )
+
+    for label, point_key, edge_key, hits_key in (
+        (
+            "surface-contact CCD",
+            "surface_contact_ccd_point_triangle_checks",
+            "surface_contact_ccd_edge_edge_checks",
+            "surface_contact_ccd_hits",
+        ),
+        (
+            "inter-body surface-contact CCD",
+            "inter_body_surface_contact_ccd_point_triangle_checks",
+            "inter_body_surface_contact_ccd_edge_edge_checks",
+            "inter_body_surface_contact_ccd_hits",
+        ),
+        (
+            "static-rigid surface CCD",
+            "static_rigid_surface_ccd_point_triangle_checks",
+            "static_rigid_surface_ccd_edge_edge_checks",
+            "static_rigid_surface_ccd_hits",
+        ),
+        (
+            "moving-rigid surface CCD",
+            "moving_rigid_surface_ccd_point_triangle_checks",
+            "moving_rigid_surface_ccd_edge_edge_checks",
+            "moving_rigid_surface_ccd_hits",
+        ),
+    ):
+        ccd_checks = counters[point_key] + counters[edge_key]
+        if counters[hits_key] > ccd_checks:
+            row_name = benchmark_row_name(row)
+            raise Plan083CpuScenePacketError(
+                f"{row_name} has more {label} hits than CCD checks"
+            )
     return counters
 
 

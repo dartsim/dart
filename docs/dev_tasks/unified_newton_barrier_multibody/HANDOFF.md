@@ -1,5 +1,44 @@
 # Unified Newton-Barrier Handoff
 
+## CPU Scene External Surface-Contact Packet Counters Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends `bm_plan083_cpu_scene_corpus` and
+`scripts/write_plan083_cpu_scene_packet.py` so the reduced deformable CPU scene
+rows serialize and validate the public external surface CCD counters exposed at
+the diagnostics boundary: inter-body deformable, deformable-vs-static-rigid,
+and deformable-vs-moving-rigid candidate, CCD check/hit/limiter, and snapshot
+counts. The regenerated `lying_flat`, `candy`, and `abd_fem_coupling` packet
+rows now carry those fields alongside the self-surface counters. In the current
+reduced fixtures, the inter-body/static-rigid/moving-rigid candidate, check,
+and hit counters remain zero, while static-rigid and moving-rigid snapshot
+builds record 1 on the median rows; that is packet schema and observability
+evidence, not nonzero external-contact or paper-scale behavior.
+
+This is CPU observability and reduced packet evidence only. It does not prove
+nonzero paper-scale external contact, GPU `World::step`, production
+scene-level GPU contact candidate construction, production runtime scene
+filtering, analytic curved CCD, full runtime affine/FEM coupling, or any
+speedup gate.
+
+Current validation passed:
+
+- `pixi run lint`
+- `pixi run build`
+- `pixi run cmake --build build/default/cpp/Release --target bm_plan083_cpu_scene_corpus`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene lying_flat`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene candy`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene abd_fem_coupling`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py tests/test_plan083_cpu_scene_corpus.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `git diff --check`
+
 ## External World-Step Surface-Contact Diagnostics Checkpoint (2026-06-13)
 
 Work continued locally on

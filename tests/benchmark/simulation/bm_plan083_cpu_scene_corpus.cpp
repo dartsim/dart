@@ -1518,6 +1518,87 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.surfaceContactCcdLimitedSteps);
   state.counters["surface_contact_ccd_zero_step_count"]
       = static_cast<double>(diagnostics.surfaceContactCcdZeroStepCount);
+  state.counters["inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCandidateBuilds);
+  state.counters["inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactPointTriangleCandidates);
+  state.counters["inter_body_surface_contact_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactEdgeEdgeCandidates);
+  state.counters["inter_body_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdPointTriangleChecks);
+  state.counters["inter_body_surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdEdgeEdgeChecks);
+  state.counters["inter_body_surface_contact_ccd_hits"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCcdHits);
+  state.counters["inter_body_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.interBodySurfaceContactCcdLimitedSteps);
+  state.counters["inter_body_surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(
+          diagnostics.interBodySurfaceContactCcdZeroStepCount);
+  state.counters["static_rigid_surface_ccd_snapshot_builds"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdSnapshotBuilds);
+  state.counters["static_rigid_surface_ccd_box_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdBoxCount);
+  state.counters["static_rigid_surface_ccd_sphere_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdSphereCount);
+  state.counters["static_rigid_surface_ccd_triangle_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdTriangleCount);
+  state.counters["static_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdEdgeCount);
+  state.counters["static_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["static_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["static_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["static_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.staticRigidSurfaceCcdPointTriangleChecks);
+  state.counters["static_rigid_surface_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["static_rigid_surface_ccd_hits"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdHits);
+  state.counters["static_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdLimitedSteps);
+  state.counters["static_rigid_surface_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.staticRigidSurfaceCcdZeroStepCount);
+  state.counters["moving_rigid_surface_ccd_snapshot_builds"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdSnapshotBuilds);
+  state.counters["moving_rigid_surface_ccd_box_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdBoxCount);
+  state.counters["moving_rigid_surface_ccd_sample_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdSampleCount);
+  state.counters["moving_rigid_surface_ccd_inflated_box_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdInflatedBoxCount);
+  state.counters["moving_rigid_surface_ccd_triangle_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdTriangleCount);
+  state.counters["moving_rigid_surface_ccd_edge_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdEdgeCount);
+  state.counters["moving_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["moving_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["moving_rigid_surface_ccd_edge_edge_candidates"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdEdgeEdgeCandidates);
+  state.counters["moving_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          diagnostics.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["moving_rigid_surface_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdEdgeEdgeChecks);
+  state.counters["moving_rigid_surface_ccd_hits"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdHits);
+  state.counters["moving_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdLimitedSteps);
+  state.counters["moving_rigid_surface_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.movingRigidSurfaceCcdZeroStepCount);
 }
 
 //==============================================================================

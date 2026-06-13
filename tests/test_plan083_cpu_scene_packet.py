@@ -54,6 +54,41 @@ def _surface_contact_counters() -> dict[str, object]:
         "surface_contact_ccd_hits": 1,
         "surface_contact_ccd_limited_steps": 1,
         "surface_contact_ccd_zero_step_count": 0,
+        "inter_body_surface_contact_candidate_builds": 0,
+        "inter_body_surface_contact_point_triangle_candidates": 0,
+        "inter_body_surface_contact_edge_edge_candidates": 0,
+        "inter_body_surface_contact_ccd_point_triangle_checks": 0,
+        "inter_body_surface_contact_ccd_edge_edge_checks": 0,
+        "inter_body_surface_contact_ccd_hits": 0,
+        "inter_body_surface_contact_ccd_limited_steps": 0,
+        "inter_body_surface_contact_ccd_zero_step_count": 0,
+        "static_rigid_surface_ccd_snapshot_builds": 0,
+        "static_rigid_surface_ccd_box_count": 0,
+        "static_rigid_surface_ccd_sphere_count": 0,
+        "static_rigid_surface_ccd_triangle_count": 0,
+        "static_rigid_surface_ccd_edge_count": 0,
+        "static_rigid_surface_ccd_candidate_builds": 0,
+        "static_rigid_surface_ccd_point_triangle_candidates": 0,
+        "static_rigid_surface_ccd_edge_edge_candidates": 0,
+        "static_rigid_surface_ccd_point_triangle_checks": 0,
+        "static_rigid_surface_ccd_edge_edge_checks": 0,
+        "static_rigid_surface_ccd_hits": 0,
+        "static_rigid_surface_ccd_limited_steps": 0,
+        "static_rigid_surface_ccd_zero_step_count": 0,
+        "moving_rigid_surface_ccd_snapshot_builds": 0,
+        "moving_rigid_surface_ccd_box_count": 0,
+        "moving_rigid_surface_ccd_sample_count": 0,
+        "moving_rigid_surface_ccd_inflated_box_count": 0,
+        "moving_rigid_surface_ccd_triangle_count": 0,
+        "moving_rigid_surface_ccd_edge_count": 0,
+        "moving_rigid_surface_ccd_candidate_builds": 0,
+        "moving_rigid_surface_ccd_point_triangle_candidates": 0,
+        "moving_rigid_surface_ccd_edge_edge_candidates": 0,
+        "moving_rigid_surface_ccd_point_triangle_checks": 0,
+        "moving_rigid_surface_ccd_edge_edge_checks": 0,
+        "moving_rigid_surface_ccd_hits": 0,
+        "moving_rigid_surface_ccd_limited_steps": 0,
+        "moving_rigid_surface_ccd_zero_step_count": 0,
     }
 
 
@@ -579,6 +614,9 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["surface_contact_edge_edge_candidates"] == 2
     assert row["surface_contact_ccd_hits"] == 1
     assert row["surface_contact_ccd_limited_steps"] == 1
+    assert row["inter_body_surface_contact_candidate_builds"] == 0
+    assert row["static_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
     assert row["wall_time_ns"] == 10.0e6
 
 
@@ -591,6 +629,48 @@ def test_plan083_cpu_scene_packet_rejects_surface_contact_hit_count_mismatch() -
     ):
         module.make_packet(
             _lying_flat_packet(surface_contact_ccd_hits=99),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_inter_body_surface_contact_hits() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="more inter-body surface-contact CCD hits than CCD checks",
+    ):
+        module.make_packet(
+            _lying_flat_packet(inter_body_surface_contact_ccd_hits=1),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_static_rigid_surface_ccd_hits() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="more static-rigid surface CCD hits than CCD checks",
+    ):
+        module.make_packet(
+            _lying_flat_packet(static_rigid_surface_ccd_hits=1),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_moving_rigid_surface_ccd_hits() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="more moving-rigid surface CCD hits than CCD checks",
+    ):
+        module.make_packet(
+            _lying_flat_packet(moving_rigid_surface_ccd_hits=1),
             max_equality_residual=1e-8,
             scene="lying_flat",
         )
@@ -781,6 +861,9 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
     assert row["line_search_trials"] == 6
     assert row["surface_contact_candidate_builds"] == 6
     assert row["surface_contact_ccd_hits"] == 1
+    assert row["inter_body_surface_contact_candidate_builds"] == 0
+    assert row["static_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
     assert row["affine_fem_candidate_diagnostics_measured"] is True
     assert row["affine_fem_mixed_candidate_count"] == 12
     assert row["affine_fem_mixed_active_barrier_count"] == 4
@@ -812,6 +895,9 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["surface_contact_edge_edge_candidates"] == 2
     assert row["surface_contact_ccd_hits"] == 1
     assert row["surface_contact_ccd_limited_steps"] == 1
+    assert row["inter_body_surface_contact_candidate_builds"] == 0
+    assert row["static_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
     assert row["wall_time_ns"] == 11.0e6
 
 

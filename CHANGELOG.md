@@ -2799,7 +2799,9 @@ Capsule Rod (IPC)` py-demos scene.
     hits, limited steps, zero-step counts, and rigid obstacle snapshot counts so
     benchmark packets and debugger surfaces can observe the default deformable
     line-search path without exposing internal solver state or device/backend
-    APIs.
+    APIs. The PLAN-083 reduced CPU scene packet rows now serialize and validate
+    those external surface CCD counters alongside the existing self-surface
+    counters.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
