@@ -281,7 +281,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     variational articulated point-joint stage now also reuses an
     allocator-backed large-structure link-index map from compliant-loop scratch,
     so same-shape baked steps do not rebuild default STL lookup storage.
-    rigid contact stage also no longer
+    The contact-free differentiable multibody derivative path now also routes
+    analytic inverse-dynamics derivative spatial-vector scratch through
+    `MultibodyInverseDynamicsScratch`, and `World` retains that scratch with
+    the free allocator for same-shape differentiable steps.
+    The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the
     authoritative query.

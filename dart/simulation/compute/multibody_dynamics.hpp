@@ -76,6 +76,8 @@ struct MultibodyDynamicsTerms
   Eigen::VectorXd gravityForces;  ///< g(q), size dof
 };
 
+struct InverseDynamicsDerivatives;
+
 /// Compute the joint-space mass matrix and bias (Coriolis/centrifugal and
 /// gravity) generalized forces for a single multibody.
 ///
@@ -156,6 +158,15 @@ private:
       const Eigen::Vector3d& gravity,
       const Eigen::VectorXd& desiredAcceleration,
       Eigen::VectorXd& result);
+
+  friend DART_SIMULATION_API void
+  computeMultibodyInverseDynamicsDerivativesInto(
+      MultibodyInverseDynamicsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      const Eigen::VectorXd& generalizedAcceleration,
+      InverseDynamicsDerivatives& result);
 };
 
 /// Reserve inverse-dynamics scratch for the current multibody shape.
@@ -202,6 +213,18 @@ computeMultibodyInverseDynamicsDerivatives(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration);
+
+/// Compute analytic inverse-dynamics partial derivatives into reusable scratch.
+///
+/// `result` is overwritten. When the analytic path does not apply, `valid` is
+/// false and the matrices are empty, matching the return-by-value wrapper.
+DART_SIMULATION_API void computeMultibodyInverseDynamicsDerivativesInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration,
+    InverseDynamicsDerivatives& result);
 
 /// Compute the body-frame spatial Jacobian of one link of a multibody.
 ///

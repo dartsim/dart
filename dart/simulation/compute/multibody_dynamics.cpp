@@ -849,6 +849,15 @@ struct MultibodyDynamicsScratch
       rneaVelocity(SpatialVectorAllocator{allocator}),
       rneaAcceleration(SpatialVectorAllocator{allocator}),
       rneaForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeAcceleration(SpatialVectorAllocator{allocator}),
+      rneaDerivativeForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeJointVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeTotalForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaVelocity(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaAcceleration(SpatialVectorAllocator{allocator}),
+      rneaDerivativeDeltaForce(SpatialVectorAllocator{allocator}),
+      rneaDerivativeAccumulatedForce(SpatialVectorAllocator{allocator}),
       linkContacts(LinkContactAllocator{allocator}),
       constrainedDof(ConstrainedDofAllocator{allocator}),
       constrainedTarget(ConstrainedTargetAllocator{allocator}),
@@ -872,6 +881,15 @@ struct MultibodyDynamicsScratch
   std::vector<Vector6, SpatialVectorAllocator> rneaVelocity;
   std::vector<Vector6, SpatialVectorAllocator> rneaAcceleration;
   std::vector<Vector6, SpatialVectorAllocator> rneaForce;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeVelocity;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeAcceleration;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeForce;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeJointVelocity;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeTotalForce;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaVelocity;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaAcceleration;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaForce;
+  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeAccumulatedForce;
   std::vector<LinkContact, LinkContactAllocator> linkContacts;
   std::vector<Eigen::Index, ConstrainedDofAllocator> constrainedDof;
   std::vector<double, ConstrainedTargetAllocator> constrainedTarget;
@@ -2141,6 +2159,17 @@ bool treeSupportsAnalyticDerivatives(
 }
 
 //==============================================================================
+using SpatialVectorScratch
+    = std::vector<Vector6, MultibodyDynamicsScratch::SpatialVectorAllocator>;
+
+void resetSpatialVectorScratch(SpatialVectorScratch& scratch, std::size_t count)
+{
+  scratch.resize(count);
+  const Vector6 zero = Vector6::Zero();
+  std::fill(scratch.begin(), scratch.end(), zero);
+}
+
+//==============================================================================
 // Analytic ∂τ/∂q and ∂τ/∂q̇ of inverse dynamics τ = ID(q, q̇, qddot) via
 // Recursive-Newton-Euler derivative recursions, for trees of constant
 // unit-twist joints (see treeSupportsAnalyticDerivatives). [angular; linear]
@@ -2151,36 +2180,49 @@ InverseDynamicsDerivatives rneaDerivatives(
     const Vector6& baseAcceleration,
     std::size_t dofCount,
     const Eigen::VectorXd& qddot,
-    const Eigen::VectorXd& qdot)
+    const Eigen::VectorXd& qdot,
+    SpatialVectorScratch& velocity,
+    SpatialVectorScratch& acceleration,
+    SpatialVectorScratch& force,
+    SpatialVectorScratch& jointVelocity,
+    SpatialVectorScratch& totalForce,
+    SpatialVectorScratch& deltaVelocity,
+    SpatialVectorScratch& deltaAcceleration,
+    SpatialVectorScratch& deltaForce,
+    SpatialVectorScratch& accumulatedForce)
 {
   const auto count = links.size();
   const auto n = static_cast<Eigen::Index>(dofCount);
 
   // Forward pass: per-link spatial velocity v, acceleration a, force f, and the
   // joint velocity contribution jv = S_i q̇_i.
-  std::vector<Vector6> v(count, Vector6::Zero());
-  std::vector<Vector6> a(count, Vector6::Zero());
-  std::vector<Vector6> f(count, Vector6::Zero());
-  std::vector<Vector6> jv(count, Vector6::Zero());
+  resetSpatialVectorScratch(velocity, count);
+  resetSpatialVectorScratch(acceleration, count);
+  resetSpatialVectorScratch(force, count);
+  resetSpatialVectorScratch(jointVelocity, count);
   for (std::size_t i = 0; i < count; ++i) {
     const auto& link = links[i];
     if (link.parentIndex < 0) {
-      a[i] = link.parentToChild * baseAcceleration;
+      acceleration[i] = link.parentToChild * baseAcceleration;
     } else {
       const auto p = static_cast<std::size_t>(link.parentIndex);
       if (link.dof > 0) {
-        jv[i] = link.subspace * qdot.segment(link.dofOffset, link.dof);
-        a[i] = link.subspace * qddot.segment(link.dofOffset, link.dof);
+        jointVelocity[i]
+            = link.subspace * qdot.segment(link.dofOffset, link.dof);
+        acceleration[i]
+            = link.subspace * qddot.segment(link.dofOffset, link.dof);
       }
-      v[i] = link.parentToChild * v[p] + jv[i];
-      a[i] += link.parentToChild * a[p] + crossMotion(v[i], jv[i]);
+      velocity[i] = link.parentToChild * velocity[p] + jointVelocity[i];
+      acceleration[i] += link.parentToChild * acceleration[p]
+                         + crossMotion(velocity[i], jointVelocity[i]);
     }
-    f[i] = link.inertia * a[i] + crossForce(v[i], link.inertia * v[i]);
+    force[i] = link.inertia * acceleration[i]
+               + crossForce(velocity[i], link.inertia * velocity[i]);
   }
 
   // Total accumulated force F_i = f_i + Σ_children X_c^T F_c (needed by the
   // δ(X^T) term in the position-derivative backward sweep).
-  std::vector<Vector6> totalForce = f;
+  totalForce.assign(force.begin(), force.end());
   for (std::size_t r = 0; r < count; ++r) {
     const auto i = count - 1 - r;
     if (links[i].parentIndex >= 0) {
@@ -2203,40 +2245,45 @@ InverseDynamicsDerivatives rneaDerivatives(
 
     // ---------- ∂/∂q_j ----------
     {
-      std::vector<Vector6> dv(count, Vector6::Zero());
-      std::vector<Vector6> da(count, Vector6::Zero());
-      std::vector<Vector6> df(count, Vector6::Zero());
+      resetSpatialVectorScratch(deltaVelocity, count);
+      resetSpatialVectorScratch(deltaAcceleration, count);
+      resetSpatialVectorScratch(deltaForce, count);
       for (std::size_t i = 0; i < count; ++i) {
         const auto& link = links[i];
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dv[i] = link.parentToChild * dv[p];
-          da[i] = link.parentToChild * da[p];
+          deltaVelocity[i] = link.parentToChild * deltaVelocity[p];
+          deltaAcceleration[i] = link.parentToChild * deltaAcceleration[p];
           if (i == m) {
             // ∂X_m/∂q_j = -crm(S_m) X_m acting on the parent motion/accel.
-            dv[i] += -crossMotion(subspaceM, link.parentToChild * v[p]);
-            da[i] += -crossMotion(subspaceM, link.parentToChild * a[p]);
+            deltaVelocity[i]
+                += -crossMotion(subspaceM, link.parentToChild * velocity[p]);
+            deltaAcceleration[i] += -crossMotion(
+                subspaceM, link.parentToChild * acceleration[p]);
           }
-          da[i] += crossMotion(dv[i], jv[i]);
+          deltaAcceleration[i]
+              += crossMotion(deltaVelocity[i], jointVelocity[i]);
         }
-        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
-                + crossForce(v[i], link.inertia * dv[i]);
+        deltaForce[i]
+            = link.inertia * deltaAcceleration[i]
+              + crossForce(deltaVelocity[i], link.inertia * velocity[i])
+              + crossForce(velocity[i], link.inertia * deltaVelocity[i]);
       }
-      std::vector<Vector6> dForce = df;
+      accumulatedForce.assign(deltaForce.begin(), deltaForce.end());
       for (std::size_t r = 0; r < count; ++r) {
         const auto i = count - 1 - r;
         const auto& link = links[i];
         if (link.dof > 0) {
           out.dTau_dq(static_cast<Eigen::Index>(link.dofOffset), j)
-              = link.subspace.col(0).dot(dForce[i]);
+              = link.subspace.col(0).dot(accumulatedForce[i]);
         }
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dForce[p] += link.childToParentForce * dForce[i];
+          accumulatedForce[p] += link.childToParentForce * accumulatedForce[i];
           if (i == m) {
             // δ(X_m^T) F_m = X_m^T crf(S_m) F_m.
-            dForce[p] += link.childToParentForce
-                         * crossForce(subspaceM, totalForce[i]);
+            accumulatedForce[p] += link.childToParentForce
+                                   * crossForce(subspaceM, totalForce[i]);
           }
         }
       }
@@ -2244,35 +2291,38 @@ InverseDynamicsDerivatives rneaDerivatives(
 
     // ---------- ∂/∂q̇_j ----------
     {
-      std::vector<Vector6> dv(count, Vector6::Zero());
-      std::vector<Vector6> da(count, Vector6::Zero());
-      std::vector<Vector6> df(count, Vector6::Zero());
+      resetSpatialVectorScratch(deltaVelocity, count);
+      resetSpatialVectorScratch(deltaAcceleration, count);
+      resetSpatialVectorScratch(deltaForce, count);
       for (std::size_t i = 0; i < count; ++i) {
         const auto& link = links[i];
         if (link.parentIndex >= 0) {
           const auto p = static_cast<std::size_t>(link.parentIndex);
-          dv[i] = link.parentToChild * dv[p];
-          da[i] = link.parentToChild * da[p];
+          deltaVelocity[i] = link.parentToChild * deltaVelocity[p];
+          deltaAcceleration[i] = link.parentToChild * deltaAcceleration[p];
           if (i == m) {
-            dv[i] += subspaceM;
-            da[i] += crossMotion(v[i], subspaceM);
+            deltaVelocity[i] += subspaceM;
+            deltaAcceleration[i] += crossMotion(velocity[i], subspaceM);
           }
-          da[i] += crossMotion(dv[i], jv[i]);
+          deltaAcceleration[i]
+              += crossMotion(deltaVelocity[i], jointVelocity[i]);
         }
-        df[i] = link.inertia * da[i] + crossForce(dv[i], link.inertia * v[i])
-                + crossForce(v[i], link.inertia * dv[i]);
+        deltaForce[i]
+            = link.inertia * deltaAcceleration[i]
+              + crossForce(deltaVelocity[i], link.inertia * velocity[i])
+              + crossForce(velocity[i], link.inertia * deltaVelocity[i]);
       }
-      std::vector<Vector6> dForce = df;
+      accumulatedForce.assign(deltaForce.begin(), deltaForce.end());
       for (std::size_t r = 0; r < count; ++r) {
         const auto i = count - 1 - r;
         const auto& link = links[i];
         if (link.dof > 0) {
           out.dTau_dqdot(static_cast<Eigen::Index>(link.dofOffset), j)
-              = link.subspace.col(0).dot(dForce[i]);
+              = link.subspace.col(0).dot(accumulatedForce[i]);
         }
         if (link.parentIndex >= 0) {
-          dForce[static_cast<std::size_t>(link.parentIndex)]
-              += link.childToParentForce * dForce[i];
+          accumulatedForce[static_cast<std::size_t>(link.parentIndex)]
+              += link.childToParentForce * accumulatedForce[i];
         }
       }
     }
@@ -2582,38 +2632,73 @@ InverseDynamicsDerivatives computeMultibodyInverseDynamicsDerivatives(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& generalizedAcceleration)
 {
+  MultibodyInverseDynamicsScratch scratch;
   InverseDynamicsDerivatives result;
+  computeMultibodyInverseDynamicsDerivativesInto(
+      scratch, registry, structure, gravity, generalizedAcceleration, result);
+  return result;
+}
+
+//==============================================================================
+void computeMultibodyInverseDynamicsDerivativesInto(
+    MultibodyInverseDynamicsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& generalizedAcceleration,
+    InverseDynamicsDerivatives& result)
+{
+  result = InverseDynamicsDerivatives{};
   if (structure.links.empty()) {
-    return result;
+    return;
   }
 
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0
-      || generalizedAcceleration.size()
-             != static_cast<Eigen::Index>(tree.dofCount)
-      || !treeSupportsAnalyticDerivatives(registry, tree)) {
-    return result; // valid == false: caller falls back to finite differencing
-  }
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyInverseDynamicsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
     }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+    scratch.m_impl.reset(impl);
   }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  if (storage.tree.dofCount == 0
+      || generalizedAcceleration.size()
+             != static_cast<Eigen::Index>(storage.tree.dofCount)
+      || !treeSupportsAnalyticDerivatives(registry, storage.tree)) {
+    return; // valid == false: caller falls back to finite differencing
+  }
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
 
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
 
-  return rneaDerivatives(
-      linkSpan(tree),
+  result = rneaDerivatives(
+      linkSpan(storage.tree),
       baseAcceleration,
-      tree.dofCount,
+      storage.tree.dofCount,
       generalizedAcceleration,
-      qdot);
+      storage.qdot,
+      storage.rneaDerivativeVelocity,
+      storage.rneaDerivativeAcceleration,
+      storage.rneaDerivativeForce,
+      storage.rneaDerivativeJointVelocity,
+      storage.rneaDerivativeTotalForce,
+      storage.rneaDerivativeDeltaVelocity,
+      storage.rneaDerivativeDeltaAcceleration,
+      storage.rneaDerivativeDeltaForce,
+      storage.rneaDerivativeAccumulatedForce);
 }
 
 //==============================================================================

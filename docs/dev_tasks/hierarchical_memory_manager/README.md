@@ -1,5 +1,66 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Inverse-Dynamics Derivative Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the analytic inverse-dynamics derivative path now reuses
+allocator-backed spatial-vector scratch through
+`compute::MultibodyInverseDynamicsScratch` instead of rebuilding
+default-allocator `std::vector<Vector6>` storage for every derivative column.
+`WorldStorage` retains the same scratch with the World free allocator and passes
+it into the contact-free differentiable multibody Jacobian path.
+
+The fix has these parts:
+
+- `MultibodyDynamicsScratch` owns reusable RNEA derivative buffers for the base
+  velocity/acceleration/force sweep, accumulated force, and per-column delta
+  sweeps;
+- `computeMultibodyInverseDynamicsDerivativesInto()` lets stage-loop callers
+  reuse those buffers while the return-by-value wrapper stays source-compatible;
+- `detail::contactFreeStepDerivatives()` accepts optional inverse-dynamics
+  scratch, and `World::captureStepDerivatives()` passes the World-owned scratch
+  for differentiable WS1 steps;
+- `World.MultibodyInverseDynamicsDerivativeScratchUsesProvidedAllocator`
+  verifies the first analytic derivative call grows caller-provided scratch
+  through the selected allocator and a same-shape second call reuses that
+  capacity.
+
+This still does not claim that derivative Eigen result matrices, dynamics-term
+finite-difference fallback storage, or public return-by-value payloads are under
+the World allocator. The closed gap is only the DART-owned spatial-vector scratch
+used by the analytic RNEA derivative recursion and its World differentiable
+call site.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.MultibodyInverseDynamicsDerivativeScratchUsesProvidedAllocator' \
+  --gtest_color=no
+DART_BUILD_DIFF_OVERRIDE=ON pixi run config
+pixi run cmake --build build/default/cpp/Release --target test_world test_diff_smooth_jacobian -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.DifferentiableMultibodyTorqueScratchUsesWorldAllocator' \
+  --gtest_color=no
+./build/default/cpp/Release/bin/test_diff_smooth_jacobian --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Articulated Point-Joint Link-Index Scratch)
 
 Resume from exactly one branch:

@@ -9881,6 +9881,89 @@ TEST(World, MultibodyInverseDynamicsRoundTrip)
   EXPECT_NEAR(joint2.getAcceleration()[0], qddotDesired[1], 1e-9);
 }
 
+TEST(World, MultibodyInverseDynamicsDerivativeScratchUsesProvidedAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("id_derivative_allocator_chain");
+  auto parent = robot.addLink("base");
+  constexpr std::size_t kJointCount = 64u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.05, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.02));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+
+  auto& registry = sx::detail::registryOf(world);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  const sx::comps::MultibodyStructure* structure = nullptr;
+  std::size_t structureCount = 0;
+  for (const auto entity : structures) {
+    structure = &structures.get<sx::comps::MultibodyStructure>(entity);
+    ++structureCount;
+  }
+  ASSERT_EQ(structureCount, 1u);
+  ASSERT_NE(structure, nullptr);
+
+  sx::compute::MultibodyInverseDynamicsScratch scratch(allocator);
+  sx::compute::InverseDynamicsDerivatives derivatives;
+  const Eigen::VectorXd qddot = Eigen::VectorXd::LinSpaced(
+      static_cast<Eigen::Index>(kJointCount), -0.1, 0.2);
+
+  const auto allocationsBeforeFirstCall = allocator.allocationCount;
+  sx::compute::computeMultibodyInverseDynamicsDerivativesInto(
+      scratch,
+      registry,
+      *structure,
+      Eigen::Vector3d::Zero(),
+      qddot,
+      derivatives);
+
+  ASSERT_TRUE(derivatives.valid);
+  EXPECT_EQ(derivatives.dTau_dq.rows(), static_cast<Eigen::Index>(kJointCount));
+  EXPECT_EQ(derivatives.dTau_dq.cols(), static_cast<Eigen::Index>(kJointCount));
+  EXPECT_EQ(
+      derivatives.dTau_dqdot.rows(), static_cast<Eigen::Index>(kJointCount));
+  EXPECT_EQ(
+      derivatives.dTau_dqdot.cols(), static_cast<Eigen::Index>(kJointCount));
+  EXPECT_GT(allocator.allocationCount, allocationsBeforeFirstCall)
+      << "inverse-dynamics derivative scratch should allocate through the "
+         "provided allocator on the first analytic derivative call";
+
+  const auto allocationsAfterFirstCall = allocator.allocationCount;
+  sx::compute::computeMultibodyInverseDynamicsDerivativesInto(
+      scratch,
+      registry,
+      *structure,
+      Eigen::Vector3d::Zero(),
+      qddot,
+      derivatives);
+
+  EXPECT_TRUE(derivatives.valid);
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstCall)
+      << "same-shape analytic derivative calls should reuse the retained "
+         "scratch capacity";
+}
+
 // Test the generalized impulse response dqdot = M^-1 f against the analytical
 // single-pendulum value and the M dqdot = f consistency identity.
 TEST(World, MultibodyImpulseResponse)

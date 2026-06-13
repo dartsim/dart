@@ -162,7 +162,8 @@ StepDerivatives contactFreeStepDerivatives(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::Ref<const Eigen::VectorXd>& tau)
+    const Eigen::Ref<const Eigen::VectorXd>& tau,
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch)
 {
   StepDerivatives derivatives;
 
@@ -212,9 +213,19 @@ StepDerivatives contactFreeStepDerivatives(
   Eigen::MatrixXd dVelNext_dq = Eigen::MatrixXd::Zero(ndof, ndof);
   Eigen::MatrixXd dVelNext_dqdot = Eigen::MatrixXd::Identity(ndof, ndof);
 
-  const compute::InverseDynamicsDerivatives idDerivatives
-      = compute::computeMultibodyInverseDynamicsDerivatives(
-          registry, structure, gravity, qddot);
+  compute::InverseDynamicsDerivatives idDerivatives;
+  if (inverseDynamicsScratch != nullptr) {
+    compute::computeMultibodyInverseDynamicsDerivativesInto(
+        *inverseDynamicsScratch,
+        registry,
+        structure,
+        gravity,
+        qddot,
+        idDerivatives);
+  } else {
+    idDerivatives = compute::computeMultibodyInverseDynamicsDerivatives(
+        registry, structure, gravity, qddot);
+  }
 
   if (idDerivatives.valid) {
     dVelNext_dq.noalias() = -timeStep * (inverseMass * idDerivatives.dTau_dq);

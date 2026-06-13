@@ -53,6 +53,10 @@ namespace dart::simulation::comps {
 struct MultibodyStructure;
 } // namespace dart::simulation::comps
 
+namespace dart::simulation::compute {
+class MultibodyInverseDynamicsScratch;
+} // namespace dart::simulation::compute
+
 namespace dart::simulation::detail {
 
 /// Analytic contact-free single-step Jacobian for ONE multibody, evaluated at
@@ -109,6 +113,7 @@ namespace dart::simulation::detail {
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::Ref<const Eigen::VectorXd>& tau);
+    const Eigen::Ref<const Eigen::VectorXd>& tau,
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch = nullptr);
 
 } // namespace dart::simulation::detail
