@@ -141,11 +141,10 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   follow-up work, not done here — track it as a follow-up packet before the
   next AVBD evidence refresh; until then, the contract binds new packet files
   via the checker rather than via the writers. Acceptance status: implemented
-  by this session with the focused gates above green; per
-  `docs/ai/orchestration.md` the implementing session does not self-approve,
-  so the packet stays `[claimed]` awaiting an independent/maintainer
-  acceptance pass (a critic subagent self-review run this session found no
-  blocking issues but is not the independent acceptance check).
+  with the focused gates above green and accepted by the maintainer via the
+  merge of PR #2990 (2026-06-13) — the implementing session did not
+  self-approve; the maintainer merge is the independent acceptance recorded by
+  the `[done]` heading marker.
 
 #### WP-091.2 Golden trajectories for the default step
 
