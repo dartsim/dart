@@ -331,8 +331,8 @@ and Raylib smoke path are no longer buildable renderer options.
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio (multi-config; CMake selects the installed VS generator)
-cmake ..
+# Visual Studio (multi-config; selects the newest installed VS generator)
+cmake .. -G "$(python ../scripts/select_windows_cmake_generator.py)"
 
 # Xcode (multi-config; pick configuration at build-time)
 cmake .. -G "Xcode"

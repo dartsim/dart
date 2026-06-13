@@ -2331,9 +2331,11 @@ config = { cmd = [
   "-lc",
   """
 set -euo pipefail
+DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -G "${DART_WINDOWS_CMAKE_GENERATOR}" \
         -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -2475,9 +2477,11 @@ config-py = { cmd = [
   "-lc",
   """
 set -euo pipefail
+DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -G "${DART_WINDOWS_CMAKE_GENERATOR}" \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
@@ -2642,9 +2646,11 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
+DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
+        -G "${DART_WINDOWS_CMAKE_GENERATOR}" \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -2689,9 +2695,11 @@ if [ -x "${DART_TRACY_BIN}" ] \
   exit 0
 fi
 rm -rf "${DART_TRACY_BUILD_DIR}"
+DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
 cmake \
   -S "${DART_TRACY_SRC_DIR}" \
   -B "${DART_TRACY_BUILD_DIR}" \
+  -G "${DART_WINDOWS_CMAKE_GENERATOR}" \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DNO_PARALLEL_STL=ON \
   -DNO_ISA_EXTENSIONS=ON
