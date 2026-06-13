@@ -1,5 +1,59 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Variational Compliant-Loop Force Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the built-in variational compliant articulated point-joint
+path no longer routes DART-owned compliant loop rows through a generic
+return-by-value contact hook. `World::step()` now evaluates the linear and
+angular compliant-loop forces directly into
+`VariationalContactEvaluationScratch::contactForce`, and the post-step row
+refresh rebuilds the variational tree through
+`MultibodyVariationalScratch::tree`.
+
+The fix has these parts:
+
+- `evaluateVariationalCompliantLoopForceInto(...)` accumulates compliant loop
+  rows into caller-owned generalized-force storage;
+- `variationalWorldTorqueInto(...)` removes the angular-row temporary dynamic
+  world-angular-Jacobian/vector path;
+- `integrateMultibodyVariationalImpl(...)` accepts an optional
+  `VariationalCompliantLoopScratch*` for World-owned compliant rows while the
+  public generic `VariationalContactHook` API stays unchanged;
+- `updateVariationalCompliantLoopConstraintRows(...)` reuses the World-owned
+  variational tree scratch for post-step row updates.
+
+This still does not claim that public generic `VariationalContactHook`
+callbacks avoid return-by-value forces, that public no-scratch/direct
+variational helpers use World-owned scratch, or that every Eigen dynamic matrix
+or vector in the variational pipeline is allocator-backed. The closed gap is the
+built-in `World::step()` compliant articulated point-joint force/row-refresh
+path.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target test_world test_variational_integration -j 8
+pixi run ./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Rigid AVBD Distance-Spring Gates)
 
 Resume from exactly one branch:
@@ -45,12 +99,6 @@ pixi run cmake --build build/default/cpp/Release --target test_world -j 8
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-13, Mechanical-Energy Velocity Scratch)
 

@@ -1224,9 +1224,15 @@ void syncVariationalCompliantLoopConstraintRows(
   }
 }
 
+VarTree& buildVarTreeIntoScratch(
+    MultibodyVariationalTreeScratch& scratch,
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
 void updateVariationalCompliantLoopConstraintRows(
     const detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
+    MultibodyVariationalTreeScratch& treeScratch,
     VariationalCompliantLoopScratch& scratch)
 {
   const auto& constraints = scratch.constraints;
@@ -1235,7 +1241,8 @@ void updateVariationalCompliantLoopConstraintRows(
     return;
   }
 
-  const VarTree tree = buildVarTree(registry, structure);
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
   const auto worldPoint = [&](int linkIndex, const Eigen::Vector3d& point) {
     if (linkIndex < 0) {
       return point;
@@ -1452,11 +1459,14 @@ std::optional<VariationalSolveReport> tryIntegrateSinglePrismaticVariational(
     MultibodyVariationalState& state,
     std::span<const VariationalLoopConstraint> constraints,
     const VariationalContactHook& contactHook,
+    const VariationalCompliantLoopScratch* compliantLoopScratch,
     const VariationalGroundContact* groundContact,
     std::span<const double> groundContactDuals)
 {
-  if (!constraints.empty() || contactHook || structure.links.size() != 2u
-      || structure.joints.size() != 1u) {
+  if (!constraints.empty() || contactHook
+      || (compliantLoopScratch != nullptr
+          && !compliantLoopScratch->constraints.empty())
+      || structure.links.size() != 2u || structure.joints.size() != 1u) {
     return std::nullopt;
   }
 
@@ -2319,6 +2329,11 @@ bool groundContactPointForceInto(
     double dual,
     Eigen::VectorXd& generalizedForce);
 
+void evaluateVariationalCompliantLoopForceInto(
+    const VariationalContactContext& context,
+    const VariationalCompliantLoopScratch& scratch,
+    Eigen::VectorXd& generalizedForce);
+
 void evaluateContactForceInto(
     const detail::WorldRegistry& registry,
     const VarTree& tree,
@@ -2326,13 +2341,17 @@ void evaluateContactForceInto(
     double timeStep,
     const Eigen::VectorXd& previousVelocity,
     const VariationalContactHook& contactHook,
+    const VariationalCompliantLoopScratch* compliantLoopScratch,
     const VariationalGroundContact* groundContact,
     const VariationalGroundContactSolver* groundContactSolver,
     VariationalContactEvaluationScratch& scratch,
     Eigen::VectorXd& contactForce)
 {
-  if (groundContact == nullptr && groundContactSolver == nullptr
-      && !contactHook) {
+  const bool hasCompliantLoopForce
+      = compliantLoopScratch != nullptr
+        && !compliantLoopScratch->constraints.empty();
+  if (groundContact == nullptr && groundContactSolver == nullptr && !contactHook
+      && !hasCompliantLoopForce) {
     contactForce.resize(0);
     return;
   }
@@ -2394,6 +2413,10 @@ void evaluateContactForceInto(
       groundContactPointForceInto(
           context, *groundContact, point, /*dual=*/0.0, contactForce);
     }
+  }
+  if (hasCompliantLoopForce) {
+    evaluateVariationalCompliantLoopForceInto(
+        context, *compliantLoopScratch, contactForce);
   }
   if (contactHook) {
     const Eigen::VectorXd hookForce = contactHook(context);
@@ -2568,13 +2591,14 @@ void variationalContactPointForceInto(
          * (detail::skew(localPoint).transpose() * bodyForce);
 }
 
-Eigen::VectorXd variationalWorldTorque(
+void variationalWorldTorqueInto(
     const VariationalContactContext& context,
     int linkIndex,
-    const Eigen::Vector3d& worldTorque)
+    const Eigen::Vector3d& worldTorque,
+    Eigen::VectorXd& generalizedForce)
 {
   if (linkIndex < 0) {
-    return Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
+    return;
   }
   const auto index = static_cast<std::size_t>(linkIndex);
   DART_SIMULATION_THROW_T_IF(
@@ -2582,130 +2606,103 @@ Eigen::VectorXd variationalWorldTorque(
       InvalidOperationException,
       "Compliant variational loop constraint references an out-of-range link "
       "index");
-  const Eigen::MatrixXd worldAngularJacobian
-      = context.linkWorldTransforms[index].linear()
-        * context.linkBodyJacobians[index].topRows<3>();
-  return worldAngularJacobian.transpose() * worldTorque;
+  const Eigen::Vector3d bodyTorque
+      = context.linkWorldTransforms[index].linear().transpose() * worldTorque;
+  generalizedForce.noalias()
+      += context.linkBodyJacobians[index].topRows<3>().transpose() * bodyTorque;
 }
 
-VariationalContactHook makeVariationalCompliantLoopConstraintHook(
-    const VariationalCompliantLoopScratch* scratch)
+void evaluateVariationalCompliantLoopForceInto(
+    const VariationalContactContext& context,
+    const VariationalCompliantLoopScratch& scratch,
+    Eigen::VectorXd& generalizedForce)
 {
-  if (scratch == nullptr || scratch->constraints.empty()) {
-    return {};
+  if (scratch.constraints.empty()) {
+    return;
   }
 
-  return [scratch](
-             const VariationalContactContext& context) -> Eigen::VectorXd {
-    Eigen::VectorXd generalizedForce
-        = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(context.dofCount));
-    const auto worldPoint = [&](int linkIndex, const Eigen::Vector3d& point) {
-      if (linkIndex < 0) {
-        return point;
-      }
-      const auto index = static_cast<std::size_t>(linkIndex);
-      DART_SIMULATION_THROW_T_IF(
-          index >= context.linkWorldTransforms.size(),
-          InvalidOperationException,
-          "Compliant variational loop constraint references an out-of-range "
-          "link index");
-      return context.linkWorldTransforms[index] * point;
-    };
-    const auto worldRotation
-        = [&](int linkIndex, const Eigen::Matrix3d& offset) -> Eigen::Matrix3d {
-      if (linkIndex < 0) {
-        return offset;
-      }
-      const auto index = static_cast<std::size_t>(linkIndex);
-      DART_SIMULATION_THROW_T_IF(
-          index >= context.linkWorldTransforms.size(),
-          InvalidOperationException,
-          "Compliant variational loop constraint references an "
-          "out-of-range link index");
-      return context.linkWorldTransforms[index].linear() * offset;
-    };
+  const auto worldPoint = [&](int linkIndex, const Eigen::Vector3d& point) {
+    if (linkIndex < 0) {
+      return point;
+    }
+    const auto index = static_cast<std::size_t>(linkIndex);
+    DART_SIMULATION_THROW_T_IF(
+        index >= context.linkWorldTransforms.size(),
+        InvalidOperationException,
+        "Compliant variational loop constraint references an out-of-range "
+        "link index");
+    return context.linkWorldTransforms[index] * point;
+  };
+  const auto worldRotation
+      = [&](int linkIndex, const Eigen::Matrix3d& offset) -> Eigen::Matrix3d {
+    if (linkIndex < 0) {
+      return offset;
+    }
+    const auto index = static_cast<std::size_t>(linkIndex);
+    DART_SIMULATION_THROW_T_IF(
+        index >= context.linkWorldTransforms.size(),
+        InvalidOperationException,
+        "Compliant variational loop constraint references an "
+        "out-of-range link index");
+    return context.linkWorldTransforms[index].linear() * offset;
+  };
 
-    for (const VariationalCompliantLoopConstraint& constraint :
-         scratch->constraints) {
-      const Eigen::Vector3d pointA
-          = worldPoint(constraint.linkA, constraint.pointA);
-      const Eigen::Vector3d pointB
-          = worldPoint(constraint.linkB, constraint.pointB);
-      const Eigen::Vector3d positionResidual = pointA - pointB;
-      for (const auto& row : constraint.linearRows) {
-        if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
-          continue;
-        }
-        const Eigen::Vector3d rowAxis
-            = variationalLoopAxis(constraint.linearAxes, row.axis);
-        const Eigen::Vector3d forceA
-            = -row.stiffness * rowAxis.dot(positionResidual) * rowAxis;
-        if (constraint.linkA >= 0) {
-          variationalContactPointForceInto(
-              context,
-              static_cast<std::size_t>(constraint.linkA),
-              constraint.pointA,
-              forceA,
-              generalizedForce);
-        }
-        if (constraint.linkB >= 0) {
-          variationalContactPointForceInto(
-              context,
-              static_cast<std::size_t>(constraint.linkB),
-              constraint.pointB,
-              -forceA,
-              generalizedForce);
-        }
-      }
-
-      if (!constraint.rigid) {
+  for (const VariationalCompliantLoopConstraint& constraint :
+       scratch.constraints) {
+    const Eigen::Vector3d pointA
+        = worldPoint(constraint.linkA, constraint.pointA);
+    const Eigen::Vector3d pointB
+        = worldPoint(constraint.linkB, constraint.pointB);
+    const Eigen::Vector3d positionResidual = pointA - pointB;
+    for (const auto& row : constraint.linearRows) {
+      if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
         continue;
       }
-      const Eigen::Matrix3d rotA
-          = worldRotation(constraint.linkA, constraint.rotationA);
-      const Eigen::Matrix3d rotB
-          = worldRotation(constraint.linkB, constraint.rotationB);
-      const Eigen::Vector3d angularResidual
-          = rotB * rotationLog3(rotB.transpose() * rotA);
-      for (const auto& row : constraint.angularRows) {
-        if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
-          continue;
-        }
-        const Eigen::Vector3d rowAxis
-            = variationalLoopAxis(constraint.angularAxes, row.axis);
-        const Eigen::Vector3d torqueA
-            = -row.stiffness * rowAxis.dot(angularResidual) * rowAxis;
-        generalizedForce
-            += variationalWorldTorque(context, constraint.linkA, torqueA);
-        generalizedForce
-            += variationalWorldTorque(context, constraint.linkB, -torqueA);
+      const Eigen::Vector3d rowAxis
+          = variationalLoopAxis(constraint.linearAxes, row.axis);
+      const Eigen::Vector3d forceA
+          = -row.stiffness * rowAxis.dot(positionResidual) * rowAxis;
+      if (constraint.linkA >= 0) {
+        variationalContactPointForceInto(
+            context,
+            static_cast<std::size_t>(constraint.linkA),
+            constraint.pointA,
+            forceA,
+            generalizedForce);
+      }
+      if (constraint.linkB >= 0) {
+        variationalContactPointForceInto(
+            context,
+            static_cast<std::size_t>(constraint.linkB),
+            constraint.pointB,
+            -forceA,
+            generalizedForce);
       }
     }
-    return generalizedForce;
-  };
-}
 
-VariationalContactHook combineVariationalContactHooks(
-    VariationalContactHook first, VariationalContactHook second)
-{
-  if (!first) {
-    return second;
-  }
-  if (!second) {
-    return first;
-  }
-  return [first = std::move(first), second = std::move(second)](
-             const VariationalContactContext& context) -> Eigen::VectorXd {
-    const Eigen::VectorXd firstForce = first(context);
-    const Eigen::VectorXd secondForce = second(context);
-    if (firstForce.size() == 0) {
-      return secondForce;
+    if (!constraint.rigid) {
+      continue;
     }
-    if (secondForce.size() == 0) {
-      return firstForce;
+    const Eigen::Matrix3d rotA
+        = worldRotation(constraint.linkA, constraint.rotationA);
+    const Eigen::Matrix3d rotB
+        = worldRotation(constraint.linkB, constraint.rotationB);
+    const Eigen::Vector3d angularResidual
+        = rotB * rotationLog3(rotB.transpose() * rotA);
+    for (const auto& row : constraint.angularRows) {
+      if (row.stiffness <= 0.0 || !std::isfinite(row.stiffness)) {
+        continue;
+      }
+      const Eigen::Vector3d rowAxis
+          = variationalLoopAxis(constraint.angularAxes, row.axis);
+      const Eigen::Vector3d torqueA
+          = -row.stiffness * rowAxis.dot(angularResidual) * rowAxis;
+      variationalWorldTorqueInto(
+          context, constraint.linkA, torqueA, generalizedForce);
+      variationalWorldTorqueInto(
+          context, constraint.linkB, -torqueA, generalizedForce);
     }
-    return firstForce + secondForce;
-  };
+  }
 }
 
 } // namespace
@@ -3287,6 +3284,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     std::span<const VariationalLoopConstraint> constraints,
     std::size_t andersonDepth,
     const VariationalContactHook& contactHook,
+    const VariationalCompliantLoopScratch* compliantLoopScratch,
     const VariationalGroundContact* fastGroundContact,
     const VariationalGroundContactSolver* groundContactSolver,
     VariationalContactEvaluationScratch* contactScratch,
@@ -3312,6 +3310,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
             state,
             constraints,
             contactHook,
+            compliantLoopScratch,
             fastGroundContact,
             groundContactDuals)) {
       return *fastReport;
@@ -3327,6 +3326,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
             state,
             constraints,
             contactHook,
+            compliantLoopScratch,
             fastGroundContact,
             groundContactDuals)) {
       return *fastReport;
@@ -3567,6 +3567,7 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
         timeStep,
         velocity,
         contactHook,
+        compliantLoopScratch,
         fastGroundContact,
         groundContactSolver,
         contactEvaluation,
@@ -4001,6 +4002,7 @@ VariationalSolveReport integrateMultibodyVariational(
       variationalLoopConstraintSpan(constraints),
       andersonDepth,
       contactHook,
+      nullptr,
       nullptr,
       nullptr,
       nullptr,
@@ -4468,9 +4470,6 @@ void MultibodyVariationalIntegrationStage::execute(
         }
       }
     }
-    contactHook = combineVariationalContactHooks(
-        std::move(contactHook),
-        makeVariationalCompliantLoopConstraintHook(compliantScratch));
     integrateMultibodyVariationalImpl(
         registry,
         structure,
@@ -4482,6 +4481,7 @@ void MultibodyVariationalIntegrationStage::execute(
         variationalLoopConstraintSpan(constraints),
         5,
         contactHook,
+        compliantScratch,
         groundContact,
         groundContactSolver,
         &scratch.contactEvaluation,
@@ -4493,7 +4493,7 @@ void MultibodyVariationalIntegrationStage::execute(
         &scratch.anderson);
     if (compliantScratch != nullptr && !compliantScratch->constraints.empty()) {
       updateVariationalCompliantLoopConstraintRows(
-          registry, structure, *compliantScratch);
+          registry, structure, scratch.tree, *compliantScratch);
     }
 
     // C3 outer loop: after the converged step, advance the AL duals on the
