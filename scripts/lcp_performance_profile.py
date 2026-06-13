@@ -474,6 +474,16 @@ def _csv_value(value) -> str:
     return str(value)
 
 
+def _missing_required_evidence_fields(category: str, data: dict) -> list[str]:
+    missing = []
+    for key in REQUIRED_EVIDENCE_COLUMNS[3:]:
+        if key == "contact_count" and category != "FrictionIndex":
+            continue
+        if _csv_value(data.get(key)) == "":
+            missing.append(key)
+    return missing
+
+
 def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
     header = list(REQUIRED_EVIDENCE_COLUMNS)
 
@@ -484,6 +494,13 @@ def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
             for (solver, problem_size), data in sorted(
                 results.get(category, {}).items()
             ):
+                missing = _missing_required_evidence_fields(category, data)
+                if missing:
+                    raise RuntimeError(
+                        "Cannot write LCP performance profile evidence with "
+                        "missing current-schema fields for "
+                        f"{category}/{solver}/{problem_size}: {missing}"
+                    )
                 writer.writerow(
                     [
                         category,

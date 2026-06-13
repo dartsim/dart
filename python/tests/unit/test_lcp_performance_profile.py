@@ -411,6 +411,33 @@ def test_lcp_profile_evidence_csv_header_matches_roster_schema(
     assert tuple(header) == module.REQUIRED_EVIDENCE_COLUMNS
 
 
+def test_lcp_profile_evidence_csv_rejects_missing_current_schema_fields(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "missing current-schema fields for Standard/Dantzig/12: "
+            "\\['lcp_dimension'"
+        ),
+    ):
+        module.save_profile_evidence_csv(results, tmp_path / "profile_evidence.csv")
+
+
 def test_lcp_profile_evidence_csv_records_support_and_problem_type(
     tmp_path: Path,
 ) -> None:
