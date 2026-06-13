@@ -102,6 +102,47 @@ def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
         module.check_demo_profile_evidence_required_columns()
 
 
+def test_lcp_solver_roster_reads_demo_profile_evidence_schema_rows() -> None:
+    module = _load_module()
+
+    documented_fields: list[str] = []
+    for row in module.parse_demo_profile_evidence_schema_rows():
+        assert set(row) == {"fields", "meaning"}
+        assert row["meaning"]
+        documented_fields.extend(module._split_demo_reference_list(row["fields"]))
+
+    assert documented_fields == list(module.REQUIRED_EVIDENCE_COLUMNS)
+    module.check_demo_profile_evidence_schema_rows()
+
+
+def test_lcp_solver_roster_rejects_stale_profile_evidence_schema_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_rows = [
+        {"fields": "category, solver", "meaning": ""},
+        {"fields": "category, stale_column", "meaning": "stale field"},
+    ]
+    monkeypatch.setattr(
+        module,
+        "parse_demo_profile_evidence_schema_rows",
+        lambda: stale_rows,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="profile evidence schema rows are out of sync",
+    ) as exc_info:
+        module.check_demo_profile_evidence_schema_rows()
+
+    message = str(exc_info.value)
+    assert "category, solver: missing fields ['meaning']" in message
+    assert "duplicate documented profile evidence fields ['category']" in message
+    assert "profile evidence schema rows do not match required columns" in message
+    assert "stale_column" in message
+    assert "time_ns" in message
+
+
 def test_lcp_solver_roster_reads_demo_performance_profile_rows() -> None:
     module = _load_module()
 

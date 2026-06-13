@@ -296,6 +296,13 @@ def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
     return tuple(columns)
 
 
+def parse_demo_profile_evidence_schema_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return list(
+        _literal_assignment(module, "_PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS")
+    )
+
+
 def _benchmark_filter_base(token: str) -> str | None:
     match = re.search(r"\b(?:BM_LCP_[A-Za-z0-9_]+|BM_Lcp[A-Za-z0-9_]*)\b", token)
     return match.group(0) if match else None
@@ -1051,6 +1058,46 @@ def check_demo_profile_evidence_required_columns() -> None:
         )
 
 
+def check_demo_profile_evidence_schema_rows() -> None:
+    rows = parse_demo_profile_evidence_schema_rows()
+    errors: list[str] = []
+    if not rows:
+        errors.append("no profile evidence schema rows")
+
+    documented_fields: list[str] = []
+    for index, row in enumerate(rows, start=1):
+        missing_fields = [
+            field
+            for field in ("fields", "meaning")
+            if not str(row.get(field, "")).strip()
+        ]
+        row_label = str(row.get("fields", f"row {index}")).strip() or f"row {index}"
+        if missing_fields:
+            errors.append(f"{row_label}: missing fields {missing_fields}")
+        for field in _split_demo_reference_list(str(row.get("fields", ""))):
+            documented_fields.append(field)
+
+    duplicates = [
+        field
+        for index, field in enumerate(documented_fields)
+        if field in documented_fields[:index]
+    ]
+    if duplicates:
+        errors.append(f"duplicate documented profile evidence fields {duplicates}")
+
+    if documented_fields != list(REQUIRED_EVIDENCE_COLUMNS):
+        errors.append(
+            "profile evidence schema rows do not match required columns. "
+            f"rows={tuple(documented_fields)} required={REQUIRED_EVIDENCE_COLUMNS}"
+        )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics profile evidence schema rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
 def parse_bound_solver_classes() -> dict[str, str]:
     pattern = re.compile(
         r"bind(?:Parameterized)?LcpSolverClass"
@@ -1618,6 +1665,7 @@ def check_roster() -> None:
     check_demo_advanced_solver_parameters(manifest)
     check_demo_performance_profiles()
     check_demo_profile_evidence_required_columns()
+    check_demo_profile_evidence_schema_rows()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]
     manifest_by_name = {entry.name: entry for entry in manifest}
