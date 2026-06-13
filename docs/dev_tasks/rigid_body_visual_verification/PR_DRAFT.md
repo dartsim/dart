@@ -247,16 +247,18 @@ rigid-body visual verification surface for the current cycle.
   with default `rest_length=0.45`, `soft_stiffness=45.0`,
   `stiff_stiffness=220.0`, and `offset_stiffness=120.0` controls in latest
   scene metrics.
-- Latest broad default validation before the backend/executor search slice:
+- Latest broad default validation recorded before the backend/executor search
+  and latest-signal review-card slices:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,
   Python tests, and documentation.
-- Latest branch-level CUDA validation before the backend/executor search slice,
-  on a visible
+- Latest branch-level CUDA validation recorded before the backend/executor
+  search and latest-signal review-card slices, on a visible
   `NVIDIA GeForce RTX 4080 Laptop GPU` host:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-  passed all seven wrapper gates. This predates the workflow search/docs/test
-  slice above.
+  passed all seven wrapper gates. Rerun broad default and CUDA validation
+  before PR publication if maintainers require current-head wrapper proof after
+  the final review-card and handoff refresh slices.
 - Focused docs/API drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented -q`
 - Focused scene-metrics/docs guard:

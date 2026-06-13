@@ -2,16 +2,16 @@
 
 ## Current Handoff (2026-06-13)
 
-Current branch snapshot before this slice:
-`feature/rigid-body-gui-visual-verification` was clean at `d919b66940b` and
-matched `origin/feature/rigid-body-gui-visual-verification` after the latest
-user-approved push. `origin/main` is already an ancestor of the branch; a local
-`git fetch origin && git merge origin/main --no-edit` reported
-`Already up to date`. After this optional-signal slice is committed, expect one
-local commit ahead of origin until a maintainer approves another push. There is
-still no PR for this branch. Do not push, create a PR, set a milestone, rerun
-CI, comment on reviews, resolve threads, or mutate any other GitHub state
-without explicit maintainer/user approval.
+Current branch snapshot:
+`feature/rigid-body-gui-visual-verification` is clean at `7c9d28b21013` and
+matches `origin/feature/rigid-body-gui-visual-verification` after the latest
+user-approved push. `origin/main` is already an ancestor of the branch; the
+latest local `git fetch origin main` plus `git merge --no-edit origin/main`
+check reported `Already up to date`, and the follow-up `git push origin HEAD`
+reported `Everything up-to-date`. There is still no PR for this branch. Do not
+push, create a PR, set a milestone, rerun CI, comment on reviews, resolve
+threads, or mutate any other GitHub state without explicit maintainer/user
+approval.
 
 Latest local continuation: workflow review-card `latest signals` now promote
 optional-row health signals instead of collapsing rows 37-53 to generic
@@ -117,12 +117,17 @@ PLAN-103 sidecar describe the split. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
 reported `2 passed`. No new visual packet was generated in this slice.
 
-Latest pushed validation: after the previous approved push, current-head
+Latest broad validation recorded for this task state: after a local
+`origin/main` merge check reported `Already up to date`,
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
+passed all six default wrapper gates, and
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-ran on an `NVIDIA GeForce RTX 4080 Laptop GPU` host and passed all seven CUDA
-wrapper gates: linting, build, unit tests, simulation tests, Python tests,
-documentation, and CUDA tests. This CUDA run predates the backend/executor
-search-routing slice above, which is limited to workflow search/docs/tests.
+passed all seven CUDA wrapper gates on an `NVIDIA GeForce RTX 4080 Laptop GPU`
+host. These broad runs are recorded evidence for the branch but predate the
+latest backend/executor search-routing and review-card latest-signal slices,
+which have focused guards recorded above. Rerun broad default and CUDA
+validation before PR publication if maintainers require current-head proof
+after this handoff refresh.
 
 Latest artifact refresh: after the backend/executor search-routing,
 backend-diagnostics, contact-query review-card, and optional-signal slices, the
