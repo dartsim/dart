@@ -179,7 +179,9 @@ caveat, so users can see why the navigator chose a row before switching scenes.
 Deferred public-API searches such as `sleep wake`, `island activation`, and
 `loop closure compliance` also show a deferred API caveat in the tooltip, guide
 payload, workflow manifest, and static review card before opening or reviewing
-the closest current verifier row.
+the closest current verifier row. Workflow manifests include
+`deferred_api_caveat_summary`, and review indexes include a top-level
+`Deferred API Caveats` table and badge for packet triage.
 Broad queries keep the list compact by showing the top six ranked rows, but the
 panel also states the full match count so users can tell when a term like
 `contact` or `solver` has more rows than are visible.

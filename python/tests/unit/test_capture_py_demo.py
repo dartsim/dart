@@ -1151,8 +1151,34 @@ def test_rigid_workflow_dry_run_writes_deferred_api_caveats(
         "No public loop-closure compliance/stiffness/damping API is exposed "
         "yet; this row compares closure families and policies."
     ]
+    assert manifest["deferred_api_caveat_count"] == 2
+    assert manifest["deferred_api_caveat_summary"] == [
+        {
+            "caveat_count": 1,
+            "caveats": [
+                "No public sleep/wake/island activation API is exposed yet; "
+                "this row only verifies body-mode semantics."
+            ],
+            "row": 1,
+            "scene": "rigid_body_modes",
+            "workflow_label": "Body modes",
+        },
+        {
+            "caveat_count": 1,
+            "caveats": [
+                "No public loop-closure compliance/stiffness/damping API is "
+                "exposed yet; this row compares closure families and policies."
+            ],
+            "row": 2,
+            "scene": "rigid_loop_closure",
+            "workflow_label": "Loop closure",
+        },
+    ]
 
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "<strong>deferred API caveats</strong> 2" in review_html
+    assert "Deferred API Caveats" in review_html
+    assert "<th>Row</th><th>Scene</th><th>Route</th><th>Caveat</th>" in review_html
     assert review_html.count("<dt>deferred API caveat</dt>") == 2
     assert "No public sleep/wake/island activation API is exposed yet" in review_html
     assert (

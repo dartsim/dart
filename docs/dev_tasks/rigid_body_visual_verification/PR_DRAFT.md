@@ -64,7 +64,8 @@ rigid-body visual verification surface for the current cycle.
 - Marks deferred public-API search routes such as `sleep wake`,
   `island activation`, and `loop closure compliance` with tooltip-level and
   review-card deferred API caveats before opening or reviewing the closest
-  current verifier row.
+  current verifier row; workflow manifests and review indexes also summarize
+  those caveats at packet level.
 - Promotes rows 1 and 3 first-screen baseline/free-flight metrics into
   workflow review-card latest signals, so the default front door and
   contact-free initial-state row show speed, height, energy, contact,

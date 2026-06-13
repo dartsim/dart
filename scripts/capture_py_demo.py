@@ -2635,6 +2635,73 @@ def _workflow_phase_map(summary: list[dict[str, object]]) -> str:
     </section>"""
 
 
+def _workflow_deferred_api_summary(
+    captures: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    summary: list[dict[str, object]] = []
+    for capture in captures:
+        caveats = capture.get("deferred_api_caveats")
+        if not isinstance(caveats, list):
+            continue
+        caveat_values = [
+            caveat for caveat in caveats if isinstance(caveat, str) and caveat
+        ]
+        if not caveat_values:
+            continue
+        row = capture.get("order")
+        scene = capture.get("scene")
+        workflow_label = capture.get("workflow_label")
+        summary.append(
+            {
+                "row": int(row) if isinstance(row, int) else None,
+                "scene": scene if isinstance(scene, str) else "",
+                "workflow_label": (
+                    workflow_label if isinstance(workflow_label, str) else ""
+                ),
+                "caveat_count": len(caveat_values),
+                "caveats": caveat_values,
+            }
+        )
+    return summary
+
+
+def _workflow_deferred_api_map(summary: list[dict[str, object]]) -> str:
+    if not summary:
+        return ""
+
+    rows: list[str] = []
+    for entry in summary:
+        row = entry.get("row")
+        row_text = str(row) if isinstance(row, int) else "n/a"
+        scene = str(entry.get("scene", ""))
+        workflow_label = str(entry.get("workflow_label", ""))
+        caveats = entry.get("caveats")
+        caveat_text = _workflow_limited_list_text(caveats, limit=3)
+        rows.append(
+            "      <tr>"
+            f"<td>{html.escape(row_text)}</td>"
+            f"<td>{html.escape(scene)}</td>"
+            f"<td>{html.escape(workflow_label)}</td>"
+            f"<td>{html.escape(caveat_text)}</td>"
+            "</tr>"
+        )
+
+    return f"""
+    <section class="deferred-api-map">
+      <h2>Deferred API Caveats</h2>
+      <p>These selected rows are nearest current verifier rows for user queries
+      whose public DART 7 API surface is still unavailable.</p>
+      <table>
+        <thead>
+          <tr><th>Row</th><th>Scene</th><th>Route</th><th>Caveat</th></tr>
+        </thead>
+        <tbody>
+{chr(10).join(rows)}
+        </tbody>
+      </table>
+    </section>"""
+
+
 def _write_workflow_review_index(
     output_dir: pathlib.Path,
     *,
@@ -2673,6 +2740,8 @@ def _write_workflow_review_index(
     failure_summary = _workflow_failure_summary(failed_rows)
     phase_summary = _workflow_phase_summary(captures)
     phase_map = _workflow_phase_map(phase_summary)
+    deferred_api_summary = _workflow_deferred_api_summary(captures)
+    deferred_api_map = _workflow_deferred_api_map(deferred_api_summary)
     workflow_command_html = (
         "<p><strong>workflow command</strong><br>"
         f"<code>{html.escape(workflow_command)}</code></p>"
@@ -2706,6 +2775,7 @@ def _write_workflow_review_index(
             _workflow_badge("requested groups", requested_groups),
             _workflow_badge("selected groups", selected_groups),
             _workflow_badge("phases", len(phase_summary)),
+            _workflow_badge("deferred API caveats", len(deferred_api_summary)),
             _workflow_badge("guidance", _workflow_guidance_status(guidance_missing)),
             _workflow_badge(
                 "solver identity",
@@ -2959,6 +3029,7 @@ def _write_workflow_review_index(
     {workflow_command_html}
     <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
     {phase_map}
+    {deferred_api_map}
   </header>
   <main>
     {failure_summary}
@@ -3051,6 +3122,7 @@ def _write_workflow_manifest(
         if isinstance(capture.get("scene_metrics_evidence"), dict)
     )
     phase_summary = _workflow_phase_summary(captures)
+    deferred_api_summary = _workflow_deferred_api_summary(captures)
     _write_json(
         manifest,
         {
@@ -3066,6 +3138,8 @@ def _write_workflow_manifest(
             "workflow_row_start": min(capture_orders) if capture_orders else None,
             "workflow_row_end": max(capture_orders) if capture_orders else None,
             "workflow_phase_summary": phase_summary,
+            "deferred_api_caveat_count": len(deferred_api_summary),
+            "deferred_api_caveat_summary": deferred_api_summary,
             "continue_on_failure": continue_on_failure,
             "dry_run": dry_run,
             "status": status,
