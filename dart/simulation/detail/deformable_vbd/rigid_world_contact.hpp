@@ -406,6 +406,17 @@ struct AvbdRigidWorldContactSolveScratch
   using AttachmentAllocator
       = ::dart::common::StlAllocator<AvbdRigidBodyPointAttachmentRow>;
   using BodyStateAllocator = ::dart::common::StlAllocator<AvbdRigidBodyState>;
+  using PointPairVector
+      = std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator>;
+  using FrictionPairVector
+      = std::vector<AvbdRigidBodyPointPairFrictionRows, FrictionPairAllocator>;
+  using AngularPairVector
+      = std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator>;
+  using DistanceSpringVector = std::
+      vector<AvbdRigidBodyPointPairDistanceSpringRow, DistanceSpringAllocator>;
+  using AttachmentVector
+      = std::vector<AvbdRigidBodyPointAttachmentRow, AttachmentAllocator>;
+  using BodyStateVector = std::vector<AvbdRigidBodyState, BodyStateAllocator>;
 
   AvbdRigidWorldContactSolveScratch() = default;
 
@@ -480,21 +491,17 @@ struct AvbdRigidWorldContactSolveScratch
   AvbdRigidPointJointRowScratch jointAngularRowsScratch;
   AvbdRigidMotorRowScratch motorRowsScratch;
   AvbdRigidDistanceSpringRowScratch distanceSpringRowsScratch;
-  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> normalRows;
-  std::vector<AvbdRigidBodyPointPairFrictionRows, FrictionPairAllocator>
-      frictionRows;
-  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> jointLinearRows;
-  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator>
-      jointAngularRows;
-  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> linearMotorRows;
-  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator> motorRows;
-  std::vector<AvbdRigidBodyPointPairDistanceSpringRow, DistanceSpringAllocator>
-      distanceSpringRows;
-  std::vector<AvbdRigidBodyPointPairRow, PointPairAllocator> pointPairRows;
-  std::vector<AvbdRigidBodyAngularPairRow, AngularPairAllocator> angularRows;
-  std::vector<AvbdRigidBodyPointAttachmentRow, AttachmentAllocator>
-      attachmentRows;
-  std::vector<AvbdRigidBodyState, BodyStateAllocator> fallbackInertialTargets;
+  PointPairVector normalRows;
+  FrictionPairVector frictionRows;
+  PointPairVector jointLinearRows;
+  AngularPairVector jointAngularRows;
+  PointPairVector linearMotorRows;
+  AngularPairVector motorRows;
+  DistanceSpringVector distanceSpringRows;
+  PointPairVector pointPairRows;
+  AngularPairVector angularRows;
+  AttachmentVector attachmentRows;
+  BodyStateVector fallbackInertialTargets;
   AvbdRigidBodyRowIndexScratch rowIndexScratch;
 };
 
