@@ -12,6 +12,46 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
+Latest local slice: the default sequential-impulse rigid contact stage now
+records whether any assembled contact can carry Coulomb friction and runs a
+normal-only Gauss-Seidel loop when every assembled contact is frictionless. This
+keeps normal impulse solving and positional correction active for the
+source-shaped Dynamic Friction max-friction-0 row, but removes the friction
+branch from the inner iteration path. The audit found the sweep still exercises
+the public World sequential-impulse contact path; the benchmark helper does not
+attach private `RigidAvbdContactConfig`, and zero friction still requires
+collision query, normal impulses, and penetration correction.
+
+Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
+  passed, 3 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-normal-only-contact-loop.json --benchmark_out_format=json'`
+  passed. It recorded a 7.53 us median CPU step under load average
+  `5.00, 9.64, 17.07` with CPU scaling enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep-after-normal-only-contact-loop.json --benchmark_out_format=json'`
+  passed. It recorded median CPU step times of 7.01 us, 7.51 us, 18.13 us,
+  11.07 us, and 8.09 us for max friction 0, 0.5, 1.0, 2.5, and 5.0
+  respectively, under load average `4.76, 9.43, 16.93` with CPU scaling
+  enabled.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
+  passed again after lint/build, 3 tests.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_brief=1`
+  passed, 314 tests.
+- `git diff --check` passed.
+
+Evidence caveat for the latest local slice: these benchmark-only reruns
+validate the edited path, but they do not regenerate the tracked
+friction-coefficient packet because same-source native timing and visual
+capture artifacts were not rerun. The max-friction-0 row still lacks a tracked
+CPU-win comparison against the native source runner. The frictionless
+max-friction-0 CPU gap, all-coefficient CPU-win gate, GPU parity, source-demo
+parity, and paper-number gates remain open.
+
 Previous local checkpoint: commit `7a226db4050` records the
 `buildAvbdRigidContactManifoldRows()` empty-friction-descriptor early return.
 That slice clears/syncs an empty friction descriptor span and returns
@@ -95,12 +135,13 @@ same-hardware paper-number match, broad fracture/breakable-wall coverage, or
 all-coefficient friction win unless tracked artifacts directly prove it.
 
 Current evidence: the zero-limit Coulomb contact-friction row skip,
-empty-friction-descriptor early return, and default contact-stage
-zero-friction tangent skip are landed or pending on this branch. The refreshed
-friction-coefficient packet still records DART faster than the native source
-runner for max friction 0.5, 1.0, 2.5, and 5.0, but slower for the frictionless
-max friction 0 case. The latest local benchmark reruns after the default
-contact-stage skip were under high host load and are not CPU-win evidence, so
+empty-friction-descriptor early return, default contact-stage zero-friction
+tangent skip, and default contact-stage normal-only frictionless inner loop are
+landed or pending on this branch. The refreshed friction-coefficient packet
+still records DART faster than the native source runner for max friction 0.5,
+1.0, 2.5, and 5.0, but slower for the frictionless max friction 0 case. The
+latest local benchmark reruns after the normal-only loop are path validation
+only because same-source native timing and visual captures were not rerun, so
 the frictionless CPU gap and GPU parity remain open.
 
 Preferred next bounded work: choose one evidence-backed PLAN-104 gap, ideally

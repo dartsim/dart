@@ -10,6 +10,28 @@ Corpus matrix:
 ## Current Status
 
 - Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact stage now records whether any assembled contact can carry Coulomb
+  friction and uses a normal-only Gauss-Seidel loop when every contact is
+  frictionless. This keeps the normal impulse and penetration-correction path
+  active for the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row
+  while removing the per-contact friction branch from the inner iteration
+  loop. Local validation passed the focused `test_world` and
+  `bm_avbd_rigid_fixed_joint` target build; the focused
+  `World.RigidBodyContactZeroFrictionPreservesSlidingVelocity`,
+  `World.RigidBodyContactFrictionDeceleratesSlidingBody`, and
+  `World.RigidBodyContactFrictionRollsSlidingSphere` filter; a focused `/0`
+  benchmark path check; and the five-row `BM_AvbdDemo2dFrictionCoefficientSweep`.
+  The five-row run recorded median CPU step times of 7.01 us, 7.51 us,
+  18.13 us, 11.07 us, and 8.09 us for max friction 0, 0.5, 1.0, 2.5, and
+  5.0 respectively under load average `4.76, 9.43, 16.93` with CPU scaling
+  enabled. These benchmark reruns validate the path only; they do not refresh
+  the tracked packet, compare same-source native timing, or close the
+  frictionless CPU-win gate. Final verification also passed `pixi run lint`,
+  `pixi run build`, the focused three-test filter after lint/build, the full
+  `test_world` binary (314 tests), and `git diff --check`. The frictionless
+  source-row gap, all-coefficient CPU-win gate, GPU parity, source-demo parity,
+  and paper-number gates remain open.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
   contact stage now computes the combined Coulomb coefficient before tangent
   setup and skips tangent-basis/effective-mass construction plus friction solve
   calls when the coefficient is zero. This targets the remaining

@@ -9744,6 +9744,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   auto& constraints = m_contactScratch->constraints;
   constraints.clear();
   constraints.reserve(contacts.size());
+  bool hasFrictionConstraints = false;
   for (const auto& contact : contacts) {
     const auto entityA = detail::toRegistryEntity(contact.bodyA.getEntity());
     const auto entityB = detail::toRegistryEntity(contact.bodyB.getEntity());
@@ -9832,6 +9833,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       };
       constraint.tangentMass1 = tangentMass(constraint.tangent1);
       constraint.tangentMass2 = tangentMass(constraint.tangent2);
+      hasFrictionConstraints = true;
     } else {
       constraint.tangent1 = Eigen::Vector3d::Zero();
       constraint.tangent2 = Eigen::Vector3d::Zero();
@@ -9845,70 +9847,86 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // Sequential impulses (Gauss-Seidel) drive each contact's normal approach
   // velocity to its restitution target. The accumulated normal impulse is
   // clamped non-negative so contacts only push, never pull.
-  for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
-    for (auto& constraint : constraints) {
-      auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-      auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+  const auto solveNormalImpulse =
+      [&](ContactScratch::NormalConstraint& constraint) {
+        auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+        auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
 
-      const Eigen::Vector3d pointVelocityA = contactPointVelocity(
-          velocityA, constraint.armA, constraint.staticA);
-      const Eigen::Vector3d pointVelocityB = contactPointVelocity(
-          velocityB, constraint.armB, constraint.staticB);
-      const double approach
-          = (pointVelocityB - pointVelocityA).dot(constraint.normal);
+        const Eigen::Vector3d pointVelocityA = contactPointVelocity(
+            velocityA, constraint.armA, constraint.staticA);
+        const Eigen::Vector3d pointVelocityB = contactPointVelocity(
+            velocityB, constraint.armB, constraint.staticB);
+        const double approach
+            = (pointVelocityB - pointVelocityA).dot(constraint.normal);
 
-      double lambda = -(approach - constraint.restitutionVelocity)
-                      / constraint.effectiveMass;
-      const double clamped = std::max(constraint.normalImpulse + lambda, 0.0);
-      lambda = clamped - constraint.normalImpulse;
-      constraint.normalImpulse = clamped;
+        double lambda = -(approach - constraint.restitutionVelocity)
+                        / constraint.effectiveMass;
+        const double clamped = std::max(constraint.normalImpulse + lambda, 0.0);
+        lambda = clamped - constraint.normalImpulse;
+        constraint.normalImpulse = clamped;
 
-      const Eigen::Vector3d impulse = lambda * constraint.normal;
-      velocityB.linear += constraint.invMassB * impulse;
-      velocityB.angular
-          += constraint.invInertiaB * constraint.armB.cross(impulse);
-      velocityA.linear -= constraint.invMassA * impulse;
-      velocityA.angular
-          -= constraint.invInertiaA * constraint.armA.cross(impulse);
+        const Eigen::Vector3d impulse = lambda * constraint.normal;
+        velocityB.linear += constraint.invMassB * impulse;
+        velocityB.angular
+            += constraint.invInertiaB * constraint.armB.cross(impulse);
+        velocityA.linear -= constraint.invMassA * impulse;
+        velocityA.angular
+            -= constraint.invInertiaA * constraint.armA.cross(impulse);
+      };
 
-      // Coulomb friction along each tangent, clamped to the friction pyramid
-      // bounded by the accumulated normal impulse.
-      if (constraint.friction > 0.0) {
-        const double frictionLimit
-            = constraint.friction * constraint.normalImpulse;
-        const auto solveFriction = [&](const Eigen::Vector3d& tangent,
-                                       double tangentMass,
-                                       double& tangentImpulse) {
-          if (tangentMass <= 0.0 || frictionLimit <= 0.0) {
-            return;
-          }
-          const Eigen::Vector3d tangentVelocity
-              = contactPointVelocity(
-                    velocityB, constraint.armB, constraint.staticB)
-                - contactPointVelocity(
-                    velocityA, constraint.armA, constraint.staticA);
-          double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
-          const double clampedTangent = std::clamp(
-              tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
-          tangentLambda = clampedTangent - tangentImpulse;
-          tangentImpulse = clampedTangent;
+  if (!hasFrictionConstraints) {
+    for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
+      for (auto& constraint : constraints) {
+        solveNormalImpulse(constraint);
+      }
+    }
+  } else {
+    for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
+      for (auto& constraint : constraints) {
+        solveNormalImpulse(constraint);
 
-          const Eigen::Vector3d tangentImpulseVector = tangentLambda * tangent;
-          velocityB.linear += constraint.invMassB * tangentImpulseVector;
-          velocityB.angular += constraint.invInertiaB
-                               * constraint.armB.cross(tangentImpulseVector);
-          velocityA.linear -= constraint.invMassA * tangentImpulseVector;
-          velocityA.angular -= constraint.invInertiaA
-                               * constraint.armA.cross(tangentImpulseVector);
-        };
-        solveFriction(
-            constraint.tangent1,
-            constraint.tangentMass1,
-            constraint.tangentImpulse1);
-        solveFriction(
-            constraint.tangent2,
-            constraint.tangentMass2,
-            constraint.tangentImpulse2);
+        // Coulomb friction along each tangent, clamped to the friction pyramid
+        // bounded by the accumulated normal impulse.
+        if (constraint.friction > 0.0) {
+          auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+          auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+          const double frictionLimit
+              = constraint.friction * constraint.normalImpulse;
+          const auto solveFriction = [&](const Eigen::Vector3d& tangent,
+                                         double tangentMass,
+                                         double& tangentImpulse) {
+            if (tangentMass <= 0.0 || frictionLimit <= 0.0) {
+              return;
+            }
+            const Eigen::Vector3d tangentVelocity
+                = contactPointVelocity(
+                      velocityB, constraint.armB, constraint.staticB)
+                  - contactPointVelocity(
+                      velocityA, constraint.armA, constraint.staticA);
+            double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
+            const double clampedTangent = std::clamp(
+                tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
+            tangentLambda = clampedTangent - tangentImpulse;
+            tangentImpulse = clampedTangent;
+
+            const Eigen::Vector3d tangentImpulseVector
+                = tangentLambda * tangent;
+            velocityB.linear += constraint.invMassB * tangentImpulseVector;
+            velocityB.angular += constraint.invInertiaB
+                                 * constraint.armB.cross(tangentImpulseVector);
+            velocityA.linear -= constraint.invMassA * tangentImpulseVector;
+            velocityA.angular -= constraint.invInertiaA
+                                 * constraint.armA.cross(tangentImpulseVector);
+          };
+          solveFriction(
+              constraint.tangent1,
+              constraint.tangentMass1,
+              constraint.tangentImpulse1);
+          solveFriction(
+              constraint.tangent2,
+              constraint.tangentMass2,
+              constraint.tangentImpulse2);
+        }
       }
     }
   }

@@ -350,7 +350,8 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     preserving normal rows. The default sequential-impulse rigid contact stage
     also skips tangent-basis setup, tangent effective-mass calculation, and
     friction solve calls for contacts with zero combined Coulomb friction while
-    preserving normal contact projection.
+    preserving normal contact projection, and uses a normal-only inner solve
+    loop when every assembled contact is frictionless.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about
