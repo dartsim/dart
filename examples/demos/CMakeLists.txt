@@ -60,6 +60,11 @@ if(TARGET dart-demos)
       EXAMPLE_dart_demos_list
       PROPERTIES LABELS "examples;gui;catalog"
     )
+    foreach(test_target IN ITEMS tests tests_and_run)
+      if(TARGET ${test_target})
+        add_dependencies(${test_target} dart-demos)
+      endif()
+    endforeach()
   endif()
 
   # Headless smoke: cycle through every registered scene a few frames each,

@@ -14,8 +14,7 @@ from drifting.
   scene metrics, resolved solver identity, and replay/debug evidence.
 - Scope: `python/examples/demos/` rigid-body scenes, runner workflow metadata,
   `scripts/capture_py_demo.py`, focused Python tests, this PLAN-103 sidecar,
-  `python/examples/demos/README.md`, `CHANGELOG.md`, and active handoff docs
-  under `docs/dev_tasks/rigid_body_visual_verification/`.
+  `python/examples/demos/README.md`, and `CHANGELOG.md`.
 - Non-goals: new C++ `dart-demos` rows, public APIs for unsupported
   sleep/island/loop-closure compliance behavior, benchmark replacement, or
   maintainer acceptance/PR publication without explicit approval.
@@ -32,10 +31,10 @@ test-all` on a host with visible CUDA runtime.
   [`../103-examples-strategy.md`](../103-examples-strategy.md), DART 7
   evidence rules from PLAN-091/PR #2986, and current public `dartpy.simulation`
   rigid API availability.
-- Evidence: current local evidence is recorded below and in
-  `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`; external
-  PR creation, milestone mutation, maintainer acceptance, and dev-task cleanup
-  remain open until explicitly approved and completed.
+- Evidence: current local evidence is recorded below and in the workflow capture
+  manifests/review indexes named in this sidecar. PR publication and milestone
+  setup are complete; maintainer acceptance and hosted review/CI remain external
+  gates.
 
 ## Scope
 
@@ -958,9 +957,9 @@ Evidence recorded for this slice:
   workflow plus optional rows 37-52 packet now has durable sidecar coverage,
   Python README user guidance, sync/drift tests, full workflow capture evidence,
   optional packet capture evidence, and explicit public-API deferrals. The
-  dev-task folder is therefore close to cleanup, but it should remain until the
-  maintainer accepts this scoped workflow as complete and the completing PR
-  removes `docs/dev_tasks/rigid_body_visual_verification` in the same change.
+  working dev-task folder was retired in the completing PR; future follow-ups
+  should update this durable sidecar and the Python demo README instead of
+  restoring task-local handoff notes.
 - Latest workflow-search count follow-up: the in-viewer `Rigid Workflow` filter
   now counts the full ranked result set while still showing only the top six
   rows, so broad queries such as `contact` display a `Showing 6 of N matching

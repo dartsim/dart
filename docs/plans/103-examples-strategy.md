@@ -243,10 +243,7 @@ which owns the 36-row user-facing `py-demos` workflow, scene-panel evidence,
 replay/capture coverage, focused tests, deferred API gaps, and capture-first
 related packets. The root README source-checkout path points first to this
 Python-first rigid-body GUI verifier, its workflow docs, and a docked capture
-command before the frozen C++ companion smoke. The temporary
-`docs/dev_tasks/rigid_body_visual_verification/` folder remains only for final
-maintainer acceptance and completion cleanup; once accepted, the completing PR
-should remove that working folder. Future rigid visual-verification follow-ups
-should update the sidecar, Python demo README, registry/tests, and dashboard
-instead of restoring a working dev-task folder unless a new multi-session task
-starts.
+command before the frozen C++ companion smoke. The temporary working folder was
+retired in the completing PR. Future rigid visual-verification follow-ups should
+update the sidecar, Python demo README, registry/tests, and dashboard instead of
+restoring a working dev-task folder unless a new multi-session task starts.

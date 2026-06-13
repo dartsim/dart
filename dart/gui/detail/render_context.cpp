@@ -52,61 +52,11 @@
 #include <cstdint>
 #include <cstdlib>
 
-#if defined(__linux__)
-  #include <sys/resource.h>
-#endif
-
 namespace dart::gui::detail {
 
 namespace {
 
 using Backend = ::filament::Engine::Backend;
-
-#if defined(__linux__)
-class ScopedHeadlessCircularBufferFileLimit
-{
-public:
-  explicit ScopedHeadlessCircularBufferFileLimit(bool enabled)
-  {
-    if (!enabled) {
-      return;
-    }
-
-    if (getrlimit(RLIMIT_FSIZE, &mOriginal) != 0) {
-      return;
-    }
-
-    constexpr rlim_t kLimit = 5u * 1024u * 1024u;
-    const rlim_t requestedSoft
-        = mOriginal.rlim_max == RLIM_INFINITY
-              ? kLimit
-              : std::min<rlim_t>(mOriginal.rlim_max, kLimit);
-    if (mOriginal.rlim_cur <= requestedSoft) {
-      return;
-    }
-
-    rlimit next = mOriginal;
-    next.rlim_cur = requestedSoft;
-    mActive = setrlimit(RLIMIT_FSIZE, &next) == 0;
-  }
-
-  ScopedHeadlessCircularBufferFileLimit(
-      const ScopedHeadlessCircularBufferFileLimit&) = delete;
-  ScopedHeadlessCircularBufferFileLimit& operator=(
-      const ScopedHeadlessCircularBufferFileLimit&) = delete;
-
-  ~ScopedHeadlessCircularBufferFileLimit()
-  {
-    if (mActive) {
-      setrlimit(RLIMIT_FSIZE, &mOriginal);
-    }
-  }
-
-private:
-  rlimit mOriginal{};
-  bool mActive = false;
-};
-#endif
 
 std::string toLowerAscii(std::string value)
 {
@@ -204,17 +154,7 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
       continue;
     }
     previous = backend;
-#if defined(__linux__)
-    // Filament's Linux command-buffer path first tries a /tmp-backed
-    // ashmem-style double mapping. On tmpfs-pressure hosts that path can SIGBUS
-    // while zeroing the mapping during Engine creation. Headless capture does
-    // not need the file-backed path, so force Filament's anonymous fallback
-    // only while the engine is built; screenshots and frame files are written
-    // after the original file-size limit is restored.
-    ScopedHeadlessCircularBufferFileLimit circularBufferLimit(headless);
-#else
     static_cast<void>(headless);
-#endif
     if (::filament::Engine* engine
         = ::filament::Engine::Builder().backend(backend).build()) {
       if (backend != requested) {

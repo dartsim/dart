@@ -363,6 +363,8 @@ def build_breakable_joint_scene(
                 break_force_log10[0]
             )
         except (TypeError, ValueError, AttributeError):
+            # Replay controls are best-effort; invalid payloads keep the
+            # current threshold while histories and metrics restore below.
             pass
         restore_history(offset_history, state.get("offset_history", []))
         restore_history(speed_history, state.get("speed_history", []))
@@ -446,7 +448,6 @@ def build_breakable_joint_scene(
         )
         if changed_break_force:
             set_break_force_log10(float(next_break_force_log10))
-            metrics = _last_metrics or record_metrics()
 
         builder.text("comparison axis: fixed break-force lifecycle")
         builder.text(
