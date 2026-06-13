@@ -2740,6 +2740,7 @@ def build() -> SceneSetup:
                     "Total us",
                     "Worst error",
                     "Worst residual",
+                    "Worst comp",
                     "Slowest case",
                     "Slowest us",
                 ],
@@ -2755,6 +2756,7 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, f"{row['total_elapsed_us']:.1f}")
                     _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
                     _write_table_cell(builder, f"{row['max_residual']:.2e}")
+                    _write_table_cell(builder, f"{row['max_complementarity']:.2e}")
                     _write_table_cell(builder, row["slowest_case"])
                     _write_table_cell(builder, f"{row['slowest_elapsed_us']:.1f}")
                 builder.end_table()
