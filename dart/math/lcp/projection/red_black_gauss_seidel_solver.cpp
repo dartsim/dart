@@ -173,6 +173,9 @@ LcpResult RedBlackGaussSeidelSolver::solve(
     if (n <= kMaxStrictInteriorFastPathSize && problem.isStandardLcp(absTol)) {
       exactFastPath = detail::trySolveStrictInteriorStandardLcpLltFirst(
           problem, absTol, validationTolerance, x, &fastW);
+    } else if (n <= kMaxStrictInteriorFastPathSize && problem.isBoxedLcp()) {
+      exactFastPath = detail::trySolveProjectedActiveSetBoxedLcp(
+          problem, absTol, validationTolerance, x, &fastW);
     } else if (
         n <= kMaxFrictionIndexExactFastPathSize && problem.hasFrictionIndex()) {
       exactFastPath = detail::trySolveInteriorFrictionIndexLcp(

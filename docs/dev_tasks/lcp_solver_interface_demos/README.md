@@ -1,9 +1,84 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-13 Current Continuation - Live Performance Profile Refresh
+## 2026-06-13 Current Continuation - Boxed Projection Exact Paths
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current base before this checkpoint:
+  `14e637307bc Refresh live LCP performance profiles`.
+- Current branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 2]`.
+- Checkpoint target: `Extend boxed projection exact paths`.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Implementation:
+
+- `RedBlackGaussSeidelSolver` now routes non-warm-started, no-custom-option
+  small boxed LCPs through `detail::trySolveProjectedActiveSetBoxedLcp(...)`
+  before entering the two-color iteration.
+- `SymmetricPsorSolver` now uses the same projected active-set boxed exact path
+  under its existing profile-shaped exact-path size gate.
+- New projection-solver unit tests assert that both solvers solve a small boxed
+  active-set packet with `iterations == 0`.
+- The stale Jacobi "large problem hits max iterations" test now explicitly uses
+  the warm-started iterative path so it does not get bypassed by the existing
+  Standard exact shortcut.
+- The Python `lcp_physics` profile summary and panel assertions were refreshed
+  after regenerating the live profile artifacts.
+
+Current profile signal from the live run after this change:
+
+- Standard: no solver average is above `1.6x`; `MPRGP` is about `1.48x`,
+  followed by `RedBlackGaussSeidel` about `1.38x`.
+- Boxed: `Sap` is the only current average above `1.6x` at about `1.68x`;
+  `ShockPropagation` is about `1.54x`, `Admm` about `1.49x`, and
+  `RedBlackGaussSeidel` / `SymmetricPsor` moved down to about `1.32x` /
+  `1.38x`.
+- FrictionIndex: `Sap` and `ShockPropagation` are the current above-`1.6x`
+  rows at about `1.82x` and `1.73x`.
+
+Verification completed so far:
+
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_projection_solvers`
+  passed.
+- `build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_projection_solvers --gtest_filter='SymmetricPsorSolver.UsesProjectedActiveSetFastPathForSmallBoxedProblem:RedBlackGaussSeidelSolver.UsesProjectedActiveSetFastPathForSmallBoxedProblem:SymmetricPsorSolver.SolveBoxedProblem:RedBlackGaussSeidelSolver.LargeProblemHitsMaxIterations:RedBlackGaussSeidelSolver.ThreadedPathMatchesSerial'`
+  passed with `5 tests`.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCP_COMPARE`
+  passed.
+- `build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/Boxed/(RedBlackGaussSeidel|SymmetricPsor)/(12|24|48)$' --benchmark_format=json --benchmark_min_time=0.001s`
+  passed; all sampled rows reported `contract_ok=1` and `iterations=0`.
+- `pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900`
+  passed and regenerated all checked profile CSV artifacts.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_projection_solvers && build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_projection_solvers`
+  passed with `47 tests`.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_py_demo_panels.py -q`
+  passed with `57 passed`.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is still uncommitted, run the focused C++/Python tests,
+   `pixi run lint`, and `git diff --check`, then commit it with
+   `Extend boxed projection exact paths`.
+3. Continue from the next bounded performance/interface/demo gap. The strongest
+   next performance target from this refresh is `Sap` on Boxed/FrictionIndex
+   rows or FrictionIndex `ShockPropagation`.
+4. Do not retry the earlier rejected SAP FrictionIndex exact shortcut or
+   ShockPropagation exact-path probe without a materially different hypothesis.
+
+## 2026-06-13 Current Continuation - Live Performance Profile Refresh
+
+Historical checkpoint section. It was the latest hand-off before the boxed
+projection exact-path continuation.
+
+This was the latest hand-off state before the boxed projection exact-path
+continuation. Sections below are historical checkpoints and may describe their
+own local "current" state.
 
 Current branch state:
 

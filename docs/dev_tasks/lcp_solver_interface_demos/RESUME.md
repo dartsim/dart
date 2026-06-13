@@ -1,9 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality - 2026-06-13 Live Performance Profile Refresh
+## Current Reality - 2026-06-13 Boxed Projection Exact Paths
 
 This is the latest hand-off. Older sections below are historical checkpoints
 and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current base before this checkpoint:
+  `14e637307bc Refresh live LCP performance profiles`
+- Current branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 2]`
+- Checkpoint target: `Extend boxed projection exact paths`
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `RedBlackGaussSeidelSolver` now tries the shared projected active-set boxed
+  exact path for small non-warm-started boxed LCPs before the red/black
+  iteration.
+- `SymmetricPsorSolver` now uses the same boxed exact path under its existing
+  exact-path size gate.
+- Focused projection-solver tests assert both solvers return `iterations == 0`
+  on a small boxed active-set packet.
+- The Jacobi large-problem max-iteration test now sets `warmStart = true` so
+  it exercises the intended iterative path instead of the existing Standard
+  exact shortcut.
+- The live performance-profile CSV artifacts and Python `lcp_physics` profile
+  summary were regenerated from the updated benchmark.
+
+Verification completed so far:
+
+```bash
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_projection_solvers
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_projection_solvers --gtest_filter='SymmetricPsorSolver.UsesProjectedActiveSetFastPathForSmallBoxedProblem:RedBlackGaussSeidelSolver.UsesProjectedActiveSetFastPathForSmallBoxedProblem:SymmetricPsorSolver.SolveBoxedProblem:RedBlackGaussSeidelSolver.LargeProblemHitsMaxIterations:RedBlackGaussSeidelSolver.ThreadedPathMatchesSerial'
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCP_COMPARE
+build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/Boxed/(RedBlackGaussSeidel|SymmetricPsor)/(12|24|48)$' --benchmark_format=json --benchmark_min_time=0.001s
+pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_projection_solvers && build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_projection_solvers
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_py_demo_panels.py -q
+```
+
+Result:
+
+- Focused C++ projection tests: `5 tests` passed.
+- Full C++ projection solver test binary: `47 tests` passed.
+- Focused profile, roster, and py-demo panel tests: `57 passed`.
+- Benchmark target compile: passed.
+- Sampled Boxed `RedBlackGaussSeidel` and `SymmetricPsor` comparison rows:
+  `contract_ok=1`, `iterations=0`.
+- Live profile refresh: passed and saved all four checked profile CSV
+  artifacts.
+- Refreshed current largest average ratios:
+  - Standard: `MPRGP 1.48`, `RedBlackGaussSeidel 1.38`.
+  - Boxed: `Sap 1.68`, `ShockPropagation 1.54`, `Admm 1.49`.
+  - FrictionIndex: `Sap 1.82`, `ShockPropagation 1.73`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is still uncommitted, run the focused C++/Python tests,
+`pixi run lint`, and `git diff --check`, then commit it with
+`Extend boxed projection exact paths`. Continue only from another bounded DART
+7 LCP interface/demo/performance gap; the broad objective remains incomplete.
+
+## Current Reality - 2026-06-13 Live Performance Profile Refresh
+
+Historical checkpoint section. It was the latest hand-off before the boxed
+projection exact-path continuation.
+
+This was the latest hand-off before the boxed projection exact-path
+continuation. Older sections below are historical checkpoints and may retain
+their original "latest" wording from the time they were written.
 
 Current branch:
 

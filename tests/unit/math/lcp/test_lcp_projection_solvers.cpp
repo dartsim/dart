@@ -658,6 +658,23 @@ TEST(SymmetricPsorSolver, SolveBoxedProblem)
 }
 
 //==============================================================================
+TEST(SymmetricPsorSolver, UsesProjectedActiveSetFastPathForSmallBoxedProblem)
+{
+  SymmetricPsorSolver solver;
+  auto problem = makeDantzigBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.array().isFinite().all());
+  ExpectBoxed(x, problem.lo, problem.hi, kTol);
+}
+
+//==============================================================================
 TEST(SymmetricPsorSolver, SolveFrictionProblem)
 {
   SymmetricPsorSolver solver;
@@ -990,7 +1007,7 @@ TEST(SubspaceMinimizationSolver, InvalidPgsIterations)
 }
 
 //==============================================================================
-TEST(JacobiSolver, LargeProblemHitsMaxIterations)
+TEST(JacobiSolver, WarmStartedLargeProblemHitsMaxIterations)
 {
   JacobiSolver solver;
   auto problem = makeLargeCoupledProblem(60);
@@ -1000,6 +1017,7 @@ TEST(JacobiSolver, LargeProblemHitsMaxIterations)
   options.maxIterations = 1;
   options.absoluteTolerance = 1e-12;
   options.relativeTolerance = 1e-12;
+  options.warmStart = true;
   options.validateSolution = false;
   const auto result = solver.solve(problem, x, options);
 
@@ -1023,6 +1041,25 @@ TEST(RedBlackGaussSeidelSolver, LargeProblemHitsMaxIterations)
 
   EXPECT_EQ(result.status, LcpSolverStatus::MaxIterations);
   EXPECT_TRUE(x.array().isFinite().all());
+}
+
+//==============================================================================
+TEST(
+    RedBlackGaussSeidelSolver,
+    UsesProjectedActiveSetFastPathForSmallBoxedProblem)
+{
+  RedBlackGaussSeidelSolver solver;
+  auto problem = makeDantzigBoxedProblem();
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+
+  LcpOptions options;
+  options.maxIterations = 1;
+  const auto result = solver.solve(problem, x, options);
+
+  EXPECT_TRUE(result.succeeded()) << result.message;
+  EXPECT_EQ(result.iterations, 0);
+  EXPECT_TRUE(x.array().isFinite().all());
+  ExpectBoxed(x, problem.lo, problem.hi, kTol);
 }
 
 //==============================================================================
