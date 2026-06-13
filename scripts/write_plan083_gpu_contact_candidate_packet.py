@@ -116,6 +116,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "SweptEdgeEdgeSweep|"
         "SceneRuntimePointTriangleSweep|"
         "SceneRuntimeEdgeEdgeSweep|"
+        "SceneRuntimeCombinedSweepFilter|"
         "RuntimePointTriangleCandidateBuffer|"
         "RuntimeEdgeEdgeCandidateBuffer|"
         "SceneRuntimePointTriangleCandidateBuffer|"
@@ -275,6 +276,15 @@ def _expected_scene_runtime_edge_edge_sweep_row_names(
     )
 
 
+def _expected_scene_runtime_combined_sweep_filter_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SceneRuntimeCombinedSweepFilterCpu/{pair_count}",
+        f"BM_Plan083SceneRuntimeCombinedSweepFilterCuda/{pair_count}",
+    )
+
+
 def _expected_scene_runtime_point_triangle_candidate_buffer_row_names(
     pair_count: int,
 ) -> tuple[str, str]:
@@ -320,6 +330,9 @@ def _representative_rows(
     )
     expected_names.update(
         _expected_scene_runtime_edge_edge_sweep_row_names(stencil_count)
+    )
+    expected_names.update(
+        _expected_scene_runtime_combined_sweep_filter_row_names(stencil_count)
     )
     expected_names.update(
         _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
@@ -848,6 +861,191 @@ def _validate_swept_edge_edge_sweep(
     return row
 
 
+def _validate_scene_runtime_combined_sweep_filter(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    label = "combined scene runtime sweep filter"
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
+        )
+
+    cpu_capacity = int(_counter(cpu_row, "pair_capacity"))
+    gpu_capacity = int(_counter(gpu_row, "gpu_pair_capacity"))
+    if cpu_capacity != gpu_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU pair capacity mismatch: {cpu_capacity}/{gpu_capacity}"
+        )
+    cpu_point_capacity = int(_counter(cpu_row, "point_triangle_pair_capacity"))
+    gpu_point_capacity = int(_counter(gpu_row, "gpu_point_triangle_pair_capacity"))
+    cpu_edge_capacity = int(_counter(cpu_row, "edge_edge_pair_capacity"))
+    gpu_edge_capacity = int(_counter(gpu_row, "gpu_edge_edge_pair_capacity"))
+    if cpu_point_capacity != gpu_point_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU point-triangle pair capacity mismatch: "
+            f"{cpu_point_capacity}/{gpu_point_capacity}"
+        )
+    if cpu_edge_capacity != gpu_edge_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU edge-edge pair capacity mismatch: "
+            f"{cpu_edge_capacity}/{gpu_edge_capacity}"
+        )
+    if cpu_capacity != cpu_point_capacity + cpu_edge_capacity:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} pair capacity {cpu_capacity} does not match "
+            f"point-triangle plus edge-edge capacity "
+            f"{cpu_point_capacity + cpu_edge_capacity}"
+        )
+
+    cpu_accepted = int(_counter(cpu_row, "accepted_count"))
+    gpu_accepted = int(_counter(gpu_row, "gpu_accepted_count"))
+    if cpu_accepted != gpu_accepted:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU accepted count mismatch: {cpu_accepted}/{gpu_accepted}"
+        )
+    cpu_point_accepted = int(_counter(cpu_row, "point_triangle_accepted_count"))
+    gpu_point_accepted = int(_counter(gpu_row, "gpu_point_triangle_accepted_count"))
+    cpu_edge_accepted = int(_counter(cpu_row, "edge_edge_accepted_count"))
+    gpu_edge_accepted = int(_counter(gpu_row, "gpu_edge_edge_accepted_count"))
+    if cpu_point_accepted != gpu_point_accepted:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU point-triangle accepted count mismatch: "
+            f"{cpu_point_accepted}/{gpu_point_accepted}"
+        )
+    if cpu_edge_accepted != gpu_edge_accepted:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU edge-edge accepted count mismatch: "
+            f"{cpu_edge_accepted}/{gpu_edge_accepted}"
+        )
+    if cpu_accepted != cpu_point_accepted + cpu_edge_accepted:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} accepted total {cpu_accepted} does not match "
+            f"point-triangle plus edge-edge count "
+            f"{cpu_point_accepted + cpu_edge_accepted}"
+        )
+
+    gpu_point_compacted = int(_counter(gpu_row, "gpu_point_triangle_compacted_count"))
+    gpu_point_compacted_triangles = int(
+        _counter(gpu_row, "gpu_point_triangle_compacted_triangle_count")
+    )
+    gpu_point_compacted_distances = int(
+        _counter(gpu_row, "gpu_point_triangle_compacted_distance_count")
+    )
+    if not (
+        gpu_point_compacted
+        == gpu_point_compacted_triangles
+        == gpu_point_compacted_distances
+        == cpu_point_accepted
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} point-triangle compacted count mismatch: "
+            f"points={gpu_point_compacted}, "
+            f"triangles={gpu_point_compacted_triangles}, "
+            f"distances={gpu_point_compacted_distances}, "
+            f"accepted={cpu_point_accepted}"
+        )
+
+    gpu_edge_compacted_a = int(
+        _counter(gpu_row, "gpu_edge_edge_compacted_edge_a_count")
+    )
+    gpu_edge_compacted_b = int(
+        _counter(gpu_row, "gpu_edge_edge_compacted_edge_b_count")
+    )
+    gpu_edge_compacted_distances = int(
+        _counter(gpu_row, "gpu_edge_edge_compacted_distance_count")
+    )
+    if not (
+        gpu_edge_compacted_a
+        == gpu_edge_compacted_b
+        == gpu_edge_compacted_distances
+        == cpu_edge_accepted
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} edge-edge compacted count mismatch: "
+            f"edge_a={gpu_edge_compacted_a}, "
+            f"edge_b={gpu_edge_compacted_b}, "
+            f"distances={gpu_edge_compacted_distances}, "
+            f"accepted={cpu_edge_accepted}"
+        )
+
+    cpu_points = int(_counter(cpu_row, "points"))
+    gpu_points = int(_counter(gpu_row, "gpu_points"))
+    cpu_triangles = int(_counter(cpu_row, "triangles"))
+    gpu_triangles = int(_counter(gpu_row, "gpu_triangles"))
+    cpu_edges = int(_counter(cpu_row, "edges"))
+    gpu_edges = int(_counter(gpu_row, "gpu_edges"))
+    if (
+        cpu_points != gpu_points
+        or cpu_triangles != gpu_triangles
+        or cpu_edges != gpu_edges
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU shape mismatch: "
+            f"points {cpu_points}/{gpu_points}, "
+            f"triangles {cpu_triangles}/{gpu_triangles}, "
+            f"edges {cpu_edges}/{gpu_edges}"
+        )
+
+    cpu_scene_bodies = int(_counter(cpu_row, "scene_bodies"))
+    gpu_scene_bodies = int(_counter(gpu_row, "scene_bodies"))
+    if cpu_scene_bodies != gpu_scene_bodies:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU scene body mismatch: "
+            f"{cpu_scene_bodies}/{gpu_scene_bodies}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+
+    return {
+        "pair_capacity": cpu_capacity,
+        "point_triangle_pair_capacity": cpu_point_capacity,
+        "edge_edge_pair_capacity": cpu_edge_capacity,
+        "accepted_count": cpu_accepted,
+        "point_triangle_accepted_count": cpu_point_accepted,
+        "edge_edge_accepted_count": cpu_edge_accepted,
+        "point_triangle_compacted_count": gpu_point_compacted,
+        "point_triangle_compacted_triangle_count": gpu_point_compacted_triangles,
+        "point_triangle_compacted_distance_count": gpu_point_compacted_distances,
+        "edge_edge_compacted_edge_a_count": gpu_edge_compacted_a,
+        "edge_edge_compacted_edge_b_count": gpu_edge_compacted_b,
+        "edge_edge_compacted_distance_count": gpu_edge_compacted_distances,
+        "point_count": cpu_points,
+        "triangle_count": cpu_triangles,
+        "edge_count": cpu_edges,
+        "scene_body_count": cpu_scene_bodies,
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
+
+
 def _validate_runtime_point_triangle_candidate_buffer(
     *,
     cpu_row: Mapping[str, Any],
@@ -1220,6 +1418,45 @@ def make_packet(
         label="scene runtime edge-edge sweep broad phase",
         include_scene_bodies=True,
     )
+    combined_sweep_cpu, combined_sweep_gpu = (
+        _expected_scene_runtime_combined_sweep_filter_row_names(stencil_count)
+    )
+    combined_scene_runtime_sweep_filter = _validate_scene_runtime_combined_sweep_filter(
+        cpu_row=representative_rows[combined_sweep_cpu],
+        gpu_row=representative_rows[combined_sweep_gpu],
+        tolerance=tolerance,
+        speedup_gate=speedup_gate,
+    )
+    if (
+        combined_scene_runtime_sweep_filter["point_triangle_pair_capacity"]
+        != scene_runtime_point_triangle_sweep["pair_capacity"]
+        or combined_scene_runtime_sweep_filter["point_triangle_accepted_count"]
+        != scene_runtime_point_triangle_sweep["accepted_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime sweep filter point-triangle counts do not "
+            "match the point-triangle scene runtime sweep row"
+        )
+    if (
+        combined_scene_runtime_sweep_filter["edge_edge_pair_capacity"]
+        != scene_runtime_edge_edge_sweep["pair_capacity"]
+        or combined_scene_runtime_sweep_filter["edge_edge_accepted_count"]
+        != scene_runtime_edge_edge_sweep["accepted_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime sweep filter edge-edge counts do not match "
+            "the edge-edge scene runtime sweep row"
+        )
+    if (
+        combined_scene_runtime_sweep_filter["scene_body_count"]
+        != scene_runtime_point_triangle_sweep["scene_body_count"]
+        or combined_scene_runtime_sweep_filter["scene_body_count"]
+        != scene_runtime_edge_edge_sweep["scene_body_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime sweep filter scene body count does not match "
+            "the per-family scene runtime sweep rows"
+        )
     runtime_point_cpu, runtime_point_gpu = (
         _expected_runtime_point_triangle_candidate_buffer_row_names(stencil_count)
     )
@@ -1312,6 +1549,7 @@ def make_packet(
         "edge_edge_sweep_broad_phase": swept_edge_edge_sweep,
         "point_triangle_scene_runtime_sweep": scene_runtime_point_triangle_sweep,
         "edge_edge_scene_runtime_sweep": scene_runtime_edge_edge_sweep,
+        "combined_scene_runtime_sweep_filter": combined_scene_runtime_sweep_filter,
         "point_triangle_runtime_sweep_buffer": (
             runtime_point_triangle_candidate_buffer
         ),

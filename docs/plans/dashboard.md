@@ -339,8 +339,9 @@ its own line so status updates remain git-history friendly.
   metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
   compact runtime sweep-buffer endpoint-distance packets, reduced
   scene-owned runtime candidate-buffer packets, and reduced scene-owned
-  runtime sweep broad-phase packets, plus a reduced combined scene runtime
-  candidate-filter row extracted from the same DART `World` surface,
+  runtime sweep broad-phase packets, plus reduced combined scene runtime
+  sweep-filter and candidate-filter rows extracted from the same DART `World`
+  surface,
   endpoint-linear point-triangle/edge-edge CCD/line-search parity plus sampled
   rigid-curved point-triangle/edge-edge CCD/line-search parity plus reduced
   scene-owned runtime point-triangle/edge-edge CCD rows, scalar
@@ -373,7 +374,8 @@ its own line so status updates remain git-history friendly.
   sparse Hessian graph construction and assembly beyond the reduced dedup row,
   unbounded production direct/global sparse factorization, production nonlinear equality convergence
   policy/solving, GPU `World::step`, paper-scale assets, full runtime
-  affine/FEM coupling, and accepted reference timings as future evidence. The
+  affine/FEM coupling, production runtime scene filtering inside `World::step`,
+  and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
   direction before deletion.

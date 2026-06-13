@@ -65,10 +65,11 @@ moves entirely into durable plan sidecars.
   sweep-and-prune broad-phase packets, and compact runtime sweep-buffer
   endpoint-distance packets that consume CPU sweep candidate keys plus reduced
   scene-owned runtime candidate buffers, scene-owned runtime sweep broad-phase
-  rows, and a reduced combined scene runtime candidate-filter row extracted
-  from one DART `World` deformable surface, but full runtime scene filtering,
-  GPU `World::step` contact candidate construction, and speedup remain
-  unproven.
+  rows, a reduced combined scene runtime sweep-filter row, and a reduced
+  combined scene runtime candidate-filter row extracted from one DART `World`
+  deformable surface, but production runtime scene filtering inside
+  `World::step`, GPU `World::step` contact candidate construction, and speedup
+  remain unproven.
   The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
   point-triangle/edge-edge CCD/line-search packet is in-progress because
   parity exists for reduced endpoint-linear, 8-sample trajectory, and reduced

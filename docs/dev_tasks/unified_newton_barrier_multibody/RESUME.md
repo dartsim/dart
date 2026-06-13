@@ -2,7 +2,46 @@
 
 ## Current Reality (2026-06-13)
 
-Latest combined scene runtime candidate-filter checkpoint (2026-06-13): work
+Latest combined scene runtime sweep-filter checkpoint (2026-06-13): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private contact-candidate packet with a reduced
+combined scene runtime sweep-filter row. The benchmark builds the same DART
+`World` deformable surface used by the existing scene-owned runtime sweep rows
+and runs the existing point-triangle and edge-edge GPU sweep builders in one
+aggregate row. This is reduced packet evidence only; it does not prove
+production runtime scene filtering inside `World::step`, GPU `World::step`
+contact candidate construction, or a top-level speedup claim.
+
+Fresh packet evidence records one scene body, 2,560 points, 768 surface
+triangles, 2,304 surface edges, and 7,274,496 total possible sweep pairs:
+1,966,080 point-triangle plus 5,308,416 edge-edge. The combined row emits
+2,048 compact candidates: 512 point-triangle and 1,536 edge-edge. It records
+`max_result_abs_error=5.551115123125783e-17` and
+`speedup=0.04386519668565386x` (`meets_speedup_gate=false`). The top-level
+contact-candidate packet records `max_result_abs_error=5.551115123125783e-17`
+and `speedup=0.002822497416176393x` (`meets_speedup_gate=false`), so the
+durable GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py --skip-run`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_contact_candidate_filter_cuda$'`
+- `git diff --check`
+- `pixi run lint`
+
+Previous combined scene runtime candidate-filter checkpoint (2026-06-13): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete

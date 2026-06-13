@@ -295,6 +295,55 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_combined_sweep_cpu = _row(
+        "BM_Plan083SceneRuntimeCombinedSweepFilterCpu/1024",
+        pair_capacity=2048,
+        point_triangle_pair_capacity=1024,
+        edge_edge_pair_capacity=1024,
+        accepted_count=48,
+        point_triangle_accepted_count=32,
+        edge_edge_accepted_count=16,
+        points=32,
+        triangles=32,
+        edges=32,
+        scene_bodies=1,
+        max_result_abs_error=0.0,
+    )
+    scene_combined_sweep_gpu = _row(
+        "BM_Plan083SceneRuntimeCombinedSweepFilterCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        pair_capacity=2048,
+        point_triangle_pair_capacity=1024,
+        edge_edge_pair_capacity=1024,
+        accepted_count=48,
+        point_triangle_accepted_count=32,
+        edge_edge_accepted_count=16,
+        points=32,
+        triangles=32,
+        edges=32,
+        scene_bodies=1,
+        gpu_pair_capacity=2048,
+        gpu_point_triangle_pair_capacity=1024,
+        gpu_edge_edge_pair_capacity=1024,
+        gpu_accepted_count=48,
+        gpu_point_triangle_accepted_count=32,
+        gpu_edge_edge_accepted_count=16,
+        gpu_point_triangle_compacted_count=32,
+        gpu_point_triangle_compacted_triangle_count=32,
+        gpu_point_triangle_compacted_distance_count=32,
+        gpu_edge_edge_compacted_edge_a_count=16,
+        gpu_edge_edge_compacted_edge_b_count=16,
+        gpu_edge_edge_compacted_distance_count=16,
+        gpu_points=32,
+        gpu_triangles=32,
+        gpu_edges=32,
+        max_result_abs_error=1e-14,
+        host_setup_ns=2.0,
+        host_to_device_ns=4.0,
+        kernel_ns=6.0,
+        device_to_host_ns=8.0,
+    )
     runtime_point_cpu = _row(
         "BM_Plan083RuntimePointTriangleCandidateBufferCpu/1024",
         candidates=32,
@@ -446,6 +495,8 @@ def _benchmark_data(**overrides):
             scene_sweep_point_gpu,
             scene_sweep_edge_cpu,
             scene_sweep_edge_gpu,
+            scene_combined_sweep_cpu,
+            scene_combined_sweep_gpu,
             runtime_point_cpu,
             runtime_point_gpu,
             runtime_edge_cpu,
@@ -474,7 +525,7 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
     assert row["row_id"] == "contact-stencils-candidate-filtering"
     assert row["same_scene_cpu_gpu"] is True
     assert row["accepted_count"] == 1536
-    assert row["candidate_pair_count"] == 8192
+    assert row["candidate_pair_count"] == 10240
     assert row["max_result_abs_error"] == 1e-14
     assert row["meets_speedup_gate"] is True
     assert set(row["primitive_families"]) == {"point_triangle", "edge_edge"}
@@ -487,6 +538,7 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         "edge_edge_sweep_broad_phase",
         "point_triangle_scene_runtime_sweep",
         "edge_edge_scene_runtime_sweep",
+        "combined_scene_runtime_sweep_filter",
         "point_triangle_runtime_sweep_buffer",
         "edge_edge_runtime_sweep_buffer",
         "point_triangle_scene_runtime_buffer",
@@ -571,6 +623,17 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         ]
         == 1
     )
+    combined_sweep = row["candidate_construction"][
+        "combined_scene_runtime_sweep_filter"
+    ]
+    assert combined_sweep["pair_capacity"] == 2048
+    assert combined_sweep["point_triangle_pair_capacity"] == 1024
+    assert combined_sweep["edge_edge_pair_capacity"] == 1024
+    assert combined_sweep["accepted_count"] == 48
+    assert combined_sweep["point_triangle_accepted_count"] == 32
+    assert combined_sweep["edge_edge_accepted_count"] == 16
+    assert combined_sweep["scene_body_count"] == 1
+    assert combined_sweep["max_result_abs_error"] == 1e-14
     assert (
         row["candidate_construction"]["point_triangle_runtime_sweep_buffer"][
             "candidate_count"
@@ -734,6 +797,29 @@ def test_plan083_gpu_contact_candidate_packet_rejects_runtime_buffer_mismatch() 
         assert "runtime point-triangle candidate buffer" in str(exc)
     else:
         raise AssertionError("expected runtime buffer failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_combined_sweep_mismatch() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    combined_gpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeCombinedSweepFilterCuda/1024"
+    )
+    combined_gpu["gpu_point_triangle_accepted_count"] = 31
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "point-triangle accepted count mismatch" in str(exc)
+    else:
+        raise AssertionError("expected combined sweep mismatch")
 
 
 def test_plan083_gpu_contact_candidate_packet_rejects_combined_runtime_mismatch() -> (
