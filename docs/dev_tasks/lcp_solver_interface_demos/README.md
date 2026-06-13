@@ -1,6 +1,6 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-12 Current Continuation - Profile Evidence Native Row Validation
+## 2026-06-12 Current Continuation - Profile Evidence Partial-Run Validation
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
@@ -9,7 +9,7 @@ Fresh AI session priority:
 
 1. Start from the current checkout, not from older WIP wording. Read
    `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
-2. Treat `9995094ed3c Validate LCP profile native evidence rows` as the latest
+2. Treat `914e3cf4a47 Reject non-native LCP profile rows` as the latest
    completed local tip before this checkpoint. If this section is committed,
    inspect `git log --oneline --decorate -8` for the new exact tip.
 3. Continue the broader LCP solver/interface/demo audit from one concrete gap
@@ -21,10 +21,10 @@ Current branch state before this checkpoint commit:
 
 - Branch: `feature/lcp-solver-interface-demos`.
 - Current local tip before this edit:
-  `9995094ed3c Validate LCP profile native evidence rows`.
+  `914e3cf4a47 Reject non-native LCP profile rows`.
 - Current relationship:
   `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
-  with the local branch ahead by two commits before this edit.
+  with the local branch ahead by three commits before this edit.
 - This branch has no associated PR. Do not push, open a PR, or mutate GitHub
   state without explicit maintainer/user approval.
 
@@ -38,19 +38,25 @@ Profile-evidence native-row status:
 - `scripts/lcp_performance_profile.py` now rejects non-native solver/category
   rows during coverage checks even when legacy benchmark JSON lacks the
   concrete `solver_supports_problem` counter.
+- `scripts/lcp_performance_profile.py --allow-partial` now only relaxes
+  missing native solver coverage for smoke runs. Invalid rows, unsupported
+  `solver_supports_problem=0` rows, and schema/counter mismatches remain hard
+  failures.
 - `python/tests/unit/test_check_lcp_solver_roster.py` covers that regression
   with a boxed `Lemke` evidence row.
 - `python/tests/unit/test_lcp_performance_profile.py` covers the corresponding
-  boxed `Lemke` historical-row case.
+  boxed `Lemke` historical-row case plus strict `--allow-partial` behavior.
 - No benchmark registrations, solver predicates, checked profile CSVs, public
   APIs, or performance timings were intentionally changed.
 
 Verification completed in this continuation:
 
 - `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_lcp_performance_profile.py -q`
-  passed with 16 tests.
+  passed with 18 tests.
 - `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
   passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- No cached `build/lcp_profile_full.json` exists in this checkout, so the
+  cached profile-regeneration path was not rerun for this slice.
 - `pixi run lint` passed, including `lint-lcp-solver-roster` and
   `sync-ai-commands`.
 - `git diff --check` passed.

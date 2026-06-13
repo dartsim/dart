@@ -262,7 +262,8 @@ def check_native_profile_coverage(
     native_support_by_category: dict[str, set[str]],
     allow_partial: bool = False,
 ) -> None:
-    errors = []
+    coverage_errors = []
+    evidence_errors = []
     manifest_names = set().union(*native_support_by_category.values())
 
     for category in PROFILE_CATEGORIES:
@@ -340,52 +341,58 @@ def check_native_profile_coverage(
         solver_family_mismatches = sorted(solver_family_mismatches)
 
         if unknown:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: benchmark JSON contains unknown solvers {unknown}"
             )
         if missing:
-            errors.append(f"{category}: missing native solvers {missing}")
+            coverage_errors.append(f"{category}: missing native solvers {missing}")
         if non_native_rows:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: benchmark JSON contains non-native rows "
                 f"{non_native_rows}"
             )
         if unsupported_rows:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows report "
                 f"solver_supports_problem=0 for {unsupported_rows}"
             )
         if form_support_mismatches:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows report unsupported "
                 f"form counters for {form_support_mismatches}"
             )
         if problem_type_mismatches:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows disagree with problem_type "
                 f"counters for {problem_type_mismatches}"
             )
         if problem_dimension_mismatches:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows disagree with problem "
                 f"dimension counters for {problem_dimension_mismatches}"
             )
         if solver_identity_mismatches:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows disagree with solver identity "
                 f"counters for {solver_identity_mismatches}"
             )
         if solver_family_mismatches:
-            errors.append(
+            evidence_errors.append(
                 f"{category}: current-schema rows disagree with solver family "
                 f"counters for {solver_family_mismatches}"
             )
 
-    if not errors:
+    if evidence_errors:
+        message = "LCP performance profile evidence is invalid:\n  - " + "\n  - ".join(
+            evidence_errors
+        )
+        raise RuntimeError(message)
+
+    if not coverage_errors:
         return
 
     message = "LCP performance profile coverage is incomplete:\n  - " + "\n  - ".join(
-        errors
+        coverage_errors
     )
     if allow_partial:
         print(f"Warning: {message}", file=sys.stderr)

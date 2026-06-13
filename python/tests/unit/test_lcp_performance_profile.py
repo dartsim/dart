@@ -122,6 +122,64 @@ def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() 
     )
 
 
+def test_lcp_profile_coverage_allows_partial_missing_native_solvers(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                }
+            ]
+        }
+    )
+
+    module.check_native_profile_coverage(
+        results,
+        {
+            "Standard": {"Dantzig", "Lemke"},
+            "Boxed": set(),
+            "FrictionIndex": set(),
+        },
+        allow_partial=True,
+    )
+
+    assert "missing native solvers ['Lemke']" in capsys.readouterr().err
+
+
+def test_lcp_profile_coverage_rejects_invalid_rows_even_when_partial() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "solver_supports_problem": 0.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="evidence is invalid"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig", "Lemke"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+            allow_partial=True,
+        )
+
+
 def test_lcp_profile_coverage_rejects_historical_non_native_rows() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
