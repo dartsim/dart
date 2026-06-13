@@ -11,6 +11,15 @@
     with headless and GUI examples covering DART 6.x dynamic joint constraints:
     [#2918](https://github.com/dartsim/dart/issues/2918)
 
+* Dynamics
+
+  * Add `ContactInverseDynamics` and `math::solveNonNegativeLeastSquares` to
+    compute joint torques together with friction-cone-consistent contact
+    forces for tracked motions with contacts, so floating-base inverse
+    dynamics no longer requires an external QP solver, with unit tests,
+    benchmarks, dartpy bindings, and an ImGui-based GUI example:
+    [#2985](https://github.com/dartsim/dart/pull/2985)
+
 ### [DART 6.18.0 (2026-06-05)](https://github.com/dartsim/dart/milestone/94?closed=1)
 
 DART 6.18.0 is a minor release on the DART 6 LTS line. It adds two contact and
