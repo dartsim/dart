@@ -55,6 +55,11 @@ rigid-body visual verification surface for the current cycle.
 - Tightens the row-2 body-mode verifier so the first early workflow comparison
   row now publishes the same `comparison_axis` and held-fixed context pattern
   used by later rigid workflow rows.
+- Promotes rows 1 and 3 first-screen baseline/free-flight metrics into
+  workflow review-card latest signals, so the default front door and
+  contact-free initial-state row show speed, height, energy, contact,
+  step-time, path-error, momentum, energy-drift, and spin-ratio evidence
+  without opening raw manifests.
 - Promotes rows 2 and 4-6 core body/frame/load metrics into workflow
   review-card latest signals, so body modes, frame hierarchy, external loads,
   and link point loads are statically reviewable without opening raw manifests.
@@ -144,6 +149,9 @@ rigid-body visual verification surface for the current cycle.
 - Focused core body/frame/load latest-signal guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_body_frame_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_load_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_card_summarizes_link_point_load_signals python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_parameter_budget_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_restitution_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_material_response_values -q`
   reported `6 passed`.
+- Focused baseline/free-flight latest-signal guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_baseline_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_free_flight_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_body_frame_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
+  reported `6 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `23 passed`.
@@ -201,6 +209,13 @@ rigid-body visual verification surface for the current cycle.
   `capture_count=5`, `failed_count=0`, `scene_metrics_complete=true`,
   `resolved_solver_identity_complete=true`, and generated review cards with
   the promoted body mode, frame hierarchy, external-load, and point-load latest
+  signals.
+- Fresh rows 1-3 workflow evidence:
+  `build/captures/rigid_workflow_baseline_freeflight_signals_1781337861`
+  captured the baseline/body-mode/free-flight front-door rows, reported
+  `status=complete`, `capture_count=3`, `failed_count=0`,
+  `scene_metrics_complete=true`, `resolved_solver_identity_complete=true`, and
+  generated review cards with the promoted baseline and free-flight latest
   signals.
 - Fresh row-2 single-scene visual evidence:
   `build/captures/rigid_body_modes_comparison_axis_1781325323` captured

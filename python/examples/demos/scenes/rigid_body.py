@@ -256,6 +256,13 @@ class _RigidBodyBaseline:
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
             "dynamic_body_count": float(len(self.dynamic_bodies)),
+            "baseline_max_speed": float(self._last_metrics["max_speed"]),
+            "baseline_min_height": float(self._last_metrics["min_height"]),
+            "baseline_energy": float(self._last_metrics["energy"]),
+            "baseline_scene_contact_count": float(
+                self._last_metrics["contact_count"]
+            ),
+            "baseline_step_ms": float(self._last_metrics["step_ms"]),
             "controls": {
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),

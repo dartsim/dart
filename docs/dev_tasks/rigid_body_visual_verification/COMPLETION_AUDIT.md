@@ -21,6 +21,20 @@ review audit checked 181 local `href`/`src` targets in `review_index.html` with
 durable docs at `/tmp/dart_capture_rigid_workflow_resilient`.
 
 Latest local implementation slice: workflow review-card `latest signals` now
+surface the baseline and free-flight values needed for first-screen static
+review. Row 1 promotes baseline max speed, minimum height, kinetic energy,
+contact count, step time, and dynamic body count from capture metrics; row 3
+promotes zero-g drift error, momentum drift, drift speed, gravity-arc position
+error, momentum residual, energy drift, height, and spin momentum ratio.
+Focused capture-helper and baseline scene guards reported `6 passed`. Fresh
+rows 1-3 workflow evidence lives at
+`build/captures/rigid_workflow_baseline_freeflight_signals_1781337861`: the
+packet completed with `status=complete`, `capture_count=3`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new baseline/free-flight latest signals.
+
+Latest local implementation slice: workflow review-card `latest signals` now
 surface the core body/frame/load values needed for static review of rows 2 and
 4-6. Row 2 promotes dynamic displacement/height/speed, kinematic path error/x,
 and static drift; row 4 promotes transform residuals, sensor position, and
@@ -223,10 +237,11 @@ DART 7 work-packet harness. The prior stopped wrapper attempt remains recorded
 below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
-for local/remote parity. The branch matched
-`origin/feature/rigid-body-gui-visual-verification` at `b187cc2bd8d` before the
-current core-signal review-card slice. After this slice is committed, expect
-one local commit ahead of origin until a maintainer approves another push.
+for local/remote parity. The branch was clean at `0548e068cb8`, one local
+commit ahead of `origin/feature/rigid-body-gui-visual-verification`
+(`b187cc2bd8d`), before the current baseline/free-flight review-card slice.
+After this slice is committed, expect two local commits ahead of origin until a
+maintainer approves another push.
 Fresh `gh pr list --head "$(git branch --show-current)"` still reported no PR
 for the branch. The latest pre-push
 `git fetch origin main && git merge --no-edit origin/main` reported

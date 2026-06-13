@@ -256,7 +256,7 @@ def _default_output_dir(scene: str) -> pathlib.Path:
 
 
 RIGID_WORKFLOW_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...] = (
-    ("rigid_body", 24, 960, 540, True),
+    ("rigid_body", 180, 960, 540, True),
     ("rigid_body_modes", 72, 960, 540, True),
     ("rigid_free_flight", 96, 960, 540, True),
     ("rigid_frame_hierarchy", 72, 960, 540, True),
@@ -1485,6 +1485,21 @@ def _workflow_link(label: str, href: object) -> str:
 
 
 _WORKFLOW_METRIC_HIGHLIGHT_KEYS = (
+    "baseline_max_speed",
+    "baseline_min_height",
+    "baseline_energy",
+    "baseline_scene_contact_count",
+    "baseline_step_ms",
+    "dynamic_body_count",
+    "drift_position_error",
+    "drift_momentum_drift",
+    "drift_speed",
+    "arc_position_error",
+    "arc_momentum_residual",
+    "arc_energy_drift",
+    "arc_height",
+    "spin_momentum_ratio",
+    "spin_energy_ratio",
     "dynamic_displacement_x",
     "dynamic_height",
     "dynamic_speed",

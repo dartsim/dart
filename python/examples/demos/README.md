@@ -960,7 +960,7 @@ row-span, requested-groups, and selected-groups badges.
 Capture the focused rigid verifier scenes with the docked UI visible:
 
 ```bash
-pixi run py-demo-capture -- --scene rigid_body --frames 24 \
+pixi run py-demo-capture -- --scene rigid_body --frames 180 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 \
     --width 960 --height 540 --show-ui

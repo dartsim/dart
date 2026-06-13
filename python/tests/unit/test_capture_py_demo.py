@@ -1417,6 +1417,64 @@ def test_rigid_workflow_review_warns_when_solver_identity_is_missing(
     assert "scenes/01_rigid_body/manifest.json" in review_html
 
 
+def test_rigid_workflow_latest_signals_prioritize_baseline_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "baseline_contact_count": 12,
+            "baseline_energy": 15.2,
+            "baseline_max_speed": 2.1,
+            "baseline_min_height": 0.38,
+            "baseline_scene_contact_count": 3,
+            "baseline_step_ms": 0.026,
+            "dynamic_body_count": 5,
+            "executor": "World.step default",
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert highlights[:6] == [
+        "baseline max speed: 2.1",
+        "baseline min height: 0.38",
+        "baseline energy: 15.2",
+        "baseline scene contact count: 3",
+        "baseline step ms: 0.026",
+        "dynamic body count: 5",
+    ]
+    assert highlights.index("baseline scene contact count: 3") < highlights.index(
+        "baseline contact count: 12"
+    )
+
+
+def test_rigid_workflow_latest_signals_prioritize_free_flight_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "arc_energy_drift": -0.022,
+            "arc_height": 0.55,
+            "arc_momentum_residual": 2e-15,
+            "arc_position_error": 0.004,
+            "contact_count": 0,
+            "drift_momentum_drift": 0.0,
+            "drift_position_error": 3e-15,
+            "drift_speed": 1.15,
+            "executor": "Sequential",
+            "solver": "sequential_impulse",
+            "spin_energy_ratio": 4.0,
+            "spin_momentum_ratio": 4.0,
+        }
+    )
+
+    assert highlights[:8] == [
+        "drift position error: 3e-15",
+        "drift momentum drift: 0",
+        "drift speed: 1.15",
+        "arc position error: 0.004",
+        "arc momentum residual: 2e-15",
+        "arc energy drift: -0.022",
+        "arc height: 0.55",
+        "spin momentum ratio: 4",
+    ]
+
+
 def test_rigid_workflow_latest_signals_prioritize_body_frame_values() -> None:
     body_highlights = capture_py_demo._workflow_metric_highlights(
         {

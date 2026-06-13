@@ -3,13 +3,27 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot before this slice:
-`feature/rigid-body-gui-visual-verification` matched
-`origin/feature/rigid-body-gui-visual-verification` at `b187cc2bd8d`. After
-this slice is committed, expect one local commit ahead of origin until a
-maintainer approves another push. There is still no PR for this branch. Do not
-push, create a PR, set a milestone, rerun CI, comment on reviews, resolve
-threads, or mutate any other GitHub state without explicit maintainer/user
-approval.
+`feature/rigid-body-gui-visual-verification` was clean at `0548e068cb8`, one
+local commit ahead of `origin/feature/rigid-body-gui-visual-verification`
+(`b187cc2bd8d`). After this slice is committed, expect two local commits ahead
+of origin until a maintainer approves another push. There is still no PR for
+this branch. Do not push, create a PR, set a milestone, rerun CI, comment on
+reviews, resolve threads, or mutate any other GitHub state without explicit
+maintainer/user approval.
+
+Latest local continuation: workflow review-card `latest signals` now promote
+the first-screen baseline and free-flight row diagnostics. Row 1 surfaces
+baseline max speed, minimum height, kinetic energy, contact count, step time,
+and dynamic body count directly from capture metrics; row 3 surfaces zero-g
+drift error, momentum drift, drift speed, gravity-arc position error, momentum
+residual, energy drift, height, and spin momentum ratio. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_baseline_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_free_flight_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_body_frame_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
+reported `6 passed`. Fresh rows 1-3 workflow evidence:
+`build/captures/rigid_workflow_baseline_freeflight_signals_1781337861`
+completed with `status=complete`, `capture_count=3`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new baseline/free-flight latest signals.
 
 Latest local continuation: workflow review-card `latest signals` now promote
 the first core body/frame/load rows that a reviewer scans after the baseline.

@@ -2534,6 +2534,17 @@ def test_rigid_body_baseline_reports_restartable_first_run_diagnostics() -> None
     assert capture_metrics["dynamic_body_count"] == pytest.approx(
         float(len(controller.dynamic_bodies))
     )
+    assert capture_metrics["baseline_max_speed"] == pytest.approx(
+        metrics["max_speed"]
+    )
+    assert capture_metrics["baseline_min_height"] == pytest.approx(
+        metrics["min_height"]
+    )
+    assert capture_metrics["baseline_energy"] == pytest.approx(metrics["energy"])
+    assert capture_metrics["baseline_scene_contact_count"] == pytest.approx(
+        metrics["contact_count"]
+    )
+    assert capture_metrics["baseline_step_ms"] == pytest.approx(metrics["step_ms"])
     assert capture_metrics["controls"]["friction"] == pytest.approx(0.42)
     assert capture_metrics["controls"]["restitution"] == pytest.approx(0.31)
     assert capture_metrics["metrics"]["max_speed"] == pytest.approx(

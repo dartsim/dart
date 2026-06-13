@@ -103,7 +103,7 @@ RIGID_VISUAL_WORKFLOW_LABELS = (
 RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS: tuple[
     tuple[str, int, int, int, bool], ...
 ] = (
-    ("rigid_body", 24, 960, 540, True),
+    ("rigid_body", 180, 960, 540, True),
     ("rigid_body_modes", 72, 960, 540, True),
     ("rigid_free_flight", 96, 960, 540, True),
     ("rigid_frame_hierarchy", 72, 960, 540, True),
