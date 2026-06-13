@@ -290,6 +290,15 @@ def check_native_profile_coverage(
             for (solver, problem_size), _ in results.get(category, {}).items()
             if problem_size <= 0
         )
+        invalid_lcp_dimension_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if data.get("lcp_dimension") is not None
+            and (
+                (lcp_dimension := _counter_to_int(data.get("lcp_dimension"))) is None
+                or lcp_dimension <= 0
+            )
+        )
         invalid_contact_count_rows = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -360,10 +369,12 @@ def check_native_profile_coverage(
         problem_type_mismatches = sorted(problem_type_mismatches)
         problem_dimension_mismatches = []
         for (solver, problem_size), data in results.get(category, {}).items():
-            lcp_dimension = _counter_to_int(data.get("lcp_dimension"))
-            contact_count = _counter_to_int(data.get("contact_count"))
-            if lcp_dimension is None:
+            if data.get("lcp_dimension") is None:
                 continue
+            lcp_dimension = _counter_to_int(data.get("lcp_dimension"))
+            if lcp_dimension is None or lcp_dimension <= 0:
+                continue
+            contact_count = _counter_to_int(data.get("contact_count"))
             if category == "FrictionIndex":
                 if contact_count != problem_size or lcp_dimension != 3 * problem_size:
                     problem_dimension_mismatches.append(f"{solver}/{problem_size}")
@@ -415,6 +426,11 @@ def check_native_profile_coverage(
             evidence_errors.append(
                 f"{category}: benchmark JSON has invalid problem sizes for "
                 f"{invalid_problem_size_rows}"
+            )
+        if invalid_lcp_dimension_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid lcp_dimension for "
+                f"{invalid_lcp_dimension_rows}"
             )
         if invalid_contact_count_rows:
             evidence_errors.append(

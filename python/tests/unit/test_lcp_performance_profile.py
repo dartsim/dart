@@ -230,6 +230,36 @@ def test_lcp_profile_coverage_rejects_invalid_problem_sizes(
         )
 
 
+@pytest.mark.parametrize("lcp_dimension", [0.0, -12.0, 1.25, float("inf"), float("nan")])
+def test_lcp_profile_coverage_rejects_invalid_lcp_dimensions(
+    lcp_dimension: float,
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "problem_size": lcp_dimension,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="invalid lcp_dimension"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 @pytest.mark.parametrize("contact_count", [-1.0, 1.25, float("inf"), float("nan")])
 def test_lcp_profile_coverage_rejects_invalid_optional_contact_counts(
     contact_count: float,
