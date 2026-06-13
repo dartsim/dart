@@ -324,6 +324,8 @@ struct AvbdRigidBodyRowIndexScratch
 {
   using SizeAllocator = ::dart::common::StlAllocator<std::size_t>;
   using KeyAllocator = ::dart::common::StlAllocator<std::uint64_t>;
+  using SizeVector = std::vector<std::size_t, SizeAllocator>;
+  using KeyVector = std::vector<std::uint64_t, KeyAllocator>;
 
   AvbdRigidBodyRowIndexScratch() = default;
 
@@ -471,30 +473,30 @@ struct AvbdRigidBodyRowIndexScratch
         2u * frictionPairRowCapacity);
   }
 
-  std::vector<std::size_t, SizeAllocator> attachmentRowOffsets;
-  std::vector<std::size_t, SizeAllocator> attachmentRowIndices;
-  std::vector<std::size_t, SizeAllocator> attachmentRowCursor;
-  std::vector<std::uint64_t, KeyAllocator> attachmentRowBodyKeys;
+  SizeVector attachmentRowOffsets;
+  SizeVector attachmentRowIndices;
+  SizeVector attachmentRowCursor;
+  KeyVector attachmentRowBodyKeys;
   std::size_t attachmentRowBodyCount = 0u;
-  std::vector<std::size_t, SizeAllocator> pointPairRowOffsets;
-  std::vector<std::size_t, SizeAllocator> pointPairRowIndices;
-  std::vector<std::size_t, SizeAllocator> pointPairRowCursor;
-  std::vector<std::uint64_t, KeyAllocator> pointPairRowBodyKeys;
+  SizeVector pointPairRowOffsets;
+  SizeVector pointPairRowIndices;
+  SizeVector pointPairRowCursor;
+  KeyVector pointPairRowBodyKeys;
   std::size_t pointPairRowBodyCount = 0u;
-  std::vector<std::size_t, SizeAllocator> distanceSpringRowOffsets;
-  std::vector<std::size_t, SizeAllocator> distanceSpringRowIndices;
-  std::vector<std::size_t, SizeAllocator> distanceSpringRowCursor;
-  std::vector<std::uint64_t, KeyAllocator> distanceSpringRowBodyKeys;
+  SizeVector distanceSpringRowOffsets;
+  SizeVector distanceSpringRowIndices;
+  SizeVector distanceSpringRowCursor;
+  KeyVector distanceSpringRowBodyKeys;
   std::size_t distanceSpringRowBodyCount = 0u;
-  std::vector<std::size_t, SizeAllocator> angularPairRowOffsets;
-  std::vector<std::size_t, SizeAllocator> angularPairRowIndices;
-  std::vector<std::size_t, SizeAllocator> angularPairRowCursor;
-  std::vector<std::uint64_t, KeyAllocator> angularPairRowBodyKeys;
+  SizeVector angularPairRowOffsets;
+  SizeVector angularPairRowIndices;
+  SizeVector angularPairRowCursor;
+  KeyVector angularPairRowBodyKeys;
   std::size_t angularPairRowBodyCount = 0u;
-  std::vector<std::size_t, SizeAllocator> frictionPairRowOffsets;
-  std::vector<std::size_t, SizeAllocator> frictionPairRowIndices;
-  std::vector<std::size_t, SizeAllocator> frictionPairRowCursor;
-  std::vector<std::uint64_t, KeyAllocator> frictionPairRowBodyKeys;
+  SizeVector frictionPairRowOffsets;
+  SizeVector frictionPairRowIndices;
+  SizeVector frictionPairRowCursor;
+  KeyVector frictionPairRowBodyKeys;
   std::size_t frictionPairRowBodyCount = 0u;
 };
 
