@@ -1901,6 +1901,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     builder = _FakePanelBuilder()
     setup.panels[0].build(builder, object())
+    assert "table:lcp_solver_manifest:Solver,Family,Coverage" in builder.events
+    assert "text:std + boxed + findex" in builder.events
+    assert "text:std only; boxed/findex delegate" in builder.events
+    assert "text:findex only; std/boxed delegate" in builder.events
     assert (
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events

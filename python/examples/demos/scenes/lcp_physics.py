@@ -1604,9 +1604,15 @@ def _write_metric_row(
 
 
 def _coverage_label(row: dict[str, Any]) -> str:
-    if row["boxed"] and row["findex"]:
-        return "std + boxed + findex"
-    return "std only; boxed/findex delegate"
+    surfaces = (("standard", "std"), ("boxed", "boxed"), ("findex", "findex"))
+    supported = [label for key, label in surfaces if row[key]]
+    delegated = [label for key, label in surfaces if not row[key]]
+    supported_text = " + ".join(supported)
+    if len(supported) == 1:
+        supported_text = f"{supported_text} only"
+    if delegated:
+        return f"{supported_text}; {'/'.join(delegated)} delegate"
+    return supported_text
 
 
 def _solver_manifest_summary() -> dict[str, int]:
