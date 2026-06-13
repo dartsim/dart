@@ -315,24 +315,34 @@ def check_native_profile_coverage(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
             if data.get("solver_supports_problem") is not None
-            and data["solver_supports_problem"] <= 0.5
+            and _counter_to_int(data.get("solver_supports_problem")) != 1
         )
-        form_support_mismatches = sorted(
-            f"{solver}/{problem_size}"
-            for (solver, problem_size), data in results.get(category, {}).items()
-            if any(data.get(key) is not None for key in FORM_SUPPORT_COUNTERS)
-            and data.get(FORM_SUPPORT_COUNTER_BY_CATEGORY[category], 0.0) <= 0.5
-        )
-        problem_type_mismatches = sorted(
-            f"{solver}/{problem_size}"
-            for (solver, problem_size), data in results.get(category, {}).items()
-            if any(data.get(key) is not None for key in PROBLEM_TYPE_COUNTERS)
-            and (
-                data.get(PROBLEM_TYPE_COUNTER_BY_CATEGORY[category], 0.0) <= 0.5
-                or sum(1 for key in PROBLEM_TYPE_COUNTERS if data.get(key, 0.0) > 0.5)
-                != 1
-            )
-        )
+        form_support_mismatches = []
+        for (solver, problem_size), data in results.get(category, {}).items():
+            if not any(data.get(key) is not None for key in FORM_SUPPORT_COUNTERS):
+                continue
+            for support_category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items():
+                expected = (
+                    1 if solver in native_support_by_category[support_category] else 0
+                )
+                if _counter_to_int(data.get(counter)) != expected:
+                    form_support_mismatches.append(f"{solver}/{problem_size}")
+                    break
+        form_support_mismatches = sorted(form_support_mismatches)
+        problem_type_mismatches = []
+        for (solver, problem_size), data in results.get(category, {}).items():
+            if not any(data.get(key) is not None for key in PROBLEM_TYPE_COUNTERS):
+                continue
+            values = {
+                key: _counter_to_int(data.get(key)) for key in PROBLEM_TYPE_COUNTERS
+            }
+            if (
+                values[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] != 1
+                or sum(1 for value in values.values() if value == 1) != 1
+                or any(value not in (0, 1) for value in values.values())
+            ):
+                problem_type_mismatches.append(f"{solver}/{problem_size}")
+        problem_type_mismatches = sorted(problem_type_mismatches)
         problem_dimension_mismatches = []
         for (solver, problem_size), data in results.get(category, {}).items():
             lcp_dimension = _counter_to_int(data.get("lcp_dimension"))

@@ -113,6 +113,33 @@ def test_lcp_profile_coverage_rejects_current_schema_unsupported_rows() -> None:
         )
 
 
+def test_lcp_profile_coverage_rejects_string_unsupported_rows() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "solver_supports_problem": "0",
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="solver_supports_problem=0"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_rejects_failed_contract_rows() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
@@ -258,6 +285,50 @@ def test_lcp_profile_ratios_use_checked_numeric_values() -> None:
     assert solvers == ["Dantzig"]
     assert problems == [12]
     assert ratios["Dantzig"] == [1.0]
+
+
+def test_lcp_profile_coverage_accepts_current_schema_string_counters() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": "10.0",
+                    "contract_ok": "1",
+                    "problem_size": "12",
+                    "iterations": "4",
+                    "residual": "0",
+                    "complementarity": "0",
+                    "bound_violation": "0",
+                    "solver_identity_schema_version": "1",
+                    "solver_manifest_index": "1",
+                    "solver_family_pivoting": "1",
+                    "solver_family_projection": "0",
+                    "solver_family_newton": "0",
+                    "solver_family_other": "0",
+                    "solver_supports_standard": "1",
+                    "solver_supports_boxed": "0",
+                    "solver_supports_friction_index": "0",
+                    "solver_supports_problem": "1",
+                    "problem_type_standard": "1",
+                    "problem_type_boxed": "0",
+                    "problem_type_friction_index": "0",
+                    "problem_type_invalid": "0",
+                }
+            ]
+        }
+    )
+
+    module.check_native_profile_coverage(
+        results,
+        {
+            "Standard": {"Dantzig"},
+            "Boxed": set(),
+            "FrictionIndex": set(),
+        },
+    )
 
 
 def test_lcp_profile_coverage_allows_partial_missing_native_solvers(
