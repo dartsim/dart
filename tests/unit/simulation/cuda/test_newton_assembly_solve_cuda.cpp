@@ -158,6 +158,61 @@ std::vector<double> evaluateExpectedOffDiagonalBlocks(
   return blocks;
 }
 
+cuda::NewtonSparseBlockEntry makeSparseBlock(
+    const std::uint32_t rowBody,
+    const std::uint32_t columnBody,
+    const double base)
+{
+  cuda::NewtonSparseBlockEntry block;
+  block.rowBodyIndex = rowBody;
+  block.columnBodyIndex = columnBody;
+  for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+       ++entry) {
+    const auto signedOffset = static_cast<int>(entry % 13) - 6;
+    block.hessianBlock[entry]
+        = base + 0.015 * static_cast<double>(signedOffset);
+  }
+  return block;
+}
+
+void evaluateExpectedSparseResidual(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& step,
+    const double regularization,
+    std::vector<double>& diagonal,
+    std::vector<double>& gradient,
+    std::vector<double>& residual)
+{
+  std::vector<double> ignoredStep;
+  evaluateExpected(
+      rows, bodyCount, regularization, diagonal, gradient, ignoredStep);
+  residual = gradient;
+  for (std::size_t dof = 0; dof < residual.size(); ++dof) {
+    residual[dof] += (diagonal[dof] + regularization) * step[dof];
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      residual[rowDof] += block.hessianBlock[entry] * step[columnDof];
+      residual[columnDof] += block.hessianBlock[entry] * step[rowDof];
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -275,6 +330,128 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidOffDiagonalRows)
   rows.front().hessianBlock[0] = std::numeric_limits<double>::infinity();
   EXPECT_THROW(
       cuda::evaluateNewtonOffDiagonalAssemblyCuda(rows, 1, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSparseResidual)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeRow(0, 2.0, -0.5),
+      makeRow(1, 3.0, 0.25),
+      makeRow(0, 1.5, 0.75),
+  };
+  constexpr std::size_t bodyCount = 2;
+  constexpr double regularization = 0.5;
+  const std::vector blocks = {
+      makeSparseBlock(0, 1, 0.125),
+      makeSparseBlock(0, 1, -0.04),
+  };
+  const std::vector<double> step = {
+      0.1,
+      -0.2,
+      0.3,
+      -0.4,
+      0.5,
+      -0.6,
+      0.7,
+      -0.8,
+      0.9,
+      -1.0,
+      1.1,
+      -1.2,
+  };
+
+  cuda::NewtonSparseResidualResult result;
+  cuda::evaluateNewtonSparseResidualCuda(
+      rows, bodyCount, blocks, step, regularization, result);
+
+  std::vector<double> expectedDiagonal;
+  std::vector<double> expectedGradient;
+  std::vector<double> expectedResidual;
+  evaluateExpectedSparseResidual(
+      rows,
+      bodyCount,
+      blocks,
+      step,
+      regularization,
+      expectedDiagonal,
+      expectedGradient,
+      expectedResidual);
+
+  ASSERT_EQ(result.assembledDiagonal.size(), expectedDiagonal.size());
+  ASSERT_EQ(result.assembledGradient.size(), expectedGradient.size());
+  ASSERT_EQ(result.residual.size(), expectedResidual.size());
+  EXPECT_EQ(result.bodyCount, bodyCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.dofCount, expectedResidual.size());
+  EXPECT_EQ(result.blockCount, blocks.size());
+  EXPECT_EQ(result.activeDofCount, expectedResidual.size());
+
+  for (std::size_t dof = 0; dof < expectedResidual.size(); ++dof) {
+    EXPECT_NEAR(result.assembledDiagonal[dof], expectedDiagonal[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.assembledGradient[dof], expectedGradient[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.residual[dof], expectedResidual[dof], 1e-12) << dof;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseResidualInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {makeRow(0, 1.0, 0.0)};
+  constexpr std::size_t bodyCount = 2;
+  constexpr double regularization = 0.1;
+  const std::vector<double> step(
+      bodyCount * cuda::kNewtonAssemblySolveDofsPerBody, 0.25);
+  cuda::NewtonSparseResidualResult result;
+
+  std::vector blocks = {makeSparseBlock(2, 1, 0.125)};
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, step, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  blocks = {makeSparseBlock(0, 2, 0.125)};
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, step, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  blocks = {makeSparseBlock(0, 0, 0.125)};
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, step, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  blocks = {makeSparseBlock(0, 1, 0.125)};
+  blocks.front().hessianBlock[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, step, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  blocks = {makeSparseBlock(0, 1, 0.125)};
+  std::vector<double> shortStep = {0.0};
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, shortStep, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  auto invalidStep = step;
+  invalidStep.front() = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseResidualCuda(
+          rows, bodyCount, blocks, invalidStep, regularization, result),
       dart::simulation::InvalidArgumentException);
 }
 

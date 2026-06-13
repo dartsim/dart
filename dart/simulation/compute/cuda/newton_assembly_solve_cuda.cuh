@@ -56,6 +56,13 @@ struct NewtonOffDiagonalAssemblyRowInput
   double hessianBlock[kNewtonAssemblySolveBlockEntries] = {};
 };
 
+struct NewtonSparseBlockEntry
+{
+  std::uint32_t rowBodyIndex = 0;
+  std::uint32_t columnBodyIndex = 0;
+  double hessianBlock[kNewtonAssemblySolveBlockEntries] = {};
+};
+
 struct NewtonEqualityReductionEntry
 {
   std::uint32_t fullDofIndex = 0;
@@ -71,6 +78,17 @@ struct NewtonAssemblySolveTiming
   double reductionKernelNs = 0.0;
   double solveKernelNs = 0.0;
   double expansionKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
+struct NewtonSparseResidualTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double assemblyKernelNs = 0.0;
+  double gradientSeedNs = 0.0;
+  double diagonalKernelNs = 0.0;
+  double offDiagonalKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
 
@@ -98,6 +116,23 @@ struct NewtonOffDiagonalAssemblyResult
   std::size_t activeBlockCount = 0;
   double maxBlockAbs = 0.0;
   NewtonAssemblySolveTiming timing;
+};
+
+struct NewtonSparseResidualResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t activeDofCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  NewtonSparseResidualTiming timing;
 };
 
 struct NewtonEqualityReducedSolveResult
@@ -145,6 +180,21 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
     const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
     std::size_t pairCount,
     NewtonOffDiagonalAssemblyResult& result);
+
+/// Evaluate a private sparse block residual packet.
+///
+/// The packet assembles full-space diagonal rows, applies symmetric 6x6
+/// off-diagonal body blocks to a supplied step, and returns the regularized
+/// sparse residual `H * step + gradient`. It intentionally does not cover
+/// sparse graph construction, factorization, nonlinear equality constraints,
+/// runtime scene assembly, or a public GPU solver backend.
+void evaluateNewtonSparseResidualCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& step,
+    double regularization,
+    NewtonSparseResidualResult& result);
 
 /// Evaluate a private reduced equality-projected diagonal solve packet.
 ///

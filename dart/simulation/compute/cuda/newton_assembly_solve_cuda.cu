@@ -108,6 +108,53 @@ __global__ void newtonEqualityReductionKernel(
       basis * assembledGradient[entry.fullDofIndex]);
 }
 
+__global__ void newtonSparseDiagonalResidualKernel(
+    const double* assembledDiagonal,
+    const double* step,
+    double* residual,
+    const std::size_t dofCount,
+    const double regularization)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  residual[index] += (assembledDiagonal[index] + regularization) * step[index];
+}
+
+__global__ void newtonSparseBlockResidualKernel(
+    const NewtonSparseBlockEntry* blocks,
+    const double* step,
+    double* residual,
+    const std::size_t blockCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const std::size_t totalEntries
+      = blockCount * kNewtonAssemblySolveBlockEntries;
+  if (index >= totalEntries) {
+    return;
+  }
+
+  const std::size_t block = index / kNewtonAssemblySolveBlockEntries;
+  const std::size_t entry = index - block * kNewtonAssemblySolveBlockEntries;
+  const std::size_t localRow = entry / kNewtonAssemblySolveDofsPerBody;
+  const std::size_t localColumn
+      = entry - localRow * kNewtonAssemblySolveDofsPerBody;
+  const NewtonSparseBlockEntry input = blocks[block];
+  const double value = input.hessianBlock[entry];
+  const std::size_t rowDof = static_cast<std::size_t>(input.rowBodyIndex)
+                                 * kNewtonAssemblySolveDofsPerBody
+                             + localRow;
+  const std::size_t columnDof = static_cast<std::size_t>(input.columnBodyIndex)
+                                    * kNewtonAssemblySolveDofsPerBody
+                                + localColumn;
+  atomicAdd(&residual[rowDof], value * step[columnDof]);
+  atomicAdd(&residual[columnDof], value * step[rowDof]);
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -212,6 +259,45 @@ cudaError_t launchNewtonEqualityReductionKernel(
       reducedDiagonal,
       reducedGradient,
       entryCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseDiagonalResidualKernel(
+    const double* assembledDiagonal,
+    const double* step,
+    double* residual,
+    const std::size_t dofCount,
+    const double regularization)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonSparseDiagonalResidualKernel<<<gridSize, blockSize>>>(
+      assembledDiagonal, step, residual, dofCount, regularization);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseBlockResidualKernel(
+    const NewtonSparseBlockEntry* blocks,
+    const double* step,
+    double* residual,
+    const std::size_t blockCount)
+{
+  if (blockCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const std::size_t totalEntries
+      = blockCount * kNewtonAssemblySolveBlockEntries;
+  const unsigned int gridSize = launchGrid1D(totalEntries, blockSize);
+  newtonSparseBlockResidualKernel<<<gridSize, blockSize>>>(
+      blocks, step, residual, blockCount);
   return cudaGetLastError();
 }
 

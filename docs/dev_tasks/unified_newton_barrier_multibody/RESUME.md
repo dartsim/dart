@@ -2,6 +2,34 @@
 
 ## Current Reality (2026-06-12)
 
+Latest sparse residual assembly checkpoint (2026-06-12): work continued
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
+remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a sparse
+block residual row. The CUDA path assembles full-space diagonal rows, seeds the
+residual with the assembled gradient, applies regularized diagonal terms, and
+applies symmetric 6x6 off-diagonal body blocks to a supplied step vector.
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 dofs, 8,192
+sparse blocks, and 294,912 block entries with
+`max_result_abs_error=1.7763568394002505e-15`,
+`output_norm=188.03633837316767`, and `speedup=0.41564862959734655x` for the
+sparse residual row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=3.02723585284463e-15`, and
+`speedup=0.24114770986042178x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Latest local gates:
+
+- focused assembly/solve packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+
 Latest equality-reduced assembly/solve checkpoint (2026-06-12): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
@@ -1076,8 +1104,8 @@ point-edge, and edge-edge primitive barrier-Hessian parity,
 point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-projection
 parity, reduced scene-owned point-triangle, point-edge, point-point, and
 edge-edge barrier-Hessian runtime rows,
-reduced assembly/solve parity including the sparse equality-reduced diagonal
-solve row, reduced scene state-batch parity, and reduced
+reduced assembly/solve parity including sparse block residual and sparse
+equality-reduced diagonal solve rows, reduced scene state-batch parity, and reduced
 ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless
 their full row policy is satisfied: additional runtime contact rows, GPU
 sweep-and-prune broad-phase construction, rigid curved trajectories, full
@@ -1092,11 +1120,10 @@ Resume only from `simx/plan083-gpu-contact-candidate-packet` / PR #2978. Keep
 remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
 runtime scene filtering and speedup-gate work; the next barrier/friction packet
-gaps are additional runtime contact rows, broader sparse Hessian assembly, and
-speedup-gate work; the next assembly/solve gaps are
-global sparse factorization, runtime scene rows, nonlinear equality
-constraints, and speedup-gate work. Do not mark these rows measured until the
-top-level speed
+gaps are additional runtime contact rows, runtime sparse Hessian assembly, and
+speedup-gate work; the next assembly/solve gaps are runtime scene rows, global
+sparse factorization, nonlinear equality constraints, and speedup-gate work. Do
+not mark these rows measured until the top-level speed
 gate and runtime evidence are proven. Keep the dev-task folder active because
 PLAN-083 acceptance criteria are still unmet. If the task later moves out of
 this folder, get maintainer direction before deleting it and keep the remaining

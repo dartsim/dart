@@ -66,6 +66,19 @@ cudaError_t launchNewtonEqualityReductionKernel(
     double* reducedGradient,
     std::size_t entryCount);
 
+cudaError_t launchNewtonSparseDiagonalResidualKernel(
+    const double* assembledDiagonal,
+    const double* step,
+    double* residual,
+    std::size_t dofCount,
+    double regularization);
+
+cudaError_t launchNewtonSparseBlockResidualKernel(
+    const NewtonSparseBlockEntry* blocks,
+    const double* step,
+    double* residual,
+    std::size_t blockCount);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -168,6 +181,69 @@ void validateOffDiagonalRows(
           row,
           entry);
     }
+  }
+}
+
+void validateSparseBlocks(
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const std::size_t bodyCount)
+{
+  DART_SIMULATION_THROW_T_IF(
+      bodyCount == 0 && !blocks.empty(),
+      sx::InvalidArgumentException,
+      "evaluateNewtonSparseResidualCuda requires bodies for sparse blocks");
+
+  for (std::size_t block = 0; block < blocks.size(); ++block) {
+    const auto& input = blocks[block];
+    DART_SIMULATION_THROW_T_IF(
+        input.rowBodyIndex >= bodyCount,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSparseResidualCuda block {} row body {} is outside {} "
+        "bodies",
+        block,
+        input.rowBodyIndex,
+        bodyCount);
+    DART_SIMULATION_THROW_T_IF(
+        input.columnBodyIndex >= bodyCount,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSparseResidualCuda block {} column body {} is outside "
+        "{} bodies",
+        block,
+        input.columnBodyIndex,
+        bodyCount);
+    DART_SIMULATION_THROW_T_IF(
+        input.rowBodyIndex == input.columnBodyIndex,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSparseResidualCuda block {} must connect different "
+        "bodies",
+        block);
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(input.hessianBlock[entry]),
+          sx::InvalidArgumentException,
+          "evaluateNewtonSparseResidualCuda block {} has an invalid entry {}",
+          block,
+          entry);
+    }
+  }
+}
+
+void validateStep(
+    const std::vector<double>& step, const std::size_t expectedDofCount)
+{
+  DART_SIMULATION_THROW_T_IF(
+      step.size() != expectedDofCount,
+      sx::InvalidArgumentException,
+      "evaluateNewtonSparseResidualCuda requires {} step dofs, got {}",
+      expectedDofCount,
+      step.size());
+  for (std::size_t dof = 0; dof < step.size(); ++dof) {
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(step[dof]),
+        sx::InvalidArgumentException,
+        "evaluateNewtonSparseResidualCuda step dof {} is invalid",
+        dof);
   }
 }
 
@@ -378,6 +454,143 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
       ++result.activeBlockCount;
     }
   }
+}
+
+//==============================================================================
+void evaluateNewtonSparseResidualCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& step,
+    const double regularization,
+    NewtonSparseResidualResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateRows(rows, bodyCount, regularization);
+  validateSparseBlocks(blocks, bodyCount);
+  const std::size_t dofCount = bodyCount * kNewtonAssemblySolveDofsPerBody;
+  validateStep(step, dofCount);
+
+  result = NewtonSparseResidualResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = dofCount;
+  result.blockCount = blocks.size();
+  result.assembledDiagonal.assign(dofCount, 0.0);
+  result.assembledGradient.assign(dofCount, 0.0);
+  result.residual.assign(dofCount, 0.0);
+
+  if (dofCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(rows.size());
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(blocks.size());
+  DeviceBuffer<double> deviceStep(dofCount);
+  DeviceBuffer<double> deviceDiagonal(dofCount);
+  DeviceBuffer<double> deviceGradient(dofCount);
+  DeviceBuffer<double> deviceResidual(dofCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton sparse residual rows copy");
+  deviceBlocks.copyToDevice(blocks, "newton sparse residual blocks copy");
+  deviceStep.copyToDevice(step, "newton sparse residual step copy");
+  throwIfCudaError(
+      cudaMemset(deviceDiagonal.data(), 0, deviceDiagonal.byteSize()),
+      "newton sparse residual diagonal zero");
+  throwIfCudaError(
+      cudaMemset(deviceGradient.data(), 0, deviceGradient.byteSize()),
+      "newton sparse residual gradient zero");
+  throwIfCudaError(
+      cudaMemset(deviceResidual.data(), 0, deviceResidual.byteSize()),
+      "newton sparse residual output zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonAssemblyRowsKernel(
+          deviceRows.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          rows.size()),
+      "newton sparse residual assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton sparse residual assembly rows synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto gradientSeedStart = Clock::now();
+  throwIfCudaError(
+      cudaMemcpy(
+          deviceResidual.data(),
+          deviceGradient.data(),
+          deviceResidual.byteSize(),
+          cudaMemcpyDeviceToDevice),
+      "newton sparse residual gradient seed");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse residual gradient synchronize");
+  const auto gradientSeedEnd = Clock::now();
+
+  const auto diagonalStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSparseDiagonalResidualKernel(
+          deviceDiagonal.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          dofCount,
+          regularization),
+      "newton sparse residual diagonal kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse residual diagonal synchronize");
+  const auto diagonalEnd = Clock::now();
+
+  const auto offDiagonalStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSparseBlockResidualKernel(
+          deviceBlocks.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          blocks.size()),
+      "newton sparse residual block kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse residual block synchronize");
+  const auto offDiagonalEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceDiagonal.copyFromDevice(
+      result.assembledDiagonal, "newton sparse residual diagonal copy");
+  deviceGradient.copyFromDevice(
+      result.assembledGradient, "newton sparse residual gradient copy");
+  deviceResidual.copyFromDevice(
+      result.residual, "newton sparse residual output copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.gradientSeedNs = elapsedNs(gradientSeedStart, gradientSeedEnd);
+  result.timing.diagonalKernelNs = elapsedNs(diagonalStart, diagonalEnd);
+  result.timing.offDiagonalKernelNs
+      = elapsedNs(offDiagonalStart, offDiagonalEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (residualAbs > 0.0) {
+      ++result.activeDofCount;
+    }
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.residualNorm = std::sqrt(residualNormSquared);
 }
 
 //==============================================================================

@@ -2,6 +2,34 @@
 
 ## Current Status
 
+Latest sparse residual assembly checkpoint (2026-06-12): work continued
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
+remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a sparse
+block residual row. The CUDA path assembles full-space diagonal rows, seeds the
+residual with the assembled gradient, applies regularized diagonal terms, and
+applies symmetric 6x6 off-diagonal body blocks to a supplied step vector.
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 dofs, 8,192
+sparse blocks, and 294,912 block entries with
+`max_result_abs_error=1.7763568394002505e-15`,
+`output_norm=188.03633837316767`, and `speedup=0.41564862959734655x` for the
+sparse residual row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=3.02723585284463e-15`, and
+`speedup=0.24114770986042178x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Latest validation passed:
+
+- focused assembly/solve packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+
 Latest equality-reduced assembly/solve checkpoint (2026-06-12): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
@@ -718,10 +746,11 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         additional runtime contact rows, full GPU `World::step`, and runtime
         speedup remain unproven.
   - [x] Add private reduced diagonal assembly/solve, pair-slot off-diagonal
-        sparse-block assembly, and sparse equality-reduced diagonal solve
-        packets with exact CPU/GPU local-output parity; keep the row
-        in-progress because global sparse factorization, nonlinear equality
-        constraints, runtime scene rows, and speedup remain unproven.
+        sparse-block assembly, sparse block residual matvec, and sparse
+        equality-reduced diagonal solve packets with exact CPU/GPU local-output
+        parity; keep the row in-progress because runtime sparse assembly,
+        global sparse factorization, nonlinear equality constraints, runtime
+        scene rows, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,
@@ -868,8 +897,8 @@ storage, or backend resources as public API.
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
    continue runtime scene filtering, speedup-gate work, downstream
-   additional primitive-family/runtime contact evidence, broader sparse
-   Hessian assembly, or global sparse assembly/solve evidence on the same PR.
+   additional primitive-family/runtime contact evidence, runtime sparse
+   Hessian assembly, or global sparse factorization evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
