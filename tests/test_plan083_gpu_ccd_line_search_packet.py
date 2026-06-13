@@ -127,7 +127,74 @@ def _benchmark_data(**overrides):
         kernel_ns=3.75,
         device_to_host_ns=4.75,
     )
-    for row in (gpu, edge_gpu, curved_gpu, curved_edge_gpu):
+    scene_pt_cpu = _row(
+        "BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu/1024",
+        pairs=128,
+        hits=96,
+        min_step_bound=0.4,
+        max_result_abs_error=0.0,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_point_triangle_candidates=256,
+        static_triangle_point_triangle_candidates=128,
+    )
+    scene_pt_gpu = _row(
+        "BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        pairs=128,
+        hits=96,
+        gpu_hits=96,
+        min_step_bound=0.4,
+        max_result_abs_error=5e-12,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_point_triangle_candidates=256,
+        static_triangle_point_triangle_candidates=128,
+        host_setup_ns=1.1,
+        host_to_device_ns=2.1,
+        kernel_ns=3.1,
+        device_to_host_ns=4.1,
+    )
+    scene_ee_cpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu/1024",
+        pairs=384,
+        hits=192,
+        min_step_bound=0.35,
+        max_result_abs_error=0.0,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_edge_edge_candidates=384,
+    )
+    scene_ee_gpu = _row(
+        "BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda/1024",
+        real_time=7.0,
+        cpu_time=7.0,
+        pairs=384,
+        hits=192,
+        gpu_hits=192,
+        min_step_bound=0.35,
+        max_result_abs_error=6e-12,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_edge_edge_candidates=384,
+        host_setup_ns=1.6,
+        host_to_device_ns=2.6,
+        kernel_ns=3.6,
+        device_to_host_ns=4.6,
+    )
+    for row in (
+        gpu,
+        edge_gpu,
+        curved_gpu,
+        curved_edge_gpu,
+        scene_pt_gpu,
+        scene_ee_gpu,
+    ):
         row.update(overrides)
     return {
         "benchmarks": [
@@ -139,6 +206,10 @@ def _benchmark_data(**overrides):
             curved_gpu,
             curved_edge_cpu,
             curved_edge_gpu,
+            scene_pt_cpu,
+            scene_pt_gpu,
+            scene_ee_cpu,
+            scene_ee_gpu,
         ]
     }
 
@@ -156,16 +227,18 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     row = packet["plan083_gpu_ccd_line_search_packet"]
     assert row["row_id"] == "ccd-line-search"
     assert row["same_scene_cpu_gpu"] is True
-    assert row["pair_count"] == 4096
-    assert row["segment_count"] == 18432
-    assert row["hit_count"] == 2432
+    assert row["pair_count"] == 4608
+    assert row["segment_count"] == 18944
+    assert row["hit_count"] == 2720
     assert row["min_step_bound"] == 0.125
-    assert row["max_result_abs_error"] == 4e-12
+    assert row["max_result_abs_error"] == 6e-12
     assert set(row["primitive_families"]) == {
         "point_triangle",
         "edge_edge",
         "rigid_curved_point_triangle",
         "rigid_curved_edge_edge",
+        "scene_runtime_point_triangle",
+        "scene_runtime_edge_edge",
     }
     assert (
         row["primitive_families"]["rigid_curved_point_triangle"]["segment_count"]
@@ -174,6 +247,24 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     assert (
         row["primitive_families"]["rigid_curved_point_triangle"]["samples_per_pair"]
         == 8
+    )
+    assert (
+        row["primitive_families"]["scene_runtime_point_triangle"][
+            "runtime_point_triangle_candidates"
+        ]
+        == 256
+    )
+    assert (
+        row["primitive_families"]["scene_runtime_point_triangle"][
+            "static_triangle_point_triangle_candidates"
+        ]
+        == 128
+    )
+    assert (
+        row["primitive_families"]["scene_runtime_edge_edge"][
+            "runtime_edge_edge_candidates"
+        ]
+        == 384
     )
     assert row["meets_speedup_gate"] is True
 

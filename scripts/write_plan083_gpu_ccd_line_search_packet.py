@@ -107,7 +107,10 @@ def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
         "^BM_Plan083"
-        "(EdgeEdge|RigidCurvedPointTriangle|RigidCurvedEdgeEdge)?"
+        "("
+        "EdgeEdge|RigidCurvedPointTriangle|RigidCurvedEdgeEdge|"
+        "SceneRuntimePointTriangle|SceneRuntimeEdgeEdge"
+        ")?"
         "CcdLineSearch(Cpu|Cuda)"
         f"/{args.pair_count}(/real_time)?$"
     )
@@ -183,6 +186,14 @@ def _expected_row_names(pair_count: int) -> dict[str, tuple[str, str]]:
             f"BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu/{pair_count}",
             f"BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda/{pair_count}",
         ),
+        "scene_runtime_point_triangle": (
+            f"BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda/{pair_count}",
+        ),
+        "scene_runtime_edge_edge": (
+            f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
     }
 
 
@@ -253,13 +264,66 @@ def _validate_primitive_family(
 
     cpu_pairs = int(_counter(cpu_row, "pairs"))
     gpu_pairs = int(_counter(gpu_row, "pairs"))
-    if cpu_pairs != pair_count or gpu_pairs != pair_count:
+    is_scene_runtime = family.startswith("scene_runtime_")
+    if cpu_pairs != gpu_pairs:
+        raise Plan083GpuCcdLineSearchPacketError(
+            f"{family} CPU pair count {cpu_pairs} != GPU pair count {gpu_pairs}"
+        )
+    if is_scene_runtime:
+        if cpu_pairs <= 0:
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} must record at least one runtime CCD pair"
+            )
+    elif cpu_pairs != pair_count:
         raise Plan083GpuCcdLineSearchPacketError(
             f"{family} expected {pair_count} pairs, got "
             f"CPU={cpu_pairs}, GPU={gpu_pairs}"
         )
 
-    segment_count = pair_count
+    scene_counters: dict[str, int] = {}
+    if is_scene_runtime:
+        required_scene_counters = [
+            "scene_bodies",
+            "scene_nodes",
+            "scene_triangles",
+        ]
+        if family == "scene_runtime_point_triangle":
+            required_scene_counters.extend(
+                [
+                    "runtime_point_triangle_candidates",
+                    "static_triangle_point_triangle_candidates",
+                ]
+            )
+        if family == "scene_runtime_edge_edge":
+            required_scene_counters.append("runtime_edge_edge_candidates")
+        for key in required_scene_counters:
+            cpu_value = int(_counter(cpu_row, key))
+            gpu_value = int(_counter(gpu_row, key))
+            if cpu_value != gpu_value:
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} CPU {key} {cpu_value} != GPU {key} {gpu_value}"
+                )
+            scene_counters[key] = cpu_value
+        if (
+            family == "scene_runtime_point_triangle"
+            and scene_counters["static_triangle_point_triangle_candidates"] != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} static-triangle pair count "
+                f"{scene_counters['static_triangle_point_triangle_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+        if (
+            family == "scene_runtime_edge_edge"
+            and scene_counters["runtime_edge_edge_candidates"] != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} runtime edge-edge candidate count "
+                f"{scene_counters['runtime_edge_edge_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+
+    segment_count = cpu_pairs
     samples_per_pair = 1
     has_segment_counters = (
         "segments" in cpu_row or "segments" in gpu_row or "gpu_segments" in gpu_row
@@ -284,9 +348,9 @@ def _validate_primitive_family(
             raise Plan083GpuCcdLineSearchPacketError(
                 f"{family} samples_per_pair must be positive"
             )
-        if cpu_segments != pair_count * cpu_samples_per_pair:
+        if cpu_segments != cpu_pairs * cpu_samples_per_pair:
             raise Plan083GpuCcdLineSearchPacketError(
-                f"{family} expected {pair_count * cpu_samples_per_pair} "
+                f"{family} expected {cpu_pairs * cpu_samples_per_pair} "
                 f"segments, got {cpu_segments}"
             )
         segment_count = cpu_segments
@@ -307,8 +371,8 @@ def _validate_primitive_family(
             f"{family} packet timing is missing {sorted(missing)}"
         )
 
-    return {
-        "pair_count": pair_count,
+    family_packet = {
+        "pair_count": cpu_pairs,
         "segment_count": segment_count,
         "samples_per_pair": samples_per_pair,
         "hit_count": int(cpu_hits),
@@ -320,6 +384,10 @@ def _validate_primitive_family(
         "cpu_benchmark_row": _packet_row_name(cpu_row),
         "gpu_benchmark_row": _packet_row_name(gpu_row),
     }
+    if is_scene_runtime:
+        family_packet["nominal_pair_count"] = pair_count
+        family_packet.update(scene_counters)
+    return family_packet
 
 
 def make_packet(
@@ -362,7 +430,9 @@ def make_packet(
             "row_id": "ccd-line-search",
             "same_scene_cpu_gpu": True,
             "primitive_families": primitive_families,
-            "pair_count": pair_count * len(primitive_families),
+            "pair_count": sum(
+                family["pair_count"] for family in primitive_families.values()
+            ),
             "segment_count": sum(
                 family["segment_count"] for family in primitive_families.values()
             ),

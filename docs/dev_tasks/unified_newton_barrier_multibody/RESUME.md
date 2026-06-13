@@ -2,31 +2,36 @@
 
 ## Current Reality (2026-06-12)
 
-Latest sampled rigid-curved CCD/line-search checkpoint (2026-06-12): work
+Latest scene-owned runtime CCD/line-search checkpoint (2026-06-12): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
 branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
-This checkpoint extends the private CCD/line-search packet with sampled
-rigid-curved point-triangle and edge-edge rows. Each sampled row splits one
-trajectory into 8 endpoint-linear subsegments, runs the existing private CUDA
-CCD kernels on those subsegments, and reduces segment hits back to one
-trajectory-level step bound. This is sampled packet evidence only; analytic
-curved CCD, runtime candidate sets, and scene-level line-search feasibility
-remain future work.
+This checkpoint extends the private CCD/line-search packet with reduced
+scene-owned runtime point-triangle and edge-edge rows from one DART `World`
+deformable surface. The point-triangle scene row consumes the runtime
+candidate set and filters to static-triangle candidates because the current
+private CUDA point-triangle CCD packet represents a moving point against a
+static triangle. The edge-edge scene row consumes the runtime edge-edge
+candidate set directly. This is still reduced packet evidence only; analytic
+curved CCD, moving-triangle scene point-triangle CCD, full scene-level
+line-search feasibility, and runtime speedup remain future work.
 
 Fresh packet evidence records 65,536 endpoint-linear point-triangle pairs,
 65,536 endpoint-linear edge-edge pairs, 65,536 sampled rigid-curved
-point-triangle trajectories over 524,288 segments, and 65,536 sampled
-rigid-curved edge-edge trajectories over 524,288 segments. The top-level packet
-covers 262,144 trajectory pairs and 1,179,648 sampled segments with
-`hit_count=196608`, `max_result_abs_error=5.62500000023114e-07`,
+point-triangle trajectories over 524,288 segments, 65,536 sampled rigid-curved
+edge-edge trajectories over 524,288 segments, 256 static-triangle
+point-triangle CCD pairs filtered from 512 runtime point-triangle candidates,
+and 1,536 runtime edge-edge CCD pairs from the same scene. The top-level packet
+covers 263,936 pairs and 1,181,440 sampled/evaluated segments with
+`hit_count=197120`, `max_result_abs_error=5.62500000023114e-07`,
 `result_abs_error_tolerance=1e-06`, and minimum primitive-family
-`speedup=3.3362865273039324x` (`meets_speedup_gate=true`). The durable CCD row
-remains `in-progress` until analytic curved CCD, runtime candidate sets, and
-scene-level line-search feasibility have evidence.
+`speedup=0.5921118335348506x` (`meets_speedup_gate=false`). The durable CCD
+row remains `in-progress` until analytic curved CCD, moving-triangle scene
+point-triangle CCD, full scene-level line-search feasibility, and runtime
+speedup have evidence.
 
 Latest validation passed:
 
@@ -1236,8 +1241,9 @@ brute-force all-pairs point-triangle and edge-edge candidate-mask packets plus
 motion-aware swept-AABB point-triangle and edge-edge candidate-list packets,
 compact runtime sweep-buffer endpoint-distance packets, winding-independent
 endpoint-linear point-triangle/edge-edge CCD/line-search packets plus sampled
-rigid-curved point-triangle/edge-edge CCD/line-search packets, reduced
-scene-owned runtime candidate-buffer packets, reduced scene-owned runtime sweep
+rigid-curved point-triangle/edge-edge CCD/line-search packets plus reduced
+scene-owned runtime point-triangle/edge-edge CCD rows, reduced scene-owned
+runtime candidate-buffer packets, reduced scene-owned runtime sweep
 broad-phase packets, scalar barrier/friction local kernels plus point-triangle
 primitive barrier gradients and point-triangle/edge-edge tangent stencils plus
 point-edge/point-point tangent stencils, point-triangle, point-point,
@@ -1251,8 +1257,8 @@ scene-owned diagonal assembly/solve row, reduced scene state-batch parity, and
 reduced ABD complex-geometry/FEM coupling
 evidence. Keep rows `in-progress` unless their full row policy is satisfied:
 additional runtime contact rows, GPU sweep-and-prune broad-phase construction,
-analytic curved CCD and scene-level line search, full runtime scene filtering,
-GPU
+analytic curved CCD, moving-triangle scene point-triangle CCD, full scene-level
+line search, full runtime scene filtering, GPU
 `World::step` contact candidate construction, runtime sparse Hessian assembly,
 direct/global sparse factorization, nonlinear equality constraints,
 paper-scale assets, and accepted reference timings remain future evidence.
@@ -1267,9 +1273,10 @@ gaps are additional runtime contact rows, runtime sparse Hessian assembly, and
 speedup-gate work; the next assembly/solve gaps are runtime sparse Hessian
 assembly, direct/global sparse factorization, nonlinear equality constraints,
 GPU `World::step` assembly/solve integration, and speedup-gate work. The CCD
-row still needs analytic curved CCD, runtime candidate sets, and scene-level
-line-search feasibility. Do not mark these rows measured until the top-level
-speed gate and runtime evidence are proven. Keep the dev-task folder active
+row still needs analytic curved CCD, moving-triangle scene point-triangle CCD,
+full scene-level line-search feasibility, and runtime speedup. Do not mark
+these rows measured until the top-level speed gate and runtime evidence are
+proven. Keep the dev-task folder active
 because PLAN-083 acceptance criteria are still unmet. If the task later moves
 out of this folder, get maintainer direction before deleting it and keep the
 remaining planned manifest plus in-progress CPU/GPU/scene limitations in
