@@ -1,5 +1,68 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - Representative Requirement Coverage
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main`
+  (`bb851f453606`).
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 88]`.
+- Last committed checkpoint:
+  `aa43914b348 Expose LCP solver selection guidance`.
+- Checkpoint target:
+  `Expose LCP representative requirement coverage`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 89 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+Py-demo representative-example alignment:
+
+- The Python `lcp_physics` panel now includes a Representative requirement
+  coverage table that ties named evaluation needs to live packets, benchmark
+  packets, metrics, and evidence cues.
+- The table explicitly covers billiards symmetry/energy/momentum, high
+  mass-ratio stacks, thin card piles, scalability smoke, and friction coupling
+  with active tangential bounds.
+- The setup metadata exposes `representative_requirement_rows`, and the panel
+  test asserts these rows so future demo edits do not hide the requirement map.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with `43 passed`.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is uncommitted, review the verification above and commit it
+   with `Expose LCP representative requirement coverage`.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Solver Selection Guidance Panel
 
 This is the latest hand-off state. Sections below are historical checkpoints

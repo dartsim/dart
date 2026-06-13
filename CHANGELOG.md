@@ -1495,6 +1495,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Added a solver selection guide to the Python `lcp_physics` panel that
     connects solver families to representative best-fit cases, strengths,
     tradeoffs, and current profile-evidence cues.
+  - Added a representative LCP requirement coverage table to the Python
+    `lcp_physics` panel, tying billiards invariants, mass-ratio stacks, card
+    piles, scalability smoke, and friction coupling to their live packets,
+    benchmark packets, and tracked metrics.
   - Optimized `BoxedSemiSmoothNewtonSolver` to try the direct semi-smooth
     Jacobian solve before falling back to regularized least squares, and kept
     friction-index moving-bound updates local to accepted line-search trials.

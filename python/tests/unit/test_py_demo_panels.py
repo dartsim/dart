@@ -1006,6 +1006,32 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "solver_parameter_sweeps",
     }
     assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
+    requirement_by_name = {
+        row["requirement"]: row for row in info["representative_requirement_rows"]
+    }
+    assert set(requirement_by_name) == {
+        "Billiard symmetry, energy, momentum",
+        "High mass-ratio stack",
+        "Thin card pile",
+        "Scalability smoke",
+        "Friction coupling and active tangential bounds",
+    }
+    assert requirement_by_name["Billiard symmetry, energy, momentum"][
+        "benchmark_packet"
+    ] == "world_billiards"
+    assert (
+        "world_stack"
+        in requirement_by_name["High mass-ratio stack"]["benchmark_packet"]
+    )
+    assert requirement_by_name["Thin card pile"]["live_packet"] == (
+        "Thin card pile"
+    )
+    assert "lcp_dimension" in requirement_by_name["Scalability smoke"][
+        "metrics"
+    ]
+    assert "contact count" in requirement_by_name[
+        "Friction coupling and active tangential bounds"
+    ]["metrics"]
     representative_tokens: list[str] = []
     for row in info["benchmark_packet_rows"]:
         for token in row["benchmark_filter"].split("|"):
@@ -1337,6 +1363,19 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_benchmark_packets:Packet,Surface,Benchmark filter,Coverage"
         in builder.events
     )
+    assert (
+        "table:lcp_representative_requirement_coverage:Requirement,Live packet,"
+        "Benchmark packet,Metrics,Evidence"
+        in builder.events
+    )
+    for requirement in (
+        "Billiard symmetry, energy, momentum",
+        "High mass-ratio stack",
+        "Thin card pile",
+        "Scalability smoke",
+        "Friction coupling and active tangential bounds",
+    ):
+        assert any(requirement in event for event in builder.events)
     assert (
         "table:lcp_performance_profiles:Surface,Profile CSV,Evidence CSV,Problem sizes,"
         "Current leaders,Current laggards,Takeaway"

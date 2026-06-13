@@ -63,6 +63,44 @@ _LIVE_PACKET_ROWS: tuple[dict[str, str], ...] = (
     },
 )
 
+_REPRESENTATIVE_REQUIREMENT_ROWS: tuple[dict[str, str], ...] = (
+    {
+        "requirement": "Billiard symmetry, energy, momentum",
+        "live_packet": "Billiard collision",
+        "benchmark_packet": "world_billiards",
+        "metrics": "symmetry error, momentum error, kinetic-energy error",
+        "evidence": "live plots and BM_LcpWorldBilliardsStep_BoxedLcp",
+    },
+    {
+        "requirement": "High mass-ratio stack",
+        "live_packet": "High-mass-ratio stack",
+        "benchmark_packet": "world_stack, mass_ratio_boxed",
+        "metrics": "stack drift, step time, active-bound residuals",
+        "evidence": "world stack packets plus standalone mass-ratio boxed row",
+    },
+    {
+        "requirement": "Thin card pile",
+        "live_packet": "Thin card pile",
+        "benchmark_packet": "world_card_pile",
+        "metrics": "card spread, height loss, step time",
+        "evidence": "live card metrics and BM_LcpWorldCardPileStep_BoxedLcp",
+    },
+    {
+        "requirement": "Scalability smoke",
+        "live_packet": "Representative solver suite",
+        "benchmark_packet": "batch_scale, moderate_scale_standard",
+        "metrics": "lcp_dimension, elapsed time, residual, complementarity",
+        "evidence": "standalone moderate-scale row plus batch benchmark packets",
+    },
+    {
+        "requirement": "Friction coupling and active tangential bounds",
+        "live_packet": "Sliding friction, Static-friction ramp",
+        "benchmark_packet": "active_friction_index_contact",
+        "metrics": "slide speed, ramp slide, bound violation, contact count",
+        "evidence": "FrictionIndex evidence rows and active tangential-bound case",
+    },
+)
+
 _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
         "packet": "standard_spd_smoke",
@@ -2008,6 +2046,28 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["benchmark"])
                 builder.end_table()
 
+        if builder.collapsing_header(
+            "Representative requirement coverage", default_open=False
+        ):
+            if builder.begin_table(
+                "lcp_representative_requirement_coverage",
+                [
+                    "Requirement",
+                    "Live packet",
+                    "Benchmark packet",
+                    "Metrics",
+                    "Evidence",
+                ],
+            ):
+                for row in _REPRESENTATIVE_REQUIREMENT_ROWS:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["requirement"])
+                    _write_table_cell(builder, row["live_packet"])
+                    _write_table_cell(builder, row["benchmark_packet"])
+                    _write_table_cell(builder, row["metrics"])
+                    _write_table_cell(builder, row["evidence"])
+                builder.end_table()
+
         if builder.collapsing_header("Solver manifest", default_open=False):
             summary = _solver_manifest_summary()
             builder.text(
@@ -2263,6 +2323,9 @@ def build() -> SceneSetup:
                 "thin_card_pile",
             ],
             "live_packet_rows": _copy_rows(_LIVE_PACKET_ROWS),
+            "representative_requirement_rows": _copy_rows(
+                _REPRESENTATIVE_REQUIREMENT_ROWS
+            ),
             "live_metrics_snapshot": live_metrics_snapshot,
             "benchmark_packet_rows": _copy_rows(_BENCHMARK_PACKET_ROWS),
             "performance_profile_rows": _copy_rows(_PERFORMANCE_PROFILE_ROWS),
