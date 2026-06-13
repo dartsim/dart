@@ -1417,6 +1417,90 @@ def test_rigid_workflow_review_warns_when_solver_identity_is_missing(
     assert "scenes/01_rigid_body/manifest.json" in review_html
 
 
+def test_rigid_workflow_latest_signals_prioritize_parameter_budget_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "base_time_step_ms": 2.0,
+            "budget_ms": 1.25,
+            "coarse_clearance": -0.001,
+            "coarse_error_ratio": 8.0,
+            "coarse_freefall_error": 0.08,
+            "dense_single_ratio": 3.5,
+            "executor": "Sequential",
+            "fine_clearance": 0.02,
+            "fine_freefall_error": 0.01,
+            "medium_freefall_error": 0.03,
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert highlights == [
+        "base time step ms: 2",
+        "fine freefall error: 0.01",
+        "medium freefall error: 0.03",
+        "coarse freefall error: 0.08",
+        "coarse error ratio: 8",
+        "fine clearance: 0.02",
+        "coarse clearance: -0.001",
+        "budget ms: 1.25",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_restitution_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "dead_contact_count": 1,
+            "dead_rebound_height": 0.08,
+            "executor": "Sequential",
+            "high_contact_count": 0,
+            "high_rebound_height": 0.15,
+            "high_upward_velocity": 3.2,
+            "middle_contact_count": 0,
+            "middle_rebound_height": 0.12,
+            "restitution_scale": 1.0,
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert highlights == [
+        "restitution scale: 1",
+        "dead rebound height: 0.08",
+        "middle rebound height: 0.12",
+        "high rebound height: 0.15",
+        "high upward velocity: 3.2",
+        "dead contact count: 1",
+        "middle contact count: 0",
+        "high contact count: 0",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_material_response_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "bounce_body_high_rebound": 0.23,
+            "bounce_surface_high_rebound": 0.23,
+            "effective_friction": 0.19,
+            "effective_restitution": 0.82,
+            "executor": "Sequential",
+            "expected_friction_rule": "sqrt_product",
+            "expected_restitution_rule": "max",
+            "slide_body_high_speed_loss": 0.53,
+            "slide_surface_high_speed_loss": 0.53,
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert highlights[:7] == [
+        "effective restitution: 0.82",
+        "expected restitution rule: max",
+        "effective friction: 0.19",
+        "expected friction rule: sqrt_product",
+        "bounce body high rebound: 0.23",
+        "bounce surface high rebound: 0.23",
+        "slide body high speed loss: 0.53",
+    ]
+
+
 def test_rigid_workflow_latest_signals_prioritize_collision_query_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {
