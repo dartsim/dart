@@ -749,7 +749,9 @@ _LCP_PROFILE_EVIDENCE_COLUMNS = (
 )
 
 
-def _write_lcp_profile_evidence(evidence_path, **overrides: str) -> None:
+def _write_lcp_profile_evidence(
+    evidence_path, columns: tuple[str, ...] | None = None, **overrides: str
+) -> None:
     row = {
         "category": "Standard",
         "solver": "Dantzig",
@@ -778,10 +780,11 @@ def _write_lcp_profile_evidence(evidence_path, **overrides: str) -> None:
         "problem_type_invalid": "0",
     }
     row.update(overrides)
+    output_columns = columns or _LCP_PROFILE_EVIDENCE_COLUMNS
     evidence_path.write_text(
-        ",".join(_LCP_PROFILE_EVIDENCE_COLUMNS)
+        ",".join(output_columns)
         + "\n"
-        + ",".join(row[column] for column in _LCP_PROFILE_EVIDENCE_COLUMNS)
+        + ",".join(row[column] for column in output_columns)
         + "\n",
         encoding="utf-8",
     )
@@ -1039,6 +1042,50 @@ def test_lcp_physics_profile_summary_rejects_invalid_numeric_rows(
     )
 
     with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_missing_evidence_columns(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(
+        evidence_path,
+        columns=tuple(
+            column
+            for column in _LCP_PROFILE_EVIDENCE_COLUMNS
+            if column != "time_ns"
+        ),
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="missing required columns: \\['time_ns'\\]",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+def test_lcp_physics_profile_summary_rejects_empty_evidence_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    evidence_path.write_text(
+        ",".join(_LCP_PROFILE_EVIDENCE_COLUMNS) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="LCP performance profile evidence has no rows",
+    ):
         lcp_physics._performance_profile_evidence_summary_rows()
 
 

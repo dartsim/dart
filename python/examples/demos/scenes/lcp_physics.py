@@ -414,6 +414,28 @@ _PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY = {
 _PROFILE_SOLVER_FAMILY_COUNTER_FIELDS = tuple(
     _PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY.values()
 )
+_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS = (
+    "category",
+    "solver",
+    "problem_size",
+    "lcp_dimension",
+    "contact_count",
+    "solver_identity_schema_version",
+    "solver_manifest_index",
+    *_PROFILE_SOLVER_FAMILY_COUNTER_FIELDS,
+    "time_ns",
+    "contract_ok",
+    "iterations",
+    "residual",
+    "complementarity",
+    "bound_violation",
+    "solver_supports_standard",
+    "solver_supports_boxed",
+    "solver_supports_friction_index",
+    "solver_supports_problem",
+    *tuple(_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS.values()),
+    "problem_type_invalid",
+)
 
 
 def _format_evidence_int_values(values: set[int]) -> str:
@@ -660,7 +682,21 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
 
     summaries: dict[str, dict[str, Any]] = {}
     with _PERFORMANCE_PROFILE_EVIDENCE_PATH.open(newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
+        reader = csv.DictReader(f)
+        header = reader.fieldnames or []
+        missing_columns = [
+            column
+            for column in _PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS
+            if column not in header
+        ]
+        if missing_columns:
+            raise RuntimeError(
+                "LCP performance profile evidence is missing required "
+                f"columns: {missing_columns}"
+            )
+        row_count = 0
+        for row in reader:
+            row_count += 1
             _validate_performance_profile_evidence_row(row)
             surface = row["category"]
             summary = summaries.setdefault(
@@ -703,6 +739,8 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
                 summary["max_bound_violation"],
                 _as_float_counter(row, "bound_violation"),
             )
+        if row_count == 0:
+            raise RuntimeError("LCP performance profile evidence has no rows")
 
     rows: list[dict[str, str]] = []
     for surface in ("Standard", "Boxed", "FrictionIndex"):
