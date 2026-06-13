@@ -422,6 +422,73 @@ def _benchmark_data(**overrides):
         final_residual_kernel_ns=5.0,
         device_to_host_ns=6.0,
     )
+    scene_sparse_cg_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseCgSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        max_iterations=32,
+        completed_iterations=13,
+        active_dofs=1920,
+        converged=1,
+        residual_tolerance=1e-12,
+        initial_residual_norm=18.0,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=2.75,
+        residual_norm=4e-14,
+        max_residual_abs=9e-15,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_cg_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseCgSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        max_iterations=32,
+        completed_iterations=13,
+        active_dofs=1920,
+        converged=1,
+        residual_tolerance=1e-12,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_max_iterations=32,
+        gpu_completed_iterations=13,
+        gpu_active_dofs=1920,
+        gpu_converged=1,
+        gpu_residual_tolerance=1e-12,
+        gpu_initial_residual_norm=18.0,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_step_norm=2.75,
+        gpu_residual_norm=4e-14,
+        gpu_max_residual_abs=9e-15,
+        max_result_abs_error=7e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
     equality_cpu = _row(
         "BM_NewtonEqualityReducedSolveCpu/1024",
         rows=1024,
@@ -484,6 +551,8 @@ def _benchmark_data(**overrides):
             scene_sparse_jacobi_gpu,
             sparse_cg_cpu,
             sparse_cg_gpu,
+            scene_sparse_cg_cpu,
+            scene_sparse_cg_gpu,
             equality_cpu,
             equality_gpu,
         ]
@@ -508,8 +577,8 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 6e-12
-    assert row["residual_norm"] == 3e-14
+    assert row["max_result_abs_error"] == 7e-12
+    assert row["residual_norm"] == 4e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
     scene = row["scene_runtime_diagonal_assembly_solve"]
@@ -613,6 +682,29 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert cg["step_norm"] == 0.5
     assert cg["timing_ns"]["iterations"] == 4.0
     assert cg["timing_ns"]["final_residual"] == 5.0
+    scene_cg = row["scene_runtime_sparse_cg_solve"]
+    assert scene_cg["row_count"] == 320
+    assert scene_cg["nominal_row_count"] == 1024
+    assert scene_cg["scene_body_count"] == 1
+    assert scene_cg["scene_node_count"] == 320
+    assert scene_cg["scene_triangle_count"] == 96
+    assert scene_cg["scene_edge_pair_count"] == 288
+    assert scene_cg["body_count"] == 320
+    assert scene_cg["dof_count"] == 1920
+    assert scene_cg["block_count"] == 288
+    assert scene_cg["block_entry_count"] == 10368
+    assert scene_cg["max_iteration_count"] == 32
+    assert scene_cg["completed_iteration_count"] == 13
+    assert scene_cg["active_dof_count"] == 1920
+    assert scene_cg["converged"] is True
+    assert scene_cg["residual_tolerance"] == 1e-12
+    assert scene_cg["initial_residual_norm"] == 18.0
+    assert scene_cg["max_result_abs_error"] == 7e-12
+    assert scene_cg["residual_norm"] == 4e-14
+    assert scene_cg["max_residual_abs"] == 9e-15
+    assert scene_cg["step_norm"] == 2.75
+    assert scene_cg["timing_ns"]["iterations"] == 4.0
+    assert scene_cg["timing_ns"]["final_residual"] == 5.0
     equality = row["equality_reduced_diagonal_solve"]
     assert equality["body_count"] == 128
     assert equality["full_dof_count"] == 768

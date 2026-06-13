@@ -211,6 +211,14 @@ struct SparseCgSolveFixture
   CpuSparseCgSolveResult cpu;
 };
 
+struct SceneRuntimeSparseCgSolveFixture : SparseCgSolveFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sceneEdgePairCount = 0;
+};
+
 struct CpuEqualityReducedSolveResult
 {
   std::vector<double> assembledDiagonal;
@@ -1086,6 +1094,22 @@ SceneRuntimeSparseJacobiSolveFixture makeSceneRuntimeSparseJacobiSolveFixture(
   return fixture;
 }
 
+SceneRuntimeSparseCgSolveFixture makeSceneRuntimeSparseCgSolveFixture(
+    const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_sparse_cg",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeSparseCgSolveFixture fixture;
+  populateSceneRuntimeSparseGraphFixture(fixture, world, body);
+  evaluateCpuSparseCgSolve(
+      fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
+  return fixture;
+}
+
 SparseJacobiSolveFixture makeSparseJacobiSolveFixture(const int rowCount)
 {
   SparseJacobiSolveFixture fixture;
@@ -1445,6 +1469,20 @@ void recordSparseCgSolveCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordSceneRuntimeSparseCgSolveCounters(
+    benchmark::State& state,
+    const SceneRuntimeSparseCgSolveFixture& fixture,
+    const double maxError)
+{
+  recordSparseCgSolveCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
 }
 
 void recordEqualityReducedCounters(
@@ -2040,6 +2078,89 @@ static void BM_NewtonSparseCgSolveCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSparseCgSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseCgSolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeSceneRuntimeSparseCgSolveFixture(static_cast<int>(state.range(0)));
+  CpuSparseCgSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSparseCgSolve(
+        fixture.rows, fixture.bodyCount, fixture.blocks, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeSparseCgSolveCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseCgSolveCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeSparseCgSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSceneRuntimeSparseCgSolveFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonSparseCgSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSparseCgSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.blocks,
+        kSparseCgMaxIterations,
+        kSparseCgResidualTolerance,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeSparseCgSolveCounters(
+      state, fixture, maxSparseCgSolveOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_max_iterations"]
+      = static_cast<double>(result.maxIterationCount);
+  state.counters["gpu_completed_iterations"]
+      = static_cast<double>(result.completedIterationCount);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_converged"] = result.converged ? 1.0 : 0.0;
+  state.counters["gpu_residual_tolerance"] = result.residualTolerance;
+  state.counters["gpu_initial_residual_norm"] = result.initialResidualNorm;
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["gpu_max_residual_abs"] = result.maxResidualAbs;
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"]
+      = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["iteration_kernel_ns"] = result.timing.iterationKernelNs;
+  state.counters["final_residual_kernel_ns"]
+      = result.timing.finalResidualKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeSparseCgSolveCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonEqualityReducedSolveCpu(benchmark::State& state)
