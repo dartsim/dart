@@ -166,6 +166,42 @@ def test_lcp_profile_coverage_rejects_invalid_timing_rows(cpu_time: float) -> No
         )
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("iterations", -1.0, "invalid iterations"),
+        ("iterations", 1.25, "invalid iterations"),
+        ("iterations", float("inf"), "invalid iterations"),
+        ("residual", -1.0, "invalid quality metrics"),
+        ("residual", float("nan"), "invalid quality metrics"),
+        ("complementarity", -1.0, "invalid quality metrics"),
+        ("bound_violation", float("inf"), "invalid quality metrics"),
+    ],
+)
+def test_lcp_profile_coverage_rejects_invalid_quality_rows(
+    field: str, value: float, message: str
+) -> None:
+    module = _load_module()
+    benchmark = {
+        "name": "BM_LcpCompare/Standard/Dantzig/12",
+        "run_type": "iteration",
+        "cpu_time": 10.0,
+        "contract_ok": 1.0,
+        field: value,
+    }
+    results = module.parse_benchmark_results({"benchmarks": [benchmark]})
+
+    with pytest.raises(RuntimeError, match=message):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(

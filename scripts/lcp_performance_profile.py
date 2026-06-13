@@ -61,6 +61,7 @@ _MANIFEST_FAMILY_BY_NAME: dict[str, str] | None = None
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
 PROFILE_EVIDENCE_CSV_NAME = "performance_profile_evidence.csv"
+QUALITY_METRIC_FIELDS = ("residual", "complementarity", "bound_violation")
 
 
 def canonical_solver_name(name: str) -> str:
@@ -244,6 +245,8 @@ def _counter_to_int(value) -> int | None:
         numeric = float(value)
     except (TypeError, ValueError):
         return None
+    if not math.isfinite(numeric):
+        return None
 
     rounded = int(round(numeric))
     if abs(numeric - rounded) > 1e-9:
@@ -291,6 +294,22 @@ def check_native_profile_coverage(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
             if (time_ns := _finite_float(data.get("time_ns"))) is None or time_ns <= 0.0
+        )
+        invalid_iteration_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if data.get("iterations") is not None
+            and (
+                (iterations := _counter_to_int(data.get("iterations"))) is None
+                or iterations < 0
+            )
+        )
+        invalid_quality_metric_rows = sorted(
+            f"{solver}/{problem_size}/{metric}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            for metric in QUALITY_METRIC_FIELDS
+            if data.get(metric) is not None
+            and ((value := _finite_float(data.get(metric))) is None or value < 0.0)
         )
         unsupported_rows = sorted(
             f"{solver}/{problem_size}"
@@ -376,6 +395,16 @@ def check_native_profile_coverage(
             evidence_errors.append(
                 f"{category}: benchmark JSON has invalid time_ns for "
                 f"{invalid_timing_rows}"
+            )
+        if invalid_iteration_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid iterations for "
+                f"{invalid_iteration_rows}"
+            )
+        if invalid_quality_metric_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid quality metrics for "
+                f"{invalid_quality_metric_rows}"
             )
         if unsupported_rows:
             evidence_errors.append(
