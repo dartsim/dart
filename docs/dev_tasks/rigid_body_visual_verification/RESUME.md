@@ -2,28 +2,27 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local follow-up: fetched `origin` and merged `origin/main` again; Git
-reported `Already up to date`, so the branch still carries the PR #2986 DART 7
-architecture/work-packet harness. The identity-complete GUI packet refresh is
-blocked on this host by a native Filament engine crash before any scene metrics
-or screenshots are written. Reproducers:
-`pixi run py-demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /tmp/dart_backend_default.ppm --out /tmp/dart_backend_default`
-dumped core; the same direct Python entry with `--render-backend noop`,
-`DART_FILAMENT_BACKEND=noop`, and `--render-backend vulkan` also dumped core;
-and `pixi run demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /tmp/dart_cpp_rigid.ppm --out /tmp/dart_cpp_rigid`
-died with `SIGBUS`. A gdb backtrace of the Python path shows the crash in
-`__memset_avx2_unaligned_erms` via
-`filament::backend::CircularBuffer::alloc`, `CommandBufferQueue`,
-`filament::FEngine::FEngine`, `filament::FEngine::create`, and
-`dart::gui::detail::createFilamentRenderContext`. Treat
-`build/captures/rigid_workflow_rows_01_36_1781311276` and the `/tmp`
-reproducers as failure evidence only, not review evidence. The next session
-should note that a follow-up gdb register snapshot at the crashing `memset`
-showed `rdx=0x7fff371fd000`, then either use a known-good GUI capture host to
-regenerate rows 01-36 and 37-52 with
-`resolved_solver_identity_complete=true`, or debug the Filament
-command-buffer allocation size / ABI boundary before attempting more packet
-regeneration on this host.
+Latest local follow-up: fetched `origin/main` and merged it again; Git reported
+`Already up to date`, so the branch still carries the PR #2986 DART 7
+architecture/work-packet harness. The previous native Filament `SIGBUS`
+blocker is now understood and fixed for Linux headless engine creation:
+Filament's file-backed CircularBuffer path used a `/tmp` ashmem-style mapping,
+and this host's tmpfs user quota is full (`quota -s` reports
+`tmpfs 25573M/25573M`). `dart::gui` now scopes a temporary file-size limit
+around headless `Engine::Builder().build()` on Linux to force Filament's
+anonymous "soft" CircularBuffer fallback, then restores the original limit
+before screenshot/frame output. Focused native evidence passes when output
+artifacts are directed away from `/tmp`: direct
+`pixi run py-demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /dev/shm/dart_headless_soft_fix.ppm --out /dev/shm/dart_headless_soft_fix`
+returned `RC=0`, and
+`pixi run py-demo-capture -- --scene rigid_body --frames 2 --width 320 --height 240 --output-dir /dev/shm/dart_capture_rigid_body_soft --show-ui`
+returned `RC=0`, wrote `resolved_solver_identity` for `Sequential impulse`,
+and produced a nonblank visual with 2047 unique colors. Treat
+`build/captures/rigid_workflow_rows_01_36_1781311276` and the earlier `/tmp`
+reproducers as failure evidence only. The next session should regenerate rows
+01-36 and optional rows 37-52 with `resolved_solver_identity_complete=true`
+using `/dev/shm` or a host with usable `/tmp`; default `/tmp` output can still
+fail during artifact writes until unrelated tmpfs quota is freed.
 
 Latest local follow-up: after merging `origin/main` (already up to date with
 PR #2986), the rigid workflow capture path now follows the DART 7 harness
@@ -120,16 +119,16 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-- Latest committed local checkpoint is
-  `34cc7396ed7 Record rigid workflow solver identity evidence`; inspect any newer
-  diff first.
+- Latest committed local checkpoint before the headless Filament fix was
+  `2510c473d2a Record rigid workflow capture blocker`; inspect any newer diff
+  first.
 - Do not push without explicit approval in the session that performs the push.
 - Use the current-HEAD full row-01-through-row-36 packet plus the optional rows
   37-52 packet above as the current review-index scan artifacts. They predate
   the explicit `resolved_solver_identity_complete` workflow fields; regenerate
-  them on a working GUI host before claiming identity-complete visual packet
-  evidence. Treat older packet directories as historical completion evidence
-  only.
+  them through the fixed headless path, preferably with `/dev/shm` output on
+  this host, before claiming identity-complete visual packet evidence. Treat
+  older packet directories as historical completion evidence only.
 - Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
   body seed after push/PR creation is explicitly approved. Its changelog
   checkbox is checked because `CHANGELOG.md` already records the DART 7 rigid

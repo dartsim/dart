@@ -112,6 +112,10 @@
     Add scene-owned Replay timeline metadata to the loop-closure row so
     saved-state scrubbing can track max closure residual ratio and jump to
     solve-advantage, family-drift, distance-tip, or rigid-orientation frames.
+    Linux headless Filament captures now force Filament's anonymous soft
+    CircularBuffer fallback during engine creation, avoiding `SIGBUS` crashes
+    when `/tmp` tmpfs quota pressure breaks the file-backed command-buffer
+    mapping before scene metrics or screenshots are written.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

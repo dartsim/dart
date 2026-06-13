@@ -2,27 +2,28 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest local follow-up: fetched `origin` and merged `origin/main` again; Git
-reported `Already up to date`, so this branch remains aligned with the PR
-#2986 DART 7 architecture/work-packet harness. The requested
-identity-complete GUI packet refresh is blocked on this host by a native
-Filament crash before scene metrics or screenshots are written. Reproducers:
-`pixi run py-demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /tmp/dart_backend_default.ppm --out /tmp/dart_backend_default`
-dumped core; the same direct Python entry with `--render-backend noop`,
-`DART_FILAMENT_BACKEND=noop`, and `--render-backend vulkan` also dumped core;
-and `pixi run demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /tmp/dart_cpp_rigid.ppm --out /tmp/dart_cpp_rigid`
-died with `SIGBUS`. A gdb backtrace of the Python path enters
-`filament::backend::CircularBuffer::alloc` during
-`filament::FEngine::create` from
-`dart::gui::detail::createFilamentRenderContext`. Treat
-`build/captures/rigid_workflow_rows_01_36_1781311276` and the `/tmp`
-reproducers as failure evidence only. A follow-up gdb register snapshot at the
-crashing `memset` showed `rdx=0x7fff371fd000`, so the next native debug pass
-should inspect the Filament command-buffer allocation size or ABI boundary
-before assuming scene-code corruption. The next useful step is to regenerate
-the current rows 01-36 and optional rows 37-52 packets on a known-good GUI
-capture host, or debug this host-level Filament SIGBUS before more local packet
-generation.
+Latest local follow-up: fetched `origin/main` and merged it again; Git reported
+`Already up to date`, so this branch remains aligned with the PR #2986 DART 7
+architecture/work-packet harness. The native Filament `SIGBUS` blocker was
+traced to Linux headless engine creation using Filament's `/tmp`-backed
+ashmem-style command-buffer mapping while this host's tmpfs user quota is full
+(`quota -s` reports `tmpfs 25573M/25573M`). `dart::gui` now forces Filament's
+anonymous "soft" CircularBuffer fallback only during Linux headless
+`Engine::Builder().build()`, then restores the original file-size limit before
+screenshots and frames are written. Focused native evidence now passes when the
+output directory avoids `/tmp`: direct
+`pixi run py-demos -- --scene rigid_body --headless --frames 1 --width 160 --height 120 --screenshot /dev/shm/dart_headless_soft_fix.ppm --out /dev/shm/dart_headless_soft_fix`
+returned `RC=0`, and
+`pixi run py-demo-capture -- --scene rigid_body --frames 2 --width 320 --height 240 --output-dir /dev/shm/dart_capture_rigid_body_soft --show-ui`
+returned `RC=0`, wrote a manifest with
+`resolved_solver_identity={'solver': 'Sequential impulse', 'source': 'scene_capture_metrics.latest.metrics'}`,
+and produced a nonblank visual with 2047 unique colors. The failed
+`build/captures/rigid_workflow_rows_01_36_1781311276` packet and earlier
+`/tmp` reproducers remain failure evidence only. Full rows 01-36 and optional
+rows 37-52 identity-complete packet regeneration is still pending; on this
+host, use `/dev/shm` or free unrelated `/tmp` quota before running the full
+packet because default `/tmp` output can still fail during artifact writes even
+though engine creation no longer crashes.
 
 Latest local follow-up: after merging `origin/main` (already up to date with
 PR #2986), the rigid workflow capture path now follows the DART 7 harness
