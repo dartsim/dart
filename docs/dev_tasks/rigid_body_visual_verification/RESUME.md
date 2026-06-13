@@ -3,16 +3,49 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-`feature/rigid-body-gui-visual-verification` has a clean worktree after this
-docs-only evidence refresh, but it is intentionally one local commit ahead of
-`origin/feature/rigid-body-gui-visual-verification` until a future explicit
-push approval. The latest user-approved push advanced the remote branch from
-`7c9d28b2101` to `7829d9b0487`; `origin/main` was already an ancestor of the
-branch, and `git fetch origin main` plus `git merge --no-edit origin/main`
-reported `Already up to date`. There is still no PR for this branch. Do not
-push, create a PR, set a milestone, rerun CI, comment on reviews, resolve
-threads, or mutate any other GitHub state without explicit maintainer/user
+At the start of this continuation,
+`feature/rigid-body-gui-visual-verification` was clean and synced with
+`origin/feature/rigid-body-gui-visual-verification` at `4a08e34f748`. The
+latest user-approved push advanced the remote branch from `7829d9b0487` to
+`4a08e34f748`; `git fetch origin main` plus `git merge --no-edit origin/main`
+reported `Already up to date`, and `origin/main` is an ancestor of `HEAD`.
+This handoff/harness-audit refresh is local-only until the next explicit push
+approval, so a fresh session should verify whether the branch is clean, dirty,
+or ahead with `git status -sb`. There is still no PR for this branch. Do not
+push new commits, create a PR, set a milestone, rerun CI, comment on reviews,
+resolve threads, or mutate any other GitHub state without explicit
+maintainer/user approval.
+
+Latest local continuation: row 5, `rigid_external_loads`, now covers public
+direct rigid-body impulse behavior instead of documenting it as a deferred API
+gap. `RigidBody` has C++ and dartpy `apply_linear_impulse()` /
+`apply_angular_impulse()` surfaces, the scene adds direct linear/angular
+impulse lanes and sliders, capture metrics promote impulse momentum/speed, and
+PLAN-103 plus the py-demos README now route `direct rigid body impulse` to the
+public load/impulse row while keeping sleep/wake, island activation, and
+loop-closure compliance deferred. Focused evidence: `pixi run
+build-py-dev-docking` rebuilt `dartpy`; the focused pytest set covering the
+new impulse API, external-loads scene metrics, API/docs drift guard, panel
+search routing, and capture-card load highlights reported `6 passed`; and
+`pixi run py-demo-capture -- --scene rigid_external_loads --frames 12 --width
+640 --height 360 --show-ui --output-dir
+/tmp/dart_capture_rigid_external_loads_impulses_1781345833` wrote a nonempty
+640x360 screenshot, 11 PNG frames, 12 scene-metrics events, complete resolved
+solver identity (`solver=sequential_impulse`, `executor=Sequential`), and
+latest metrics with `scope=external_load_and_direct_impulse_response`,
+`linear_impulse_momentum_x=0.8`, `linear_impulse_speed=0.8`,
+`angular_impulse_momentum_z=0.09`, `angular_impulse_speed=2.0`, and
+`static_drift=0.0`. This slice is local-only until pushed with explicit
 approval.
+
+Latest local continuation: a fresh DART 7 work-packet dry-run checked the
+current 53-row rigid workflow harness shape without rendering:
+`DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_dryrun_current`
+completed successfully. The dry-run manifest reports `status=planned`,
+`dry_run=true`, `capture_count=53`, `guidance_complete=true`,
+`guidance_missing_count=0`, all requested optional groups enabled, all selected
+optional groups enabled, and `review_index.html` shows rows `1-53 / 53` with
+requested/selected groups `numbered, related, ipc shelf, packets`.
 
 Latest local continuation: workflow review-card `latest signals` now promote
 optional-row health signals instead of collapsing rows 37-53 to generic

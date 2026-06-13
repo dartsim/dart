@@ -199,9 +199,12 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
         "Kinematics/frame row only; not a force, contact, sensor model, or solver-family claim.",
     ),
     "rigid_external_loads": (
-        "How do external loads move and spin bodies?",
-        ("Mass-scaled acceleration", "Torque response and static drift"),
-        "Contact-free zero-gravity accumulator row; no direct rigid-body impulse API claim.",
+        "How do external loads and direct impulses move and spin bodies?",
+        (
+            "Mass-scaled acceleration",
+            "Direct impulse momentum and static drift",
+        ),
+        "Contact-free zero-gravity load and direct rigid-body impulse row; no contact or solver-family claim.",
     ),
     "rigid_link_point_loads": (
         "Do point forces create lever-arm torque?",
@@ -381,8 +384,8 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Healthy: world and relative transform residuals stay near zero.",
     ),
     "rigid_external_loads": (
-        "Change force, torque, mass ratio, and inertia ratio.",
-        "Healthy: acceleration scales with mass, torque response scales with inertia.",
+        "Change force, torque, impulse magnitudes, mass ratio, and inertia ratio.",
+        "Healthy: acceleration scales with mass and impulse momentum matches the direct kick.",
     ),
     "rigid_link_point_loads": (
         "Move the point offset and compare centered/off-center lanes.",

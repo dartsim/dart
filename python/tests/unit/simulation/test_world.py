@@ -146,6 +146,8 @@ def test_simulation_api_exposes_python_names_only():
             "setTorque",
             "applyTorque",
             "clearTorque",
+            "applyLinearImpulse",
+            "applyAngularImpulse",
         ),
         sx.Joint: (
             "get_name",
@@ -6093,6 +6095,29 @@ def test_simulation_rigid_body_dynamic_quantities():
     assert box.angular_momentum.tolist() == pytest.approx([2.0, 0.0, 0.0])
     assert box.kinetic_energy == pytest.approx(10.0)
     assert box.potential_energy == pytest.approx(98.1)
+
+
+def test_simulation_rigid_body_impulses_update_momentum():
+    sx = _simulation()
+
+    world = sx.World(gravity=(0.0, 0.0, 0.0))
+    body = world.add_rigid_body("body", mass=2.0)
+    body.inertia = ((2.0, 0.0, 0.0), (0.0, 4.0, 0.0), (0.0, 0.0, 3.0))
+
+    body.apply_linear_impulse((4.0, -2.0, 0.0))
+    body.apply_angular_impulse((0.0, 8.0, 6.0))
+
+    assert body.linear_velocity.tolist() == pytest.approx([2.0, -1.0, 0.0])
+    assert body.linear_momentum.tolist() == pytest.approx([4.0, -2.0, 0.0])
+    assert body.angular_velocity.tolist() == pytest.approx([0.0, 2.0, 2.0])
+    assert body.angular_momentum.tolist() == pytest.approx([0.0, 8.0, 6.0])
+
+    static_body = world.add_rigid_body("static_body")
+    static_body.is_static = True
+    static_body.apply_linear_impulse((4.0, 0.0, 0.0))
+    static_body.apply_angular_impulse((0.0, 0.0, 4.0))
+    assert static_body.linear_velocity.tolist() == pytest.approx([0.0, 0.0, 0.0])
+    assert static_body.angular_velocity.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
 
 def test_simulation_multibody_forward_dynamics():

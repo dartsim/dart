@@ -7,6 +7,26 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: row 5, `rigid_external_loads`, now covers
+public direct rigid-body impulse behavior. The C++ `RigidBody` API and dartpy
+bindings expose `apply_linear_impulse()` and `apply_angular_impulse()`;
+the scene adds direct linear/angular impulse lanes and sliders; capture metrics
+publish impulse magnitudes, momentum, and speed; and the PLAN-103 sidecar plus
+py-demos README route `direct rigid body impulse` to the public load/impulse
+row while preserving the sleep/wake, island activation, and loop-closure
+compliance deferrals. Focused validation: `pixi run build-py-dev-docking`
+rebuilt `dartpy`; the focused pytest set for the impulse API, row-5 scene
+metrics, API/docs drift guard, panel search routing, and capture-card latest
+signals reported `6 passed`; and
+`/tmp/dart_capture_rigid_external_loads_impulses_1781345833` contains a
+nonempty 640x360 screenshot, 11 PNG frames, 12 scene-metrics events, complete
+resolved solver identity (`solver=sequential_impulse`, `executor=Sequential`),
+and latest metrics with `scope=external_load_and_direct_impulse_response`,
+`linear_impulse_momentum_x=0.8`, `linear_impulse_speed=0.8`,
+`angular_impulse_momentum_z=0.09`, `angular_impulse_speed=2.0`, and
+`static_drift=0.0`. This slice has not had broad `test-all`/CUDA wrapper
+validation yet.
+
 Latest local implementation slice: workflow review-card `latest signals` now
 promote optional-row health signals for World related, focused Rigid IPC,
 direct IPC shelf, capture-first stack packet, differentiable contact-gradient,
@@ -254,10 +274,12 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The latest user-approved push advanced
-`origin/feature/rigid-body-gui-visual-verification` from `7c9d28b2101` to
-`7829d9b0487`; the current docs-only evidence refresh is intentionally one
-local commit ahead of origin until a future explicit push approval. No PR
-exists for this branch in the latest local checks.
+`origin/feature/rigid-body-gui-visual-verification` from `7829d9b0487` to
+`4a08e34f748`; at the start of this continuation the branch was clean and
+synced with its remote. This handoff/harness-audit refresh is local-only until
+the next explicit push approval, so a fresh session should verify whether the
+branch is clean, dirty, or ahead. No PR exists for this branch in the latest
+local checks.
 `git fetch origin main && git merge --no-edit origin/main` reported
 `Already up to date`, and `git merge-base --is-ancestor origin/main HEAD`
 confirmed `origin/main` is an ancestor of the branch. The approved push did
@@ -276,6 +298,17 @@ present. The refreshed optional rows 37-53 packet reports
 `scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
 `resolved_solver_identity_count=17`, and 86/86 local review-index assets
 present.
+
+Latest DART 7 work-packet harness dry-run: the current command
+`DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --dry-run --output-dir /tmp/dart_capture_rigid_workflow_dryrun_current`
+completed successfully without rendering. The dry-run manifest reports
+`status=planned`, `dry_run=true`, `capture_count=53`,
+`guidance_complete=true`, `guidance_missing_count=0`, all requested optional
+groups enabled, all selected optional groups enabled, and the generated
+`review_index.html` header shows `rows 1-53 / 53`, requested groups
+`numbered, related, ipc shelf, packets`, selected groups
+`numbered, related, ipc shelf, packets`, `solver identity not required`, and
+`scene metrics not required`.
 
 Latest publication-readiness audit: `git fetch origin main && git merge
 --no-edit origin/main` still reports `Already up to date`; `gh pr status` still
@@ -334,10 +367,11 @@ intentionally records no new green validation after the user stop instruction.
 - Latest merge check: `git fetch origin && git merge origin/main --no-edit`
   reported `Already up to date`, and `origin/main` is an ancestor of `HEAD`.
 - Current remote publication state: `git status -sb` shows
-  `feature/rigid-body-gui-visual-verification` with a clean worktree and one
-  local docs-only evidence commit ahead of
-  `origin/feature/rigid-body-gui-visual-verification`; the last approved push
-  left origin at `7829d9b0487`. No PR for this branch from the latest recorded
+  `feature/rigid-body-gui-visual-verification` started this continuation with
+  a clean worktree synced to
+  `origin/feature/rigid-body-gui-visual-verification` at `4a08e34f748`; this
+  local handoff/harness-audit refresh may put the branch ahead until the next
+  explicit push approval. No PR for this branch from the latest recorded
   `gh pr list --head "$(git branch --show-current)"` or `gh pr status` checks.
 - Latest broad default validation for pushed commit `7829d9b0487`:
   `pixi run test-all` passed all six wrapper gates with `DART_SAFE_JOBS=5`;
@@ -349,6 +383,8 @@ intentionally records no new green validation after the user stop instruction.
   final CUDA CTest log recorded `test_lcp_jacobi_batch_cuda` at `00:03:48`.
 - Latest focused validation for this slice: the optional latest-signal guard
   reported `9 passed`.
+- Latest harness dry-run: the full requested 53-row packet shape completed in
+  plan mode with `guidance_complete=true` and no missing guidance rows.
 - Current packet evidence: the full rows 01-36 packet and optional rows 37-53
   packet regenerated successfully after the latest control-metadata,
   search-routing, and optional-signal slices. Both report complete scene

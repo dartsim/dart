@@ -53,6 +53,8 @@ class _RigidExternalLoads:
         self.executor_index = 0
         self.force_magnitude = 4.0
         self.torque_magnitude = 0.18
+        self.linear_impulse_magnitude = 0.8
+        self.angular_impulse_magnitude = 0.09
         self.mass_ratio = 4.0
         self.inertia_ratio = 5.0
         self._executors = self._make_executors()
@@ -92,9 +94,17 @@ class _RigidExternalLoads:
                 "static_load",
                 "Static ignored load",
                 "static",
-                (0.96, 0.44, 0.0),
+                (0.96, -0.44, 0.0),
                 (0.50, 0.50, 0.56),
                 _STATIC_HALF,
+            ),
+            self._make_lane(
+                "linear_impulse",
+                "Direct linear impulse",
+                "linear_impulse",
+                (0.96, 0.44, 0.0),
+                (0.92, 0.80, 0.28),
+                _BOX_HALF,
             ),
             self._make_lane(
                 "low_inertia_torque",
@@ -112,12 +122,24 @@ class _RigidExternalLoads:
                 (0.26, 0.70, 0.70),
                 _BAR_HALF,
             ),
+            self._make_lane(
+                "angular_impulse",
+                "Direct angular impulse",
+                "angular_impulse",
+                (-0.96, -0.44, 0.0),
+                (0.64, 0.46, 0.86),
+                _BAR_HALF,
+            ),
         ]
         self.world.enter_simulation_mode()
 
         self.bridge = WorldRenderBridge(self.world, name="rigid_external_loads_render")
         for lane in self.lanes:
-            half_extents = _BAR_HALF if lane.kind == "angular" else _BOX_HALF
+            half_extents = (
+                _BAR_HALF
+                if lane.kind in {"angular", "angular_impulse"}
+                else _BOX_HALF
+            )
             if lane.kind == "static":
                 half_extents = _STATIC_HALF
             self.bridge.add_rigid_body_visual(
@@ -206,6 +228,14 @@ class _RigidExternalLoads:
         if self._pulse_frames_remaining > 0:
             self._lane("pulse_force").body.apply_force(force)
 
+    def _apply_impulses(self) -> None:
+        self._lane("linear_impulse").body.apply_linear_impulse(
+            (float(self.linear_impulse_magnitude), 0.0, 0.0)
+        )
+        self._lane("angular_impulse").body.apply_angular_impulse(
+            (0.0, 0.0, float(self.angular_impulse_magnitude))
+        )
+
     def _lane(self, key: str) -> _LoadLane:
         return next(lane for lane in self.lanes if lane.key == key)
 
@@ -222,6 +252,7 @@ class _RigidExternalLoads:
         for lane in self.lanes:
             self._reset_lane(lane)
         self._apply_loads()
+        self._apply_impulses()
         self.world.time = 0.0
         try:
             self.world.clear_replay_recording()
@@ -261,6 +292,8 @@ class _RigidExternalLoads:
         translation = np.asarray(body.translation, dtype=float).reshape(3)
         force = np.asarray(body.force, dtype=float).reshape(3)
         torque = np.asarray(body.torque, dtype=float).reshape(3)
+        linear_momentum = np.asarray(body.linear_momentum, dtype=float).reshape(3)
+        angular_momentum = np.asarray(body.angular_momentum, dtype=float).reshape(3)
         acceleration = (velocity - previous_velocity) / _TIME_STEP
         angular_acceleration = (angular_velocity - previous_angular_velocity) / _TIME_STEP
         displacement = translation - lane.initial_position
@@ -278,6 +311,8 @@ class _RigidExternalLoads:
             "displacement_x": float(displacement[0]),
             "force_norm": float(np.linalg.norm(force)),
             "torque_norm": float(np.linalg.norm(torque)),
+            "linear_momentum_x": float(linear_momentum[0]),
+            "angular_momentum_z": float(angular_momentum[2]),
             "mass": float(body.mass),
             "inertia_z": inertia_z,
             "kinetic_energy": float(body.kinetic_energy),
@@ -288,6 +323,10 @@ class _RigidExternalLoads:
     def _lane_status(self, lane: _LoadLane, drift: float) -> str:
         if lane.kind == "static":
             return "static ignores load"
+        if lane.kind == "linear_impulse":
+            return "linear impulse applied"
+        if lane.kind == "angular_impulse":
+            return "angular impulse applied"
         if lane.kind == "pulse":
             return "pulse cleared" if self._pulse_frames_remaining <= 0 else "pulse active"
         if lane.kind == "angular":
@@ -349,6 +388,8 @@ class _RigidExternalLoads:
                 "executor_index": int(self.executor_index),
                 "force_magnitude": float(self.force_magnitude),
                 "torque_magnitude": float(self.torque_magnitude),
+                "linear_impulse_magnitude": float(self.linear_impulse_magnitude),
+                "angular_impulse_magnitude": float(self.angular_impulse_magnitude),
                 "mass_ratio": float(self.mass_ratio),
                 "inertia_ratio": float(self.inertia_ratio),
                 "pulse_frames_remaining": int(self._pulse_frames_remaining),
@@ -382,18 +423,22 @@ class _RigidExternalLoads:
         heavy = metrics["heavy_force"]
         pulse = metrics["pulse_force"]
         static = metrics["static_load"]
+        linear_impulse = metrics["linear_impulse"]
         low = metrics["low_inertia_torque"]
         high = metrics["high_inertia_torque"]
+        angular_impulse = metrics["angular_impulse"]
         step_values = list(self._step_ms_history)
         return {
             "row": "rigid_external_loads",
             "solver": "sequential_impulse",
             "executor": self._executors[int(self.executor_index)][0],
-            "scope": "external_force_torque_accumulator_response",
+            "scope": "external_load_and_direct_impulse_response",
             "time_step_ms": float(_TIME_STEP * 1000.0),
             "world_time": float(self.world.time),
             "force_magnitude": float(self.force_magnitude),
             "torque_magnitude": float(self.torque_magnitude),
+            "linear_impulse_magnitude": float(self.linear_impulse_magnitude),
+            "angular_impulse_magnitude": float(self.angular_impulse_magnitude),
             "mass_ratio": float(self.mass_ratio),
             "inertia_ratio": float(self.inertia_ratio),
             "lane_order": [lane.key for lane in self.lanes],
@@ -402,6 +447,8 @@ class _RigidExternalLoads:
                 "executor_index": float(self.executor_index),
                 "force_magnitude": float(self.force_magnitude),
                 "torque_magnitude": float(self.torque_magnitude),
+                "linear_impulse_magnitude": float(self.linear_impulse_magnitude),
+                "angular_impulse_magnitude": float(self.angular_impulse_magnitude),
                 "mass_ratio": float(self.mass_ratio),
                 "inertia_ratio": float(self.inertia_ratio),
             },
@@ -409,8 +456,14 @@ class _RigidExternalLoads:
             "heavy_force_accel_x": float(heavy["linear_accel_x"]),
             "pulse_force_norm": float(pulse["force_norm"]),
             "static_drift": float(static["drift"]),
+            "linear_impulse_momentum_x": float(linear_impulse["linear_momentum_x"]),
+            "linear_impulse_speed": float(linear_impulse["speed"]),
             "low_inertia_angular_accel_z": float(low["angular_accel_z"]),
             "high_inertia_angular_accel_z": float(high["angular_accel_z"]),
+            "angular_impulse_momentum_z": float(
+                angular_impulse["angular_momentum_z"]
+            ),
+            "angular_impulse_speed": float(angular_impulse["angular_speed"]),
             "step_ms": float(step_values[-1]) if step_values else 0.0,
             "history": {
                 "samples": float(len(step_values)),
@@ -420,6 +473,13 @@ class _RigidExternalLoads:
                 ),
                 "max_heavy_speed": max(
                     (float(value) for value in self._speed_history["heavy_force"]),
+                    default=0.0,
+                ),
+                "max_linear_impulse_speed": max(
+                    (
+                        float(value)
+                        for value in self._speed_history["linear_impulse"]
+                    ),
                     default=0.0,
                 ),
                 "max_low_inertia_angular_speed": max(
@@ -436,6 +496,15 @@ class _RigidExternalLoads:
                         float(value)
                         for value in self._angular_speed_history[
                             "high_inertia_torque"
+                        ]
+                    ),
+                    default=0.0,
+                ),
+                "max_angular_impulse_speed": max(
+                    (
+                        float(value)
+                        for value in self._angular_speed_history[
+                            "angular_impulse"
                         ]
                     ),
                     default=0.0,
@@ -462,6 +531,12 @@ class _RigidExternalLoads:
         )
         self.torque_magnitude = float(
             controls.get("torque_magnitude", self.torque_magnitude)
+        )
+        self.linear_impulse_magnitude = float(
+            controls.get("linear_impulse_magnitude", self.linear_impulse_magnitude)
+        )
+        self.angular_impulse_magnitude = float(
+            controls.get("angular_impulse_magnitude", self.angular_impulse_magnitude)
         )
         self.mass_ratio = float(controls.get("mass_ratio", self.mass_ratio))
         self.inertia_ratio = float(controls.get("inertia_ratio", self.inertia_ratio))
@@ -520,6 +595,12 @@ class _RigidExternalLoads:
         changed_torque, torque_magnitude = self._slider_with_reset(
             builder, "Torque magnitude", self.torque_magnitude, 0.0, 0.5
         )
+        changed_linear_impulse, linear_impulse_magnitude = self._slider_with_reset(
+            builder, "Linear impulse", self.linear_impulse_magnitude, 0.0, 2.0
+        )
+        changed_angular_impulse, angular_impulse_magnitude = self._slider_with_reset(
+            builder, "Angular impulse", self.angular_impulse_magnitude, 0.0, 0.25
+        )
         changed_mass, mass_ratio = self._slider_with_reset(
             builder, "Heavy mass ratio", self.mass_ratio, 1.0, 8.0
         )
@@ -530,11 +611,15 @@ class _RigidExternalLoads:
             changed_executor
             or changed_force
             or changed_torque
+            or changed_linear_impulse
+            or changed_angular_impulse
             or changed_mass
             or changed_inertia
         ):
             self.force_magnitude = force_magnitude
             self.torque_magnitude = torque_magnitude
+            self.linear_impulse_magnitude = linear_impulse_magnitude
+            self.angular_impulse_magnitude = angular_impulse_magnitude
             self.mass_ratio = mass_ratio
             self.inertia_ratio = inertia_ratio
             self._reset()
@@ -549,15 +634,21 @@ class _RigidExternalLoads:
             "persistent load accumulators stay active until cleared; pulse clears "
             "after one step"
         )
+        builder.text("direct impulses change momentum immediately on reset")
         self._lane_text(builder, "light_force")
         self._lane_text(builder, "heavy_force")
         self._lane_text(builder, "pulse_force")
+        self._lane_text(builder, "linear_impulse")
         self._lane_text(builder, "low_inertia_torque")
         self._lane_text(builder, "high_inertia_torque")
+        self._lane_text(builder, "angular_impulse")
         self._lane_text(builder, "static_load")
         builder.plot_lines("Light speed", list(self._speed_history["light_force"]))
         builder.plot_lines("Heavy speed", list(self._speed_history["heavy_force"]))
         builder.plot_lines("Pulse speed", list(self._speed_history["pulse_force"]))
+        builder.plot_lines(
+            "Linear impulse speed", list(self._speed_history["linear_impulse"])
+        )
         builder.plot_lines(
             "Low inertia angular speed",
             list(self._angular_speed_history["low_inertia_torque"]),
@@ -565,6 +656,10 @@ class _RigidExternalLoads:
         builder.plot_lines(
             "High inertia angular speed",
             list(self._angular_speed_history["high_inertia_torque"]),
+        )
+        builder.plot_lines(
+            "Angular impulse speed",
+            list(self._angular_speed_history["angular_impulse"]),
         )
         builder.plot_lines("Static drift", list(self._static_drift_history))
         builder.plot_lines("Step profile ms", list(self._step_ms_history))
@@ -585,9 +680,11 @@ class _RigidExternalLoads:
                 "expected_angular_accel_z": 0.0,
                 "force_norm": float(np.linalg.norm(np.asarray(lane.body.force))),
                 "torque_norm": float(np.linalg.norm(np.asarray(lane.body.torque))),
+                "linear_momentum_x": 0.0,
+                "angular_momentum_z": 0.0,
                 "drift": 0.0,
             }
-        if lane.kind in {"linear", "pulse", "static"}:
+        if lane.kind in {"linear", "pulse", "linear_impulse", "static"}:
             builder.text(
                 f"{lane.label}: {metrics['status']} | "
                 f"speed {float(metrics['speed']):.3f} m/s | "
@@ -595,13 +692,22 @@ class _RigidExternalLoads:
                 f"{float(metrics['expected_linear_accel_x']):.3f} m/s^2 | "
                 f"|F| {float(metrics['force_norm']):.2f}"
             )
-        if lane.kind in {"angular", "static"}:
+        if lane.kind == "linear_impulse":
+            builder.text(
+                f"linear impulse momentum x "
+                f"{float(metrics['linear_momentum_x']):.3f}"
+            )
+        if lane.kind in {"angular", "angular_impulse", "static"}:
             builder.text(
                 f"{lane.label}: {metrics['status']} | "
                 f"omega {float(metrics['angular_speed']):.3f} rad/s | "
                 f"az {float(metrics['angular_accel_z']):.3f}/"
                 f"{float(metrics['expected_angular_accel_z']):.3f} rad/s^2 | "
                 f"|tau| {float(metrics['torque_norm']):.2f}"
+            )
+        if lane.kind == "angular_impulse":
+            builder.text(
+                f"angular impulse momentum z {float(metrics['angular_momentum_z']):.3f}"
             )
         if lane.kind == "static":
             builder.text(f"static drift {float(metrics['drift']):.6f} m")
@@ -631,8 +737,9 @@ SCENE = PythonDemoScene(
     title="Rigid External Loads",
     category="World Rigid Body",
     summary=(
-        "Shows persistent force/torque accumulators, mass and inertia scaling, "
-        "pulse clearing, and static-body load caveats."
+        "Shows persistent force/torque accumulators, direct linear/angular "
+        "impulses, mass and inertia scaling, pulse clearing, and static-body "
+        "load caveats."
     ),
     build=build,
 )

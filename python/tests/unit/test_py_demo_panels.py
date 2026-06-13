@@ -2158,7 +2158,7 @@ def test_rigid_workflow_search_routes_deferred_api_terms() -> None:
         guide.scene_id for guide in _workflow_matching_guides("closure stiffness")
     ][:1] == ["rigid_loop_closure"]
 
-    assert "no direct rigid-body impulse API claim" in (
+    assert "direct rigid-body impulse" in (
         RIGID_VISUAL_WORKFLOW_GUIDES["rigid_external_loads"].scope
     )
     assert "no sleep/wake or island activation API claim" in (

@@ -213,8 +213,8 @@
     scene-owned capture metrics.
   - Added `rigid_external_loads` to Python `py-demos`, showing persistent
     force/torque accumulators, mass-scaled acceleration, inertia-scaled angular
-    response, pulse clearing, static-body load caveats, and scene-owned capture
-    metrics for rigid bodies.
+    response, direct linear/angular impulse momentum, pulse clearing,
+    static-body load caveats, and scene-owned capture metrics for rigid bodies.
   - Added `rigid_link_point_loads` to Python `py-demos`, showing one-shot
     `Link.apply_force()` point-load behavior on floating rigid links with
     centered translation, off-center lever-arm yaw acceleration, double-call

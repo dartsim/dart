@@ -1545,6 +1545,18 @@ void defSimulationModule(nb::module_& m)
           },
           nb::arg("torque"))
       .def("clear_torque", &sim::RigidBody::clearTorque)
+      .def(
+          "apply_linear_impulse",
+          [](sim::RigidBody& self, const nb::handle& impulse) {
+            self.applyLinearImpulse(toVector3(impulse));
+          },
+          nb::arg("impulse"))
+      .def(
+          "apply_angular_impulse",
+          [](sim::RigidBody& self, const nb::handle& impulse) {
+            self.applyAngularImpulse(toVector3(impulse));
+          },
+          nb::arg("impulse"))
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro("translation", &sim::RigidBody::getTranslation)

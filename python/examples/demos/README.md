@@ -110,8 +110,9 @@ gravity, spin, inertia, momentum, or energy diagnostics need inspection, use
 **`rigid_frame_hierarchy`** when body-fixed sensor/tool frames, local transforms,
 world transforms, or relative transforms need inspection, use
 **`rigid_external_loads`** when force and torque accumulator response needs
-inspection, use **`rigid_link_point_loads`** when off-center force application
-and world/local frame semantics need inspection, use
+inspection alongside direct rigid-body impulse momentum, use
+**`rigid_link_point_loads`** when off-center force application and world/local
+frame semantics need inspection, use
 **`rigid_timestep_sensitivity`** when `World.time_step` or gravity tuning
 changes integration error, contact timing, clearance, or step cost, use
 **`rigid_step_diagnostics`** when per-stage step profiling, ECS counters, or
@@ -155,8 +156,9 @@ in-viewer scene switches. Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Scope caveats
 remain visible in the row, so deferred public-API searches route to the closest
-current row without claiming unsupported impulse, activation, or compliance
-behavior. The filter ranks positive intent matches first so searches such as
+current row without claiming unsupported activation or compliance behavior.
+Direct impulse searches route to the public load/impulse row. The filter ranks
+positive intent matches first so searches such as
 `contact`, `solver`, `step profile`, `backend comparison`,
 `executor comparison`, and `sequential impulse` do not get dominated by early
 rows that only mention what not to infer. Related-evidence searches such as
@@ -209,7 +211,7 @@ plus a warning block if any selected row is missing those fields.
 | 02/36 | `rigid_body_modes`               | Which body mode should I choose?                   | Solver, executor, gravity, force, kinematic speed     | Dynamic fall, static drift, kinematic path error              |
 | 03/36 | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?     | Executor, launch speed/angle, gravity, spin/inertia   | Path error, momentum residual, energy drift, spin ratio       |
 | 04/36 | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?     | Executor, body yaw/path, local offset/yaw             | Parent frame, world pose, relative/world residuals            |
-| 05/36 | `rigid_external_loads`           | How do external loads move and spin bodies?        | Force/torque magnitude, mass/inertia ratio, executor  | Acceleration, angular speed, pulse clear, static drift        |
+| 05/36 | `rigid_external_loads`           | How do loads and impulses move/spin bodies?        | Force/torque, direct impulse, mass/inertia, executor  | Acceleration, impulse momentum, angular speed, static drift   |
 | 06/36 | `rigid_link_point_loads`         | Do point forces create lever-arm torque?           | Force, point offset, body yaw, executor               | Translation, yaw acceleration, pulse clear, frame split       |
 | 07/36 | `rigid_timestep_sensitivity`     | How does time step size change a drop?             | Solver, executor, base time step, gravity scale       | Free-fall error, contact timing, clearance, step time         |
 | 08/36 | `rigid_step_diagnostics`         | Where does a World step spend time and memory?     | Solver, executor, reset                               | Stage/domain/backend status, ECS, scratch, contacts           |
@@ -328,12 +330,15 @@ residual, relative-transform residual, orientation error, and step timing.
 The **`rigid_external_loads`** scene keeps contacts and gravity out of the
 question so users can inspect external rigid-body load semantics directly.
 Matched lanes show persistent `apply_force()` response on light and heavy
-bodies, a one-step force pulse that is explicitly cleared, persistent
-`apply_torque()` response on low- and high-inertia bodies, and a static body
-that retains force/torque accumulators while remaining fixed. The panel exposes
-force magnitude, torque magnitude, mass ratio, inertia ratio, executor choice,
-speed, acceleration versus expected acceleration, angular response, static
-drift, and step timing.
+bodies, direct linear impulse response through
+`RigidBody.apply_linear_impulse()`, a one-step force pulse that is explicitly
+cleared, persistent `apply_torque()` response on low- and high-inertia bodies,
+direct angular impulse response through `RigidBody.apply_angular_impulse()`,
+and a static body that retains force/torque accumulators while remaining fixed.
+The panel exposes force magnitude, torque magnitude, direct linear impulse,
+direct angular impulse, mass ratio, inertia ratio, executor choice, speed,
+linear impulse momentum, acceleration versus expected acceleration, angular
+response, angular impulse momentum, static drift, and step timing.
 
 ## Rigid link point loads
 

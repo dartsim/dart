@@ -1979,21 +1979,14 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
     assert {
         "apply_force",
         "apply_torque",
+        "apply_linear_impulse",
+        "apply_angular_impulse",
         "linear_momentum",
         "angular_momentum",
     } <= rigid_body_attrs
     assert "compute_impulse_response" in set(dir(sx.Multibody))
 
-    rigid_impulse_attrs = {
-        name
-        for name in rigid_body_attrs
-        if "impulse" in name.lower()
-    }
-    assert not rigid_impulse_attrs, (
-        "Public RigidBody impulse API appeared; update the rigid-body visual "
-        "workflow and revisit the direct-impulse row deferral."
-    )
-    assert "no public direct rigid-body impulse surface" in normalized_text
+    assert "public direct rigid-body impulse surface" in normalized_text
 
     activation_attrs = {
         name
@@ -2024,6 +2017,8 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
     for path in (sidecar, readme):
         path_text = re.sub(r"\s+", " ", path.read_text(encoding="utf-8"))
         assert "direct rigid body impulse" in path_text
+        assert "direct linear impulse" in path_text
+        assert "direct angular impulse" in path_text
         assert "sleep wake" in path_text
         assert "island activation" in path_text
         assert "loop closure compliance" in path_text
@@ -2591,16 +2586,20 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
         "heavy_force",
         "pulse_force",
         "static_load",
+        "linear_impulse",
         "low_inertia_torque",
         "high_inertia_torque",
+        "angular_impulse",
     }
 
     light = metrics["light_force"]
     heavy = metrics["heavy_force"]
     pulse = metrics["pulse_force"]
     static = metrics["static_load"]
+    linear_impulse = metrics["linear_impulse"]
     low = metrics["low_inertia_torque"]
     high = metrics["high_inertia_torque"]
+    angular_impulse = metrics["angular_impulse"]
 
     assert float(light["linear_accel_x"]) == pytest.approx(
         float(light["expected_linear_accel_x"]), abs=1.0e-12
@@ -2618,6 +2617,11 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
     assert float(pulse["force_norm"]) == pytest.approx(0.0, abs=1.0e-12)
     assert float(pulse["speed"]) < 0.05 * float(light["speed"])
     assert str(pulse["status"]) == "pulse cleared"
+    assert float(linear_impulse["linear_momentum_x"]) == pytest.approx(
+        controller.linear_impulse_magnitude
+    )
+    assert float(linear_impulse["force_norm"]) == pytest.approx(0.0, abs=1.0e-12)
+    assert str(linear_impulse["status"]) == "linear impulse applied"
 
     assert float(low["angular_accel_z"]) == pytest.approx(
         float(low["expected_angular_accel_z"]), abs=1.0e-12
@@ -2632,6 +2636,11 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
     assert float(high["angular_accel_z"]) == pytest.approx(
         controller.torque_magnitude / float(high["inertia_z"]), abs=1.0e-12
     )
+    assert float(angular_impulse["angular_momentum_z"]) == pytest.approx(
+        controller.angular_impulse_magnitude
+    )
+    assert float(angular_impulse["torque_norm"]) == pytest.approx(0.0, abs=1.0e-12)
+    assert str(angular_impulse["status"]) == "angular impulse applied"
 
     assert float(static["speed"]) == pytest.approx(0.0, abs=1.0e-12)
     assert float(static["angular_speed"]) == pytest.approx(0.0, abs=1.0e-12)
@@ -2653,8 +2662,26 @@ def test_rigid_external_loads_scale_force_and_torque_response() -> None:
     )
     assert capture_metrics["pulse_force_norm"] == pytest.approx(pulse["force_norm"])
     assert capture_metrics["static_drift"] == pytest.approx(static["drift"])
+    assert capture_metrics["linear_impulse_momentum_x"] == pytest.approx(
+        linear_impulse["linear_momentum_x"]
+    )
+    assert capture_metrics["linear_impulse_speed"] == pytest.approx(
+        linear_impulse["speed"]
+    )
     assert capture_metrics["low_inertia_angular_accel_z"] == pytest.approx(
         low["angular_accel_z"]
+    )
+    assert capture_metrics["angular_impulse_momentum_z"] == pytest.approx(
+        angular_impulse["angular_momentum_z"]
+    )
+    assert capture_metrics["angular_impulse_speed"] == pytest.approx(
+        angular_impulse["angular_speed"]
+    )
+    assert capture_metrics["controls"]["linear_impulse_magnitude"] == pytest.approx(
+        controller.linear_impulse_magnitude
+    )
+    assert capture_metrics["controls"]["angular_impulse_magnitude"] == pytest.approx(
+        controller.angular_impulse_magnitude
     )
     assert capture_metrics["history"]["samples"] == pytest.approx(
         float(len(controller._step_ms_history))

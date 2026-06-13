@@ -1527,8 +1527,12 @@ def test_rigid_workflow_latest_signals_prioritize_load_values() -> None:
             "executor": "Sequential",
             "heavy_force_accel_x": 0.18,
             "high_inertia_angular_accel_z": 0.07,
+            "linear_impulse_momentum_x": 0.8,
+            "linear_impulse_speed": 0.8,
             "light_force_accel_x": 0.72,
             "low_inertia_angular_accel_z": 0.41,
+            "angular_impulse_momentum_z": 0.09,
+            "angular_impulse_speed": 2.0,
             "solver": "Sequential impulse",
             "static_drift": 0.0001,
         }
@@ -1545,12 +1549,15 @@ def test_rigid_workflow_latest_signals_prioritize_load_values() -> None:
         }
     )
 
-    assert load_highlights[:5] == [
+    assert load_highlights[:8] == [
         "light force accel x: 0.72",
         "heavy force accel x: 0.18",
+        "linear impulse momentum x: 0.8",
+        "linear impulse speed: 0.8",
         "low inertia angular accel z: 0.41",
         "high inertia angular accel z: 0.07",
-        "static drift: 0.0001",
+        "angular impulse momentum z: 0.09",
+        "angular impulse speed: 2",
     ]
     assert point_load_highlights[:5] == [
         "center world accel x: 0.54",

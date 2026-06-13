@@ -16,10 +16,9 @@ from drifting.
   `scripts/capture_py_demo.py`, focused Python tests, this PLAN-103 sidecar,
   `python/examples/demos/README.md`, `CHANGELOG.md`, and active handoff docs
   under `docs/dev_tasks/rigid_body_visual_verification/`.
-- Non-goals: new C++ `dart-demos` rows, public APIs for unsupported direct
-  rigid-body impulse/sleep/island/loop-closure compliance behavior, benchmark
-  replacement, or maintainer acceptance/PR publication without explicit
-  approval.
+- Non-goals: new C++ `dart-demos` rows, public APIs for unsupported
+  sleep/island/loop-closure compliance behavior, benchmark replacement, or
+  maintainer acceptance/PR publication without explicit approval.
 - Acceptance evidence: default 36-row and optional extended workflow manifests
   report complete guidance, scene metrics, and resolved solver identity; static
   review indexes resolve their local assets; focused capture and docs drift
@@ -65,15 +64,17 @@ Out of scope:
 - claiming exact analytic thresholds for near-discontinuous contact behavior;
 - live-GUI-heavy IPC stacks that are better handled as benchmark or
   capture-first packets until runtime improves;
-- direct rigid-body impulse, sleep/deactivation/island-state, and
-  loop-closure compliance rows until public dartpy exposes those surfaces.
+- sleep/deactivation/island-state and loop-closure compliance rows until public
+  dartpy exposes those surfaces.
 
 Current public API audit: `RigidBody` exposes force/torque accumulators plus
-linear and angular momentum, `Link.apply_force()` exposes one-shot point-load
-semantics, and `Multibody.compute_impulse_response()` exposes joint-space
-impulse response. There is still no public direct rigid-body impulse surface,
-no public sleep/wake or island activation surface, and no public loop-closure
-compliance surface, so those candidate GUI rows remain deferred.
+direct linear/angular impulse and momentum accessors, `Link.apply_force()`
+exposes one-shot point-load semantics, and
+`Multibody.compute_impulse_response()` exposes joint-space impulse response.
+The public direct rigid-body impulse surface is covered by
+`rigid_external_loads`; there is still no public sleep/wake or island
+activation surface and no public loop-closure compliance surface, so those
+candidate GUI rows remain deferred.
 
 ## Curated Workflow
 
@@ -163,10 +164,11 @@ intent searches such as `contact`, `solver`, `step profile`,
 `backend comparison`, `executor comparison`, or `sequential impulse` surface
 the relevant debugging rows instead of early rows that only say what not to
 infer. Backend-status terms route to `rigid_step_diagnostics`, while executor
-terms route to the same-solver `rigid_executor_equivalence` row. Deferred
-public-API queries route to the closest current row while preserving the row's
-caveat, so the workflow remains searchable without claiming unsupported
-impulse, activation, or compliance behavior.
+terms route to the same-solver `rigid_executor_equivalence` row. Direct impulse
+queries route to the public `rigid_external_loads` row, while deferred
+activation and compliance queries route to the closest current row while
+preserving the row's caveat, so the workflow remains searchable without
+claiming unsupported activation or compliance behavior.
 
 | Order | Scene id                         | User question                                                            | Solver(s)                        | Controls and diagnostics                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Capture command                                                                                                      | Automated evidence                                                                                                                                                                                                                                                                                                                 | Known limitation                                                                                         |
 | ----- | -------------------------------- | ------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -174,7 +176,7 @@ impulse, activation, or compliance behavior.
 | 2     | `rigid_body_modes`               | Which body mode should I choose?                                         | Selectable rigid solver          | Rigid-body mode-semantics comparison axis, held-fixed solver/executor/gravity/force/body-mass/time-step context, kinematic speed, dynamic height/x, static drift, kinematic path error, mode flags, force norm, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_body_modes --frames 72 --width 960 --height 540 --show-ui`                | `test_rigid_body_modes_compare_dynamic_static_kinematic_semantics`, comparison-axis panel/capture coverage, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                               | Contact-free mode semantics row; no sleep/wake or island activation API claim.                           |
 | 3     | `rigid_free_flight`              | Do initial velocity, gravity, and spin evolve?                           | Sequential impulse               | Executor, launch speed, launch angle, gravity scale, spin speed, spin inertia ratio, path error, momentum residual, energy drift, spin ratios, contact count, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                                       | `pixi run py-demo-capture -- --scene rigid_free_flight --frames 96 --width 960 --height 540 --show-ui`               | `test_rigid_free_flight_preserves_initial_state_diagnostics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                             | No-contact initial-state row; not a load, restitution, contact, or solver row.                           |
 | 4     | `rigid_frame_hierarchy`          | Where is a sensor/tool frame on a moving body?                           | World frame hierarchy            | Executor, body yaw speed, path radius, local offset/yaw, parent name, body/sensor world pose, world-transform residual, relative-transform residual, orientation error, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                             | `pixi run py-demo-capture -- --scene rigid_frame_hierarchy --frames 72 --width 960 --height 540 --show-ui`           | `test_rigid_frame_hierarchy_tracks_body_fixed_frame`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                                     | Kinematics/frame row only; not a force, contact, sensor model, or solver-family claim.                   |
-| 5     | `rigid_external_loads`           | How do external loads move and spin bodies?                              | Sequential impulse               | Executor, force magnitude, torque magnitude, heavy mass ratio, high inertia ratio, speed, acceleration versus expected, angular response, static drift, step profile timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                                     | `pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 --width 960 --height 540 --show-ui`            | `test_rigid_external_loads_scale_force_and_torque_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                              | Contact-free zero-gravity accumulator row; no direct rigid-body impulse API claim.                       |
+| 5     | `rigid_external_loads`           | How do external loads and direct impulses move and spin bodies?          | Sequential impulse               | Executor, force magnitude, torque magnitude, direct linear impulse, direct angular impulse, heavy mass ratio, high inertia ratio, speed, acceleration versus expected, direct impulse momentum, angular response, static drift, step profile timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                             | `pixi run py-demo-capture -- --scene rigid_external_loads --frames 72 --width 960 --height 540 --show-ui`            | `test_rigid_external_loads_scale_force_and_torque_response`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                              | Contact-free zero-gravity load and direct rigid-body impulse row; no contact or solver-family claim.     |
 | 6     | `rigid_link_point_loads`         | Do point forces create lever-arm torque?                                 | Sequential impulse               | Executor, force magnitude, point offset, yawed frame angle, centered/world-point/pulse/double/world-frame/local-frame lanes, acceleration versus expected, yaw acceleration, displacement, step timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                          | `pixi run py-demo-capture -- --scene rigid_link_point_loads --frames 72 --width 960 --height 540 --show-ui`          | `test_rigid_link_point_loads_show_lever_arm_and_frame_semantics`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                         | Contact-free one-shot Link.apply_force row; not persistent rigid-body accumulator behavior.              |
 | 7     | `rigid_timestep_sensitivity`     | How does time-step size change free fall/contact?                        | Selectable rigid solver          | Solver, executor, base time step, gravity scale, matched fine/medium/coarse lanes, free-fall error, contact timing, clearance, error ratio, step-profile timing, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `pixi run py-demo-capture -- --scene rigid_timestep_sensitivity --frames 96 --width 960 --height 540 --show-ui`      | `test_rigid_timestep_sensitivity_orders_freefall_error_by_step_size`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                     | Parameter-sensitivity row; not a solver correctness proof or exact contact threshold.                    |
 | 8     | `rigid_step_diagnostics`         | Where does a World step spend time and memory?                           | Selectable rigid solver          | Solver, executor, single/contact/stack lanes, profile stage count, wall/stage time, top stage domain/acceleration/backend status, worker count, ECS counters, contact count, frame-scratch usage, overflow/reset counters, and capture metrics.                                                                                                                                                                                                                                                                                                                                                                                       | `pixi run py-demo-capture -- --scene rigid_step_diagnostics --frames 72 --width 960 --height 540 --show-ui`          | `test_rigid_step_diagnostics_reports_profile_and_memory_counters`, replay-control snapshot coverage, workflow ordering, panel/category coverage, capture metrics, and visual smoke capture.                                                                                                                                        | Profiling may be compiled out; memory/contact diagnostics remain visible.                                |
@@ -922,15 +924,14 @@ Evidence recorded for this slice:
   dev-task folder is therefore close to cleanup, but it should remain until the
   maintainer accepts this scoped workflow as complete and the completing PR
   removes `docs/dev_tasks/rigid_body_visual_verification` in the same change.
-- Latest API-deferred search follow-up: public dartpy still has no direct
-  `RigidBody` impulse surface, no sleep/wake or island activation surface, and
-  no loop-closure compliance/stiffness/damping surface. The in-viewer
-  `Rigid Workflow` search now routes terms such as
-  `direct rigid body impulse`, `sleep wake`, `island activation`, and
-  `loop closure compliance` to the closest current rows with their explicit
-  non-claim caveats, so users can find the deferred topic without the workflow
-  adding speculative rows. The focused search/API/docs guard reported
-  `6 passed`.
+- Latest API search follow-up: public dartpy now exposes direct
+  `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
+  surfaces, while sleep/wake or island activation and loop-closure
+  compliance/stiffness/damping remain unavailable. The in-viewer `Rigid
+Workflow` search routes `direct rigid body impulse` to
+  `rigid_external_loads`, and continues to route `sleep wake`,
+  `island activation`, and `loop closure compliance` to the closest current
+  rows with their explicit non-claim caveats.
 - Latest optional extended-packet capture refresh:
   `pixi run py-demo-capture -- --rigid-workflow --include-related --include-ipc-shelf --include-packets --workflow-start-row 37 --workflow-end-row 51 --output-dir /tmp/dart_capture_rigid_workflow_optional_rows_37_51_1781285053`
   completed the non-numbered related-evidence, direct Rigid IPC shelf, and
@@ -1151,11 +1152,11 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   0.125 m depth and near-zero target travel, while the sequential-impulse lane
   had `status=pushed` with about 0.123 m target travel.
 - Latest API-gap audit follow-up: public dartpy currently exposes
-  `RigidBody.apply_force()`, `RigidBody.apply_torque()`, rigid-body
-  linear/angular momentum accessors, `Link.apply_force(..., point, ...)`, and
-  `Multibody.compute_impulse_response()`, but no public direct rigid-body
-  impulse surface, sleep/wake or island activation surface, or loop-closure
-  compliance surface. The drift guard
+  `RigidBody.apply_force()`, `RigidBody.apply_torque()`,
+  `RigidBody.apply_linear_impulse()`, `RigidBody.apply_angular_impulse()`,
+  rigid-body linear/angular momentum accessors, `Link.apply_force(..., point,
+...)`, and `Multibody.compute_impulse_response()`, but no public sleep/wake
+  or island activation surface or loop-closure compliance surface. The drift guard
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `4 passed`. This keeps those deferrals explicit and points future
   API additions back to this workflow.
@@ -1887,8 +1888,9 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   and the ordered demo registry in sync.
 - Keep motor/limit wording on the World multibody joint actuator path until
   rigid-body joint motors have equally stable public behavior.
-- Add future point-force or impulse rows only if the public API supports a
-  distinct, bounded visual question that the accumulator row does not answer.
+- Add future point-force or impulse rows only if they answer a distinct,
+  bounded visual question that the `rigid_external_loads` direct impulse lanes
+  do not answer.
 - Add a separate `rigid_energy_momentum` row only if it answers a distinct user
   question beyond the free-flight diagnostics, without duplicating the
   time-step, load, restitution, or solver-comparison rows.
