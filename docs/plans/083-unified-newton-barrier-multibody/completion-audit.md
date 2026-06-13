@@ -68,11 +68,11 @@ moves entirely into durable plan sidecars.
   broad-phase rows extracted from one DART `World` deformable surface, but full
   runtime scene filtering, GPU `World::step` contact candidate construction,
   and speedup remain unproven.
-  The
-  endpoint-linear point-triangle and edge-edge CCD/line-search packet is
-  in-progress because parity exists for reduced endpoint-linear fixtures but
-  rigid curved trajectories, runtime candidate sets, and scene-level
-  line-search feasibility remain unproven. The barrier/friction local-kernel
+  The endpoint-linear point-triangle/edge-edge plus sampled rigid-curved
+  point-triangle/edge-edge CCD/line-search packet is in-progress because
+  parity exists for reduced endpoint-linear and 8-sample trajectory fixtures,
+  but analytic curved CCD, runtime candidate sets, and scene-level line-search
+  feasibility remain unproven. The barrier/friction local-kernel
   packet is
   in-progress because parity exists for clamped-log barrier derivatives,
   smoothed friction norm/work, point-triangle primitive barrier gradients,

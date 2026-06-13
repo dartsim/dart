@@ -47,6 +47,9 @@ namespace dc = dart::simulation::detail::deformable_contact;
 
 namespace {
 
+constexpr std::size_t kRigidCurvedSegmentCount = 8;
+constexpr double kPi = 3.14159265358979323846264338327950288;
+
 struct CcdFixture
 {
   std::vector<cuda::PointTriangleCcdLineSearchPair> pairs;
@@ -61,6 +64,18 @@ struct EdgeEdgeCcdFixture
   std::vector<cuda::EdgeEdgeCcdLineSearchPair> pairs;
   std::vector<double> cpuStepBounds;
   std::vector<std::uint8_t> cpuHits;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+};
+
+template <typename Pair>
+struct RigidCurvedCcdFixture
+{
+  std::vector<Pair> segmentPairs;
+  std::vector<double> cpuStepBounds;
+  std::vector<std::uint8_t> cpuHits;
+  std::size_t trajectoryCount = 0;
+  std::size_t segmentCount = kRigidCurvedSegmentCount;
   std::size_t hitCount = 0;
   double minStepBound = 1.0;
 };
@@ -143,6 +158,115 @@ dc::ContinuousCollisionStepResult cpuResult(
       vec3(pair.edgeB1End));
 }
 
+double smoothAlpha(const double alpha)
+{
+  return 0.5 - 0.5 * std::cos(kPi * alpha);
+}
+
+Eigen::Vector3d sampledRigidCurvedPoint(
+    const double baseX, const double baseY, const double alpha, const bool hit)
+{
+  const double eased = smoothAlpha(alpha);
+  const double lateralPhase = (5.0 * kPi / 1.125) * alpha;
+  const double lateral = 0.035 * std::sin(lateralPhase);
+  const double z = hit ? 0.32 * (0.5625 - alpha) : 0.18 - 0.08 * eased;
+  return {baseX + lateral, baseY + 0.025 * std::sin(lateralPhase), z};
+}
+
+Eigen::Vector3d sampledRigidCurvedEdgeEndpoint(
+    const double baseY,
+    const double alpha,
+    const bool hit,
+    const double halfLengthSign)
+{
+  const double eased = smoothAlpha(alpha);
+  const double centerX = -0.45 + (hit ? 1.0 : 0.25) * eased;
+  const double theta = 0.18 * std::sin(2.0 * kPi * alpha);
+  const Eigen::Vector3d direction(std::sin(theta), std::cos(theta), 0.0);
+  const Eigen::Vector3d center(centerX, baseY, 0.0);
+  return center + (halfLengthSign * 0.21) * direction;
+}
+
+template <typename Pair>
+void evaluateTrajectorySegments(
+    const std::vector<Pair>& segmentPairs,
+    const std::size_t trajectoryCount,
+    const std::size_t segmentCount,
+    std::vector<double>& stepBounds,
+    std::vector<std::uint8_t>& hits,
+    std::size_t& hitCount,
+    double& minStepBound)
+{
+  stepBounds.assign(trajectoryCount, 1.0);
+  hits.assign(trajectoryCount, 0u);
+  hitCount = 0;
+  minStepBound = 1.0;
+
+  for (std::size_t trajectory = 0; trajectory < trajectoryCount; ++trajectory) {
+    for (std::size_t segment = 0; segment < segmentCount; ++segment) {
+      const std::size_t pairIndex = trajectory * segmentCount + segment;
+      const auto result = cpuResult(segmentPairs[pairIndex]);
+      if (!result.hit) {
+        continue;
+      }
+
+      const double localStep = std::clamp(result.stepBound, 0.0, 1.0);
+      const double trajectoryStep = (static_cast<double>(segment) + localStep)
+                                    / static_cast<double>(segmentCount);
+      stepBounds[trajectory] = trajectoryStep;
+      hits[trajectory] = 1u;
+      ++hitCount;
+      minStepBound = std::min(minStepBound, trajectoryStep);
+      break;
+    }
+  }
+}
+
+template <typename Result>
+void reduceGpuTrajectorySegments(
+    const Result& result,
+    const std::size_t trajectoryCount,
+    const std::size_t segmentCount,
+    std::vector<double>& stepBounds,
+    std::vector<std::uint8_t>& hits,
+    std::size_t& hitCount,
+    double& minStepBound)
+{
+  stepBounds.assign(trajectoryCount, 1.0);
+  hits.assign(trajectoryCount, 0u);
+  hitCount = 0;
+  minStepBound = 1.0;
+
+  for (std::size_t trajectory = 0; trajectory < trajectoryCount; ++trajectory) {
+    for (std::size_t segment = 0; segment < segmentCount; ++segment) {
+      const std::size_t pairIndex = trajectory * segmentCount + segment;
+      if (result.hits[pairIndex] == 0u) {
+        continue;
+      }
+
+      const double localStep
+          = std::clamp(result.stepBounds[pairIndex], 0.0, 1.0);
+      const double trajectoryStep = (static_cast<double>(segment) + localStep)
+                                    / static_cast<double>(segmentCount);
+      stepBounds[trajectory] = trajectoryStep;
+      hits[trajectory] = 1u;
+      ++hitCount;
+      minStepBound = std::min(minStepBound, trajectoryStep);
+      break;
+    }
+  }
+}
+
+double maxAbsDifference(
+    const std::vector<double>& lhs, const std::vector<double>& rhs)
+{
+  double maxError = 0.0;
+  for (std::size_t i = 0; i < lhs.size(); ++i) {
+    maxError = std::max(maxError, std::abs(lhs[i] - rhs[i]));
+  }
+  return maxError;
+}
+
 CcdFixture makeCcdFixture(const int pairCount)
 {
   CcdFixture fixture;
@@ -216,6 +340,90 @@ EdgeEdgeCcdFixture makeEdgeEdgeCcdFixture(const int pairCount)
   return fixture;
 }
 
+RigidCurvedCcdFixture<cuda::PointTriangleCcdLineSearchPair>
+makeRigidCurvedPointTriangleFixture(const int trajectoryCount)
+{
+  RigidCurvedCcdFixture<cuda::PointTriangleCcdLineSearchPair> fixture;
+  fixture.trajectoryCount = static_cast<std::size_t>(trajectoryCount);
+  fixture.segmentPairs.reserve(fixture.trajectoryCount * fixture.segmentCount);
+
+  const Eigen::Vector3d a(-1.0, -1.0, 0.0);
+  const Eigen::Vector3d b(1.0, -1.0, 0.0);
+  const Eigen::Vector3d c(0.0, 1.0, 0.0);
+  for (int i = 0; i < trajectoryCount; ++i) {
+    const double baseX = static_cast<double>((i % 16) - 8) * 0.015;
+    const double baseY = static_cast<double>(((i / 16) % 16) - 8) * 0.015;
+    const bool hit = (i % 4) != 0;
+    for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
+      const double alpha0 = static_cast<double>(segment)
+                            / static_cast<double>(fixture.segmentCount);
+      const double alpha1 = static_cast<double>(segment + 1)
+                            / static_cast<double>(fixture.segmentCount);
+      const Eigen::Vector3d pointStart
+          = sampledRigidCurvedPoint(baseX, baseY, alpha0, hit);
+      const Eigen::Vector3d pointEnd
+          = sampledRigidCurvedPoint(baseX, baseY, alpha1, hit);
+      if ((i % 2) == 0) {
+        fixture.segmentPairs.push_back(makePair(pointStart, pointEnd, a, b, c));
+      } else {
+        fixture.segmentPairs.push_back(makePair(pointStart, pointEnd, a, c, b));
+      }
+    }
+  }
+
+  evaluateTrajectorySegments(
+      fixture.segmentPairs,
+      fixture.trajectoryCount,
+      fixture.segmentCount,
+      fixture.cpuStepBounds,
+      fixture.cpuHits,
+      fixture.hitCount,
+      fixture.minStepBound);
+
+  return fixture;
+}
+
+RigidCurvedCcdFixture<cuda::EdgeEdgeCcdLineSearchPair>
+makeRigidCurvedEdgeEdgeFixture(const int trajectoryCount)
+{
+  RigidCurvedCcdFixture<cuda::EdgeEdgeCcdLineSearchPair> fixture;
+  fixture.trajectoryCount = static_cast<std::size_t>(trajectoryCount);
+  fixture.segmentPairs.reserve(fixture.trajectoryCount * fixture.segmentCount);
+
+  const Eigen::Vector3d b0(0.0, -0.55, 0.0);
+  const Eigen::Vector3d b1(0.0, 0.55, 0.0);
+  for (int i = 0; i < trajectoryCount; ++i) {
+    const double baseY = static_cast<double>((i % 8) - 4) * 0.015;
+    const bool hit = (i % 4) != 0;
+    for (std::size_t segment = 0; segment < fixture.segmentCount; ++segment) {
+      const double alpha0 = static_cast<double>(segment)
+                            / static_cast<double>(fixture.segmentCount);
+      const double alpha1 = static_cast<double>(segment + 1)
+                            / static_cast<double>(fixture.segmentCount);
+      fixture.segmentPairs.push_back(makeEdgeEdgePair(
+          sampledRigidCurvedEdgeEndpoint(baseY, alpha0, hit, -1.0),
+          sampledRigidCurvedEdgeEndpoint(baseY, alpha1, hit, -1.0),
+          sampledRigidCurvedEdgeEndpoint(baseY, alpha0, hit, 1.0),
+          sampledRigidCurvedEdgeEndpoint(baseY, alpha1, hit, 1.0),
+          b0,
+          b0,
+          b1,
+          b1));
+    }
+  }
+
+  evaluateTrajectorySegments(
+      fixture.segmentPairs,
+      fixture.trajectoryCount,
+      fixture.segmentCount,
+      fixture.cpuStepBounds,
+      fixture.cpuHits,
+      fixture.hitCount,
+      fixture.minStepBound);
+
+  return fixture;
+}
+
 void recordSharedCounters(
     benchmark::State& state, const CcdFixture& fixture, const double maxError)
 {
@@ -238,6 +446,24 @@ void recordSharedCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.pairs.size()));
+}
+
+template <typename Pair>
+void recordRigidCurvedCounters(
+    benchmark::State& state,
+    const RigidCurvedCcdFixture<Pair>& fixture,
+    const double maxError)
+{
+  state.counters["pairs"] = static_cast<double>(fixture.trajectoryCount);
+  state.counters["segments"] = static_cast<double>(fixture.segmentPairs.size());
+  state.counters["samples_per_pair"]
+      = static_cast<double>(fixture.segmentCount);
+  state.counters["hits"] = static_cast<double>(fixture.hitCount);
+  state.counters["min_step_bound"] = fixture.minStepBound;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations() * fixture.segmentPairs.size()));
 }
 
 } // namespace
@@ -364,6 +590,170 @@ static void BM_Plan083EdgeEdgeCcdLineSearchCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083EdgeEdgeCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedPointTriangleCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeRigidCurvedPointTriangleFixture(static_cast<int>(state.range(0)));
+
+  std::vector<double> stepBounds;
+  std::vector<std::uint8_t> hits;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    evaluateTrajectorySegments(
+        fixture.segmentPairs,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        stepBounds,
+        hits,
+        hitCount,
+        minStepBound);
+    benchmark::DoNotOptimize(stepBounds.data());
+    benchmark::DoNotOptimize(hits.data());
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordRigidCurvedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083RigidCurvedPointTriangleCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeRigidCurvedPointTriangleFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleCcdLineSearchResult segmentResult;
+  std::vector<double> gpuStepBounds;
+  std::vector<std::uint8_t> gpuHits;
+  std::size_t gpuHitCount = 0;
+  double gpuMinStepBound = 1.0;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleCcdLineSearchCuda(
+        fixture.segmentPairs, cuda::CcdLineSearchOptions{}, segmentResult);
+    reduceGpuTrajectorySegments(
+        segmentResult,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        gpuStepBounds,
+        gpuHits,
+        gpuHitCount,
+        gpuMinStepBound);
+    benchmark::DoNotOptimize(gpuStepBounds.data());
+    benchmark::DoNotOptimize(gpuHits.data());
+  }
+
+  maxError = maxAbsDifference(gpuStepBounds, fixture.cpuStepBounds);
+  recordRigidCurvedCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(gpuHitCount);
+  state.counters["gpu_segments"]
+      = static_cast<double>(segmentResult.hits.size());
+  state.counters["gpu_min_step_bound"] = gpuMinStepBound;
+  state.counters["host_setup_ns"] = segmentResult.timing.setupNs;
+  state.counters["host_to_device_ns"] = segmentResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = segmentResult.timing.kernelNs;
+  state.counters["device_to_host_ns"] = segmentResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083RigidCurvedPointTriangleCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeRigidCurvedEdgeEdgeFixture(static_cast<int>(state.range(0)));
+
+  std::vector<double> stepBounds;
+  std::vector<std::uint8_t> hits;
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    evaluateTrajectorySegments(
+        fixture.segmentPairs,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        stepBounds,
+        hits,
+        hitCount,
+        minStepBound);
+    benchmark::DoNotOptimize(stepBounds.data());
+    benchmark::DoNotOptimize(hits.data());
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordRigidCurvedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeRigidCurvedEdgeEdgeFixture(static_cast<int>(state.range(0)));
+  cuda::EdgeEdgeCcdLineSearchResult segmentResult;
+  std::vector<double> gpuStepBounds;
+  std::vector<std::uint8_t> gpuHits;
+  std::size_t gpuHitCount = 0;
+  double gpuMinStepBound = 1.0;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluateEdgeEdgeCcdLineSearchCuda(
+        fixture.segmentPairs, cuda::CcdLineSearchOptions{}, segmentResult);
+    reduceGpuTrajectorySegments(
+        segmentResult,
+        fixture.trajectoryCount,
+        fixture.segmentCount,
+        gpuStepBounds,
+        gpuHits,
+        gpuHitCount,
+        gpuMinStepBound);
+    benchmark::DoNotOptimize(gpuStepBounds.data());
+    benchmark::DoNotOptimize(gpuHits.data());
+  }
+
+  maxError = maxAbsDifference(gpuStepBounds, fixture.cpuStepBounds);
+  recordRigidCurvedCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(gpuHitCount);
+  state.counters["gpu_segments"]
+      = static_cast<double>(segmentResult.hits.size());
+  state.counters["gpu_min_step_bound"] = gpuMinStepBound;
+  state.counters["host_setup_ns"] = segmentResult.timing.setupNs;
+  state.counters["host_to_device_ns"] = segmentResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"] = segmentResult.timing.kernelNs;
+  state.counters["device_to_host_ns"] = segmentResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083RigidCurvedEdgeEdgeCcdLineSearchCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

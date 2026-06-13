@@ -1,5 +1,39 @@
 # Unified Newton-Barrier Handoff
 
+## Sampled Rigid-Curved CCD/Line-Search Packet Checkpoint (2026-06-12)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private CCD/line-search packet with sampled
+rigid-curved point-triangle and edge-edge rows. Each sampled row splits one
+trajectory into 8 endpoint-linear subsegments, runs the existing private CUDA
+CCD kernels on those subsegments, and reduces segment hits back to one
+trajectory-level step bound. This is sampled packet evidence only; analytic
+curved CCD, runtime candidate sets, and scene-level line-search feasibility
+remain future work.
+
+Fresh packet evidence records 65,536 endpoint-linear point-triangle pairs,
+65,536 endpoint-linear edge-edge pairs, 65,536 sampled rigid-curved
+point-triangle trajectories over 524,288 segments, and 65,536 sampled
+rigid-curved edge-edge trajectories over 524,288 segments. The top-level packet
+covers 262,144 trajectory pairs and 1,179,648 sampled segments with
+`hit_count=196608`, `max_result_abs_error=5.62500000023114e-07`,
+`result_abs_error_tolerance=1e-06`, and minimum primitive-family
+`speedup=3.3362865273039324x` (`meets_speedup_gate=true`). The durable CCD row
+remains `in-progress` until analytic curved CCD, runtime candidate sets, and
+scene-level line-search feasibility have evidence.
+
+Latest local gates:
+
+- focused CCD packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused CUDA CCD CTest
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
+
 ## Scene-Owned Assembly/Solve Packet Checkpoint (2026-06-12)
 
 Work continued locally on
@@ -209,7 +243,7 @@ Use this prompt for the next fresh Codex session:
 ```text
 Continue PLAN-083 on branch simx/plan083-gpu-contact-candidate-packet / PR #2978. First read AGENTS.md, docs/ai/principles.md, docs/ai/orchestration.md, docs/dev_tasks/unified_newton_barrier_multibody/RESUME.md, and docs/dev_tasks/unified_newton_barrier_multibody/HANDOFF.md. Keep all PLAN-083 work consolidated on this branch/PR; do not open another PLAN-083 PR. Do not push, comment on PRs, resolve review threads, trigger CI, or delete branches without explicit maintainer approval.
 
-Current local packet evidence covers contact candidates, CCD/line-search, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, reduced diagonal/off-diagonal/sparse-residual/sparse-Jacobi/sparse-CG/equality-reduced assembly/solve plus a scene-owned diagonal assembly/solve row, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, rigid curved CCD/line-search rows, runtime sparse Hessian assembly, direct/global sparse factorization, nonlinear equality constraints, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
+Current local packet evidence covers contact candidates, endpoint-linear plus sampled rigid-curved CCD/line-search, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, reduced diagonal/off-diagonal/sparse-residual/sparse-Jacobi/sparse-CG/equality-reduced assembly/solve plus a scene-owned diagonal assembly/solve row, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, analytic curved CCD and scene-level line search, runtime sparse Hessian assembly, direct/global sparse factorization, nonlinear equality constraints, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
 ```
 
 ## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)
@@ -1100,14 +1134,16 @@ barrier/friction benchmark packet. It measured
 1. Resume only from `simx/plan083-gpu-contact-candidate-packet` and PR #2978.
 2. Inspect local status before editing, committing, or pushing. The current
    branch is the single consolidated #2978 branch and now includes the reduced
-   scene-owned point-triangle barrier-Hessian runtime row on top of the earlier
-   contact-candidate, CCD/line-search, barrier/friction, assembly/solve, and
-   scene-parity packet checkpoints.
+   sampled rigid-curved CCD/line-search rows and scene-owned assembly/solve row
+   on top of the earlier contact-candidate, barrier/friction, assembly/solve,
+   and scene-parity packet checkpoints.
 3. Check hosted CI and new review comments before editing. Do not reply to bot
    comments.
-4. Continue on the same PR with the remaining runtime/parity gaps: broader
-   sparse Hessian assembly, additional runtime contact rows, equality-reduced
-   assembly/solve rows, and packet speedup gates.
+4. Continue on the same PR with the remaining runtime/parity gaps: runtime
+   scene filtering, analytic curved CCD and scene-level line search, broader
+   sparse Hessian assembly, direct/global sparse factorization, nonlinear
+   equality constraints, GPU `World::step` integration, additional runtime
+   contact rows, and packet speedup gates.
 5. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

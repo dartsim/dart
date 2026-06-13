@@ -2,7 +2,40 @@
 
 ## Current Status
 
-Latest scene-owned assembly/solve checkpoint (2026-06-12): work continued
+Latest sampled rigid-curved CCD/line-search checkpoint (2026-06-12): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private CCD/line-search packet with sampled
+rigid-curved point-triangle and edge-edge rows. Each sampled row splits one
+trajectory into 8 endpoint-linear subsegments, runs the existing private CUDA
+CCD kernels on those subsegments, and reduces segment hits back to one
+trajectory-level step bound. This is sampled packet evidence only; analytic
+curved CCD, runtime candidate sets, and scene-level line-search feasibility
+remain future work.
+
+Fresh packet evidence records 65,536 endpoint-linear point-triangle pairs,
+65,536 endpoint-linear edge-edge pairs, 65,536 sampled rigid-curved
+point-triangle trajectories over 524,288 segments, and 65,536 sampled
+rigid-curved edge-edge trajectories over 524,288 segments. The top-level packet
+covers 262,144 trajectory pairs and 1,179,648 sampled segments with
+`hit_count=196608`, `max_result_abs_error=5.62500000023114e-07`,
+`result_abs_error_tolerance=1e-06`, and minimum primitive-family
+`speedup=3.3362865273039324x` (`meets_speedup_gate=true`). The durable CCD row
+remains `in-progress` until analytic curved CCD, runtime candidate sets, and
+scene-level line-search feasibility have evidence.
+
+Latest validation passed:
+
+- focused CCD packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused CUDA CCD CTest
+- `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
+
+Previous scene-owned assembly/solve checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
 remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -836,10 +869,11 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         broad-phase packets from that same surface; keep the row in-progress
         because full runtime scene filtering, GPU `World::step` contact
         candidate construction, and speedup remain unproven.
-  - [x] Add private endpoint-linear point-triangle and edge-edge CCD/line-search
-        packets with exact CPU/GPU step-bound parity; keep the row in-progress
-        because rigid curved trajectories, runtime candidate sets, and
-        scene-level line-search feasibility remain unproven.
+  - [x] Add private endpoint-linear point-triangle/edge-edge plus sampled
+        rigid-curved point-triangle/edge-edge CCD/line-search packets with
+        CPU/GPU step-bound parity; keep the row in-progress because analytic
+        curved CCD, runtime candidate sets, and scene-level line-search
+        feasibility remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
         primitive barrier-gradient, point-triangle/edge-edge/point-edge/
         point-point tangent-stencil, and point-triangle/point-point/point-edge/
@@ -944,7 +978,8 @@ storage, or backend resources as public API.
   ragdoll, nunchaku, windmill, Candy, and precession smoke scenes, the reduced
   timing-breakdown and Table 2 packets, launchable planned py-demo placeholders,
   and checked corpus manifest.
-- No rigid curved-trajectory CCD move.
+- No analytic rigid curved-trajectory CCD move or runtime line-search
+  integration.
 - No sparse Newton loop merge.
 - No rigid IPC default behavior change.
 - No public or `World`-integrated ABD runtime stage.
@@ -961,7 +996,8 @@ storage, or backend resources as public API.
 - For the remaining PLAN-083 follow-up work, PR #2978 is the consolidated
   review unit; keep additional packet/runtime slices on that branch instead of
   opening per-packet PRs.
-- Current PR #2978 head includes the CUDA CCD review fix plus the private
+- Current PR #2978 head includes the CUDA CCD review fix, sampled
+  rigid-curved CCD/line-search packet rows, plus the private
   barrier/friction point-triangle gradient, all four primitive-family
   tangent-stencil packet rows, point-triangle/point-point/point-edge/edge-edge
   primitive barrier-Hessian, point-triangle/point-point/point-edge Hessian
@@ -1005,8 +1041,8 @@ storage, or backend resources as public API.
    first, check hosted #2978 CI/review state for actionable failures, then
    continue runtime scene filtering, speedup-gate work, downstream
    additional primitive-family/runtime contact evidence, runtime sparse
-   Hessian assembly, or direct/global sparse factorization evidence on the same
-   PR.
+   Hessian assembly, direct/global sparse factorization, or analytic/runtime
+   CCD line-search evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse

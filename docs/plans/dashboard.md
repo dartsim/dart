@@ -339,10 +339,9 @@ its own line so status updates remain git-history friendly.
   metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
   compact runtime sweep-buffer endpoint-distance packets, reduced
   scene-owned runtime candidate-buffer packets, and reduced scene-owned
-  runtime sweep broad-phase packets,
-  endpoint-linear
-  point-triangle and
-  edge-edge CCD/line-search parity, scalar barrier/friction local-kernel parity
+  runtime sweep broad-phase packets, endpoint-linear point-triangle/edge-edge
+  CCD/line-search parity plus sampled rigid-curved point-triangle/edge-edge
+  CCD/line-search parity, scalar barrier/friction local-kernel parity
   plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
   tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge
@@ -356,9 +355,10 @@ its own line so status updates remain git-history friendly.
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
   parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
-  contact rows, runtime scene filtering, rigid curved trajectories,
-  runtime sparse Hessian assembly, direct/global sparse factorization, nonlinear
-  equality constraints, GPU `World::step`, paper-scale assets, full runtime
+  contact rows, runtime scene filtering, analytic curved CCD and scene-level
+  line search, runtime sparse Hessian assembly, direct/global sparse
+  factorization, nonlinear equality constraints, GPU `World::step`, paper-scale
+  assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer
