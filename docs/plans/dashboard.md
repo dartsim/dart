@@ -351,10 +351,11 @@ its own line so status updates remain git-history friendly.
   point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
   rows, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
-  sparse off-diagonal surface-edge assembly row plus sparse block residual
-  matvec plus a reduced scene-owned sparse residual row plus fixed-iteration
-  sparse Jacobi solve plus a reduced scene-owned sparse Jacobi row plus capped
-  sparse CG solve plus a reduced scene-owned sparse CG row plus sparse
+  sparse off-diagonal surface-edge assembly row plus a reduced scene-owned
+  sparse graph construction/assembly row plus sparse block residual matvec
+  plus a reduced scene-owned sparse residual row plus fixed-iteration sparse
+  Jacobi solve plus a reduced scene-owned sparse Jacobi row plus capped sparse
+  CG solve plus a reduced scene-owned sparse CG row plus sparse
   equality-reduced diagonal solve parity plus a reduced scene-owned
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
   parity and speedup, reduced ABD complex-geometry packets,

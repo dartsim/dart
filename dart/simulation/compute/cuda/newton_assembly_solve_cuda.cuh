@@ -70,6 +70,20 @@ struct NewtonEqualityReductionEntry
   double basisValue = 0.0;
 };
 
+struct NewtonSceneNodeInput
+{
+  double position[3] = {};
+  double velocity[3] = {};
+  double mass = 0.0;
+};
+
+struct NewtonSceneSurfaceTriangleInput
+{
+  std::uint32_t nodeA = 0;
+  std::uint32_t nodeB = 0;
+  std::uint32_t nodeC = 0;
+};
+
 struct NewtonAssemblySolveTiming
 {
   double setupNs = 0.0;
@@ -78,6 +92,16 @@ struct NewtonAssemblySolveTiming
   double reductionKernelNs = 0.0;
   double solveKernelNs = 0.0;
   double expansionKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
+struct NewtonSceneSparseGraphAssemblyTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double incidenceKernelNs = 0.0;
+  double diagonalKernelNs = 0.0;
+  double sparseBlockKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
 
@@ -136,6 +160,23 @@ struct NewtonOffDiagonalAssemblyResult
   std::size_t activeBlockCount = 0;
   double maxBlockAbs = 0.0;
   NewtonAssemblySolveTiming timing;
+};
+
+struct NewtonSceneSparseGraphAssemblyResult
+{
+  std::vector<NewtonAssemblySolveRowInput> rows;
+  std::vector<NewtonSparseBlockEntry> blocks;
+  std::size_t nodeCount = 0;
+  std::size_t triangleCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  NewtonSceneSparseGraphAssemblyTiming timing;
 };
 
 struct NewtonSparseResidualResult
@@ -244,6 +285,19 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
     const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
     std::size_t pairCount,
     NewtonOffDiagonalAssemblyResult& result);
+
+/// Evaluate a private reduced scene sparse graph construction packet.
+///
+/// The packet consumes scene-owned node state and surface triangles, counts
+/// triangle incidence, emits per-node diagonal Newton rows, and emits one 6x6
+/// sparse block for each oriented surface edge. It intentionally does not cover
+/// production sparse graph deduplication, global sparse factorization,
+/// nonlinear equality constraints, runtime World::step integration, or a
+/// public GPU solver backend.
+void evaluateNewtonSceneSparseGraphAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
+    NewtonSceneSparseGraphAssemblyResult& result);
 
 /// Evaluate a private sparse block residual packet.
 ///

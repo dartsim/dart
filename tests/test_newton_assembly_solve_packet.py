@@ -175,6 +175,55 @@ def _benchmark_data(**overrides):
         solve_kernel_ns=0.0,
         device_to_host_ns=5.0,
     )
+    scene_sparse_graph_cpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphAssemblyCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        max_block_abs=0.25,
+        max_result_abs_error=0.0,
+    )
+    scene_sparse_graph_gpu = _row(
+        "BM_NewtonSceneRuntimeSparseGraphAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_max_diagonal=10.0,
+        gpu_max_gradient_abs=1.0,
+        gpu_max_block_abs=0.25,
+        max_result_abs_error=8e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        incidence_kernel_ns=3.0,
+        diagonal_kernel_ns=4.0,
+        sparse_block_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
     sparse_residual_cpu = _row(
         "BM_NewtonSparseResidualCpu/1024",
         rows=1024,
@@ -541,6 +590,8 @@ def _benchmark_data(**overrides):
             off_diagonal_gpu,
             scene_off_diagonal_cpu,
             scene_off_diagonal_gpu,
+            scene_sparse_graph_cpu,
+            scene_sparse_graph_gpu,
             sparse_residual_cpu,
             sparse_residual_gpu,
             scene_sparse_residual_cpu,
@@ -577,7 +628,7 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 7e-12
+    assert row["max_result_abs_error"] == 8e-12
     assert row["residual_norm"] == 4e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
@@ -606,6 +657,24 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert scene_off_diagonal["block_entry_count"] == 10368
     assert scene_off_diagonal["active_block_count"] == 288
     assert scene_off_diagonal["max_result_abs_error"] == 2e-12
+    scene_sparse_graph = row["scene_runtime_sparse_graph_assembly"]
+    assert scene_sparse_graph["row_count"] == 320
+    assert scene_sparse_graph["nominal_row_count"] == 1024
+    assert scene_sparse_graph["scene_body_count"] == 1
+    assert scene_sparse_graph["scene_node_count"] == 320
+    assert scene_sparse_graph["scene_triangle_count"] == 96
+    assert scene_sparse_graph["scene_edge_pair_count"] == 288
+    assert scene_sparse_graph["body_count"] == 320
+    assert scene_sparse_graph["dof_count"] == 1920
+    assert scene_sparse_graph["block_count"] == 288
+    assert scene_sparse_graph["block_entry_count"] == 10368
+    assert scene_sparse_graph["max_result_abs_error"] == 8e-12
+    assert scene_sparse_graph["max_diagonal"] == 10.0
+    assert scene_sparse_graph["max_gradient_abs"] == 1.0
+    assert scene_sparse_graph["max_block_abs"] == 0.25
+    assert scene_sparse_graph["timing_ns"]["incidence"] == 3.0
+    assert scene_sparse_graph["timing_ns"]["diagonal"] == 4.0
+    assert scene_sparse_graph["timing_ns"]["sparse_blocks"] == 5.0
     sparse = row["sparse_block_residual"]
     assert sparse["body_count"] == 128
     assert sparse["dof_count"] == 768

@@ -58,6 +58,23 @@ cudaError_t launchNewtonOffDiagonalAssemblyRowsKernel(
     double* assembledBlocks,
     std::size_t rowCount);
 
+cudaError_t launchNewtonSceneTriangleIncidenceKernel(
+    const NewtonSceneSurfaceTriangleInput* triangles,
+    std::uint32_t* incidentTriangleCounts,
+    std::size_t triangleCount);
+
+cudaError_t launchNewtonSceneDiagonalRowsKernel(
+    const NewtonSceneNodeInput* nodes,
+    const std::uint32_t* incidentTriangleCounts,
+    NewtonAssemblySolveRowInput* rows,
+    std::size_t nodeCount);
+
+cudaError_t launchNewtonSceneSparseBlocksKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneSurfaceTriangleInput* triangles,
+    NewtonSparseBlockEntry* blocks,
+    std::size_t triangleCount);
+
 cudaError_t launchNewtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -213,6 +230,58 @@ void validateOffDiagonalRows(
           row,
           entry);
     }
+  }
+}
+
+void validateSceneSparseGraphInputs(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneSurfaceTriangleInput>& triangles)
+{
+  DART_SIMULATION_THROW_T_IF(
+      nodes.empty() && !triangles.empty(),
+      sx::InvalidArgumentException,
+      "evaluateNewtonSceneSparseGraphAssemblyCuda requires nodes for "
+      "triangles");
+
+  for (std::size_t node = 0; node < nodes.size(); ++node) {
+    const auto& input = nodes[node];
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(input.mass) || input.mass <= 0.0,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneSparseGraphAssemblyCuda node {} has invalid mass",
+        node);
+    for (std::size_t axis = 0; axis < 3u; ++axis) {
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(input.position[axis])
+              || !std::isfinite(input.velocity[axis]),
+          sx::InvalidArgumentException,
+          "evaluateNewtonSceneSparseGraphAssemblyCuda node {} axis {} is "
+          "invalid",
+          node,
+          axis);
+    }
+  }
+
+  for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
+    const auto& input = triangles[triangle];
+    DART_SIMULATION_THROW_T_IF(
+        input.nodeA >= nodes.size() || input.nodeB >= nodes.size()
+            || input.nodeC >= nodes.size(),
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneSparseGraphAssemblyCuda triangle {} references "
+        "nodes ({}, {}, {}) outside {} nodes",
+        triangle,
+        input.nodeA,
+        input.nodeB,
+        input.nodeC,
+        nodes.size());
+    DART_SIMULATION_THROW_T_IF(
+        input.nodeA == input.nodeB || input.nodeB == input.nodeC
+            || input.nodeC == input.nodeA,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneSparseGraphAssemblyCuda triangle {} has duplicate "
+        "node indices",
+        triangle);
   }
 }
 
@@ -522,6 +591,121 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
     }
     if (active) {
       ++result.activeBlockCount;
+    }
+  }
+}
+
+//==============================================================================
+void evaluateNewtonSceneSparseGraphAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
+    NewtonSceneSparseGraphAssemblyResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateSceneSparseGraphInputs(nodes, triangles);
+
+  result = NewtonSceneSparseGraphAssemblyResult{};
+  result.nodeCount = nodes.size();
+  result.triangleCount = triangles.size();
+  result.rowCount = nodes.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = 3u * triangles.size();
+  result.blockEntryCount = result.blockCount * kNewtonAssemblySolveBlockEntries;
+  result.rows.assign(result.rowCount, {});
+  result.blocks.assign(result.blockCount, {});
+
+  if (nodes.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonSceneNodeInput> deviceNodes(nodes.size());
+  DeviceBuffer<NewtonSceneSurfaceTriangleInput> deviceTriangles(
+      triangles.size());
+  DeviceBuffer<std::uint32_t> deviceIncidentTriangleCounts(nodes.size());
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(result.rowCount);
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(result.blockCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceNodes.copyToDevice(nodes, "newton scene sparse graph nodes copy");
+  deviceTriangles.copyToDevice(
+      triangles, "newton scene sparse graph triangles copy");
+  throwIfCudaError(
+      cudaMemset(
+          deviceIncidentTriangleCounts.data(),
+          0,
+          deviceIncidentTriangleCounts.byteSize()),
+      "newton scene sparse graph incidence zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto incidenceStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneTriangleIncidenceKernel(
+          deviceTriangles.data(),
+          deviceIncidentTriangleCounts.data(),
+          triangles.size()),
+      "newton scene sparse graph incidence kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene sparse graph incidence synchronize");
+  const auto incidenceEnd = Clock::now();
+
+  const auto diagonalStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneDiagonalRowsKernel(
+          deviceNodes.data(),
+          deviceIncidentTriangleCounts.data(),
+          deviceRows.data(),
+          nodes.size()),
+      "newton scene sparse graph diagonal rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene sparse graph diagonal rows synchronize");
+  const auto diagonalEnd = Clock::now();
+
+  const auto sparseBlockStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneSparseBlocksKernel(
+          deviceNodes.data(),
+          deviceTriangles.data(),
+          deviceBlocks.data(),
+          triangles.size()),
+      "newton scene sparse graph block kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton scene sparse graph block synchronize");
+  const auto sparseBlockEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceRows.copyFromDevice(result.rows, "newton scene sparse graph rows copy");
+  deviceBlocks.copyFromDevice(
+      result.blocks, "newton scene sparse graph blocks copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.incidenceKernelNs = elapsedNs(incidenceStart, incidenceEnd);
+  result.timing.diagonalKernelNs = elapsedNs(diagonalStart, diagonalEnd);
+  result.timing.sparseBlockKernelNs
+      = elapsedNs(sparseBlockStart, sparseBlockEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
     }
   }
 }

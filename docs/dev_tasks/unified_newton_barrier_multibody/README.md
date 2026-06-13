@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Latest scene-owned sparse CG checkpoint (2026-06-12): work continued
+Latest scene-owned sparse graph assembly checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -10,28 +10,26 @@ branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned sparse CG solve row. The benchmark builds one DART `World` with a
-deformable surface, derives deterministic scene-owned diagonal rows and
-surface-edge 6x6 sparse blocks from the scene triangles, and runs the existing
-CPU/CUDA capped sparse CG parity path. This is reduced packet evidence only; it
-does not prove production sparse Hessian graph construction, full runtime
-sparse Hessian assembly, direct/global sparse factorization, nonlinear equality
-constraints, GPU `World::step` assembly/solve integration, or a speedup claim.
+scene-owned sparse graph construction/assembly row. The benchmark builds one
+DART `World` with a deformable surface, extracts scene-owned nodes and surface
+triangles, counts triangle incidence on the GPU, emits deterministic per-node
+diagonal Newton rows, and emits one oriented 6x6 sparse block per surface-edge
+pair. This is reduced packet evidence only; it does not prove production sparse
+graph deduplication, full runtime sparse Hessian construction/assembly,
+direct/global sparse factorization, nonlinear equality constraints, GPU
+`World::step` assembly/solve integration, or a speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
-surface-edge pair slots, 2,304 active sparse blocks, 82,944 6x6 block entries,
-15,360 dofs, 32 capped CG iterations, and convergence in 32 completed
-iterations with `residual_tolerance=1e-12`,
-`initial_residual_norm=251.2292519273944`,
-`max_result_abs_error=4.035455000502137e-15`,
-`residual_norm=3.7084910876473394e-13`,
-`max_residual_abs=6.143966550981803e-14`,
-`step_norm=91.86904088929667`, and `speedup=1.1087271769493807x` for the
-scene-owned sparse CG row. The top-level assembly/solve packet records
-`max_result_abs_error=4.035455000502137e-15`,
-`residual_norm=3.7084910876473394e-13`, and
-`speedup=0.10863016315635801x` (`meets_speedup_gate=false`), so the durable GPU
-packet row remains `in-progress`.
+surface-edge pair slots, 2,560 diagonal rows, 2,304 sparse blocks, 82,944 6x6
+block entries, and 15,360 dofs. The scene-owned sparse graph assembly row
+records `max_result_abs_error=4.440892098500626e-16`,
+`max_diagonal=3.8525`, `max_gradient_abs=7.6674999999999995`,
+`max_block_abs=0.0014150000000000002`, and
+`speedup=0.034699192240483435x`. The top-level assembly/solve packet records
+`max_result_abs_error=4.009584404066394e-15`,
+`residual_norm=3.6981539869853577e-13`, and
+`speedup=0.01831350563120611x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
 
 Latest validation passed:
 
