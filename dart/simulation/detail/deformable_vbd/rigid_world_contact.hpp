@@ -318,6 +318,10 @@ struct AvbdRigidWorldContactBuildScratch
       = ::dart::common::StlAllocator<AvbdRigidWorldRowCounter>;
   using RowOrderAllocator
       = ::dart::common::StlAllocator<AvbdRigidWorldContactRowOrder>;
+  using RowCounterVector
+      = std::vector<AvbdRigidWorldRowCounter, RowCounterAllocator>;
+  using RowOrderVector
+      = std::vector<AvbdRigidWorldContactRowOrder, RowOrderAllocator>;
 
   AvbdRigidWorldContactBuildScratch() = default;
 
@@ -328,8 +332,15 @@ struct AvbdRigidWorldContactBuildScratch
   {
   }
 
-  std::vector<AvbdRigidWorldRowCounter, RowCounterAllocator> rowCounters;
-  std::vector<AvbdRigidWorldContactRowOrder, RowOrderAllocator> contactRowOrder;
+  explicit AvbdRigidWorldContactBuildScratch(
+      const AvbdRigidWorldContactSnapshot::ContactAllocator& allocator)
+    : rowCounters(RowCounterAllocator{allocator}),
+      contactRowOrder(RowOrderAllocator{allocator})
+  {
+  }
+
+  RowCounterVector rowCounters;
+  RowOrderVector contactRowOrder;
 };
 
 struct AvbdRigidWorldContactSolveScratch
@@ -1742,9 +1753,9 @@ inline void assignAvbdRigidWorldContactRows(
 inline void assignAvbdRigidWorldContactRows(
     AvbdRigidWorldContactSnapshot& snapshot)
 {
-  std::vector<AvbdRigidWorldContactRowOrder> rows;
-  std::vector<AvbdRigidWorldRowCounter> rowCounters;
-  assignAvbdRigidWorldContactRows(snapshot, rows, rowCounters);
+  AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
+  assignAvbdRigidWorldContactRows(
+      snapshot, scratch.contactRowOrder, scratch.rowCounters);
 }
 
 } // namespace detail
@@ -1892,7 +1903,7 @@ inline void buildAvbdRigidWorldContactSnapshotInto(
     AvbdRigidWorldContactSnapshot& snapshot,
     const AvbdRigidWorldContactOptions& options = {})
 {
-  AvbdRigidWorldContactBuildScratch scratch;
+  AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
   buildAvbdRigidWorldContactSnapshot(
       registry, contacts, snapshot, scratch, options);
 }
@@ -2138,7 +2149,7 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot)
 {
-  AvbdRigidWorldContactBuildScratch scratch;
+  AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
   return appendAvbdRigidWorldPointJoints(registry, inputs, snapshot, scratch);
 }
 
@@ -2148,7 +2159,7 @@ inline std::size_t appendAvbdRigidWorldDistanceSprings(
     std::span<const AvbdRigidWorldDistanceSpringInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot)
 {
-  AvbdRigidWorldContactBuildScratch scratch;
+  AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
   return appendAvbdRigidWorldDistanceSprings(
       registry, inputs, snapshot, scratch);
 }

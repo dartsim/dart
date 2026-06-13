@@ -1,5 +1,69 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Fallback Build Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: AVBD rigid-world no-scratch fallback helpers now derive
+their short-lived `AvbdRigidWorldContactBuildScratch` from the allocator already
+attached to `AvbdRigidWorldContactSnapshot::contacts`. This keeps fallback
+row-order and row-counter temporaries on the caller-provided DART allocator
+when the caller supplied an allocator-backed snapshot.
+
+The fix has these parts:
+
+- `AvbdRigidWorldContactBuildScratch` uses local `RowCounterVector` and
+  `RowOrderVector` aliases for its allocator-backed temporary vectors;
+- `AvbdRigidWorldContactBuildScratch` can be constructed from a snapshot
+  contact allocator, converting that allocator to its row-counter and row-order
+  vector allocators;
+- the no-scratch `detail::assignAvbdRigidWorldContactRows(snapshot)` fallback
+  now builds scratch from `snapshot.contacts.get_allocator()`;
+- the no-scratch `buildAvbdRigidWorldContactSnapshotInto(...)`,
+  `appendAvbdRigidWorldPointJoints(...)`, and
+  `appendAvbdRigidWorldDistanceSprings(...)` overloads now borrow the snapshot
+  contact allocator for their internal build scratch;
+- `AvbdRigidBlock.RigidWorldContactRowsFallbackUsesSnapshotAllocator` verifies
+  the short-lived row-assignment fallback scratch routes allocations through
+  the snapshot allocator.
+
+This still does not claim that return-by-value AVBD rigid-world snapshot
+helpers are allocation-free, that fallback scratch is retained across calls, or
+that unrelated AVBD row builders have been converted. The closed gap is
+allocator provenance for the no-scratch rigid-world fallback helpers when a
+caller already provided an allocator-backed snapshot.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_avbd_rigid_block
+pixi run build/default/cpp/Release/bin/test_avbd_rigid_block \
+  --gtest_filter=AvbdRigidBlock.RigidWorldContactRowsFallbackUsesSnapshotAllocator
+pixi run build/default/cpp/Release/bin/test_avbd_rigid_block
+pixi run lint
+git diff --check
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+The CUDA `test-all` run passed with the existing no-GUI
+`dartpy._world_render_bridge` autodoc warnings during documentation generation
+and CPU-scaling benchmark warnings during CUDA benchmark smoke.
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Boxed-LCP Contact Snapshot Payload Scratch)
 
 Resume from exactly one branch:

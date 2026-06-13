@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <iterator>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
@@ -55,6 +56,40 @@ namespace {
 using Vec3 = Eigen::Vector3d;
 namespace common = dart::common;
 namespace sx = dart::simulation;
+
+class CountingMemoryAllocator final : public common::MemoryAllocator
+{
+public:
+  std::string_view getType() const override
+  {
+    return "CountingMemoryAllocator";
+  }
+
+  void* allocate(std::size_t bytes) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes);
+  }
+
+  void* allocate(std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    ++allocations;
+    return common::MemoryAllocator::GetDefault().allocate(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t bytes) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t bytes, std::size_t alignment) override
+  {
+    common::MemoryAllocator::GetDefault().deallocate(pointer, bytes, alignment);
+  }
+
+  std::size_t allocations = 0u;
+};
 
 //==============================================================================
 Eigen::Quaterniond rotationX(double angle)
@@ -3277,6 +3312,40 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
     EXPECT_DOUBLE_EQ(normalInventory[i].state.lambda, expectedLambda);
     EXPECT_DOUBLE_EQ(normalRows[i].row.state.lambda, expectedLambda);
   }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactRowsFallbackUsesSnapshotAllocator)
+{
+  CountingMemoryAllocator allocator;
+  vbd::AvbdRigidWorldContactSnapshot snapshot(allocator);
+  snapshot.contacts.reserve(2u);
+
+  const vbd::AvbdContactEndpointId endpointA{
+      1u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      2u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+
+  vbd::AvbdRigidContactManifoldPoint right;
+  right.endpointA = endpointA;
+  right.endpointB = endpointB;
+  right.point = Vec3(0.75, 0.0, 0.0);
+  right.row = 99u;
+  vbd::AvbdRigidContactManifoldPoint left = right;
+  left.point = Vec3(0.25, 0.0, 0.0);
+
+  snapshot.contacts.push_back(right);
+  snapshot.contacts.push_back(left);
+
+  const std::size_t allocationsBeforeRows = allocator.allocations;
+  vbd::detail::assignAvbdRigidWorldContactRows(snapshot);
+
+  EXPECT_GT(allocator.allocations, allocationsBeforeRows)
+      << "row-assignment fallback scratch should borrow the snapshot "
+         "allocator";
+  ASSERT_EQ(snapshot.contacts.size(), 2u);
+  EXPECT_EQ(snapshot.contacts[0].row, 1u);
+  EXPECT_EQ(snapshot.contacts[1].row, 0u);
 }
 
 //==============================================================================
