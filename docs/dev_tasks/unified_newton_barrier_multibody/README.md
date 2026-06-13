@@ -2,6 +2,41 @@
 
 ## Current Status
 
+Latest scene-owned assembly/solve checkpoint (2026-06-12): work continued
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
+remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned diagonal assembly/solve row. The benchmark builds one DART `World`
+with a deformable surface, extracts node masses, positions, velocities, and
+surface-triangle incidence into deterministic per-node diagonal Newton rows,
+and runs the existing CPU/CUDA diagonal assembly/solve parity path.
+
+Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 15,360
+dofs, and 15,360 active dofs with
+`max_result_abs_error=4.4021269828727137e-16`,
+`residual_norm=1.0086044953133903e-14`,
+`step_norm=92.04417917780955`, and `speedup=0.22366599153516908x` for the
+scene-owned diagonal row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=9.937538231096445e-14`, and
+`speedup=0.22366599153516908x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest validation passed:
+
+- focused assembly/solve packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- PLAN-083 GPU parity/completion-audit validators
+- focused PLAN-083 packet pytest trio
+- `git diff --check`
+- `pixi run lint`
+
 Latest sparse CG solve checkpoint (2026-06-12): work continued locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
 PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
@@ -815,13 +850,14 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         keep the row in-progress because broader sparse Hessian assembly,
         additional runtime contact rows, full GPU `World::step`, and runtime
         speedup remain unproven.
-  - [x] Add private reduced diagonal assembly/solve, pair-slot off-diagonal
-        sparse-block assembly, sparse block residual matvec, fixed-iteration
-        sparse Jacobi solve, capped sparse CG solve, and sparse
-        equality-reduced diagonal solve packets with exact CPU/GPU local-output
-        parity; keep the row in-progress because runtime sparse assembly,
-        direct/global sparse factorization, nonlinear equality constraints,
-        runtime scene rows, and speedup remain unproven.
+  - [x] Add private reduced diagonal assembly/solve, reduced scene-owned
+        diagonal assembly/solve, pair-slot off-diagonal sparse-block assembly,
+        sparse block residual matvec, fixed-iteration sparse Jacobi solve,
+        capped sparse CG solve, and sparse equality-reduced diagonal solve
+        packets with exact CPU/GPU local-output parity; keep the row
+        in-progress because runtime sparse Hessian assembly, direct/global
+        sparse factorization, nonlinear equality constraints, GPU
+        `World::step` assembly/solve integration, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,

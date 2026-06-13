@@ -134,8 +134,9 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
-        "^BM_Newton(AssemblySolve|OffDiagonalAssembly|SparseResidual|"
-        "SparseJacobiSolve|SparseCgSolve|EqualityReducedSolve)(Cpu|Cuda)"
+        "^BM_Newton(AssemblySolve|SceneRuntimeAssemblySolve|"
+        "OffDiagonalAssembly|SparseResidual|SparseJacobiSolve|"
+        "SparseCgSolve|EqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
     )
     command = [
@@ -196,6 +197,8 @@ def _representative_rows(
     expected_names = {
         "diagonal_cpu": f"BM_NewtonAssemblySolveCpu/{row_count}",
         "diagonal_gpu": f"BM_NewtonAssemblySolveCuda/{row_count}",
+        "scene_assembly_cpu": f"BM_NewtonSceneRuntimeAssemblySolveCpu/{row_count}",
+        "scene_assembly_gpu": f"BM_NewtonSceneRuntimeAssemblySolveCuda/{row_count}",
         "off_diagonal_cpu": f"BM_NewtonOffDiagonalAssemblyCpu/{row_count}",
         "off_diagonal_gpu": f"BM_NewtonOffDiagonalAssemblyCuda/{row_count}",
         "sparse_residual_cpu": f"BM_NewtonSparseResidualCpu/{row_count}",
@@ -267,6 +270,8 @@ def make_packet(
     representative_rows = _representative_rows(typed_rows, row_count)
     cpu_row = representative_rows["diagonal_cpu"]
     gpu_row = representative_rows["diagonal_gpu"]
+    scene_assembly_cpu_row = representative_rows["scene_assembly_cpu"]
+    scene_assembly_gpu_row = representative_rows["scene_assembly_gpu"]
     off_diagonal_cpu_row = representative_rows["off_diagonal_cpu"]
     off_diagonal_gpu_row = representative_rows["off_diagonal_gpu"]
     sparse_residual_cpu_row = representative_rows["sparse_residual_cpu"]
@@ -279,6 +284,8 @@ def make_packet(
     equality_gpu_row = representative_rows["equality_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
+    scene_assembly_cpu_ns = benchmark_timing_ns(scene_assembly_cpu_row)
+    scene_assembly_gpu_ns = benchmark_timing_ns(scene_assembly_gpu_row)
     off_diagonal_cpu_ns = benchmark_timing_ns(off_diagonal_cpu_row)
     off_diagonal_gpu_ns = benchmark_timing_ns(off_diagonal_gpu_row)
     sparse_residual_cpu_ns = benchmark_timing_ns(sparse_residual_cpu_row)
@@ -293,6 +300,14 @@ def make_packet(
         raise NewtonAssemblySolvePacketError("CPU benchmark timing is not positive")
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError("GPU benchmark timing is not positive")
+    if not math.isfinite(scene_assembly_cpu_ns) or scene_assembly_cpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime assembly CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(scene_assembly_gpu_ns) or scene_assembly_gpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime assembly GPU benchmark timing is not positive"
+        )
     if not math.isfinite(off_diagonal_cpu_ns) or off_diagonal_cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
             "off-diagonal CPU benchmark timing is not positive"
@@ -335,6 +350,7 @@ def make_packet(
         )
 
     diagonal_max_error = _counter(gpu_row, "max_result_abs_error")
+    scene_assembly_max_error = _counter(scene_assembly_gpu_row, "max_result_abs_error")
     off_diagonal_max_error = _counter(off_diagonal_gpu_row, "max_result_abs_error")
     sparse_residual_max_error = _counter(
         sparse_residual_gpu_row, "max_result_abs_error"
@@ -344,6 +360,7 @@ def make_packet(
     equality_max_error = _counter(equality_gpu_row, "max_result_abs_error")
     max_error = max(
         diagonal_max_error,
+        scene_assembly_max_error,
         off_diagonal_max_error,
         sparse_residual_max_error,
         sparse_jacobi_max_error,
@@ -356,11 +373,13 @@ def make_packet(
         )
 
     residual_norm = _counter(gpu_row, "gpu_residual_norm")
+    scene_assembly_residual_norm = _counter(scene_assembly_gpu_row, "gpu_residual_norm")
     sparse_jacobi_residual_norm = _counter(sparse_jacobi_gpu_row, "gpu_residual_norm")
     sparse_cg_residual_norm = _counter(sparse_cg_gpu_row, "gpu_residual_norm")
     equality_residual_norm = _counter(equality_gpu_row, "gpu_residual_norm")
     max_residual_norm = max(
         residual_norm,
+        scene_assembly_residual_norm,
         sparse_jacobi_residual_norm,
         sparse_cg_residual_norm,
         equality_residual_norm,
@@ -383,6 +402,45 @@ def make_packet(
     dofs = int(_counter(cpu_row, "dofs"))
 
     step_norm = _counter(gpu_row, "gpu_step_norm")
+    scene_assembly_rows = _matching_int_counter(
+        scene_assembly_cpu_row, scene_assembly_gpu_row, "rows", "gpu_rows"
+    )
+    if scene_assembly_rows <= 0:
+        raise NewtonAssemblySolvePacketError("scene runtime assembly row count is zero")
+    scene_assembly_bodies = _matching_int_counter(
+        scene_assembly_cpu_row,
+        scene_assembly_gpu_row,
+        "bodies",
+        "gpu_bodies",
+    )
+    scene_assembly_dofs = _matching_int_counter(
+        scene_assembly_cpu_row, scene_assembly_gpu_row, "dofs", "gpu_dofs"
+    )
+    scene_assembly_active_dofs = _matching_int_counter(
+        scene_assembly_cpu_row,
+        scene_assembly_gpu_row,
+        "active_dofs",
+        "gpu_active_dofs",
+    )
+    scene_assembly_scene_bodies = _matching_int_counter(
+        scene_assembly_cpu_row,
+        scene_assembly_gpu_row,
+        "scene_bodies",
+        "gpu_scene_bodies",
+    )
+    scene_assembly_scene_nodes = _matching_int_counter(
+        scene_assembly_cpu_row,
+        scene_assembly_gpu_row,
+        "scene_nodes",
+        "gpu_scene_nodes",
+    )
+    scene_assembly_scene_triangles = _matching_int_counter(
+        scene_assembly_cpu_row,
+        scene_assembly_gpu_row,
+        "scene_triangles",
+        "gpu_scene_triangles",
+    )
+    scene_assembly_step_norm = _counter(scene_assembly_gpu_row, "gpu_step_norm")
     off_diagonal_rows = _matching_int_counter(
         off_diagonal_cpu_row, off_diagonal_gpu_row, "rows", "gpu_rows"
     )
@@ -560,12 +618,14 @@ def make_packet(
     equality_step_norm = _counter(equality_gpu_row, "gpu_step_norm")
     off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
     diagonal_speedup = cpu_ns / gpu_ns
+    scene_assembly_speedup = scene_assembly_cpu_ns / scene_assembly_gpu_ns
     sparse_residual_speedup = sparse_residual_cpu_ns / sparse_residual_gpu_ns
     sparse_jacobi_speedup = sparse_jacobi_cpu_ns / sparse_jacobi_gpu_ns
     sparse_cg_speedup = sparse_cg_cpu_ns / sparse_cg_gpu_ns
     equality_speedup = equality_cpu_ns / equality_gpu_ns
     speedup = min(
         diagonal_speedup,
+        scene_assembly_speedup,
         off_diagonal_speedup,
         sparse_residual_speedup,
         sparse_jacobi_speedup,
@@ -584,6 +644,19 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"packet timing is missing {sorted(missing)}"
+        )
+    scene_assembly_timing_ns = {
+        "setup": _counter(scene_assembly_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(scene_assembly_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(scene_assembly_gpu_row, "assembly_kernel_ns"),
+        "solve": _counter(scene_assembly_gpu_row, "solve_kernel_ns"),
+        "device_to_host": _counter(scene_assembly_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = REQUIRED_TIMING_KEYS - scene_assembly_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"scene runtime assembly packet timing is missing {sorted(missing)}"
         )
     off_diagonal_timing_ns = {
         "setup": _counter(off_diagonal_gpu_row, "host_setup_ns"),
@@ -689,6 +762,24 @@ def make_packet(
                 "timing_ns": timing_ns,
                 "cpu_benchmark_row": _packet_row_name(cpu_row),
                 "gpu_benchmark_row": _packet_row_name(gpu_row),
+            },
+            "scene_runtime_diagonal_assembly_solve": {
+                "row_count": scene_assembly_rows,
+                "nominal_row_count": row_count,
+                "scene_body_count": scene_assembly_scene_bodies,
+                "scene_node_count": scene_assembly_scene_nodes,
+                "scene_triangle_count": scene_assembly_scene_triangles,
+                "body_count": scene_assembly_bodies,
+                "dof_count": scene_assembly_dofs,
+                "active_dof_count": scene_assembly_active_dofs,
+                "max_result_abs_error": scene_assembly_max_error,
+                "residual_norm": scene_assembly_residual_norm,
+                "step_norm": scene_assembly_step_norm,
+                "speedup": scene_assembly_speedup,
+                "meets_speedup_gate": scene_assembly_speedup >= speedup_gate,
+                "timing_ns": scene_assembly_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(scene_assembly_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(scene_assembly_gpu_row),
             },
             "off_diagonal_sparse_block_assembly": {
                 "row_count": row_count,

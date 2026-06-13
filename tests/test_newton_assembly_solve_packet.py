@@ -65,6 +65,48 @@ def _benchmark_data(**overrides):
         solve_kernel_ns=4.0,
         device_to_host_ns=5.0,
     )
+    scene_assembly_cpu = _row(
+        "BM_NewtonSceneRuntimeAssemblySolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.25,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    scene_assembly_gpu = _row(
+        "BM_NewtonSceneRuntimeAssemblySolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        active_dofs=1920,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_active_dofs=1920,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_step_norm=0.25,
+        gpu_residual_norm=1e-14,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        solve_kernel_ns=4.0,
+        device_to_host_ns=5.0,
+    )
     off_diagonal_cpu = _row(
         "BM_NewtonOffDiagonalAssemblyCpu/1024",
         rows=1024,
@@ -278,6 +320,8 @@ def _benchmark_data(**overrides):
         "benchmarks": [
             cpu,
             gpu,
+            scene_assembly_cpu,
+            scene_assembly_gpu,
             off_diagonal_cpu,
             off_diagonal_gpu,
             sparse_residual_cpu,
@@ -314,6 +358,17 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["residual_norm"] == 3e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
+    scene = row["scene_runtime_diagonal_assembly_solve"]
+    assert scene["row_count"] == 320
+    assert scene["nominal_row_count"] == 1024
+    assert scene["scene_body_count"] == 1
+    assert scene["scene_node_count"] == 320
+    assert scene["scene_triangle_count"] == 96
+    assert scene["body_count"] == 320
+    assert scene["dof_count"] == 1920
+    assert scene["active_dof_count"] == 1920
+    assert scene["max_result_abs_error"] == 2e-12
+    assert scene["residual_norm"] == 1e-14
     assert row["off_diagonal_sparse_block_assembly"]["pair_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["active_block_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["max_result_abs_error"] == 1e-12

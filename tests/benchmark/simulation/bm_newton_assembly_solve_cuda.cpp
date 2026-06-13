@@ -30,6 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/body/deformable_body.hpp>
+#include <dart/simulation/body/deformable_body_options.hpp>
+#include <dart/simulation/world.hpp>
+
+#include <Eigen/Core>
 #include <benchmark/benchmark.h>
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
 #include <dart/simulation/compute/cuda/newton_assembly_solve_cuda.cuh>
@@ -41,6 +46,7 @@
 #include <cstdint>
 
 namespace cuda = dart::simulation::compute::cuda;
+namespace sx = dart::simulation;
 
 namespace {
 
@@ -48,6 +54,7 @@ constexpr double kRegularization = 0.25;
 constexpr std::size_t kSparseJacobiIterations = 16;
 constexpr std::size_t kSparseCgMaxIterations = 32;
 constexpr double kSparseCgResidualTolerance = 1e-12;
+constexpr double kSceneRuntimeAssemblyTimeStep = 1.0;
 
 struct CpuAssemblySolveResult
 {
@@ -68,6 +75,16 @@ struct AssemblySolveFixture
 {
   std::vector<cuda::NewtonAssemblySolveRowInput> rows;
   std::size_t bodyCount = 0;
+  CpuAssemblySolveResult cpu;
+};
+
+struct SceneRuntimeAssemblySolveFixture
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::size_t bodyCount = 0;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
   CpuAssemblySolveResult cpu;
 };
 
@@ -316,6 +333,117 @@ void evaluateCpu(
   }
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+sx::DeformableBodyOptions makeSceneRuntimeAssemblyBodyOptions(
+    const int rowCount)
+{
+  sx::DeformableBodyOptions options;
+  const int groupCount
+      = std::max(1, static_cast<int>(std::sqrt(static_cast<double>(rowCount))));
+  const auto appendSceneNode
+      = [&options](const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+          const double mass
+              = 1.0 + 0.01 * static_cast<double>(options.positions.size() % 7u);
+          options.positions.push_back(start);
+          options.velocities.push_back(
+              (end - start) / kSceneRuntimeAssemblyTimeStep);
+          options.masses.push_back(mass);
+        };
+
+  for (int group = 0; group < groupCount; ++group) {
+    const double x = static_cast<double>(group % 64) * 4.0;
+    const double y = static_cast<double>(group / 64) * 4.0;
+    const std::size_t base = options.positions.size();
+
+    appendSceneNode({x, y, 0.0}, {x, y, 0.0});
+    appendSceneNode({x + 1.0, y, 0.0}, {x + 1.0, y, 0.0});
+    appendSceneNode({x, y + 1.0, 0.0}, {x, y + 1.0, 0.0});
+    appendSceneNode({x + 0.25, y + 0.25, 0.20}, {x + 0.25, y + 0.25, -0.20});
+    options.surfaceTriangles.push_back({base, base + 1u, base + 2u});
+
+    appendSceneNode({x + 2.0, y, 0.0}, {x + 2.0, y, 0.0});
+    appendSceneNode({x + 3.0, y, 0.0}, {x + 3.0, y, 0.0});
+    appendSceneNode({x + 2.0, y + 1.0, 0.0}, {x + 2.0, y + 1.0, 0.0});
+    options.surfaceTriangles.push_back({base + 4u, base + 5u, base + 6u});
+
+    appendSceneNode({x + 2.25, y + 0.20, -0.5}, {x + 2.25, y - 0.20, -0.5});
+    appendSceneNode({x + 2.25, y + 0.20, 0.5}, {x + 2.25, y - 0.20, 0.5});
+    appendSceneNode({x + 3.25, y + 1.25, 0.0}, {x + 3.25, y + 1.25, 0.0});
+    options.surfaceTriangles.push_back({base + 7u, base + 8u, base + 9u});
+  }
+
+  return options;
+}
+
+cuda::NewtonAssemblySolveRowInput makeSceneRuntimeAssemblyRow(
+    const sx::DeformableBody& body,
+    const std::size_t node,
+    const std::size_t incidentTriangleCount)
+{
+  cuda::NewtonAssemblySolveRowInput row;
+  row.bodyIndex = static_cast<std::uint32_t>(node);
+
+  const Eigen::Vector3d position = body.getPosition(node);
+  const Eigen::Vector3d velocity = body.getVelocity(node);
+  const double mass = body.getMass(node);
+  const double incidentScale = static_cast<double>(incidentTriangleCount);
+  const double radius = position.norm();
+
+  for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++dof) {
+    const std::size_t axis = dof % 3u;
+    const double axisPosition = position[axis];
+    const double axisVelocity = velocity[axis];
+    if (dof < 3u) {
+      row.hessianDiagonal[dof] = mass + 0.20 * static_cast<double>(axis + 1u)
+                                 + 0.05 * incidentScale
+                                 + 0.01 * std::abs(axisPosition);
+      row.gradient[dof] = 0.08 * axisVelocity + 0.03 * axisPosition
+                          + 0.01 * static_cast<double>(axis + 1u);
+    } else {
+      row.hessianDiagonal[dof] = 0.50 + 0.10 * mass
+                                 + 0.05 * static_cast<double>(axis + 1u)
+                                 + 0.025 * incidentScale + 0.005 * radius;
+      row.gradient[dof] = 0.015 * static_cast<double>(axis + 1u) * axisPosition
+                          - 0.02 * axisVelocity;
+    }
+  }
+
+  return row;
+}
+
+SceneRuntimeAssemblySolveFixture makeSceneRuntimeAssemblySolveFixture(
+    const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_assembly_solve",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeAssemblySolveFixture fixture;
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.sceneNodeCount = body.getNodeCount();
+  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
+  fixture.bodyCount = fixture.sceneNodeCount;
+
+  std::vector<std::size_t> incidentTriangleCounts(fixture.sceneNodeCount, 0u);
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
+    ++incidentTriangleCounts[surfaceTriangle.nodeA];
+    ++incidentTriangleCounts[surfaceTriangle.nodeB];
+    ++incidentTriangleCounts[surfaceTriangle.nodeC];
+  }
+
+  fixture.rows.reserve(fixture.sceneNodeCount);
+  for (std::size_t node = 0; node < fixture.sceneNodeCount; ++node) {
+    fixture.rows.push_back(
+        makeSceneRuntimeAssemblyRow(body, node, incidentTriangleCounts[node]));
+  }
+  evaluateCpu(fixture.rows, fixture.bodyCount, fixture.cpu);
+  return fixture;
 }
 
 void evaluateCpuEqualityReducedSolve(
@@ -944,6 +1072,30 @@ void recordCounters(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
 }
 
+void recordSceneRuntimeAssemblyCounters(
+    benchmark::State& state,
+    const SceneRuntimeAssemblySolveFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["bodies"] = static_cast<double>(fixture.bodyCount);
+  state.counters["dofs"] = static_cast<double>(
+      fixture.bodyCount * cuda::kNewtonAssemblySolveDofsPerBody);
+  state.counters["active_dofs"]
+      = static_cast<double>(fixture.cpu.activeDofCount);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["step_norm"] = fixture.cpu.stepNorm;
+  state.counters["residual_norm"] = fixture.cpu.residualNorm;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
 void recordOffDiagonalCounters(
     benchmark::State& state,
     const OffDiagonalAssemblyFixture& fixture,
@@ -1109,6 +1261,70 @@ static void BM_NewtonAssemblySolveCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonAssemblySolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeAssemblySolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeSceneRuntimeAssemblySolveFixture(static_cast<int>(state.range(0)));
+  CpuAssemblySolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpu(fixture.rows, fixture.bodyCount, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeAssemblyCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeAssemblySolveCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeAssemblySolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSceneRuntimeAssemblySolveFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonAssemblySolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonAssemblySolveCuda(
+        fixture.rows, fixture.bodyCount, kRegularization, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSceneRuntimeAssemblyCounters(
+      state, fixture, maxOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(
+      result.bodyCount * cuda::kNewtonAssemblySolveDofsPerBody);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"]
+      = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["solve_kernel_ns"] = result.timing.solveKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeAssemblySolveCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonOffDiagonalAssemblyCpu(benchmark::State& state)
