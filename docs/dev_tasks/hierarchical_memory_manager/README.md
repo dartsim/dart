@@ -1,6 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Hard Stop Handoff (2026-06-12, Collision Query Cache Scratch Allocators)
+## Hard Stop Handoff (2026-06-12, Contact Query and Rigid IPC Allocators)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -8,94 +8,109 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
-Previous pushed handoff checkpoint commit: `2ff2418d93d`
-(`Record HMM final handoff stop state`). The branch is expected to be clean and
-tracking `origin/pr/hmm-phase45-replay-snapshot-allocators`; rerun
-`git status -sb && git branch -vv` and check `git log -1 --oneline` before
-trusting any local workspace state.
+Latest local slice: DART-owned cached collision-query contact results now use
+the World free allocator, and the validation fallout closed two adjacent Rigid
+IPC allocator/policy gaps. The previous cache slice routed shape specs, object
+keys, object-id lookup, native object entries, and live rigid-body joint-pair
+filter scratch through World memory, but `CollisionQueryCache::contacts` still
+used default STL storage. Built-in contact stages and differentiable boxed-LCP
+capture consume that cached contact list directly, so first contact-result
+population could still grow default-allocator storage after the shape/object
+cache was warm. Full `test_world` validation also exposed that Rigid IPC
+projected-Newton step deltas still owned default-allocator Eigen storage during
+stage prepare, and that the contact-free diagonal fast path ignored the
+documented zero-iteration non-converged policy.
 
-Suggested Codex goal prompt for a future resumed session:
+The fix has these parts:
 
-```text
-Resume DART hierarchical memory manager work from the pushed branch
-pr/hmm-phase45-replay-snapshot-allocators. First read AGENTS.md,
-docs/ai/principles.md, docs/dev_tasks/hierarchical_memory_manager/RESUME.md,
-and docs/dev_tasks/hierarchical_memory_manager/README.md, then run the
-$dart-resume recon steps before editing. Treat the top Hard Stop Handoff
-section as authoritative; lower Historical Slice sections are evidence from
-previous work, not live instructions. Do not continue implementation, run
-verification, push, open a PR, or add new scenes unless the maintainer has
-explicitly resumed the work. When resumed, continue toward the DART 7 HMM north
-star with one small evidence-first slice at a time, prefer DART-owned
-simulation-loop storage or stage scratch, avoid overfitting benchmarks or
-changing thresholds without apple-to-apples evidence, update this README and
-RESUME as gaps close, run pixi run lint before every commit, and get explicit
-approval before any push or PR mutation.
-```
+- `CollisionQueryCache::contacts` is an allocator-backed vector constructed
+  from the World's free allocator;
+- private `World::queryContacts()` returns `std::span<const Contact>` so
+  built-in stages can read the allocator-backed cache without exposing its
+  concrete container type;
+- multibody, unified-constraint, boxed-LCP, rigid AVBD contact, and
+  differentiable contact-gradient helpers consume contact spans instead of
+  requiring a default-allocator `std::vector<Contact>`;
+- public `World::collide()` keeps the existing return-by-value
+  `std::vector<Contact>` convenience by copying from the cached span;
+- `RigidIpcProjectedNewtonStep` now stores its delta in a
+  `common::StlAllocator<double>`-backed buffer and exposes Eigen maps at solver
+  call sites, so Rigid IPC prepare/solve scratch can reserve from the provided
+  free allocator;
+- the Rigid IPC contact-free diagonal shortcut now requires a positive
+  iteration budget, preserving the zero-budget rejected/non-converged stage
+  policy used by regression tests;
+- `FreeListAllocator` pre-reserves a small amount of internal block metadata so
+  allocator-backed stage prepare does not grow the allocator's bookkeeping
+  vector through global `operator new` during no-heap checks.
 
-Latest implementation/evidence commit before this docs-only handoff:
-`a2e2332ad5f` (`Route collision query cache scratch through World allocator`).
-At the start of this handoff update, the local branch was ahead of
-`origin/pr/hmm-phase45-replay-snapshot-allocators` by that one commit and had
-no uncommitted changes.
-
-Latest local slice: DART-owned collision query cache scratch now uses the
-World free allocator for reusable cache vectors. The pre-fix gap was that the
-`CollisionQueryCache` object itself lived under the World memory hierarchy, but
-its shape specs, object keys, object-id lookup, native object entries, and live
-rigid-body joint-pair filter vector used default STL storage. First population
-of a contact query shape set therefore grew default-allocator storage instead
-of making the World allocator ownership visible.
-
-The fix has three parts:
-
-- `CollisionQueryCache` now has an allocator-aware constructor and allocator-
-  backed vectors for keys, entries, object-id lookup, shape specs, and live
-  rigid-body joint pairs;
-- `makeCollisionQueryCache()` passes the World's free allocator into that
-  constructor;
-- `collectLivePublicRigidBodyJointPairsInto()` accepts allocator-aware vector
-  storage, preserving the existing live rigid-body joint filtering behavior.
-
-This does not claim that native collision internals or the public
-`std::vector<Contact>` return object have been moved under the World allocator;
-those remain separate API/native-boundary work. The closed gap is the
-DART-owned reusable cache scratch.
+This still does not claim that native collision internals or the public
+`std::vector<Contact>` return object are under the World allocator; those
+remain API/native-boundary work. The closed gaps are DART-owned cached contact
+result storage used by built-in simulation paths and the Rigid IPC
+projected-Newton step delta storage used by stage scratch.
 
 New regression coverage:
 
-- `World.CollisionQueryCacheScratchUsesWorldAllocator` warms the empty cache,
-  adds an overlapping rigid-body pair, checks that first shape-set population
-  grows the World free allocator, and checks that a same-shape second query
-  does not grow it again.
+- `World.CollisionQueryCacheScratchUsesWorldAllocator` warms a same-shape
+  non-contact query, moves one body into contact, checks that first
+  contact-result population grows the World free allocator, and checks that a
+  same-shape contact query reuses capacity.
+- `World.RigidIpcContactStageScratchPayloadUsesProvidedAllocator` now covers
+  allocator-backed projected-Newton step delta scratch and allocator metadata
+  prewarming during mixed rigid/deformable IPC stage prepare.
+- `World.RigidIpcContactStageAdvancesUnsupportedKinematicBody` and
+  `World.RigidIpcContactStageSkipsUnconvergedSolveResult` cover the
+  zero-iteration rejected-solve policy against the contact-free diagonal fast
+  path.
+- `RigidIpcBarrier.ProjectedNewtonSolveScratchUsesProvidedAllocator` now
+  includes the allocator-backed step delta as part of detail solver scratch
+  ownership.
 
 Validation for this slice:
 
 ```bash
-cmake --build build/default/cpp/Release --target test_world --parallel "$JOBS"
+cmake --build build/default/cpp/Release \
+  --target test_world test_rigid_ipc_barrier \
+  --parallel ${JOBS:-8}
 build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.CollisionQueryCacheScratchUsesWorldAllocator' \
+  --gtest_filter='World.RigidIpcContactStageScratchPayloadUsesProvidedAllocator:World.RigidIpcContactStageAdvancesUnsupportedKinematicBody:World.RigidIpcContactStageSkipsUnconvergedSolveResult:World.CollisionQueryCacheScratchUsesWorldAllocator' \
   --gtest_color=no
-build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.CollisionQueryCacheScratchUsesWorldAllocator:World.CollisionQuerySkipsLiveRigidBodyJointPairs:World.WorldPersistentStorageUsesWorldFreeAllocator' \
+build/default/cpp/Release/bin/test_rigid_ipc_barrier \
+  --gtest_filter='RigidIpcBarrier.ProjectedNewtonStepSolvesBarrierSystem:RigidIpcBarrier.ProjectedNewtonStepHonorsLineSearchBound:RigidIpcBarrier.ProjectedNewtonStepBlocksUnsafeLineSearch:RigidIpcBarrier.ProjectedNewtonSolveScratchUsesProvidedAllocator' \
+  --gtest_color=no
+cmake --build build/cuda/cpp/Release \
+  --target test_world test_rigid_ipc_barrier \
+  --parallel ${JOBS:-8}
+build/cuda/cpp/Release/bin/test_world \
+  --gtest_filter='World.RigidIpcContactStageScratchPayloadUsesProvidedAllocator:World.RigidIpcContactStageAdvancesUnsupportedKinematicBody:World.RigidIpcContactStageSkipsUnconvergedSolveResult:World.CollisionQueryCacheScratchUsesWorldAllocator' \
+  --gtest_color=no
+build/cuda/cpp/Release/bin/test_rigid_ipc_barrier \
+  --gtest_filter='RigidIpcBarrier.ProjectedNewtonStepSolvesBarrierSystem:RigidIpcBarrier.ProjectedNewtonStepHonorsLineSearchBound:RigidIpcBarrier.ProjectedNewtonStepBlocksUnsafeLineSearch:RigidIpcBarrier.ProjectedNewtonSolveScratchUsesProvidedAllocator' \
+  --gtest_color=no
+cmake --build build/default/cpp/Release \
+  --target test_multibody_link_contact test_unified_constraint test_boxed_lcp_contact \
+  --parallel ${JOBS:-8}
+build/default/cpp/Release/bin/test_multibody_link_contact --gtest_color=no
+build/default/cpp/Release/bin/test_unified_constraint --gtest_color=no
+build/default/cpp/Release/bin/test_boxed_lcp_contact \
+  --gtest_filter='BoxedLcpContact*' \
   --gtest_color=no
 pixi run lint
 pixi run build
 pixi run test-unit
+pixi run -e cuda test-all
 ```
 
-Do not continue optimization, add scenes, run verification, push, or open a PR
-from this stop state unless the maintainer explicitly resumes the work. The
-validation list above records the already-completed collision-query slice
-evidence; no lint, build, test, or benchmark command was run for this
-docs-only handoff update, by explicit maintainer instruction.
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
 
 ## Historical Slices Below
 
 The sections below are retained as chronological evidence for previous HMM
 slices. They are not current instructions. A fresh agent should use the top
-hard-stop section and suggested Codex goal prompt as the authoritative handoff
-surface.
+hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 

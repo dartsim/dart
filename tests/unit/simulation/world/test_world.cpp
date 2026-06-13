@@ -11460,16 +11460,23 @@ TEST(World, CollisionQueryCacheScratchUsesWorldAllocator)
   bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
   sx::RigidBodyOptions bodyBOptions;
-  bodyBOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  bodyBOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
   auto bodyB = world.addRigidBody("cache_allocator_b", bodyBOptions);
   bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
 
-  const auto allocationsBeforePopulate = freeList.getAllocationCount();
+  const auto emptyContacts = world.collide();
+  ASSERT_TRUE(emptyContacts.empty());
+
+  Eigen::Isometry3d overlapPose = Eigen::Isometry3d::Identity();
+  overlapPose.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  bodyB.setTransform(overlapPose);
+
+  const auto allocationsBeforeContactResults = freeList.getAllocationCount();
   const auto contacts = world.collide();
   ASSERT_FALSE(contacts.empty());
-  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforePopulate)
-      << "DART-owned collision query cache vectors should reserve from the "
-         "World free allocator when a query shape set first appears";
+  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeContactResults)
+      << "cached collision contact results should reserve from the World "
+         "free allocator when contacts first appear for a warmed shape set";
 
   const auto allocationsAfterPopulate = freeList.getAllocationCount();
   const auto warmedContacts = world.collide();

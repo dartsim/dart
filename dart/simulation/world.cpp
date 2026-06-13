@@ -210,6 +210,7 @@ struct World::CollisionQueryCache
       = std::vector<std::size_t, CacheAllocator<std::size_t>>;
   using ShapeEntrySpecVector
       = std::vector<ShapeEntrySpec, CacheAllocator<ShapeEntrySpec>>;
+  using ContactVector = std::vector<Contact, CacheAllocator<Contact>>;
   using CollisionPairVector = std::vector<
       detail::WorldStorage::CollisionPairKey,
       CacheAllocator<detail::WorldStorage::CollisionPairKey>>;
@@ -222,7 +223,8 @@ struct World::CollisionQueryCache
       entryByObjectId(CacheAllocator<std::size_t>{allocator}),
       specs(CacheAllocator<ShapeEntrySpec>{allocator}),
       liveRigidBodyJointPairs(
-          CacheAllocator<detail::WorldStorage::CollisionPairKey>{allocator})
+          CacheAllocator<detail::WorldStorage::CollisionPairKey>{allocator}),
+      contacts(CacheAllocator<Contact>{allocator})
   {
   }
 
@@ -254,7 +256,7 @@ struct World::CollisionQueryCache
   ShapeEntrySpecVector specs;
   ncol::BroadPhaseSnapshot candidatePairs;
   CollisionPairVector liveRigidBodyJointPairs;
-  std::vector<Contact> contacts;
+  ContactVector contacts;
   ncol::CollisionResult pairResult;
 };
 
@@ -5619,14 +5621,15 @@ void World::captureStepDerivatives()
   // Contact-aware path (PLAN-110 WS2): when the boxed-LCP contact solver is
   // selected, the differentiable step Jacobian must include the analytic
   // frictionless normal-contact gradient. Capture the active contacts at the
-  // pre-step state from the same collide() source the BoxedLcp contact stage
+  // pre-step state from the same query source the BoxedLcp contact stage
   // consumes, validate they fall inside the WS2 slice's scope, then route
   // through detail::contactStepDerivatives(). When there are no active contacts
   // this reduces exactly to the contact-free (free-fall) Jacobian for the
   // dynamic rigid bodies; that is a mathematically exact reduction, not a
   // fallback.
   if (m_contactSolverMethod == ContactSolverMethod::BoxedLcp) {
-    const std::vector<Contact> contacts = collide();
+    const std::span<const Contact> contacts
+        = queryContacts(CollisionQueryOptions{});
 
     // Scope guard: the contact gradient now covers Coulomb-friction rigid-body
     // contacts including those that excite the angular DOFs (lever arm not
@@ -6433,11 +6436,12 @@ std::size_t World::getIgnoredCollisionPairCount() const noexcept
 //==============================================================================
 std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 {
-  return queryContacts(options);
+  const std::span<const Contact> contacts = queryContacts(options);
+  return std::vector<Contact>(contacts.begin(), contacts.end());
 }
 
 //==============================================================================
-const std::vector<Contact>& World::queryContacts(
+std::span<const Contact> World::queryContacts(
     const CollisionQueryOptions& options)
 {
   if (!m_collisionQueryCache) {
@@ -6596,7 +6600,8 @@ const std::vector<Contact>& World::queryContacts(
 
   if (specs.empty()) {
     cache.contacts.clear();
-    return cache.contacts;
+    return std::span<const Contact>{
+        cache.contacts.data(), cache.contacts.size()};
   }
 
   const bool rebuildCache
@@ -6686,7 +6691,7 @@ const std::vector<Contact>& World::queryContacts(
     });
   }
 
-  return contacts;
+  return std::span<const Contact>{contacts.data(), contacts.size()};
 }
 
 //==============================================================================

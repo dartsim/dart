@@ -54,6 +54,7 @@
 #include <iosfwd>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -1011,7 +1012,7 @@ private:
       std::optional<Eigen::Vector3d> childAnchor = std::nullopt);
 
   void ensureDesignMode() const;
-  [[nodiscard]] const std::vector<Contact>& queryContacts(
+  [[nodiscard]] std::span<const Contact> queryContacts(
       const CollisionQueryOptions& options);
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;

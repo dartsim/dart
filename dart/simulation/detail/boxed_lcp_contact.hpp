@@ -60,6 +60,7 @@
 #include <Eigen/Geometry>
 #include <entt/fwd.hpp>
 
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -180,7 +181,7 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
 
 DART_SIMULATION_API void reserveBoxedLcpContactScratch(
     const detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     BoxedLcpContactScratch& scratch);
 
 /// Assemble and solve the Coulomb-friction boxed LCP for the active rigid-body
@@ -201,13 +202,13 @@ DART_SIMULATION_API void reserveBoxedLcpContactScratch(
 ///         when there is no active rigid-body normal constraint.
 [[nodiscard]] DART_SIMULATION_API BoxedLcpContactSnapshot solveBoxedLcpContacts(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep);
 
 [[nodiscard]] DART_SIMULATION_API BoxedLcpContactSnapshot&
 solveBoxedLcpContacts(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep,
     BoxedLcpContactScratch& scratch);
 

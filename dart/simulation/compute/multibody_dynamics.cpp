@@ -1849,7 +1849,7 @@ template <typename LinkContactVector>
 void collectMultibodyLinkContactsInto(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     LinkContactVector& linkContacts)
 {
   const auto isRigidBody = [&](entt::entity entity) {
@@ -2682,17 +2682,18 @@ void MultibodyForwardDynamicsStage::execute(
   // contacts remain a later unified-solve slice.
   const bool hasContactShapes
       = hasAnyCollisionShapesForMultibodyContacts(registry, view);
-  const auto* contacts = hasContactShapes
-                             ? &world.queryContacts(CollisionQueryOptions{})
-                             : nullptr;
+  std::span<const Contact> contacts;
+  if (hasContactShapes) {
+    contacts = world.queryContacts(CollisionQueryOptions{});
+  }
 
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
         = getOrEmplaceMultibodyDynamicsScratch(world, registry, entity);
-    if (contacts != nullptr) {
+    if (hasContactShapes) {
       collectMultibodyLinkContactsInto(
-          registry, structure, *contacts, scratch.linkContacts);
+          registry, structure, contacts, scratch.linkContacts);
     } else {
       scratch.linkContacts.clear();
     }
@@ -2779,7 +2780,7 @@ void MultibodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
     auto& scratch
@@ -3036,7 +3037,7 @@ struct UnifiedConstraintStage::Scratch
 
 //==============================================================================
 bool UnifiedConstraintStage::assembleProblemIntoScratch(
-    World& world, const std::vector<Contact>& contacts)
+    World& world, std::span<const Contact> contacts)
 {
   auto& registry = dart::simulation::detail::registryOf(world);
   const double timeStep = world.getTimeStep();
@@ -3232,7 +3233,7 @@ void UnifiedConstraintStage::prepare(World& world)
     return;
   }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
   }
@@ -3251,7 +3252,7 @@ void UnifiedConstraintStage::prepare(World& world)
 bool tryResolveSequentialMultibodyContacts(
     World& world,
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep)
 {
   if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
@@ -3443,7 +3444,7 @@ void UnifiedConstraintStage::execute(
   if (!hasAnyCollisionShapes(registry)) {
     return;
   }
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     return;
   }

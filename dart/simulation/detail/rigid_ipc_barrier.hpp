@@ -42,6 +42,7 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <span>
@@ -425,14 +426,96 @@ struct RigidIpcProjectedNewtonStats
   bool lineSearchLimited = false;
 };
 
+class RigidIpcProjectedNewtonDelta
+{
+public:
+  using Allocator = dart::common::StlAllocator<double>;
+  using Vector = std::vector<double, Allocator>;
+  using EigenMap = Eigen::Map<Eigen::VectorXd>;
+  using ConstEigenMap = Eigen::Map<const Eigen::VectorXd>;
+
+  RigidIpcProjectedNewtonDelta() = default;
+
+  explicit RigidIpcProjectedNewtonDelta(
+      dart::common::MemoryAllocator& allocator)
+    : m_values(Allocator{allocator})
+  {
+  }
+
+  [[nodiscard]] Eigen::Index size() const noexcept
+  {
+    return static_cast<Eigen::Index>(m_values.size());
+  }
+
+  void resize(Eigen::Index size)
+  {
+    m_values.resize(static_cast<std::size_t>(std::max<Eigen::Index>(0, size)));
+  }
+
+  void setZero()
+  {
+    std::fill(m_values.begin(), m_values.end(), 0.0);
+  }
+
+  [[nodiscard]] double norm() const
+  {
+    return asEigen().norm();
+  }
+
+  [[nodiscard]] double& operator[](Eigen::Index index) noexcept
+  {
+    return m_values[static_cast<std::size_t>(index)];
+  }
+
+  [[nodiscard]] double operator[](Eigen::Index index) const noexcept
+  {
+    return m_values[static_cast<std::size_t>(index)];
+  }
+
+  [[nodiscard]] EigenMap asEigen() noexcept
+  {
+    return EigenMap(m_values.data(), size());
+  }
+
+  [[nodiscard]] ConstEigenMap asEigen() const noexcept
+  {
+    return ConstEigenMap(m_values.data(), size());
+  }
+
+  template <typename Derived>
+  RigidIpcProjectedNewtonDelta& operator=(
+      const Eigen::MatrixBase<Derived>& values)
+  {
+    resize(values.size());
+    asEigen() = values;
+    return *this;
+  }
+
+  RigidIpcProjectedNewtonDelta& operator*=(double scale)
+  {
+    asEigen() *= scale;
+    return *this;
+  }
+
+private:
+  Vector m_values;
+};
+
 struct RigidIpcProjectedNewtonStep
 {
+  RigidIpcProjectedNewtonStep() = default;
+
+  explicit RigidIpcProjectedNewtonStep(dart::common::MemoryAllocator& allocator)
+    : delta(allocator)
+  {
+  }
+
   RigidIpcProjectedNewtonStatus status
       = RigidIpcProjectedNewtonStatus::FactorizationFailed;
   bool success = false;
   bool converged = false;
   bool lineSearchBlocked = false;
-  Eigen::VectorXd delta;
+  RigidIpcProjectedNewtonDelta delta;
   RigidIpcProjectedNewtonStats stats;
 
   [[nodiscard]] bool hasDescentDirection() const noexcept
@@ -535,7 +618,9 @@ struct RigidIpcProjectedNewtonSolveResult
 
   explicit RigidIpcProjectedNewtonSolveResult(
       dart::common::MemoryAllocator& allocator)
-    : surfaces(SurfaceAllocator{allocator}), assembly(allocator)
+    : surfaces(SurfaceAllocator{allocator}),
+      assembly(allocator),
+      lastStep(allocator)
   {
   }
 

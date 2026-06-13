@@ -1740,7 +1740,7 @@ bool shouldSkipRigidBodyContactQuery(const detail::WorldRegistry& registry)
 // are corrected.
 void resolveRigidBodyContactPositions(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double /*timeStep*/)
 {
   constexpr double allowance = 1e-4;
@@ -10253,7 +10253,7 @@ void RigidBodyContactStage::prepare(World& world)
   const bool skipContactQuery = shouldSkipRigidBodyContactQuery(registry);
   std::size_t contactCount = 0u;
   if (!skipContactQuery) {
-    const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+    const auto contacts = world.queryContacts(CollisionQueryOptions{});
     contactCount = contacts.size();
     if (world.getContactSolverMethod() == ContactSolverMethod::BoxedLcp) {
       detail::reserveBoxedLcpContactScratch(
@@ -10380,7 +10380,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const auto contacts = world.queryContacts(CollisionQueryOptions{});
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;
@@ -11085,7 +11085,7 @@ void RigidIpcContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   if (solverBodies.size() == 1u && surfaces.size() == 1u
       && options.dynamicsTerms.size() == 1u
       && options.articulationConstraints.empty() && surfaces[0].dynamic
-      && options.dynamicsTerms[0].active) {
+      && options.dynamicsTerms[0].active && options.maxIterations > 0u) {
     const auto& term = options.dynamicsTerms[0];
     sxdetail::RigidIpcVector6d acceptedPosition = poseVector(term.targetPose);
     bool diagonalSolveValid = true;

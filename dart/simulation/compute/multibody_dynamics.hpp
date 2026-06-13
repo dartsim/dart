@@ -512,7 +512,7 @@ private:
   using ScratchPtr = std::unique_ptr<Scratch, ScratchDeleter>;
 
   bool assembleProblemIntoScratch(
-      World& world, const std::vector<Contact>& contacts);
+      World& world, std::span<const Contact> contacts);
 
   std::size_t m_frictionIterations;
   common::MemoryManager* m_memoryManager = nullptr;

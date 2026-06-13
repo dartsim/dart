@@ -48,6 +48,7 @@
 #include <entt/entt.hpp>
 
 #include <limits>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -281,7 +282,7 @@ inline Eigen::VectorXd minvJtTimes(
 
 //==============================================================================
 ContactScene buildScene(
-    detail::WorldRegistry& registry, const std::vector<Contact>& contacts)
+    detail::WorldRegistry& registry, std::span<const Contact> contacts)
 {
   ContactScene scene;
 
@@ -640,7 +641,7 @@ Eigen::VectorXd constrainedNextState(
 //==============================================================================
 StepDerivatives contactStepDerivatives(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     ContactGradientMode mode)
@@ -1108,7 +1109,7 @@ std::size_t parameterColumnCount(PhysicalParameter parameter)
 // dependence on that quantity. Restores `*target` exactly.
 Eigen::VectorXd centralDifferenceColumn(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     double* target)
@@ -1134,7 +1135,7 @@ Eigen::VectorXd centralDifferenceColumn(
 //==============================================================================
 StepDerivatives contactStepDerivativesWithParameters(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<ParameterRegistration>& parameters,

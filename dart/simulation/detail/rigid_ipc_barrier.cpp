@@ -1310,7 +1310,7 @@ RigidIpcProjectedNewtonStep& computeRigidIpcProjectedNewtonStepInto(
   result.delta = stepScale * rawStep;
   result.stats.stepScale = stepScale;
   result.stats.stepNorm = result.delta.norm();
-  result.stats.gradientDotStep = assembly.gradient.dot(result.delta);
+  result.stats.gradientDotStep = assembly.gradient.dot(result.delta.asEigen());
   if ((!hasEqualityRows && !(result.stats.gradientDotStep < 0.0))
       || !std::isfinite(result.stats.gradientDotStep)) {
     result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
@@ -1338,10 +1338,11 @@ RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
   return result;
 }
 
+template <typename Derived>
 void applyRigidIpcNewtonDelta(
     auto& surfaces,
     const RigidIpcBarrierAssembly& assembly,
-    const Eigen::VectorXd& delta)
+    const Eigen::MatrixBase<Derived>& delta)
 {
   assert(assembly.bodyDofOffsets.size() == surfaces.size());
   for (std::size_t body = 0; body < surfaces.size(); ++body) {
@@ -1351,9 +1352,9 @@ void applyRigidIpcNewtonDelta(
     }
     assert(static_cast<Eigen::Index>(offset + 6) <= delta.size());
     surfaces[body].pose.position
-        += delta.segment<3>(static_cast<Eigen::Index>(offset));
+        += delta.template segment<3>(static_cast<Eigen::Index>(offset));
     surfaces[body].pose.rotation
-        += delta.segment<3>(static_cast<Eigen::Index>(offset + 3));
+        += delta.template segment<3>(static_cast<Eigen::Index>(offset + 3));
   }
 }
 
@@ -2670,6 +2671,7 @@ RigidIpcProjectedNewtonSolveScratch::RigidIpcProjectedNewtonSolveScratch(
     candidateSurfaces(SurfaceAllocator{allocator}),
     acceptedSurfaces(SurfaceAllocator{allocator}),
     bestDecreasingSurfaces(SurfaceAllocator{allocator}),
+    step(allocator),
     workspace(allocator.construct<RigidIpcProjectedNewtonSolveScratchWorkspace>(
         &allocator))
 {
@@ -3045,7 +3047,7 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
         candidateSurfaces.assign(
             result.surfaces.begin(), result.surfaces.end());
         applyRigidIpcNewtonDelta(
-            candidateSurfaces, result.assembly, step.delta);
+            candidateSurfaces, result.assembly, step.delta.asEigen());
         // The Newton delta only moves dynamic surfaces, so candidateSurfaces
         // holds each kinematic obstacle at its END pose. Sweep from a start
         // configuration with kinematic obstacles at their START pose so the
@@ -3141,7 +3143,9 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
           candidateSurfaces.assign(
               result.surfaces.begin(), result.surfaces.end());
           applyRigidIpcNewtonDelta(
-              candidateSurfaces, result.assembly, trialScale * step.delta);
+              candidateSurfaces,
+              result.assembly,
+              trialScale * step.delta.asEigen());
           if (!kinematicCandidateAllowsFullStep(candidateSurfaces)) {
             hasUnsafeKinematicCandidate = true;
             if (backtrack == newtonOptions.maxBacktrackingIterations) {
@@ -3216,7 +3220,8 @@ void solveRigidIpcProjectedNewtonBarrierSystem(
       }
 
       if (!acceptedCandidate) {
-        applyRigidIpcNewtonDelta(result.surfaces, result.assembly, step.delta);
+        applyRigidIpcNewtonDelta(
+            result.surfaces, result.assembly, step.delta.asEigen());
       }
       ++result.stats.acceptedSteps;
       ++result.stats.iterations;

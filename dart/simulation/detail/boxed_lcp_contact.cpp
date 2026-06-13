@@ -49,6 +49,7 @@
 #include <entt/entt.hpp>
 
 #include <limits>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -195,7 +196,7 @@ void BoxedLcpContactScratch::clearProblem()
 //==============================================================================
 void reserveBoxedLcpContactScratch(
     const detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     BoxedLcpContactScratch& scratch)
 {
   if (contacts.empty()) {
@@ -240,7 +241,7 @@ void reserveBoxedLcpContactScratch(
 //==============================================================================
 BoxedLcpContactSnapshot solveBoxedLcpContacts(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep)
 {
   BoxedLcpContactScratch scratch;
@@ -252,7 +253,7 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
 //==============================================================================
 BoxedLcpContactSnapshot& solveBoxedLcpContacts(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     double timeStep,
     BoxedLcpContactScratch& scratch)
 {

@@ -56,6 +56,7 @@
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -133,7 +134,7 @@ namespace dart::simulation::detail {
 ///         (except under `PreContactSurrogate`, which adds a surrogate block).
 [[nodiscard]] DART_SIMULATION_API StepDerivatives contactStepDerivatives(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     ContactGradientMode mode = ContactGradientMode::Analytic);
@@ -187,7 +188,7 @@ using ParameterRegistration = std::pair<entt::entity, PhysicalParameter>;
 [[nodiscard]] DART_SIMULATION_API StepDerivatives
 contactStepDerivativesWithParameters(
     detail::WorldRegistry& registry,
-    const std::vector<Contact>& contacts,
+    std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<ParameterRegistration>& parameters,
