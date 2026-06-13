@@ -1,5 +1,46 @@
 # Unified Newton-Barrier Handoff
 
+## Combined Scene Runtime Barrier-Hessian Packet Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private barrier/friction packet with a reduced
+combined all-family scene runtime barrier-Hessian row. The benchmark builds the
+same DART `World` deformable surface used by the existing scene-owned runtime
+barrier rows, extracts the runtime point-triangle and edge-edge candidate sets
+once, expands the point-triangle contacts into point-edge and point-point
+primitive contacts, and evaluates point-triangle, point-edge, point-point, and
+edge-edge barrier-Hessian CUDA paths in one packet row. This is reduced packet
+evidence only; it does not prove broader sparse Hessian assembly, full runtime
+scene filtering, GPU `World::step`, or a top-level speedup claim.
+
+Fresh packet evidence records one scene body, 2,560 scene nodes, 768 surface
+triangles, 512 source point-triangle candidates, 1,536 source edge-edge
+candidates, and 5,120 total runtime primitive contacts: 512 point-triangle,
+1,536 point-edge, 1,536 point-point, and 1,536 edge-edge. The combined row
+records 2,560 active barriers with family counts 256/768/256/1,280,
+`max_result_abs_error=2.220446049250313e-15`, and
+`speedup=0.30063758288923775x` (`meets_speedup_gate=false`). The top-level
+barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.048260742808231415x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_barrier_friction_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda python scripts/write_plan083_gpu_barrier_friction_packet.py`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_barrier_friction_kernel_cuda$'`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+
 ## Scene-Owned Equality-Reduced Diagonal Solve Packet Checkpoint (2026-06-13)
 
 Work continued locally on
@@ -556,8 +597,8 @@ point-point runtime row. The top-level barrier/friction packet records
 
 This is reduced scene-owned point-triangle, point-edge, and point-point
 barrier-Hessian evidence only. It does not claim broader sparse Hessian
-assembly, additional runtime rows, full GPU `World::step`, or barrier/friction
-speedup-gate completion.
+assembly, broader sparse barrier/contact assembly, full GPU `World::step`, or
+barrier/friction speedup-gate completion.
 
 Latest local gates:
 
@@ -1425,7 +1466,8 @@ gates remain future evidence.
    scene filtering, analytic curved CCD, full scene-level line search, broader
    production sparse Hessian graph construction/assembly, direct/global sparse
    factorization, nonlinear equality constraints, GPU `World::step`
-   integration, additional runtime contact rows, and packet speedup gates.
+   integration, broader sparse barrier/contact assembly, and packet speedup
+   gates.
 5. Keep plan/dev-task text honest: packet rows may move from `planned` to
    `in-progress` only with corresponding runtime or packet evidence, and the
    dev-task folder should not be retired until the remaining in-progress work

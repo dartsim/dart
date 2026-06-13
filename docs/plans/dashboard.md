@@ -349,7 +349,8 @@ its own line so status updates remain git-history friendly.
   primitive barrier-Hessian parity, point-triangle/point-point/point-edge
   primitive barrier-Hessian PSD-projection parity, reduced scene-owned
   point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
-  rows, reduced diagonal assembly/solve plus
+  rows plus a reduced combined all-family scene runtime barrier-Hessian row,
+  reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
   sparse off-diagonal surface-edge assembly row plus a reduced scene-owned
   sparse graph construction/assembly row plus a reduced scene-owned nonlinear
@@ -365,10 +366,9 @@ its own line so status updates remain git-history friendly.
   unique-edge dedup row plus a reduced scene-owned diagonal assembly/solve row,
   reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
-  and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
-  contact rows, runtime scene filtering, analytic curved CCD, full scene-level
-  line search, full runtime sparse Hessian graph construction and assembly
-  beyond the reduced dedup row,
+  and an ABD/FEM coupled micro-solve packet. It still keeps runtime scene
+  filtering, analytic curved CCD, full scene-level line search, full runtime
+  sparse Hessian graph construction and assembly beyond the reduced dedup row,
   unbounded production direct/global sparse factorization, production nonlinear equality convergence
   policy/solving, GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The

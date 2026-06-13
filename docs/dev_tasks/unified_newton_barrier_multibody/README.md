@@ -2,6 +2,46 @@
 
 ## Current Status
 
+Latest combined scene runtime barrier-Hessian checkpoint (2026-06-13): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private barrier/friction packet with a reduced
+combined all-family scene runtime barrier-Hessian row. The benchmark builds the
+same DART `World` deformable surface used by the existing scene-owned runtime
+barrier rows, extracts the runtime point-triangle and edge-edge candidate sets
+once, expands the point-triangle contacts into point-edge and point-point
+primitive contacts, and evaluates point-triangle, point-edge, point-point, and
+edge-edge barrier-Hessian CUDA paths in one packet row. This is reduced packet
+evidence only; it does not prove broader sparse Hessian assembly, full runtime
+scene filtering, GPU `World::step`, or a top-level speedup claim.
+
+Fresh packet evidence records one scene body, 2,560 scene nodes, 768 surface
+triangles, 512 source point-triangle candidates, 1,536 source edge-edge
+candidates, and 5,120 total runtime primitive contacts: 512 point-triangle,
+1,536 point-edge, 1,536 point-point, and 1,536 edge-edge. The combined row
+records 2,560 active barriers with family counts 256/768/256/1,280,
+`max_result_abs_error=2.220446049250313e-15`, and
+`speedup=0.30063758288923775x` (`meets_speedup_gate=false`). The top-level
+barrier/friction packet records
+`max_result_abs_error=7.844391802791506e-12` and
+`speedup=0.048260742808231415x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_barrier_friction_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py -q`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda python scripts/write_plan083_gpu_barrier_friction_packet.py`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_barrier_friction_kernel_cuda$'`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_barrier_friction_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+
 Latest scene-owned equality-reduced diagonal solve checkpoint (2026-06-13):
 work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
 #2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
@@ -549,7 +589,8 @@ point-point runtime row. The top-level barrier/friction packet records
 `max_result_abs_error=7.844391802791506e-12` and
 `speedup=0.2016402329495093x` (`meets_speedup_gate=false`). This is reduced
 scene-owned point-triangle, point-edge, and point-point barrier-Hessian evidence
-only: broader sparse Hessian assembly, additional runtime rows, full GPU
+only: broader sparse Hessian assembly, broader sparse barrier/contact assembly,
+full GPU
 `World::step`, and speedup-gate completion remain future work.
 
 Latest validation passed:
@@ -974,7 +1015,7 @@ packets as in-progress evidence.
 
 Fresh-session continuation: first inspect `git status -sb`, the local diff,
 #2978, the branch head, hosted CI, and new review comments. Then continue with
-broader sparse Hessian assembly, additional runtime contact rows, or
+broader sparse Hessian assembly, broader sparse barrier/contact assembly, or
 speedup-gate work on the same PR. Do not open another PLAN-083 PR.
 
 - [x] Phase 1: promote shared world-primitive math into an internal
@@ -1158,10 +1199,10 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         edge-edge primitive barrier-Hessian packets, plus point-triangle/
         point-point/point-edge Hessian PSD-projection parity, plus reduced
         scene-owned point-triangle/point-edge/point-point/edge-edge
-        barrier-Hessian runtime rows, with exact CPU/GPU local-output parity;
+        barrier-Hessian runtime rows plus a reduced combined all-family scene
+        runtime barrier-Hessian row, with exact CPU/GPU local-output parity;
         keep the row in-progress because broader sparse Hessian assembly,
-        additional runtime contact rows, full GPU `World::step`, and runtime
-        speedup remain unproven.
+        full GPU `World::step`, and runtime speedup remain unproven.
   - [x] Add private reduced diagonal assembly/solve, reduced scene-owned
         diagonal assembly/solve, pair-slot off-diagonal sparse-block assembly,
         reduced scene-owned sparse off-diagonal surface-edge assembly, sparse
@@ -1285,7 +1326,8 @@ storage, or backend resources as public API.
   tangent-stencil packet rows, point-triangle/point-point/point-edge/edge-edge
   primitive barrier-Hessian, point-triangle/point-point/point-edge Hessian
   PSD-projection, and reduced scene-owned point-triangle/point-edge/
-  point-point/edge-edge barrier-Hessian runtime packet evidence. Continue
+  point-point/edge-edge barrier-Hessian runtime packet evidence plus a reduced
+  combined all-family scene runtime barrier-Hessian row. Continue
   monitoring CI/review on the same branch and keep further PLAN-083 slices
   consolidated there.
 - The old `deformable_contact` include paths remain as forwarding
@@ -1322,9 +1364,9 @@ storage, or backend resources as public API.
    and keep remaining work in consolidated PR #2978 instead of reopening the
    old phase-scoped stack. A fresh session should resume the branch/PR context
    first, check hosted #2978 CI/review state for actionable failures, then
-   continue runtime scene filtering, speedup-gate work, downstream
-   additional primitive-family/runtime contact evidence, runtime sparse
-   Hessian graph construction/assembly beyond the reduced dedup row,
+   continue runtime scene filtering, speedup-gate work, runtime sparse
+   Hessian graph construction/assembly beyond the reduced dedup row, broader
+   sparse barrier/contact assembly,
    direct/global sparse factorization, or analytic/runtime CCD line-search
    evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
