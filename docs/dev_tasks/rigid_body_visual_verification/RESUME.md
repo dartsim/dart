@@ -2,6 +2,25 @@
 
 ## Current Handoff (2026-06-12)
 
+Current branch snapshot after this slice: `feature/rigid-body-gui-visual-verification`
+is clean and ahead of `origin/feature/rigid-body-gui-visual-verification` by one
+local commit, `Guard rigid joint panel controls`. There is still no PR for this
+branch. Do not push, create a PR, set a milestone, rerun CI, or mutate review
+state without explicit maintainer/user approval.
+
+Latest local continuation: rows 28-34 now have a stronger panel-contract guard
+for the editable controls that users rely on in the later joint and multibody
+workflow rows. The comparison-panel test now asserts the Perturbation,
+motor/limit, screw-pitch, dynamics-term, COM, and Jacobian slider labels and
+ranges. Row 29, `rigid_joint_motor_limits`, also has a focused panel-edit
+guard proving the GUI sliders update the controller, joint command velocity,
+velocity limits, position upper limit, requested force, effort cap, and capture
+controls. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_joint_motor_limits_panel_edits_public_limits -q`
+reported `2 passed`; the adjacent runtime/replay guard
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_joint_motor_limits_clamp_commands_and_effort -q`
+reported `2 passed`. No new capture packet was generated in this slice.
+
 Latest local continuation: row 27, `rigid_distance_spring`, now exposes the
 public distance-spring parameters promised by the workflow. `World` has narrow
 `has/get/set` accessors for named rigid-body distance springs, dartpy exposes

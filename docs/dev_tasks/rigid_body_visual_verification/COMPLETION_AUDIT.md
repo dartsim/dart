@@ -7,6 +7,18 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local harness-hardening slice: rows 28-34 now have a stronger
+panel-contract guard for the editable controls that make the later joint and
+multibody rows useful during visual debugging. The comparison-panel test now
+asserts the public Perturbation, motor/limit, screw-pitch, dynamics-term, COM,
+and Jacobian slider labels and ranges. Row 29, `rigid_joint_motor_limits`, also
+has a focused panel-edit guard proving GUI sliders update the controller, joint
+command velocity, velocity limits, position upper limit, requested force,
+effort cap, and capture controls. Focused panel guards reported `2 passed`,
+and the adjacent row-29 runtime/replay guards reported `2 passed`. This slice
+does not add a new visual packet; the existing rows 01-36 packet remains the
+latest broad visual artifact.
+
 Latest local implementation slice: row 30,
 `rigid_joint_passive_parameters`, now exposes the passive-joint force controls
 that were already modeled in capture and replay state. The GUI adds

@@ -1277,6 +1277,7 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_limited_joints,
             (
+                "slider:Perturbation:0.0:0.35",
                 "text:comparison axis: one-DOF joint constraint family",
                 "text:held fixed: sequential rigid joints | static bases | z-axis joints | payload mass 1.0 | time step 5.0 ms",
             ),
@@ -1284,6 +1285,11 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_joint_motor_limits,
             (
+                "slider:Command speed:0.05:0.85",
+                "slider:Velocity limit:0.05:0.5",
+                "slider:Position upper limit:0.12:0.65",
+                "slider:Requested force:2.0:22.0",
+                "slider:Effort cap:1.0:9.0",
                 "text:comparison axis: World multibody actuator/limit family",
                 "text:held fixed: World multibody joints | x-axis prismatic rails + y-axis revolute stop | carriage mass 2.0 | time step 5.0 ms",
             ),
@@ -1300,6 +1306,10 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_screw_joint_pitch,
             (
+                "slider:Pitch scale:0.02:0.6",
+                "slider:Gravity scale:0.0:1.4",
+                "slider:Moving mass:0.5:5.0",
+                "slider:Axial inertia:0.03:0.8",
                 "text:comparison axis: screw pitch coupling family",
                 "text:held fixed: World screw joints | contacts off | z-axis screw | moving mass 2.0 | axial inertia 0.12 | time step 3.0 ms",
             ),
@@ -1307,6 +1317,10 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_multibody_dynamics_terms,
             (
+                "slider:Target acceleration:0.2:5.0",
+                "slider:Joint impulse:0.2:8.0",
+                "slider:Heavy distal mass scale:1.2:8.0",
+                "slider:Gravity scale:0.0:1.5",
                 "text:comparison axis: joint-space dynamics term family",
                 "text:held fixed: World multibody dynamics | contacts off | fixed-base revolute links | target acceleration 2.2 | impulse 3.0 | gravity scale 1.0 | time step 3.0 ms",
             ),
@@ -1314,6 +1328,10 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_link_center_of_mass,
             (
+                "slider:COM offset:0.0:0.32",
+                "slider:Gravity scale:0.0:1.5",
+                "slider:Link mass:0.5:5.0",
+                "slider:High-inertia multiplier:1.0:8.0",
                 "text:comparison axis: link center-of-mass offset family",
                 "text:held fixed: World multibody revolute links | contacts off | visual geometry fixed | link mass 2.0 | gravity scale 1.0 | time step 3.0 ms",
             ),
@@ -1321,6 +1339,11 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_link_jacobian,
             (
+                "slider:Motion speed:0.1:2.4",
+                "slider:Elbow phase:-3.14:3.14",
+                "slider:Wrench force:0.0:3.0",
+                "slider:Wrench angle:-120.0:120.0",
+                "slider:Wrench moment:-0.6:0.6",
                 "text:comparison axis: link-origin Jacobian mapping family",
                 "text:held fixed: World multibody link Jacobian | contacts off | gravity off | two revolute links | link length 0.55 | time step 4.0 ms",
             ),
@@ -2213,6 +2236,65 @@ def test_rigid_distance_spring_panel_edits_public_spring_parameters() -> None:
     assert capture_metrics["controls"]["soft_stiffness"] == pytest.approx(72.0)
     assert capture_metrics["controls"]["stiff_stiffness"] == pytest.approx(280.0)
     assert capture_metrics["controls"]["offset_stiffness"] == pytest.approx(160.0)
+
+
+def test_rigid_joint_motor_limits_panel_edits_public_limits() -> None:
+    _require_simulation_symbols("World", "JointSpec")
+
+    setup = rigid_joint_motor_limits.build()
+    controller = setup.info["rigid_joint_motor_limit_controller"]
+
+    builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Command speed": 0.73,
+            "Velocity limit": 0.22,
+            "Position upper limit": 0.47,
+            "Requested force": 17.0,
+            "Effort cap": 4.25,
+        },
+    )
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Command speed:0.05:0.85" in builder.events
+    assert "slider:Velocity limit:0.05:0.5" in builder.events
+    assert "slider:Position upper limit:0.12:0.65" in builder.events
+    assert "slider:Requested force:2.0:22.0" in builder.events
+    assert "slider:Effort cap:1.0:9.0" in builder.events
+    assert controller.command_speed == pytest.approx(0.73)
+    assert controller.velocity_limit == pytest.approx(0.22)
+    assert controller.position_limit == pytest.approx(0.47)
+    assert controller.force_command == pytest.approx(17.0)
+    assert controller.effort_limit == pytest.approx(4.25)
+    assert controller.motor_joint.command_velocity.tolist() == pytest.approx([0.73])
+    assert controller.motor_joint.velocity_lower_limits.tolist() == pytest.approx(
+        [-0.22]
+    )
+    assert controller.motor_joint.velocity_upper_limits.tolist() == pytest.approx(
+        [0.22]
+    )
+    assert controller.limit_joint.position_lower_limits.tolist() == pytest.approx(
+        [-0.25]
+    )
+    assert controller.limit_joint.position_upper_limits.tolist() == pytest.approx(
+        [0.47]
+    )
+    assert controller.limited_force_joint.force.tolist() == pytest.approx([17.0])
+    assert controller.limited_force_joint.effort_lower_limits.tolist() == pytest.approx(
+        [-4.25]
+    )
+    assert controller.limited_force_joint.effort_upper_limits.tolist() == pytest.approx(
+        [4.25]
+    )
+    assert controller.open_force_joint.force.tolist() == pytest.approx([17.0])
+    assert controller.open_force_joint.effort_upper_limits.tolist() == pytest.approx(
+        [17.0]
+    )
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["controls"]["command_speed"] == pytest.approx(0.73)
+    assert capture_metrics["controls"]["velocity_limit"] == pytest.approx(0.22)
+    assert capture_metrics["controls"]["position_limit"] == pytest.approx(0.47)
+    assert capture_metrics["controls"]["force_command"] == pytest.approx(17.0)
+    assert capture_metrics["controls"]["effort_limit"] == pytest.approx(4.25)
 
 
 def test_rigid_joint_passive_parameters_panel_edits_drive_forces() -> None:
