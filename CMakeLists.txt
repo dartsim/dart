@@ -633,16 +633,16 @@ endif()
 # Compiler flags
 #===============================================================================
 if(MSVC)
-  # Visual Studio 2022 17.10+ required for C++20 support
-  set(msvc_required_version 1940)
+  # Visual Studio 2026 required for supported Windows builds.
+  set(msvc_required_version 1950)
   if(
     MSVC_VERSION VERSION_LESS ${msvc_required_version}
     AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC"
   )
     message(
       FATAL_ERROR
-      "Visual Studio ${MSVC_VERSION} is detected, but "
-      "${PROJECT_NAME_UPPERCASE} requires ${msvc_required_version} or greater (Visual Studio 2022 17.10+)."
+      "MSVC ${MSVC_VERSION} is detected, but "
+      "${PROJECT_NAME_UPPERCASE} requires MSVC ${msvc_required_version} or greater (Visual Studio 2026)."
     )
   endif()
 
