@@ -1,5 +1,74 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Profile Header Guard Tests
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was `f711df5312a Guard exact LCP stub classes`;
+   if this section is committed, inspect `git log --oneline --decorate -8` for
+   the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   profile-header test guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `f711df5312a Guard exact LCP stub classes`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by twenty-one commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/tests/unit/test_check_lcp_solver_roster.py` now covers
+  `check_performance_profile_headers()` rejecting malformed CSV headers,
+  unknown solver columns, and non-native solver columns.
+- The production roster checker, generated profile CSVs, bindings, stubs,
+  solver predicates, demo runtime behavior, public APIs, and performance
+  timings were not intentionally changed in this test-only slice.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- Focused roster tests: 19 tests passed.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, `scripts/check_lcp_solver_roster.py`, `pixi run lint`,
+and `git diff --check`, then commit the focused test/docs change. Then continue
+the broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Exact Stub Class Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

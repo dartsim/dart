@@ -295,6 +295,54 @@ def test_lcp_profile_headers_reject_missing_native_solver(
         module.check_performance_profile_headers(manifest)
 
 
+def test_lcp_profile_headers_reject_invalid_header(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    path = tmp_path / "performance_profile_standard.csv"
+    path.write_text("scale,Dantzig\n1,1.0\n", encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"standard": path})
+
+    with pytest.raises(AssertionError, match="invalid header"):
+        module.check_performance_profile_headers(manifest)
+
+
+def test_lcp_profile_headers_reject_unknown_solver(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    path = tmp_path / "performance_profile_standard.csv"
+    path.write_text("tau,Dantzig,Ghost\n1,1.0,2.0\n", encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"standard": path})
+
+    with pytest.raises(AssertionError, match="contains unknown solvers"):
+        module.check_performance_profile_headers(manifest)
+
+
+def test_lcp_profile_headers_reject_non_native_solver(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    path = tmp_path / "performance_profile_boxed.csv"
+    path.write_text("tau,Dantzig\n1,1.0\n", encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"boxed": path})
+
+    with pytest.raises(AssertionError, match="contains non-native boxed solvers"):
+        module.check_performance_profile_headers(manifest)
+
+
 def test_lcp_profile_evidence_rejects_missing_native_solver(
     tmp_path: Path,
 ) -> None:
