@@ -13,17 +13,59 @@ breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
 Latest local slice: the default sequential-impulse normal contact solve now
-stores each contact's `arm x normal` angular Jacobian terms and reuses them for
-normal effective mass, restitution approach, and per-iteration normal approach
-velocity. This avoids rebuilding full contact-point velocities with angular
-cross products inside the normal loop. The frictional tangent solve still uses
-the existing full contact-point velocity path. This targets the
-`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row, where the centered
-frictionless contacts have zero angular normal Jacobian terms. This does not
-refresh the tracked friction-sweep packet, close the frictionless source-row CPU
-gap, or claim GPU parity.
+records whether each contact side has a nonzero normal angular Jacobian term,
+skips the corresponding zero-angular approach-velocity and effective-mass work,
+avoids no-op angular velocity updates for centered normal rows, and returns
+early from normal-impulse application when the clamped impulse delta is zero.
+The frictional tangent solve still uses the existing full contact-point
+velocity path. This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0`
+source-shaped row, where the centered frictionless contacts have zero angular
+normal Jacobian terms. This does not refresh the tracked friction-sweep packet,
+close the frictionless source-row CPU gap, or claim GPU parity.
 
 Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-before-guarded-normal-updates.json --benchmark_out_format=json'`
+  passed before the edit. It recorded a 7.96 us median CPU step under load
+  average `5.59, 6.12, 8.44` with CPU scaling enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-guarded-normal-updates.json --benchmark_out_format=json'`
+  passed after the edit. It recorded a 7.49 us median CPU step under load
+  average `3.01, 4.24, 6.99` with CPU scaling enabled. This is local path
+  smoke only because same-source native timing and visual captures were not
+  rerun.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The run
+  overlapped external DART/CUDA load; slow stages included
+  `test_rigid_ipc_paper_experiments` at 396.33 s, `test_world` at 234.02 s,
+  the simulation-label `test_lcp_jacobi_batch_cuda` at 539.94 s, and the final
+  CUDA smoke `test_lcp_jacobi_batch_cuda` at 295.82 s. The documentation stage
+  emitted four existing autodoc warnings about the generated
+  `dartpy._world_render_bridge` stub import, but the command passed.
+
+Next preferred bounded work: continue the per-step frictionless max-friction-0
+CPU audit under cleaner host load, or switch to GPU parity preparation if the
+CPU path has no safe bounded next cut.
+
+Previous local checkpoint: commit `5101bd44a92` records the default
+sequential-impulse normal contact solve storing each contact's `arm x normal`
+angular Jacobian terms and reusing them for normal effective mass, restitution
+approach, and per-iteration normal approach velocity. This avoids rebuilding
+full contact-point velocities with angular cross products inside the normal
+loop. The frictional tangent solve still uses the existing full contact-point
+velocity path. This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0`
+source-shaped row, where the centered frictionless contacts have zero angular
+normal Jacobian terms. This does not refresh the tracked friction-sweep packet,
+close the frictionless source-row CPU gap, or claim GPU parity.
+
+Validation for commit `5101bd44a92`:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
   passed.
@@ -49,10 +91,6 @@ Validation for the latest local slice:
   `test_lcp_jacobi_batch_cuda` in 768.61 s before passing benchmark smoke. The
   documentation stage emitted four existing autodoc warnings about the
   generated `dartpy._world_render_bridge` stub import, but the command passed.
-
-Next preferred bounded work: continue the per-step frictionless max-friction-0
-CPU audit under cleaner host load, or switch to GPU parity preparation if the
-CPU path has no safe bounded next cut.
 
 Previous local checkpoint: commit `2cfdc455ee3` records the default
 sequential-impulse rigid contact path skipping inverse world-inertia

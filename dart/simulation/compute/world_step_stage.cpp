@@ -1359,11 +1359,17 @@ Eigen::Matrix3d inverseWorldInertia(
 }
 
 //==============================================================================
+bool hasContactNormalAngularTerm(const Eigen::Vector3d& normalArmCross)
+{
+  return normalArmCross.x() != 0.0 || normalArmCross.y() != 0.0
+         || normalArmCross.z() != 0.0;
+}
+
+//==============================================================================
 bool needsContactInverseInertia(
     const Eigen::Vector3d& normalArmCross, const double friction)
 {
-  return friction > 0.0 || normalArmCross.x() != 0.0
-         || normalArmCross.y() != 0.0 || normalArmCross.z() != 0.0;
+  return friction > 0.0 || hasContactNormalAngularTerm(normalArmCross);
 }
 
 //==============================================================================
@@ -9395,6 +9401,8 @@ struct RigidBodyContactStage::ContactScratch
     double invMassB;
     Eigen::Matrix3d invInertiaA;
     Eigen::Matrix3d invInertiaB;
+    bool hasNormalAngularA;
+    bool hasNormalAngularB;
     double effectiveMass;
     double inverseEffectiveMass;
     double depth;
@@ -9763,11 +9771,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   const auto normalPointVelocity = [](const comps::Velocity& velocity,
                                       const Eigen::Vector3d& normal,
                                       const Eigen::Vector3d& normalArmCross,
+                                      bool hasNormalAngular,
                                       bool isStatic) -> double {
     if (isStatic) {
       return 0.0;
     }
-    return velocity.linear.dot(normal) + velocity.angular.dot(normalArmCross);
+    double result = velocity.linear.dot(normal);
+    if (hasNormalAngular) {
+      result += velocity.angular.dot(normalArmCross);
+    }
+    return result;
   };
 
   if (m_contactScratch == nullptr) {
@@ -9816,6 +9829,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     constraint.normalArmCrossA = constraint.armA.cross(constraint.normal);
     constraint.normalArmCrossB = constraint.armB.cross(constraint.normal);
+    constraint.hasNormalAngularA
+        = !staticA && hasContactNormalAngularTerm(constraint.normalArmCrossA);
+    constraint.hasNormalAngularB
+        = !staticB && hasContactNormalAngularTerm(constraint.normalArmCrossB);
     const bool needsInverseInertiaA
         = !staticA
           && needsContactInverseInertia(
@@ -9832,15 +9849,25 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
                                  : Eigen::Matrix3d::Zero();
     constraint.normalLinearDeltaA = -constraint.invMassA * constraint.normal;
     constraint.normalLinearDeltaB = constraint.invMassB * constraint.normal;
-    constraint.normalAngularDeltaA
-        = -constraint.invInertiaA * constraint.normalArmCrossA;
-    constraint.normalAngularDeltaB
-        = constraint.invInertiaB * constraint.normalArmCrossB;
+    constraint.normalAngularDeltaA = Eigen::Vector3d::Zero();
+    if (constraint.hasNormalAngularA) {
+      constraint.normalAngularDeltaA
+          = -constraint.invInertiaA * constraint.normalArmCrossA;
+    }
+    constraint.normalAngularDeltaB = Eigen::Vector3d::Zero();
+    if (constraint.hasNormalAngularB) {
+      constraint.normalAngularDeltaB
+          = constraint.invInertiaB * constraint.normalArmCrossB;
+    }
     const double angular
-        = constraint.normalArmCrossA.dot(
-              constraint.invInertiaA * constraint.normalArmCrossA)
-          + constraint.normalArmCrossB.dot(
-              constraint.invInertiaB * constraint.normalArmCrossB);
+        = (constraint.hasNormalAngularA
+               ? constraint.normalArmCrossA.dot(
+                     constraint.invInertiaA * constraint.normalArmCrossA)
+               : 0.0)
+          + (constraint.hasNormalAngularB
+                 ? constraint.normalArmCrossB.dot(
+                       constraint.invInertiaB * constraint.normalArmCrossB)
+                 : 0.0);
     constraint.effectiveMass
         = constraint.invMassA + constraint.invMassB + angular;
     if (constraint.effectiveMass <= 0.0) {
@@ -9860,11 +9887,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
                                        velocityB,
                                        constraint.normal,
                                        constraint.normalArmCrossB,
+                                       constraint.hasNormalAngularB,
                                        constraint.staticB)
                                    - normalPointVelocity(
                                        velocityA,
                                        constraint.normal,
                                        constraint.normalArmCrossA,
+                                       constraint.hasNormalAngularA,
                                        constraint.staticA);
     constexpr double restitutionThreshold = 1e-3;
     constraint.restitutionVelocity
@@ -9914,11 +9943,13 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
                                     velocityB,
                                     constraint.normal,
                                     constraint.normalArmCrossB,
+                                    constraint.hasNormalAngularB,
                                     constraint.staticB)
                                 - normalPointVelocity(
                                     velocityA,
                                     constraint.normal,
                                     constraint.normalArmCrossA,
+                                    constraint.hasNormalAngularA,
                                     constraint.staticA);
 
         double lambda = -(approach - constraint.restitutionVelocity)
@@ -9927,10 +9958,21 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         lambda = clamped - constraint.normalImpulse;
         constraint.normalImpulse = clamped;
 
-        velocityA.linear += lambda * constraint.normalLinearDeltaA;
-        velocityA.angular += lambda * constraint.normalAngularDeltaA;
-        velocityB.linear += lambda * constraint.normalLinearDeltaB;
-        velocityB.angular += lambda * constraint.normalAngularDeltaB;
+        if (lambda == 0.0) {
+          return;
+        }
+        if (!constraint.staticA) {
+          velocityA.linear += lambda * constraint.normalLinearDeltaA;
+          if (constraint.hasNormalAngularA) {
+            velocityA.angular += lambda * constraint.normalAngularDeltaA;
+          }
+        }
+        if (!constraint.staticB) {
+          velocityB.linear += lambda * constraint.normalLinearDeltaB;
+          if (constraint.hasNormalAngularB) {
+            velocityB.angular += lambda * constraint.normalAngularDeltaB;
+          }
+        }
       };
 
   if (!hasFrictionConstraints) {
