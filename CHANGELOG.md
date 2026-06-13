@@ -284,7 +284,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     The contact-free differentiable multibody derivative path now also routes
     analytic inverse-dynamics derivative spatial-vector scratch through
     `MultibodyInverseDynamicsScratch`, and `World` retains that scratch with
-    the free allocator for same-shape differentiable steps.
+    the free allocator for same-shape differentiable steps. It now also keeps
+    contact-free coordinate collection in World-owned scratch instead of
+    rebuilding a default-allocator vector for every differentiable step.
     The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the

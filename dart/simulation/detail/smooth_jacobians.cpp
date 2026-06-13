@@ -39,25 +39,11 @@
 
 #include <entt/entt.hpp>
 
-#include <utility>
-#include <vector>
-
 #include <cmath>
 
 namespace dart::simulation::detail {
 
 namespace {
-
-//==============================================================================
-// One generalized coordinate addressed by its owning joint entity and the local
-// coordinate index within that joint. The flat list is built in the same order
-// `buildDynamicsTree` assigns DOF offsets (structure.links order, movable
-// joints only), so list index == global DOF index.
-struct CoordinateRef
-{
-  entt::entity joint = entt::null;
-  Eigen::Index local = 0;
-};
 
 //==============================================================================
 Eigen::Matrix3d skew(const Eigen::Vector3d& v)
@@ -123,11 +109,13 @@ Eigen::Matrix3d rotationRightJacobianInverse(const Eigen::Vector3d& phi)
 }
 
 //==============================================================================
-std::vector<CoordinateRef> collectCoordinates(
+void collectCoordinatesInto(
     const detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure)
+    const comps::MultibodyStructure& structure,
+    ContactFreeStepCoordinateScratch& coordinates)
 {
-  std::vector<CoordinateRef> coordinates;
+  coordinates.clear();
+  coordinates.reserve(structure.links.size());
   for (const auto linkEntity : structure.links) {
     const auto& link = registry.get<comps::Link>(linkEntity);
     if (link.parentJoint == entt::null) {
@@ -139,7 +127,6 @@ std::vector<CoordinateRef> collectCoordinates(
       coordinates.push_back({link.parentJoint, d});
     }
   }
-  return coordinates;
 }
 
 //==============================================================================
@@ -163,11 +150,15 @@ StepDerivatives contactFreeStepDerivatives(
     const Eigen::Vector3d& gravity,
     double timeStep,
     const Eigen::Ref<const Eigen::VectorXd>& tau,
+    ContactFreeStepCoordinateScratch* coordinateScratch,
     compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch)
 {
   StepDerivatives derivatives;
 
-  const auto coordinates = collectCoordinates(registry, structure);
+  ContactFreeStepCoordinateScratch localCoordinates;
+  auto& coordinates
+      = coordinateScratch != nullptr ? *coordinateScratch : localCoordinates;
+  collectCoordinatesInto(registry, structure, coordinates);
   const auto ndof = static_cast<Eigen::Index>(coordinates.size());
   if (ndof == 0) {
     return derivatives;

@@ -1,5 +1,62 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Contact-Free Coordinate Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the contact-free differentiable multibody Jacobian path now
+collects generalized-coordinate references into reusable
+`detail::ContactFreeStepCoordinateScratch` instead of rebuilding a
+default-allocator `std::vector` on every `World::captureStepDerivatives()` WS1
+call. `WorldStorage` retains that coordinate scratch with the World free
+allocator and passes it into `detail::contactFreeStepDerivatives()`.
+
+The fix has these parts:
+
+- `detail::ContactFreeStepCoordinate` and
+  `detail::ContactFreeStepCoordinateScratch` name the internal coordinate list
+  used by the contact-free smooth Jacobian helper;
+- `collectCoordinatesInto()` clears and refills caller-owned scratch, preserving
+  same-shape capacity across differentiable steps;
+- `WorldStorage` owns `differentiableCoordinateScratch` with the World free
+  allocator and passes it alongside the existing inverse-dynamics derivative
+  scratch;
+- `World.DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator`
+  verifies the first direct smooth-Jacobian call grows caller-provided
+  coordinate scratch through the selected allocator and a same-shape second call
+  reuses that capacity.
+
+This still does not claim that derivative Eigen result matrices,
+`computeMultibodyDynamicsTerms()` fallback storage, finite-difference temporary
+matrices, or public return-by-value payloads are under the World allocator. The
+closed gap is only the DART-owned coordinate-reference list used before
+assembling contact-free differentiable multibody derivatives.
+
+Validation for this slice:
+
+```bash
+DART_BUILD_DIFF_OVERRIDE=ON pixi run config
+pixi run cmake --build build/default/cpp/Release --target test_world test_diff_smooth_jacobian -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator:World.DifferentiableMultibodyTorqueScratchUsesWorldAllocator' \
+  --gtest_color=no
+./build/default/cpp/Release/bin/test_diff_smooth_jacobian --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Inverse-Dynamics Derivative Scratch)
 
 Resume from exactly one branch:

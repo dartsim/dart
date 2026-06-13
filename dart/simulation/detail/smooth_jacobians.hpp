@@ -45,9 +45,13 @@
 #include <dart/simulation/diff/step_derivatives.hpp>
 #include <dart/simulation/export.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <entt/fwd.hpp>
+#include <entt/entity/entity.hpp>
+
+#include <vector>
 
 namespace dart::simulation::comps {
 struct MultibodyStructure;
@@ -58,6 +62,19 @@ class MultibodyInverseDynamicsScratch;
 } // namespace dart::simulation::compute
 
 namespace dart::simulation::detail {
+
+/// One generalized coordinate used by the contact-free differentiable
+/// multibody Jacobian path.
+struct ContactFreeStepCoordinate
+{
+  entt::entity joint = entt::null;
+  Eigen::Index local = 0;
+};
+
+using ContactFreeStepCoordinateAllocator
+    = common::StlAllocator<ContactFreeStepCoordinate>;
+using ContactFreeStepCoordinateScratch = std::
+    vector<ContactFreeStepCoordinate, ContactFreeStepCoordinateAllocator>;
 
 /// Analytic contact-free single-step Jacobian for ONE multibody, evaluated at
 /// its current (pre-step) joint state. Supports fixed, revolute, prismatic,
@@ -114,6 +131,7 @@ namespace dart::simulation::detail {
     const Eigen::Vector3d& gravity,
     double timeStep,
     const Eigen::Ref<const Eigen::VectorXd>& tau,
+    ContactFreeStepCoordinateScratch* coordinateScratch = nullptr,
     compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch = nullptr);
 
 } // namespace dart::simulation::detail

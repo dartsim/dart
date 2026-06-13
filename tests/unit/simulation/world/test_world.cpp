@@ -60,6 +60,7 @@
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/detail/world_storage.hpp>
 #include <dart/simulation/frame/fixed_frame.hpp>
@@ -3667,6 +3668,89 @@ TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
   EXPECT_EQ(freeList.getPeakAllocatedSize(), peakBytesBeforeSecondStep)
       << "reusing differentiable multibody torque scratch should not grow "
          "the World free-list peak on a same-size follow-up step";
+}
+
+TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("diff_coordinate_allocator_chain");
+  auto parent = robot.addLink("diff_coordinate_allocator_base");
+  constexpr std::size_t kJointCount = 64u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.02, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.01));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+
+  auto& registry = sx::detail::registryOf(world);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  const sx::comps::MultibodyStructure* structure = nullptr;
+  std::size_t structureCount = 0;
+  for (const auto entity : structures) {
+    structure = &structures.get<sx::comps::MultibodyStructure>(entity);
+    ++structureCount;
+  }
+  ASSERT_EQ(structureCount, 1u);
+  ASSERT_NE(structure, nullptr);
+
+  sx::detail::ContactFreeStepCoordinateScratch coordinateScratch(
+      sx::detail::ContactFreeStepCoordinateAllocator{allocator});
+  const Eigen::VectorXd tau
+      = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(kJointCount), 0.25);
+
+  const auto allocationsBeforeFirstCall = allocator.allocationCount;
+  auto derivatives = sx::detail::contactFreeStepDerivatives(
+      registry,
+      *structure,
+      world.getGravity(),
+      world.getTimeStep(),
+      tau,
+      &coordinateScratch);
+
+  EXPECT_EQ(
+      derivatives.controlJacobian.cols(),
+      static_cast<Eigen::Index>(kJointCount));
+  EXPECT_GT(allocator.allocationCount, allocationsBeforeFirstCall)
+      << "contact-free coordinate scratch should allocate through the "
+         "provided allocator on the first derivative call";
+  EXPECT_GE(coordinateScratch.capacity(), kJointCount);
+
+  const auto allocationsAfterFirstCall = allocator.allocationCount;
+  derivatives = sx::detail::contactFreeStepDerivatives(
+      registry,
+      *structure,
+      world.getGravity(),
+      world.getTimeStep(),
+      tau,
+      &coordinateScratch);
+
+  EXPECT_EQ(
+      derivatives.controlJacobian.cols(),
+      static_cast<Eigen::Index>(kJointCount));
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstCall)
+      << "same-shape contact-free coordinate collection should reuse retained "
+         "scratch capacity";
 }
 #endif
 

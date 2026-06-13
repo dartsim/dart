@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/compute/multibody_dynamics.hpp>
+#include <dart/simulation/detail/smooth_jacobians.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/diff/physical_parameter.hpp>
 #include <dart/simulation/diff/step_derivatives.hpp>
@@ -88,6 +89,10 @@ struct WorldStorage
   /// every differentiable step.
   std::vector<double, DifferentiableTorqueAllocator>
       differentiableTorqueScratch;
+
+  /// Reusable coordinate collection scratch for the differentiable contact-free
+  /// multibody Jacobian path.
+  ContactFreeStepCoordinateScratch differentiableCoordinateScratch;
 
   /// Reusable inverse-dynamics derivative scratch for the differentiable
   /// contact-free multibody Jacobian path.
