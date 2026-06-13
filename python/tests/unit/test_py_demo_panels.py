@@ -1520,6 +1520,15 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         )
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
+        solver_problem_rows = [
+            row for row in problem_rows if row["solver"] == solver_name
+        ]
+        native_solver_problem_rows = [
+            row for row in solver_problem_rows if row["native_supported"]
+        ]
+        delegated_solver_problem_rows = [
+            row for row in solver_problem_rows if not row["native_supported"]
+        ]
         expected_native_case_count = (
             4 * int(manifest_row["standard"])
             + 3 * int(manifest_row["boxed"])
@@ -1546,6 +1555,37 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert profile_row["max_complementarity"] <= 1e-3
         assert profile_row["total_elapsed_us"] >= 0.0
         assert profile_row["slowest_case"] in expected_problem_counts
+        assert profile_row["problem_count"] == len(solver_problem_rows)
+        assert profile_row["native_case_count"] == len(native_solver_problem_rows)
+        assert profile_row["delegated_case_count"] == len(
+            delegated_solver_problem_rows
+        )
+        assert profile_row["contract_ok_count"] == sum(
+            1 for row in solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["native_contract_ok_count"] == sum(
+            1 for row in native_solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["delegated_contract_ok_count"] == sum(
+            1 for row in delegated_solver_problem_rows if row["contract_ok"]
+        )
+        assert profile_row["max_solution_error"] == pytest.approx(
+            max(row["solution_error"] for row in solver_problem_rows)
+        )
+        assert profile_row["max_residual"] == pytest.approx(
+            max(row["residual"] for row in solver_problem_rows)
+        )
+        assert profile_row["max_complementarity"] == pytest.approx(
+            max(row["complementarity"] for row in solver_problem_rows)
+        )
+        assert profile_row["total_elapsed_us"] == pytest.approx(
+            sum(row["elapsed_us"] for row in solver_problem_rows)
+        )
+        slowest_row = max(solver_problem_rows, key=lambda row: row["elapsed_us"])
+        assert profile_row["slowest_case"] == slowest_row["case"]
+        assert profile_row["slowest_elapsed_us"] == pytest.approx(
+            slowest_row["elapsed_us"]
+        )
     assert solver_profile_by_name["Dantzig"]["native_surfaces"] == (
         "standard 4/4, boxed 3/3, findex 2/2"
     )
