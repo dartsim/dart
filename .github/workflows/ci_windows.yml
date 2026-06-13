@@ -36,7 +36,9 @@ jobs:
     needs: changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Tests (${{ matrix.build_type }})
-    runs-on: windows-latest
+    # The Windows Pixi tasks use the Visual Studio 17 2022 CMake generator.
+    # Keep this job on an image that provides that VS toolchain.
+    runs-on: windows-2022
     # Fail fast on a regression instead of waiting for the ~6h default kill.
     # Sized generously for a first cold-sccache Ninja build.
     timeout-minutes: 120
