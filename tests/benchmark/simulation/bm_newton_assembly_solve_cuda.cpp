@@ -45,6 +45,7 @@ namespace cuda = dart::simulation::compute::cuda;
 namespace {
 
 constexpr double kRegularization = 0.25;
+constexpr std::size_t kSparseJacobiIterations = 16;
 
 struct CpuAssemblySolveResult
 {
@@ -107,6 +108,33 @@ struct SparseResidualFixture
   std::vector<double> step;
   std::size_t bodyCount = 0;
   CpuSparseResidualResult cpu;
+};
+
+struct CpuSparseJacobiSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t iterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+};
+
+struct SparseJacobiSolveFixture
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::size_t bodyCount = 0;
+  CpuSparseJacobiSolveResult cpu;
 };
 
 struct CpuEqualityReducedSolveResult
@@ -411,6 +439,91 @@ void evaluateCpuSparseResidual(
   result.residualNorm = std::sqrt(residualNormSquared);
 }
 
+std::vector<double> computeSparseResidualFromAssembled(
+    const std::vector<double>& assembledDiagonal,
+    const std::vector<double>& assembledGradient,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& step)
+{
+  std::vector<double> residual = assembledGradient;
+  for (std::size_t dof = 0; dof < residual.size(); ++dof) {
+    residual[dof] += (assembledDiagonal[dof] + kRegularization) * step[dof];
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      residual[rowDof] += block.hessianBlock[entry] * step[columnDof];
+      residual[columnDof] += block.hessianBlock[entry] * step[rowDof];
+    }
+  }
+  return residual;
+}
+
+void evaluateCpuSparseJacobiSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    CpuSparseJacobiSolveResult& result)
+{
+  CpuAssemblySolveResult diagonal;
+  evaluateCpu(rows, bodyCount, diagonal);
+
+  result = CpuSparseJacobiSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = blocks.size();
+  result.iterationCount = kSparseJacobiIterations;
+  result.assembledDiagonal = diagonal.assembledDiagonal;
+  result.assembledGradient = diagonal.assembledGradient;
+  result.step.assign(result.dofCount, 0.0);
+
+  for (std::size_t iteration = 0; iteration < kSparseJacobiIterations;
+       ++iteration) {
+    const auto residual = computeSparseResidualFromAssembled(
+        result.assembledDiagonal,
+        result.assembledGradient,
+        blocks,
+        result.step);
+    for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+      result.step[dof]
+          -= residual[dof] / (result.assembledDiagonal[dof] + kRegularization);
+    }
+  }
+  result.residual = computeSparseResidualFromAssembled(
+      result.assembledDiagonal, result.assembledGradient, blocks, result.step);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + kRegularization > 1e-14) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+}
+
 AssemblySolveFixture makeFixture(const int rowCount)
 {
   AssemblySolveFixture fixture;
@@ -463,6 +576,28 @@ SparseResidualFixture makeSparseResidualFixture(const int rowCount)
       fixture.blocks,
       fixture.step,
       fixture.cpu);
+  return fixture;
+}
+
+SparseJacobiSolveFixture makeSparseJacobiSolveFixture(const int rowCount)
+{
+  SparseJacobiSolveFixture fixture;
+  fixture.bodyCount
+      = std::max<std::size_t>(2, static_cast<std::size_t>(rowCount) / 8);
+  fixture.rows.reserve(static_cast<std::size_t>(rowCount));
+  for (int row = 0; row < rowCount; ++row) {
+    fixture.rows.push_back(makeRow(row, fixture.bodyCount));
+  }
+
+  const std::size_t blockCount
+      = std::max<std::size_t>(1, static_cast<std::size_t>(rowCount) / 8);
+  fixture.blocks.reserve(blockCount);
+  for (std::size_t block = 0; block < blockCount; ++block) {
+    fixture.blocks.push_back(
+        makeSparseBlock(static_cast<int>(block), fixture.bodyCount));
+  }
+  evaluateCpuSparseJacobiSolve(
+      fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
   return fixture;
 }
 
@@ -537,6 +672,23 @@ double maxSparseResidualOutputError(
   maxError = std::max(
       maxError,
       maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.residual, actual.residual));
+  return maxError;
+}
+
+double maxSparseJacobiSolveOutputError(
+    const CpuSparseJacobiSolveResult& expected,
+    const cuda::NewtonSparseJacobiSolveResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledDiagonal, actual.assembledDiagonal));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(maxError, maxAbsDifference(expected.step, actual.step));
   maxError = std::max(
       maxError, maxAbsDifference(expected.residual, actual.residual));
   return maxError;
@@ -623,6 +775,31 @@ void recordSparseResidualCounters(
   state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
   state.counters["output_norm"] = fixture.cpu.residualNorm;
   state.counters["max_output_abs"] = fixture.cpu.maxResidualAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordSparseJacobiSolveCounters(
+    benchmark::State& state,
+    const SparseJacobiSolveFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["bodies"] = static_cast<double>(fixture.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.dofCount);
+  state.counters["blocks"] = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["block_entries"] = static_cast<double>(
+      fixture.cpu.blockCount * cuda::kNewtonAssemblySolveBlockEntries);
+  state.counters["iterations"]
+      = static_cast<double>(fixture.cpu.iterationCount);
+  state.counters["active_dofs"]
+      = static_cast<double>(fixture.cpu.activeDofCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["step_norm"] = fixture.cpu.stepNorm;
+  state.counters["residual_norm"] = fixture.cpu.residualNorm;
+  state.counters["max_residual_abs"] = fixture.cpu.maxResidualAbs;
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
@@ -812,6 +989,68 @@ static void BM_NewtonSparseResidualCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSparseResidualCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSparseJacobiSolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeSparseJacobiSolveFixture(static_cast<int>(state.range(0)));
+  CpuSparseJacobiSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSparseJacobiSolve(
+        fixture.rows, fixture.bodyCount, fixture.blocks, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSparseJacobiSolveCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSparseJacobiSolveCpu)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSparseJacobiSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSparseJacobiSolveFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonSparseJacobiSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSparseJacobiSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.blocks,
+        kSparseJacobiIterations,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSparseJacobiSolveCounters(
+      state, fixture, maxSparseJacobiSolveOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_iterations"] = static_cast<double>(result.iterationCount);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["gpu_max_residual_abs"] = result.maxResidualAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["iteration_kernel_ns"] = result.timing.iterationKernelNs;
+  state.counters["final_residual_kernel_ns"]
+      = result.timing.finalResidualKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSparseJacobiSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonEqualityReducedSolveCpu(benchmark::State& state)

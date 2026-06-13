@@ -2,6 +2,39 @@
 
 ## Current Reality (2026-06-12)
 
+Latest sparse Jacobi solve checkpoint (2026-06-12): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a
+fixed-iteration sparse Jacobi solve row. The CUDA path assembles full-space
+diagonal rows, applies symmetric 6x6 sparse off-diagonal body blocks during a
+deterministic diagonal-preconditioned residual update, runs 16 iterations, and
+recomputes the final sparse residual.
+
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 dofs, 8,192
+sparse blocks, 294,912 block entries, 16 iterations, and 49,152 active dofs
+with `max_result_abs_error=1.7763568394002505e-15`,
+`residual_norm=2.987542991182462e-15`,
+`max_residual_abs=5.095750210681871e-17`,
+`step_norm=10.694462363332693`, and `speedup=1.7149190773941674x` for the
+sparse Jacobi row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=3.025652421429066e-15`, and
+`speedup=0.24004618767678942x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest local gates:
+
+- focused assembly/solve packet pytest
+- PLAN-083 GPU parity/completion-audit validators
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- `pixi run lint`
+
 Latest sparse residual assembly checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
 remaining PLAN-083 follow-up work consolidated there; do not push,

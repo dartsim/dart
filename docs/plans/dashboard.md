@@ -351,11 +351,12 @@ its own line so status updates remain git-history friendly.
   point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
   rows, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly plus sparse block residual
-  matvec plus sparse equality-reduced diagonal solve parity, reduced hanging-bridge scene
+  matvec plus fixed-iteration sparse Jacobi solve plus sparse
+  equality-reduced diagonal solve parity, reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, rigid curved trajectories,
-  runtime sparse Hessian assembly, global sparse factorization, nonlinear
+  runtime sparse Hessian assembly, direct/global sparse factorization, nonlinear
   equality constraints, GPU `World::step`, paper-scale assets, full runtime affine/FEM coupling, and
   accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress

@@ -213,6 +213,49 @@ void evaluateExpectedSparseResidual(
   }
 }
 
+void evaluateExpectedSparseJacobiSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::size_t iterationCount,
+    const double regularization,
+    std::vector<double>& diagonal,
+    std::vector<double>& gradient,
+    std::vector<double>& step,
+    std::vector<double>& residual)
+{
+  std::vector<double> ignoredStep;
+  evaluateExpected(
+      rows, bodyCount, regularization, diagonal, gradient, ignoredStep);
+  step.assign(bodyCount * cuda::kNewtonAssemblySolveDofsPerBody, 0.0);
+
+  for (std::size_t iteration = 0; iteration < iterationCount; ++iteration) {
+    std::vector<double> iterationResidual;
+    evaluateExpectedSparseResidual(
+        rows,
+        bodyCount,
+        blocks,
+        step,
+        regularization,
+        diagonal,
+        gradient,
+        iterationResidual);
+    for (std::size_t dof = 0; dof < step.size(); ++dof) {
+      step[dof] -= iterationResidual[dof] / (diagonal[dof] + regularization);
+    }
+  }
+
+  evaluateExpectedSparseResidual(
+      rows,
+      bodyCount,
+      blocks,
+      step,
+      regularization,
+      diagonal,
+      gradient,
+      residual);
+}
+
 } // namespace
 
 //==============================================================================
@@ -452,6 +495,86 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseResidualInputs)
   EXPECT_THROW(
       cuda::evaluateNewtonSparseResidualCuda(
           rows, bodyCount, blocks, invalidStep, regularization, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSparseJacobiSolve)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeRow(0, 4.0, -0.5),
+      makeRow(1, 5.0, 0.25),
+      makeRow(0, 2.5, 0.75),
+  };
+  constexpr std::size_t bodyCount = 2;
+  constexpr std::size_t iterationCount = 12;
+  constexpr double regularization = 0.75;
+  const std::vector blocks = {
+      makeSparseBlock(0, 1, 0.025),
+      makeSparseBlock(0, 1, -0.01),
+  };
+
+  cuda::NewtonSparseJacobiSolveResult result;
+  cuda::evaluateNewtonSparseJacobiSolveCuda(
+      rows, bodyCount, blocks, iterationCount, regularization, result);
+
+  std::vector<double> expectedDiagonal;
+  std::vector<double> expectedGradient;
+  std::vector<double> expectedStep;
+  std::vector<double> expectedResidual;
+  evaluateExpectedSparseJacobiSolve(
+      rows,
+      bodyCount,
+      blocks,
+      iterationCount,
+      regularization,
+      expectedDiagonal,
+      expectedGradient,
+      expectedStep,
+      expectedResidual);
+
+  ASSERT_EQ(result.assembledDiagonal.size(), expectedDiagonal.size());
+  ASSERT_EQ(result.assembledGradient.size(), expectedGradient.size());
+  ASSERT_EQ(result.step.size(), expectedStep.size());
+  ASSERT_EQ(result.residual.size(), expectedResidual.size());
+  EXPECT_EQ(result.bodyCount, bodyCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.dofCount, expectedStep.size());
+  EXPECT_EQ(result.blockCount, blocks.size());
+  EXPECT_EQ(result.iterationCount, iterationCount);
+  EXPECT_EQ(result.activeDofCount, expectedStep.size());
+  EXPECT_LT(result.residualNorm, 1e-10);
+
+  for (std::size_t dof = 0; dof < expectedStep.size(); ++dof) {
+    EXPECT_NEAR(result.assembledDiagonal[dof], expectedDiagonal[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.assembledGradient[dof], expectedGradient[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.step[dof], expectedStep[dof], 1e-12) << dof;
+    EXPECT_NEAR(result.residual[dof], expectedResidual[dof], 1e-12) << dof;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseJacobiSolveInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {makeRow(0, 1.0, 0.0)};
+  constexpr std::size_t bodyCount = 2;
+  constexpr double regularization = 0.1;
+  const std::vector blocks = {makeSparseBlock(0, 1, 0.125)};
+  cuda::NewtonSparseJacobiSolveResult result;
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseJacobiSolveCuda(
+          rows, bodyCount, blocks, 0, regularization, result),
       dart::simulation::InvalidArgumentException);
 }
 

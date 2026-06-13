@@ -79,6 +79,14 @@ cudaError_t launchNewtonSparseBlockResidualKernel(
     double* residual,
     std::size_t blockCount);
 
+cudaError_t launchNewtonSparseJacobiUpdateKernel(
+    const double* assembledDiagonal,
+    const double* residual,
+    double* step,
+    std::size_t dofCount,
+    double regularization,
+    double epsilonForDivision);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -245,6 +253,16 @@ void validateStep(
         "evaluateNewtonSparseResidualCuda step dof {} is invalid",
         dof);
   }
+}
+
+void validateIterationCount(
+    const std::size_t iterationCount, const char* caller)
+{
+  DART_SIMULATION_THROW_T_IF(
+      iterationCount == 0,
+      sx::InvalidArgumentException,
+      "{} requires at least one iteration",
+      caller);
 }
 
 void validateEqualityReduction(
@@ -590,6 +608,178 @@ void evaluateNewtonSparseResidualCuda(
     }
     residualNormSquared += result.residual[dof] * result.residual[dof];
   }
+  result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+//==============================================================================
+void evaluateNewtonSparseJacobiSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const std::size_t iterationCount,
+    const double regularization,
+    NewtonSparseJacobiSolveResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateRows(rows, bodyCount, regularization);
+  validateSparseBlocks(blocks, bodyCount);
+  validateIterationCount(iterationCount, "evaluateNewtonSparseJacobiSolveCuda");
+  const std::size_t dofCount = bodyCount * kNewtonAssemblySolveDofsPerBody;
+
+  result = NewtonSparseJacobiSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = dofCount;
+  result.blockCount = blocks.size();
+  result.iterationCount = iterationCount;
+  result.assembledDiagonal.assign(dofCount, 0.0);
+  result.assembledGradient.assign(dofCount, 0.0);
+  result.step.assign(dofCount, 0.0);
+  result.residual.assign(dofCount, 0.0);
+
+  if (dofCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(rows.size());
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(blocks.size());
+  DeviceBuffer<double> deviceDiagonal(dofCount);
+  DeviceBuffer<double> deviceGradient(dofCount);
+  DeviceBuffer<double> deviceStep(dofCount);
+  DeviceBuffer<double> deviceResidual(dofCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton sparse Jacobi rows copy");
+  deviceBlocks.copyToDevice(blocks, "newton sparse Jacobi blocks copy");
+  throwIfCudaError(
+      cudaMemset(deviceDiagonal.data(), 0, deviceDiagonal.byteSize()),
+      "newton sparse Jacobi diagonal zero");
+  throwIfCudaError(
+      cudaMemset(deviceGradient.data(), 0, deviceGradient.byteSize()),
+      "newton sparse Jacobi gradient zero");
+  throwIfCudaError(
+      cudaMemset(deviceStep.data(), 0, deviceStep.byteSize()),
+      "newton sparse Jacobi step zero");
+  throwIfCudaError(
+      cudaMemset(deviceResidual.data(), 0, deviceResidual.byteSize()),
+      "newton sparse Jacobi residual zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonAssemblyRowsKernel(
+          deviceRows.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          rows.size()),
+      "newton sparse Jacobi assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse Jacobi assembly synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto iterationStart = Clock::now();
+  for (std::size_t iteration = 0; iteration < iterationCount; ++iteration) {
+    throwIfCudaError(
+        cudaMemcpy(
+            deviceResidual.data(),
+            deviceGradient.data(),
+            deviceResidual.byteSize(),
+            cudaMemcpyDeviceToDevice),
+        "newton sparse Jacobi residual seed");
+    throwIfCudaError(
+        detail::launchNewtonSparseDiagonalResidualKernel(
+            deviceDiagonal.data(),
+            deviceStep.data(),
+            deviceResidual.data(),
+            dofCount,
+            regularization),
+        "newton sparse Jacobi diagonal residual kernel");
+    throwIfCudaError(
+        detail::launchNewtonSparseBlockResidualKernel(
+            deviceBlocks.data(),
+            deviceStep.data(),
+            deviceResidual.data(),
+            blocks.size()),
+        "newton sparse Jacobi block residual kernel");
+    throwIfCudaError(
+        detail::launchNewtonSparseJacobiUpdateKernel(
+            deviceDiagonal.data(),
+            deviceResidual.data(),
+            deviceStep.data(),
+            dofCount,
+            regularization,
+            1e-14),
+        "newton sparse Jacobi update kernel");
+    throwIfCudaError(
+        cudaDeviceSynchronize(), "newton sparse Jacobi iteration synchronize");
+  }
+  const auto iterationEnd = Clock::now();
+
+  const auto finalResidualStart = Clock::now();
+  throwIfCudaError(
+      cudaMemcpy(
+          deviceResidual.data(),
+          deviceGradient.data(),
+          deviceResidual.byteSize(),
+          cudaMemcpyDeviceToDevice),
+      "newton sparse Jacobi final residual seed");
+  throwIfCudaError(
+      detail::launchNewtonSparseDiagonalResidualKernel(
+          deviceDiagonal.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          dofCount,
+          regularization),
+      "newton sparse Jacobi final diagonal residual kernel");
+  throwIfCudaError(
+      detail::launchNewtonSparseBlockResidualKernel(
+          deviceBlocks.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          blocks.size()),
+      "newton sparse Jacobi final block residual kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton sparse Jacobi final residual synchronize");
+  const auto finalResidualEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceDiagonal.copyFromDevice(
+      result.assembledDiagonal, "newton sparse Jacobi diagonal copy");
+  deviceGradient.copyFromDevice(
+      result.assembledGradient, "newton sparse Jacobi gradient copy");
+  deviceStep.copyFromDevice(result.step, "newton sparse Jacobi step copy");
+  deviceResidual.copyFromDevice(
+      result.residual, "newton sparse Jacobi residual copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.iterationKernelNs = elapsedNs(iterationStart, iterationEnd);
+  result.timing.finalResidualKernelNs
+      = elapsedNs(finalResidualStart, finalResidualEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + regularization > 1e-14) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
 }
 

@@ -155,6 +155,27 @@ __global__ void newtonSparseBlockResidualKernel(
   atomicAdd(&residual[columnDof], value * step[rowDof]);
 }
 
+__global__ void newtonSparseJacobiUpdateKernel(
+    const double* assembledDiagonal,
+    const double* residual,
+    double* step,
+    const std::size_t dofCount,
+    const double regularization,
+    const double epsilonForDivision)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  const double effectiveDiagonal = assembledDiagonal[index] + regularization;
+  if (isfinite(effectiveDiagonal)
+      && fabs(effectiveDiagonal) > epsilonForDivision) {
+    step[index] -= residual[index] / effectiveDiagonal;
+  }
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -298,6 +319,31 @@ cudaError_t launchNewtonSparseBlockResidualKernel(
   const unsigned int gridSize = launchGrid1D(totalEntries, blockSize);
   newtonSparseBlockResidualKernel<<<gridSize, blockSize>>>(
       blocks, step, residual, blockCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseJacobiUpdateKernel(
+    const double* assembledDiagonal,
+    const double* residual,
+    double* step,
+    const std::size_t dofCount,
+    const double regularization,
+    const double epsilonForDivision)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonSparseJacobiUpdateKernel<<<gridSize, blockSize>>>(
+      assembledDiagonal,
+      residual,
+      step,
+      dofCount,
+      regularization,
+      epsilonForDivision);
   return cudaGetLastError();
 }
 

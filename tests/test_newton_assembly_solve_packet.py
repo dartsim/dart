@@ -133,6 +133,50 @@ def _benchmark_data(**overrides):
         off_diagonal_kernel_ns=6.0,
         device_to_host_ns=7.0,
     )
+    sparse_jacobi_cpu = _row(
+        "BM_NewtonSparseJacobiSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        iterations=16,
+        active_dofs=768,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.5,
+        residual_norm=3e-14,
+        max_residual_abs=1e-14,
+        max_result_abs_error=0.0,
+    )
+    sparse_jacobi_gpu = _row(
+        "BM_NewtonSparseJacobiSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        iterations=16,
+        active_dofs=768,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_blocks=128,
+        gpu_iterations=16,
+        gpu_active_dofs=768,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=3e-14,
+        gpu_max_residual_abs=1e-14,
+        max_result_abs_error=4e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
     equality_cpu = _row(
         "BM_NewtonEqualityReducedSolveCpu/1024",
         rows=1024,
@@ -183,6 +227,8 @@ def _benchmark_data(**overrides):
             off_diagonal_gpu,
             sparse_residual_cpu,
             sparse_residual_gpu,
+            sparse_jacobi_cpu,
+            sparse_jacobi_gpu,
             equality_cpu,
             equality_gpu,
         ]
@@ -207,8 +253,8 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 3e-12
-    assert row["residual_norm"] == 2e-14
+    assert row["max_result_abs_error"] == 4e-12
+    assert row["residual_norm"] == 3e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
     assert row["off_diagonal_sparse_block_assembly"]["pair_count"] == 64
@@ -224,6 +270,19 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert sparse["output_norm"] == 4.0
     assert sparse["timing_ns"]["gradient_seed"] == 4.0
     assert sparse["timing_ns"]["off_diagonal"] == 6.0
+    jacobi = row["sparse_block_jacobi_solve"]
+    assert jacobi["body_count"] == 128
+    assert jacobi["dof_count"] == 768
+    assert jacobi["block_count"] == 128
+    assert jacobi["block_entry_count"] == 4608
+    assert jacobi["iteration_count"] == 16
+    assert jacobi["active_dof_count"] == 768
+    assert jacobi["max_result_abs_error"] == 4e-12
+    assert jacobi["residual_norm"] == 3e-14
+    assert jacobi["max_residual_abs"] == 1e-14
+    assert jacobi["step_norm"] == 0.5
+    assert jacobi["timing_ns"]["iterations"] == 4.0
+    assert jacobi["timing_ns"]["final_residual"] == 5.0
     equality = row["equality_reduced_diagonal_solve"]
     assert equality["body_count"] == 128
     assert equality["full_dof_count"] == 768

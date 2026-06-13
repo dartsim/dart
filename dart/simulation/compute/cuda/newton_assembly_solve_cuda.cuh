@@ -92,6 +92,16 @@ struct NewtonSparseResidualTiming
   double deviceToHostNs = 0.0;
 };
 
+struct NewtonSparseJacobiSolveTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double assemblyKernelNs = 0.0;
+  double iterationKernelNs = 0.0;
+  double finalResidualKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
 struct NewtonAssemblySolveResult
 {
   std::vector<double> assembledDiagonal;
@@ -133,6 +143,26 @@ struct NewtonSparseResidualResult
   double residualNorm = 0.0;
   double maxResidualAbs = 0.0;
   NewtonSparseResidualTiming timing;
+};
+
+struct NewtonSparseJacobiSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t iterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  NewtonSparseJacobiSolveTiming timing;
 };
 
 struct NewtonEqualityReducedSolveResult
@@ -195,6 +225,21 @@ void evaluateNewtonSparseResidualCuda(
     const std::vector<double>& step,
     double regularization,
     NewtonSparseResidualResult& result);
+
+/// Evaluate a private fixed-iteration sparse Jacobi solve packet.
+///
+/// The packet assembles full-space diagonal rows and applies symmetric 6x6
+/// sparse blocks while running a deterministic diagonal-preconditioned
+/// residual update. It intentionally does not cover sparse graph construction,
+/// direct factorization, nonlinear equality constraints, runtime scene
+/// assembly, convergence policy, or a public GPU solver backend.
+void evaluateNewtonSparseJacobiSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    std::size_t iterationCount,
+    double regularization,
+    NewtonSparseJacobiSolveResult& result);
 
 /// Evaluate a private reduced equality-projected diagonal solve packet.
 ///
