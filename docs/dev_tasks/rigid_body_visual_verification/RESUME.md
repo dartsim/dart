@@ -2,6 +2,18 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest validation follow-up: current `HEAD` has fresh broad validation evidence
+after the previous stop-only handoff. From branch
+`feature/rigid-body-gui-visual-verification`, with `DART_SAFE_JOBS=5`, the
+default command
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
+completed successfully: linting, build, unit tests, simulation tests, Python
+tests, and documentation all passed. Because `nvidia-smi -L` reported
+`GPU 0: NVIDIA GeForce RTX 4080 Laptop GPU`, the CUDA command
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
+was also run and exited successfully. The previous stopped validation attempt
+remains useful archaeology only; do not report it as the latest state.
+
 Stop/push handoff: the newest instruction was to stop code changes, stop
 further verification, update only the handoff docs, merge latest `origin/main`,
 push to `origin`, and stop. The active broad validation process was terminated
@@ -20,9 +32,10 @@ Latest merge/push state for the handoff: `git fetch origin main &&
 git merge --no-edit origin/main` reported `Already up to date`. The current
 session has explicit approval to push this branch to `origin`, but not to
 create a PR, set a milestone, rerun CI, mutate review threads, or treat the
-dev-task as complete. This docs-only handoff refresh intentionally skips
+dev-task as complete. This docs-only handoff refresh intentionally skipped
 additional verification because the user explicitly requested no further
-verification.
+verification in that session. This is superseded by the successful validation
+follow-up above.
 
 Latest local follow-up: fetched `origin/main` and merged it again; Git reported
 `Already up to date`, so the branch still carries the PR #2986 DART 7
@@ -141,9 +154,9 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-- Latest committed local checkpoint before this docs refresh was
-  `3758d3c84a5 Fix headless Filament capture under tmpfs pressure`; inspect any
-  newer diff first.
+- Latest pushed checkpoint before this validation-evidence refresh was
+  `802b5d282b8 Update rigid workflow handoff state`; inspect any newer diff
+  first.
 - Do not push without explicit approval in the session that performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
   and

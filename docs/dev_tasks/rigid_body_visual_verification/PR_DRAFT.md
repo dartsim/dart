@@ -56,6 +56,13 @@ rigid-body visual verification surface for the current cycle.
 ## Testing
 
 - `pixi run lint`
+- Broad default validation:
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
+  passed all wrapper gates: linting, build, unit tests, simulation tests,
+  Python tests, and documentation.
+- CUDA validation on a visible `NVIDIA GeForce RTX 4080 Laptop GPU` host:
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
+  exited successfully.
 - Focused docs/API drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented -q`
 - Focused capture/review-index guard:
@@ -83,8 +90,9 @@ rigid-body visual verification surface for the current cycle.
   `resolved_solver_identity_count=16`, 1004 PNG frames).
 - Static review-index asset audit: 0 missing local assets for both current
   review indexes.
-- Stopped broad validation attempt, not a pass: after a first wrapper attempt
-  was interrupted during Release test build, direct
+- Historical stopped broad validation attempt, superseded by the green broad
+  runs above: after a first wrapper attempt was interrupted during Release test
+  build, direct
   `pixi run build-tests ON Release` passed. A later
   `timeout 7200s pixi run test-all --skip-lint --skip-build` attempt restarted
   the full wrapper because the pixi task did not forward the flags; it was

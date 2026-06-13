@@ -2,6 +2,20 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest validation follow-up: with the branch clean and pushed at
+`802b5d282b8`, reran broad validation from current `HEAD` using the DART safe
+parallelism cap (`DART_SAFE_JOBS=5`). Default
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
+completed with all six wrapper gates passing: linting, build, unit tests,
+simulation tests, Python tests, and documentation, ending with
+`All tests passed`. The host exposes `GPU 0: NVIDIA GeForce RTX 4080 Laptop
+GPU`, so CUDA validation was also run with the same cap:
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
+exited successfully. The default run reported the two long simulation tests as
+green: `test_world` in 141.77 seconds and `test_rigid_ipc_paper_experiments`
+in 304.21 seconds. The only local diff after validation was markdown formatter
+cleanup in this dev-task audit, followed by this evidence refresh.
+
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest
 `origin/main`, and push to `origin`. The running broad validation command
@@ -13,7 +27,8 @@ simulation progress was 52/65 when output last streamed. Treat this as a
 stopped verification attempt, not a completed `test-all` pass. CUDA validation
 was not started. The docs-only handoff refresh intentionally does not run
 additional verification because the user explicitly requested no further
-verification in this session.
+verification in that session. This historical stopped attempt is superseded for
+current local evidence by the successful default and CUDA validation runs above.
 
 Latest merge state: `git fetch origin main && git merge --no-edit origin/main`
 reported `Already up to date`, so the branch remains aligned with the latest
