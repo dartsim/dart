@@ -1,5 +1,84 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Benchmark Filter Roster Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `6dce6771507 Document LCP partial profile help`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark filter roster guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `6dce6771507 Document LCP partial profile help`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by forty-nine commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now extracts benchmark-filter tokens
+  from the LCP demo scene, including the demo smoke filter, representative
+  benchmark packet filters, and the profile smoke filter.
+- The roster checker now compares those tokens against benchmark-name prefixes
+  parsed from `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`, so stale
+  user-facing demo benchmark filters fail the existing LCP roster lint gate.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers current token
+  extraction and a synthetic stale demo benchmark token.
+- Benchmark registration code, profile artifacts, solver implementations,
+  bindings, stubs, public APIs, and generated profile/evidence CSVs were not
+  intentionally changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'benchmark_filter or surfaces_match'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+git diff --check
+pixi run build
+```
+
+Result:
+
+- Focused benchmark-filter/roster tests: passed with 3 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full roster unit test file: passed with 29 tests.
+- `pixi run lint`: passed, including the LCP solver roster and generated AI
+  command checks.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+roster unit test, roster check, `pixi run lint`, `git diff --check`,
+`pixi run build`, and any broader gate warranted by the final diff, then commit
+the focused checker/test/docs change. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Partial Profile Help Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

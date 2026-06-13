@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "tests/common/lcpsolver/lcp_solver_manifest.hpp"
 SELECTION_GUIDE_PATH = ROOT / "docs/background/lcp/07_selection-guide.md"
 LCP_DEMO_PATH = ROOT / "python/examples/demos/scenes/lcp_physics.py"
+BM_LCP_COMPARE_PATH = ROOT / "tests/benchmark/lcpsolver/bm_lcp_compare.cpp"
 LCP_DOCS_DIR = ROOT / "docs/background/lcp"
 LCP_PROFILE_CSV_PATHS = {
     "standard": ROOT / "docs/background/lcp/figures/performance_profile_standard.csv",
@@ -281,6 +282,69 @@ def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
         "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"
     ]
     return tuple(columns)
+
+
+def _benchmark_filter_base(token: str) -> str | None:
+    match = re.search(r"\b(?:BM_LCP_[A-Za-z0-9_]+|BM_Lcp[A-Za-z0-9_]*)\b", token)
+    return match.group(0) if match else None
+
+
+def _split_benchmark_filter_tokens(filter_text: str) -> list[str]:
+    return [token for token in filter_text.split("|") if token]
+
+
+def parse_demo_benchmark_filter_tokens() -> list[str]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    packet_rows = list(_literal_assignment(module, "_BENCHMARK_PACKET_ROWS"))
+    smoke_filter = str(_literal_assignment(module, "_BENCHMARK_SMOKE_FILTER"))
+    profile_smoke_command = str(
+        _literal_assignment(module, "_PERFORMANCE_PROFILE_SMOKE_COMMAND")
+    )
+
+    tokens = [smoke_filter]
+    for row in packet_rows:
+        tokens.extend(_split_benchmark_filter_tokens(row["benchmark_filter"]))
+
+    profile_filter_match = re.search(
+        r"(?:^|\s)--benchmark-filter\s+(?P<filter>\S+)",
+        profile_smoke_command,
+    )
+    if profile_filter_match is None:
+        raise AssertionError(
+            "lcp_physics performance profile smoke command is missing "
+            "--benchmark-filter"
+        )
+    tokens.extend(_split_benchmark_filter_tokens(profile_filter_match.group("filter")))
+    return tokens
+
+
+def parse_lcp_compare_benchmark_bases() -> set[str]:
+    return set(
+        re.findall(
+            r"\b(?:BM_LCP_[A-Za-z0-9_]+|BM_Lcp[A-Za-z0-9_]*)\b",
+            _read(BM_LCP_COMPARE_PATH),
+        )
+    )
+
+
+def check_demo_benchmark_filters() -> None:
+    registered_bases = parse_lcp_compare_benchmark_bases()
+    if not registered_bases:
+        raise AssertionError(f"no benchmark names parsed from {BM_LCP_COMPARE_PATH}")
+
+    unknown_tokens: list[str] = []
+    for token in parse_demo_benchmark_filter_tokens():
+        base = _benchmark_filter_base(token)
+        if base is None or not any(
+            registered_base.startswith(base) for registered_base in registered_bases
+        ):
+            unknown_tokens.append(token)
+
+    if unknown_tokens:
+        raise AssertionError(
+            "lcp_physics benchmark filters do not match BM_LCP_COMPARE "
+            f"benchmarks: {unknown_tokens}"
+        )
 
 
 def check_demo_profile_evidence_required_columns() -> None:
@@ -879,6 +943,7 @@ def check_roster() -> None:
     manifest = parse_cpp_manifest()
     check_performance_profile_headers(manifest)
     check_performance_profile_evidence(manifest)
+    check_demo_benchmark_filters()
     check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]

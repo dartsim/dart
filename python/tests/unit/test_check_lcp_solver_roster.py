@@ -101,6 +101,34 @@ def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
         module.check_demo_profile_evidence_required_columns()
 
 
+def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
+    module = _load_module()
+
+    tokens = module.parse_demo_benchmark_filter_tokens()
+
+    assert "BM_LCP_COMPARE_SMOKE" in tokens
+    assert "BM_LcpCompare/Standard/Dantzig/12" in tokens
+    assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
+    assert "BM_LcpArticulatedUnifiedContact" in tokens
+
+
+def test_lcp_solver_roster_rejects_unknown_demo_benchmark_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_demo_benchmark_filter_tokens",
+        lambda: ["BM_LcpCompare/Standard", "BM_LcpMissingDemoPacket"],
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="benchmark filters do not match BM_LCP_COMPARE benchmarks",
+    ):
+        module.check_demo_benchmark_filters()
+
+
 def test_lcp_solver_roster_rejects_extra_bound_solver_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
