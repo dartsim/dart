@@ -3778,6 +3778,74 @@ TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
 }
 #endif
 
+TEST(World, VariationalContactPointForceIntoReusesOutputStorage)
+{
+  namespace sx = dart::simulation;
+
+  constexpr Eigen::Index kDof = 96;
+  std::array<Eigen::Isometry3d, 1> transforms{Eigen::Isometry3d::Identity()};
+  transforms[0].linear()
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+  std::array<Eigen::MatrixXd, 1> bodyJacobians{Eigen::MatrixXd(6, kDof)};
+  for (Eigen::Index col = 0; col < kDof; ++col) {
+    const double scale = 0.01 * static_cast<double>(col + 1);
+    bodyJacobians[0](0, col) = 0.5 * scale;
+    bodyJacobians[0](1, col) = -0.25 * scale;
+    bodyJacobians[0](2, col) = 0.125 * scale;
+    bodyJacobians[0](3, col) = -0.2 * scale;
+    bodyJacobians[0](4, col) = 0.4 * scale;
+    bodyJacobians[0](5, col) = -0.1 * scale;
+  }
+
+  const Eigen::VectorXd previousVelocity
+      = Eigen::VectorXd::LinSpaced(kDof, -0.5, 0.5);
+  const sx::compute::VariationalContactContext context{
+      std::span<const Eigen::Isometry3d>{transforms.data(), transforms.size()},
+      std::span<const Eigen::MatrixXd>{
+          bodyJacobians.data(), bodyJacobians.size()},
+      static_cast<std::size_t>(kDof),
+      std::span<const Eigen::Isometry3d>{transforms.data(), transforms.size()},
+      std::span<const Eigen::MatrixXd>{
+          bodyJacobians.data(), bodyJacobians.size()},
+      previousVelocity,
+      0.001};
+
+  const Eigen::Vector3d localPoint(0.2, -0.1, 0.05);
+  const Eigen::Vector3d worldForce(1.2, -0.4, 2.0);
+
+  Eigen::Matrix3d localPointCross;
+  localPointCross << 0.0, -localPoint.z(), localPoint.y(), localPoint.z(), 0.0,
+      -localPoint.x(), -localPoint.y(), localPoint.x(), 0.0;
+  const Eigen::MatrixXd worldPointJacobian
+      = transforms[0].linear()
+        * (bodyJacobians[0].bottomRows<3>()
+           - localPointCross * bodyJacobians[0].topRows<3>());
+  const Eigen::VectorXd reference = worldPointJacobian.transpose() * worldForce;
+
+  Eigen::VectorXd generalizedForce;
+  sx::compute::variationalContactPointForceInto(
+      context, 0u, localPoint, worldForce, generalizedForce);
+  const Eigen::VectorXd returned = sx::compute::variationalContactPointForce(
+      context, 0u, localPoint, worldForce);
+
+  EXPECT_TRUE(generalizedForce.isApprox(reference, 1e-12));
+  EXPECT_TRUE(returned.isApprox(reference, 1e-12));
+
+  const auto* retainedData = generalizedForce.data();
+  ScopedHeapAllocationCounter heapCounter;
+  sx::compute::variationalContactPointForceInto(
+      context, 0u, localPoint, worldForce, generalizedForce);
+  heapCounter.stop();
+
+  EXPECT_EQ(generalizedForce.data(), retainedData);
+  EXPECT_TRUE(generalizedForce.isApprox(reference, 1e-12));
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "same-shape variational point-force diagnostics should reuse "
+         "caller-owned output storage";
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 TEST(World, VariationalMechanicalEnergyScratchUsesProvidedAllocator)
 {
   namespace sx = dart::simulation;

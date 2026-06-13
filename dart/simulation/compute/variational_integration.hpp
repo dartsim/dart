@@ -205,6 +205,16 @@ using VariationalContactHook
     const Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& worldForce);
 
+/// Overwrite `generalizedForce` with `J(p)^T * F` using caller-owned output
+/// storage. Repeated same-shape calls can retain the output vector capacity
+/// instead of allocating a return-by-value payload on every call.
+DART_SIMULATION_API void variationalContactPointForceInto(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce,
+    Eigen::VectorXd& generalizedForce);
+
 /// **EXPERIMENTAL (PLAN-082 Phase C).** A body-fixed contact point: the point
 /// at body-frame position `localPoint` on link `linkIndex`, evaluated against
 /// the contact geometry at the trial configuration.

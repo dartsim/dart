@@ -1,5 +1,59 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Variational Contact Point Force Output)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: direct variational contact point-force callers can now
+reuse caller-owned generalized-force output storage. The public
+`variationalContactPointForceInto(...)` helper overwrites a retained
+`Eigen::VectorXd` result, while the old return-by-value
+`variationalContactPointForce(...)` helper remains source-compatible and
+delegates through the same implementation. Internal built-in ground-contact,
+link-sphere, and compliant-loop force paths continue to accumulate into their
+existing reusable force scratch.
+
+The fix has these parts:
+
+- `variationalContactPointForceInto(...)` exposes the existing no-temporary
+  point-force math as a public overwrite-style helper;
+- `variationalContactPointForce(...)` delegates through the new helper instead
+  of constructing temporary dynamic Jacobian matrices;
+- internal multi-contact force assembly uses a private accumulator so built-in
+  World-stage paths preserve their existing reusable scratch behavior;
+- `World.VariationalContactPointForceIntoReusesOutputStorage` verifies the
+  helper matches the direct Jacobian formula and performs zero global heap
+  allocations on a warmed same-shape call with retained output storage.
+
+This still does not claim that arbitrary user-provided
+`VariationalContactHook` callbacks avoid return-by-value forces, that every
+Eigen dynamic result payload borrows a DART allocator, or that public
+return-by-value convenience helpers are allocation-free. The closed gap is the
+direct point-force helper's caller-retained output payload path and removal of
+its avoidable temporary dynamic Jacobian matrices.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalContactPointForceIntoReusesOutputStorage:World.VariationalConstraintLinearizationScratchUsesProvidedAllocator:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Variational Constraint Linearization Scratch Helper)
 
 Resume from exactly one branch:
@@ -50,7 +104,7 @@ Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
 
-## Historical Slices Below
+## Historical Slices Below (Older)
 
 The sections below are retained as chronological evidence for previous HMM
 slices. They are not current instructions. A fresh agent should use the top

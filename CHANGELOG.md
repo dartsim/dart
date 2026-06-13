@@ -297,6 +297,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     Variational loop-constraint linearization helpers can now reuse
     caller-owned variational tree and projection scratch while retaining output
     payload capacity across same-shape diagnostic calls.
+    Variational contact point-force helpers can now overwrite caller-owned
+    output storage, avoiding return-by-value payload allocation for repeated
+    same-shape direct contact diagnostics after warmup.
     The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the

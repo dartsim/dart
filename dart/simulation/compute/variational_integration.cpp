@@ -2545,30 +2545,7 @@ VarTree& buildVarTreeIntoScratch(
   return storage.tree;
 }
 
-} // namespace
-
-//==============================================================================
-Eigen::VectorXd variationalContactPointForce(
-    const VariationalContactContext& context,
-    std::size_t linkIndex,
-    const Eigen::Vector3d& localPoint,
-    const Eigen::Vector3d& worldForce)
-{
-  // World-frame translational point Jacobian J(p) = R_i (J_linear - [p]
-  // J_angular) of the body-fixed point, then the generalized force J(p)^T F.
-  const Eigen::Matrix3d rotation
-      = context.linkWorldTransforms[linkIndex].linear();
-  const Eigen::MatrixXd& jacobian = context.linkBodyJacobians[linkIndex];
-  const Eigen::MatrixXd angular = jacobian.topRows<3>();
-  const Eigen::MatrixXd linear = jacobian.bottomRows<3>();
-  const Eigen::MatrixXd worldPointJacobian
-      = rotation * (linear - detail::skew(localPoint) * angular);
-  return worldPointJacobian.transpose() * worldForce;
-}
-
-namespace {
-
-void variationalContactPointForceInto(
+void accumulateVariationalContactPointForceInto(
     const VariationalContactContext& context,
     std::size_t linkIndex,
     const Eigen::Vector3d& localPoint,
@@ -2585,6 +2562,48 @@ void variationalContactPointForceInto(
       -= jacobian.topRows<3>().transpose()
          * (detail::skew(localPoint).transpose() * bodyForce);
 }
+
+} // namespace
+
+//==============================================================================
+Eigen::VectorXd variationalContactPointForce(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  Eigen::VectorXd generalizedForce;
+  variationalContactPointForceInto(
+      context, linkIndex, localPoint, worldForce, generalizedForce);
+  return generalizedForce;
+}
+
+void variationalContactPointForceInto(
+    const VariationalContactContext& context,
+    std::size_t linkIndex,
+    const Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& worldForce,
+    Eigen::VectorXd& generalizedForce)
+{
+  DART_SIMULATION_THROW_T_IF(
+      linkIndex >= context.linkWorldTransforms.size()
+          || linkIndex >= context.linkBodyJacobians.size(),
+      InvalidOperationException,
+      "Variational contact point force references an out-of-range link index");
+
+  const Eigen::MatrixXd& jacobian = context.linkBodyJacobians[linkIndex];
+  DART_SIMULATION_THROW_T_IF(
+      jacobian.rows() != 6
+          || jacobian.cols() != static_cast<Eigen::Index>(context.dofCount),
+      InvalidOperationException,
+      "Variational contact point force expects a 6 x dof body Jacobian");
+
+  generalizedForce.setZero(static_cast<Eigen::Index>(context.dofCount));
+  accumulateVariationalContactPointForceInto(
+      context, linkIndex, localPoint, worldForce, generalizedForce);
+}
+
+namespace {
 
 void variationalWorldTorqueInto(
     const VariationalContactContext& context,
@@ -2658,7 +2677,7 @@ void evaluateVariationalCompliantLoopForceInto(
       const Eigen::Vector3d forceA
           = -row.stiffness * rowAxis.dot(positionResidual) * rowAxis;
       if (constraint.linkA >= 0) {
-        variationalContactPointForceInto(
+        accumulateVariationalContactPointForceInto(
             context,
             static_cast<std::size_t>(constraint.linkA),
             constraint.pointA,
@@ -2666,7 +2685,7 @@ void evaluateVariationalCompliantLoopForceInto(
             generalizedForce);
       }
       if (constraint.linkB >= 0) {
-        variationalContactPointForceInto(
+        accumulateVariationalContactPointForceInto(
             context,
             static_cast<std::size_t>(constraint.linkB),
             constraint.pointB,
@@ -2810,7 +2829,7 @@ VariationalContactHook makeVariationalGroundContactHook(
                        tangentVelocity.squaredNorm() + epsilon * epsilon);
           }
         }
-        variationalContactPointForceInto(
+        accumulateVariationalContactPointForceInto(
             context,
             point.linkIndex,
             point.localPoint,
@@ -3053,7 +3072,7 @@ bool groundContactPointForceInto(
         -= contact.frictionCoefficient * normalMagnitude * tangentVelocity
            / std::sqrt(tangentVelocity.squaredNorm() + epsilon * epsilon);
   }
-  variationalContactPointForceInto(
+  accumulateVariationalContactPointForceInto(
       context,
       point.linkIndex,
       point.localPoint,
@@ -3248,13 +3267,13 @@ VariationalContactHook makeVariationalLinkSphereContactHook(
             = std::max(0.0, forceMagnitude - dampingCoefficient * approachRate);
       }
       // Equal and opposite: push A along -n, B along +n.
-      variationalContactPointForceInto(
+      accumulateVariationalContactPointForceInto(
           context,
           pair.linkA,
           pair.centerA,
           -forceMagnitude * normal,
           generalizedForce);
-      variationalContactPointForceInto(
+      accumulateVariationalContactPointForceInto(
           context,
           pair.linkB,
           pair.centerB,
