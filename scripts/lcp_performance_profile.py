@@ -32,7 +32,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from check_lcp_solver_roster import parse_cpp_manifest
+from check_lcp_solver_roster import REQUIRED_EVIDENCE_COLUMNS, parse_cpp_manifest
 
 try:
     import matplotlib.pyplot as plt
@@ -490,33 +490,7 @@ def _csv_value(value) -> str:
 
 
 def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
-    header = [
-        "category",
-        "solver",
-        "problem_size",
-        "lcp_dimension",
-        "contact_count",
-        "solver_identity_schema_version",
-        "solver_manifest_index",
-        "solver_family_pivoting",
-        "solver_family_projection",
-        "solver_family_newton",
-        "solver_family_other",
-        "time_ns",
-        "contract_ok",
-        "iterations",
-        "residual",
-        "complementarity",
-        "bound_violation",
-        "solver_supports_standard",
-        "solver_supports_boxed",
-        "solver_supports_friction_index",
-        "solver_supports_problem",
-        "problem_type_standard",
-        "problem_type_boxed",
-        "problem_type_friction_index",
-        "problem_type_invalid",
-    ]
+    header = list(REQUIRED_EVIDENCE_COLUMNS)
 
     with open(output_path, "w", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")

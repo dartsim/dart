@@ -373,6 +373,20 @@ def test_lcp_profile_coverage_rejects_solver_family_mismatches() -> None:
         )
 
 
+def test_lcp_profile_evidence_csv_header_matches_roster_schema(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "profile_evidence.csv"
+
+    module.save_profile_evidence_csv({}, path)
+
+    with path.open(newline="") as f:
+        header = next(csv.reader(f))
+
+    assert tuple(header) == module.REQUIRED_EVIDENCE_COLUMNS
+
+
 def test_lcp_profile_evidence_csv_records_support_and_problem_type(
     tmp_path: Path,
 ) -> None:
