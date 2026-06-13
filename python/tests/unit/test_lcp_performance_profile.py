@@ -113,6 +113,32 @@ def test_lcp_profile_coverage_rejects_current_schema_unsupported_rows() -> None:
         )
 
 
+def test_lcp_profile_coverage_rejects_failed_contract_rows() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 0.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="contract_ok!=1"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(
