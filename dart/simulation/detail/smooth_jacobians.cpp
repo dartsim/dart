@@ -129,18 +129,6 @@ void collectCoordinatesInto(
   }
 }
 
-//==============================================================================
-// Central finite difference of the dynamics terms with respect to one
-// generalized coordinate. `applyPerturbation` writes the perturbed value into
-// the registry and is followed by a recompute; the caller restores the original
-// value afterward. Returns (terms(+h) - terms(-h)) / (2h) for M, c, where
-// c = coriolisForces + gravityForces.
-struct TermDerivative
-{
-  Eigen::MatrixXd massMatrix; // dM/d(coordinate)
-  Eigen::VectorXd biasForces; // dc/d(coordinate),  c = C q̇ + g
-};
-
 } // namespace
 
 //==============================================================================
@@ -151,7 +139,8 @@ StepDerivatives contactFreeStepDerivatives(
     double timeStep,
     const Eigen::Ref<const Eigen::VectorXd>& tau,
     ContactFreeStepCoordinateScratch* coordinateScratch,
-    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch)
+    compute::MultibodyInverseDynamicsScratch* inverseDynamicsScratch,
+    ContactFreeStepDynamicsTermsScratch* dynamicsTermsScratch)
 {
   StepDerivatives derivatives;
 
@@ -165,9 +154,26 @@ StepDerivatives contactFreeStepDerivatives(
   }
 
   // Base-point dynamics terms and current generalized velocity.
-  const auto baseTerms
-      = compute::computeMultibodyDynamicsTerms(registry, structure, gravity);
-  const Eigen::MatrixXd massMatrix = baseTerms.massMatrix;
+  compute::MultibodyDynamicsTerms localBaseTerms;
+  compute::MultibodyDynamicsTerms localPlusTerms;
+  compute::MultibodyDynamicsTerms localMinusTerms;
+  compute::MultibodyDynamicsTermsScratch localDynamicsTermsScratch;
+  auto& dynamicsScratch = dynamicsTermsScratch != nullptr
+                              ? dynamicsTermsScratch->dynamicsTermsScratch
+                              : localDynamicsTermsScratch;
+  auto& baseTerms = dynamicsTermsScratch != nullptr
+                        ? dynamicsTermsScratch->baseTerms
+                        : localBaseTerms;
+  auto& plusTerms = dynamicsTermsScratch != nullptr
+                        ? dynamicsTermsScratch->plusTerms
+                        : localPlusTerms;
+  auto& minusTerms = dynamicsTermsScratch != nullptr
+                         ? dynamicsTermsScratch->minusTerms
+                         : localMinusTerms;
+
+  compute::computeMultibodyDynamicsTermsInto(
+      dynamicsScratch, registry, structure, gravity, baseTerms);
+  const Eigen::MatrixXd& massMatrix = baseTerms.massMatrix;
   const Eigen::VectorXd biasForces
       = baseTerms.coriolisForces + baseTerms.gravityForces; // c = C q̇ + g
 
@@ -183,13 +189,11 @@ StepDerivatives contactFreeStepDerivatives(
 
   // Central finite differencing of the dynamics terms. The relative step keeps
   // the perturbation well scaled regardless of the coordinate magnitude.
-  const auto evalTerms = [&]() {
-    const auto terms
-        = compute::computeMultibodyDynamicsTerms(registry, structure, gravity);
-    TermDerivative snapshot;
-    snapshot.massMatrix = terms.massMatrix;
-    snapshot.biasForces = terms.coriolisForces + terms.gravityForces;
-    return snapshot;
+  const auto evalTermsInto = [&](compute::MultibodyDynamicsTerms& terms)
+      -> const compute::MultibodyDynamicsTerms& {
+    compute::computeMultibodyDynamicsTermsInto(
+        dynamicsScratch, registry, structure, gravity, terms);
+    return terms;
   };
 
   // Velocity-block Jacobians of the semi-implicit-Euler velocity update
@@ -234,15 +238,18 @@ StepDerivatives contactFreeStepDerivatives(
         const double h = 1e-6 * (1.0 + std::abs(original));
 
         joint.position[coordinate.local] = original + h;
-        const TermDerivative plus = evalTerms();
+        const auto& plus = evalTermsInto(plusTerms);
         joint.position[coordinate.local] = original - h;
-        const TermDerivative minus = evalTerms();
+        const auto& minus = evalTermsInto(minusTerms);
         joint.position[coordinate.local] = original; // restore exactly
 
         const Eigen::MatrixXd dMass
             = (plus.massMatrix - minus.massMatrix) / (2.0 * h);
-        const Eigen::VectorXd dBias
-            = (plus.biasForces - minus.biasForces) / (2.0 * h);
+        Eigen::VectorXd dBias = plus.coriolisForces;
+        dBias += plus.gravityForces;
+        dBias -= minus.coriolisForces;
+        dBias -= minus.gravityForces;
+        dBias /= 2.0 * h;
 
         dVelNext_dq.col(k)
             = timeStep * (-inverseMass * (dMass * qddot) - inverseMass * dBias);
@@ -255,13 +262,16 @@ StepDerivatives contactFreeStepDerivatives(
         const double h = 1e-6 * (1.0 + std::abs(original));
 
         joint.velocity[coordinate.local] = original + h;
-        const TermDerivative plus = evalTerms();
+        const auto& plus = evalTermsInto(plusTerms);
         joint.velocity[coordinate.local] = original - h;
-        const TermDerivative minus = evalTerms();
+        const auto& minus = evalTermsInto(minusTerms);
         joint.velocity[coordinate.local] = original; // restore exactly
 
-        const Eigen::VectorXd dBias
-            = (plus.biasForces - minus.biasForces) / (2.0 * h);
+        Eigen::VectorXd dBias = plus.coriolisForces;
+        dBias += plus.gravityForces;
+        dBias -= minus.coriolisForces;
+        dBias -= minus.gravityForces;
+        dBias /= 2.0 * h;
 
         dVelNext_dqdot.col(k) += timeStep * (-inverseMass * dBias);
       }

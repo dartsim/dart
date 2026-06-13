@@ -1,6 +1,6 @@
 # Resume: Hierarchical Memory Manager
 
-## Hard Stop Handoff (2026-06-13, Multibody Dynamics-Terms Scratch Helper)
+## Hard Stop Handoff (2026-06-13, Contact-Free Derivative Dynamics-Terms Scratch)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -8,40 +8,42 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
-Latest local slice: direct multibody dynamics-terms callers can now reuse
-caller-owned dynamics-tree, velocity, mass/bias, and RNEA scratch plus
-caller-retained result capacity. `MultibodyDynamicsTermsScratch` owns the
-allocator-backed storage, `reserveMultibodyDynamicsTermsScratch(...)` prewarms
-it for the current multibody shape, and
-`computeMultibodyDynamicsTermsInto(...)` overwrites a retained
-`MultibodyDynamicsTerms` result.
+Latest local slice: the differentiable contact-free multibody Jacobian path now
+borrows reusable dynamics-terms scratch from `WorldStorage` in addition to its
+existing coordinate and inverse-dynamics scratch. The internal
+`ContactFreeStepDynamicsTermsScratch` bundle retains
+`MultibodyDynamicsTermsScratch` plus the base/perturbed
+`MultibodyDynamicsTerms` result payloads used by
+`detail::contactFreeStepDerivatives(...)`.
 
 The fix has these parts:
 
-- `MultibodyDynamicsTermsScratch` exposes allocator-backed reuse for the
-  existing internal `MultibodyDynamicsScratch` tree, velocity, mass/bias, and
-  RNEA storage;
-- the return-by-value `computeMultibodyDynamicsTerms(...)` helper remains
-  source-compatible and delegates through the same implementation;
-- `World.MultibodyDynamicsTermsScratchUsesProvidedAllocator` verifies first-use
-  scratch allocation through the provided allocator, equivalence with the
-  return-by-value helper, and zero global heap allocation on warmed same-shape
-  dynamics-terms calls.
+- `ContactFreeStepDynamicsTermsScratch` exposes allocator-backed reuse for the
+  dynamics-term evaluations inside the contact-free differentiable Jacobian
+  helper;
+- `WorldStorage` constructs that scratch from the World free allocator and
+  passes it through `World::captureStepDerivatives()`;
+- `World.DifferentiableContactFreeStepScratchUsesProvidedAllocator` verifies
+  first-use allocation through the provided allocator and no additional
+  configured-allocator growth on a same-shape follow-up derivative call.
 
 This still does not claim that arbitrary user-provided
 `VariationalContactHook` callbacks avoid return-by-value forces, that every
 Eigen dynamic result payload borrows a DART allocator, or that the
 return-by-value `Multibody::getMassMatrix()` / `getCoriolisForces()` /
 `getGravityForces()` convenience accessors are allocation-free. The closed gap
-is the direct compute-layer dynamics-terms diagnostic path's reusable
-DART-owned tree/RNEA/mass-bias scratch and caller-retained result capacity.
+is the DART-owned dynamics-tree/RNEA/mass-bias scratch and retained
+dynamics-term result capacity used inside the differentiable contact-free
+multibody Jacobian path.
 
 Validation for this slice:
 
 ```bash
-pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+DART_BUILD_DIFF_OVERRIDE=ON pixi run config
+pixi run cmake --build build/default/cpp/Release --target test_world test_diff_smooth_jacobian -j 8
 build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.MultibodyDynamicsTermsScratchUsesProvidedAllocator:World.MultibodyEquationOfMotionConsistency:World.MultibodyInverseDynamicsRoundTrip'
+  --gtest_filter='World.DifferentiableContactFreeStepScratchUsesProvidedAllocator:World.MultibodyDynamicsTermsScratchUsesProvidedAllocator:World.MultibodyEquationOfMotionConsistency'
+build/default/cpp/Release/bin/test_diff_smooth_jacobian
 pixi run lint
 pixi run build
 pixi run test-unit

@@ -3694,7 +3694,7 @@ TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
          "the World free-list peak on a same-size follow-up step";
 }
 
-TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
+TEST(World, DifferentiableContactFreeStepScratchUsesProvidedAllocator)
 {
   namespace sx = dart::simulation;
 
@@ -3740,6 +3740,10 @@ TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
 
   sx::detail::ContactFreeStepCoordinateScratch coordinateScratch(
       sx::detail::ContactFreeStepCoordinateAllocator{allocator});
+  sx::compute::MultibodyInverseDynamicsScratch inverseDynamicsScratch(
+      allocator);
+  sx::detail::ContactFreeStepDynamicsTermsScratch dynamicsTermsScratch(
+      allocator);
   const Eigen::VectorXd tau
       = Eigen::VectorXd::Constant(static_cast<Eigen::Index>(kJointCount), 0.25);
 
@@ -3750,13 +3754,15 @@ TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
       world.getGravity(),
       world.getTimeStep(),
       tau,
-      &coordinateScratch);
+      &coordinateScratch,
+      &inverseDynamicsScratch,
+      &dynamicsTermsScratch);
 
   EXPECT_EQ(
       derivatives.controlJacobian.cols(),
       static_cast<Eigen::Index>(kJointCount));
   EXPECT_GT(allocator.allocationCount, allocationsBeforeFirstCall)
-      << "contact-free coordinate scratch should allocate through the "
+      << "contact-free derivative scratch should allocate through the "
          "provided allocator on the first derivative call";
   EXPECT_GE(coordinateScratch.capacity(), kJointCount);
 
@@ -3767,14 +3773,16 @@ TEST(World, DifferentiableContactFreeCoordinateScratchUsesProvidedAllocator)
       world.getGravity(),
       world.getTimeStep(),
       tau,
-      &coordinateScratch);
+      &coordinateScratch,
+      &inverseDynamicsScratch,
+      &dynamicsTermsScratch);
 
   EXPECT_EQ(
       derivatives.controlJacobian.cols(),
       static_cast<Eigen::Index>(kJointCount));
   EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstCall)
-      << "same-shape contact-free coordinate collection should reuse retained "
-         "scratch capacity";
+      << "same-shape contact-free derivative evaluation should reuse retained "
+         "coordinate, dynamics-term, and inverse-dynamics scratch capacity";
 }
 #endif
 

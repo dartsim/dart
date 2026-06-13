@@ -98,6 +98,10 @@ struct WorldStorage
   /// contact-free multibody Jacobian path.
   compute::MultibodyInverseDynamicsScratch differentiableInverseDynamicsScratch;
 
+  /// Reusable dynamics-term scratch for the differentiable contact-free
+  /// multibody Jacobian path.
+  ContactFreeStepDynamicsTermsScratch differentiableDynamicsTermsScratch;
+
   /// Cached explicit Jacobians of the most recent differentiable step.
   /// Populated only when the World opted into differentiable simulation and
   /// differentiable support is compiled (`DART_HAS_DIFF`); always empty

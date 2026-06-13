@@ -3274,6 +3274,7 @@ detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
     differentiableCoordinateScratch(
         detail::ContactFreeStepCoordinateAllocator{allocator}),
     differentiableInverseDynamicsScratch(allocator),
+    differentiableDynamicsTermsScratch(allocator),
     ignoredCollisionPairs(
         std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator})
 {
@@ -5741,7 +5742,8 @@ void World::captureStepDerivatives()
         m_timeStep,
         tau,
         &m_storage->differentiableCoordinateScratch,
-        &m_storage->differentiableInverseDynamicsScratch);
+        &m_storage->differentiableInverseDynamicsScratch,
+        &m_storage->differentiableDynamicsTermsScratch);
     return; // WS1: one multibody.
   }
 #endif
