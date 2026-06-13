@@ -111,8 +111,13 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
         "packet": "active_set_transition",
         "surface": "boxed/findex",
-        "benchmark_filter": "BM_LcpActiveSetTransition|BM_LcpNewtonWarmStart",
-        "coverage": "bound changes and warm-start behavior",
+        "benchmark_filter": (
+            "BM_LcpActiveSetTransition|"
+            "BM_LcpNewtonWarmStart|"
+            "BM_LcpNewtonWarmStartBatchSerial|"
+            "BM_LcpNewtonWarmStartBatchParallel"
+        ),
+        "coverage": "bound changes, warm-start behavior, and warm-start batches",
     },
     {
         "packet": "active_set_scale",
