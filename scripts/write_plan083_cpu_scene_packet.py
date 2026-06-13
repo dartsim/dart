@@ -2625,6 +2625,9 @@ def _make_terrain_vehicle_packet(
         raise Plan083CpuScenePacketError(
             "terrain vehicle wheel penetrated the reduced terrain smoke scene"
         )
+    sidecar_payload = _external_surface_ccd_sidecar_payload(
+        row, scene_label="terrain vehicle"
+    )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -2632,7 +2635,10 @@ def _make_terrain_vehicle_packet(
             "scene_id": "plan083_terrain_vehicle",
             "benchmark_row": _packet_row_name(row),
             "paper_scale": False,
-            "runtime_path": "rigid IPC World::step",
+            "runtime_path": (
+                "rigid IPC World::step plus deformable IPC World::step "
+                "external surface CCD sidecar"
+            ),
             "step_count": 1,
             "wall_time_ns": timing_ns,
             "body_count": body_count,
@@ -2648,10 +2654,11 @@ def _make_terrain_vehicle_packet(
             "max_equality_residual": max_equality_residual,
             "chassis_height_m": _finite_number(row, "chassis_height_m"),
             "min_wheel_ground_clearance_m": ground_clearance,
+            **sidecar_payload,
             "limitation_status": (
-                "Reduced chassis/passive-wheel terrain smoke packet only; "
-                "paper-scale terrain mesh, navigation controls, and Table 2 "
-                "timings remain planned."
+                "Reduced chassis/passive-wheel terrain smoke packet plus "
+                "external surface CCD sidecar only; paper-scale terrain mesh, "
+                "navigation controls, and Table 2 timings remain planned."
             ),
         },
         "benchmarks": rows,

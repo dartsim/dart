@@ -2812,12 +2812,14 @@ Capsule Rod (IPC)` py-demos scene.
     inter-body, static-rigid, and moving-rigid external surface CCD sidecar
     witnesses. The reduced umbrella benchmark packet now carries nonzero
     inter-body, static-rigid, and moving-rigid external surface CCD sidecar
-    witnesses, and the reduced Candy benchmark packet now carries nonzero
-    static-rigid and moving-rigid surface CCD witnesses. The reduced ABD/FEM
-    benchmark packet now also requires nonzero inter-body, static-rigid, and
-    moving-rigid external surface CCD sidecar witnesses while keeping
-    paper-scale mixed-scene, full runtime affine/FEM, and GPU parity claims
-    deferred.
+    witnesses. The reduced terrain vehicle benchmark packet now carries
+    nonzero inter-body, static-rigid, and moving-rigid external surface CCD
+    sidecar witnesses, and the reduced Candy benchmark packet now carries
+    nonzero static-rigid and moving-rigid surface CCD witnesses. The reduced
+    ABD/FEM benchmark packet now also requires nonzero inter-body,
+    static-rigid, and moving-rigid external surface CCD sidecar witnesses while
+    keeping paper-scale mixed-scene, full runtime affine/FEM, and GPU parity
+    claims deferred.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
