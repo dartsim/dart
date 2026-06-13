@@ -1091,6 +1091,36 @@ def _workflow_row_rerun_argv(
     return rerun_argv
 
 
+def _workflow_command_argv(
+    args: argparse.Namespace, output_dir: pathlib.Path
+) -> list[str]:
+    workflow_argv = ["--rigid-workflow"]
+    if getattr(args, "include_related", False):
+        workflow_argv.append("--include-related")
+    if getattr(args, "include_ipc_shelf", False):
+        workflow_argv.append("--include-ipc-shelf")
+    if getattr(args, "include_packets", False):
+        workflow_argv.append("--include-packets")
+    if getattr(args, "continue_on_failure", False):
+        workflow_argv.append("--continue-on-failure")
+    start = getattr(args, "workflow_start_row", None)
+    if start is not None:
+        workflow_argv.extend(["--workflow-start-row", str(start)])
+    end = getattr(args, "workflow_end_row", None)
+    if end is not None:
+        workflow_argv.extend(["--workflow-end-row", str(end)])
+    if args.dry_run:
+        workflow_argv.append("--dry-run")
+    if args.backend:
+        workflow_argv.extend(["--backend", args.backend])
+    if args.allow_noop:
+        workflow_argv.append("--allow-noop")
+    if args.video:
+        workflow_argv.extend(["--video", "--fps", str(args.fps)])
+    workflow_argv.extend(["--output-dir", str(output_dir)])
+    return workflow_argv
+
+
 def _public_command(argv: list[str]) -> str:
     return "pixi run py-demo-capture -- " + " ".join(shlex.quote(arg) for arg in argv)
 
@@ -1171,6 +1201,23 @@ def _workflow_href(target: pathlib.Path, base_dir: pathlib.Path) -> str:
     return href.replace(os.sep, "/")
 
 
+def _workflow_manifest_artifact_path(
+    artifact: str, manifest_path: pathlib.Path, output_dir: pathlib.Path
+) -> pathlib.Path:
+    artifact_path = pathlib.Path(artifact)
+    if artifact_path.is_absolute():
+        return artifact_path
+    manifest_relative = manifest_path.parent / artifact_path
+    if manifest_relative.exists():
+        return manifest_relative
+    output_relative = output_dir / artifact_path
+    if output_relative.exists():
+        return output_relative
+    if artifact_path.exists():
+        return artifact_path
+    return manifest_relative
+
+
 def _workflow_scene_manifest_summary(
     capture: dict[str, object], output_dir: pathlib.Path
 ) -> dict[str, object]:
@@ -1197,21 +1244,21 @@ def _workflow_scene_manifest_summary(
     if isinstance(artifacts, dict):
         screenshot = artifacts.get("screenshot")
         if isinstance(screenshot, str) and screenshot:
-            screenshot_path = pathlib.Path(screenshot)
-            if not screenshot_path.is_absolute():
-                screenshot_path = manifest_path.parent / screenshot_path
+            screenshot_path = _workflow_manifest_artifact_path(
+                screenshot, manifest_path, output_dir
+            )
             summary["screenshot_href"] = _workflow_href(screenshot_path, output_dir)
         frames = artifacts.get("frames")
         if isinstance(frames, str) and frames:
-            frames_path = pathlib.Path(frames)
-            if not frames_path.is_absolute():
-                frames_path = manifest_path.parent / frames_path
+            frames_path = _workflow_manifest_artifact_path(
+                frames, manifest_path, output_dir
+            )
             summary["frames_href"] = _workflow_href(frames_path, output_dir)
         video = artifacts.get("video")
         if isinstance(video, str) and video:
-            video_path = pathlib.Path(video)
-            if not video_path.is_absolute():
-                video_path = manifest_path.parent / video_path
+            video_path = _workflow_manifest_artifact_path(
+                video, manifest_path, output_dir
+            )
             summary["video_href"] = _workflow_href(video_path, output_dir)
 
     scene_metrics = payload.get("scene_metrics")
@@ -1801,6 +1848,7 @@ def _write_workflow_review_index(
     started_at: float,
     requested_include_flags: dict[str, bool] | None = None,
     continue_on_failure: bool = False,
+    workflow_command: str = "",
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     index = _workflow_review_index_path(output_dir)
@@ -1819,6 +1867,12 @@ def _write_workflow_review_index(
     guidance_warning = _workflow_guidance_warning(guidance_missing)
     failed_rows = _workflow_failed_rows(captures)
     failure_summary = _workflow_failure_summary(failed_rows)
+    workflow_command_html = (
+        "<p><strong>workflow command</strong><br>"
+        f"<code>{html.escape(workflow_command)}</code></p>"
+        if workflow_command
+        else ""
+    )
     capture_orders = [
         int(capture["order"])
         for capture in captures
@@ -2019,6 +2073,9 @@ def _write_workflow_review_index(
       font-size: 12px;
       line-height: 1.35;
     }}
+    code {{
+      overflow-wrap: anywhere;
+    }}
     .command-label {{
       margin: 8px 0 4px;
       color: #57606a;
@@ -2039,6 +2096,7 @@ def _write_workflow_review_index(
     <p>Generated by <code>scripts/capture_py_demo.py</code>. Open this file after
     <code>py-demo-capture -- --rigid-workflow</code> to inspect the selected
     rigid visual-verification captures from one page.</p>
+    {workflow_command_html}
     <p>{_workflow_link("workflow manifest", "manifest.json")}</p>
   </header>
   <main>
@@ -2065,6 +2123,7 @@ def _write_workflow_manifest(
     started_at: float,
     requested_include_flags: dict[str, bool] | None = None,
     continue_on_failure: bool = False,
+    workflow_command: str = "",
 ) -> pathlib.Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "manifest.json"
@@ -2076,6 +2135,7 @@ def _write_workflow_manifest(
         started_at=started_at,
         requested_include_flags=requested_include_flags,
         continue_on_failure=continue_on_failure,
+        workflow_command=workflow_command,
     )
     completed = sum(1 for capture in captures if capture.get("status") == "captured")
     failed = sum(1 for capture in captures if capture.get("status") == "failed")
@@ -2126,6 +2186,7 @@ def _write_workflow_manifest(
             "continue_on_failure": continue_on_failure,
             "dry_run": dry_run,
             "status": status,
+            "command": workflow_command,
             "capture_count": len(captures),
             "completed_count": completed,
             "failed_count": failed,
@@ -2167,6 +2228,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
     specs = _workflow_capture_specs(args)
     _workflow_row_bounds(args, len(specs))
     captures = _workflow_plan_entries(args, output_dir)
+    workflow_command = _public_command(_workflow_command_argv(args, output_dir))
     if args.dry_run:
         manifest = _write_workflow_manifest(
             output_dir,
@@ -2176,6 +2238,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             started_at=started_at,
             requested_include_flags=requested_include_flags,
             continue_on_failure=args.continue_on_failure,
+            workflow_command=workflow_command,
         )
         for capture in captures:
             print(capture["command"], flush=True)
@@ -2190,6 +2253,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         started_at=started_at,
         requested_include_flags=requested_include_flags,
         continue_on_failure=args.continue_on_failure,
+        workflow_command=workflow_command,
     )
     first_failure_rc = 0
     for capture in captures:
@@ -2220,6 +2284,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             started_at=started_at,
             requested_include_flags=requested_include_flags,
             continue_on_failure=args.continue_on_failure,
+            workflow_command=workflow_command,
         )
         if capture["status"] == "failed":
             print(f"manifest: {manifest}", flush=True)
@@ -2235,6 +2300,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         started_at=started_at,
         requested_include_flags=requested_include_flags,
         continue_on_failure=args.continue_on_failure,
+        workflow_command=workflow_command,
     )
     print(f"workflow manifest: {manifest}", flush=True)
     return first_failure_rc

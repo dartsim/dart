@@ -169,9 +169,11 @@ capture commands, and metric summaries can be reviewed from one page. Rows with
 scene-owned Replay timeline metadata also write a JSON-safe
 `scene_metadata.replay_timeline` summary into each per-scene manifest, and the
 review card names the Replay track plus whether it has signal and marker
-tracks. The panel also includes a current-row motion packet command; workflow
-packets pass `--video --fps` through to the selected row captures and the
-review index links MP4 artifacts when `ffmpeg` is available.
+tracks. The top-level manifest and review header record the exact workflow
+packet command that produced the artifact, so a reviewer can rerun the same
+selected packet. The panel also includes a current-row motion packet command;
+workflow packets pass `--video --fps` through to the selected row captures and
+the review index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
@@ -836,7 +838,8 @@ current-row rerun, and extended related/IPC-shelf/packet commands.
 Optional related, direct IPC shelf, and capture-first packet rows carry the
 same row-guidance fields in the manifest and review index, so extended packets
 remain readable without opening the live GUI. The same outputs also include a
-guidance-completeness audit for the selected packet.
+guidance-completeness audit and the exact top-level workflow command for the
+selected packet.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run

@@ -2,6 +2,17 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: the workflow packet manifest and review index now
+record the exact top-level `pixi run py-demo-capture -- --rigid-workflow ...`
+command that produced the packet, and review-index screenshot/frame/video links
+now normalize workspace-relative artifact paths from per-scene manifests so
+they resolve from `review_index.html`. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_request_video_commands python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos -q`
+reported `4 passed`. Existing `build/captures/...` packets remain historical
+evidence from the previous generator; regenerate the 36-row and optional
+37-52 packets from this HEAD before treating the static HTML as the final
+maintainer-review artifact.
+
 Latest local follow-up: fetched `origin/main` and merged it into
 `feature/rigid-body-gui-visual-verification`; Git reported the branch was
 already up to date with the PR #2986 DART 7 architecture/work-packet harness.
@@ -972,6 +983,10 @@ Evidence supporting readiness:
   37-52 with `failed_count=0`, guidance complete, and all selected related,
   direct IPC shelf, and capture-first packet groups present, including the
   heavy stack packet at row 52.
+- The historical packet HTML above was generated before the current
+  review-index link-normalization and top-level command-provenance fix. Use it
+  as capture-completion evidence, but regenerate the packets from current HEAD
+  before sending `review_index.html` as the final scan artifact.
 - Long optional packets now have an explicit failure-recovery path:
   `--continue-on-failure` records `failed_rows`, review-index Failed Rows
   summaries, and workflow row-range rerun commands that preserve
@@ -1021,20 +1036,16 @@ Acceptance decision packet:
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Latest local commit at this hand-off is titled
-  `Add rigid workflow failed-row reruns`; it builds on the
-  `Summarize rigid workflow failed rows` triage slice, the
-  `Let rigid workflow packets continue after failures` failure-resilience slice,
-  the row-range guidance commit, and the earlier heavy-packet implementation
-  commit.
-  Origin tip observed before these local slices was
-  `bdf757db2c9 Refresh rigid handoff stop state`.
-- Local `HEAD` before the loop-closure implementation work was
-  `1add2036097 Add multibody solver family replay timeline`, which is local
-  until explicitly pushed in a future approved session. `git status -sb` before
-  this continuation resumed showed the branch fourteen commits ahead of origin
-  with uncommitted row 36 scene/test edits and stop-only hand-off docs; this
-  checkpoint supersedes that hand-off state.
+- Latest committed local checkpoint before the current uncommitted provenance
+  work was `10e72ec9e2a Guard rigid workflow review thumbnails`; the branch had
+  no associated pull request and was 36 commits ahead of
+  `origin/feature/rigid-body-gui-visual-verification`.
+- Earlier branch snapshots below are historical archaeology from the
+  multi-session implementation and should not override the current handoff,
+  readiness audit, or `git status -sb`.
+- Historical implementation checkpoints covered by this hand-off included the
+  failed-row rerun, failed-row summary, continue-on-failure, row-range
+  guidance, and heavy-packet slices.
 - Latest implementation checkpoints covered by this hand-off:
   `4c9f367bcd0 Preserve requested rigid workflow packet groups`,
   `f48187d6ce2 Summarize rigid workflow packet groups in review index`, and
@@ -2415,17 +2426,17 @@ passed and `git diff --check` was clean.
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the latest completed local implementation commit to be
-   `Surface workflow review latest signals` if this slice has been committed;
-   otherwise inspect the uncommitted diff for the latest-signals review-index
-   follow-up.
-3. If the tree is clean with that slice present, the next concrete unblocked
-   GUI-verification follow-up is the rows 19-21 contact-failure comparison
-   mini-packet: `rigid_friction_threshold`, `rigid_spin_roll_coupling`, and
-   `rigid_stack_stability`.
-4. Retire this dev-task folder only if the maintainer explicitly accepts the
+2. If the workflow command/link-provenance slice is uncommitted, inspect
+   `scripts/capture_py_demo.py`, `python/tests/unit/test_capture_py_demo.py`,
+   this handoff, the PLAN-103 sidecar, and `python/examples/demos/README.md`.
+3. Regenerate the 36-row workflow packet and optional rows 37-52 packet from
+   current HEAD before using the static `review_index.html` artifacts for final
+   maintainer review.
+4. Do not add new numbered rows unless a public API gap has been resolved and
+   the durable PLAN-103 scope is updated first.
+5. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-5. Do not push again unless the user explicitly approves pushing in that
+6. Do not push again unless the user explicitly approves pushing in that
    session; before pushing a PR branch, merge latest base rather than rebasing.
 
 ## Commit And Push Notes

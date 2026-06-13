@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import html
+from html.parser import HTMLParser
 import importlib.util
 import json
 import pathlib
@@ -15,6 +17,25 @@ assert _SPEC is not None
 assert _SPEC.loader is not None
 capture_py_demo = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(capture_py_demo)
+
+
+class _ReviewAssetParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.assets: list[str] = []
+
+    def handle_starttag(
+        self, _tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        for name, value in attrs:
+            if name in {"href", "src"} and value:
+                self.assets.append(value)
+
+
+def _review_assets(html_text: str) -> list[str]:
+    parser = _ReviewAssetParser()
+    parser.feed(html_text)
+    return parser.assets
 
 
 def _write_ppm(
@@ -760,6 +781,12 @@ def test_rigid_workflow_dry_run_can_request_video_commands(
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["capture_count"] == 1
     assert (
+        manifest["command"]
+        == "pixi run py-demo-capture -- --rigid-workflow --dry-run "
+        "--backend opengl --video --fps 12 --output-dir "
+        f"{output}"
+    )
+    assert (
         manifest["captures"][0]["command"]
         == "pixi run py-demo-capture -- --scene rigid_solver_compare "
         "--frames 24 --width 960 --height 540 --output-dir "
@@ -771,6 +798,9 @@ def test_rigid_workflow_dry_run_can_request_video_commands(
         == "pixi run py-demos -- --scene rigid_solver_compare --width 960 "
         "--height 540 --backend opengl"
     )
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "<strong>workflow command</strong>" in review_html
+    assert html.escape(manifest["command"]) in review_html
 
 
 def test_rigid_workflow_row_range_preserves_requested_extra_groups(
@@ -1043,6 +1073,10 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["dry_run"] is False
     assert manifest["status"] == "complete"
+    assert manifest["command"] == (
+        "pixi run py-demo-capture -- --rigid-workflow --output-dir "
+        f"{output}"
+    )
     assert manifest["completed_count"] == len(specs)
     assert manifest["failed_count"] == 0
     assert [capture["status"] for capture in manifest["captures"]] == [
@@ -1054,6 +1088,8 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert review_index.is_file()
     review_html = review_index.read_text()
     assert "scenes/01_rigid_body/rigid_body.png" in review_html
+    assert "<strong>workflow command</strong>" in review_html
+    assert html.escape(manifest["command"]) in review_html
     assert review_html.count('alt="rigid_body screenshot"') == 1
     assert review_html.count('alt="rigid_executor_equivalence screenshot"') == 1
     assert "scenes/02_rigid_executor_equivalence/manifest.json" in review_html
@@ -1528,6 +1564,54 @@ def test_rigid_workflow_run_links_scene_videos(
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "scenes/01_rigid_body/rigid_body.mp4" in review_html
     assert ">video</a>" in review_html
+
+
+def test_rigid_workflow_review_links_resolve_workspace_relative_artifacts(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    output = pathlib.Path("rigid_workflow")
+    specs = (("rigid_body", 24, 960, 540, True),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fake_run(argv: list[str]) -> int:
+        scene = argv[argv.index("--scene") + 1]
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        frames_dir = output_dir / "png_frames"
+        frames_dir.mkdir()
+        screenshot = output_dir / f"{scene}.png"
+        video = output_dir / f"{scene}.mp4"
+        screenshot.write_bytes(b"fake-png")
+        video.write_bytes(b"fake-mp4")
+        (output_dir / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "scene": scene,
+                    "artifacts": {
+                        "frames": str(frames_dir),
+                        "screenshot": str(screenshot),
+                        "video": str(video),
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(
+        ["--rigid-workflow", "--video", "--output-dir", str(output)]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    review_index = pathlib.Path(manifest["artifacts"]["review_index"])
+    review_html = review_index.read_text()
+    for asset in _review_assets(review_html):
+        assert (review_index.parent / asset).exists(), asset
 
 
 def test_rigid_workflow_fails_when_scene_manifest_is_missing(

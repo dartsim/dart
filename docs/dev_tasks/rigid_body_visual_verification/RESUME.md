@@ -2,6 +2,17 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: the workflow packet manifest and review index now
+record the exact top-level `pixi run py-demo-capture -- --rigid-workflow ...`
+command that produced the packet, and review-index screenshot/frame/video links
+now normalize workspace-relative artifact paths from per-scene manifests so
+they resolve from `review_index.html`. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_request_video_commands python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos -q`
+reported `4 passed`. Existing `build/captures/...` packets remain historical
+evidence from the previous generator; regenerate the 36-row and optional
+37-52 packets from this HEAD before treating the static HTML as the final
+maintainer-review artifact.
+
 Latest local follow-up: fetched `origin/main` and merged it into
 `feature/rigid-body-gui-visual-verification`; Git reported the branch was
 already up to date with the PR #2986 DART 7 architecture/work-packet harness.
@@ -46,14 +57,16 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-  Latest completed implementation commit for the row-15-through-row-36 pass was
-  `608a8792afa Surface loop closure workflow signals`; if a docs-only evidence
-  commit exists after it, inspect that diff first.
+- Latest committed local checkpoint before the current uncommitted provenance
+  work was `10e72ec9e2a Guard rigid workflow review thumbnails`; inspect any
+  newer diff first.
 - Do not push without explicit approval in the session that performs the push.
 - Use the full row-01-through-row-36 packet plus the optional rows 37-52 packet
-  as maintainer-review evidence for the current rigid workflow. If more local
-  progress is requested before pushing/review, audit the API-deferred gaps
-  rather than adding speculative numbered rows.
+  as historical completion evidence for the current rigid workflow, then
+  regenerate those packets from current HEAD before relying on
+  `review_index.html` as the final maintainer-review scan artifact.
+  If more local progress is requested before pushing/review, audit the
+  API-deferred gaps rather than adding speculative numbered rows.
 
 Files touched by this row-36 slice:
 
