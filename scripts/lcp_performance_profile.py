@@ -290,6 +290,16 @@ def check_native_profile_coverage(
             for (solver, problem_size), _ in results.get(category, {}).items()
             if problem_size <= 0
         )
+        invalid_contact_count_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if category != "FrictionIndex"
+            and data.get("contact_count") is not None
+            and (
+                (contact_count := _counter_to_int(data.get("contact_count"))) is None
+                or contact_count < 0
+            )
+        )
         failed_contract_rows = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -405,6 +415,11 @@ def check_native_profile_coverage(
             evidence_errors.append(
                 f"{category}: benchmark JSON has invalid problem sizes for "
                 f"{invalid_problem_size_rows}"
+            )
+        if invalid_contact_count_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid contact counts for "
+                f"{invalid_contact_count_rows}"
             )
         if failed_contract_rows:
             evidence_errors.append(
