@@ -66,21 +66,21 @@ rigid-body visual verification surface for the current cycle.
   `build/captures/rigid_workflow_rows_01_36_1781311276` failed on row 1 with
   `return_code=-7` before scene metrics were written. The underlying native
   `SIGBUS` was traced to Filament's Linux `/tmp`-backed CircularBuffer path
-  under a full tmpfs user quota. After the scoped headless engine-creation fix,
-  direct `py-demos` with `/dev/shm` output returned `RC=0`, and single-scene
-  `py-demo-capture` with `/dev/shm` output returned `RC=0`, wrote
-  `resolved_solver_identity` for `Sequential impulse`, and produced a
-  nonblank visual with 2047 unique colors. The failed refresh path is not
-  included in the evidence below; full identity-complete packet regeneration
-  remains pending.
+  under tmpfs user-quota pressure. After the scoped headless engine-creation
+  fix, direct `py-demos` with `/dev/shm` output returned `RC=0`, single-scene
+  `py-demo-capture` with `/dev/shm` output returned `RC=0`, and the full plus
+  optional workflow packets below regenerated with complete solver identity.
+  The failed `1781311276` refresh path is not included in the evidence below.
 - Full numbered workflow packet:
-  `build/captures/rigid_workflow_rows_01_36_1781309127`
+  `build/captures/rigid_workflow_rows_01_36_1781312968`
   (`status=complete`, `capture_count=36`, `failed_count=0`,
-  `guidance_complete=true`, 2388 PNG frames).
+  `guidance_complete=true`, `resolved_solver_identity_complete=true`,
+  `resolved_solver_identity_count=36`, 2388 PNG frames).
 - Optional rows 37-52 packet:
-  `build/captures/rigid_workflow_optional_rows_37_52_1781309448`
+  `build/captures/rigid_workflow_optional_rows_37_52_1781313357`
   (`status=complete`, `capture_count=16`, `failed_count=0`,
-  `guidance_complete=true`, 1004 PNG frames).
+  `guidance_complete=true`, `resolved_solver_identity_complete=true`,
+  `resolved_solver_identity_count=16`, 1004 PNG frames).
 - Static review-index asset audit: 0 missing local assets for both current
   review indexes.
 - Completion audit:
