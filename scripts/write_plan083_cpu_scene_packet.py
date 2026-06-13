@@ -1998,6 +1998,7 @@ def _make_pulley_packet(
     separation = _finite_number(row, "load_separation_m")
     if separation <= 0.0:
         raise Plan083CpuScenePacketError("pulley load separation is not positive")
+    sidecar_payload = _external_surface_ccd_sidecar_payload(row, scene_label="pulley")
 
     return {
         "plan083_cpu_scene_packet": {
@@ -2005,7 +2006,10 @@ def _make_pulley_packet(
             "scene_id": "plan083_pulley_system",
             "benchmark_row": _packet_row_name(row),
             "paper_scale": False,
-            "runtime_path": "rigid IPC World::step",
+            "runtime_path": (
+                "rigid IPC World::step plus deformable IPC World::step "
+                "external surface CCD sidecar"
+            ),
             "step_count": 1,
             "wall_time_ns": timing_ns,
             "body_count": body_count,
@@ -2020,10 +2024,12 @@ def _make_pulley_packet(
             "load_height_difference_m": _finite_number(row, "load_height_difference_m"),
             "load_separation_m": separation,
             "wheel_spin_rad_s": _finite_number(row, "wheel_spin_rad_s"),
+            **sidecar_payload,
             "limitation_status": (
-                "Reduced hinged-wheel and point-connection smoke packet only; "
-                "analytical force comparison, rope/rod coupling, and paper-scale "
-                "timing remain planned."
+                "Reduced hinged-wheel and point-connection smoke packet plus "
+                "external surface CCD sidecar only; analytical force comparison, "
+                "sliding constraints, rope/rod coupling, and paper-scale timing "
+                "remain planned."
             ),
         },
         "benchmarks": rows,

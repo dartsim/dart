@@ -192,6 +192,12 @@ def _pulley_packet(**overrides):
         "load_height_difference_m": 0.06,
         "load_separation_m": 0.40,
         "wheel_spin_rad_s": 0.0,
+        "external_surface_ccd_sidecar_scene_count": 1,
+        "deformable_sidecar_body_count": 3,
+        "deformable_sidecar_node_count": 31,
+        "deformable_sidecar_edge_count": 68,
+        "deformable_sidecar_surface_triangle_count": 32,
+        **_external_surface_ccd_sidecar_counters(),
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -819,6 +825,14 @@ def test_plan083_cpu_scene_packet_accepts_reduced_pulley() -> None:
     assert row["revolute_joint_count"] == 1
     assert row["active_articulation_constraints"] == 8
     assert row["wall_time_ns"] == 8.0e6
+    assert (
+        row["runtime_path"]
+        == "rigid IPC World::step plus deformable IPC World::step external surface CCD sidecar"
+    )
+    assert row["external_surface_ccd_sidecar_scene_count"] == 1
+    assert row["inter_body_surface_contact_ccd_hits"] == 33
+    assert row["static_rigid_surface_ccd_hits"] == 34
+    assert row["moving_rigid_surface_ccd_hits"] == 1
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_umbrella() -> None:
@@ -1452,6 +1466,28 @@ def test_plan083_cpu_scene_packet_rejects_pulley_without_point_connections() -> 
     with pytest.raises(module.Plan083CpuScenePacketError, match="point-connection"):
         module.make_packet(
             _pulley_packet(fixed_joint_count=1),
+            max_equality_residual=1e-8,
+            scene="pulley_system",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_pulley_without_sidecar() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _pulley_packet(external_surface_ccd_sidecar_scene_count=0),
+            max_equality_residual=1e-8,
+            scene="pulley_system",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_pulley_without_external_ccd() -> None:
+    module = _load_module()
+
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _pulley_packet(moving_rigid_surface_ccd_hits=0),
             max_equality_residual=1e-8,
             scene="pulley_system",
         )

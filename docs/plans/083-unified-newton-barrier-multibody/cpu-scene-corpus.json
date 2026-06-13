@@ -88,9 +88,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/pulley_system/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-pulley-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/pulley_system.json",
-      "expected_invariant": "Pulley constraints satisfy residual tolerances and force-vs-mass comparison rows.",
-      "limitation_status": "Reduced hinged-wheel and point-connection smoke packet only; analytical force comparison and paper-scale rope/rod coupling remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced pulley scene through World::step, and bm-plan083-cpu-pulley-packet validates the reduced benchmark packet. Analytical force-vs-mass comparison remains planned."
+      "expected_invariant": "Reduced pulley hinge, point-connected loads, and articulation rows stay finite while stepping through the rigid IPC World path, and the row's deformable IPC sidecar records nonzero inter-body, static-rigid, and moving-rigid external surface CCD counters.",
+      "limitation_status": "Reduced rigid runtime smoke and external surface CCD sidecar CPU packet only; analytical force comparison, sliding constraints, elastic rods, and paper-scale rope/rod coupling remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced pulley scene through World::step, and bm-plan083-cpu-pulley-packet validates the reduced benchmark packet. The packet now records 68 self-surface candidate builds, 660 point-triangle CCD checks, 1224 edge-edge CCD checks, one reduced inter-body surface CCD sidecar witness with 67 candidate builds, 33 point-triangle checks, 33 hits, and one limited step, one reduced static-rigid surface CCD sidecar witness with 35 candidate builds, 68 point-triangle checks, 102 edge-edge checks, 34 hits, and one limited step, plus one reduced moving-rigid surface CCD sidecar witness with 3 candidate builds, 2 point-triangle checks, 41 edge-edge checks, 1 hit, and one limited step on the median row. Analytical force comparison, sliding constraints, elastic rods, and paper-scale rope/rod coupling remain planned."
     },
     {
       "row_id": "unb-fig-04",
