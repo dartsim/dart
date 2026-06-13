@@ -2808,6 +2808,8 @@ Capsule Rod (IPC)` py-demos scene.
     also carries nonzero inter-body, static-rigid, and moving-rigid surface CCD
     witnesses. The reduced hanging-bridge benchmark packet now carries nonzero
     inter-body, static-rigid, and moving-rigid external surface CCD sidecar
+    witnesses. The reduced umbrella benchmark packet now carries nonzero
+    inter-body, static-rigid, and moving-rigid external surface CCD sidecar
     witnesses, and the reduced Candy benchmark packet now carries nonzero
     static-rigid and moving-rigid surface CCD witnesses. The reduced ABD/FEM
     benchmark packet now also requires nonzero inter-body, static-rigid, and

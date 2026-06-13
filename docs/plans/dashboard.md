@@ -381,9 +381,10 @@ its own line so status updates remain git-history friendly.
   activates all three external families, plus reduced lying-flat
   inter-body/static-rigid/moving-rigid surface CCD witness rows, one reduced
   hanging-bridge inter-body/static-rigid/moving-rigid external CCD sidecar row,
-  one reduced Candy static-rigid/moving-rigid surface CCD witness row, and one
-  reduced ABD/FEM external sidecar witness row. Other broader figure/demo scene
-  rows still have zero external candidate/check/hit counts.
+  one reduced umbrella inter-body/static-rigid/moving-rigid external CCD sidecar
+  row, one reduced Candy static-rigid/moving-rigid surface CCD witness row, and
+  one reduced ABD/FEM external sidecar witness row. Other broader figure/demo
+  scene rows still have zero external candidate/check/hit counts.
   It still keeps
   production runtime scene filtering, analytic curved CCD, production
   scene-level line search inside

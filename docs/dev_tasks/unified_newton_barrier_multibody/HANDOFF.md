@@ -1,5 +1,47 @@
 # Unified Newton-Barrier Handoff
 
+## Umbrella External Surface CCD Sidecar CPU Packet Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint upgrades the reduced `unb-fig-04` umbrella CPU benchmark row
+from a rigid-only runtime smoke packet to a rigid IPC `World::step` umbrella
+step plus a deformable IPC `World::step` external surface CCD sidecar. The
+umbrella row still validates 4 rigid bodies, 3 dynamic bodies, 2
+point-connected ribs, 1 revolute hinge, and 8 active articulation constraints,
+while `scripts/write_plan083_cpu_scene_packet.py` now requires a
+3-body/31-node external CCD sidecar with positive inter-body, static-rigid, and
+moving-rigid surface CCD witness counters for `scene=umbrella`. The latest
+median packet records 68 self-surface candidate builds, 660 point-triangle CCD
+checks, 1,224 edge-edge CCD checks, 67 inter-body candidate builds, 33
+inter-body hits and one limited step, 35 static-rigid candidate builds, 68
+point-triangle checks, 102 edge-edge checks, 34 static-rigid hits and one
+limited step, plus 3 moving-rigid candidate builds, 2 point-triangle checks, 41
+edge-edge checks, 1 moving-rigid hit, and one limited step with
+`failed_steps=0`.
+
+This is still a reduced rigid umbrella smoke packet plus sidecar evidence only.
+It does not prove umbrella-owned deformable contact, cloth shrinking,
+wrinkling, sliding constraints, rod/codimensional paper-scale coupling,
+accepted Table 2 counts, production runtime scene filtering, analytic curved
+CCD, GPU `World::step`, accepted reference timings, or any speedup gate.
+
+Current validation passed:
+
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run bm-plan083-cpu-umbrella-packet`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py tests/test_plan083_cpu_scene_corpus.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-all`
+
 ## Hanging-Bridge External Surface CCD Sidecar CPU Packet Checkpoint (2026-06-13)
 
 Work continued locally on
