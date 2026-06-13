@@ -1,5 +1,44 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Replay Scratch Vector Aliases)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR. It includes `origin/main` at
+`a122e8e0f3e` via local merge commit `57c8b1cd608`; a fresh
+`git fetch origin main && git merge origin/main` reported "Already up to date."
+
+Latest local slice: replay capture/restore helper scratch vectors now use local
+`ReplayScratchAllocator<T>` and `ReplayScratchVector<T>` aliases instead of
+repeating `std::vector<T, common::StlAllocator<T>>` at each helper call site.
+This follows the surrounding replay-state allocator-vector pattern and keeps
+future allocator spelling changes localized.
+
+This is a mechanical maintainability slice. It does not change allocator
+provenance, replay semantics, public APIs, or the existing replay no-global-heap
+contract.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+pixi run build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.WorldPersistentStorageUsesWorldFreeAllocator:World.Replay*'
+pixi run lint
+git diff --check
+```
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Motor Row Gates)
 
 Resume from exactly one branch:

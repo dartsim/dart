@@ -521,6 +521,12 @@ struct World::ReplayState
 
 namespace {
 
+template <typename Value>
+using ReplayScratchAllocator = common::StlAllocator<Value>;
+
+template <typename Value>
+using ReplayScratchVector = std::vector<Value, ReplayScratchAllocator<Value>>;
+
 template <typename View>
 std::size_t countReplayView(const View& view)
 {
@@ -842,12 +848,12 @@ auto orderReplayRigidBodiesParentBeforeChild(
     const PublicFrameStates& publicFrameStates,
     common::MemoryAllocator& allocator)
 {
-  std::vector<std::size_t, common::StlAllocator<std::size_t>> ordered(
-      common::StlAllocator<std::size_t>{allocator});
+  ReplayScratchVector<std::size_t> ordered(
+      ReplayScratchAllocator<std::size_t>{allocator});
   ordered.reserve(states.size());
 
-  std::vector<int, common::StlAllocator<int>> visitState(
-      states.size(), 0, common::StlAllocator<int>{allocator});
+  ReplayScratchVector<int> visitState(
+      states.size(), 0, ReplayScratchAllocator<int>{allocator});
   for (std::size_t i = 0; i < states.size(); ++i) {
     appendReplayRigidBodyParentBeforeChild(
         registry, states, publicFrameStates, visitState, ordered, i);
@@ -861,8 +867,8 @@ auto captureReplayComponents(
     const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
 {
   using SnapshotValue = std::pair<entt::entity, Component>;
-  std::vector<SnapshotValue, common::StlAllocator<SnapshotValue>> snapshot(
-      common::StlAllocator<SnapshotValue>{allocator});
+  ReplayScratchVector<SnapshotValue> snapshot(
+      ReplayScratchAllocator<SnapshotValue>{allocator});
   auto view = registry.view<Component>();
   snapshot.reserve(countReplayView(view));
   for (auto entity : view) {
@@ -887,8 +893,8 @@ auto captureReplayDeformableNodeStates(
     const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
 {
   using SnapshotValue = std::pair<entt::entity, DeformableNodeStateSnapshot>;
-  std::vector<SnapshotValue, common::StlAllocator<SnapshotValue>> snapshot(
-      common::StlAllocator<SnapshotValue>{allocator});
+  ReplayScratchVector<SnapshotValue> snapshot(
+      ReplayScratchAllocator<SnapshotValue>{allocator});
   auto view = registry.view<comps::DeformableNodeState>();
   snapshot.reserve(countReplayView(view));
   for (auto entity : view) {
@@ -1086,8 +1092,8 @@ void restoreReplayTransientComponentsWithRestorer(
   validateReplayTransientComponents<Component>(
       registry, snapshot, componentName, entityPredicate);
 
-  std::vector<std::uint32_t, common::StlAllocator<std::uint32_t>>
-      snapshotEntities(common::StlAllocator<std::uint32_t>{allocator});
+  ReplayScratchVector<std::uint32_t> snapshotEntities(
+      ReplayScratchAllocator<std::uint32_t>{allocator});
   snapshotEntities.reserve(snapshot.size());
   for (const auto& [entity, component] : snapshot) {
     static_cast<void>(component);
@@ -1095,8 +1101,8 @@ void restoreReplayTransientComponentsWithRestorer(
   }
   std::ranges::sort(snapshotEntities);
 
-  std::vector<entt::entity, common::StlAllocator<entt::entity>> staleEntities(
-      common::StlAllocator<entt::entity>{allocator});
+  ReplayScratchVector<entt::entity> staleEntities(
+      ReplayScratchAllocator<entt::entity>{allocator});
   auto view = registry.view<Component>();
   for (auto entity : view) {
     if (!std::ranges::binary_search(
@@ -1162,8 +1168,8 @@ template <typename LoopClosureState>
 auto captureReplayLoopClosures(
     const detail::WorldRegistry& registry, common::MemoryAllocator& allocator)
 {
-  std::vector<LoopClosureState, common::StlAllocator<LoopClosureState>> states(
-      common::StlAllocator<LoopClosureState>{allocator});
+  ReplayScratchVector<LoopClosureState> states(
+      ReplayScratchAllocator<LoopClosureState>{allocator});
   auto view = registry.view<comps::LoopClosure, comps::Name>();
   states.reserve(countReplayView(view));
   for (auto entity : view) {
