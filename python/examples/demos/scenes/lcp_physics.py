@@ -2750,6 +2750,8 @@ def build() -> SceneSetup:
                     "Solver",
                     "Native cases",
                     "OK",
+                    "Native OK",
+                    "Delegated OK",
                     "Total us",
                     "Worst error",
                     "Worst residual",
@@ -2765,6 +2767,20 @@ def build() -> SceneSetup:
                     _write_table_cell(
                         builder,
                         f"{row['contract_ok_count']}/{row['problem_count']}",
+                    )
+                    _write_table_cell(
+                        builder,
+                        (
+                            f"{row['native_contract_ok_count']}/"
+                            f"{row['native_case_count']}"
+                        ),
+                    )
+                    _write_table_cell(
+                        builder,
+                        (
+                            f"{row['delegated_contract_ok_count']}/"
+                            f"{row['delegated_case_count']}"
+                        ),
                     )
                     _write_table_cell(builder, f"{row['total_elapsed_us']:.1f}")
                     _write_table_cell(builder, f"{row['max_solution_error']:.2e}")

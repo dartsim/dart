@@ -2180,8 +2180,18 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     ):
         assert any(guidance_text in event for event in builder.events)
     assert (
-        "table:lcp_solver_profile:Solver,Native cases,OK,Total us,Worst error,"
-        "Worst residual,Worst comp,Slowest case,Slowest us"
+        "table:lcp_solver_profile:Solver,Native cases,OK,Native OK,Delegated OK,"
+        "Total us,Worst error,Worst residual,Worst comp,Slowest case,Slowest us"
+        in builder.events
+    )
+    assert (
+        f"text:{solver_profile_by_name['Dantzig']['native_contract_ok_count']}/"
+        f"{solver_profile_by_name['Dantzig']['native_case_count']}"
+        in builder.events
+    )
+    assert (
+        f"text:{solver_profile_by_name['MPRGP']['delegated_contract_ok_count']}/"
+        f"{solver_profile_by_name['MPRGP']['delegated_case_count']}"
         in builder.events
     )
     assert (
