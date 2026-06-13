@@ -161,20 +161,54 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   evidence).
 - Gates: `pixi run lint`, `pixi run build`, `pixi run test-unit`.
 - Dependencies: none. Later refactor packets declare this packet in their own
-  Dependencies lines, which are the source of truth.
+  Dependencies lines, which are the source of truth. Handoff notes (verified
+  2026-06-13): no golden/reference-trajectory fixture exists under `tests/`
+  yet, so this seeds the first; follow the committed fixture convention —
+  tab-separated `.tsv` under `tests/fixtures/` (pattern:
+  `tests/fixtures/rigid_ipc/wrecking_ball_ccd.tsv`), not JSON; model the
+  regression test on
+  `tests/unit/simulation/world/test_world_contact_parity.cpp` (the `world/`
+  directory is auto-registered via `dart_add_unit_test_dir(world …)` in
+  `tests/unit/simulation/CMakeLists.txt`, so no per-directory CMake edit is
+  needed); record per-step state (position, velocity, contact count, time)
+  and the tolerance policy in the fixture/test.
 
 #### WP-091.3 Architecture-page claim lint
 
 - Objective: every ✅/available claim in `docs/readthedocs/architecture.md`
   is CI-checkable: each marked row cites a header symbol and a test.
-- Scope: a `scripts/check_*.py` following the completion-audit checker
-  pattern, registered in `pixi.toml` lint/check aggregates, plus a meta-test.
+- Scope: (a) the marked-availability rows do not yet carry test citations and
+  the tables (Physics domains, Solver method families, Cross-domain coupling,
+  Collision/contacts, Compute backends — ~23 marked rows) have no test column,
+  so the executor first adds, to each ✅/available row, a citation to a
+  DART-owned test that exercises that claim (a new `Test` column or an inline
+  citation in the existing `Owner`/`Selected by` cell — pick one form and
+  apply it consistently across both table shapes); the existing
+  header-symbol/entry-point citation stays. (b) a `scripts/check_*.py`
+  following the completion-audit checker pattern
+  (`scripts/check_plan083_completion_audit.py`) that, for every marked row,
+  asserts the cited header symbol resolves in an installed public header and
+  the cited test file exists under `tests/`; registered in `pixi.toml`
+  `lint`/`check-lint` aggregates (add both a `lint-*` and a `check-*` task,
+  mirroring the `lint-plan083-*`/`check-plan083-*` pairing); plus a meta-test.
+  The added citations are the judgment work and the checker is mechanical, but
+  they share one verification story (the checker passing on the now-cited doc),
+  so they stay in this one packet.
 - Non-goals: re-grading the markers themselves (done with this plan's
-  creation); generating the tables.
-- Acceptance evidence: checker passes on current docs; meta-test proves it
-  catches an injected unsupported claim.
+  creation); generating the tables; changing any claim's ✅/available status
+  (a marked row with no real test is a finding to report back, not a marker to
+  silently downgrade here).
+- Acceptance evidence: every ✅/available row in `architecture.md` carries a
+  header-symbol citation and a test citation; the new checker passes on the
+  amended docs; a meta-test proves it rejects an injected unsupported claim (a
+  marked row whose cited test does not exist, and one whose cited symbol does
+  not resolve).
 - Gates: `pixi run lint`, `pixi run check-lint`, new checker meta-test.
-- Dependencies: none.
+- Dependencies: none. Hazards: the two solver tables use different column
+  layouts (Physics domains: Domain/Status/Public entry point/Owner; Solver
+  method families: Domain/Method option/Status/Selected by), so the citation
+  form must fit both; `architecture.md` cites `PLAN-082`, so coordinate with
+  WP-091.5 if both are in flight (the renumber rewrites that citation).
 
 #### WP-091.4 Legacy freeze gate and Decision 5
 
@@ -191,7 +225,19 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
 - Acceptance evidence: decision recorded in PLAN-042; freeze check exercised
   by a meta-test; orphaned-feature disposition recorded.
 - Gates: `pixi run lint`, `pixi run check-lint`.
-- Dependencies: maintainer direction on Decision 5 options.
+- Dependencies: maintainer direction on Decision 5 options. **BLOCKED as of
+  2026-06-13:** Decision 5 is still listed under PLAN-042's "Decisions To
+  Make" with no recorded maintainer choice, and
+  `042-dart7-public-api-and-source-layout/post-promotion-source-layout-decision.md`
+  records `dart/dynamics` only as an unresolved "compatibility/quarantine
+  lane; decide remove, wrap, or quarantine per concept". Unblock by recording
+  Decision 5 in that file (a `## Decision 5` section enumerating, per DART 6
+  surface — World, Skeleton, BodyNode, the constraint concepts, the orphaned
+  cylindrical joint — whether each is removed, quarantined, wrapped, or
+  promoted) and flipping the open marker in
+  `042-dart7-public-api-and-source-layout/api-source-layout-audit.md`. The
+  quarantine lane this packet's freeze check must enforce is undefined until
+  that decision exists, so do not start the check before then.
 
 #### WP-091.5 Renumber colliding plan IDs
 
@@ -203,11 +249,24 @@ joint-grid, net}` and `avbd-demo3d-{soft-body, bridge, breakable}`; chain
   multibody solver table cites PLAN-082), and `solver-family-intake.md` all
   cite these IDs); add a plan-ID uniqueness check to the docs-policy script.
 - Non-goals: changing any plan's content or status.
-- Acceptance evidence: one dashboard block per ID; link checker / docs policy
-  green; uniqueness check has a meta-test.
+- Acceptance evidence: one dashboard block per ID (today `dashboard.md` has
+  two PLAN-080 blocks — Rigid-Body Dynamics Solver and Performance Dashboard —
+  and two PLAN-082 blocks — Rigid Implicit-Barrier Contact and Linear-Time
+  Variational Integrator); link checker / docs policy green; a plan-ID
+  uniqueness check added to `scripts/check_docs_policy.py` (extend the plan
+  lifecycle/lint logic to reject a dashboard with two blocks claiming one
+  PLAN-ID) with a meta-test under `tests/` proving it rejects a duplicate-ID
+  fixture.
 - Gates: `pixi run lint`, `pixi run check-docs-policy`.
-- Dependencies: none. Hazards: 20+ cross-referencing files; grep-by-ID hits
-  the wrong block while duplicates exist — fix the duplicates in one packet.
+- Dependencies: none. Hazards: the collision is real and confirmed (verified
+  2026-06-13) — `PLAN-080` resolves to ~52 references across ~21 files and
+  `PLAN-082` to ~97 references across ~32 files (≈53 distinct files total), so
+  grep-by-ID hits the wrong block while duplicates exist; fix the duplicates
+  in one packet and renumber the file plus its sidecar folder in tandem
+  (`080-*`, `082-rigid-implicit-barrier-contact{,/}`,
+  `082-variational-integrator-solver{,/}` all exist on disk). Coordinate with
+  WP-091.3 if both are in flight (both rewrite the `architecture.md` PLAN-082
+  citation).
 
 ### WS1 — Internal solver contract and selection
 
