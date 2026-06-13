@@ -1,5 +1,98 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Advanced Parameter Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `a63bcabbcb6 Guard LCP solver guidance metadata`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   advanced solver-parameter guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `a63bcabbcb6 Guard LCP solver guidance metadata`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-four commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now parses the LCP demo advanced
+  solver-parameter table and checks its solver names, supported surfaces, and
+  benchmark filters against the manifest and C++ benchmark registry.
+- The guard also requires each advanced row benchmark filter to be covered by
+  the demo's `solver_parameter_sweeps` packet.
+- The guard exposed a stale overview packet: advanced Newton rows referenced
+  `BM_LcpNewtonWarmStart`, but the packet listed only batch warm-start filters.
+  `python/examples/demos/scenes/lcp_physics.py` now includes
+  `BM_LcpNewtonWarmStart` in that packet, and the demo panel metadata test pins
+  the updated string.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers the valid parser
+  path and stale solver, stale benchmark-filter, and unsupported-surface
+  failures.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'advanced_solver_parameter or solver_guidance or representative_requirement or benchmark_filter or uncovered'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q
+pixi run lint
+git diff --check
+pixi run build
+nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused advanced-parameter and adjacent roster tests: passed with 8 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full LCP roster unit file: passed with 37 tests.
+- LCP demo panel metadata test: passed with 1 test.
+- `pixi run lint`: passed, including the LCP solver roster check and AI command
+  sync.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- CUDA device used for the full gate: NVIDIA RTX 5000 Ada Generation Laptop
+  GPU, compute capability 8.9.
+- `pixi run -e cuda test-all`: passed end to end. The report showed linting,
+  build, unit tests, simulation tests, Python tests, documentation, and CUDA
+  tests all passed; documentation emitted the known four
+  `dartpy._world_render_bridge` autodoc warnings.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, roster check, `pixi run lint`, `git diff --check`, and
+any broader gate warranted by the final diff. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Solver Guidance Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

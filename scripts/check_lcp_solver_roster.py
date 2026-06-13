@@ -195,6 +195,14 @@ def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
             else:
                 values.append(_evaluate_demo_expression(element, env))
         return tuple(values)
+    if isinstance(node, ast.List):
+        values = []
+        for element in node.elts:
+            if isinstance(element, ast.Starred):
+                values.extend(_evaluate_demo_expression(element.value, env))
+            else:
+                values.append(_evaluate_demo_expression(element, env))
+        return values
     if isinstance(node, ast.Dict):
         return {
             _evaluate_demo_expression(key, env): _evaluate_demo_expression(value, env)
@@ -384,6 +392,71 @@ def parse_demo_solver_guidance_rows() -> list[dict[str, str]]:
     return list(_literal_assignment(module, "_SOLVER_GUIDANCE_ROWS"))
 
 
+def parse_demo_advanced_solver_parameter_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    function = next(
+        (
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_advanced_solver_parameter_rows"
+        ),
+        None,
+    )
+    if function is None:
+        raise AssertionError(
+            f"{LCP_DEMO_PATH} is missing _advanced_solver_parameter_rows()"
+        )
+
+    env: dict[str, Any] = {}
+    for statement in function.body:
+        if isinstance(statement, ast.Assign):
+            if len(statement.targets) == 1 and isinstance(
+                statement.targets[0], ast.Name
+            ):
+                env[statement.targets[0].id] = _evaluate_demo_expression(
+                    statement.value, env
+                )
+            continue
+
+        if isinstance(statement, ast.Return):
+            if not isinstance(statement.value, ast.List):
+                raise AssertionError(
+                    f"{LCP_DEMO_PATH} _advanced_solver_parameter_rows() "
+                    "must return a list literal"
+                )
+
+            rows: list[dict[str, str]] = []
+            for item in statement.value.elts:
+                if (
+                    not isinstance(item, ast.Call)
+                    or not isinstance(item.func, ast.Name)
+                    or item.func.id != "make_row"
+                    or len(item.args) != 5
+                ):
+                    raise AssertionError(
+                        f"{LCP_DEMO_PATH} _advanced_solver_parameter_rows() "
+                        f"contains unsupported row expression: {ast.dump(item)}"
+                    )
+
+                parameter_names = _evaluate_demo_expression(item.args[3], env)
+                rows.append(
+                    {
+                        "solver": str(_evaluate_demo_expression(item.args[0], env)),
+                        "surface": str(_evaluate_demo_expression(item.args[1], env)),
+                        "parameters": ", ".join(str(name) for name in parameter_names),
+                        "benchmark_filter": str(
+                            _evaluate_demo_expression(item.args[4], env)
+                        ),
+                    }
+                )
+            return rows
+
+    raise AssertionError(
+        f"{LCP_DEMO_PATH} _advanced_solver_parameter_rows() is missing a return"
+    )
+
+
 def _split_demo_reference_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
@@ -555,6 +628,90 @@ def check_demo_solver_guidance(manifest: list[SolverEntry]) -> None:
     if errors:
         raise AssertionError(
             "lcp_physics solver guidance rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
+def check_demo_advanced_solver_parameters(manifest: list[SolverEntry]) -> None:
+    rows = parse_demo_advanced_solver_parameter_rows()
+    manifest_by_name = {entry.name: entry for entry in manifest}
+    registered_bases = parse_lcp_compare_benchmark_bases()
+    benchmark_packet_rows = parse_demo_benchmark_packet_rows()
+    solver_parameter_rows = [
+        row
+        for row in benchmark_packet_rows
+        if row["packet"] == "solver_parameter_sweeps"
+    ]
+    if len(solver_parameter_rows) != 1:
+        raise AssertionError(
+            "lcp_physics benchmark packets must contain exactly one "
+            "solver_parameter_sweeps row"
+        )
+    solver_parameter_tokens = set(
+        _split_benchmark_filter_tokens(solver_parameter_rows[0]["benchmark_filter"])
+    )
+    required_fields = ("solver", "surface", "parameters", "benchmark_filter")
+    surface_checks = {
+        "standard": lambda entry: entry.standard,
+        "boxed/findex": lambda entry: entry.boxed and entry.findex,
+    }
+
+    errors: list[str] = []
+    solvers = [row.get("solver", "") for row in rows]
+    duplicate_solvers = [
+        solver for index, solver in enumerate(solvers) if solver in solvers[:index]
+    ]
+    if duplicate_solvers:
+        errors.append(f"duplicate solver parameter rows {duplicate_solvers}")
+
+    for index, row in enumerate(rows, start=1):
+        solver = row.get("solver", f"row {index}")
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{solver}: missing fields {missing_fields}")
+            continue
+
+        entry = manifest_by_name.get(solver)
+        if entry is None:
+            errors.append(f"{solver}: unknown solver")
+        else:
+            surface = row["surface"]
+            surface_check = surface_checks.get(surface)
+            if surface_check is None:
+                errors.append(f"{solver}: unknown surface {surface!r}")
+            elif not surface_check(entry):
+                errors.append(
+                    f"{solver}: surface {surface!r} is not supported by manifest"
+                )
+
+        tokens = _split_benchmark_filter_tokens(row["benchmark_filter"])
+        if not tokens:
+            errors.append(f"{solver}: missing benchmark filter tokens")
+            continue
+        unknown_tokens = [
+            token
+            for token in tokens
+            if (base := _benchmark_filter_base(token)) is None
+            or not any(
+                registered_base.startswith(base) for registered_base in registered_bases
+            )
+        ]
+        if unknown_tokens:
+            errors.append(f"{solver}: unknown benchmark filters {unknown_tokens}")
+        uncovered_tokens = [
+            token for token in tokens if token not in solver_parameter_tokens
+        ]
+        if uncovered_tokens:
+            errors.append(
+                f"{solver}: benchmark filters missing from solver_parameter_sweeps "
+                f"packet {uncovered_tokens}"
+            )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics advanced solver parameter rows are out of sync:\n  - "
             + "\n  - ".join(errors)
         )
 
@@ -1158,6 +1315,7 @@ def check_roster() -> None:
     check_demo_benchmark_filters()
     check_demo_representative_requirements()
     check_demo_solver_guidance(manifest)
+    check_demo_advanced_solver_parameters(manifest)
     check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]

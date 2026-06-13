@@ -238,6 +238,7 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
             "BM_LcpNncgPgsIterationsSweep|"
             "BM_LcpSubspaceMinimizationPgsIterationsSweep|"
             "BM_LcpShockPropagationLayerSweep|"
+            "BM_LcpNewtonWarmStart|"
             "BM_LcpMprgpSpdCheckSweep|"
             "BM_LcpInteriorPointPathSweep|"
             "BM_LcpAdmmRhoSweep|"

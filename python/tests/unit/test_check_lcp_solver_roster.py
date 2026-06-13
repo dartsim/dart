@@ -332,6 +332,63 @@ def test_lcp_solver_roster_rejects_stale_solver_guidance(
     assert "Lemke" in message
 
 
+def test_lcp_solver_roster_reads_demo_advanced_solver_parameter_links() -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+
+    parameter_by_solver = {
+        row["solver"]: row for row in module.parse_demo_advanced_solver_parameter_rows()
+    }
+
+    assert parameter_by_solver["Pgs"]["surface"] == "boxed/findex"
+    assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
+    assert "epsilon_for_division" in parameter_by_solver["Pgs"]["parameters"]
+    assert parameter_by_solver["SymmetricPsor"]["surface"] == "standard"
+    assert parameter_by_solver["BoxedSemiSmoothNewton"]["benchmark_filter"] == (
+        "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep"
+    )
+    assert "regularization" in parameter_by_solver["Sap"]["parameters"]
+    module.check_demo_advanced_solver_parameters(manifest)
+
+
+def test_lcp_solver_roster_rejects_stale_advanced_solver_parameter_links(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    stale_rows = [
+        {
+            "solver": "MissingSolver",
+            "surface": "standard",
+            "parameters": "epsilon_for_division",
+            "benchmark_filter": "BM_LcpMissingParameterSweep",
+        },
+        {
+            "solver": "InteriorPoint",
+            "surface": "boxed/findex",
+            "parameters": "sigma",
+            "benchmark_filter": "BM_LcpInteriorPointPathSweep",
+        },
+    ]
+    monkeypatch.setattr(
+        module,
+        "parse_demo_advanced_solver_parameter_rows",
+        lambda: stale_rows,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="advanced solver parameter rows are out of sync",
+    ) as exc_info:
+        module.check_demo_advanced_solver_parameters(manifest)
+
+    message = str(exc_info.value)
+    assert "MissingSolver: unknown solver" in message
+    assert "unknown benchmark filters ['BM_LcpMissingParameterSweep']" in message
+    assert "solver_parameter_sweeps packet ['BM_LcpMissingParameterSweep']" in message
+    assert "InteriorPoint: surface 'boxed/findex' is not supported" in message
+
+
 def test_lcp_solver_roster_rejects_extra_bound_solver_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

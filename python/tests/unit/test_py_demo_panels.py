@@ -1961,6 +1961,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_LcpNncgPgsIterationsSweep|"
         "BM_LcpSubspaceMinimizationPgsIterationsSweep|"
         "BM_LcpShockPropagationLayerSweep|"
+        "BM_LcpNewtonWarmStart|"
         "BM_LcpMprgpSpdCheckSweep|"
         "BM_LcpInteriorPointPathSweep|"
         "BM_LcpAdmmRhoSweep|"
