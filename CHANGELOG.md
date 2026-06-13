@@ -357,7 +357,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     public `World::collide()` and AVBD contact snapshots still request full
     shape-index/local-point data; the sequential normal solve caches
     velocity/transform component pointers and unit normal impulse deltas across
-    its inner iterations.
+    its inner iterations. During simulation bake, the rigid contact stage now
+    reserves ordinary and AVBD contact scratch from the collision-shape capacity
+    estimate and prewarms collision-query cache storage without generating
+    prepare-time contacts; `execute()` remains the only path that assembles
+    contact rows for the actual solve.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about

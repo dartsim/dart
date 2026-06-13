@@ -5708,6 +5708,24 @@ std::vector<Contact> World::collide(const CollisionQueryOptions& options)
 const std::vector<Contact>& World::queryContacts(
     const CollisionQueryOptions& options, bool includeShapeContactDetails)
 {
+  return updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/true);
+}
+
+//==============================================================================
+void World::prepareCollisionQueryCache(
+    const CollisionQueryOptions& options, bool includeShapeContactDetails)
+{
+  (void)updateCollisionQueryCache(
+      options, includeShapeContactDetails, /*collectContacts=*/false);
+}
+
+//==============================================================================
+const std::vector<Contact>& World::updateCollisionQueryCache(
+    const CollisionQueryOptions& options,
+    bool includeShapeContactDetails,
+    bool collectContacts)
+{
   if (!m_collisionQueryCache) {
     m_collisionQueryCache = std::make_unique<CollisionQueryCache>();
   }
@@ -5916,6 +5934,9 @@ const std::vector<Contact>& World::queryContacts(
   cache.collisionWorld.buildBroadPhaseSnapshot(cache.candidatePairs);
   auto& contacts = cache.contacts;
   contacts.clear();
+  if (!collectContacts) {
+    return contacts;
+  }
   for (const auto& pair : cache.candidatePairs.pairs) {
     if (pair.first >= cache.entryByObjectId.size()
         || pair.second >= cache.entryByObjectId.size()) {

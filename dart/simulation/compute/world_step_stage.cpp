@@ -9459,11 +9459,10 @@ void RigidBodyContactStage::prepare(World& world)
                                      / kContactConstraintCapacityPerShape
               ? collisionShapeCount * kContactConstraintCapacityPerShape
               : std::numeric_limits<std::size_t>::max();
-    const auto& initialContacts = world.queryContacts(
-        CollisionQueryOptions{}, /*includeShapeContactDetails=*/false);
-    contactCapacity
-        = std::max(contactConstraintCapacity, initialContacts.capacity());
+    contactCapacity = contactConstraintCapacity;
     constraints.reserve(contactCapacity);
+    world.prepareCollisionQueryCache(
+        CollisionQueryOptions{}, /*includeShapeContactDetails=*/false);
   }
 
   const bool mayHavePointJointConfigs

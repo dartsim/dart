@@ -12,25 +12,58 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the friction-coefficient sweep owner row now matches the
-tracked packet evidence. The packet records DART faster than the same-source
-native runner at max friction 0.5, 1.0, 2.5, and 5.0, but still slower at max
-friction 0.0; the all-coefficient CPU-win gate remains open. The packet-writer
-regression now covers mixed faster/slower reference sweeps so the
-`all_dart_faster_than_reference` flag and remaining-gate text stay true to the
-per-coefficient comparison. This is evidence hygiene only; it does not refresh
-the benchmark packet, close the frictionless source-row CPU gap, or claim GPU
-parity.
+Latest local slice: `RigidBodyContactStage::prepare()` now sizes ordinary and
+AVBD contact scratch from the conservative collision-shape capacity estimate and
+prewarms collision-query cache storage without generating prepare-time contacts.
+`execute()` remains the only path that assembles contact rows for the actual
+solve. This removes duplicate bake-time contact generation only; it does not
+refresh the tracked friction-sweep packet, close the frictionless source-row CPU
+gap, or claim GPU parity.
 
 Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.RigidAvbdContactRowsAreActive:World.RigidBodyContactStageAvbdRunsThroughDefaultWorldStep:World.RigidBodyContactStageAvbdMultipleConfiguredContactsRunThroughDefaultWorldStep:World.RigidBodyContactZeroFrictionPreservesSlidingVelocity' --gtest_brief=1`
+  passed, 6 tests.
+- `pixi run -e cuda -- cmake --build build/cuda/cpp/Release --target test_world -j 8`
+  passed.
+- `pixi run -e cuda -- build/cuda/cpp/Release/bin/test_world --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed after a first full `pixi run -e cuda test-all` attempt exposed the
+  missing collision-query-cache prewarm in that same allocator regression.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The documentation stage emitted four existing autodoc warnings about the
+  generated `dartpy._world_render_bridge` stub import, but the command passed.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-cache-prewarm.json --benchmark_out_format=json'`
+  passed. It recorded an 8.73 us median CPU step under load average
+  `12.97, 10.30, 8.72` with CPU scaling enabled. This is path smoke only
+  because the edit affects simulation bake, not the steady-state per-step
+  contact solve.
+
+Next preferred bounded work: return to the per-step frictionless max-friction-0
+CPU audit/optimization under cleaner host load, or switch to GPU parity
+preparation if the CPU path has no safe bounded next cut.
+
+Previous local checkpoint: commit `4c2cc43073b` records the
+friction-coefficient sweep owner row matching the tracked packet evidence. The
+packet records DART faster than the same-source native runner at max friction
+0.5, 1.0, 2.5, and 5.0, but still slower at max friction 0.0; the
+all-coefficient CPU-win gate remains open. The packet-writer regression covers
+mixed faster/slower reference sweeps so the `all_dart_faster_than_reference` flag
+and remaining-gate text stay true to the per-coefficient comparison. This is
+evidence hygiene only; it does not refresh the benchmark packet, close the
+frictionless source-row CPU gap, or claim GPU parity.
+
+Validation for commit `4c2cc43073b`:
 
 - `pixi run pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py`
   passed, 15 tests.
 - `pixi run lint` passed.
-
-Next preferred bounded work: return to the frictionless max-friction-0 CPU
-audit/optimization under cleaner host load, or switch to GPU parity preparation
-if the CPU path has no safe bounded next cut.
 
 Previous local checkpoint: commit `7a4c148352a` records the default
 sequential-impulse rigid contact path requesting only basic private contact-query

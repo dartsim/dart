@@ -9,6 +9,16 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): `RigidBodyContactStage::prepare()`
+  now sizes ordinary and AVBD contact scratch from the conservative
+  collision-shape capacity estimate and prewarms collision-query cache storage
+  without generating prepare-time contacts. `execute()` remains the only path
+  that assembles contact rows for the actual solve. Focused contact tests, the
+  previously failing baked allocator regression in default and CUDA builds,
+  `pixi run lint`, `pixi run build`, `pixi run test-unit`, full
+  `pixi run -e cuda test-all`, and a `/0` friction-sweep benchmark smoke
+  passed. This removes duplicate bake-time contact generation only; the `/0`
+  benchmark smoke is path evidence, not a tracked source-row CPU-win refresh.
 - Latest resumed checkpoint (2026-06-12): the friction-coefficient sweep owner
   row now matches the tracked packet evidence: DART is faster than the
   same-source native runner at max friction 0.5, 1.0, 2.5, and 5.0, but still
