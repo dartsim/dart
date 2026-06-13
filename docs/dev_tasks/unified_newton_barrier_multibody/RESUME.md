@@ -2,7 +2,7 @@
 
 ## Current Reality (2026-06-13)
 
-Latest external surface CCD CPU packet checkpoint (2026-06-13): work
+Latest mixed external surface CCD CPU packet checkpoint (2026-06-13): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -11,19 +11,21 @@ approval.
 
 This checkpoint adds a dedicated reduced `unb-alg-barriers` CPU packet row for
 external surface CCD diagnostics. `bm_plan083_cpu_scene_corpus` now runs three
-tiny built-in deformable IPC `World::step` scenes that exercise inter-body
-deformable, deformable-vs-static-rigid, and deformable-vs-moving-rigid surface
-CCD limiter paths. `scripts/write_plan083_cpu_scene_packet.py` serializes the
-new row as `plan083_external_surface_ccd` and requires positive candidate, CCD
-check, hit, and limited-step counters for all three external families. The
-latest median packet records 33 inter-body hits, 68 static-rigid hits, and 76
-moving-rigid hits with `failed_steps=0`.
+isolated built-in deformable IPC `World::step` witnesses plus one mixed reduced
+`World::step` scene that exercises inter-body deformable,
+deformable-vs-static-rigid, and deformable-vs-moving-rigid surface CCD limiter
+paths in a single step. `scripts/write_plan083_cpu_scene_packet.py` serializes
+the row as `plan083_external_surface_ccd` and requires positive aggregate and
+mixed-scene candidate, CCD check, hit, and limited-step counters for all three
+external families. The latest median packet records aggregate 66 inter-body
+hits, 136 static-rigid hits, and 152 moving-rigid hits; the mixed scene alone
+records 33/68/76 hits with `failed_steps=0`.
 
 This is a reduced CPU diagnostic packet only. It does not prove paper-scale
 external contact, production runtime scene filtering, analytic curved CCD, GPU
 `World::step`, full runtime affine/FEM coupling, or any speedup gate. The
-broader reduced scene rows still have zero external candidate/check/hit counts
-in their mixed fixtures.
+broader figure/demo scene rows still have zero external candidate/check/hit
+counts in their mixed fixtures.
 
 Latest CPU scene external surface-contact packet counters checkpoint
 (2026-06-13): work continued locally on

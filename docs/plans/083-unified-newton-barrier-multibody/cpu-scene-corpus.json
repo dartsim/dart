@@ -291,9 +291,9 @@
       "visual_evidence_artifact": "not-required",
       "benchmark_command": "pixi run bm-plan083-cpu-external-surface-ccd-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/external_surface_ccd.json",
-      "expected_invariant": "Reduced CPU packet reports positive inter-body deformable, static-rigid, and moving-rigid surface CCD candidate/check/hit/limited-step counters through built-in deformable IPC World::step diagnostics.",
-      "limitation_status": "Reduced external surface CCD diagnostic packet only; paper-scale external contact, runtime scene filtering, GPU World::step, analytic curved CCD, and speedup evidence remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-external-surface-ccd-packet runs three tiny World::step scenes that reuse the built-in inter-body, static-rigid, and moving-rigid surface CCD limiter paths and serialize their nonzero counters under unb-alg-barriers. The latest median packet records 33 inter-body hits, 68 static-rigid hits, and 76 moving-rigid hits with failed_steps=0."
+      "expected_invariant": "Reduced CPU packet reports positive inter-body deformable, static-rigid, and moving-rigid surface CCD candidate/check/hit/limited-step counters through built-in deformable IPC World::step diagnostics, including one mixed World::step scene that activates all three external families.",
+      "limitation_status": "Reduced external surface CCD diagnostic packet only; paper-scale external contact, production runtime scene filtering, GPU World::step, analytic curved CCD, and speedup evidence remain planned.",
+      "notes_or_gap": "bm-plan083-cpu-external-surface-ccd-packet now runs three isolated World::step witnesses plus one mixed reduced World::step scene that reuses the built-in inter-body, static-rigid, and moving-rigid surface CCD limiter paths. The latest median packet records aggregate 66 inter-body hits, 136 static-rigid hits, and 152 moving-rigid hits; the mixed scene alone records 33/68/76 hits across those families with failed_steps=0."
     },
     {
       "row_id": "abd-vs-rigid-wreck",

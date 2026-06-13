@@ -1688,9 +1688,9 @@ void recordDeformableRuntimeContactCounters(
       = static_cast<double>(diagnostics.movingRigidSurfaceCcdZeroStepCount);
 }
 
-template <typename Member>
+template <std::size_t Count, typename Member>
 std::size_t sumDiagnosticsMember(
-    const std::array<sx::DeformableSolverDiagnostics, 3>& diagnostics,
+    const std::array<sx::DeformableSolverDiagnostics, Count>& diagnostics,
     Member member)
 {
   std::size_t total = 0;
@@ -1700,9 +1700,10 @@ std::size_t sumDiagnosticsMember(
   return total;
 }
 
+template <std::size_t Count>
 void recordSummedDeformableRuntimeContactCounters(
     benchmark::State& state,
-    const std::array<sx::DeformableSolverDiagnostics, 3>& diagnostics)
+    const std::array<sx::DeformableSolverDiagnostics, Count>& diagnostics)
 {
   state.counters["line_search_trials"]
       = static_cast<double>(sumDiagnosticsMember(
@@ -1899,9 +1900,13 @@ struct ExternalSurfaceCcdDiagnostics
   sx::DeformableSolverDiagnostics interBody;
   sx::DeformableSolverDiagnostics staticRigid;
   sx::DeformableSolverDiagnostics movingRigid;
+  sx::DeformableSolverDiagnostics mixed;
   double interBodyLimitedPointZ = 0.0;
   double staticRigidLimitedPointX = 0.0;
   double movingRigidLimitedPointX = 0.0;
+  double mixedInterBodyLimitedPointZ = 0.0;
+  double mixedStaticRigidLimitedPointX = 0.0;
+  double mixedMovingRigidLimitedPointX = 0.0;
 };
 
 ExternalSurfaceCcdDiagnostics runExternalSurfaceCcdDiagnostics()
@@ -1958,6 +1963,42 @@ ExternalSurfaceCcdDiagnostics runExternalSurfaceCcdDiagnostics()
     diagnostics.movingRigidLimitedPointX = body.getPosition(0).x();
   }
 
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    auto interBodyMoving = world.addDeformableBody(
+        "mixed_inter_body_moving", makePlan083InterBodyMovingPointOptions());
+    world.addDeformableBody(
+        "mixed_inter_body_obstacle",
+        makePlan083StationaryTriangleObstacleOptions());
+    addPlan083StaticSurfaceCcdBox(
+        world,
+        "mixed_static_box",
+        Eigen::Vector3d(0.0, 4.0, 0.0),
+        Eigen::Vector3d(0.05, 1.0, 1.0));
+    auto staticPoint = world.addDeformableBody(
+        "mixed_static_fast_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-1.0, 4.0, 0.0), Eigen::Vector3d(20.0, 0.0, 0.0)));
+    addPlan083MovingSurfaceCcdBox(
+        world,
+        "mixed_moving_box",
+        Eigen::Vector3d(1.0, 8.0, 0.0),
+        Eigen::Vector3d(0.2, 1.0, 1.0),
+        Eigen::Vector3d(-1.0, 0.0, 0.0));
+    auto movingPoint = world.addDeformableBody(
+        "mixed_moving_fast_point",
+        makePlan083SingleNodeBodyOptions(
+            Eigen::Vector3d(-0.5, 8.0, 0.0), Eigen::Vector3d(15.0, 0.0, 0.0)));
+    world.step();
+    diagnostics.mixed = world.getLastDeformableSolverDiagnostics();
+    diagnostics.mixedInterBodyLimitedPointZ
+        = interBodyMoving.getPosition(3).z();
+    diagnostics.mixedStaticRigidLimitedPointX = staticPoint.getPosition(0).x();
+    diagnostics.mixedMovingRigidLimitedPointX = movingPoint.getPosition(0).x();
+  }
+
   return diagnostics;
 }
 
@@ -1967,6 +2008,7 @@ bool hasRequiredExternalSurfaceCcdEvidence(
   const auto& interBody = diagnostics.interBody;
   const auto& staticRigid = diagnostics.staticRigid;
   const auto& movingRigid = diagnostics.movingRigid;
+  const auto& mixed = diagnostics.mixed;
 
   return interBody.interBodySurfaceContactCandidateBuilds > 0u
          && interBody.interBodySurfaceContactPointTriangleCandidates > 0u
@@ -1997,7 +2039,33 @@ bool hasRequiredExternalSurfaceCcdEvidence(
          && movingRigid.movingRigidSurfaceCcdHits > 0u
          && movingRigid.movingRigidSurfaceCcdLimitedSteps > 0u
          && diagnostics.movingRigidLimitedPointX > -0.5
-         && diagnostics.movingRigidLimitedPointX < 0.7;
+         && diagnostics.movingRigidLimitedPointX < 0.7
+         && mixed.interBodySurfaceContactCandidateBuilds > 0u
+         && mixed.interBodySurfaceContactPointTriangleCandidates > 0u
+         && mixed.interBodySurfaceContactCcdPointTriangleChecks > 0u
+         && mixed.interBodySurfaceContactCcdHits > 0u
+         && mixed.interBodySurfaceContactCcdLimitedSteps > 0u
+         && diagnostics.mixedInterBodyLimitedPointZ > 0.0
+         && diagnostics.mixedInterBodyLimitedPointZ < 1.0
+         && mixed.staticRigidSurfaceCcdSnapshotBuilds > 0u
+         && mixed.staticRigidSurfaceCcdBoxCount == 1u
+         && mixed.staticRigidSurfaceCcdCandidateBuilds > 0u
+         && mixed.staticRigidSurfaceCcdPointTriangleCandidates > 0u
+         && mixed.staticRigidSurfaceCcdPointTriangleChecks > 0u
+         && mixed.staticRigidSurfaceCcdHits > 0u
+         && mixed.staticRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.mixedStaticRigidLimitedPointX > -1.0
+         && diagnostics.mixedStaticRigidLimitedPointX < -0.05
+         && mixed.movingRigidSurfaceCcdSnapshotBuilds > 0u
+         && mixed.movingRigidSurfaceCcdBoxCount == 1u
+         && mixed.movingRigidSurfaceCcdSampleCount >= 2u
+         && mixed.movingRigidSurfaceCcdCandidateBuilds > 0u
+         && mixed.movingRigidSurfaceCcdPointTriangleCandidates > 0u
+         && mixed.movingRigidSurfaceCcdPointTriangleChecks > 0u
+         && mixed.movingRigidSurfaceCcdHits > 0u
+         && mixed.movingRigidSurfaceCcdLimitedSteps > 0u
+         && diagnostics.mixedMovingRigidLimitedPointX > -0.5
+         && diagnostics.mixedMovingRigidLimitedPointX < 0.7;
 }
 
 //==============================================================================
@@ -2017,28 +2085,74 @@ static void BM_Plan083CpuScene_external_surface_ccd_diagnostics(
     benchmark::ClobberMemory();
   }
 
-  const std::array<sx::DeformableSolverDiagnostics, 3> diagnostics{
+  const std::array<sx::DeformableSolverDiagnostics, 4> allDiagnostics{
       lastDiagnostics.interBody,
       lastDiagnostics.staticRigid,
-      lastDiagnostics.movingRigid};
+      lastDiagnostics.movingRigid,
+      lastDiagnostics.mixed};
 
   state.counters["row_unb_alg_barriers"] = 1.0;
   state.counters["paper_scale"] = 0.0;
-  state.counters["external_surface_ccd_scene_count"] = 3.0;
-  state.counters["rigid_obstacle_count"] = 2.0;
-  state.counters["static_rigid_obstacle_count"] = 1.0;
-  state.counters["moving_rigid_obstacle_count"] = 1.0;
+  state.counters["external_surface_ccd_scene_count"] = 4.0;
+  state.counters["mixed_external_surface_ccd_scene_count"] = 1.0;
+  state.counters["mixed_external_surface_ccd_family_count"] = 3.0;
+  state.counters["rigid_obstacle_count"] = 4.0;
+  state.counters["static_rigid_obstacle_count"] = 2.0;
+  state.counters["moving_rigid_obstacle_count"] = 2.0;
   state.counters["deformable_body_count"]
       = static_cast<double>(sumDiagnosticsMember(
-          diagnostics, &sx::DeformableSolverDiagnostics::bodyCount));
+          allDiagnostics, &sx::DeformableSolverDiagnostics::bodyCount));
   state.counters["deformable_node_count"]
       = static_cast<double>(sumDiagnosticsMember(
-          diagnostics, &sx::DeformableSolverDiagnostics::nodeCount));
+          allDiagnostics, &sx::DeformableSolverDiagnostics::nodeCount));
   state.counters["deformable_edge_count"]
       = static_cast<double>(sumDiagnosticsMember(
-          diagnostics, &sx::DeformableSolverDiagnostics::edgeCount));
-  state.counters["surface_triangle_count"] = 2.0;
-  recordSummedDeformableRuntimeContactCounters(state, diagnostics);
+          allDiagnostics, &sx::DeformableSolverDiagnostics::edgeCount));
+  state.counters["surface_triangle_count"] = 4.0;
+  recordSummedDeformableRuntimeContactCounters(state, allDiagnostics);
+  state.counters["mixed_inter_body_surface_contact_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCandidateBuilds);
+  state.counters["mixed_inter_body_surface_contact_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactPointTriangleCandidates);
+  state.counters["mixed_inter_body_surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdPointTriangleChecks);
+  state.counters["mixed_inter_body_surface_contact_ccd_hits"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdHits);
+  state.counters["mixed_inter_body_surface_contact_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.interBodySurfaceContactCcdLimitedSteps);
+  state.counters["mixed_static_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdCandidateBuilds);
+  state.counters["mixed_static_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["mixed_static_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdPointTriangleChecks);
+  state.counters["mixed_static_rigid_surface_ccd_hits"]
+      = static_cast<double>(lastDiagnostics.mixed.staticRigidSurfaceCcdHits);
+  state.counters["mixed_static_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.staticRigidSurfaceCcdLimitedSteps);
+  state.counters["mixed_moving_rigid_surface_ccd_candidate_builds"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdCandidateBuilds);
+  state.counters["mixed_moving_rigid_surface_ccd_point_triangle_candidates"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdPointTriangleCandidates);
+  state.counters["mixed_moving_rigid_surface_ccd_point_triangle_checks"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdPointTriangleChecks);
+  state.counters["mixed_moving_rigid_surface_ccd_hits"]
+      = static_cast<double>(lastDiagnostics.mixed.movingRigidSurfaceCcdHits);
+  state.counters["mixed_moving_rigid_surface_ccd_limited_steps"]
+      = static_cast<double>(
+          lastDiagnostics.mixed.movingRigidSurfaceCcdLimitedSteps);
   state.counters["failed_steps"] = static_cast<double>(failedSteps);
 }
 BENCHMARK(BM_Plan083CpuScene_external_surface_ccd_diagnostics)

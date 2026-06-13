@@ -551,6 +551,26 @@ EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS = (
     "moving_rigid_surface_ccd_limited_steps",
 )
 
+MIXED_EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS = (
+    "mixed_external_surface_ccd_scene_count",
+    "mixed_external_surface_ccd_family_count",
+    "mixed_inter_body_surface_contact_candidate_builds",
+    "mixed_inter_body_surface_contact_point_triangle_candidates",
+    "mixed_inter_body_surface_contact_ccd_point_triangle_checks",
+    "mixed_inter_body_surface_contact_ccd_hits",
+    "mixed_inter_body_surface_contact_ccd_limited_steps",
+    "mixed_static_rigid_surface_ccd_candidate_builds",
+    "mixed_static_rigid_surface_ccd_point_triangle_candidates",
+    "mixed_static_rigid_surface_ccd_point_triangle_checks",
+    "mixed_static_rigid_surface_ccd_hits",
+    "mixed_static_rigid_surface_ccd_limited_steps",
+    "mixed_moving_rigid_surface_ccd_candidate_builds",
+    "mixed_moving_rigid_surface_ccd_point_triangle_candidates",
+    "mixed_moving_rigid_surface_ccd_point_triangle_checks",
+    "mixed_moving_rigid_surface_ccd_hits",
+    "mixed_moving_rigid_surface_ccd_limited_steps",
+)
+
 
 def _surface_contact_runtime_counters(row: Mapping[str, Any]) -> dict[str, int]:
     counters = {
@@ -942,29 +962,29 @@ def _make_external_surface_ccd_packet(
     moving_rigid_obstacle_count = int(
         _finite_number(row, "moving_rigid_obstacle_count")
     )
-    if scene_count != 3:
+    if scene_count != 4:
         raise Plan083CpuScenePacketError(
-            f"expected 3 external surface CCD diagnostic scenes, got {scene_count}"
+            f"expected 4 external surface CCD diagnostic scenes, got {scene_count}"
         )
-    if deformable_body_count != 4:
+    if deformable_body_count != 8:
         raise Plan083CpuScenePacketError(
-            f"expected 4 deformable bodies across external CCD scenes, got {deformable_body_count}"
+            f"expected 8 deformable bodies across external CCD scenes, got {deformable_body_count}"
         )
-    if deformable_node_count < 9:
+    if deformable_node_count < 18:
         raise Plan083CpuScenePacketError(
-            "expected at least 9 deformable nodes across external CCD scenes"
+            "expected at least 18 deformable nodes across external CCD scenes"
         )
-    if surface_triangle_count < 2:
+    if surface_triangle_count < 4:
         raise Plan083CpuScenePacketError(
-            "expected at least 2 deformable surface triangles across external CCD scenes"
+            "expected at least 4 deformable surface triangles across external CCD scenes"
         )
-    if rigid_obstacle_count != 2:
+    if rigid_obstacle_count != 4:
         raise Plan083CpuScenePacketError(
-            f"expected 2 rigid surface CCD obstacles, got {rigid_obstacle_count}"
+            f"expected 4 rigid surface CCD obstacles, got {rigid_obstacle_count}"
         )
-    if static_rigid_obstacle_count != 1 or moving_rigid_obstacle_count != 1:
+    if static_rigid_obstacle_count != 2 or moving_rigid_obstacle_count != 2:
         raise Plan083CpuScenePacketError(
-            "expected one static-rigid and one moving-rigid surface CCD obstacle"
+            "expected two static-rigid and two moving-rigid surface CCD obstacles"
         )
 
     counters = _surface_contact_runtime_counters(row)
@@ -972,6 +992,23 @@ def _make_external_surface_ccd_packet(
         if counters[key] <= 0:
             raise Plan083CpuScenePacketError(
                 f"external surface CCD diagnostic row requires positive {key}"
+            )
+    mixed_counters = {
+        key: int(_finite_number(row, key))
+        for key in MIXED_EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS
+    }
+    if mixed_counters["mixed_external_surface_ccd_scene_count"] != 1:
+        raise Plan083CpuScenePacketError(
+            "external surface CCD diagnostic row requires one mixed scene"
+        )
+    if mixed_counters["mixed_external_surface_ccd_family_count"] != 3:
+        raise Plan083CpuScenePacketError(
+            "external surface CCD mixed scene must exercise all three external families"
+        )
+    for key, value in mixed_counters.items():
+        if value <= 0:
+            raise Plan083CpuScenePacketError(
+                f"external surface CCD mixed scene requires positive {key}"
             )
 
     return {
@@ -992,11 +1029,13 @@ def _make_external_surface_ccd_packet(
             "deformable_edge_count": deformable_edge_count,
             "surface_triangle_count": surface_triangle_count,
             **counters,
+            **mixed_counters,
             "limitation_status": (
-                "Reduced three-scene external surface CCD diagnostic packet "
-                "only; paper-scale external contact, runtime scene filtering, "
-                "GPU World::step, analytic curved CCD, and speedup evidence "
-                "remain planned."
+                "Reduced external surface CCD diagnostic packet only; the packet "
+                "includes one mixed World::step scene plus isolated witnesses, "
+                "but paper-scale external contact, production runtime scene "
+                "filtering, GPU World::step, analytic curved CCD, and speedup "
+                "evidence remain planned."
             ),
         },
         "benchmarks": rows,
