@@ -1,5 +1,112 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 CUDA Benchmark Packets
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `1a85a2ee3ae Expose LCP boxed world-step benchmark packet`; if this section
+   is committed, inspect `git log --oneline --decorate -8` for the new exact
+   tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   CUDA benchmark-packet fix does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `1a85a2ee3ae Expose LCP boxed world-step benchmark packet`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by fifty-nine commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` now exposes dedicated
+  `cuda_batch_scale` and `cuda_contact_batch` benchmark packets.
+- `cuda_batch_scale` covers the registered CUDA Jacobi/PGS standalone and
+  grouped batch prefixes for standard, boxed, and friction-index families.
+- `cuda_contact_batch` covers the registered CUDA Jacobi/PGS world-contact,
+  dense-box, stack, articulated, and mixed contact grouped batch prefixes.
+- The demo representative benchmark command now derives coverage for every
+  registered `BM_LCP_COMPARE`/`BM_Lcp*` base parsed by
+  `scripts/check_lcp_solver_roster.py`; the local uncovered audit reported
+  `uncovered 0`.
+- `python/tests/unit/test_py_demo_panels.py` now checks that both CUDA packets
+  remain in the demo metadata with their exact filter prefixes.
+- `python/tests/unit/test_check_lcp_solver_roster.py` now checks that the LCP
+  roster checker reads representative CUDA benchmark-filter tokens from the
+  demo metadata.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, and generated evidence CSVs were not intentionally changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python - <<'PY'
+import scripts.check_lcp_solver_roster as r
+registered = sorted(r.parse_lcp_compare_benchmark_bases())
+tokens = [r._benchmark_filter_base(t) for t in r.parse_demo_benchmark_filter_tokens()]
+tokens = [t for t in tokens if t]
+uncovered = [b for b in registered if not any(b.startswith(t) for t in tokens)]
+print('uncovered', len(uncovered))
+for b in uncovered:
+    print(b)
+PY
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k 'lcp_physics_exposes_solver_manifest_and_benchmark_metadata or lcp_physics_updates_live_metrics_headlessly'
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'benchmark_filter or surfaces_match'
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Local uncovered benchmark audit: passed with `uncovered 0`.
+- Focused LCP demo metadata/panel tests: passed with 2 tests.
+- Focused benchmark-filter/roster tests: passed with 3 tests.
+- Full demo-panel unit test file: passed with 78 tests.
+- Full roster unit test file: passed with 29 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- `pixi run lint`: passed, including the LCP solver roster and CUDA workflow
+  checks.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- `pixi run -e cuda test-all`: passed on this Linux host with an NVIDIA RTX
+  5000 Ada visible via `nvidia-smi`; the CUDA gate included lint, build, C++
+  unit tests, simulation tests, Python tests, documentation, CUDA-labeled tests,
+  and CUDA benchmark smoke wrappers.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the full
+demo-panel unit test, full roster unit test, roster check, `pixi run lint`,
+`git diff --check`, `pixi run build`, and any broader gate warranted by the
+final diff, then commit the focused demo/test/docs change. Then continue the
+broader LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Boxed World-Step Benchmark Packet
 
 This is the latest hand-off. Older sections below are historical checkpoints

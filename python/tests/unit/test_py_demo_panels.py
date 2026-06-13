@@ -1547,6 +1547,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "world_billiards",
         "world_card_pile",
         "batch_scale",
+        "cuda_batch_scale",
+        "cuda_contact_batch",
         "solver_parameter_sweeps",
     }
     assert all(row["benchmark_filter"] for row in benchmark_by_packet.values())
@@ -1913,6 +1915,30 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_LcpMildIllConditioned|"
         "BM_LcpMildIllConditionedBatchSerial|"
         "BM_LcpMildIllConditionedBatchParallel"
+    )
+    assert benchmark_by_packet["cuda_batch_scale"]["benchmark_filter"] == (
+        "BM_LcpCudaJacobiBatch|"
+        "BM_LcpCudaPgsBatch|"
+        "BM_LcpCudaJacobiGroupedBatch|"
+        "BM_LcpCudaPgsGroupedBatch"
+    )
+    assert benchmark_by_packet["cuda_contact_batch"]["benchmark_filter"] == (
+        "BM_LcpCudaJacobiWorldContactBatch|"
+        "BM_LcpCudaPgsWorldContactBatch|"
+        "BM_LcpCudaJacobiWorldContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldContactGroupedBatch|"
+        "BM_LcpCudaJacobiWorldBoxContactBatch|"
+        "BM_LcpCudaPgsWorldBoxContactBatch|"
+        "BM_LcpCudaJacobiWorldBoxContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldBoxContactGroupedBatch|"
+        "BM_LcpCudaJacobiWorldStackContactBatch|"
+        "BM_LcpCudaPgsWorldStackContactBatch|"
+        "BM_LcpCudaJacobiWorldStackContactGroupedBatch|"
+        "BM_LcpCudaPgsWorldStackContactGroupedBatch|"
+        "BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch|"
+        "BM_LcpCudaPgsArticulatedUnifiedContactGroupedBatch|"
+        "BM_LcpCudaJacobiMixedContactGroupedBatch|"
+        "BM_LcpCudaPgsMixedContactGroupedBatch"
     )
     assert benchmark_by_packet["solver_parameter_sweeps"][
         "benchmark_filter"

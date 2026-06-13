@@ -126,6 +126,12 @@ def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
     assert "BM_LcpWorldBoxStep_BoxedLcp" in tokens
     assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
     assert "BM_LcpArticulatedUnifiedContact" in tokens
+    assert "BM_LcpCudaJacobiBatch" in tokens
+    assert "BM_LcpCudaPgsGroupedBatch" in tokens
+    assert "BM_LcpCudaJacobiWorldContactBatch" in tokens
+    assert "BM_LcpCudaPgsWorldBoxContactGroupedBatch" in tokens
+    assert "BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch" in tokens
+    assert "BM_LcpCudaPgsMixedContactGroupedBatch" in tokens
 
 
 def test_lcp_solver_roster_rejects_unknown_demo_benchmark_filter(

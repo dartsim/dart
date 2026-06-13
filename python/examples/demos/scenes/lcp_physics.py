@@ -209,6 +209,17 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "parallel scalability and grouped batches",
     },
     {
+        "packet": "cuda_batch_scale",
+        "surface": "cuda standard/boxed/findex",
+        "benchmark_filter": (
+            "BM_LcpCudaJacobiBatch|"
+            "BM_LcpCudaPgsBatch|"
+            "BM_LcpCudaJacobiGroupedBatch|"
+            "BM_LcpCudaPgsGroupedBatch"
+        ),
+        "coverage": "CUDA Jacobi/PGS batch and grouped-batch solves",
+    },
+    {
         "packet": "solver_parameter_sweeps",
         "surface": "standard/boxed/findex",
         "benchmark_filter": (
@@ -272,6 +283,29 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "surface": "findex contact",
         "benchmark_filter": "BM_LcpWorldArticulated|BM_LcpArticulatedUnifiedContact",
         "coverage": "robot-link contact assembly and solve cost",
+    },
+    {
+        "packet": "cuda_contact_batch",
+        "surface": "cuda findex contact",
+        "benchmark_filter": (
+            "BM_LcpCudaJacobiWorldContactBatch|"
+            "BM_LcpCudaPgsWorldContactBatch|"
+            "BM_LcpCudaJacobiWorldContactGroupedBatch|"
+            "BM_LcpCudaPgsWorldContactGroupedBatch|"
+            "BM_LcpCudaJacobiWorldBoxContactBatch|"
+            "BM_LcpCudaPgsWorldBoxContactBatch|"
+            "BM_LcpCudaJacobiWorldBoxContactGroupedBatch|"
+            "BM_LcpCudaPgsWorldBoxContactGroupedBatch|"
+            "BM_LcpCudaJacobiWorldStackContactBatch|"
+            "BM_LcpCudaPgsWorldStackContactBatch|"
+            "BM_LcpCudaJacobiWorldStackContactGroupedBatch|"
+            "BM_LcpCudaPgsWorldStackContactGroupedBatch|"
+            "BM_LcpCudaJacobiArticulatedUnifiedContactGroupedBatch|"
+            "BM_LcpCudaPgsArticulatedUnifiedContactGroupedBatch|"
+            "BM_LcpCudaJacobiMixedContactGroupedBatch|"
+            "BM_LcpCudaPgsMixedContactGroupedBatch"
+        ),
+        "coverage": "CUDA world/contact batches across representative packets",
     },
 )
 
