@@ -156,6 +156,11 @@ Run the benchmark smoke with:
 pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE
 ```
 
+The `lcp_physics` scene metadata exposes the derived
+`representative_benchmark_command` for the full representative packet filter;
+keep the long generated filter list in the scene metadata instead of copying it
+into this README.
+
 ## AVBD Rigid Constraints (sx)
 
 The dedicated **`AVBD Rigid Constraints (sx)`** category groups the first

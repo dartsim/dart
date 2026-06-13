@@ -1,5 +1,71 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-13 Current Continuation - Demo README Benchmark Command Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `f3594d980f3 Guard LCP benchmark packet coverage` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `f3594d980f3 Guard LCP benchmark packet coverage`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-one commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Demo README benchmark-command status:
+
+- `python/tests/unit/test_py_demo_panels.py` now checks that the LCP demo README
+  benchmark smoke command stays synchronized with the `_BENCHMARK_COMMAND`
+  metadata in `python/examples/demos/scenes/lcp_physics.py`.
+- `python/examples/demos/README.md` now points readers at the scene metadata's
+  derived `representative_benchmark_command` for the full representative packet
+  filter instead of duplicating the long generated filter list in prose.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo scene runtime behavior were not
+  intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k 'readme_commands_match_scene_metadata or lcp_physics_exposes_solver_manifest_and_benchmark_metadata'`
+  passed with 2 tests.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with 78 tests.
+- `pixi run lint` passed, including LCP solver roster and generated AI command
+  checks.
+- `git diff --check` passed.
+- `pixi run build` passed.
+- `pixi run -e cuda test-all` passed end to end. The documentation phase still
+  emitted the known four `dartpy._world_render_bridge` autodoc warnings, but
+  the full gate passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   focused demo-panel metadata test, `pixi run lint`, `git diff --check`, and
+   any broader gate warranted by the final diff, then
+   commit the focused README/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-13 Current Continuation - Benchmark Coverage Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

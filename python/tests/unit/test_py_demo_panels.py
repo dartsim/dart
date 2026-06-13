@@ -1186,7 +1186,7 @@ def test_lcp_physics_profile_evidence_schema_is_exposed_in_info() -> None:
     ]
 
 
-def test_lcp_physics_readme_profile_commands_match_scene_metadata() -> None:
+def test_lcp_physics_readme_commands_match_scene_metadata() -> None:
     assert (
         _read_demo_readme_bash_command_after("those artifacts with:")
         == lcp_physics._PERFORMANCE_PROFILE_REFRESH_COMMAND
@@ -1194,6 +1194,10 @@ def test_lcp_physics_readme_profile_commands_match_scene_metadata() -> None:
     assert (
         _read_demo_readme_bash_command_after("quick profile-pipeline smoke")
         == lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND
+    )
+    assert (
+        _read_demo_readme_bash_command_after("benchmark smoke with:")
+        == lcp_physics._BENCHMARK_COMMAND
     )
 
 
