@@ -541,6 +541,10 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
             "healthy_signal": guide.healthy_signal,
             "scope": guide.scope,
         }
+        if guide.deferred_api_caveats:
+            guidance[str(scene_id)]["deferred_api_caveats"] = list(
+                guide.deferred_api_caveats
+            )
     if rigid_workflow_related_evidence_by_scene is not None:
         for source_scene, entries in rigid_workflow_related_evidence_by_scene().items():
             source_guide = RIGID_VISUAL_WORKFLOW_GUIDES.get(source_scene)
@@ -2380,6 +2384,14 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     scope = capture.get("scope")
     if isinstance(scope, str) and scope:
         details.append(_workflow_detail("scope", scope))
+    deferred_api_caveats = capture.get("deferred_api_caveats")
+    if isinstance(deferred_api_caveats, list) and deferred_api_caveats:
+        details.append(
+            _workflow_detail(
+                "deferred API caveat",
+                " / ".join(str(caveat) for caveat in deferred_api_caveats),
+            )
+        )
     return_code = capture.get("return_code")
     if return_code is not None:
         details.append(_workflow_detail("return code", return_code))

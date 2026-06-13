@@ -17,7 +17,8 @@ current evidence-to-requirement map and remaining external gates.
 - Covers public direct rigid-body impulse behavior in row 5 while keeping
   unsupported sleep/wake, island activation, and loop-closure compliance rows
   explicitly deferred until public `dartpy` APIs exist, with search tooltips
-  marking those nearest-row routes as deferred API caveats.
+  and static review cards marking those nearest-row routes as deferred API
+  caveats.
 
 ## Motivation / Problem
 
@@ -61,8 +62,9 @@ rigid-body visual verification surface for the current cycle.
   `RigidBody.apply_angular_impulse()` APIs, GUI sliders, capture metrics, and
   workflow search routing for `direct rigid body impulse`.
 - Marks deferred public-API search routes such as `sleep wake`,
-  `island activation`, and `loop closure compliance` with tooltip-level
-  deferred API caveats before opening the closest current verifier row.
+  `island activation`, and `loop closure compliance` with tooltip-level and
+  review-card deferred API caveats before opening or reviewing the closest
+  current verifier row.
 - Promotes rows 1 and 3 first-screen baseline/free-flight metrics into
   workflow review-card latest signals, so the default front door and
   contact-free initial-state row show speed, height, energy, contact,

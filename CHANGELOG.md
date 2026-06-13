@@ -69,7 +69,8 @@
     match count when the compact panel caps the visible result list. Deferred
     public-API searches such as `sleep wake`, `island activation`, and
     `loop closure compliance` route to the closest current verifier row with a
-    tooltip-level caveat instead of claiming unsupported APIs. The
+    tooltip-level and static-review caveat instead of claiming unsupported
+    APIs. The
     in-viewer workflow panel also names each row's workflow phase and focus
     axis, so users can distinguish foundations, diagnostics, contact/material
     basics, solver decisions, contact behavior, rigid constraints, multibody

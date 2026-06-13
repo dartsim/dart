@@ -160,6 +160,7 @@ class RigidWorkflowGuide:
     inspect: tuple[str, ...]
     healthy_signal: str
     scope: str
+    deferred_api_caveats: tuple[str, ...]
     previous_scene_id: str | None
     next_scene_id: str | None
     capture_frames: int
@@ -933,6 +934,15 @@ _RIGID_VISUAL_WORKFLOW_DEFERRED_API_SEARCHES: Mapping[
 }
 
 
+def _deferred_api_caveats_for_scene(scene_id: str) -> tuple[str, ...]:
+    return tuple(
+        deferred_search.note
+        for deferred_search in _RIGID_VISUAL_WORKFLOW_DEFERRED_API_SEARCHES.get(
+            scene_id, ()
+        )
+    )
+
+
 def _rigid_workflow_capture_command(
     scene_id: str,
     frames: int,
@@ -1033,6 +1043,7 @@ def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
             inspect=inspect,
             healthy_signal=healthy_signal,
             scope=scope,
+            deferred_api_caveats=_deferred_api_caveats_for_scene(scene_id),
             previous_scene_id=scene_ids[index - 2] if index > 1 else None,
             next_scene_id=scene_ids[index] if index < count else None,
             capture_frames=frames,
@@ -2469,6 +2480,10 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.separator()
         builder.text("Do not infer")
         builder.text(guide.scope)
+        if guide.deferred_api_caveats:
+            builder.text("Deferred API caveats")
+            for caveat in guide.deferred_api_caveats:
+                builder.text(caveat)
         builder.separator()
         builder.text("Capture evidence")
         ui_mode = "docked UI" if guide.capture_show_ui else "headless"

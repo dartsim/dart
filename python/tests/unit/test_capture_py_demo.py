@@ -1121,6 +1121,46 @@ def test_rigid_workflow_manifest_reports_missing_guidance(
     assert "workflow_label, user_question, try_first" in review_html
 
 
+def test_rigid_workflow_dry_run_writes_deferred_api_caveats(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (
+        ("rigid_body_modes", 1, 320, 180, True),
+        ("rigid_loop_closure", 1, 320, 180, True),
+    )
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fail_run(_argv: list[str]) -> int:
+        raise AssertionError("dry-run should not render scenes")
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fail_run)
+
+    rc = capture_py_demo.main(
+        ["--rigid-workflow", "--dry-run", "--output-dir", str(output)]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    body_modes, loop_closure = manifest["captures"]
+    assert body_modes["deferred_api_caveats"] == [
+        "No public sleep/wake/island activation API is exposed yet; "
+        "this row only verifies body-mode semantics."
+    ]
+    assert loop_closure["deferred_api_caveats"] == [
+        "No public loop-closure compliance/stiffness/damping API is exposed "
+        "yet; this row compares closure families and policies."
+    ]
+
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert review_html.count("<dt>deferred API caveat</dt>") == 2
+    assert "No public sleep/wake/island activation API is exposed yet" in review_html
+    assert (
+        "No public loop-closure compliance/stiffness/damping API is exposed yet"
+        in review_html
+    )
+
+
 def test_rigid_workflow_run_aggregates_scene_manifests(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

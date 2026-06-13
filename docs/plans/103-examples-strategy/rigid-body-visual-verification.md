@@ -191,7 +191,8 @@ number, user question, workflow phase, focus axis, related evidence, or scope
 caveat, so the navigator is auditable before the user switches scenes.
 Deferred public-API searches such as `sleep wake`, `island activation`, and
 `loop closure compliance` additionally show a deferred API caveat in the
-tooltip before opening the closest current verifier row.
+tooltip, guide payload, workflow manifest, and static review card before
+opening or reviewing the closest current verifier row.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Direct impulse queries route to the public
@@ -996,9 +997,10 @@ workflow rows` line before the selectable results. This keeps the navigator
   phase status/focus-axis display reported `4 passed`.
 - Latest deferred-search UX follow-up: deferred public-API searches such as
   `sleep wake`, `island activation`, and `loop closure compliance` still route
-  to the closest current verifier rows, but the result tooltip now shows a
-  `Deferred API caveat` note before reporting the search match. The focused
-  panel/docs guard reported `5 passed`.
+  to the closest current verifier rows, but the result tooltip, guide payload,
+  workflow manifest, and static review card now show a `Deferred API caveat`
+  note before reporting the search match. The focused panel/capture/docs guard
+  reported `8 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure

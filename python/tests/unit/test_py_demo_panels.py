@@ -1671,6 +1671,10 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert f"text:{guide.healthy_signal}" in events
         assert "text:Do not infer" in events
         assert f"text:{guide.scope}" in events
+        if guide.deferred_api_caveats:
+            assert "text:Deferred API caveats" in events
+            for caveat in guide.deferred_api_caveats:
+                assert f"text:{caveat}" in events
         assert "text:Capture evidence" in events
         assert (
             "text:"
