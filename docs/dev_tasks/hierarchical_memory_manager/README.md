@@ -1,5 +1,60 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Ignored-Pair Save Allocator)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: experimental `World::saveBinary()` now builds the
+temporary ignored collision-pair filter vector with the same World allocator
+already owned by `WorldStorage::ignoredCollisionPairs`. The pre-fix gap was
+that persistent ignored-pair storage used the World free allocator, but binary
+save filtered those pairs through a default-allocator
+`std::vector<CollisionPairKey>` before writing entity-map-remapped endpoints.
+Large worlds with many persisted ignored pairs could therefore grow default
+heap storage during save even though the source pair set was already under the
+World memory hierarchy.
+
+The fix has these parts:
+
+- `World::saveBinary()` constructs `savedIgnoredPairs` with
+  `m_storage->ignoredCollisionPairs.get_allocator()`, preserving logical const
+  behavior while routing the temporary filter storage through the World-owned
+  allocator;
+- `World.SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator` creates more
+  than 2,000 persisted ignored pairs, saves the world, verifies the World
+  free-list peak grows during the temporary filter allocation, verifies live
+  bytes return to the pre-save value, and round-trips the ignored-pair count
+  through `loadBinary()`;
+- the previous contact-query and Rigid IPC allocator slice remains intact below
+  as historical context for this branch.
+
+This still does not claim that serialization's public stream buffers,
+`io::EntityMap`, native collision internals, or public return-by-value
+`std::vector` APIs are under the World allocator. The closed gap is only the
+DART-owned ignored-pair filter vector inside `World::saveBinary()`.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter=World.SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-12, Contact Query and Rigid IPC Allocators)
 
 Resume from exactly one branch:
@@ -105,12 +160,6 @@ pixi run -e cuda test-all
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-12, AVBD Rigid Writeback Dirty Stack)
 

@@ -3528,6 +3528,47 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
 #endif
 }
 
+TEST(World, SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  constexpr std::size_t kBodyCount = 72u;
+  std::vector<sx::RigidBody> bodies;
+  bodies.reserve(kBodyCount);
+  for (std::size_t i = 0; i < kBodyCount; ++i) {
+    bodies.push_back(world.addRigidBody(std::format("ignored_save_{:03}", i)));
+  }
+
+  for (std::size_t i = 0; i < bodies.size(); ++i) {
+    for (std::size_t j = i + 1u; j < bodies.size(); ++j) {
+      world.setCollisionPairIgnored(bodies[i], bodies[j]);
+    }
+  }
+  ASSERT_GT(world.getIgnoredCollisionPairCount(), 2000u);
+
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const auto liveBytesBeforeSave = freeList.getAllocatedSize();
+  const auto peakBytesBeforeSave = freeList.getPeakAllocatedSize();
+
+  std::stringstream buffer;
+  world.saveBinary(buffer);
+
+  EXPECT_EQ(freeList.getAllocatedSize(), liveBytesBeforeSave)
+      << "saveBinary should release the temporary ignored-pair filter "
+         "storage before returning";
+  EXPECT_GT(freeList.getPeakAllocatedSize(), peakBytesBeforeSave)
+      << "saveBinary should allocate ignored-pair filter storage through the "
+         "World free allocator, not a default std::vector heap allocation";
+
+  buffer.seekg(0);
+  sx::World loaded;
+  loaded.loadBinary(buffer);
+  EXPECT_EQ(
+      loaded.getIgnoredCollisionPairCount(),
+      world.getIgnoredCollisionPairCount());
+}
+
 TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
 {
   namespace sx = dart::simulation;

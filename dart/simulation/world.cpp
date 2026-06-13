@@ -6731,7 +6731,10 @@ void World::saveBinary(std::ostream& output) const
             : 0u;
   io::writePOD(output, multibodyIntegrationMethod);
 
-  std::vector<detail::WorldStorage::CollisionPairKey> savedIgnoredPairs;
+  std::vector<
+      detail::WorldStorage::CollisionPairKey,
+      detail::WorldStorage::CollisionPairAllocator>
+      savedIgnoredPairs{m_storage->ignoredCollisionPairs.get_allocator()};
   savedIgnoredPairs.reserve(m_storage->ignoredCollisionPairs.size());
   for (const auto& pair : m_storage->ignoredCollisionPairs) {
     if (entityMap.contains(pair.first) && entityMap.contains(pair.second)) {

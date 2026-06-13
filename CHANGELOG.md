@@ -582,6 +582,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     contact-free diagonal fast path, and pre-reserved free-list block metadata
     so allocator-backed stage prepare does not grow bookkeeping storage through
     global `operator new` during no-heap checks.
+  - Routed experimental `World::saveBinary()` ignored collision-pair filter
+    storage through the same World allocator already used by persistent
+    ignored-pair storage, and added peak/live allocator coverage for the
+    temporary save vector.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory
