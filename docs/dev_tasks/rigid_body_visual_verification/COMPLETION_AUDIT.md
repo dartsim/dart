@@ -23,9 +23,13 @@ route to `rigid_collision_query_options`; static-friction terms route to
 `rigid_multibody_dynamics_terms`; direct `RigidBody` impulse/load API terms
 route to `rigid_external_loads`; stack-jitter/resting-stack terms route to
 `rigid_stack_stability`; and closed-chain/closed-loop terms route to
-`rigid_loop_closure`. Focused validation:
-`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `5 passed`. This local slice is not pushed yet.
+`rigid_loop_closure`. The search now folds punctuation, underscores, hyphens,
+dotted API names, CamelCase, compact API tokens, and simple plurals, so
+`RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`,
+`ray-cast`, `shape-cast`, `body kind filters`, and `resting contacts` route
+like their documented snake_case or singular forms. Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `7 passed`. This local slice is not pushed yet.
 
 Latest pushed implementation slice: rigid workflow search now routes GPU/CUDA
 shorthand (`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,

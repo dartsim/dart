@@ -544,6 +544,10 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
         "instant impulse",
         "linear impulse",
         "linear momentum",
+        "rigid body apply angular impulse",
+        "rigid body apply force",
+        "rigid body apply linear impulse",
+        "rigid body apply torque",
         "rigidbody.apply_angular_impulse",
         "rigidbody.apply_force",
         "rigidbody.apply_linear_impulse",
@@ -2032,20 +2036,51 @@ def _workflow_search_row_id_text(guide: RigidWorkflowGuide) -> str:
     return f"row {guide.index} row {guide.index:02d} {row_id} {unpadded_row_id}"
 
 
+def _workflow_search_words(text: str) -> tuple[str, ...]:
+    split_camel = re.sub(r"(?<=[A-Z])(?=[A-Z][a-z])", " ", text)
+    split_camel = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", split_camel)
+    return tuple(re.findall(r"[a-z0-9]+", split_camel.lower()))
+
+
 def _workflow_search_tokens(query: str) -> tuple[str, ...]:
-    return tuple(token for token in query.strip().lower().split() if token)
+    return _workflow_search_words(query)
+
+
+def _workflow_search_phrase(text: str) -> str:
+    return " ".join(_workflow_search_words(text))
+
+
+def _workflow_search_word_variants(words: Iterable[str]) -> set[str]:
+    variants = set(words)
+    for word in words:
+        if len(word) <= 3:
+            continue
+        if word.endswith("ies"):
+            variants.add(f"{word[:-3]}y")
+        elif word.endswith("s"):
+            if not word.endswith(("is", "ss", "us")):
+                variants.add(word[:-1])
+        else:
+            variants.add(f"{word}s")
+    return variants
 
 
 def _workflow_text_matches(text: str, tokens: tuple[str, ...]) -> bool:
     if not tokens:
         return False
-    lowered = text.lower()
-    words = set(re.findall(r"[a-z0-9]+", lowered))
+    words = _workflow_search_words(text)
+    word_variants = _workflow_search_word_variants(words)
+    phrase = " ".join(words)
+    compact = "".join(words)
     for token in tokens:
+        token_variants = _workflow_search_word_variants((token,))
         if len(token) <= 2:
-            if token not in words:
+            if word_variants.isdisjoint(token_variants):
                 return False
-        elif token not in lowered:
+        elif not any(
+            variant in word_variants or variant in phrase or variant in compact
+            for variant in token_variants
+        ):
             return False
     return True
 
@@ -2066,11 +2101,11 @@ def _workflow_core_search_score(
     )
 
     positive_score = 0
-    if query_text == guide.scene_id.lower():
+    if query_text == _workflow_search_phrase(guide.scene_id):
         positive_score += 1800
-    if query_text == guide.label.lower():
+    if query_text == _workflow_search_phrase(guide.label):
         positive_score += 1600
-    if query_text in {alias.lower() for alias in aliases}:
+    if query_text in {_workflow_search_phrase(alias) for alias in aliases}:
         positive_score += 4000
     elif len(tokens) > 1 and any(
         _workflow_text_matches(alias, tokens) for alias in aliases

@@ -171,6 +171,11 @@ ids, labels, questions, positive signals, and explicit aliases such as
 `CollisionQueryOptions`, `generalized force`, `compute_impulse_response`,
 `closed chain`, `executor comparison`, or `sequential impulse` surface the
 relevant debugging rows instead of early rows that only say what not to infer.
+The search folds punctuation, underscores, hyphens, dotted API names,
+CamelCase, compact API tokens, and simple plurals, so
+`RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`, `ray-cast`,
+`shape-cast`, `body kind filters`, and `resting contacts` route like the
+documented snake_case or singular terms.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Direct impulse queries route to the public

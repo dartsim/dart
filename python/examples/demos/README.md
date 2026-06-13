@@ -159,6 +159,11 @@ labels, questions, signals, and explicit aliases such as `RigidBodySolver`,
 `closed chain`, `closed loop`, `direct rigid body impulse`, `sleep wake`,
 `island activation`, and `loop closure compliance` that request in-viewer scene
 switches.
+The filter folds punctuation, underscores, hyphens, dotted API names,
+CamelCase, compact API tokens, and simple plurals, so queries such as
+`RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`,
+`ray-cast`, `shape-cast`, `body kind filters`, or `resting contacts` find the
+same rows as their documented snake_case or singular forms.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Scope caveats

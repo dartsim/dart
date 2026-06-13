@@ -116,6 +116,11 @@ rigid-body visual verification surface for the current cycle.
   `compute_impulse_response`; direct `RigidBody.apply_*` load/impulse API
   terms; stack-jitter/resting-stack wording; and closed-chain/closed-loop
   wording.
+- Normalizes workflow search across punctuation, underscores, hyphens, dotted
+  API names, CamelCase, compact API tokens, and simple plurals, so
+  `RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`,
+  `ray-cast`, `shape-cast`, `body kind filters`, and `resting contacts` route
+  like their documented snake_case or singular forms.
 - Promotes row-8 nested step-profile lane metrics into workflow review cards as
   `backend diagnostics`, so backend activity, accelerated-stage counts, worker
   counts, top stages, and stage timings are visible from the static review
@@ -169,8 +174,8 @@ rigid-body visual verification surface for the current cycle.
   reported `3 passed`.
 - Focused search-alias/docs guard for broader user terminology and public API
   spellings:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-  reported `5 passed`.
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `7 passed`.
 - Focused backend-diagnostics review-card guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_summarizes_backend_diagnostics python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
   reported `2 passed`.
