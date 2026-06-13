@@ -58,7 +58,7 @@ contracts this plan is landing.
 
 ### WS0 — Evidence integrity and guardrails
 
-#### WP-091.1 Solver-identity recording and AVBD evidence relabel [claimed]
+#### WP-091.1 Solver-identity recording and AVBD evidence relabel [done — PR #2990, merged 2026-06-13]
 
 - Objective: every benchmark evidence packet machine-records the resolved
   solver configuration, and the AVBD contact-scene rows that timed the
