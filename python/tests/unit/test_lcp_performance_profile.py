@@ -739,13 +739,28 @@ def test_lcp_profile_evidence_csv_header_matches_roster_schema(
 ) -> None:
     module = _load_module()
     path = tmp_path / "profile_evidence.csv"
+    results = module.parse_benchmark_results(
+        {"benchmarks": [_valid_current_schema_benchmark()]}
+    )
 
-    module.save_profile_evidence_csv({}, path)
+    module.save_profile_evidence_csv(results, path)
 
     with path.open(newline="") as f:
         header = next(csv.reader(f))
 
     assert tuple(header) == module.REQUIRED_EVIDENCE_COLUMNS
+
+
+def test_lcp_profile_evidence_csv_rejects_no_evidence_rows(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "profile_evidence.csv"
+
+    with pytest.raises(RuntimeError, match="no evidence rows"):
+        module.save_profile_evidence_csv({}, path)
+
+    assert not path.exists()
 
 
 def test_lcp_profile_evidence_csv_rejects_missing_current_schema_fields(

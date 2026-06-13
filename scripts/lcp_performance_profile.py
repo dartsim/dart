@@ -763,30 +763,36 @@ def _validate_profile_evidence_csv_row(
 
 def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
     header = list(REQUIRED_EVIDENCE_COLUMNS)
+    rows = []
+
+    for category in PROFILE_CATEGORIES:
+        for (solver, problem_size), data in sorted(results.get(category, {}).items()):
+            missing = _missing_required_evidence_fields(category, data)
+            if missing:
+                raise RuntimeError(
+                    "Cannot write LCP performance profile evidence with "
+                    "missing current-schema fields for "
+                    f"{category}/{solver}/{problem_size}: {missing}"
+                )
+            _validate_profile_evidence_csv_row(category, solver, problem_size, data)
+            rows.append(
+                [
+                    category,
+                    solver,
+                    problem_size,
+                    *(_csv_value(data.get(key)) for key in header[3:]),
+                ]
+            )
+
+    if not rows:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with no evidence rows"
+        )
 
     with open(output_path, "w", newline="") as f:
         writer = csv.writer(f, lineterminator="\n")
         writer.writerow(header)
-        for category in PROFILE_CATEGORIES:
-            for (solver, problem_size), data in sorted(
-                results.get(category, {}).items()
-            ):
-                missing = _missing_required_evidence_fields(category, data)
-                if missing:
-                    raise RuntimeError(
-                        "Cannot write LCP performance profile evidence with "
-                        "missing current-schema fields for "
-                        f"{category}/{solver}/{problem_size}: {missing}"
-                    )
-                _validate_profile_evidence_csv_row(category, solver, problem_size, data)
-                writer.writerow(
-                    [
-                        category,
-                        solver,
-                        problem_size,
-                        *(_csv_value(data.get(key)) for key in header[3:]),
-                    ]
-                )
+        writer.writerows(rows)
 
     print(f"Saved evidence CSV: {output_path}")
 
