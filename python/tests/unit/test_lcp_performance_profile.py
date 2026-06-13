@@ -537,6 +537,16 @@ def test_lcp_profile_allows_partial_scratch_output_target() -> None:
     )
 
 
+def test_lcp_profile_help_documents_partial_scratch_output() -> None:
+    module = _load_module()
+
+    help_text = " ".join(module.build_arg_parser().format_help().split())
+
+    assert "--allow-partial" in help_text
+    assert "scratch --output directory" in help_text
+    assert str(module.DEFAULT_OUTPUT_DIR) in help_text
+
+
 def test_lcp_profile_coverage_rejects_historical_non_native_rows() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(

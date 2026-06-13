@@ -930,7 +930,7 @@ def print_summary_table(ratios: dict, solvers: list, category: str):
         print(f"{solver:<30} {wins:>6} {solved:>8} {avg_ratio:>10.2f}")
 
 
-def main():
+def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Generate LCP solver performance profiles"
     )
@@ -963,7 +963,11 @@ def main():
     parser.add_argument(
         "--allow-partial",
         action="store_true",
-        help="Allow incomplete native solver coverage in benchmark JSON",
+        help=(
+            "Allow incomplete native solver coverage in benchmark JSON. "
+            "Partial runs must use a scratch --output directory; checked "
+            f"{DEFAULT_OUTPUT_DIR} output is refused."
+        ),
     )
     parser.add_argument(
         "--benchmark-timeout",
@@ -974,6 +978,11 @@ def main():
             f"(default: {DEFAULT_BENCHMARK_TIMEOUT_SECONDS})"
         ),
     )
+    return parser
+
+
+def main():
+    parser = build_arg_parser()
     args = parser.parse_args()
 
     project_root = Path(__file__).parent.parent
