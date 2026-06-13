@@ -2804,7 +2804,9 @@ Capsule Rod (IPC)` py-demos scene.
     counters, and the dedicated `unb-alg-barriers` CPU packet row exercises
     nonzero inter-body/static-rigid/moving-rigid surface CCD counter evidence,
     including a mixed reduced `World::step` witness that activates all three
-    external families in one step.
+    external families in one step. The reduced lying-flat benchmark packet now
+    also carries one nonzero static-rigid surface CCD witness while keeping
+    paper-scale mixed-scene and GPU parity claims deferred.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`

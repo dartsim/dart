@@ -833,6 +833,23 @@ def _make_lying_flat_packet(
         raise Plan083CpuScenePacketError(
             "reduced lying-flat cloth span is not positive"
         )
+    counters = _surface_contact_runtime_counters(row)
+    if counters["static_rigid_surface_ccd_box_count"] <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced lying-flat packet needs a static-rigid surface CCD witness box"
+        )
+    for key in (
+        "static_rigid_surface_ccd_candidate_builds",
+        "static_rigid_surface_ccd_point_triangle_candidates",
+        "static_rigid_surface_ccd_point_triangle_checks",
+        "static_rigid_surface_ccd_hits",
+        "static_rigid_surface_ccd_limited_steps",
+    ):
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced lying-flat packet needs positive static-rigid "
+                f"surface CCD witness counter {key}"
+            )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -850,7 +867,7 @@ def _make_lying_flat_packet(
             "surface_triangle_count": surface_triangle_count,
             "solver_iterations": int(_finite_number(row, "solver_iterations")),
             "active_contact_count": int(_finite_number(row, "active_contact_count")),
-            **_surface_contact_runtime_counters(row),
+            **counters,
             "friction_dissipation": _finite_number(row, "friction_dissipation"),
             "min_active_contact_distance_m": _finite_number(
                 row, "min_active_contact_distance_m"

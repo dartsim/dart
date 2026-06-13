@@ -50,9 +50,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/lying_flat/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-lying-flat-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json",
-      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path, with built-in self-surface candidate/CCD counters recorded from the last step diagnostics.",
+      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path, with built-in self-surface candidate/CCD counters plus one reduced static-rigid surface CCD witness recorded from the last step diagnostics.",
       "limitation_status": "Reduced deformable-cloth/static-obstacle smoke packet only; rigid rings, deformable tori, rods, articulated ragdoll, cloth self-contact, and paper-scale mixed coupling remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. The packet now records 37 self-surface candidate builds, 1038 point-triangle CCD checks, and 1852 edge-edge CCD checks from built-in deformable World::step diagnostics on the median row. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
+      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. The packet now records 35 self-surface candidate builds, 882 point-triangle CCD checks, 1660 edge-edge CCD checks, and one reduced static-rigid surface CCD witness with 34 candidate builds, 68 point-triangle checks, 102 edge-edge checks, 34 hits, and one limited step on the median row. Inter-body and moving-rigid external surface CCD remain zero for this figure row. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
     },
     {
       "row_id": "unb-fig-02",

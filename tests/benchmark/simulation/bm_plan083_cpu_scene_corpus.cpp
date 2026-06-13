@@ -83,6 +83,8 @@ const Eigen::Vector3d kUmbrellaHubHalfExtents(0.05, 0.05, 0.04);
 const Eigen::Vector3d kUmbrellaRibHalfExtents(0.18, 0.025, 0.025);
 const Eigen::Vector3d kLyingFlatGroundHalfExtents(0.28, 0.18, 0.012);
 const Eigen::Vector3d kLyingFlatRodHalfExtents(0.14, 0.015, 0.015);
+const Eigen::Vector3d kLyingFlatStaticCcdWitnessHalfExtents(
+    0.010, 0.020, 0.020);
 constexpr double kLyingFlatRingRadius = 0.028;
 constexpr std::size_t kLyingFlatGridColumns = 6;
 constexpr std::size_t kLyingFlatGridRows = 4;
@@ -612,6 +614,10 @@ struct LyingFlatFixture
   {
     world.setTimeStep(0.004);
     world.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+    const double halfWidth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridColumns - 1u);
+    const double halfDepth = 0.5 * kLyingFlatGridSpacing
+                             * static_cast<double>(kLyingFlatGridRows - 1u);
 
     addObstacle(
         "plan083_lying_flat_ground",
@@ -629,12 +635,13 @@ struct LyingFlatFixture
         "plan083_lying_flat_right_ring",
         Eigen::Vector3d(0.09, -0.045, 0.042),
         sx::CollisionShape::makeSphere(kLyingFlatRingRadius));
+    addObstacle(
+        "plan083_lying_flat_static_ccd_witness",
+        Eigen::Vector3d(-0.040, -halfDepth, 0.078),
+        sx::CollisionShape::makeBox(kLyingFlatStaticCcdWitnessHalfExtents),
+        false);
 
     sx::DeformableBodyOptions clothOptions;
-    const double halfWidth = 0.5 * kLyingFlatGridSpacing
-                             * static_cast<double>(kLyingFlatGridColumns - 1u);
-    const double halfDepth = 0.5 * kLyingFlatGridSpacing
-                             * static_cast<double>(kLyingFlatGridRows - 1u);
     for (std::size_t row = 0; row < kLyingFlatGridRows; ++row) {
       for (std::size_t col = 0; col < kLyingFlatGridColumns; ++col) {
         const double x
@@ -644,8 +651,12 @@ struct LyingFlatFixture
         const double stagger = (col + row) % 2u == 0u ? 0.0 : 0.003;
         const double lateral
             = col < kLyingFlatGridColumns / 2u ? 0.025 : -0.025;
+        const bool drivesStaticCcdWitness = row == 0u && col == 0u;
+        const Eigen::Vector3d velocity
+            = drivesStaticCcdWitness ? Eigen::Vector3d(40.0, 0.0, 0.0)
+                                     : Eigen::Vector3d(lateral, 0.0, -0.02);
         clothOptions.positions.emplace_back(x, y, 0.078 + stagger);
-        clothOptions.velocities.emplace_back(lateral, 0.0, -0.02);
+        clothOptions.velocities.push_back(velocity);
         clothOptions.masses.push_back(0.02);
       }
     }
@@ -668,7 +679,8 @@ struct LyingFlatFixture
   sx::RigidBody addObstacle(
       const std::string& name,
       const Eigen::Vector3d& position,
-      const sx::CollisionShape& shape)
+      const sx::CollisionShape& shape,
+      const bool barrierOnly = true)
   {
     sx::RigidBodyOptions options;
     options.isStatic = true;
@@ -676,7 +688,7 @@ struct LyingFlatFixture
     sx::RigidBody body = world.addRigidBody(name, options);
     body.setCollisionShape(shape);
     body.setDeformableSurfaceCcdObstacle(true);
-    body.setDeformableObstacleBarrierOnly(true);
+    body.setDeformableObstacleBarrierOnly(barrierOnly);
     obstacles.push_back(body);
     return body;
   }
