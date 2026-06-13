@@ -347,7 +347,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     with no active Coulomb friction capacity now clear their friction row
     inventory and return after normal-row construction, avoiding tangent-row
     warm-start lookup and construction work for frictionless manifolds while
-    preserving normal rows.
+    preserving normal rows. The default sequential-impulse rigid contact stage
+    also skips tangent-basis setup, tangent effective-mass calculation, and
+    friction solve calls for contacts with zero combined Coulomb friction while
+    preserving normal contact projection.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about

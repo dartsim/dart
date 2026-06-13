@@ -9,6 +9,24 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact stage now computes the combined Coulomb coefficient before tangent
+  setup and skips tangent-basis/effective-mass construction plus friction solve
+  calls when the coefficient is zero. This targets the remaining
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` fixed overhead after profiling the
+  source-shaped Dynamic Friction sweep showed `rigid_body_contact` dominated
+  the frictionless step. Focused validation passed the `test_world` and
+  `bm_avbd_rigid_fixed_joint` target build; the focused
+  `World.RigidBodyContactZeroFrictionPreservesSlidingVelocity`,
+  `World.RigidBodyContactFrictionDeceleratesSlidingBody`, and
+  `World.RigidBodyContactFrictionRollsSlidingSphere` filter; the full
+  `test_world` binary (314 tests); the five-row
+  `BM_AvbdDemo2dFrictionCoefficientSweep`; and a focused `/0` rerun. The
+  benchmark reruns were under high host load averages around
+  `32.19, 29.17, 20.43` and `32.33, 29.42, 20.74`, so they validate the path
+  but are not packet-refresh or CPU-win evidence. The frictionless source-row
+  gap, all-coefficient CPU-win gate, GPU parity, source-demo parity, and
+  paper-number gates remain open.
 - Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
   short-circuits the empty Coulomb friction descriptor path after normal rows
   are built. When every active contact has zero friction-force limit, the
