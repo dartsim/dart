@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Plot CSV Export Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `da1d03ffe24 Guard LCP profile CSV export`; if this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   plot CSV export guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `da1d03ffe24 Guard LCP profile CSV export`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by forty-two commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/lcp_performance_profile.py` now writes the sibling
+  `performance_profile_<category>.csv` artifact before optional Matplotlib
+  plotting. A plotting-enabled environment can no longer refresh profile PNGs
+  while skipping the CSV artifact and its validation path.
+- The same preflight validation used by direct CSV exports now runs before any
+  plotting attempt, so malformed profile data cannot leave behind a plotted
+  profile artifact.
+- `python/tests/unit/test_lcp_performance_profile.py` covers the
+  Matplotlib-enabled path with a fake plotter and verifies invalid profile data
+  fails before a PNG or CSV is written.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and Python demo code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- LCP performance profile generator tests: passed with 65 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- `pixi run lint`: passed, including the LCP solver roster and generated AI
+  command checks.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- `pixi run -e cuda test-all`: passed. The CUDA gate included lint, build,
+  unit, simulation, Python, documentation, CUDA simulation tests, and CUDA
+  benchmark smoke; the final report was 7/7 tests passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused profile tests, roster check, `pixi run lint`, `git diff --check`,
+`pixi run build`, and `pixi run -e cuda test-all`, then commit the focused
+generator/test/docs change. Then continue the broader LCP interface/demo audit
+from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Profile CSV Preflight Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

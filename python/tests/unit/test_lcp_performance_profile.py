@@ -755,6 +755,106 @@ def test_lcp_profile_csv_writer_rejects_invalid_profiles_before_write(
     assert not path.exists()
 
 
+class _FakeProfileAxis:
+    def plot(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_xlabel(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_ylabel(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_title(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_xlim(self, *_args, **_kwargs) -> None:
+        pass
+
+    def set_ylim(self, *_args, **_kwargs) -> None:
+        pass
+
+    def grid(self, *_args, **_kwargs) -> None:
+        pass
+
+    def legend(self, *_args, **_kwargs) -> None:
+        pass
+
+
+class _FakeProfileColorMap:
+    def tab20(self, values):
+        return [f"C{i}" for i, _ in enumerate(values)]
+
+
+class _FakeProfilePlot:
+    def __init__(self) -> None:
+        self.cm = _FakeProfileColorMap()
+        self.saved_paths: list[Path] = []
+        self.closed = False
+
+    def subplots(self, *_args, **_kwargs):
+        return object(), _FakeProfileAxis()
+
+    def tight_layout(self) -> None:
+        pass
+
+    def savefig(self, path: Path, *_args, **_kwargs) -> None:
+        self.saved_paths.append(path)
+        path.write_text("fake plot\n", encoding="utf-8")
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_lcp_profile_plot_writes_csv_with_matplotlib(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    fake_plot = _FakeProfilePlot()
+    module.HAS_MATPLOTLIB = True
+    module.plt = fake_plot
+    path = tmp_path / "profile.png"
+
+    module.plot_performance_profile(
+        module.np.array([1.0, 2.0]),
+        {"Dantzig": module.np.array([1.0, 0.5])},
+        "Standard",
+        path,
+    )
+
+    assert path.with_suffix(".csv").read_text(encoding="utf-8").splitlines() == [
+        "tau,Dantzig",
+        "1.0000,1.0000",
+        "2.0000,0.5000",
+    ]
+    assert path.read_text(encoding="utf-8") == "fake plot\n"
+    assert fake_plot.saved_paths == [path]
+    assert fake_plot.closed
+
+
+def test_lcp_profile_plot_rejects_invalid_profile_before_plotting(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    fake_plot = _FakeProfilePlot()
+    module.HAS_MATPLOTLIB = True
+    module.plt = fake_plot
+    path = tmp_path / "profile.png"
+
+    with pytest.raises(RuntimeError, match="invalid profile value"):
+        module.plot_performance_profile(
+            module.np.array([1.0]),
+            {"Dantzig": module.np.array([1.5])},
+            "Standard",
+            path,
+        )
+
+    assert not path.exists()
+    assert not path.with_suffix(".csv").exists()
+    assert fake_plot.saved_paths == []
+    assert not fake_plot.closed
+
+
 def test_lcp_profile_evidence_constants_match_roster_schema() -> None:
     module = _load_module()
     roster = sys.modules["check_lcp_solver_roster"]

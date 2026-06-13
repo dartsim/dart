@@ -850,9 +850,10 @@ def plot_performance_profile(
     output_path: Path,
     title_suffix: str = "",
 ):
+    csv_path = output_path.with_suffix(".csv")
+    save_profile_csv(tau_values, profiles, csv_path)
+
     if not HAS_MATPLOTLIB:
-        csv_path = output_path.with_suffix(".csv")
-        save_profile_csv(tau_values, profiles, csv_path)
         return
 
     fig, ax = plt.subplots(figsize=(10, 6))
