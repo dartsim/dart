@@ -62,20 +62,41 @@ def test_lcp_solver_roster_rejects_demo_profile_column_drift(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    stale_schema = dict(module.parse_demo_profile_evidence_schema())
     stale_columns = tuple(
         column
         for column in module.REQUIRED_EVIDENCE_COLUMNS
         if column != "time_ns"
     )
+    stale_schema["_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"] = stale_columns
     monkeypatch.setattr(
         module,
-        "parse_demo_profile_evidence_required_columns",
-        lambda: stale_columns,
+        "parse_demo_profile_evidence_schema",
+        lambda: stale_schema,
     )
 
     with pytest.raises(
         AssertionError,
         match="profile evidence required columns do not match",
+    ):
+        module.check_demo_profile_evidence_required_columns()
+
+
+def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_schema = dict(module.parse_demo_profile_evidence_schema())
+    stale_schema["_SOLVER_IDENTITY_SCHEMA_VERSION"] = 2
+    monkeypatch.setattr(
+        module,
+        "parse_demo_profile_evidence_schema",
+        lambda: stale_schema,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="profile evidence schema does not match",
     ):
         module.check_demo_profile_evidence_required_columns()
 

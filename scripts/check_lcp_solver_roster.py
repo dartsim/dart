@@ -200,6 +200,11 @@ def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
         if node.id in env:
             return env[node.id]
         raise AssertionError(f"cannot evaluate unknown demo name {node.id!r}")
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        left = _evaluate_demo_expression(node.left, env)
+        right = _evaluate_demo_expression(node.right, env)
+        if isinstance(left, tuple) and isinstance(right, tuple):
+            return left + right
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         if node.func.id == "tuple" and len(node.args) == 1 and not node.keywords:
             return tuple(_evaluate_demo_expression(node.args[0], env))
@@ -223,12 +228,17 @@ def parse_demo_roster() -> tuple[list[dict[str, Any]], dict[str, str]]:
     return rows, class_names
 
 
-def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
+def parse_demo_profile_evidence_schema() -> dict[str, Any]:
     module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
     targets = {
+        "_PROFILE_CATEGORY_SUPPORT_FIELDS",
+        "_PROFILE_EVIDENCE_REQUIRED_SURFACES",
+        "_PROFILE_SOLVER_SUPPORT_FIELDS",
+        "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS",
+        "_PROFILE_PROBLEM_TYPE_FIELDS",
+        "_SOLVER_IDENTITY_SCHEMA_VERSION",
         "_PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY",
         "_PROFILE_SOLVER_FAMILY_COUNTER_FIELDS",
-        "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS",
         "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS",
     }
     env: dict[str, Any] = {}
@@ -257,22 +267,56 @@ def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
         if target_name is not None and value is not None:
             env[target_name] = _evaluate_demo_expression(value, env)
 
-    columns = env.get("_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS")
-    if columns is None:
+    missing = sorted(targets - set(env))
+    if missing:
         raise AssertionError(
-            f"{LCP_DEMO_PATH} is missing "
-            "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"
+            f"{LCP_DEMO_PATH} is missing profile evidence schema assignments: "
+            f"{missing}"
         )
+    return env
+
+
+def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
+    columns = parse_demo_profile_evidence_schema()[
+        "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"
+    ]
     return tuple(columns)
 
 
 def check_demo_profile_evidence_required_columns() -> None:
-    demo_columns = parse_demo_profile_evidence_required_columns()
+    demo_schema = parse_demo_profile_evidence_schema()
+    demo_columns = tuple(demo_schema["_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"])
+    expected_solver_support_fields = {
+        counter: PROFILE_KEY_BY_CATEGORY[category]
+        for category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
+    }
+    expected = {
+        "_PROFILE_CATEGORY_SUPPORT_FIELDS": FORM_SUPPORT_COUNTER_BY_CATEGORY,
+        "_PROFILE_EVIDENCE_REQUIRED_SURFACES": PROFILE_CATEGORIES,
+        "_PROFILE_SOLVER_SUPPORT_FIELDS": expected_solver_support_fields,
+        "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTER_BY_CATEGORY,
+        "_PROFILE_PROBLEM_TYPE_FIELDS": PROBLEM_TYPE_COUNTERS,
+        "_SOLVER_IDENTITY_SCHEMA_VERSION": SOLVER_IDENTITY_SCHEMA_VERSION,
+        "_PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY": SOLVER_FAMILY_COUNTER_BY_FAMILY,
+        "_PROFILE_SOLVER_FAMILY_COUNTER_FIELDS": SOLVER_FAMILY_COUNTERS,
+        "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS": REQUIRED_EVIDENCE_COLUMNS,
+    }
+    mismatches = {
+        name: {"checker": expected_value, "demo": demo_schema[name]}
+        for name, expected_value in expected.items()
+        if demo_schema[name] != expected_value
+        and name != "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"
+    }
     if demo_columns != REQUIRED_EVIDENCE_COLUMNS:
         raise AssertionError(
             "lcp_physics profile evidence required columns do not match the "
             "roster checker.\n"
             f"checker={REQUIRED_EVIDENCE_COLUMNS}\ndemo={demo_columns}"
+        )
+    if mismatches:
+        raise AssertionError(
+            "lcp_physics profile evidence schema does not match the roster "
+            f"checker: {mismatches}"
         )
 
 

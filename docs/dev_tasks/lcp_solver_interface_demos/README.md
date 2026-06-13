@@ -1,9 +1,72 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-13 Current Continuation - Profile Counter Schema Reuse
+## 2026-06-13 Current Continuation - Demo Profile Schema Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `19ebc6db6cb Share LCP profile counter schema` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `19ebc6db6cb Share LCP profile counter schema`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by fifteen commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Demo profile schema-guard status:
+
+- `scripts/check_lcp_solver_roster.py` now parses the Python LCP demo's
+  display-side profile evidence schema constants, including category support
+  fields, required surfaces, solver support fields, problem-type fields,
+  identity schema version, family counters, and required columns.
+- The roster lint gate now rejects future drift between the demo validator and
+  the roster-owned profile evidence schema.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers both stale demo
+  required-column tuples and stale non-column schema constants.
+- No checked profile CSVs, benchmark registrations, solver predicates, demo
+  runtime behavior, public APIs, or performance timings were intentionally
+  changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with 24 tests.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   focused profile/roster tests, `scripts/check_lcp_solver_roster.py`,
+   `pixi run lint`, and `git diff --check`, then commit the focused
+   script/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-13 Current Continuation - Profile Counter Schema Reuse
+
+Historical checkpoint section. It was the latest hand-off before the demo
+profile schema-guard continuation.
 
 Fresh AI session priority:
 
