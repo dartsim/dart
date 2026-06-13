@@ -126,6 +126,10 @@ struct ContactCandidateSet
   using PointTriangleAllocator
       = ::dart::common::StlAllocator<PointTriangleCandidate>;
   using EdgeEdgeAllocator = ::dart::common::StlAllocator<EdgeEdgeCandidate>;
+  using SurfaceEdgeVector = std::vector<SurfaceEdge, SurfaceEdgeAllocator>;
+  using PointTriangleVector
+      = std::vector<PointTriangleCandidate, PointTriangleAllocator>;
+  using EdgeEdgeVector = std::vector<EdgeEdgeCandidate, EdgeEdgeAllocator>;
 
   ContactCandidateSet() = default;
 
@@ -136,10 +140,9 @@ struct ContactCandidateSet
   {
   }
 
-  std::vector<SurfaceEdge, SurfaceEdgeAllocator> surfaceEdges;
-  std::vector<PointTriangleCandidate, PointTriangleAllocator>
-      pointTriangleCandidates;
-  std::vector<EdgeEdgeCandidate, EdgeEdgeAllocator> edgeEdgeCandidates;
+  SurfaceEdgeVector surfaceEdges;
+  PointTriangleVector pointTriangleCandidates;
+  EdgeEdgeVector edgeEdgeCandidates;
   ContactCandidateStats stats;
 };
 
@@ -176,6 +179,8 @@ struct ContactCandidateSweepScratch
 {
   using SweepItemAllocator = ::dart::common::StlAllocator<SweepItem>;
   using SweepLinkAllocator = ::dart::common::StlAllocator<std::size_t>;
+  using SweepItemVector = std::vector<SweepItem, SweepItemAllocator>;
+  using SweepLinkVector = std::vector<std::size_t, SweepLinkAllocator>;
 
   ContactCandidateSweepScratch() = default;
 
@@ -188,12 +193,21 @@ struct ContactCandidateSweepScratch
   {
   }
 
-  std::vector<SweepItem, SweepItemAllocator> pointItems;
-  std::vector<SweepItem, SweepItemAllocator> triangleItems;
-  std::vector<SweepItem, SweepItemAllocator> edgeItems;
+  explicit ContactCandidateSweepScratch(
+      const ContactCandidateSet::SurfaceEdgeAllocator& allocator)
+    : pointItems(SweepItemAllocator{allocator}),
+      triangleItems(SweepItemAllocator{allocator}),
+      edgeItems(SweepItemAllocator{allocator}),
+      sweepLinks(SweepLinkAllocator{allocator})
+  {
+  }
+
+  SweepItemVector pointItems;
+  SweepItemVector triangleItems;
+  SweepItemVector edgeItems;
   // Reusable next-index live list for the cross-set sweep-and-prune traversal
   // (sized to the right-hand-side item count per call).
-  std::vector<std::size_t, SweepLinkAllocator> sweepLinks;
+  SweepLinkVector sweepLinks;
 };
 
 //==============================================================================
@@ -801,7 +815,8 @@ inline void buildContactCandidatesSweep(
     const ContactCandidateOptions& options,
     ContactCandidateSet& candidates)
 {
-  detail::ContactCandidateSweepScratch scratch;
+  detail::ContactCandidateSweepScratch scratch(
+      candidates.surfaceEdges.get_allocator());
   buildContactCandidatesSweep(
       positions, triangles, options, candidates, scratch);
 }
@@ -1017,7 +1032,8 @@ inline void buildMotionAwareContactCandidatesSweep(
     const ContactCandidateOptions& options,
     ContactCandidateSet& candidates)
 {
-  detail::ContactCandidateSweepScratch scratch;
+  detail::ContactCandidateSweepScratch scratch(
+      candidates.surfaceEdges.get_allocator());
   buildMotionAwareContactCandidatesSweep(
       positionsStart, positionsEnd, triangles, options, candidates, scratch);
 }

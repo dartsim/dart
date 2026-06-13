@@ -1,5 +1,73 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Contact Candidate Sweep Fallback Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: deformable contact candidate no-scratch sweep builders now
+derive their short-lived `ContactCandidateSweepScratch` from the allocator
+already attached to `ContactCandidateSet::surfaceEdges`. This keeps fallback
+point-item, triangle-item, edge-item, and sweep-link temporaries on the
+caller-provided DART allocator when the caller supplied an allocator-backed
+candidate set.
+
+The fix has these parts:
+
+- `ContactCandidateSet` uses local `SurfaceEdgeVector`,
+  `PointTriangleVector`, and `EdgeEdgeVector` aliases for its allocator-backed
+  result vectors;
+- `ContactCandidateSweepScratch` uses local `SweepItemVector` and
+  `SweepLinkVector` aliases for its allocator-backed temporary vectors;
+- `ContactCandidateSweepScratch` can be constructed from a candidate-set
+  surface-edge allocator, converting that allocator to its sweep-item and
+  sweep-link vector allocators;
+- the no-scratch `buildContactCandidatesSweep(..., candidates)` fallback now
+  builds scratch from `candidates.surfaceEdges.get_allocator()`;
+- the no-scratch `buildMotionAwareContactCandidatesSweep(..., candidates)`
+  fallback now borrows the same candidate-set allocator for its internal sweep
+  scratch;
+- `IpcContactCandidateSet.NoScratchSweepBuildersBorrowCandidateAllocator`
+  verifies both fallback builders route local sweep-scratch allocations through
+  the candidate-set allocator after pre-reserving result storage.
+
+This still does not claim that return-by-value candidate-set helpers are
+allocation-free, that fallback scratch is retained across calls, that explicit
+scratch callers changed behavior, or that unrelated deformable/contact builder
+payloads are allocator-backed. The closed gap is allocator provenance for the
+no-scratch deformable contact candidate sweep fallback helpers when a caller
+already provided an allocator-backed candidate set.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_contact_candidate_set -j 8
+pixi run build/default/cpp/Release/bin/test_contact_candidate_set \
+  --gtest_filter=IpcContactCandidateSet.NoScratchSweepBuildersBorrowCandidateAllocator
+pixi run build/default/cpp/Release/bin/test_contact_candidate_set
+pixi run lint
+git diff --check
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+The CUDA `test-all` run passed with the existing no-GUI
+`dartpy._world_render_bridge` autodoc warnings during documentation generation
+and CPU-scaling warnings during CUDA benchmark smoke.
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Fallback Build Scratch)
 
 Resume from exactly one branch:
