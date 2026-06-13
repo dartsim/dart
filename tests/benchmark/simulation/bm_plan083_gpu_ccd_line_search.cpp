@@ -92,6 +92,8 @@ struct ScenePointTriangleCcdFixture : CcdFixture
   std::size_t sceneNodeCount = 0;
   std::size_t sceneTriangleCount = 0;
   std::size_t sourcePointTriangleCandidateCount = 0;
+  std::size_t staticTrianglePointTriangleCandidateCount = 0;
+  std::size_t movingTrianglePointTriangleCandidateCount = 0;
 };
 
 struct SceneEdgeEdgeCcdFixture : EdgeEdgeCcdFixture
@@ -129,17 +131,33 @@ Eigen::Vector3d vec3(const double values[3])
 cuda::PointTriangleCcdLineSearchPair makePair(
     const Eigen::Vector3d& pointStart,
     const Eigen::Vector3d& pointEnd,
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c)
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aEnd,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bEnd,
+    const Eigen::Vector3d& cStart,
+    const Eigen::Vector3d& cEnd)
 {
   cuda::PointTriangleCcdLineSearchPair pair;
   setVec3(pair.pointStart, pointStart);
   setVec3(pair.pointEnd, pointEnd);
-  setVec3(pair.triangleA, a);
-  setVec3(pair.triangleB, b);
-  setVec3(pair.triangleC, c);
+  setVec3(pair.triangleAStart, aStart);
+  setVec3(pair.triangleAEnd, aEnd);
+  setVec3(pair.triangleBStart, bStart);
+  setVec3(pair.triangleBEnd, bEnd);
+  setVec3(pair.triangleCStart, cStart);
+  setVec3(pair.triangleCEnd, cEnd);
   return pair;
+}
+
+cuda::PointTriangleCcdLineSearchPair makePair(
+    const Eigen::Vector3d& pointStart,
+    const Eigen::Vector3d& pointEnd,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  return makePair(pointStart, pointEnd, a, a, b, b, c, c);
 }
 
 cuda::EdgeEdgeCcdLineSearchPair makeEdgeEdgePair(
@@ -170,12 +188,12 @@ dc::ContinuousCollisionStepResult cpuResult(
   return dc::pointTriangleStepBound(
       vec3(pair.pointStart),
       vec3(pair.pointEnd),
-      vec3(pair.triangleA),
-      vec3(pair.triangleA),
-      vec3(pair.triangleB),
-      vec3(pair.triangleB),
-      vec3(pair.triangleC),
-      vec3(pair.triangleC));
+      vec3(pair.triangleAStart),
+      vec3(pair.triangleAEnd),
+      vec3(pair.triangleBStart),
+      vec3(pair.triangleBEnd),
+      vec3(pair.triangleCStart),
+      vec3(pair.triangleCEnd));
 }
 
 dc::ContinuousCollisionStepResult cpuResult(
@@ -482,16 +500,21 @@ ScenePointTriangleCcdFixture makeSceneRuntimePointTriangleCcdFixture(
 
   for (const auto& candidate : surface.candidates.pointTriangleCandidates) {
     const auto& triangle = surface.triangles[candidate.triangle];
-    if (!isStaticTriangle(surface, triangle)) {
-      continue;
+    if (isStaticTriangle(surface, triangle)) {
+      ++fixture.staticTrianglePointTriangleCandidateCount;
+    } else {
+      ++fixture.movingTrianglePointTriangleCandidateCount;
     }
 
     fixture.pairs.push_back(makePair(
         surface.start[candidate.point],
         surface.end[candidate.point],
         surface.start[triangle.nodeA],
+        surface.end[triangle.nodeA],
         surface.start[triangle.nodeB],
-        surface.start[triangle.nodeC]));
+        surface.end[triangle.nodeB],
+        surface.start[triangle.nodeC],
+        surface.end[triangle.nodeC]));
   }
 
   populateCpuPairResults(fixture);
@@ -651,7 +674,9 @@ void recordSceneRuntimeCounters(
   state.counters["runtime_point_triangle_candidates"]
       = static_cast<double>(fixture.sourcePointTriangleCandidateCount);
   state.counters["static_triangle_point_triangle_candidates"]
-      = static_cast<double>(fixture.pairs.size());
+      = static_cast<double>(fixture.staticTrianglePointTriangleCandidateCount);
+  state.counters["moving_triangle_point_triangle_candidates"]
+      = static_cast<double>(fixture.movingTrianglePointTriangleCandidateCount);
 }
 
 void recordSceneRuntimeCounters(

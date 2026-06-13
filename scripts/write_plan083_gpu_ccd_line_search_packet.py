@@ -292,6 +292,7 @@ def _validate_primitive_family(
                 [
                     "runtime_point_triangle_candidates",
                     "static_triangle_point_triangle_candidates",
+                    "moving_triangle_point_triangle_candidates",
                 ]
             )
         if family == "scene_runtime_edge_edge":
@@ -306,11 +307,25 @@ def _validate_primitive_family(
             scene_counters[key] = cpu_value
         if (
             family == "scene_runtime_point_triangle"
-            and scene_counters["static_triangle_point_triangle_candidates"] != cpu_pairs
+            and scene_counters["runtime_point_triangle_candidates"] != cpu_pairs
         ):
             raise Plan083GpuCcdLineSearchPacketError(
-                f"{family} static-triangle pair count "
+                f"{family} runtime point-triangle candidate count "
+                f"{scene_counters['runtime_point_triangle_candidates']} "
+                f"!= pairs {cpu_pairs}"
+            )
+        if (
+            family == "scene_runtime_point_triangle"
+            and (
+                scene_counters["static_triangle_point_triangle_candidates"]
+                + scene_counters["moving_triangle_point_triangle_candidates"]
+            )
+            != cpu_pairs
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                f"{family} static/moving point-triangle candidate counts "
                 f"{scene_counters['static_triangle_point_triangle_candidates']} "
+                f"+ {scene_counters['moving_triangle_point_triangle_candidates']} "
                 f"!= pairs {cpu_pairs}"
             )
         if (

@@ -9,29 +9,27 @@ PR-comment, resolve review threads, trigger CI, open or close PRs, delete
 branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
-This checkpoint extends the private CCD/line-search packet with reduced
-scene-owned runtime point-triangle and edge-edge rows from one DART `World`
-deformable surface. The point-triangle scene row consumes the runtime
-candidate set and filters to static-triangle candidates because the current
-private CUDA point-triangle CCD packet represents a moving point against a
-static triangle. The edge-edge scene row consumes the runtime edge-edge
-candidate set directly. This is still reduced packet evidence only; analytic
-curved CCD, moving-triangle scene point-triangle CCD, full scene-level
+This checkpoint extends the private CCD/line-search packet with moving-triangle
+point-triangle CCD support plus reduced scene-owned runtime point-triangle and
+edge-edge rows from one DART `World` deformable surface. The point-triangle
+scene row now consumes the full runtime candidate set: 512 point-triangle CCD
+pairs split across 256 static-triangle and 256 moving-triangle candidates. The
+edge-edge scene row consumes the runtime edge-edge candidate set directly. This
+is still reduced packet evidence only; analytic curved CCD, full scene-level
 line-search feasibility, and runtime speedup remain future work.
 
 Fresh packet evidence records 65,536 endpoint-linear point-triangle pairs,
 65,536 endpoint-linear edge-edge pairs, 65,536 sampled rigid-curved
 point-triangle trajectories over 524,288 segments, 65,536 sampled rigid-curved
-edge-edge trajectories over 524,288 segments, 256 static-triangle
-point-triangle CCD pairs filtered from 512 runtime point-triangle candidates,
-and 1,536 runtime edge-edge CCD pairs from the same scene. The top-level packet
-covers 263,936 pairs and 1,181,440 sampled/evaluated segments with
-`hit_count=197120`, `max_result_abs_error=5.62500000023114e-07`,
+edge-edge trajectories over 524,288 segments, 512 runtime point-triangle CCD
+pairs split across 256 static-triangle and 256 moving-triangle candidates, and
+1,536 runtime edge-edge CCD pairs from the same scene. The top-level packet
+covers 264,192 pairs and 1,181,696 sampled/evaluated segments with
+`hit_count=197120`, `max_result_abs_error=5.551115123125783e-17`,
 `result_abs_error_tolerance=1e-06`, and minimum primitive-family
-`speedup=0.5921118335348506x` (`meets_speedup_gate=false`). The durable CCD
-row remains `in-progress` until analytic curved CCD, moving-triangle scene
-point-triangle CCD, full scene-level line-search feasibility, and runtime
-speedup have evidence.
+`speedup=0.3492306596158999x` (`meets_speedup_gate=false`). The durable CCD
+row remains `in-progress` until analytic curved CCD, full scene-level
+line-search feasibility, and runtime speedup have evidence.
 
 Latest validation passed:
 
@@ -39,6 +37,10 @@ Latest validation passed:
 - `pixi run -e cuda build-cuda Release`
 - focused CUDA CCD CTest
 - `pixi run -e cuda bm-plan083-gpu-ccd-line-search-packet`
+- PLAN-083 GPU parity/completion-audit validators
+- focused PLAN-083 packet pytest trio
+- `git diff --check`
+- `pixi run lint`
 
 Previous scene-owned assembly/solve checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all
@@ -878,8 +880,8 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         rigid-curved point-triangle/edge-edge CCD/line-search packets plus
         reduced scene-owned runtime point-triangle/edge-edge CCD rows with
         CPU/GPU step-bound parity; keep the row in-progress because analytic
-        curved CCD, moving-triangle scene point-triangle CCD, full scene-level
-        line-search feasibility, and runtime speedup remain unproven.
+        curved CCD, full scene-level line-search feasibility, and runtime
+        speedup remain unproven.
   - [x] Add private scalar barrier/friction local-kernel, point-triangle
         primitive barrier-gradient, point-triangle/edge-edge/point-edge/
         point-point tangent-stencil, and point-triangle/point-point/point-edge/

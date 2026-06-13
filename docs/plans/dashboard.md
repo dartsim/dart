@@ -356,9 +356,8 @@ its own line so status updates remain git-history friendly.
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
   parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
-  contact rows, runtime scene filtering, analytic curved CCD, moving-triangle
-  scene point-triangle CCD, full scene-level line search, runtime sparse
-  Hessian assembly, direct/global sparse
+  contact rows, runtime scene filtering, analytic curved CCD, full scene-level
+  line search, runtime sparse Hessian assembly, direct/global sparse
   factorization, nonlinear equality constraints, GPU `World::step`, paper-scale
   assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The

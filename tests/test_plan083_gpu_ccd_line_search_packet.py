@@ -129,8 +129,8 @@ def _benchmark_data(**overrides):
     )
     scene_pt_cpu = _row(
         "BM_Plan083SceneRuntimePointTriangleCcdLineSearchCpu/1024",
-        pairs=128,
-        hits=96,
+        pairs=256,
+        hits=192,
         min_step_bound=0.4,
         max_result_abs_error=0.0,
         scene_bodies=1,
@@ -138,14 +138,15 @@ def _benchmark_data(**overrides):
         scene_triangles=768,
         runtime_point_triangle_candidates=256,
         static_triangle_point_triangle_candidates=128,
+        moving_triangle_point_triangle_candidates=128,
     )
     scene_pt_gpu = _row(
         "BM_Plan083SceneRuntimePointTriangleCcdLineSearchCuda/1024",
         real_time=4.0,
         cpu_time=4.0,
-        pairs=128,
-        hits=96,
-        gpu_hits=96,
+        pairs=256,
+        hits=192,
+        gpu_hits=192,
         min_step_bound=0.4,
         max_result_abs_error=5e-12,
         scene_bodies=1,
@@ -153,6 +154,7 @@ def _benchmark_data(**overrides):
         scene_triangles=768,
         runtime_point_triangle_candidates=256,
         static_triangle_point_triangle_candidates=128,
+        moving_triangle_point_triangle_candidates=128,
         host_setup_ns=1.1,
         host_to_device_ns=2.1,
         kernel_ns=3.1,
@@ -227,9 +229,9 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     row = packet["plan083_gpu_ccd_line_search_packet"]
     assert row["row_id"] == "ccd-line-search"
     assert row["same_scene_cpu_gpu"] is True
-    assert row["pair_count"] == 4608
-    assert row["segment_count"] == 18944
-    assert row["hit_count"] == 2720
+    assert row["pair_count"] == 4736
+    assert row["segment_count"] == 19072
+    assert row["hit_count"] == 2816
     assert row["min_step_bound"] == 0.125
     assert row["max_result_abs_error"] == 6e-12
     assert set(row["primitive_families"]) == {
@@ -257,6 +259,12 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     assert (
         row["primitive_families"]["scene_runtime_point_triangle"][
             "static_triangle_point_triangle_candidates"
+        ]
+        == 128
+    )
+    assert (
+        row["primitive_families"]["scene_runtime_point_triangle"][
+            "moving_triangle_point_triangle_candidates"
         ]
         == 128
     )

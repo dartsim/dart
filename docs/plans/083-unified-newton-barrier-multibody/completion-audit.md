@@ -72,8 +72,8 @@ moves entirely into durable plan sidecars.
   point-triangle/edge-edge CCD/line-search packet is in-progress because
   parity exists for reduced endpoint-linear, 8-sample trajectory, and reduced
   scene-owned runtime candidate fixtures, but analytic curved CCD,
-  moving-triangle scene point-triangle CCD, full scene-level line-search
-  feasibility, and runtime speedup remain unproven. The barrier/friction
+  full scene-level line-search feasibility, and runtime speedup remain
+  unproven. The barrier/friction
   local-kernel
   packet is
   in-progress because parity exists for clamped-log barrier derivatives,
