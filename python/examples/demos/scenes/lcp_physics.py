@@ -2701,6 +2701,7 @@ def build() -> SceneSetup:
                     "Solver",
                     "Route",
                     "Status",
+                    "Contract",
                     "Iterations",
                     "Error",
                     "Residual",
@@ -2714,6 +2715,7 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, row["solver"])
                     _write_table_cell(builder, row["solve_route"])
                     _write_table_cell(builder, row["status"])
+                    _write_table_cell(builder, "OK" if row["contract_ok"] else "Fail")
                     _write_table_cell(builder, str(row["iterations"]))
                     _write_table_cell(builder, f"{row['solution_error']:.2e}")
                     _write_table_cell(builder, f"{row['residual']:.2e}")

@@ -2163,9 +2163,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert any(challenge in event for event in builder.events)
     assert (
         "table:lcp_representative_solver_details:Problem,Solver,Route,Status,"
-        "Iterations,Error,Residual,Complementarity,us"
+        "Contract,Iterations,Error,Residual,Complementarity,us"
         in builder.events
     )
+    assert "text:OK" in builder.events
     assert (
         "table:lcp_solver_selection_guide:Family,Solvers,Best fit,Strength,"
         "Tradeoff,Evidence cue"
