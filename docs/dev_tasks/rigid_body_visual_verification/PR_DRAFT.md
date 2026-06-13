@@ -3,7 +3,9 @@
 Use this as the PR body seed after the branch is pushed with maintainer
 approval. Keep the durable source of truth in
 `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`,
-`python/examples/demos/README.md`, and the generated capture manifests.
+`python/examples/demos/README.md`, and the generated capture manifests. Use
+`docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` for the
+current evidence-to-requirement map and remaining external gates.
 
 ## Summary
 
@@ -65,6 +67,8 @@ rigid-body visual verification surface for the current cycle.
   `guidance_complete=true`, 1004 PNG frames).
 - Static review-index asset audit: 0 missing local assets for both current
   review indexes.
+- Completion audit:
+  `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
 
 ## Breaking Changes
 

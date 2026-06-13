@@ -999,6 +999,10 @@ Evidence supporting readiness:
   maintainer-facing PR body seed for the current branch. It points back to the
   durable sidecar, py-demos README, generated manifests, current review-index
   artifacts, and required acceptance checkbox.
+- `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` maps the
+  original objective to current evidence and records the remaining external
+  gates: push/PR approval, DART 7.0 milestone, maintainer acceptance, and
+  same-PR dev-task cleanup.
 - The user-facing `python/examples/demos/README.md` describes the same ordered
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.
@@ -1043,6 +1047,8 @@ Remaining before retirement:
   selected, are the completed scope for this dev task.
 - Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
   body seed after push/PR creation is explicitly approved.
+- Use `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` to
+  avoid conflating local review readiness with completed maintainer acceptance.
 - If accepted, do the cleanup in the completing PR: add only a short durable
   close-out note if the sidecar or Python README still lacks it, then
   `git rm -r docs/dev_tasks/rigid_body_visual_verification`.
@@ -2469,11 +2475,14 @@ passed and `git diff --check` was clean.
    HEAD and passed local asset-link audits.
 4. Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
    body seed once push/PR creation is explicitly approved.
-5. Do not add new numbered rows unless a public API gap has been resolved and
+5. Check `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
+   before claiming completion; local evidence is review-ready but external
+   acceptance is still missing.
+6. Do not add new numbered rows unless a public API gap has been resolved and
    the durable PLAN-103 scope is updated first.
-6. Retire this dev-task folder only if the maintainer explicitly accepts the
+7. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-7. Do not push again unless the user explicitly approves pushing in that
+8. Do not push again unless the user explicitly approves pushing in that
    session; before pushing a PR branch, merge latest base rather than rebasing.
 
 ## Commit And Push Notes

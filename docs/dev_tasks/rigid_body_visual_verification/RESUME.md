@@ -91,6 +91,10 @@ Resume from this state:
   checkbox is checked because `CHANGELOG.md` already records the DART 7 rigid
   workflow command, review packet, related-evidence groups, replay metadata,
   and scene additions.
+- Use `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` to
+  distinguish proven local review readiness from missing external gates:
+  push/PR approval, DART 7.0 milestone, maintainer acceptance, and same-PR
+  dev-task cleanup.
   If more local progress is requested before pushing/review, audit the
   API-deferred gaps rather than adding speculative numbered rows.
 
@@ -106,6 +110,7 @@ Files touched by this row-36 slice:
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
 - `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+- `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
 
 Row-36 loop-closure slice:
 
@@ -1166,8 +1171,10 @@ same completing PR. The direct rigid-body impulse, sleep/wake or island
 activation, and loop-closure compliance rows remain deferred until public
 `dartpy` APIs exist. Use
 `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR body seed
-after push/PR creation is explicitly approved. Do not push without explicit
-approval in the session that performs the push.
+after push/PR creation is explicitly approved, and check
+`docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` before
+claiming completion. Do not push without explicit approval in the session that
+performs the push.
 
 Replay capture-metadata checks for this slice:
 
