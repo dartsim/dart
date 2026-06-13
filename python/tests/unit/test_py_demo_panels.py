@@ -750,11 +750,69 @@ def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
                     "category,solver,lcp_dimension,contact_count,contract_ok,"
                     "iterations,residual,complementarity,bound_violation,"
                     "solver_supports_boxed,solver_supports_problem,"
-                    "problem_type_boxed"
+                    "problem_type_standard,problem_type_boxed,"
+                    "problem_type_friction_index,problem_type_invalid"
                 ),
                 (
                     "Boxed,Lemke,12,,1,0,0,0,0,"
-                    f"{solver_supports_boxed},{solver_supports_problem},1"
+                    f"{solver_supports_boxed},{solver_supports_problem},0,1,0,0"
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("category", "problem_type_counters", "expected_error"),
+    [
+        (
+            "Unknown",
+            "0,1,0,0",
+            "unknown LCP performance profile evidence category: 'Unknown'",
+        ),
+        (
+            "Boxed",
+            "1,0,0,0",
+            "mismatched LCP performance profile evidence row: "
+            "Boxed/Dantzig has problem_type_standard=1",
+        ),
+        (
+            "Boxed",
+            "0,1,0,1",
+            "mismatched LCP performance profile evidence row: "
+            "Boxed/Dantzig has problem_type_invalid=1",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    category: str,
+    problem_type_counters: str,
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    evidence_path.write_text(
+        "\n".join(
+            [
+                (
+                    "category,solver,lcp_dimension,contact_count,contract_ok,"
+                    "iterations,residual,complementarity,bound_violation,"
+                    "solver_supports_standard,solver_supports_boxed,"
+                    "solver_supports_friction_index,solver_supports_problem,"
+                    "problem_type_standard,problem_type_boxed,"
+                    "problem_type_friction_index,problem_type_invalid"
+                ),
+                (
+                    f"{category},Dantzig,12,,1,0,0,0,0,1,1,1,1,"
+                    f"{problem_type_counters}"
                 ),
             ]
         ),

@@ -396,6 +396,9 @@ _PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS = {
     "Boxed": "problem_type_boxed",
     "FrictionIndex": "problem_type_friction_index",
 }
+_PROFILE_PROBLEM_TYPE_FIELDS = tuple(_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS.values()) + (
+    "problem_type_invalid",
+)
 
 
 def _format_evidence_int_values(values: set[int]) -> str:
@@ -438,10 +441,21 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
             "unsupported LCP performance profile evidence row: "
             f"{surface}/{solver} has solver_supports_problem=0"
         )
-    if _as_int_counter(row, problem_type_field) != 1:
+    problem_type_sum = 0
+    for field in _PROFILE_PROBLEM_TYPE_FIELDS:
+        value = _as_int_counter(row, field)
+        expected = 1 if field == problem_type_field else 0
+        if value == 1:
+            problem_type_sum += 1
+        if value != expected:
+            raise RuntimeError(
+                "mismatched LCP performance profile evidence row: "
+                f"{surface}/{solver} has {field}={value}"
+            )
+    if problem_type_sum != 1:
         raise RuntimeError(
             "mismatched LCP performance profile evidence row: "
-            f"{surface}/{solver} has {problem_type_field}=0"
+            f"{surface}/{solver} problem type counters are not one-hot"
         )
 
 
