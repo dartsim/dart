@@ -1448,6 +1448,12 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     }
     assert all(row["contract_ok"] for row in problem_rows)
     assert {row["status"] for row in problem_rows} <= {"Success", "MaxIterations"}
+    assert {
+        row["solve_route"] for row in problem_rows if row["native_supported"]
+    } == {"native"}
+    assert {
+        row["solve_route"] for row in problem_rows if not row["native_supported"]
+    } == {"delegated"}
     for case_name, expected_count in expected_problem_counts.items():
         summary_row = problem_summary_by_case[case_name]
         assert summary_row["solver_count"] == expected_count
