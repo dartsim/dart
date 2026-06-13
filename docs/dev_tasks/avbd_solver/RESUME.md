@@ -12,6 +12,62 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
+## Fresh Codex Goal Prompt
+
+Copy/paste this as the first user prompt for a new Codex session:
+
+```text
+Resume PLAN-104 AVBD solver work in /home/jeongseok/dev/jslee02/dartsim/dart/task_4.
+
+Goal: continue from the single consolidated non-main branch
+avbd/source-row-extraction-precheck. This branch contains the ongoing AVBD work,
+PR #2977's local source-row performance work, the latest friction-sweep evidence,
+the branch-consolidation handoff docs, and a merge of the latest origin/main as
+of the handoff. Do not resume from deleted local branch names, remote archival
+branches, or stashes unless I explicitly ask for forensic recovery.
+
+Start by reading:
+- AGENTS.md
+- docs/ai/principles.md
+- docs/dev_tasks/avbd_solver/README.md
+- docs/dev_tasks/avbd_solver/RESUME.md
+- docs/plans/104-vertex-block-descent-solver.md
+- docs/plans/104-vertex-block-descent-solver/avbd-demo-corpus.md
+
+Then verify:
+- git status --short --branch
+- git branch -vv
+- git log --oneline --decorate -5
+- git stash list
+- git fetch origin, then merge origin/main before any push
+
+Current north star: advance PLAN-104 AVBD toward source-shaped articulated rigid
+and deformable row coverage with real evidence against the native source corpus.
+Keep claims narrow. Do not claim a source-demo CPU win, GPU parity,
+same-hardware paper-number match, broad fracture/breakable-wall coverage, or
+all-coefficient friction win unless tracked artifacts directly prove it.
+
+Current evidence: the zero-limit Coulomb contact-friction row skip is landed on
+this branch. The refreshed friction-coefficient packet records DART faster than
+the native source runner for max friction 0.5, 1.0, 2.5, and 5.0, but still
+slower for the frictionless max friction 0 case. GPU parity remains open.
+
+Preferred next bounded work: choose one evidence-backed PLAN-104 gap, ideally
+the frictionless max-friction-0 CPU gap or GPU parity preparation, and make a
+surgical change with focused validation. If the best next step is only an audit,
+keep it read-only and update the handoff docs with the evidence.
+
+Rules:
+- Use pixi run tasks.
+- Run pixi run lint before every commit.
+- Run build/tests appropriate to touched code.
+- Before every push, merge latest origin/main into the branch.
+- Do not mutate PRs, rerun hosted CI, delete remote branches, or drop stashes
+  without explicit user approval.
+- Preserve the old remote checkpoint refs as archival; do not re-expand them
+  into local working branches for normal resume.
+```
+
 Current slice: skip Coulomb tangent-row inventory creation when every active
 contact in a rigid contact manifold has a zero friction-force limit. This keeps
 normal rows alive, removes useless zero-limit friction rows for frictionless
@@ -30,6 +86,9 @@ Current branch-consolidation snapshot:
   `2f15556ef8b Record AVBD zero-limit friction handoff push`; current
   local/upstream HEAD should be the latest pushed commit on
   `avbd/source-row-extraction-precheck`.
+- Latest `origin/main` was merged into this branch before committing the fresh
+  Codex goal prompt. Refresh and merge `origin/main` again before any future
+  push.
 - Current branch had no associated GitHub PR in the latest read-only
   `gh pr list --head "$(git branch --show-current)"` snapshot.
 - The zero-limit friction-row skip slice was pushed to
