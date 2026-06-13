@@ -1690,6 +1690,16 @@ def _coverage_label(row: dict[str, Any]) -> str:
     return supported_text
 
 
+def _smoke_coverage_label(row: dict[str, Any]) -> str:
+    return _coverage_label(
+        {
+            "standard": row["native_standard"],
+            "boxed": row["native_boxed"],
+            "findex": row["native_findex"],
+        }
+    )
+
+
 def _solver_manifest_summary() -> dict[str, int]:
     return {
         "solver_count": len(_SOLVER_SUPPORT_ROWS),
@@ -2614,11 +2624,22 @@ def build() -> SceneSetup:
         if builder.collapsing_header("Standalone solver smoke", default_open=False):
             if builder.begin_table(
                 "lcp_standalone_solver_smoke",
-                ["Solver", "Route", "Status", "Error", "Residual", "Complementarity"],
+                [
+                    "Solver",
+                    "Family",
+                    "Native coverage",
+                    "Route",
+                    "Status",
+                    "Error",
+                    "Residual",
+                    "Complementarity",
+                ],
             ):
                 for row in standalone_solver_rows:
                     builder.table_next_row()
                     _write_table_cell(builder, row["name"])
+                    _write_table_cell(builder, row["family"])
+                    _write_table_cell(builder, _smoke_coverage_label(row))
                     _write_table_cell(builder, row["solve_route"])
                     _write_table_cell(
                         builder, f"{row['status']} ({row['iterations']} it)"

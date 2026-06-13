@@ -2119,10 +2119,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
-        "table:lcp_standalone_solver_smoke:Solver,Route,Status,Error,Residual,"
-        "Complementarity"
+        "table:lcp_standalone_solver_smoke:Solver,Family,Native coverage,Route,"
+        "Status,Error,Residual,Complementarity"
         in builder.events
     )
+    assert f"text:{smoke_by_name['Dantzig']['family']}" in builder.events
     assert "text:delegated" in builder.events
     assert f"text:{smoke_by_name['Dantzig']['residual']:.2e}" in builder.events
     assert (
