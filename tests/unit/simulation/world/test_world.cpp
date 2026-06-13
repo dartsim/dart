@@ -2908,6 +2908,57 @@ void configureRigidAvbdDistanceSpringRowsScene(dart::simulation::World& world)
       /*stiffness=*/200.0);
 }
 
+void configureRigidAvbdRevoluteMotorRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("rigid_avbd_motor_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("rigid_avbd_revolute_motor_link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "rigid_avbd_revolute_motor", base, link, Eigen::Vector3d::UnitZ());
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -500.0),
+      Eigen::VectorXd::Constant(1, 500.0));
+}
+
+void configureRigidAvbdPrismaticMotorRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("rigid_avbd_slider_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Eigen::Vector3d::UnitZ();
+  auto link
+      = world.addRigidBody("rigid_avbd_prismatic_motor_link", linkOptions);
+
+  auto joint = world.addRigidBodyPrismaticJoint(
+      "rigid_avbd_prismatic_motor", base, link, Eigen::Vector3d::UnitZ());
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.6));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -400.0),
+      Eigen::VectorXd::Constant(1, 400.0));
+}
+
 } // namespace
 
 // Test World construction
@@ -5219,6 +5270,20 @@ TEST(World, RigidAvbdRegistryStorageRebuildsAfterClear)
       false,
       false);
   expectRigidAvbdRegistryStorageRebuildsAfterClear(
+      "rigid AVBD revolute motor rows",
+      configureRigidAvbdRevoluteMotorRowsScene,
+      false,
+      true,
+      false,
+      false);
+  expectRigidAvbdRegistryStorageRebuildsAfterClear(
+      "rigid AVBD prismatic motor rows",
+      configureRigidAvbdPrismaticMotorRowsScene,
+      false,
+      true,
+      false,
+      false);
+  expectRigidAvbdRegistryStorageRebuildsAfterClear(
       "rigid AVBD distance-spring rows",
       configureRigidAvbdDistanceSpringRowsScene,
       false,
@@ -6608,6 +6673,12 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid AVBD revolute motor rows",
+      configureRigidAvbdRevoluteMotorRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid AVBD prismatic motor rows",
+      configureRigidAvbdPrismaticMotorRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid AVBD distance-spring rows",
       configureRigidAvbdDistanceSpringRowsScene);
 
@@ -7881,6 +7952,40 @@ TEST(World, RigidAvbdDistanceSpringRowsAreActiveWithoutContacts)
   EXPECT_LT(link->getLinearVelocity().x(), 0.0);
 }
 
+TEST(World, RigidAvbdRevoluteMotorRowsAreActiveWithoutContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureRigidAvbdRevoluteMotorRowsScene(world);
+  auto link = world.getRigidBody("rigid_avbd_revolute_motor_link");
+  ASSERT_TRUE(link.has_value());
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+  world.step();
+
+  EXPECT_GT(link->getAngularVelocity().z(), 0.05);
+  EXPECT_LT(link->getAngularVelocity().z(), 1.25);
+}
+
+TEST(World, RigidAvbdPrismaticMotorRowsAreActiveWithoutContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureRigidAvbdPrismaticMotorRowsScene(world);
+  auto link = world.getRigidBody("rigid_avbd_prismatic_motor_link");
+  ASSERT_TRUE(link.has_value());
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+  world.step();
+
+  EXPECT_GT(link->getLinearVelocity().z(), 0.05);
+  EXPECT_LT(link->getLinearVelocity().z(), 1.0);
+}
+
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
 {
   namespace sx = dart::simulation;
@@ -7966,6 +8071,12 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
       "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid AVBD revolute motor rows",
+      configureRigidAvbdRevoluteMotorRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid AVBD prismatic motor rows",
+      configureRigidAvbdPrismaticMotorRowsScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "rigid AVBD distance-spring rows",
       configureRigidAvbdDistanceSpringRowsScene);

@@ -1,5 +1,62 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Motor Row Gates)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR. It includes `origin/main` at
+`a122e8e0f3e` via local merge commit `57c8b1cd608`; a fresh
+`git fetch origin main && git merge origin/main` reported "Already up to date."
+
+Latest local slice: World-level rigid AVBD velocity-motor scenes now exercise
+both angular motor rows from a revolute joint and linear motor rows from a
+prismatic joint through the same baked-step allocation gates used for contact,
+fixed-joint, and distance-spring rows.
+
+The proof has these parts:
+
+- `configureRigidAvbdRevoluteMotorRowsScene(...)` builds a collision-free
+  rigid AVBD revolute velocity actuator scene and verifies the motor row moves
+  the child body;
+- `configureRigidAvbdPrismaticMotorRowsScene(...)` builds the corresponding
+  prismatic velocity actuator scene and verifies the linear motor row moves the
+  child body;
+- `World.RigidAvbdRegistryStorageRebuildsAfterClear` now includes both motor
+  scenes, proving the point-joint ECS storage still rebuilds cleanly after
+  `World::clear()`;
+- `World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths` now includes
+  both motor scenes, proving baked World steps do not grow the World base
+  allocator for reserved rigid AVBD motor-row paths;
+- `World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap` now includes both
+  motor scenes, proving the baked rigid AVBD motor-row World paths do not touch
+  the global heap.
+
+This is an evidence slice. It does not change production allocator plumbing,
+does not claim every AVBD helper overload is allocation-free, and does not
+expand the claim beyond the baked World-level rigid AVBD motor-row paths under
+the tested scenes.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+pixi run build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.RigidAvbdRevoluteMotorRowsAreActiveWithoutContacts:World.RigidAvbdPrismaticMotorRowsAreActiveWithoutContacts:World.RigidAvbdRegistryStorageRebuildsAfterClear:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap'
+pixi run lint
+git diff --check
+```
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Step Fallback Scratch)
 
 Resume from exactly one branch:
