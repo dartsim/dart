@@ -3393,7 +3393,7 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
     mixedDiagnostics
         = evaluateReducedAffineFemMixedDiagnostics(deformableFixture);
     coupledSolve = solveReducedAffineFemCoupledContact(deformableFixture);
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 3u || lastDiagnostics.nodeCount != 31u
         || !std::isfinite(deformableFixture.minClothHeight())
         || !mixedDiagnostics.finite || mixedDiagnostics.candidateCount == 0u
         || mixedDiagnostics.activeBarrierCount == 0u || !coupledSolve.valid

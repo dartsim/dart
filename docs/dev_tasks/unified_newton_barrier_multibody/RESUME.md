@@ -2,6 +2,46 @@
 
 ## Current Reality (2026-06-13)
 
+Latest ABD/FEM external surface CCD sidecar CPU packet checkpoint
+(2026-06-13): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint repairs and tightens the reduced
+`abd-fem-coupling` CPU benchmark row after the deformable sidecar inherited the
+lying-flat external CCD witnesses. The benchmark now treats the reduced FEM
+cloth plus two inter-body witness deformables as the expected 3-body/31-node
+deformable sidecar inside
+`BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step`, and
+`scripts/write_plan083_cpu_scene_packet.py` requires positive inter-body,
+static-rigid, and moving-rigid surface CCD witness counters for
+`scene=abd_fem_coupling`. The latest median packet records 68 self-surface
+candidate builds, 660 point-triangle CCD checks, 1,224 edge-edge CCD checks,
+67 inter-body candidate builds, 33 inter-body hits and one limited step, 35
+static-rigid candidate builds, 68 point-triangle checks, 102 edge-edge checks,
+34 static-rigid hits and one limited step, plus 3 moving-rigid candidate
+builds, 2 point-triangle checks, 41 edge-edge checks, 1 moving-rigid hit, and
+one limited step with `failed_steps=0`.
+
+This is still reduced affine pair runtime-step, deformable IPC sidecar, and
+affine/deformable coupled contact micro-solve evidence only. It does not prove
+full runtime affine/FEM coupling, 1.1M-triangle assets, accepted reference
+timings, paper-scale reproduction, GPU `World::step`, or any speedup gate.
+
+Current validation passed:
+
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run bm-plan083-cpu-abd-fem-coupling-packet`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py tests/test_plan083_cpu_scene_corpus.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-all`
+
 Latest Candy static/moving-rigid surface CCD CPU packet checkpoint (2026-06-13):
 work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
 #2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
@@ -104,10 +144,11 @@ records 33/68/76 hits with `failed_steps=0`.
 This is a reduced CPU diagnostic packet only. It does not prove paper-scale
 external contact, production runtime scene filtering, analytic curved CCD, GPU
 `World::step`, full runtime affine/FEM coupling, or any speedup gate. The
-later lying-flat inter-body/static/moving-rigid witnesses and Candy
-static/moving-rigid witnesses are the only broader figure rows with nonzero
-external candidate/check/hit counters so far; other figure/demo rows still have zero
-external candidate/check/hit counts in their mixed fixtures.
+later lying-flat inter-body/static/moving-rigid witnesses, Candy
+static/moving-rigid witnesses, and ABD/FEM external sidecar witnesses are the
+only broader rows with nonzero external candidate/check/hit counters so far;
+other figure/demo rows still have zero external candidate/check/hit counts in
+their mixed fixtures.
 
 Latest CPU scene external surface-contact packet counters checkpoint
 (2026-06-13): work continued locally on
@@ -192,9 +233,14 @@ claiming paper-scale reproduction. Fresh packet evidence records:
   median row.
 - `candy`: 3 self-surface candidate builds, 64 point-triangle CCD checks, 207
   edge-edge CCD checks, 0 CCD hits, and 0 limited steps on the median row.
-- `abd_fem_coupling`: the deformable `World::step` side records the same 37 /
-  1,038 / 1,852 self-surface diagnostic counts while the existing affine/FEM
-  mixed-candidate and coupled micro-solve evidence remains bounded.
+- `abd_fem_coupling`: at that checkpoint, the deformable `World::step` side
+  recorded the same 37 / 1,038 / 1,852 self-surface diagnostic counts while the
+  existing affine/FEM mixed-candidate and coupled micro-solve evidence remained
+  bounded.
+
+The later ABD/FEM external sidecar checkpoint above supersedes the current
+`abd_fem_coupling` counts after the row inherited the lying-flat witness
+sidecar.
 
 This is CPU observability and reduced packet evidence only. It does not prove
 GPU `World::step`, production scene-level GPU contact candidate construction,

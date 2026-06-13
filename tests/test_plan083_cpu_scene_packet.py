@@ -92,6 +92,53 @@ def _surface_contact_counters() -> dict[str, object]:
     }
 
 
+def _abd_fem_surface_contact_counters() -> dict[str, object]:
+    counters = _surface_contact_counters()
+    counters.update(
+        {
+            "line_search_trials": 68,
+            "surface_contact_candidate_builds": 68,
+            "surface_contact_point_triangle_candidates": 660,
+            "surface_contact_edge_edge_candidates": 1224,
+            "surface_contact_ccd_point_triangle_checks": 660,
+            "surface_contact_ccd_edge_edge_checks": 1224,
+            "surface_contact_ccd_hits": 1,
+            "surface_contact_ccd_limited_steps": 0,
+            "inter_body_surface_contact_candidate_builds": 67,
+            "inter_body_surface_contact_point_triangle_candidates": 33,
+            "inter_body_surface_contact_ccd_point_triangle_checks": 33,
+            "inter_body_surface_contact_ccd_hits": 33,
+            "inter_body_surface_contact_ccd_limited_steps": 1,
+            "inter_body_surface_contact_ccd_zero_step_count": 32,
+            "static_rigid_surface_ccd_snapshot_builds": 1,
+            "static_rigid_surface_ccd_box_count": 1,
+            "static_rigid_surface_ccd_triangle_count": 12,
+            "static_rigid_surface_ccd_edge_count": 12,
+            "static_rigid_surface_ccd_candidate_builds": 35,
+            "static_rigid_surface_ccd_point_triangle_candidates": 68,
+            "static_rigid_surface_ccd_edge_edge_candidates": 102,
+            "static_rigid_surface_ccd_point_triangle_checks": 68,
+            "static_rigid_surface_ccd_edge_edge_checks": 102,
+            "static_rigid_surface_ccd_hits": 34,
+            "static_rigid_surface_ccd_limited_steps": 1,
+            "static_rigid_surface_ccd_zero_step_count": 62,
+            "moving_rigid_surface_ccd_snapshot_builds": 1,
+            "moving_rigid_surface_ccd_box_count": 1,
+            "moving_rigid_surface_ccd_sample_count": 10,
+            "moving_rigid_surface_ccd_triangle_count": 120,
+            "moving_rigid_surface_ccd_edge_count": 120,
+            "moving_rigid_surface_ccd_candidate_builds": 3,
+            "moving_rigid_surface_ccd_point_triangle_candidates": 2,
+            "moving_rigid_surface_ccd_edge_edge_candidates": 41,
+            "moving_rigid_surface_ccd_point_triangle_checks": 2,
+            "moving_rigid_surface_ccd_edge_edge_checks": 41,
+            "moving_rigid_surface_ccd_hits": 1,
+            "moving_rigid_surface_ccd_limited_steps": 1,
+        }
+    )
+    return counters
+
+
 def _nunchaku_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step_median",
@@ -993,25 +1040,25 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
         _abd_comparison_packet(
             "abd_fem_coupling",
             27,
-            deformable_body_count=1,
-            deformable_node_count=24,
+            deformable_body_count=3,
+            deformable_node_count=31,
             deformable_edge_count=68,
             surface_triangle_count=30,
-            deformable_solver_iterations=4,
-            min_cloth_height_m=0.055,
+            deformable_solver_iterations=6,
+            min_cloth_height_m=0.0763259,
             affine_fem_candidate_diagnostics_measured=1,
-            affine_fem_mixed_candidate_count=12,
-            affine_fem_mixed_active_barrier_count=4,
-            affine_fem_mixed_min_squared_distance=1e-4,
-            affine_fem_mixed_barrier_value=0.3,
+            affine_fem_mixed_candidate_count=26,
+            affine_fem_mixed_active_barrier_count=26,
+            affine_fem_mixed_min_squared_distance=2.87308e-4,
+            affine_fem_mixed_barrier_value=0.00167175,
             affine_fem_coupled_contact_measured=1,
             affine_fem_coupled_solve_converged=1,
-            affine_fem_coupled_objective_decrease=0.2,
-            affine_fem_coupled_initial_gradient_norm=0.4,
-            affine_fem_coupled_final_gradient_norm=0.02,
-            affine_fem_coupled_affine_displacement_norm=0.01,
-            affine_fem_coupled_deformable_displacement_norm=0.002,
-            **_surface_contact_counters(),
+            affine_fem_coupled_objective_decrease=5.6378e-5,
+            affine_fem_coupled_initial_gradient_norm=0.0106202,
+            affine_fem_coupled_final_gradient_norm=3.27139e-8,
+            affine_fem_coupled_affine_displacement_norm=0.0100439,
+            affine_fem_coupled_deformable_displacement_norm=0.0034389,
+            **_abd_fem_surface_contact_counters(),
         ),
         max_equality_residual=1e-8,
         scene="abd_fem_coupling",
@@ -1023,21 +1070,28 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
     assert row["paper_scale"] is False
     assert (
         row["runtime_path"]
-        == "detail affine point-triangle runtime step plus deformable IPC World::step"
+        == "detail affine point-triangle runtime step plus deformable IPC World::step external surface CCD sidecar"
     )
     assert row["affine_body_count"] == 54
     assert row["dynamic_pair_count"] == 27
-    assert row["deformable_body_count"] == 1
-    assert row["deformable_node_count"] == 24
-    assert row["line_search_trials"] == 6
-    assert row["surface_contact_candidate_builds"] == 6
+    assert row["deformable_body_count"] == 3
+    assert row["deformable_node_count"] == 31
+    assert row["line_search_trials"] == 68
+    assert row["surface_contact_candidate_builds"] == 68
     assert row["surface_contact_ccd_hits"] == 1
-    assert row["inter_body_surface_contact_candidate_builds"] == 0
-    assert row["static_rigid_surface_ccd_candidate_builds"] == 0
-    assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["inter_body_surface_contact_candidate_builds"] == 67
+    assert row["inter_body_surface_contact_ccd_hits"] == 33
+    assert row["inter_body_surface_contact_ccd_limited_steps"] == 1
+    assert row["static_rigid_surface_ccd_candidate_builds"] == 35
+    assert row["static_rigid_surface_ccd_hits"] == 34
+    assert row["static_rigid_surface_ccd_limited_steps"] == 1
+    assert row["moving_rigid_surface_ccd_candidate_builds"] == 3
+    assert row["moving_rigid_surface_ccd_edge_edge_checks"] == 41
+    assert row["moving_rigid_surface_ccd_hits"] == 1
+    assert row["moving_rigid_surface_ccd_limited_steps"] == 1
     assert row["affine_fem_candidate_diagnostics_measured"] is True
-    assert row["affine_fem_mixed_candidate_count"] == 12
-    assert row["affine_fem_mixed_active_barrier_count"] == 4
+    assert row["affine_fem_mixed_candidate_count"] == 26
+    assert row["affine_fem_mixed_active_barrier_count"] == 26
     assert row["affine_fem_coupled_contact_measured"] is True
     assert row["affine_fem_coupled_solve_converged"] is True
     assert row["wall_time_ns"] == 6.0e6
@@ -1479,24 +1533,60 @@ def test_plan083_cpu_scene_packet_rejects_abd_fem_without_coupled_contact() -> N
             _abd_comparison_packet(
                 "abd_fem_coupling",
                 27,
-                deformable_body_count=1,
-                deformable_node_count=24,
+                deformable_body_count=3,
+                deformable_node_count=31,
                 deformable_edge_count=68,
                 surface_triangle_count=30,
-                deformable_solver_iterations=4,
-                min_cloth_height_m=0.055,
+                deformable_solver_iterations=6,
+                min_cloth_height_m=0.0763259,
                 affine_fem_candidate_diagnostics_measured=1,
-                affine_fem_mixed_candidate_count=12,
-                affine_fem_mixed_active_barrier_count=4,
-                affine_fem_mixed_min_squared_distance=1e-4,
-                affine_fem_mixed_barrier_value=0.3,
+                affine_fem_mixed_candidate_count=26,
+                affine_fem_mixed_active_barrier_count=26,
+                affine_fem_mixed_min_squared_distance=2.87308e-4,
+                affine_fem_mixed_barrier_value=0.00167175,
                 affine_fem_coupled_contact_measured=0,
                 affine_fem_coupled_solve_converged=1,
-                affine_fem_coupled_objective_decrease=0.2,
-                affine_fem_coupled_initial_gradient_norm=0.4,
-                affine_fem_coupled_final_gradient_norm=0.02,
-                affine_fem_coupled_affine_displacement_norm=0.01,
-                affine_fem_coupled_deformable_displacement_norm=0.002,
+                affine_fem_coupled_objective_decrease=5.6378e-5,
+                affine_fem_coupled_initial_gradient_norm=0.0106202,
+                affine_fem_coupled_final_gradient_norm=3.27139e-8,
+                affine_fem_coupled_affine_displacement_norm=0.0100439,
+                affine_fem_coupled_deformable_displacement_norm=0.0034389,
+                **_abd_fem_surface_contact_counters(),
+            ),
+            max_equality_residual=1e-8,
+            scene="abd_fem_coupling",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_abd_fem_without_external_ccd() -> None:
+    module = _load_module()
+
+    counters = _abd_fem_surface_contact_counters()
+    counters["inter_body_surface_contact_ccd_hits"] = 0
+    with pytest.raises(module.Plan083CpuScenePacketError, match="external surface CCD"):
+        module.make_packet(
+            _abd_comparison_packet(
+                "abd_fem_coupling",
+                27,
+                deformable_body_count=3,
+                deformable_node_count=31,
+                deformable_edge_count=68,
+                surface_triangle_count=30,
+                deformable_solver_iterations=6,
+                min_cloth_height_m=0.0763259,
+                affine_fem_candidate_diagnostics_measured=1,
+                affine_fem_mixed_candidate_count=26,
+                affine_fem_mixed_active_barrier_count=26,
+                affine_fem_mixed_min_squared_distance=2.87308e-4,
+                affine_fem_mixed_barrier_value=0.00167175,
+                affine_fem_coupled_contact_measured=1,
+                affine_fem_coupled_solve_converged=1,
+                affine_fem_coupled_objective_decrease=5.6378e-5,
+                affine_fem_coupled_initial_gradient_norm=0.0106202,
+                affine_fem_coupled_final_gradient_norm=3.27139e-8,
+                affine_fem_coupled_affine_displacement_norm=0.0100439,
+                affine_fem_coupled_deformable_displacement_norm=0.0034389,
+                **counters,
             ),
             max_equality_residual=1e-8,
             scene="abd_fem_coupling",

@@ -1657,13 +1657,15 @@ def _make_abd_fem_coupling_packet(
         row, "affine_fem_coupled_deformable_displacement_norm"
     )
 
-    if deformable_body_count != 1:
+    if deformable_body_count != 3:
         raise Plan083CpuScenePacketError(
-            f"expected 1 reduced FEM body, got {deformable_body_count}"
+            "expected reduced FEM cloth plus two inter-body witness "
+            f"deformable bodies, got {deformable_body_count}"
         )
-    if deformable_node_count != 24:
+    if deformable_node_count != 31:
         raise Plan083CpuScenePacketError(
-            f"expected 24 reduced FEM nodes, got {deformable_node_count}"
+            "expected 24 reduced FEM cloth nodes plus 7 inter-body witness "
+            f"nodes, got {deformable_node_count}"
         )
     if deformable_edge_count < 68:
         raise Plan083CpuScenePacketError(
@@ -1681,6 +1683,13 @@ def _make_abd_fem_coupling_packet(
         raise Plan083CpuScenePacketError(
             f"reduced FEM cloth penetrated below z=0: {min_cloth_height:.3g}"
         )
+    counters = _surface_contact_runtime_counters(row)
+    for key in EXTERNAL_SURFACE_CCD_REQUIRED_COUNTER_KEYS:
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced ABD/FEM packet needs positive external surface CCD "
+                f"witness counter {key}"
+            )
     if candidate_diagnostics_measured != 1.0:
         raise Plan083CpuScenePacketError(
             "reduced ABD/FEM packet must measure mixed candidate diagnostics"
@@ -1730,14 +1739,14 @@ def _make_abd_fem_coupling_packet(
         {
             "runtime_path": (
                 "detail affine point-triangle runtime step plus deformable IPC "
-                "World::step"
+                "World::step external surface CCD sidecar"
             ),
             "deformable_body_count": deformable_body_count,
             "deformable_node_count": deformable_node_count,
             "deformable_edge_count": deformable_edge_count,
             "surface_triangle_count": surface_triangle_count,
             "deformable_solver_iterations": deformable_solver_iterations,
-            **_surface_contact_runtime_counters(row),
+            **counters,
             "min_cloth_height_m": min_cloth_height,
             "affine_fem_candidate_diagnostics_measured": True,
             "affine_fem_mixed_candidate_count": mixed_candidate_count,
@@ -1753,8 +1762,9 @@ def _make_abd_fem_coupling_packet(
             "affine_fem_coupled_deformable_displacement_norm": coupled_deformable_displacement_norm,
             "limitation_status": (
                 "Reduced affine runtime-step, deformable IPC smoke, and "
-                "affine/deformable coupled contact micro-solve evidence only; "
-                "full runtime affine/FEM coupling, 1.1M-triangle assets, and "
+                "affine/deformable coupled contact micro-solve evidence with "
+                "a reduced external surface CCD witness sidecar only; full "
+                "runtime affine/FEM coupling, 1.1M-triangle assets, and "
                 "paper-scale reproduction remain planned."
             ),
         }
