@@ -2,6 +2,26 @@
 
 ## Current Handoff (2026-06-12)
 
+Stop/push handoff: the current session was redirected to stop code changes and
+stop further verification, update only the dev-task handoff docs, merge latest
+`origin/main`, and push to `origin`. The running broad validation command
+`timeout 7200s pixi run test-all --skip-lint --skip-build` was terminated on
+request while inside the simulation-labeled ctest stage. Its visible progress
+had already passed lint, Release configure/build, the direct re-run of
+`pixi run build-tests ON Release`, and the 219/219 C++ unit tests; visible
+simulation progress was 52/65 when output last streamed. Treat this as a
+stopped verification attempt, not a completed `test-all` pass. CUDA validation
+was not started. The docs-only handoff refresh intentionally does not run
+additional verification because the user explicitly requested no further
+verification in this session.
+
+Latest merge state: `git fetch origin main && git merge --no-edit origin/main`
+reported `Already up to date`, so the branch remains aligned with the latest
+`origin/main` and the PR #2986 DART 7 architecture/work-packet harness before
+the handoff docs push. The user explicitly requested `push to origin` for this
+handoff; no PR creation, milestone mutation, CI rerun, or review-thread action
+was requested or approved by that push instruction.
+
 Latest local follow-up: fetched `origin/main` and merged it again; Git reported
 `Already up to date`, so this branch remains aligned with the PR #2986 DART 7
 architecture/work-packet harness. The native Filament `SIGBUS` blocker was

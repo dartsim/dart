@@ -7,6 +7,17 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest stop/push handoff: the current session was redirected to stop code
+changes and stop further verification, update only this handoff state, merge
+latest `origin/main`, push to `origin`, and stop. `git fetch origin main &&
+git merge --no-edit origin/main` reported `Already up to date`. The running
+`test-all` wrapper was terminated by request during the simulation-labeled ctest
+stage; it is not a completed validation pass. Visible progress before
+termination included a successful direct `pixi run build-tests ON Release`
+re-run, 219/219 C++ unit tests passed, and simulation output through 52/65
+visible tests. CUDA validation was not run. The handoff docs refresh therefore
+intentionally records no new green validation after the user stop instruction.
+
 ## Objective Requirements
 
 | Requirement                                                                                    | Evidence inspected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status                                        |
@@ -21,16 +32,19 @@ completion PR cleanup happen.
 | Keep durable docs current.                                                                     | PLAN-103 sidecar, `python/examples/demos/README.md`, `CHANGELOG.md`, `docs/dev_tasks/rigid_body_visual_verification/README.md`, `RESUME.md`, and `PR_DRAFT.md` record the current workflow, evidence, caveats, and PR-ready state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Proven locally                                |
 | Provide automated drift guards.                                                                | Focused docs/API drift guard, capture/review-index guard, and mandatory `pixi run lint` are recorded in the PR draft and recent local commits.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Proven locally for focused scope              |
 | Record the AI principle audit for substantial AI-assisted work.                                | This file and `PR_DRAFT.md` record the objective, assumptions, source-of-truth docs, public `pixi run ...` paths, evidence packets, and shared-state safety status.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Proven locally                                |
-| Open/publish maintainer review with DART 7.0 milestone.                                        | `gh pr list --head "$(git branch --show-current)"` currently returns no PR; branch is local-only and ahead of origin. Push and PR creation require explicit approval.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Missing external action                       |
+| Open/publish maintainer review with DART 7.0 milestone.                                        | `gh pr list --head "$(git branch --show-current)"` returned no PR before this handoff. The user explicitly requested pushing this branch to `origin`, but did not request PR creation, milestone mutation, CI rerun, or review-thread mutation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | PR/milestone external action still missing    |
 | Maintainer accepts the 36-row workflow plus optional 52-row packet as the completed scope.     | `PR_DRAFT.md` includes the explicit maintainer acceptance checkbox. No maintainer acceptance has been recorded in the current repository state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Missing external decision                     |
 | Retire the dev-task folder in the completing PR.                                               | `docs/dev_tasks/README.md` requires deletion in the completing PR after durable artifacts are promoted. This folder remains active because acceptance is not recorded yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Not yet done by design                        |
 
 ## Current Local Evidence
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Git state must be rechecked before acting; this audit was introduced after
-  the regenerated evidence and PR-draft commits were already local.
-- Current PR state: no PR for this branch from `gh pr list --head "$(git branch --show-current)"`
+- Latest merge check: `git fetch origin main && git merge --no-edit
+  origin/main` reported `Already up to date`.
+- Current PR state before this handoff push: no PR for this branch from
+  `gh pr list --head "$(git branch --show-current)"`
+- Stopped validation state: the interrupted `test-all` wrapper is not a pass;
+  rerun validation in a future session if requested.
 - Full review packet:
   `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
 - Optional review packet:
@@ -64,8 +78,9 @@ completion PR cleanup happen.
 - Evidence: current full and optional workflow manifests, review-index asset
   audits, focused pytest guards, and `pixi run lint` are recorded in the PR
   draft and this audit.
-- Shared-state safety: no push, PR creation, milestone mutation, review comment,
-  CI re-trigger, or merge is performed without explicit approval.
+- Shared-state safety: this handoff push is explicitly approved by the user.
+  PR creation, milestone mutation, review comments, CI re-triggers, and merges
+  still require explicit approval.
 
 ## Completion Decision
 
@@ -73,7 +88,7 @@ Do not mark the thread goal complete yet. The local rigid-body visual workflow
 is review-ready for the scoped public API surface, but final completion still
 requires:
 
-1. explicit approval to push and create/update the PR;
+1. explicit approval to create/update the PR;
 2. the PR milestone set to `DART 7.0`;
 3. maintainer acceptance that the maintained 36-row workflow plus optional
    52-row packet is the completed scope for this dev task; and

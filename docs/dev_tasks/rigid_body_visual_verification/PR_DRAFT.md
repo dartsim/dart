@@ -83,6 +83,14 @@ rigid-body visual verification surface for the current cycle.
   `resolved_solver_identity_count=16`, 1004 PNG frames).
 - Static review-index asset audit: 0 missing local assets for both current
   review indexes.
+- Stopped broad validation attempt, not a pass: after a first wrapper attempt
+  was interrupted during Release test build, direct
+  `pixi run build-tests ON Release` passed. A later
+  `timeout 7200s pixi run test-all --skip-lint --skip-build` attempt restarted
+  the full wrapper because the pixi task did not forward the flags; it was
+  terminated on user request during simulation-labeled ctest after visible
+  progress showed 219/219 C++ unit tests passed and simulation output through
+  52/65 visible tests. CUDA validation was not run after the stop instruction.
 - Completion audit:
   `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
 - AI principle audit: recorded in
