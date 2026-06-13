@@ -1,5 +1,91 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Standalone Problem Case Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `cdcec488d8d Guard LCP advanced parameter metadata`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   standalone problem-case guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `cdcec488d8d Guard LCP advanced parameter metadata`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-five commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now parses the full LCP demo standalone
+  representative problem-case table and checks case names, labels, surfaces,
+  support keys, challenges, `make_problem` function references, and tolerances.
+- The guard rejects stale or partial case metadata before the demo can render
+  misleading representative solver-suite rows, and rejects malformed case
+  entries with missing required keywords.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers the valid parser
+  path and stale duplicate, missing-field, surface/support, missing function,
+  tolerance, missing-surface, and malformed-entry failures.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'standalone_problem or representative_requirement or advanced_solver_parameter or solver_guidance'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+pixi run build
+nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused standalone-problem and adjacent roster tests: passed with 8 tests,
+  and passed again after `pixi run lint` reformatted
+  `scripts/check_lcp_solver_roster.py`.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full LCP roster unit file: passed with 40 tests.
+- `pixi run lint`: passed, including the LCP solver roster check and AI command
+  sync.
+- `pixi run build`: passed.
+- NVIDIA query: reported
+  `NVIDIA RTX 5000 Ada Generation Laptop GPU, 8.9`.
+- `pixi run -e cuda test-all`: passed end-to-end on that GPU. Its docs phase
+  emitted the known four `dartpy._world_render_bridge` autodoc warnings and
+  still passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, roster check, `pixi run lint`, `git diff --check`, and
+any broader gate warranted by the final diff. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Advanced Parameter Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

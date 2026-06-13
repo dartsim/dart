@@ -345,7 +345,12 @@ def parse_demo_standalone_problem_suite_label() -> str:
     return str(_literal_assignment(module, "_STANDALONE_PROBLEM_SUITE_LABEL"))
 
 
-def parse_demo_standalone_problem_case_names() -> list[str]:
+def parse_demo_function_names() -> set[str]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return {node.name for node in module.body if isinstance(node, ast.FunctionDef)}
+
+
+def parse_demo_standalone_problem_case_rows() -> list[dict[str, Any]]:
     module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
     value = _assignment_value(module, "_STANDALONE_PROBLEM_CASES")
     if not isinstance(value, ast.Tuple):
@@ -353,24 +358,61 @@ def parse_demo_standalone_problem_case_names() -> list[str]:
             f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES is not a tuple literal"
         )
 
-    names: list[str] = []
+    rows: list[dict[str, Any]] = []
     for element in value.elts:
-        if not isinstance(element, ast.Call):
-            raise AssertionError(
-                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains "
-                f"non-call entry: {ast.dump(element)}"
-            )
-        keywords = {keyword.arg: keyword.value for keyword in element.keywords}
-        name_node = keywords.get("name")
-        if not isinstance(name_node, ast.Constant) or not isinstance(
-            name_node.value, str
+        if (
+            not isinstance(element, ast.Call)
+            or not isinstance(element.func, ast.Name)
+            or element.func.id != "_StandaloneProblemCase"
         ):
             raise AssertionError(
-                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains an entry "
-                "without a literal name"
+                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains "
+                f"unsupported entry: {ast.dump(element)}"
             )
-        names.append(name_node.value)
-    return names
+        keywords = {keyword.arg: keyword.value for keyword in element.keywords}
+        required_keywords = (
+            "name",
+            "label",
+            "surface",
+            "support_key",
+            "challenge",
+            "make_problem",
+        )
+        missing_keywords = [
+            keyword for keyword in required_keywords if keyword not in keywords
+        ]
+        if missing_keywords:
+            raise AssertionError(
+                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains an entry "
+                f"missing required keywords {missing_keywords}: {ast.dump(element)}"
+            )
+        make_problem_node = keywords.get("make_problem")
+        if not isinstance(make_problem_node, ast.Name):
+            raise AssertionError(
+                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains an entry "
+                "without a make_problem function reference"
+            )
+        tolerance_node = keywords.get("tolerance")
+        rows.append(
+            {
+                "name": _evaluate_demo_expression(keywords["name"], {}),
+                "label": _evaluate_demo_expression(keywords["label"], {}),
+                "surface": _evaluate_demo_expression(keywords["surface"], {}),
+                "support_key": _evaluate_demo_expression(keywords["support_key"], {}),
+                "challenge": _evaluate_demo_expression(keywords["challenge"], {}),
+                "make_problem": make_problem_node.id,
+                "tolerance": (
+                    _evaluate_demo_expression(tolerance_node, {})
+                    if tolerance_node is not None
+                    else 1e-4
+                ),
+            }
+        )
+    return rows
+
+
+def parse_demo_standalone_problem_case_names() -> list[str]:
+    return [str(row["name"]) for row in parse_demo_standalone_problem_case_rows()]
 
 
 def parse_demo_representative_requirement_rows() -> list[dict[str, str]]:
@@ -566,6 +608,85 @@ def check_demo_representative_requirements() -> None:
     if errors:
         raise AssertionError(
             "lcp_physics representative requirement rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
+def check_demo_standalone_problem_cases() -> None:
+    rows = parse_demo_standalone_problem_case_rows()
+    suite_label = parse_demo_standalone_problem_suite_label()
+    function_names = parse_demo_function_names()
+    expected_surfaces = {"standard", "boxed", "findex"}
+    required_fields = (
+        "name",
+        "label",
+        "surface",
+        "support_key",
+        "challenge",
+        "make_problem",
+        "tolerance",
+    )
+
+    errors: list[str] = []
+    if not suite_label.strip():
+        errors.append("_STANDALONE_PROBLEM_SUITE_LABEL is blank")
+
+    names = [str(row.get("name", "")) for row in rows]
+    labels = [str(row.get("label", "")) for row in rows]
+    duplicate_names = [
+        name for index, name in enumerate(names) if name in names[:index]
+    ]
+    duplicate_labels = [
+        label for index, label in enumerate(labels) if label in labels[:index]
+    ]
+    if duplicate_names:
+        errors.append(f"duplicate standalone problem names {duplicate_names}")
+    if duplicate_labels:
+        errors.append(f"duplicate standalone problem labels {duplicate_labels}")
+
+    for index, row in enumerate(rows, start=1):
+        case = str(row.get("name", f"row {index}"))
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{case}: missing fields {missing_fields}")
+
+        surface = str(row.get("surface", ""))
+        support_key = str(row.get("support_key", ""))
+        if surface and surface not in expected_surfaces:
+            errors.append(f"{case}: unknown surface {surface!r}")
+        if support_key and support_key not in expected_surfaces:
+            errors.append(f"{case}: unknown support_key {support_key!r}")
+        if surface in expected_surfaces and support_key in expected_surfaces:
+            if surface != support_key:
+                errors.append(
+                    f"{case}: surface {surface!r} does not match "
+                    f"support_key {support_key!r}"
+                )
+
+        make_problem = str(row.get("make_problem", ""))
+        if make_problem and make_problem not in function_names:
+            errors.append(f"{case}: unknown make_problem function {make_problem!r}")
+
+        try:
+            tolerance = float(row.get("tolerance", "nan"))
+        except (TypeError, ValueError):
+            tolerance = math.nan
+        if not math.isfinite(tolerance) or tolerance <= 0.0:
+            errors.append(f"{case}: tolerance must be positive and finite")
+
+    present_surfaces = {str(row.get("surface", "")) for row in rows}
+    missing_surfaces = sorted(expected_surfaces - present_surfaces)
+    if missing_surfaces:
+        errors.append(
+            "standalone problem cases are missing representative surfaces "
+            f"{missing_surfaces}"
+        )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics standalone problem cases are out of sync:\n  - "
             + "\n  - ".join(errors)
         )
 
@@ -1314,6 +1435,7 @@ def check_roster() -> None:
     check_performance_profile_evidence(manifest)
     check_demo_benchmark_filters()
     check_demo_representative_requirements()
+    check_demo_standalone_problem_cases()
     check_demo_solver_guidance(manifest)
     check_demo_advanced_solver_parameters(manifest)
     check_demo_profile_evidence_required_columns()

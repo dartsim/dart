@@ -1,5 +1,81 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-13 Current Continuation - Standalone Problem Case Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `cdcec488d8d Guard LCP advanced parameter metadata` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `cdcec488d8d Guard LCP advanced parameter metadata`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-five commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Standalone problem-case status:
+
+- `scripts/check_lcp_solver_roster.py` now parses the full
+  `_STANDALONE_PROBLEM_CASES` table from
+  `python/examples/demos/scenes/lcp_physics.py`, instead of only extracting
+  case names for representative requirement links.
+- The roster guard now rejects blank suite labels, duplicate case names or
+  labels, blank required fields, unknown surfaces/support keys, surface/support
+  mismatches, unknown `make_problem` function references, non-positive or
+  non-finite tolerances, malformed case entries, and missing representative
+  standard/boxed/findex surfaces.
+- `python/tests/unit/test_check_lcp_solver_roster.py` now covers both the valid
+  standalone-case parser path, malformed case entries, and stale case metadata
+  failures.
+- Solver implementations, solver support predicates, benchmark registration
+  code, profile artifacts, bindings, stubs, public APIs, generated profile
+  CSVs, generated evidence CSVs, and demo runtime behavior were not
+  intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'standalone_problem or representative_requirement or advanced_solver_parameter or solver_guidance'`
+  passed with 8 tests, and passed again after `pixi run lint` reformatted
+  `scripts/check_lcp_solver_roster.py`.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed with 40 tests.
+- `pixi run lint` passed, including the LCP solver roster check and AI command
+  sync.
+- `pixi run build` passed.
+- `nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader` reported
+  `NVIDIA RTX 5000 Ada Generation Laptop GPU, 8.9`.
+- `pixi run -e cuda test-all` passed end-to-end on that GPU: lint, build,
+  unit tests, simulation tests, Python tests, documentation, and CUDA C++ tests
+  plus benchmark smoke. The documentation phase emitted the known four
+  `dartpy._world_render_bridge` autodoc warnings and still passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   focused roster tests, the roster check, `pixi run lint`, `git diff --check`,
+   and any broader gate warranted by the final diff.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-13 Current Continuation - Advanced Parameter Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

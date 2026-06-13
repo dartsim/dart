@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import csv
 import importlib.util
 import sys
@@ -198,6 +199,101 @@ def test_lcp_solver_roster_reads_demo_representative_requirement_links() -> None
         )
     ) == {"world_stack", "mass_ratio_boxed"}
     module.check_demo_representative_requirements()
+
+
+def test_lcp_solver_roster_reads_demo_standalone_problem_cases() -> None:
+    module = _load_module()
+
+    cases_by_name = {
+        row["name"]: row for row in module.parse_demo_standalone_problem_case_rows()
+    }
+
+    assert cases_by_name["standard_spd"]["label"] == "Standard SPD"
+    assert cases_by_name["standard_spd"]["surface"] == "standard"
+    assert cases_by_name["standard_spd"]["support_key"] == "standard"
+    assert cases_by_name["standard_spd"]["make_problem"] == "_make_standard_spd_case"
+    assert cases_by_name["standard_spd"]["tolerance"] == pytest.approx(1e-4)
+    assert cases_by_name["mass_ratio_boxed"]["surface"] == "boxed"
+    assert cases_by_name["mass_ratio_boxed"]["tolerance"] == pytest.approx(5e-4)
+    assert cases_by_name["friction_index_contact"]["support_key"] == "findex"
+    assert cases_by_name["active_friction_index_contact"]["challenge"] == (
+        "two-contact active tangential bounds with coupled normals"
+    )
+    module.check_demo_standalone_problem_cases()
+
+
+def test_lcp_solver_roster_rejects_stale_standalone_problem_cases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_rows = [
+        {
+            "name": "duplicate_case",
+            "label": "Duplicate case",
+            "surface": "standard",
+            "support_key": "boxed",
+            "challenge": "",
+            "make_problem": "_missing_case",
+            "tolerance": 0.0,
+        },
+        {
+            "name": "duplicate_case",
+            "label": "Duplicate case",
+            "surface": "mystery",
+            "support_key": "unknown",
+            "challenge": "stale metadata",
+            "make_problem": "_make_standard_spd_case",
+            "tolerance": float("nan"),
+        },
+    ]
+    monkeypatch.setattr(
+        module,
+        "parse_demo_standalone_problem_case_rows",
+        lambda: stale_rows,
+    )
+    monkeypatch.setattr(module, "parse_demo_standalone_problem_suite_label", lambda: "")
+    monkeypatch.setattr(
+        module,
+        "parse_demo_function_names",
+        lambda: {"_make_standard_spd_case"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="standalone problem cases are out of sync",
+    ) as exc_info:
+        module.check_demo_standalone_problem_cases()
+
+    message = str(exc_info.value)
+    assert "_STANDALONE_PROBLEM_SUITE_LABEL is blank" in message
+    assert "duplicate standalone problem names ['duplicate_case']" in message
+    assert "duplicate standalone problem labels ['Duplicate case']" in message
+    assert "duplicate_case: missing fields ['challenge']" in message
+    assert "surface 'standard' does not match support_key 'boxed'" in message
+    assert "unknown make_problem function '_missing_case'" in message
+    assert "unknown surface 'mystery'" in message
+    assert "unknown support_key 'unknown'" in message
+    assert "tolerance must be positive and finite" in message
+    assert "missing representative surfaces ['boxed', 'findex']" in message
+
+
+def test_lcp_solver_roster_rejects_malformed_standalone_problem_case_ast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    malformed_cases = ast.parse(
+        "_STANDALONE_PROBLEM_CASES = ("
+        "_StandaloneProblemCase(name='missing_fields'),"
+        ")"
+    ).body[0].value
+    monkeypatch.setattr(
+        module,
+        "_assignment_value",
+        lambda _module, _name: malformed_cases,
+    )
+
+    with pytest.raises(AssertionError, match="missing required keywords"):
+        module.parse_demo_standalone_problem_case_rows()
 
 
 def test_lcp_solver_roster_rejects_stale_requirement_live_packet(
