@@ -528,6 +528,7 @@ class _RigidJointMotorLimitVerifier:
             ):
                 return 1.0
         except (TypeError, ValueError):
+            # Malformed replay controls leave this marker inactive.
             pass
 
         try:
@@ -546,6 +547,7 @@ class _RigidJointMotorLimitVerifier:
             if limit_angle >= position_limit - 0.02 or abs(limit_error) >= 0.005:
                 return 1.0
         except (TypeError, ValueError):
+            # Malformed replay limit metrics leave this marker inactive.
             pass
 
         limited_acceleration = _last_float(
@@ -560,6 +562,7 @@ class _RigidJointMotorLimitVerifier:
                 if abs(float(metrics.get("force_acceleration_gap", 0.0))) >= 0.50:
                     return 1.0
             except (TypeError, ValueError):
+                # Malformed acceleration metrics leave this marker inactive.
                 pass
 
         force_gap = _last_float(snapshot.get("force_position_gap_history", []))
