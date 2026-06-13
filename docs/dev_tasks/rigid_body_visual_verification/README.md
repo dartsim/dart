@@ -2,9 +2,55 @@
 
 ## Current Handoff (2026-06-12)
 
-Latest validation follow-up: with the branch clean and pushed at
-`802b5d282b8`, reran broad validation from current `HEAD` using the DART safe
-parallelism cap (`DART_SAFE_JOBS=5`). Default
+Remote publication checkpoint: after the explicit `push to origin` instruction,
+`origin/feature/rigid-body-gui-visual-verification` points to
+`21702f9960d Clarify rigid workflow publication state`. A fresh
+`gh pr list --head "$(git branch --show-current)"` still returned no PR for the
+branch. The most recent pre-push target-branch merge was
+`git fetch origin main && git merge --no-edit origin/main`, and Git reported
+`Already up to date`, so the branch remained aligned with the PR #2986 DART 7
+architecture/work-packet harness at publication time. This docs-only
+review-prep refresh may be local; rerun `git status -sb` before acting. The
+push approval did not approve PR creation, milestone mutation, CI reruns,
+review comments, thread resolution, or other GitHub review-state changes.
+
+Latest local continuation: a read-only artifact audit rechecked the current
+review packet manifests and static review indexes. The full rows 01-36 packet
+still reports `status=complete`, `capture_count=36`, `failed_count=0`,
+`guidance_complete=true`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=36`, and 181/181 local review-index assets
+present. The optional rows 37-52 packet still reports `status=complete`,
+`capture_count=16`, `failed_count=0`, `guidance_complete=true`,
+`resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=16`, and 81/81 local review-index assets
+present.
+
+Latest publication-readiness audit: `git fetch origin main && git merge
+--no-edit origin/main` still reports `Already up to date`; `gh pr status` still
+reports no PR for `feature/rigid-body-gui-visual-verification`; the open
+milestone list includes `DART 7.0`; and `PR_DRAFT.md` is safe to pass as a body
+file because the visible body starts at `## Summary` after the HTML comment and
+contains Testing, Breaking Changes, Related Issues / PRs, milestone, and
+completion-audit references.
+
+Latest deferred-API audit: runtime `dartpy.simulation` symbol introspection and
+targeted binding/stub reads still find only `RigidBody.apply_force()`,
+`RigidBody.apply_torque()`, force/torque properties, rigid-body
+linear/angular-momentum accessors, `Link.apply_force(...)`, and
+`Multibody.compute_impulse_response(...)` for the relevant public surfaces.
+No public `RigidBody` or `World` symbol exposes a direct rigid-body impulse,
+sleep/wake, island activation, or loop-closure compliance/stiffness/damping
+control, so the current workflow should keep those queries routed to caveated
+nearest rows instead of adding speculative numbered rows.
+
+Fresh focused guard for that audit:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `6 passed`.
+
+Latest validation follow-up: after the earlier stop-only handoff left the
+branch clean and pushed at `802b5d282b8`, broad validation was rerun from the
+then-current `HEAD` using the DART safe parallelism cap (`DART_SAFE_JOBS=5`).
+Default
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed with all six wrapper gates passing: linting, build, unit tests,
 simulation tests, Python tests, and documentation, ending with
@@ -16,13 +62,12 @@ green: `test_world` in 141.77 seconds and `test_rigid_ipc_paper_experiments`
 in 304.21 seconds. The only local diff after validation was markdown formatter
 cleanup in this dev-task audit, followed by this evidence refresh.
 
-Publication state: after the validation-evidence commit
-`84897c2fde5 Record rigid workflow validation evidence`, the local branch was
-ahead of `origin/feature/rigid-body-gui-visual-verification` and `gh pr list
---head "$(git branch --show-current)"` returned no PR. Do not infer push or PR
-approval from the persistent goal context; a future session still needs
-explicit approval before pushing any new local commits, creating a PR, setting
-the `DART 7.0` milestone, rerunning CI, or mutating review state.
+Historical publication state before the latest approved push: after the
+validation-evidence commit `84897c2fde5 Record rigid workflow validation
+evidence`, the local branch was ahead of
+`origin/feature/rigid-body-gui-visual-verification` and `gh pr list --head
+"$(git branch --show-current)"` returned no PR. That is superseded by the
+current pushed `21702f9960d` state above.
 
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest

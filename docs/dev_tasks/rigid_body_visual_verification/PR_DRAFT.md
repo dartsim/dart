@@ -1,11 +1,11 @@
-# Rigid Body Visual Verification PR Draft
-
-Use this as the PR body seed after the branch is pushed with maintainer
-approval. Keep the durable source of truth in
-`docs/plans/103-examples-strategy/rigid-body-visual-verification.md`,
-`python/examples/demos/README.md`, and the generated capture manifests. Use
-`docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` for the
+<!--
+PR body seed for the rigid-body visual verification branch. Keep the durable
+source of truth in
+docs/plans/103-examples-strategy/rigid-body-visual-verification.md,
+python/examples/demos/README.md, and the generated capture manifests. Use
+docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md for the
 current evidence-to-requirement map and remaining external gates.
+-->
 
 ## Summary
 

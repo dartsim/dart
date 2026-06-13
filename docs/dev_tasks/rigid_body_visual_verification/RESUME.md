@@ -2,6 +2,51 @@
 
 ## Current Handoff (2026-06-12)
 
+Remote publication checkpoint: after the explicit `push to origin` instruction,
+`origin/feature/rigid-body-gui-visual-verification` points to
+`21702f9960d Clarify rigid workflow publication state`. A fresh
+`gh pr list --head "$(git branch --show-current)"` still returned no PR for the
+branch. The latest pre-push `git fetch origin main && git merge --no-edit
+origin/main` reported `Already up to date`, so the branch remained aligned with
+the PR #2986 DART 7 architecture/work-packet harness at publication time. This
+docs-only review-prep refresh may be local; rerun `git status -sb` before
+acting. The approved push did not approve PR creation, milestone mutation, CI
+reruns, review comments, thread resolution, or other GitHub review-state
+changes.
+
+Latest local continuation: a read-only artifact audit rechecked the current
+review packet manifests and static review indexes. The full rows 01-36 packet
+still reports `status=complete`, `capture_count=36`, `failed_count=0`,
+`guidance_complete=true`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=36`, and 181/181 local review-index assets
+present. The optional rows 37-52 packet still reports `status=complete`,
+`capture_count=16`, `failed_count=0`, `guidance_complete=true`,
+`resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=16`, and 81/81 local review-index assets
+present.
+
+Latest publication-readiness audit: `git fetch origin main && git merge
+--no-edit origin/main` still reports `Already up to date`; `gh pr status` still
+reports no PR for `feature/rigid-body-gui-visual-verification`; the open
+milestone list includes `DART 7.0`; and `PR_DRAFT.md` is safe to pass as a body
+file because the visible body starts at `## Summary` after the HTML comment and
+contains Testing, Breaking Changes, Related Issues / PRs, milestone, and
+completion-audit references.
+
+Latest deferred-API audit: runtime `dartpy.simulation` symbol introspection and
+targeted binding/stub reads still find only `RigidBody.apply_force()`,
+`RigidBody.apply_torque()`, force/torque properties, rigid-body
+linear/angular-momentum accessors, `Link.apply_force(...)`, and
+`Multibody.compute_impulse_response(...)` for the relevant public surfaces.
+No public `RigidBody` or `World` symbol exposes a direct rigid-body impulse,
+sleep/wake, island activation, or loop-closure compliance/stiffness/damping
+control, so the current workflow should keep those queries routed to caveated
+nearest rows instead of adding speculative numbered rows.
+
+Fresh focused guard for that audit:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `6 passed`.
+
 Latest validation follow-up: current `HEAD` has fresh broad validation evidence
 after the previous stop-only handoff. From branch
 `feature/rigid-body-gui-visual-verification`, with `DART_SAFE_JOBS=5`, the
@@ -14,13 +59,14 @@ tests, and documentation all passed. Because `nvidia-smi -L` reported
 was also run and exited successfully. The previous stopped validation attempt
 remains useful archaeology only; do not report it as the latest state.
 
-Publication state: after committing
+Historical publication state before the latest approved push: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
 ahead of `origin/feature/rigid-body-gui-visual-verification`, and
-`gh pr list --head "$(git branch --show-current)"` returned no PR. Future
-sessions must re-run `git status -sb` and must get explicit approval before
-pushing newer local commits, creating a PR, setting the `DART 7.0` milestone,
-rerunning CI, or mutating GitHub review state.
+`gh pr list --head "$(git branch --show-current)"` returned no PR. That is now
+superseded by the pushed `21702f9960d` state above. Future sessions must rerun
+`git status -sb` and must get explicit approval before pushing newer local
+commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
+mutating GitHub review state.
 
 Stop/push handoff: the newest instruction was to stop code changes, stop
 further verification, update only the handoff docs, merge latest `origin/main`,
@@ -162,11 +208,10 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-- Latest pushed checkpoint before the validation-evidence refresh was
-  `802b5d282b8 Update rigid workflow handoff state`. The validation-evidence
-  commit `84897c2fde5 Record rigid workflow validation evidence` was local and
-  ahead of origin when this note was written; inspect any newer commits first.
-- Do not push without explicit approval in the session that performs the push.
+- Latest pushed checkpoint is
+  `21702f9960d Clarify rigid workflow publication state`.
+- Do not push newer local commits without explicit approval in the session that
+  performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
   and
   `build/captures/rigid_workflow_optional_rows_37_52_1781313357/review_index.html`
@@ -184,6 +229,23 @@ Resume from this state:
   AI-assisted workflow change.
   If more local progress is requested before pushing/review, audit the
   API-deferred gaps rather than adding speculative numbered rows.
+
+Post-approval publication path:
+
+```bash
+git fetch origin main
+git merge --no-edit origin/main
+git push origin HEAD
+gh pr create --draft --base main \
+  --title "Add rigid-body visual verification workflow" \
+  --body-file docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md
+gh pr edit --milestone "DART 7.0"
+```
+
+Only run those commands after explicit maintainer/user approval in the session
+that performs the GitHub mutation. If a PR is created by another route, still
+set the `DART 7.0` milestone and keep the dev-task folder until maintainer
+acceptance and same-PR cleanup.
 
 Files touched by this row-36 slice:
 
