@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import dartpy as dart
 import numpy as np
 import pytest
@@ -69,6 +71,8 @@ from examples.demos.scenes import (
     vbd_tilted_strand,
 )
 
+_DEMOS_README = Path(__file__).resolve().parents[2] / "examples/demos/README.md"
+
 
 def _require_simulation_symbols(*names: str):
     try:
@@ -80,6 +84,23 @@ def _require_simulation_symbols(*names: str):
         formatted = ", ".join(f"dartpy.{name}" for name in missing)
         pytest.skip(f"{formatted} unavailable in this build")
     return sx
+
+
+def _read_demo_readme_bash_command_after(marker: str) -> str:
+    text = _DEMOS_README.read_text(encoding="utf-8")
+    marker_index = text.index(marker)
+    fence_start = text.index("```bash", marker_index) + len("```bash")
+    fence_end = text.index("```", fence_start)
+    lines = [line.strip() for line in text[fence_start:fence_end].splitlines()]
+
+    parts: list[str] = []
+    for line in lines:
+        if not line:
+            continue
+        if line.endswith("\\"):
+            line = line[:-1].rstrip()
+        parts.append(line)
+    return " ".join(parts)
 
 
 def test_make_world_factory_returns_panels_tuple() -> None:
@@ -1163,6 +1184,17 @@ def test_lcp_physics_profile_evidence_schema_is_exposed_in_info() -> None:
     assert setup.info["performance_profile_evidence_schema_rows"] == [
         dict(row) for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
     ]
+
+
+def test_lcp_physics_readme_profile_commands_match_scene_metadata() -> None:
+    assert (
+        _read_demo_readme_bash_command_after("those artifacts with:")
+        == lcp_physics._PERFORMANCE_PROFILE_REFRESH_COMMAND
+    )
+    assert (
+        _read_demo_readme_bash_command_after("quick profile-pipeline smoke")
+        == lcp_physics._PERFORMANCE_PROFILE_SMOKE_COMMAND
+    )
 
 
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:

@@ -1,5 +1,71 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-13 Current Continuation - README Profile Command Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `7f9f2c6f519 Expose LCP profile smoke command` as the latest completed
+   local tip before this checkpoint. If this section is committed, inspect
+   `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `7f9f2c6f519 Expose LCP profile smoke command`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by forty-seven commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+README profile command status:
+
+- `python/examples/demos/README.md` now matches the LCP scene metadata's full
+  performance-profile refresh command, including `--benchmark-timeout 900`.
+- `python/tests/unit/test_py_demo_panels.py` now parses the LCP profile command
+  fenced blocks in `python/examples/demos/README.md` and compares them against
+  the scene-owned `_PERFORMANCE_PROFILE_REFRESH_COMMAND` and
+  `_PERFORMANCE_PROFILE_SMOKE_COMMAND` constants. Future README drift in either
+  the checked refresh command or scratch-output smoke command now fails the
+  demo-panel regression.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and C++ solver code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q -k 'lcp_physics_readme_profile_commands_match_scene_metadata or lcp_physics_exposes_solver_manifest_and_benchmark_metadata or profile_evidence_schema'`
+  passed with 4 tests.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q`
+  passed with 78 tests.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `pixi run lint` passed, including the LCP solver roster and generated AI
+  command checks.
+- `git diff --check` passed.
+- `pixi run build` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   full demo-panel unit test, roster check, `pixi run lint`, `git diff --check`,
+   `pixi run build`, and any broader gate warranted by the final diff, then
+   commit the focused README/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-13 Current Continuation - Profile Smoke Command
 
 This is the latest hand-off state. Sections below are historical checkpoints

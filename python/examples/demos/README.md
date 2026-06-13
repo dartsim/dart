@@ -133,7 +133,8 @@ those artifacts with:
 ```bash
 pixi run python scripts/lcp_performance_profile.py --run \
     --cache build/lcp_profile_full.json \
-    --output docs/background/lcp/figures
+    --output docs/background/lcp/figures \
+    --benchmark-timeout 900
 ```
 
 For a quick profile-pipeline smoke that allows partial native solver coverage
