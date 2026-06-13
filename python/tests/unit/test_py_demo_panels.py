@@ -1514,10 +1514,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_elapsed_us"] >= 0.0
         assert summary_row["fastest_native_solver"] in solver_by_name
         assert summary_row["fastest_native_elapsed_us"] >= 0.0
+        assert summary_row["slowest_solver"] in solver_by_name
+        assert summary_row["slowest_elapsed_us"] >= summary_row["fastest_elapsed_us"]
         case_rows = [row for row in problem_rows if row["case"] == case_name]
         native_case_rows = [row for row in case_rows if row["native_supported"]]
         fastest_row = min(case_rows, key=lambda row: row["elapsed_us"])
         fastest_native_row = min(native_case_rows, key=lambda row: row["elapsed_us"])
+        slowest_row = max(case_rows, key=lambda row: row["elapsed_us"])
         assert summary_row["fastest_solver"] == fastest_row["solver"]
         assert summary_row["fastest_elapsed_us"] == pytest.approx(
             fastest_row["elapsed_us"]
@@ -1525,6 +1528,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         assert summary_row["fastest_native_solver"] == fastest_native_row["solver"]
         assert summary_row["fastest_native_elapsed_us"] == pytest.approx(
             fastest_native_row["elapsed_us"]
+        )
+        assert summary_row["slowest_solver"] == slowest_row["solver"]
+        assert summary_row["slowest_elapsed_us"] == pytest.approx(
+            slowest_row["elapsed_us"]
         )
     for solver_name, profile_row in solver_profile_by_name.items():
         manifest_row = solver_by_name[solver_name]
@@ -2125,7 +2132,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
         "Challenge,Native,Delegated,Max error,Max comp,Max residual,Fastest,"
-        "Fastest native"
+        "Fastest native,Slowest"
         in builder.events
     )
     standard_spd_summary = problem_summary_by_case["standard_spd"]
@@ -2140,6 +2147,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     assert (
         f"text:{standard_spd_summary['max_complementarity']:.2e}"
+        in builder.events
+    )
+    assert (
+        f"text:{standard_spd_summary['slowest_solver']} "
+        f"({standard_spd_summary['slowest_elapsed_us']:.1f} us)"
         in builder.events
     )
     for challenge in (

@@ -2019,6 +2019,7 @@ def _summarize_standalone_problem_suite(
         fastest_native_row = min(
             native_rows, key=lambda row: row["elapsed_us"], default=None
         )
+        slowest_row = max(case_rows, key=lambda row: row["elapsed_us"], default=None)
         summaries.append(
             {
                 "case": problem_case.name,
@@ -2058,6 +2059,10 @@ def _summarize_standalone_problem_suite(
                 ),
                 "fastest_native_elapsed_us": (
                     fastest_native_row["elapsed_us"] if fastest_native_row else 0.0
+                ),
+                "slowest_solver": slowest_row["solver"] if slowest_row else "",
+                "slowest_elapsed_us": (
+                    slowest_row["elapsed_us"] if slowest_row else max_elapsed_us
                 ),
             }
         )
@@ -2641,6 +2646,7 @@ def build() -> SceneSetup:
                     "Max residual",
                     "Fastest",
                     "Fastest native",
+                    "Slowest",
                 ],
             ):
                 for row in standalone_problem_summary_rows:
@@ -2676,6 +2682,13 @@ def build() -> SceneSetup:
                         (
                             f"{row['fastest_native_solver']} "
                             f"({row['fastest_native_elapsed_us']:.1f} us)"
+                        ),
+                    )
+                    _write_table_cell(
+                        builder,
+                        (
+                            f"{row['slowest_solver']} "
+                            f"({row['slowest_elapsed_us']:.1f} us)"
                         ),
                     )
                 builder.end_table()
