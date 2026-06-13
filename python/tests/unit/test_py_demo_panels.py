@@ -1065,6 +1065,28 @@ def test_lcp_physics_profile_summary_rejects_duplicate_evidence_columns(
         lcp_physics._performance_profile_evidence_summary_rows()
 
 
+def test_lcp_physics_profile_summary_rejects_duplicate_evidence_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path)
+    lines = evidence_path.read_text(encoding="utf-8").splitlines()
+    evidence_path.write_text(
+        "\n".join((*lines, lines[1])) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="duplicate LCP performance profile evidence row: Standard/Dantzig/12",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
 def test_lcp_physics_profile_summary_rejects_empty_evidence_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,

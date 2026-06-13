@@ -401,6 +401,29 @@ def test_lcp_profile_evidence_rejects_duplicate_column(
         module.check_performance_profile_evidence(manifest, path)
 
 
+def test_lcp_profile_evidence_rejects_duplicate_row(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    row = _valid_evidence_row() | {
+        "solver_supports_boxed": "0",
+        "solver_supports_friction_index": "0",
+    }
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(row)
+        writer.writerow(row)
+
+    with pytest.raises(AssertionError, match="duplicate evidence row"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
 def test_lcp_profile_evidence_rejects_invalid_metric(
     tmp_path: Path,
 ) -> None:

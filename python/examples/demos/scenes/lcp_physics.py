@@ -508,7 +508,9 @@ def _validate_finite_nonnegative_evidence_float(
     return value
 
 
-def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
+def _validate_performance_profile_evidence_row(
+    row: dict[str, str],
+) -> tuple[str, str, int]:
     surface = row.get("category", "")
     solver = row.get("solver") or "<unknown>"
     support_field = _PROFILE_CATEGORY_SUPPORT_FIELDS.get(surface)
@@ -662,6 +664,7 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
         )
     for metric in ("residual", "complementarity", "bound_violation"):
         _validate_finite_nonnegative_evidence_float(row, surface, solver, metric)
+    return surface, solver, problem_size
 
 
 def _duplicate_values(values: list[str]) -> list[str]:
@@ -694,6 +697,7 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
         )
 
     summaries: dict[str, dict[str, Any]] = {}
+    observed_evidence_keys: set[tuple[str, str, int]] = set()
     with _PERFORMANCE_PROFILE_EVIDENCE_PATH.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
@@ -716,8 +720,15 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
         row_count = 0
         for row in reader:
             row_count += 1
-            _validate_performance_profile_evidence_row(row)
-            surface = row["category"]
+            evidence_key = _validate_performance_profile_evidence_row(row)
+            if evidence_key in observed_evidence_keys:
+                surface, solver, problem_size = evidence_key
+                raise RuntimeError(
+                    "duplicate LCP performance profile evidence row: "
+                    f"{surface}/{solver}/{problem_size}"
+                )
+            observed_evidence_keys.add(evidence_key)
+            surface = evidence_key[0]
             summary = summaries.setdefault(
                 surface,
                 {

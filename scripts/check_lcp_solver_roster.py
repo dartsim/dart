@@ -631,6 +631,7 @@ def check_performance_profile_evidence(
     observed_native_solvers_by_category: dict[str, set[str]] = {
         category: set() for category in PROFILE_KEY_BY_CATEGORY
     }
+    observed_evidence_keys: set[tuple[str, str, int]] = set()
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
@@ -667,6 +668,15 @@ def check_performance_profile_evidence(
                 errors.append(
                     f"row {row_number}: invalid problem_size {row['problem_size']!r}"
                 )
+            else:
+                evidence_key = (category, solver_name, problem_size)
+                if evidence_key in observed_evidence_keys:
+                    errors.append(
+                        f"row {row_number}: duplicate evidence row for "
+                        f"{category}/{solver_name}/{problem_size}"
+                    )
+                else:
+                    observed_evidence_keys.add(evidence_key)
 
             lcp_dimension = _csv_counter_as_int(row, "lcp_dimension")
             if lcp_dimension is None or lcp_dimension <= 0:
