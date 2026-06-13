@@ -144,6 +144,8 @@ struct BoxedLcpContactNormal
 struct DART_SIMULATION_API BoxedLcpContactScratch
 {
   using NormalAllocator = dart::common::StlAllocator<BoxedLcpContactNormal>;
+  using DoubleAllocator = dart::common::StlAllocator<double>;
+  using DoubleVector = std::vector<double, DoubleAllocator>;
   using BodyColumnPair = std::pair<const entt::entity, std::size_t>;
   using BodyColumnAllocator = dart::common::StlAllocator<BodyColumnPair>;
   using BodyColumnMap = std::unordered_map<
@@ -162,6 +164,11 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
           std::hash<entt::entity>{},
           std::equal_to<entt::entity>{},
           BodyColumnAllocator{allocator}),
+      Minv(DoubleAllocator{allocator}),
+      vFree(DoubleAllocator{allocator}),
+      JMinv(DoubleAllocator{allocator}),
+      jtImpulse(DoubleAllocator{allocator}),
+      deltaV(DoubleAllocator{allocator}),
       dantzig(allocator)
   {
   }
@@ -172,11 +179,11 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
   std::vector<BoxedLcpContactNormal, NormalAllocator> normals;
   BodyColumnMap bodyColumn;
   BoxedLcpContactSnapshot snapshot;
-  Eigen::MatrixXd Minv;
-  Eigen::VectorXd vFree;
-  Eigen::MatrixXd JMinv;
-  Eigen::VectorXd jtImpulse;
-  Eigen::VectorXd deltaV;
+  DoubleVector Minv;
+  DoubleVector vFree;
+  DoubleVector JMinv;
+  DoubleVector jtImpulse;
+  DoubleVector deltaV;
   math::DantzigSolver::Scratch dantzig;
 };
 

@@ -141,11 +141,14 @@ void BoxedLcpContactScratch::reserve(
   snapshot.findex.resize(rows);
   snapshot.f.resize(rows);
   snapshot.J.resize(rows, dofs);
-  Minv.resize(dofs, dofs);
-  vFree.resize(dofs);
-  JMinv.resize(rows, dofs);
-  jtImpulse.resize(dofs);
-  deltaV.resize(dofs);
+  const auto dofSize = static_cast<std::size_t>(dofs);
+  const auto dofMatrixSize = dofSize * dofSize;
+  const auto rowDofMatrixSize = static_cast<std::size_t>(rows) * dofSize;
+  Minv.resize(dofMatrixSize);
+  vFree.resize(dofSize);
+  JMinv.resize(rowDofMatrixSize);
+  jtImpulse.resize(dofSize);
+  deltaV.resize(dofSize);
 
   const auto vectorSize = static_cast<std::size_t>(rows);
   const auto nSkip
@@ -378,11 +381,12 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
 
   // Stacked inverse mass operator M⁻¹ (block-diagonal, 6 dofs per body) and the
   // free velocity v_free at solve time.
-  auto& Minv = scratch.Minv;
-  auto& vFree = scratch.vFree;
-  Minv.resize(dofs, dofs);
+  scratch.Minv.resize(
+      static_cast<std::size_t>(dofs) * static_cast<std::size_t>(dofs));
+  scratch.vFree.resize(static_cast<std::size_t>(dofs));
+  Eigen::Map<Eigen::MatrixXd> Minv(scratch.Minv.data(), dofs, dofs);
+  Eigen::Map<Eigen::VectorXd> vFree(scratch.vFree.data(), dofs);
   Minv.setZero();
-  vFree.resize(dofs);
   vFree.setZero();
   for (const auto& [entity, column] : bodyColumn) {
     const auto& mass = registry.get<comps::MassProperties>(entity);
@@ -444,8 +448,9 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
   // → post-approach = bias. Friction rows target zero tangential relative
   // velocity (b = -(J v_free), no bias) and are coupled to their normal row
   // through findex with lo = -mu, hi = +mu.
-  auto& JMinv = scratch.JMinv;
-  JMinv.resize(rows, dofs);
+  scratch.JMinv.resize(
+      static_cast<std::size_t>(rows) * static_cast<std::size_t>(dofs));
+  Eigen::Map<Eigen::MatrixXd> JMinv(scratch.JMinv.data(), rows, dofs);
   JMinv.noalias() = J * Minv;
   auto& A = snapshot.A;
   A.resize(rows, rows);
@@ -516,11 +521,11 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
   }
 
   // Apply Δv = M⁻¹ Jᵀ f to the dynamic body velocities.
-  auto& jtImpulse = scratch.jtImpulse;
-  auto& deltaV = scratch.deltaV;
-  jtImpulse.resize(dofs);
+  scratch.jtImpulse.resize(static_cast<std::size_t>(dofs));
+  scratch.deltaV.resize(static_cast<std::size_t>(dofs));
+  Eigen::Map<Eigen::VectorXd> jtImpulse(scratch.jtImpulse.data(), dofs);
+  Eigen::Map<Eigen::VectorXd> deltaV(scratch.deltaV.data(), dofs);
   jtImpulse.noalias() = J.transpose() * f;
-  deltaV.resize(dofs);
   deltaV.noalias() = Minv * jtImpulse;
   for (const auto& [entity, column] : bodyColumn) {
     const Eigen::Index base = static_cast<Eigen::Index>(6 * column);

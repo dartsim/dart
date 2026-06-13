@@ -1,6 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Hard Stop Handoff (2026-06-13, Dantzig Boxed-LCP Validation Scratch Allocator)
+## Hard Stop Handoff (2026-06-13, Boxed-LCP Contact Scratch Temporary Allocator)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -8,50 +8,42 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
-Latest local slice: reusable Dantzig boxed-LCP scratch now also borrows the
-provided DART allocator for the solver's retained validation payloads.
-`DantzigSolver::Scratch::w`, `loEff`, and `hiEff` are allocator-backed vectors,
-and the solve path maps them as Eigen views while computing residual,
-complementarity, and optional validation. The previous Dantzig work-array,
+Latest local slice: reusable boxed-LCP contact scratch now borrows the provided
+DART allocator for its retained dense solve temporaries. `Minv`, `vFree`,
+`JMinv`, `jtImpulse`, and `deltaV` are allocator-backed vectors, and the solve
+path maps them as Eigen views while assembling the dense contact system and
+applying solved impulses. The previous Dantzig validation, work-array,
 pivot-state, and World boxed-LCP/unified-constraint nested scratch allocator
 wiring remains intact.
 
 The fix has these parts:
 
-- `DantzigLcpScratch` stores its pivot work arrays in
-  `common::StlAllocator`-backed vectors and replaces the old `new[]` bool state
-  with an allocator-backed reusable state buffer;
-- `DantzigSolver::Scratch` forwards a provided `MemoryAllocator` to its Dantzig
-  arrays, retained validation vectors, and nested low-level LCP scratch;
-- `DantzigSolver::solve(..., Scratch&, ...)` maps retained scratch vectors into
-  Eigen views for the `w = A*x - b` evaluation, effective bounds, residual,
-  complementarity, and solution validation without owning Eigen validation
-  payloads;
-- `lcp_validation.hpp` exposes explicit map-friendly validation view helpers so
-  existing `VectorXd` APIs stay source-compatible;
-- `BoxedLcpContactScratch` and `UnifiedConstraintSolveScratch` construct nested
-  Dantzig scratch from the same allocator used by their stage-owned scratch;
-- `DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers` verifies
-  allocator-backed Dantzig reuse, release, and warmed same-shape zero global
-  heap allocation, while
-  `World.BoxedLcpContactScratchDantzigUsesProvidedAllocator` verifies boxed-LCP
-  contact scratch reserves the nested Dantzig arrays/state from the provided
-  free allocator.
+- `BoxedLcpContactScratch` defines allocator-backed double buffers for the
+  retained dense contact solve temporaries;
+- `reserveBoxedLcpContactScratch(...)` sizes those temporary buffers alongside
+  the existing contact snapshot, body-column map, normal rows, and nested
+  Dantzig scratch;
+- `solveBoxedLcpContacts(..., BoxedLcpContactScratch&)` maps the retained
+  buffers as Eigen matrices/vectors for dense inverse-mass, free-velocity,
+  `J M^-1`, `J^T f`, and `deltaV` operations without owning Eigen temporaries;
+- the prior `DantzigSolver::Scratch` allocator wiring for validation vectors,
+  Dantzig work arrays, and pivot state remains in place for the nested solve;
+- `World.BoxedLcpContactScratchUsesProvidedAllocator` verifies allocator-backed
+  contact temporary storage, expected reserve sizes, nested Dantzig storage, and
+  release back to the provided free allocator.
 
 This still does not claim that Eigen dynamic payloads inside boxed-LCP
 snapshots, arbitrary one-shot LCP solve APIs, or return-by-value contact
 snapshot helpers are allocation-free or allocator-backed. The closed gap is the
-retained validation storage plus the STL work-array and pivot-state storage
-owned by reusable Dantzig scratch when a caller supplies DART scratch storage.
+retained boxed-LCP contact solve temporary storage owned by reusable
+`BoxedLcpContactScratch` when a caller supplies DART scratch storage.
 
 Validation for this slice:
 
 ```bash
-pixi run cmake --build build/default/cpp/Release --target UNIT_math_lcp_math_lcp_dantzig_solver test_world -j 8
-build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_dantzig_solver \
-  --gtest_filter='DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers:DantzigSolver.ReusedScratchAvoidsHeapAllocationForSameShapeSolve'
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
 build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.BoxedLcpContactScratchDantzigUsesProvidedAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap:World.UnifiedConstraintStageScratchUsesProvidedAllocator'
+  --gtest_filter='World.BoxedLcpContactScratchUsesProvidedAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap'
 pixi run lint
 pixi run build
 pixi run test-unit

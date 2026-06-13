@@ -4290,10 +4290,15 @@ TEST(World, UnifiedConstraintStageScratchUsesProvidedAllocator)
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
 }
 
-TEST(World, BoxedLcpContactScratchDantzigUsesProvidedAllocator)
+TEST(World, BoxedLcpContactScratchUsesProvidedAllocator)
 {
   namespace common = dart::common;
   namespace sxdetail = dart::simulation::detail;
+
+  constexpr std::size_t contactCapacity = 2u;
+  constexpr std::size_t bodyCapacity = 2u;
+  constexpr std::size_t rows = 3u * contactCapacity;
+  constexpr std::size_t dofs = 6u * bodyCapacity;
 
   common::MemoryManager memoryManager;
   auto& freeList = memoryManager.getFreeListAllocator();
@@ -4303,12 +4308,26 @@ TEST(World, BoxedLcpContactScratchDantzigUsesProvidedAllocator)
     sxdetail::BoxedLcpContactScratch scratch(memoryManager.getFreeAllocator());
     const auto allocationsAfterScratch = freeList.getAllocationCount();
 
-    scratch.reserve(/*contactCapacity=*/2u, /*bodyCapacity=*/2u);
+    scratch.reserve(contactCapacity, bodyCapacity);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterScratch + 12u)
+    const sxdetail::BoxedLcpContactScratch::DoubleAllocator doubleAllocator{
+        memoryManager.getFreeAllocator()};
+    EXPECT_EQ(scratch.Minv.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.vFree.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.JMinv.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.jtImpulse.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.deltaV.get_allocator(), doubleAllocator);
+
+    EXPECT_EQ(scratch.Minv.size(), dofs * dofs);
+    EXPECT_EQ(scratch.vFree.size(), dofs);
+    EXPECT_EQ(scratch.JMinv.size(), rows * dofs);
+    EXPECT_EQ(scratch.jtImpulse.size(), dofs);
+    EXPECT_EQ(scratch.deltaV.size(), dofs);
+
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterScratch + 17u)
         << "allocator-aware boxed-LCP contact scratch should reserve nested "
-           "Dantzig work arrays and state storage from the provided free "
-           "allocator";
+           "contact temporaries plus Dantzig work arrays and state storage "
+           "from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeScratch);
