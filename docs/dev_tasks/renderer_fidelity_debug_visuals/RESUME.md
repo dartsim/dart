@@ -28,13 +28,24 @@ the new `DebugDrawOptions` fields plus `make_joint_axis_debug_lines` and
 current local and remote state with `git status --short --branch` and
 `git log -4 --oneline` before continuing.
 
+## Current Reality (2026-06-13 snapshot — verify fresh)
+
+All four Codex P2 fixes are pushed (head `30d15865a81`, branch in sync with
+origin) and Codex's re-review at 2026-06-12T22:49Z returned **"Didn't find
+any major issues."** A further `@codex review` was posted at
+2026-06-13T01:19Z and is awaiting a response. CI on this head: 12 pass,
+18 pending, 0 failures, 2 skipping.
+
 ## Immediate Next Step
 
-1. Push the latest local follow-up commits after validation.
-2. Re-trigger `@codex review` once the branch is pushed, then monitor CI and
-   review state.
+1. Wait for the pending CI matrix (`gh pr checks 2984`; resilient poll, not a
+   single `--watch`) and for Codex's response to the 01:19Z trigger.
+2. When CI is green and Codex stays clean: resolve the four addressed review
+   threads via GraphQL and mark the draft ready for review (draft-ready fast
+   path in `docs/onboarding/ai-tools.md`), both after maintainer approval.
+3. Merge waits for branch protection / required checks.
 
-## Open Review Findings
+## Open Review Findings (all addressed and pushed)
 
 - **Codex P2** (review `4482029601`, `dart/gui/detail/panel.cpp:507`) has a
   local fix: the built-in panel now hides body/joint/velocity controls that
