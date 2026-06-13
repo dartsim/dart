@@ -1497,6 +1497,29 @@ static void BM_Plan083CpuScene_umbrella_reduced_world_step(
 BENCHMARK(BM_Plan083CpuScene_umbrella_reduced_world_step)
     ->Unit(benchmark::kMillisecond);
 
+void recordDeformableRuntimeContactCounters(
+    benchmark::State& state, const sx::DeformableSolverDiagnostics& diagnostics)
+{
+  state.counters["line_search_trials"]
+      = static_cast<double>(diagnostics.lineSearchTrials);
+  state.counters["surface_contact_candidate_builds"]
+      = static_cast<double>(diagnostics.surfaceContactCandidateBuilds);
+  state.counters["surface_contact_point_triangle_candidates"]
+      = static_cast<double>(diagnostics.surfaceContactPointTriangleCandidates);
+  state.counters["surface_contact_edge_edge_candidates"]
+      = static_cast<double>(diagnostics.surfaceContactEdgeEdgeCandidates);
+  state.counters["surface_contact_ccd_point_triangle_checks"]
+      = static_cast<double>(diagnostics.surfaceContactCcdPointTriangleChecks);
+  state.counters["surface_contact_ccd_edge_edge_checks"]
+      = static_cast<double>(diagnostics.surfaceContactCcdEdgeEdgeChecks);
+  state.counters["surface_contact_ccd_hits"]
+      = static_cast<double>(diagnostics.surfaceContactCcdHits);
+  state.counters["surface_contact_ccd_limited_steps"]
+      = static_cast<double>(diagnostics.surfaceContactCcdLimitedSteps);
+  state.counters["surface_contact_ccd_zero_step_count"]
+      = static_cast<double>(diagnostics.surfaceContactCcdZeroStepCount);
+}
+
 //==============================================================================
 static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
     benchmark::State& state)
@@ -1544,6 +1567,7 @@ static void BM_Plan083CpuScene_lying_flat_reduced_world_step(
   state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
   state.counters["min_active_contact_distance_m"]
       = lastDiagnostics.minActiveContactDistance;
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = fixture.minClothHeight();
   state.counters["cloth_span_x_m"] = fixture.clothSpanX();
   state.counters["cloth_span_y_m"] = fixture.clothSpanY();
@@ -1597,6 +1621,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
   state.counters["friction_dissipation"] = lastDiagnostics.frictionDissipation;
   state.counters["min_active_contact_distance_m"]
       = lastDiagnostics.minActiveContactDistance;
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = fixture.minClothHeight();
   state.counters["cloth_span_x_m"] = fixture.clothSpanX();
   state.counters["failed_steps"] = static_cast<double>(failedSteps);
@@ -2662,6 +2687,7 @@ static void BM_Plan083CpuScene_abd_fem_coupling_reduced_side_by_side_step(
       = static_cast<double>(deformableFixture.cloth->getSurfaceTriangleCount());
   state.counters["deformable_solver_iterations"]
       = static_cast<double>(lastDiagnostics.solverIterations);
+  recordDeformableRuntimeContactCounters(state, lastDiagnostics);
   state.counters["min_cloth_height_m"] = deformableFixture.minClothHeight();
   state.counters["affine_fem_candidate_diagnostics_measured"] = 1.0;
   state.counters["affine_fem_mixed_candidate_count"]

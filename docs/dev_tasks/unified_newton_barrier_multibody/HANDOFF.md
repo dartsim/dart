@@ -1,5 +1,46 @@
 # Unified Newton-Barrier Handoff
 
+## Built-In World-Step Surface-Contact Diagnostics Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint exposes existing default deformable `World::step` self-surface
+contact candidate and CCD counters through `DeformableSolverDiagnostics`
+(`World::getLastDeformableSolverDiagnostics` and dartpy
+`last_deformable_solver_diagnostics`). The reduced CPU scene benchmark rows now
+record those counters for `lying_flat`, `candy`, and the deformable side of
+`abd_fem_coupling`, and the packet writer validates the fields without
+claiming paper-scale reproduction. Fresh packet evidence records:
+
+- `lying_flat`: 37 self-surface candidate builds, 1,038 point-triangle CCD
+  checks, 1,852 edge-edge CCD checks, 0 CCD hits, and 0 limited steps on the
+  median row.
+- `candy`: 3 self-surface candidate builds, 64 point-triangle CCD checks, 207
+  edge-edge CCD checks, 0 CCD hits, and 0 limited steps on the median row.
+- `abd_fem_coupling`: the deformable `World::step` side records the same 37 /
+  1,038 / 1,852 self-surface diagnostic counts while the existing affine/FEM
+  mixed-candidate and coupled micro-solve evidence remains bounded.
+
+This is CPU observability and reduced packet evidence only. It does not prove
+GPU `World::step`, production scene-level GPU contact candidate construction,
+production runtime scene filtering, analytic curved CCD, inter-body/static or
+moving-rigid surface-contact diagnostics, full runtime affine/FEM coupling, or
+any speedup gate.
+
+Current validation passed:
+
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run build`
+- `pixi run cmake --build build/default/cpp/Release --target test_deformable_body`
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_deformable_body$'`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene lying_flat`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene candy`
+- `pixi run python scripts/write_plan083_cpu_scene_packet.py --scene abd_fem_coupling`
+
 ## Combined Scene Runtime CCD Line-Search Packet Checkpoint (2026-06-13)
 
 Work continued locally on

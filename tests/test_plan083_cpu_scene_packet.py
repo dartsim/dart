@@ -43,6 +43,20 @@ def _benchmark_packet(**overrides):
     return {"benchmarks": [row]}
 
 
+def _surface_contact_counters() -> dict[str, object]:
+    return {
+        "line_search_trials": 6,
+        "surface_contact_candidate_builds": 6,
+        "surface_contact_point_triangle_candidates": 4,
+        "surface_contact_edge_edge_candidates": 2,
+        "surface_contact_ccd_point_triangle_checks": 4,
+        "surface_contact_ccd_edge_edge_checks": 2,
+        "surface_contact_ccd_hits": 1,
+        "surface_contact_ccd_limited_steps": 1,
+        "surface_contact_ccd_zero_step_count": 0,
+    }
+
+
 def _nunchaku_packet(**overrides):
     row = {
         "name": "BM_Plan083CpuScene_nunchaku_single_reduced_world_step_median",
@@ -134,6 +148,7 @@ def _candy_packet(**overrides):
         "min_cloth_height_m": 0.06,
         "cloth_span_x_m": 0.22,
         "failed_steps": 0,
+        **_surface_contact_counters(),
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -293,6 +308,7 @@ def _lying_flat_packet(**overrides):
         "cloth_span_x_m": 0.27,
         "cloth_span_y_m": 0.16,
         "failed_steps": 0,
+        **_surface_contact_counters(),
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -557,7 +573,27 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["deformable_body_count"] == 1
     assert row["deformable_node_count"] == 25
     assert row["surface_triangle_count"] == 32
+    assert row["line_search_trials"] == 6
+    assert row["surface_contact_candidate_builds"] == 6
+    assert row["surface_contact_point_triangle_candidates"] == 4
+    assert row["surface_contact_edge_edge_candidates"] == 2
+    assert row["surface_contact_ccd_hits"] == 1
+    assert row["surface_contact_ccd_limited_steps"] == 1
     assert row["wall_time_ns"] == 10.0e6
+
+
+def test_plan083_cpu_scene_packet_rejects_surface_contact_hit_count_mismatch() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="more surface-contact CCD hits than CCD checks",
+    ):
+        module.make_packet(
+            _lying_flat_packet(surface_contact_ccd_hits=99),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
 
 
 def test_plan083_cpu_scene_packet_accepts_reduced_abd_house_cards() -> None:
@@ -724,6 +760,7 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
             affine_fem_coupled_final_gradient_norm=0.02,
             affine_fem_coupled_affine_displacement_norm=0.01,
             affine_fem_coupled_deformable_displacement_norm=0.002,
+            **_surface_contact_counters(),
         ),
         max_equality_residual=1e-8,
         scene="abd_fem_coupling",
@@ -741,6 +778,9 @@ def test_plan083_cpu_scene_packet_accepts_reduced_abd_fem_coupling() -> None:
     assert row["dynamic_pair_count"] == 27
     assert row["deformable_body_count"] == 1
     assert row["deformable_node_count"] == 24
+    assert row["line_search_trials"] == 6
+    assert row["surface_contact_candidate_builds"] == 6
+    assert row["surface_contact_ccd_hits"] == 1
     assert row["affine_fem_candidate_diagnostics_measured"] is True
     assert row["affine_fem_mixed_candidate_count"] == 12
     assert row["affine_fem_mixed_active_barrier_count"] == 4
@@ -766,6 +806,12 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["deformable_body_count"] == 1
     assert row["deformable_node_count"] == 24
     assert row["surface_triangle_count"] == 30
+    assert row["line_search_trials"] == 6
+    assert row["surface_contact_candidate_builds"] == 6
+    assert row["surface_contact_point_triangle_candidates"] == 4
+    assert row["surface_contact_edge_edge_candidates"] == 2
+    assert row["surface_contact_ccd_hits"] == 1
+    assert row["surface_contact_ccd_limited_steps"] == 1
     assert row["wall_time_ns"] == 11.0e6
 
 

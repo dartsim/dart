@@ -108,10 +108,11 @@ struct CollisionQueryOptions
 /// A read-only snapshot of the deformable solver's per-step diagnostics, folded
 /// across all deformable bodies on the most recent ``World::step``. This is a
 /// curated, stable subset of the internal ``compute::DeformableSolverStats``
-/// (mesh sizes, projected-Newton convergence, self-contact activity, and the
-/// contact closest-approach diagnostic), surfaced for observability from tools
-/// and bindings without exposing the full internal counter set. All counters
-/// are zero before the first step that runs a deformable solve.
+/// (mesh sizes, projected-Newton convergence, self-contact activity,
+/// self-surface candidate/CCD counters, and the contact closest-approach
+/// diagnostic), surfaced for observability from tools and bindings without
+/// exposing the full internal counter set. All counters are zero before the
+/// first step that runs a deformable solve.
 struct DeformableSolverDiagnostics
 {
   /// Number of deformable bodies stepped.
@@ -151,6 +152,17 @@ struct DeformableSolverDiagnostics
   double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  /// Runtime self-surface contact candidate and CCD activity produced inside
+  /// the default deformable ``World::step`` line search. Candidate counts are
+  /// cumulative over line-search trials for the most recent step.
+  std::size_t surfaceContactCandidateBuilds = 0;
+  std::size_t surfaceContactPointTriangleCandidates = 0;
+  std::size_t surfaceContactEdgeEdgeCandidates = 0;
+  std::size_t surfaceContactCcdPointTriangleChecks = 0;
+  std::size_t surfaceContactCcdEdgeEdgeChecks = 0;
+  std::size_t surfaceContactCcdHits = 0;
+  std::size_t surfaceContactCcdLimitedSteps = 0;
+  std::size_t surfaceContactCcdZeroStepCount = 0;
   /// Coulomb friction energy dissipated at the converged iterate.
   double frictionDissipation = 0.0;
   /// Contact closest-approach diagnostic at the converged iterate: the smallest

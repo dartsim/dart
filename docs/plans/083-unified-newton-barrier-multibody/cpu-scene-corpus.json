@@ -50,9 +50,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/lying_flat/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-lying-flat-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/lying_flat.json",
-      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path.",
+      "expected_invariant": "Reduced deformable cloth patch and static obstacle proxies stay finite while stepping through the deformable IPC World path, with built-in self-surface candidate/CCD counters recorded from the last step diagnostics.",
       "limitation_status": "Reduced deformable-cloth/static-obstacle smoke packet only; rigid rings, deformable tori, rods, articulated ragdoll, cloth self-contact, and paper-scale mixed coupling remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
+      "notes_or_gap": "The py-demo now runs a reduced lying-flat scene through World::step, and bm-plan083-cpu-lying-flat-packet validates the reduced benchmark packet. The packet now records 37 self-surface candidate builds, 1038 point-triangle CCD checks, and 1852 edge-edge CCD checks from built-in deformable World::step diagnostics on the median row. Full paper body/node/contact counts and mixed rigid/deformable/rod/ragdoll coupling remain planned."
     },
     {
       "row_id": "unb-fig-02",
@@ -202,9 +202,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/candy/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-candy-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/candy.json",
-      "expected_invariant": "Reduced deformable cloth patch and static shell obstacle stay finite while stepping through the deformable IPC World path.",
+      "expected_invariant": "Reduced deformable cloth patch and static shell obstacle stay finite while stepping through the deformable IPC World path, with built-in self-surface candidate/CCD counters recorded from the last step diagnostics.",
       "limitation_status": "Reduced deformable-cloth/static-shell smoke packet only; affine body packing, twisted shell, and cloth self-contact parity remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced candy scene through World::step, and bm-plan083-cpu-candy-packet validates the reduced benchmark packet. ABD primitive/oracle rows exist, but affine packing and paper-scale cloth self-contact remain planned."
+      "notes_or_gap": "The py-demo now runs a reduced candy scene through World::step, and bm-plan083-cpu-candy-packet validates the reduced benchmark packet. The packet now records 3 self-surface candidate builds, 64 point-triangle CCD checks, and 207 edge-edge CCD checks from built-in deformable World::step diagnostics on the median row. ABD primitive/oracle rows exist, but affine packing and paper-scale cloth self-contact remain planned."
     },
     {
       "row_id": "unb-fig-23",
@@ -465,9 +465,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/abd_fem_coupling/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-abd-fem-coupling-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/abd_fem_coupling.json",
-      "expected_invariant": "Reduced ABD/FEM packet reports valid affine pair runtime steps, a finite deformable IPC smoke step, active affine/deformable mixed candidate diagnostics, and a converged coupled affine/deformable contact micro-solve.",
+      "expected_invariant": "Reduced ABD/FEM packet reports valid affine pair runtime steps, a finite deformable IPC smoke step with built-in self-surface candidate/CCD counters, active affine/deformable mixed candidate diagnostics, and a converged coupled affine/deformable contact micro-solve.",
       "limitation_status": "Reduced affine runtime-step, deformable IPC smoke, and affine/deformable coupled contact micro-solve evidence only; full runtime affine/FEM coupling, 1.1M-triangle assets, and paper-scale reproduction remain planned.",
-      "notes_or_gap": "bm-plan083-cpu-abd-fem-coupling-packet records bounded ABD/FEM micro-solve evidence but does not run a full runtime affine/FEM World::step path or reproduce the deck timing."
+      "notes_or_gap": "bm-plan083-cpu-abd-fem-coupling-packet records bounded ABD/FEM micro-solve evidence and now carries the deformable World::step side's built-in self-surface candidate/CCD counters: 37 candidate builds, 1038 point-triangle CCD checks, and 1852 edge-edge CCD checks on the median row. It does not run a full runtime affine/FEM World::step path or reproduce the deck timing."
     },
     {
       "row_id": "abd-demo-suite",

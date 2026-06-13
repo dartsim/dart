@@ -461,6 +461,41 @@ def _optional_finite_number(row: Mapping[str, Any], key: str) -> float:
     return _finite_number(row, key)
 
 
+SURFACE_CONTACT_RUNTIME_COUNTER_KEYS = (
+    "line_search_trials",
+    "surface_contact_candidate_builds",
+    "surface_contact_point_triangle_candidates",
+    "surface_contact_edge_edge_candidates",
+    "surface_contact_ccd_point_triangle_checks",
+    "surface_contact_ccd_edge_edge_checks",
+    "surface_contact_ccd_hits",
+    "surface_contact_ccd_limited_steps",
+    "surface_contact_ccd_zero_step_count",
+)
+
+
+def _surface_contact_runtime_counters(row: Mapping[str, Any]) -> dict[str, int]:
+    counters = {
+        key: int(_finite_number(row, key))
+        for key in SURFACE_CONTACT_RUNTIME_COUNTER_KEYS
+    }
+    for key, value in counters.items():
+        if value < 0:
+            raise Plan083CpuScenePacketError(
+                f"{benchmark_row_name(row)} has negative counter {key}"
+            )
+    ccd_checks = (
+        counters["surface_contact_ccd_point_triangle_checks"]
+        + counters["surface_contact_ccd_edge_edge_checks"]
+    )
+    if counters["surface_contact_ccd_hits"] > ccd_checks:
+        raise Plan083CpuScenePacketError(
+            f"{benchmark_row_name(row)} has more surface-contact CCD hits "
+            "than CCD checks"
+        )
+    return counters
+
+
 def _packet_row_name(row: Mapping[str, Any]) -> str:
     name = canonical_benchmark_name(benchmark_row_name(row))
     if name.endswith("/real_time"):
@@ -691,6 +726,7 @@ def _make_lying_flat_packet(
             "surface_triangle_count": surface_triangle_count,
             "solver_iterations": int(_finite_number(row, "solver_iterations")),
             "active_contact_count": int(_finite_number(row, "active_contact_count")),
+            **_surface_contact_runtime_counters(row),
             "friction_dissipation": _finite_number(row, "friction_dissipation"),
             "min_active_contact_distance_m": _finite_number(
                 row, "min_active_contact_distance_m"
@@ -767,6 +803,7 @@ def _make_candy_packet(
             "surface_triangle_count": surface_triangle_count,
             "solver_iterations": int(_finite_number(row, "solver_iterations")),
             "active_contact_count": int(_finite_number(row, "active_contact_count")),
+            **_surface_contact_runtime_counters(row),
             "friction_dissipation": _finite_number(row, "friction_dissipation"),
             "min_active_contact_distance_m": _finite_number(
                 row, "min_active_contact_distance_m"
@@ -1392,6 +1429,7 @@ def _make_abd_fem_coupling_packet(
             "deformable_edge_count": deformable_edge_count,
             "surface_triangle_count": surface_triangle_count,
             "deformable_solver_iterations": deformable_solver_iterations,
+            **_surface_contact_runtime_counters(row),
             "min_cloth_height_m": min_cloth_height,
             "affine_fem_candidate_diagnostics_measured": True,
             "affine_fem_mixed_candidate_count": mixed_candidate_count,

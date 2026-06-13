@@ -1983,6 +1983,32 @@ void defSimulationModule(nb::module_& m)
           "self_contact_barrier_active_contacts",
           &sim::DeformableSolverDiagnostics::selfContactBarrierActiveContacts)
       .def_ro(
+          "surface_contact_candidate_builds",
+          &sim::DeformableSolverDiagnostics::surfaceContactCandidateBuilds)
+      .def_ro(
+          "surface_contact_point_triangle_candidates",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactPointTriangleCandidates)
+      .def_ro(
+          "surface_contact_edge_edge_candidates",
+          &sim::DeformableSolverDiagnostics::surfaceContactEdgeEdgeCandidates)
+      .def_ro(
+          "surface_contact_ccd_point_triangle_checks",
+          &sim::DeformableSolverDiagnostics::
+              surfaceContactCcdPointTriangleChecks)
+      .def_ro(
+          "surface_contact_ccd_edge_edge_checks",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdEdgeEdgeChecks)
+      .def_ro(
+          "surface_contact_ccd_hits",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdHits)
+      .def_ro(
+          "surface_contact_ccd_limited_steps",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdLimitedSteps)
+      .def_ro(
+          "surface_contact_ccd_zero_step_count",
+          &sim::DeformableSolverDiagnostics::surfaceContactCcdZeroStepCount)
+      .def_ro(
           "friction_dissipation",
           &sim::DeformableSolverDiagnostics::frictionDissipation)
       .def_ro(

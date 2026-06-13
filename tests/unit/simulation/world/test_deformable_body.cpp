@@ -851,6 +851,9 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(before.projectedNewtonHessianNonZeros, 0u);
   EXPECT_EQ(before.projectedNewtonHessianStorageBytes, 0u);
   EXPECT_EQ(before.projectedNewtonMatrixFreeSolves, 0u);
+  EXPECT_EQ(before.surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(before.surfaceContactCcdHits, 0u);
+  EXPECT_EQ(before.surfaceContactCcdLimitedSteps, 0u);
 
   world.step(5);
 
@@ -873,6 +876,9 @@ TEST(DeformableBody, ExposesDeformableSolverDiagnostics)
   EXPECT_EQ(reset.solverIterations, 0u);
   EXPECT_EQ(reset.projectedNewtonHessianNonZeros, 0u);
   EXPECT_EQ(reset.projectedNewtonHessianStorageBytes, 0u);
+  EXPECT_EQ(reset.surfaceContactCandidateBuilds, 0u);
+  EXPECT_EQ(reset.surfaceContactCcdHits, 0u);
+  EXPECT_EQ(reset.surfaceContactCcdLimitedSteps, 0u);
 }
 
 //==============================================================================
@@ -2059,6 +2065,26 @@ TEST(DeformableBody, SurfaceContactCcdReportsCustomStageStats)
   EXPECT_EQ(stats.surfaceContactCcdIndeterminateCount, 0u);
   EXPECT_EQ(stats.interBodySurfaceContactPointTriangleCandidates, 0u);
   EXPECT_EQ(stats.interBodySurfaceContactEdgeEdgeCandidates, 0u);
+}
+
+//==============================================================================
+TEST(DeformableBody, SurfaceContactCcdReportsBuiltInWorldDiagnostics)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+  auto body = world.addDeformableBody(
+      "surface_crossing", makeSurfaceCrossingBodyOptions());
+
+  world.step();
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_GT(body.getPosition(3).z(), 0.0);
+  EXPECT_GT(diagnostics.surfaceContactCandidateBuilds, 0u);
+  EXPECT_GT(diagnostics.surfaceContactPointTriangleCandidates, 0u);
+  EXPECT_GT(diagnostics.surfaceContactCcdPointTriangleChecks, 0u);
+  EXPECT_GT(diagnostics.surfaceContactCcdHits, 0u);
+  EXPECT_GT(diagnostics.surfaceContactCcdLimitedSteps, 0u);
 }
 
 //==============================================================================

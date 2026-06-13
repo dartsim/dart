@@ -886,6 +886,21 @@ DeformableSolverDiagnostics makeDeformableSolverDiagnostics(
       = stats.projectedNewtonIterativeMaxError;
   diagnostics.selfContactBarrierActiveContacts
       = stats.selfContactBarrierActiveContacts;
+  diagnostics.surfaceContactCandidateBuilds
+      = stats.surfaceContactCandidateBuilds;
+  diagnostics.surfaceContactPointTriangleCandidates
+      = stats.surfaceContactPointTriangleCandidates;
+  diagnostics.surfaceContactEdgeEdgeCandidates
+      = stats.surfaceContactEdgeEdgeCandidates;
+  diagnostics.surfaceContactCcdPointTriangleChecks
+      = stats.surfaceContactCcdPointTriangleChecks;
+  diagnostics.surfaceContactCcdEdgeEdgeChecks
+      = stats.surfaceContactCcdEdgeEdgeChecks;
+  diagnostics.surfaceContactCcdHits = stats.surfaceContactCcdHits;
+  diagnostics.surfaceContactCcdLimitedSteps
+      = stats.surfaceContactCcdLimitedSteps;
+  diagnostics.surfaceContactCcdZeroStepCount
+      = stats.surfaceContactCcdZeroStepCount;
   diagnostics.frictionDissipation = stats.frictionDissipation;
   diagnostics.minActiveContactDistance = stats.minActiveContactDistance;
   diagnostics.convergedActiveContactCount = stats.convergedActiveContactCount;

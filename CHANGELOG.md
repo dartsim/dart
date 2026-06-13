@@ -2790,6 +2790,14 @@ Capsule Rod (IPC)` py-demos scene.
     The FEM-bar and chunky 3D cube benchmarks now emit `cg_iters_per_step`,
     `cg_max_error`, `hessian_nonzeros`, and `hessian_storage_bytes` counters
     toward the PLAN-081 Fig. 23 / Table 1 profiling surface.
+  - Extended public deformable solver diagnostics with built-in `World::step`
+    self-surface contact candidate and CCD activity counters (PLAN-083 reduced
+    CPU scene evidence). `DeformableSolverDiagnostics` and dartpy
+    `last_deformable_solver_diagnostics` now report surface-contact candidate
+    builds, point-triangle and edge-edge candidate counts, CCD check counts, CCD
+    hits, limited steps, and zero-step counts so benchmark packets can observe
+    the default deformable line-search path without exposing internal solver
+    state or device/backend APIs.
   - Added an explicit matrix-free deformable projected-Newton CG path
     (PLAN-081 M7). `DeformableMaterialProperties.useMatrixFreeLinearSolver`
     (dartpy `use_matrix_free_linear_solver`) bypasses Eigen `SparseMatrix`
