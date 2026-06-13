@@ -186,7 +186,10 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "benchmark_filter": (
             "BM_LcpPgsRelaxationSweep|"
             "BM_LcpSymmetricPsorRelaxationSweep|"
+            "BM_LcpJacobiSolverThreading|"
             "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+            "BM_LcpRedBlackGaussSeidelSolverThreadingBanded|"
+            "BM_LcpBlockedJacobiSolverThreadingBanded|"
             "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep|"
             "BM_LcpPivotingScaleSweep|"
             "BM_LcpBlockPartitionSweep|"
@@ -2102,21 +2105,24 @@ def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
             "boxed/findex",
             dart.JacobiSolverParameters(),
             ["epsilon_for_division", "worker_threads"],
-            "BM_LcpPgsRelaxationSweep",
+            "BM_LcpJacobiSolverThreading",
         ),
         make_row(
             "RedBlackGaussSeidel",
             "boxed/findex",
             dart.RedBlackGaussSeidelSolverParameters(),
             ["epsilon_for_division", "worker_threads"],
-            "BM_LcpRedBlackGaussSeidelRelaxationSweep",
+            (
+                "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+                "BM_LcpRedBlackGaussSeidelSolverThreadingBanded"
+            ),
         ),
         make_row(
             "BlockedJacobi",
             "boxed/findex",
             dart.BlockedJacobiSolverParameters(),
             ["block_sizes", "worker_threads"],
-            "BM_LcpBlockPartitionSweep",
+            "BM_LcpBlockPartitionSweep|BM_LcpBlockedJacobiSolverThreadingBanded",
         ),
         make_row(
             "BGS",

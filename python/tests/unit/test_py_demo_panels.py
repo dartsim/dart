@@ -1383,6 +1383,16 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BoxedSemiSmoothNewton"
     ]["parameters"]
     assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
+    assert parameter_by_solver["Jacobi"]["benchmark_filter"] == (
+        "BM_LcpJacobiSolverThreading"
+    )
+    assert parameter_by_solver["RedBlackGaussSeidel"]["benchmark_filter"] == (
+        "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+        "BM_LcpRedBlackGaussSeidelSolverThreadingBanded"
+    )
+    assert parameter_by_solver["BlockedJacobi"]["benchmark_filter"] == (
+        "BM_LcpBlockPartitionSweep|BM_LcpBlockedJacobiSolverThreadingBanded"
+    )
     assert parameter_by_solver["Apgd"]["benchmark_filter"] == (
         "BM_LcpApgdRestartSweep"
     )
@@ -1885,7 +1895,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     ] == (
         "BM_LcpPgsRelaxationSweep|"
         "BM_LcpSymmetricPsorRelaxationSweep|"
+        "BM_LcpJacobiSolverThreading|"
         "BM_LcpRedBlackGaussSeidelRelaxationSweep|"
+        "BM_LcpRedBlackGaussSeidelSolverThreadingBanded|"
+        "BM_LcpBlockedJacobiSolverThreadingBanded|"
         "BM_LcpBoxedSemiSmoothNewtonLineSearchSweep|"
         "BM_LcpPivotingScaleSweep|"
         "BM_LcpBlockPartitionSweep|"

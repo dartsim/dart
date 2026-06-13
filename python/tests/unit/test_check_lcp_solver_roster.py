@@ -108,6 +108,9 @@ def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
 
     assert "BM_LCP_COMPARE_SMOKE" in tokens
     assert "BM_LcpCompare/Standard/Dantzig/12" in tokens
+    assert "BM_LcpJacobiSolverThreading" in tokens
+    assert "BM_LcpRedBlackGaussSeidelSolverThreadingBanded" in tokens
+    assert "BM_LcpBlockedJacobiSolverThreadingBanded" in tokens
     assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
     assert "BM_LcpArticulatedUnifiedContact" in tokens
 
