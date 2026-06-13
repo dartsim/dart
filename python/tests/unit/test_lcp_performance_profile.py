@@ -139,6 +139,33 @@ def test_lcp_profile_coverage_rejects_failed_contract_rows() -> None:
         )
 
 
+@pytest.mark.parametrize("cpu_time", [0.0, -1.0, float("nan")])
+def test_lcp_profile_coverage_rejects_invalid_timing_rows(cpu_time: float) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": cpu_time,
+                    "contract_ok": 1.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="invalid time_ns"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() -> None:
     module = _load_module()
     results = module.parse_benchmark_results(

@@ -21,6 +21,7 @@ Options:
 import argparse
 import csv
 import json
+import math
 import subprocess
 import sys
 from collections import defaultdict
@@ -250,6 +251,18 @@ def _counter_to_int(value) -> int | None:
     return rounded
 
 
+def _finite_float(value) -> float | None:
+    if value is None:
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return numeric
+
+
 def check_native_profile_coverage(
     results: dict,
     native_support_by_category: dict[str, set[str]],
@@ -273,6 +286,11 @@ def check_native_profile_coverage(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
             if _counter_to_int(data.get("contract_ok")) != 1
+        )
+        invalid_timing_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), data in results.get(category, {}).items()
+            if (time_ns := _finite_float(data.get("time_ns"))) is None or time_ns <= 0.0
         )
         unsupported_rows = sorted(
             f"{solver}/{problem_size}"
@@ -353,6 +371,11 @@ def check_native_profile_coverage(
             evidence_errors.append(
                 f"{category}: benchmark JSON reports contract_ok!=1 for "
                 f"{failed_contract_rows}"
+            )
+        if invalid_timing_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid time_ns for "
+                f"{invalid_timing_rows}"
             )
         if unsupported_rows:
             evidence_errors.append(
