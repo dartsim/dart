@@ -12,60 +12,41 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact path now
-requests only basic private contact-query details when no rigid AVBD contact
-config component is present. Public `World::collide()` and
-private AVBD contact snapshots still request the full shape-index/local-point
-payload. The same slice caches per-contact velocity/transform component
-pointers, inverse effective mass, and unit normal impulse velocity deltas across
-the sequential normal solve, avoiding repeated registry lookups and normal
-impulse cross/matrix work inside the inner iterations. The audit found the
-source-shaped Dynamic Friction max-friction-0 row still exercises the public
-World sequential-impulse contact path; the benchmark helper does not attach
-private `RigidAvbdContactConfig`, and zero friction still requires collision
-query, normal impulses, and penetration correction.
+Latest local slice: the friction-coefficient sweep owner row now matches the
+tracked packet evidence. The packet records DART faster than the same-source
+native runner at max friction 0.5, 1.0, 2.5, and 5.0, but still slower at max
+friction 0.0; the all-coefficient CPU-win gate remains open. The packet-writer
+regression now covers mixed faster/slower reference sweeps so the
+`all_dart_faster_than_reference` flag and remaining-gate text stay true to the
+per-coefficient comparison. This is evidence hygiene only; it does not refresh
+the benchmark packet, close the frictionless source-row CPU gap, or claim GPU
+parity.
 
 Validation for the latest local slice:
 
-- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint`
-  passed.
-- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
-  passed, 3 tests.
-- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-cached-contact-impulse.json --benchmark_out_format=json'`
-  passed. It recorded a 6.74 us median CPU step under load average
-  `2.85, 3.12, 7.77` with CPU scaling enabled.
-- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-basic-contact-query.json --benchmark_out_format=json'`
-  passed. It recorded a 7.47 us median CPU step under load average
-  `8.48, 5.33, 7.43` with CPU scaling enabled.
-- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryUsesShapeLocalTransform:World.CollisionQueryCacheUpdatesTransformsAndShapes:World.CollisionQuerySupportsCompoundRigidBodyShapes' --gtest_brief=1`
-  passed, 3 tests.
-- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=2.0s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-basic-contact-query-long.json --benchmark_out_format=json'`
-  passed. It recorded a 7.25 us median CPU step under load average
-  `6.54, 5.13, 7.31` with CPU scaling enabled.
+- `pixi run pytest python/tests/unit/test_write_avbd_friction_coefficient_sweep_packet.py`
+  passed, 15 tests.
 - `pixi run lint` passed.
-- `pixi run build` passed.
-- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
-  passed again after lint/build, 3 tests.
-- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryUsesShapeLocalTransform:World.CollisionQueryCacheUpdatesTransformsAndShapes:World.CollisionQuerySupportsCompoundRigidBodyShapes' --gtest_brief=1`
-  passed again after lint/build, 3 tests.
-- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_brief=1`
-  passed, 314 tests.
-- `git diff --check` passed.
-- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
-  The gate reported linting, build, unit tests, simulation tests, Python tests,
-  documentation, and CUDA tests all passed; its CUDA smoke phase also passed
-  the four `simulation-cuda` tests and the benchmark smoke filters, with
-  CPU-scaling warnings on the benchmark timings.
 
-Evidence caveat for the latest local slice: these benchmark-only reruns
-validate the edited path, but they do not regenerate the tracked
-friction-coefficient packet because same-source native timing and visual
-capture artifacts were not rerun. The cached-contact and basic-contact-query
-changes reduce per-step work, but the local timings are not CPU-win evidence
-and the max-friction-0 row still lacks a tracked CPU-win comparison against the
-native source runner. The frictionless max-friction-0 CPU gap, all-coefficient
-CPU-win gate, GPU parity, source-demo parity, and paper-number gates remain
-open.
+Next preferred bounded work: return to the frictionless max-friction-0 CPU
+audit/optimization under cleaner host load, or switch to GPU parity preparation
+if the CPU path has no safe bounded next cut.
+
+Previous local checkpoint: commit `7a4c148352a` records the default
+sequential-impulse rigid contact path requesting only basic private contact-query
+details when no rigid AVBD contact config component is present. Public
+`World::collide()` and private AVBD contact snapshots still request the full
+shape-index/local-point payload. The same slice caches per-contact
+velocity/transform component pointers, inverse effective mass, and unit normal
+impulse velocity deltas across the sequential normal solve, avoiding repeated
+registry lookups and normal impulse cross/matrix work inside the inner
+iterations. The audit found the source-shaped Dynamic Friction max-friction-0 row
+still exercises the public World sequential-impulse contact path; the benchmark
+helper does not attach private `RigidAvbdContactConfig`, and zero friction still
+requires collision query, normal impulses, and penetration correction. That
+slice passed focused target builds/tests, focused `/0` benchmark path checks,
+`pixi run lint`, `pixi run build`, full `test_world`, `git diff --check`, and
+`pixi run -e cuda test-all` on the visible NVIDIA RTX 5000 Ada host.
 
 Previous local checkpoint: commit `7a226db4050` records the
 `buildAvbdRigidContactManifoldRows()` empty-friction-descriptor early return.

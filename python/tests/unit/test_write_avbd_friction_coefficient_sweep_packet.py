@@ -80,6 +80,7 @@ def _write_reference_timing_json(
     tmp_path: Path,
     max_friction: float,
     *,
+    cpu_time_per_step_ns: float | None = None,
     wrong_dynamic_bodies: bool = False,
 ) -> Path:
     arg = int(round(max_friction * 10.0))
@@ -89,7 +90,11 @@ def _write_reference_timing_json(
         "compile_command": ["c++", "<temp-dir>/reference_runner.cpp"],
         "compile_flags": "-std=c++17 -O3 -DNDEBUG",
         "compiler": "c++",
-        "cpu_time_per_step_ns": 200.0 + arg,
+        "cpu_time_per_step_ns": (
+            200.0 + arg
+            if cpu_time_per_step_ns is None
+            else cpu_time_per_step_ns
+        ),
         "dynamic_bodies": 10 if wrong_dynamic_bodies else 11,
         "dynamic_max_friction": max_friction,
         "dynamic_min_friction": 0.0,
@@ -296,6 +301,47 @@ def test_avbd_friction_coefficient_sweep_packet_records_reference_sweep(
     assert "source/reference friction-sweep timing comparison" not in packet[
         "remaining_gates"
     ]
+
+
+def test_avbd_friction_coefficient_sweep_packet_records_mixed_reference_sweep(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT, "write_avbd_friction_sweep_packet_mixed_ref"
+    )
+    benchmark_json = _write_benchmark_json(tmp_path)
+    reference_jsons = [
+        _write_reference_timing_json(tmp_path, 0.0, cpu_time_per_step_ns=50.0),
+        *[
+            _write_reference_timing_json(tmp_path, max_friction)
+            for max_friction in (0.5, 1.0, 2.5, 5.0)
+        ],
+    ]
+    output = tmp_path / "packet.json"
+
+    args = [
+        "--benchmark-json",
+        str(benchmark_json),
+        "--output",
+        str(output),
+    ]
+    for reference_json in reference_jsons:
+        args.extend(["--reference-timing-json", str(reference_json)])
+    assert module.main(args) == 0
+
+    packet = json.loads(output.read_text(encoding="utf-8"))
+    assert packet["reference_sweep"]["all_dart_faster_than_reference"] is False
+    assert [
+        row["dart_faster_than_reference"]
+        for row in packet["reference_sweep"]["comparison"]
+    ] == [False, True, True, True, True]
+    assert packet["reference_sweep"]["comparison"][0][
+        "dart_to_reference_cpu_time_ratio"
+    ] == 2.0
+    assert (
+        "DART CPU performance must beat the native source sweep before a CPU win is claimed for every friction coefficient"
+        in packet["remaining_gates"]
+    )
 
 
 def test_avbd_friction_coefficient_sweep_packet_rejects_missing_value(

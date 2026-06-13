@@ -9,6 +9,14 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the friction-coefficient sweep owner
+  row now matches the tracked packet evidence: DART is faster than the
+  same-source native runner at max friction 0.5, 1.0, 2.5, and 5.0, but still
+  slower at max friction 0.0, so the all-coefficient CPU-win gate remains open.
+  The packet-writer regression now covers mixed faster/slower reference sweeps
+  and preserves the remaining-gate text when any coefficient fails the CPU-win
+  comparison. This is evidence hygiene only; it does not refresh benchmark
+  timings, close the frictionless source-row gap, or claim GPU parity.
 - Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
   contact path now requests only basic private contact-query details when no
   rigid AVBD contact config component is present, while
