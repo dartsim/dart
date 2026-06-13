@@ -1089,6 +1089,23 @@ def test_lcp_physics_profile_summary_rejects_empty_evidence_file(
         lcp_physics._performance_profile_evidence_summary_rows()
 
 
+def test_lcp_physics_profile_summary_rejects_missing_evidence_surfaces(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path)
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="missing surfaces: \\['Boxed', 'FrictionIndex'\\]",
+    ):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     _require_simulation_symbols("World", "ContactSolverMethod")
 

@@ -391,6 +391,7 @@ _PROFILE_CATEGORY_SUPPORT_FIELDS = {
     "Boxed": "solver_supports_boxed",
     "FrictionIndex": "solver_supports_friction_index",
 }
+_PROFILE_EVIDENCE_REQUIRED_SURFACES = tuple(_PROFILE_CATEGORY_SUPPORT_FIELDS)
 _PROFILE_SOLVER_SUPPORT_FIELDS = {
     "solver_supports_standard": "standard",
     "solver_supports_boxed": "boxed",
@@ -741,6 +742,16 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
             )
         if row_count == 0:
             raise RuntimeError("LCP performance profile evidence has no rows")
+        missing_surfaces = [
+            surface
+            for surface in _PROFILE_EVIDENCE_REQUIRED_SURFACES
+            if surface not in summaries
+        ]
+        if missing_surfaces:
+            raise RuntimeError(
+                "LCP performance profile evidence is missing surfaces: "
+                f"{missing_surfaces}"
+            )
 
     rows: list[dict[str, str]] = []
     for surface in ("Standard", "Boxed", "FrictionIndex"):

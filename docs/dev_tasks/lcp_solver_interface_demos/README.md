@@ -1,9 +1,68 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-13 Current Continuation - Python Demo Profile Schema Validation
+## 2026-06-13 Current Continuation - Python Demo Profile Surface Validation
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `0b8bbb74564 Validate LCP demo profile schema` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `0b8bbb74564 Validate LCP demo profile schema`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by ten commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Python demo profile surface status:
+
+- `python/examples/demos/scenes/lcp_physics.py` now requires the profile
+  evidence summary source to include Standard, Boxed, and FrictionIndex rows
+  before the Python LCP demo displays the evidence summary table.
+- The demo rejects present-but-partial evidence files instead of silently
+  omitting a profile surface from the table.
+- `python/tests/unit/test_py_demo_panels.py` covers missing evidence surfaces
+  alongside the existing schema, category, identity, support, problem-type, and
+  numeric profile-evidence guards.
+- No checked profile CSVs, benchmark registrations, solver predicates, public
+  APIs, or performance timings were intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_non_native_evidence_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_stale_support_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_invalid_numeric_rows python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_missing_evidence_columns python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_empty_evidence_file python/tests/unit/test_py_demo_panels.py::test_lcp_physics_profile_summary_rejects_missing_evidence_surfaces python/tests/unit/test_py_demo_panels.py::test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata -q`
+  passed with 27 tests.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun the
+   focused py-demo panel tests, `pixi run lint`, and `git diff --check`, then
+   commit the focused demo/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
+## 2026-06-13 Current Continuation - Python Demo Profile Schema Validation
+
+Historical checkpoint section. It was the latest hand-off before the Python
+demo profile surface validation continuation.
 
 Fresh AI session priority:
 
