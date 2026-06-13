@@ -58,6 +58,28 @@ def test_lcp_solver_roster_surfaces_match() -> None:
     module.check_roster()
 
 
+def test_lcp_solver_roster_rejects_demo_profile_column_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_columns = tuple(
+        column
+        for column in module.REQUIRED_EVIDENCE_COLUMNS
+        if column != "time_ns"
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_profile_evidence_required_columns",
+        lambda: stale_columns,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="profile evidence required columns do not match",
+    ):
+        module.check_demo_profile_evidence_required_columns()
+
+
 def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
     tmp_path: Path,
 ) -> None:

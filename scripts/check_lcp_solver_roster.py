@@ -171,11 +171,101 @@ def _literal_assignment(module: ast.Module, name: str) -> Any:
     raise AssertionError(f"{LCP_DEMO_PATH} is missing assignment {name}")
 
 
+def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Tuple):
+        values: list[Any] = []
+        for element in node.elts:
+            if isinstance(element, ast.Starred):
+                values.extend(_evaluate_demo_expression(element.value, env))
+            else:
+                values.append(_evaluate_demo_expression(element, env))
+        return tuple(values)
+    if isinstance(node, ast.Dict):
+        return {
+            _evaluate_demo_expression(key, env): _evaluate_demo_expression(value, env)
+            for key, value in zip(node.keys, node.values, strict=True)
+            if key is not None
+        }
+    if isinstance(node, ast.Name):
+        if node.id in env:
+            return env[node.id]
+        raise AssertionError(f"cannot evaluate unknown demo name {node.id!r}")
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+        if node.func.id == "tuple" and len(node.args) == 1 and not node.keywords:
+            return tuple(_evaluate_demo_expression(node.args[0], env))
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "values"
+        and not node.args
+        and not node.keywords
+    ):
+        value = _evaluate_demo_expression(node.func.value, env)
+        if isinstance(value, dict):
+            return tuple(value.values())
+    raise AssertionError(f"cannot evaluate demo expression: {ast.dump(node)}")
+
+
 def parse_demo_roster() -> tuple[list[dict[str, Any]], dict[str, str]]:
     module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
     rows = list(_literal_assignment(module, "_SOLVER_SUPPORT_ROWS"))
     class_names = dict(_literal_assignment(module, "_SOLVER_CLASS_NAMES"))
     return rows, class_names
+
+
+def parse_demo_profile_evidence_required_columns() -> tuple[str, ...]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    targets = {
+        "_PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY",
+        "_PROFILE_SOLVER_FAMILY_COUNTER_FIELDS",
+        "_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS",
+        "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS",
+    }
+    env: dict[str, Any] = {}
+
+    for node in module.body:
+        target_name: str | None = None
+        value: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            target_names = [
+                target.id
+                for target in node.targets
+                if isinstance(target, ast.Name) and target.id in targets
+            ]
+            if target_names:
+                target_name = target_names[0]
+                value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id in targets
+            and node.value is not None
+        ):
+            target_name = node.target.id
+            value = node.value
+
+        if target_name is not None and value is not None:
+            env[target_name] = _evaluate_demo_expression(value, env)
+
+    columns = env.get("_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS")
+    if columns is None:
+        raise AssertionError(
+            f"{LCP_DEMO_PATH} is missing "
+            "_PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS"
+        )
+    return tuple(columns)
+
+
+def check_demo_profile_evidence_required_columns() -> None:
+    demo_columns = parse_demo_profile_evidence_required_columns()
+    if demo_columns != REQUIRED_EVIDENCE_COLUMNS:
+        raise AssertionError(
+            "lcp_physics profile evidence required columns do not match the "
+            "roster checker.\n"
+            f"checker={REQUIRED_EVIDENCE_COLUMNS}\ndemo={demo_columns}"
+        )
 
 
 def parse_bound_solver_classes() -> dict[str, str]:
@@ -506,6 +596,7 @@ def check_roster() -> None:
     manifest = parse_cpp_manifest()
     check_performance_profile_headers(manifest)
     check_performance_profile_evidence(manifest)
+    check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]
     manifest_by_name = {entry.name: entry for entry in manifest}
