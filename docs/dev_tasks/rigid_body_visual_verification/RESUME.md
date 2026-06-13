@@ -3,10 +3,24 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice: `feature/rigid-body-gui-visual-verification`
-is clean and ahead of `origin/feature/rigid-body-gui-visual-verification` by one
-local commit, `Guard rigid joint panel controls`. There is still no PR for this
-branch. Do not push, create a PR, set a milestone, rerun CI, or mutate review
-state without explicit maintainer/user approval.
+is clean and ahead of `origin/feature/rigid-body-gui-visual-verification` by two
+local commits, latest `Reset loop closure executor edits` after
+`Guard rigid joint panel controls`. There is still no PR for this branch. Do
+not push, create a PR, set a milestone, rerun CI, or mutate review state
+without explicit maintainer/user approval.
+
+Latest local continuation: rows 35-36 now close the editable-control guard for
+the numbered World Rigid Body workflow. Row 35,
+`rigid_multibody_solver_family`, and row 36, `rigid_loop_closure`, have panel
+guards for their gravity controls and focused panel-edit tests proving executor
+and gravity changes update runtime state, reset simulation time, and publish
+capture controls. Row 36 also now resets/clears replay on executor-only edits,
+matching the other executor-driven verifier rows, and its panel shows the active
+executor. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_multibody_solver_family_panel_edits_execution_controls python/tests/unit/test_py_demo_panels.py::test_rigid_loop_closure_panel_edits_execution_controls -q`
+reported `3 passed`; the adjacent behavior guard
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_multibody_solver_family_routes_solved_closures python/tests/integration/test_demos_cycle.py::test_rigid_loop_closure_compares_closure_families -q`
+reported `2 passed`. No new visual packet was generated in this slice.
 
 Latest local continuation: rows 28-34 now have a stronger panel-contract guard
 for the editable controls that users rely on in the later joint and multibody

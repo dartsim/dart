@@ -7,7 +7,7 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
-Latest local harness-hardening slice: rows 28-34 now have a stronger
+Previous local harness-hardening slice: rows 28-34 now have a stronger
 panel-contract guard for the editable controls that make the later joint and
 multibody rows useful during visual debugging. The comparison-panel test now
 asserts the public Perturbation, motor/limit, screw-pitch, dynamics-term, COM,
@@ -18,6 +18,17 @@ effort cap, and capture controls. Focused panel guards reported `2 passed`,
 and the adjacent row-29 runtime/replay guards reported `2 passed`. This slice
 does not add a new visual packet; the existing rows 01-36 packet remains the
 latest broad visual artifact.
+
+Latest local implementation slice: rows 35-36 now close the editable-control
+guard for the numbered World Rigid Body workflow. Row 35,
+`rigid_multibody_solver_family`, and row 36, `rigid_loop_closure`, have panel
+guards for their gravity controls and focused panel-edit tests proving executor
+and gravity changes update runtime state, reset simulation time, and publish
+capture controls. Row 36 also resets/clears replay on executor-only edits,
+matching the other executor-driven verifier rows, and its panel shows the active
+executor. Focused panel guards reported `3 passed`, and the adjacent row 35-36
+behavior guards reported `2 passed`. This slice does not add a new visual
+packet; the existing rows 01-36 packet remains the latest broad visual artifact.
 
 Latest local implementation slice: row 30,
 `rigid_joint_passive_parameters`, now exposes the passive-joint force controls

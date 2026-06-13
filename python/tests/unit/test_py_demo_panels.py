@@ -1351,6 +1351,7 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_multibody_solver_family,
             (
+                "slider:Gravity scale:0.0:1.8",
                 "text:comparison axis: multibody integration solve-policy family",
                 "text:held fixed: World multibody point closure | contacts off | three revolute links | link length 0.55 | gravity scale 1.0 | time step 5.0 ms",
             ),
@@ -1358,8 +1359,10 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_loop_closure,
             (
+                "slider:Gravity scale:0.0:1.4",
                 "text:comparison axis: loop-closure family and solve policy",
                 "text:held fixed: Variational rigid multibody | contacts off | four revolute links | link length 0.56 | gravity scale 1.0 | time step 5.0 ms",
+                "text:executor: Sequential",
             ),
         ),
     ]
@@ -2295,6 +2298,96 @@ def test_rigid_joint_motor_limits_panel_edits_public_limits() -> None:
     assert capture_metrics["controls"]["position_limit"] == pytest.approx(0.47)
     assert capture_metrics["controls"]["force_command"] == pytest.approx(17.0)
     assert capture_metrics["controls"]["effort_limit"] == pytest.approx(4.25)
+
+
+def test_rigid_multibody_solver_family_panel_edits_execution_controls() -> None:
+    _require_simulation_symbols("World", "LoopClosureSpec", "MultibodyOptions")
+
+    setup = rigid_multibody_solver_family.build()
+    controller = setup.info["rigid_multibody_solver_family_controller"]
+    assert setup.pre_step is not None
+    setup.pre_step()
+    assert controller.primary_world.time > 0.0
+
+    target_executor = len(controller._executors) - 1
+    builder = _ScriptedPanelBuilder(
+        select_values={"Executor": target_executor},
+        slider_values={"Gravity scale": 0.45},
+    )
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("select:Executor:") for event in builder.events)
+    assert "slider:Gravity scale:0.0:1.8" in builder.events
+    assert controller.executor_index == target_executor
+    assert controller.gravity_scale == pytest.approx(0.45)
+    assert controller.primary_world.time == pytest.approx(0.0)
+    for case in controller.cases:
+        assert case.world.time == pytest.approx(0.0)
+        assert case.world.gravity[2] == pytest.approx(-9.81 * 0.45)
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["executor"] == controller._executor_label()
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        target_executor
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(0.45)
+
+
+def test_rigid_loop_closure_panel_edits_execution_controls() -> None:
+    _require_simulation_symbols(
+        "World",
+        "LoopClosureSpec",
+        "LoopClosureFamily",
+        "ClosureDynamicsPolicy",
+        "MultibodyOptions",
+    )
+
+    setup = rigid_loop_closure.build()
+    controller = setup.info["rigid_loop_closure_controller"]
+    assert setup.pre_step is not None
+    setup.pre_step()
+    assert controller.primary_world.time > 0.0
+
+    if len(controller._executors) > 1:
+        executor_only_builder = _ScriptedPanelBuilder(
+            select_values={"Executor": 1},
+        )
+        setup.panels[0].build(executor_only_builder, object())
+
+        assert controller.executor_index == 1
+        assert controller.primary_world.time == pytest.approx(0.0)
+        for case in controller.cases:
+            assert case.world.time == pytest.approx(0.0)
+        assert f"text:executor: {controller._executors[1][0]}" in (
+            executor_only_builder.events
+        )
+        setup.pre_step()
+        assert controller.primary_world.time > 0.0
+
+    target_executor = len(controller._executors) - 1
+    builder = _ScriptedPanelBuilder(
+        select_values={"Executor": target_executor},
+        slider_values={"Gravity scale": 0.55},
+    )
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("select:Executor:") for event in builder.events)
+    assert "slider:Gravity scale:0.0:1.4" in builder.events
+    assert (
+        f"text:executor: {controller._executors[target_executor][0]}"
+        in builder.events
+    )
+    assert controller.executor_index == target_executor
+    assert controller.gravity_scale == pytest.approx(0.55)
+    assert controller.primary_world.time == pytest.approx(0.0)
+    for case in controller.cases:
+        assert case.world.time == pytest.approx(0.0)
+        assert case.world.gravity[2] == pytest.approx(-9.81 * 0.55)
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["executor"] == controller._executors[target_executor][0]
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        target_executor
+    )
+    assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(0.55)
 
 
 def test_rigid_joint_passive_parameters_panel_edits_drive_forces() -> None:

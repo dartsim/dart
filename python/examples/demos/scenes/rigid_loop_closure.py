@@ -848,17 +848,19 @@ class _RigidLoopClosureVerifier:
 
     def build_panel(self, builder: Any, context: Any) -> None:
         choices = [label for label, _executor in self._executors]
-        changed, executor_index = builder.select(
+        changed_executor, executor_index = builder.select(
             "Executor", int(self.executor_index), choices
         )
-        if changed:
+        if changed_executor:
             self.executor_index = int(executor_index)
 
-        changed, gravity_scale = builder.slider(
+        changed_gravity, gravity_scale = builder.slider(
             "Gravity scale", float(self.gravity_scale), 0.0, 1.4
         )
-        if changed:
+        if changed_gravity:
             self.gravity_scale = float(gravity_scale)
+
+        if changed_executor or changed_gravity:
             self.reset(clear_replay=True)
 
         if builder.button("Reset closure verifier"):
@@ -872,6 +874,9 @@ class _RigidLoopClosureVerifier:
             f"gravity scale {self.gravity_scale:.1f} | "
             f"time step {_TIME_STEP * 1000.0:.1f} ms"
         )
+        executor_index = max(0, min(int(self.executor_index), len(self._executors) - 1))
+        self.executor_index = executor_index
+        builder.text(f"executor: {self._executors[executor_index][0]}")
         builder.text(f"world time: {self.primary_world.time:.3f} s")
         builder.text("families: POINT endpoint, DISTANCE tether, RIGID weld")
         builder.text("solver path: variational rigid multibody")
