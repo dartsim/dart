@@ -154,6 +154,15 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "normal-only contact subproblems",
     },
     {
+        "packet": "validation_friction_index",
+        "surface": "findex validation",
+        "benchmark_filter": (
+            "BM_LcpValidation_Serial_FrictionIndex|"
+            "BM_LcpValidation_Threaded_FrictionIndex"
+        ),
+        "coverage": "serial and threaded residual/complementarity validation",
+    },
+    {
         "packet": "singular_degenerate",
         "surface": "standard/boxed/findex",
         "benchmark_filter": "BM_LcpSingularDegenerate",

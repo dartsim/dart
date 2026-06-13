@@ -1886,6 +1886,10 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["contact_normal_standard_sweep"][
         "benchmark_filter"
     ] == "BM_LcpContactNormalStandardSweep"
+    assert benchmark_by_packet["validation_friction_index"]["benchmark_filter"] == (
+        "BM_LcpValidation_Serial_FrictionIndex|"
+        "BM_LcpValidation_Threaded_FrictionIndex"
+    )
     assert benchmark_by_packet["near_singular"]["benchmark_filter"] == (
         "BM_LcpNearSingular|"
         "BM_LcpNearSingularBatchSerial|"
