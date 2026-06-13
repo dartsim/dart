@@ -309,7 +309,7 @@ _RIGID_VISUAL_WORKFLOW_GUIDE_TEXT: Mapping[
     "rigid_joint_breakage": (
         "What happens when a fixed joint breaks?",
         ("Broken/intact state and connector color", "Payload release and reset"),
-        "AVBD-pinned breakage row; no user-editable threshold, sequential-impulse, or IPC break-force parity claim.",
+        "AVBD-pinned editable-threshold breakage row; no sequential-impulse or IPC break-force parity claim.",
     ),
     "rigid_distance_spring": (
         "How do rigid-body distance springs enforce rest length?",

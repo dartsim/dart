@@ -649,16 +649,16 @@ residual-motion frames during recovery.
 
 The **`rigid_joint_breakage`** scene is the next fixed-joint lifecycle row. It
 is explicitly AVBD-pinned: a very weak fixed joint starts intact, crosses a
-fixed break-force threshold, turns the connector red when `is_broken` becomes
-true, and exposes `reset_breakage()` behavior without claiming
-sequential-impulse or IPC parity. The panel also has a `Reset breakage lifecycle`
-button that clears the broken flag, restores the captured body poses, clears
-loads, and restarts the row timing. The panel and capture metrics label the
-fixed break-force lifecycle comparison axis, the held-fixed AVBD/static-base
-context, and top-level breakage signals for release distance, broken state,
-captured-offset error, payload speed, and status. The shared Replay panel uses
-payload release distance as its value track and marks broken or released frames
-so saved-state scrubbing jumps to the breakage event.
+break-force threshold, turns the connector red when `is_broken` becomes true,
+and exposes `reset_breakage()` behavior without claiming sequential-impulse or
+IPC parity. The panel includes a log-scale break-force threshold control plus
+reset paths for the current threshold, locked reset, and weak re-arm. The panel
+and capture metrics label the fixed break-force lifecycle comparison axis, the
+held-fixed AVBD/static-base context, active threshold diagnostics, and top-level
+breakage signals for release distance, broken state, captured-offset error,
+payload speed, and status. The shared Replay panel uses payload release
+distance as its value track and marks broken or released frames so saved-state
+scrubbing jumps to the breakage event.
 
 The **`rigid_distance_spring`** scene shows the public
 `World.add_rigid_body_distance_spring()` path on free rigid bodies before users

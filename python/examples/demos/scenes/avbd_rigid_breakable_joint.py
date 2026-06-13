@@ -22,6 +22,9 @@ _CAPTURED_OFFSET = np.array([0.62, 0.0, 0.0])
 _PAYLOAD_PRESTRAIN = np.array([0.18, 0.0, -0.08])
 _BREAK_FORCE = 1.0e-12
 _RESET_BREAK_FORCE = 1.0e12
+_BREAK_FORCE_LOG10_MIN = -12.0
+_BREAK_FORCE_LOG10_MAX = 12.0
+_BREAK_FORCE_LOG10_DEFAULT = float(np.log10(_BREAK_FORCE))
 
 
 def _full(half_extents: np.ndarray) -> np.ndarray:
@@ -54,6 +57,25 @@ def _connector_transform(start: np.ndarray, end: np.ndarray) -> np.ndarray:
     transform[:3, 1] = y_axis
     transform[:3, 2] = z_axis
     return transform
+
+
+def _break_force_from_log10(value: float) -> float:
+    exponent = float(
+        np.clip(value, _BREAK_FORCE_LOG10_MIN, _BREAK_FORCE_LOG10_MAX)
+    )
+    return float(10.0**exponent)
+
+
+def _break_force_log10(value: float) -> float:
+    if not np.isfinite(value) or value <= 0.0:
+        return _BREAK_FORCE_LOG10_MIN
+    return float(
+        np.clip(
+            np.log10(value),
+            _BREAK_FORCE_LOG10_MIN,
+            _BREAK_FORCE_LOG10_MAX,
+        )
+    )
 
 
 def build_breakable_joint_scene(
@@ -143,6 +165,7 @@ def build_breakable_joint_scene(
     release_history: deque[float] = deque(maxlen=160)
     broken_history: deque[float] = deque(maxlen=160)
     _last_metrics: dict[str, float | str] = {}
+    break_force_log10 = [_BREAK_FORCE_LOG10_DEFAULT]
 
     def sample_metrics() -> dict[str, float | str]:
         base_pos = np.asarray(base.translation, dtype=float).reshape(3)
@@ -159,6 +182,9 @@ def build_breakable_joint_scene(
             ),
             "broken": broken,
             "break_force": float(breakable_joint.break_force),
+            "break_force_log10": _break_force_log10(
+                float(breakable_joint.break_force)
+            ),
             "world_time": float(world.time),
             "status": "broken" if breakable_joint.is_broken else "intact",
         }
@@ -186,6 +212,7 @@ def build_breakable_joint_scene(
         payload_release_distance = float(_last_metrics["payload_release_distance"])
         broken = float(_last_metrics["broken"])
         break_force = float(_last_metrics["break_force"])
+        active_break_force_log10 = float(_last_metrics["break_force_log10"])
         status = str(_last_metrics["status"])
         metrics_payload: dict[str, object] = {
             "row": row_id,
@@ -204,7 +231,12 @@ def build_breakable_joint_scene(
                 "time_step_ms": _TIME_STEP * 1000.0,
             },
             "controls": {
-                "break_force": float(_BREAK_FORCE),
+                "break_force": break_force,
+                "break_force_log10": active_break_force_log10,
+                "break_force_log10_range": [
+                    _BREAK_FORCE_LOG10_MIN,
+                    _BREAK_FORCE_LOG10_MAX,
+                ],
                 "reset_break_force": float(_RESET_BREAK_FORCE),
             },
             "breakage_payload_release_distance": payload_release_distance,
@@ -219,6 +251,7 @@ def build_breakable_joint_scene(
                 "payload_release_distance": payload_release_distance,
                 "broken": broken,
                 "break_force": break_force,
+                "break_force_log10": active_break_force_log10,
                 "status": status,
             },
             "history": {
@@ -233,12 +266,21 @@ def build_breakable_joint_scene(
             metrics_payload["related_source_row"] = related_source_row
         return metrics_payload
 
+    def set_break_force_log10(value: float) -> None:
+        break_force_log10[0] = float(
+            np.clip(value, _BREAK_FORCE_LOG10_MIN, _BREAK_FORCE_LOG10_MAX)
+        )
+        breakable_joint.break_force = _break_force_from_log10(break_force_log10[0])
+        record_metrics()
+        sync_connector()
+
     def capture_replay_state() -> dict[str, Any]:
         if not _last_metrics:
             record_metrics()
         return {
             "controls": {
                 "break_force": float(breakable_joint.break_force),
+                "break_force_log10": float(break_force_log10[0]),
             },
             "offset_history": list(offset_history),
             "speed_history": list(speed_history),
@@ -306,8 +348,19 @@ def build_breakable_joint_scene(
     def restore_replay_state(state: dict[str, Any]) -> None:
         controls = state.get("controls", {})
         try:
-            breakable_joint.break_force = float(
-                controls.get("break_force", breakable_joint.break_force)
+            break_force_log10[0] = _break_force_log10(
+                float(controls.get("break_force", breakable_joint.break_force))
+            )
+            if "break_force_log10" in controls:
+                break_force_log10[0] = float(
+                    np.clip(
+                        float(controls["break_force_log10"]),
+                        _BREAK_FORCE_LOG10_MIN,
+                        _BREAK_FORCE_LOG10_MAX,
+                    )
+                )
+            breakable_joint.break_force = _break_force_from_log10(
+                break_force_log10[0]
             )
         except (TypeError, ValueError, AttributeError):
             pass
@@ -325,15 +378,21 @@ def build_breakable_joint_scene(
                     _last_metrics[str(key)] = str(value)
         replay_sync()
 
-    def reset_joint(break_force: float = _RESET_BREAK_FORCE) -> None:
+    def reset_joint(break_force: float | None = None) -> None:
+        if break_force is None:
+            target_break_force = _break_force_from_log10(break_force_log10[0])
+        else:
+            target_break_force = float(break_force)
+            break_force_log10[0] = _break_force_log10(target_break_force)
         payload.linear_velocity = (0.0, 0.0, 0.0)
         payload.angular_velocity = (0.0, 0.0, 0.0)
-        breakable_joint.break_force = float(break_force)
+        breakable_joint.break_force = target_break_force
         breakable_joint.reset_breakage()
         record_metrics()
         sync_connector()
 
     def rearm_weak_joint() -> None:
+        break_force_log10[0] = _BREAK_FORCE_LOG10_DEFAULT
         reset_joint(_BREAK_FORCE)
 
     def pre_step() -> None:
@@ -379,6 +438,16 @@ def build_breakable_joint_scene(
         speed = float(metrics["payload_speed"])
         captured_offset = float(np.linalg.norm(_CAPTURED_OFFSET))
 
+        changed_break_force, next_break_force_log10 = builder.slider(
+            "Break force log10(N)",
+            float(break_force_log10[0]),
+            _BREAK_FORCE_LOG10_MIN,
+            _BREAK_FORCE_LOG10_MAX,
+        )
+        if changed_break_force:
+            set_break_force_log10(float(next_break_force_log10))
+            metrics = _last_metrics or record_metrics()
+
         builder.text("comparison axis: fixed break-force lifecycle")
         builder.text(
             "held fixed: AVBD rigid joints | static base | payload mass "
@@ -388,10 +457,12 @@ def build_breakable_joint_scene(
         builder.text("solver: AVBD fixed joint with break-force threshold")
         builder.text(f"joint: {breakable_joint.name}")
         builder.text(f"state: {'broken' if breakable_joint.is_broken else 'intact'}")
-        builder.text(f"break force: {_BREAK_FORCE:.1e} N")
+        builder.text(f"break force: {float(breakable_joint.break_force):.1e} N")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"captured-offset error: {offset_error:.4f} m")
         builder.text(f"payload speed: {speed:.3f} m/s")
+        if builder.button("Reset with current threshold"):
+            reset_joint()
         if builder.button("Reset joint"):
             reset_joint(_RESET_BREAK_FORCE)
         if builder.button("Re-arm weak joint"):
@@ -433,6 +504,7 @@ def build_breakable_joint_scene(
             "reset_break_force": _RESET_BREAK_FORCE,
             "reset_joint": reset_joint,
             "rearm_weak_joint": rearm_weak_joint,
+            "set_break_force_log10": set_break_force_log10,
         },
     )
 

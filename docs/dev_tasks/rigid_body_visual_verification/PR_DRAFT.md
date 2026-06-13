@@ -46,6 +46,9 @@ rigid-body visual verification surface for the current cycle.
   for `ContactGradientMode.PRE_CONTACT_SURROGATE`, proving the
   approaching-but-not-touching backward-only signal without expanding the
   numbered rigid workflow.
+- Exposes the row-26 fixed-joint breakage threshold as a log-scale GUI
+  parameter backed by public `Joint.break_force`, with capture metrics and
+  replay state recording the active threshold.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -66,6 +69,17 @@ rigid-body visual verification surface for the current cycle.
 - Current-head focused docs/capture drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `6 passed`.
+- Focused editable break-force threshold guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_edits_break_force_threshold python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage -q`
+  reported `4 passed`.
+- Adjacent rigid workflow docs consistency guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
+  reported `3 passed`.
+- Fresh row-26 single-scene visual evidence:
+  `build/captures/rigid_joint_breakage_editable_threshold_1781324921`
+  captured `rigid_joint_breakage` at 48 requested UI frames, wrote 47 PNG
+  frames plus `rigid_joint_breakage.png`, and recorded
+  `scene_metrics.event_count=48` with editable-threshold workflow guidance.
 - Current-head broad default validation:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,

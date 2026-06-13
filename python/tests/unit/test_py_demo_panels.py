@@ -932,6 +932,7 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         checkbox_values: dict[str, bool] | None = None,
         text_input_values: dict[str, str] | None = None,
         select_values: dict[str, int] | None = None,
+        slider_values: dict[str, float] | None = None,
         timeline_values: dict[str, float] | None = None,
     ) -> None:
         super().__init__()
@@ -940,6 +941,7 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         self.checkbox_values = checkbox_values or {}
         self.text_input_values = text_input_values or {}
         self.select_values = select_values or {}
+        self.slider_values = slider_values or {}
         self.timeline_values = timeline_values or {}
 
     def button(self, label: str) -> bool:
@@ -969,6 +971,14 @@ class _ScriptedPanelBuilder(_FakePanelBuilder):
         if label in self.select_values:
             return True, self.select_values[label]
         return False, selected_index
+
+    def slider(
+        self, label: str, value: float, minimum: float, maximum: float
+    ) -> tuple[bool, float]:
+        self.events.append(f"slider:{label}:{minimum}:{maximum}")
+        if label in self.slider_values:
+            return True, self.slider_values[label]
+        return False, value
 
     def timeline(
         self,
@@ -1240,6 +1250,7 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_joint_breakage,
             (
+                "slider:Break force log10(N):-12.0:12.0",
                 "text:comparison axis: fixed break-force lifecycle",
                 "text:held fixed: AVBD rigid joints | static base | payload mass 1.0 | offset 0.62 m | time step 4.0 ms",
             ),
@@ -2127,6 +2138,27 @@ def test_rigid_joint_breakage_panel_resets_lifecycle() -> None:
     assert not joint.is_broken
     reset_payload = np.asarray(payload.translation, dtype=float).reshape(3)
     assert reset_payload.tolist() == pytest.approx(initial_payload.tolist())
+
+
+def test_rigid_joint_breakage_panel_edits_break_force_threshold() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_joint_breakage.build()
+    joint = setup.info["joint"]
+
+    builder = _ScriptedPanelBuilder(
+        slider_values={"Break force log10(N)": 2.0},
+        clicked_buttons={"Reset with current threshold"},
+    )
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Break force log10(N):-12.0:12.0" in builder.events
+    assert "button:Reset with current threshold" in builder.events
+    assert joint.break_force == pytest.approx(100.0)
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["controls"]["break_force"] == pytest.approx(100.0)
+    assert capture_metrics["controls"]["break_force_log10"] == pytest.approx(2.0)
+    assert capture_metrics["metrics"]["break_force_log10"] == pytest.approx(2.0)
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:

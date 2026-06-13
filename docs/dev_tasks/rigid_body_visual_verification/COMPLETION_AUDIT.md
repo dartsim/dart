@@ -7,6 +7,20 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: row 26, `rigid_joint_breakage`, now exposes
+the public `Joint.break_force` parameter directly through a log-scale
+`Break force log10(N)` GUI slider. Capture metrics and replay state record the
+active break threshold, and the panel can reset with the current threshold
+without losing the existing locked-reset and weak-rearm paths. The workflow
+scope now describes this as an AVBD-pinned editable-threshold breakage row, not
+a fixed-threshold caveat. Focused breakage-row guards reported `4 passed`, and
+adjacent docs/workflow consistency guards reported `3 passed`. Fresh
+single-scene visual evidence for the changed row lives at
+`build/captures/rigid_joint_breakage_editable_threshold_1781324921`: 48
+requested UI frames, 47 PNG frames written, screenshot written, and
+`scene_metrics.event_count=48` with workflow guidance scope matching the
+editable-threshold row.
+
 Latest validation evidence: after merging latest `origin/main` (`Already up to
 date`), the default command
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`

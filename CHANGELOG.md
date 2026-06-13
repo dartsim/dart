@@ -258,9 +258,10 @@
     explicit reset path, force-drag, contact, energy, height, speed, step-timing,
     replay-control diagnostics, and scene-owned capture metrics.
   - Added `rigid_joint_breakage` to Python `py-demos`, an AVBD-pinned fixed
-    joint break-force row that shows broken state, connector color, offset
-    error, payload speed, capture metrics, and an explicit reset lifecycle
-    without claiming sequential-impulse or IPC breakage parity.
+    joint break-force row that shows an editable log-scale threshold, broken
+    state, connector color, offset error, payload speed, capture metrics, and
+    an explicit reset lifecycle without claiming sequential-impulse or IPC
+    breakage parity.
   - Prefixed the interactive Python `py-demos` Demos navigator titles for the
     36-row World Rigid Body visual-verification workflow with their position
     and role while keeping `--list` scene titles and ids stable for scripts.

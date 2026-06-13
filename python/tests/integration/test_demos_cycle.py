@@ -5331,6 +5331,16 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     )
     assert capture_metrics["breakage_status"] == "broken"
     assert capture_metrics["metrics"]["broken"] == pytest.approx(1.0)
+    assert capture_metrics["controls"]["break_force"] == pytest.approx(break_force)
+    assert capture_metrics["controls"]["break_force_log10"] == pytest.approx(-12.0)
+    assert capture_metrics["controls"]["break_force_log10_range"] == [
+        pytest.approx(-12.0),
+        pytest.approx(12.0),
+    ]
+    assert capture_metrics["controls"]["reset_break_force"] == pytest.approx(
+        float(setup.info["reset_break_force"])
+    )
+    assert capture_metrics["metrics"]["break_force_log10"] == pytest.approx(-12.0)
     assert capture_metrics["metrics"]["status"] == "broken"
     assert capture_metrics["metrics"]["payload_release_distance"] > 1.0e-2
     assert capture_metrics["history"]["saw_broken"] == pytest.approx(1.0)
@@ -5390,6 +5400,20 @@ def test_rigid_joint_breakage_marks_and_resets_breakage() -> None:
     reset_snapshot = setup.info["replay_capture_state"]()
     assert timeline["signal"](reset_snapshot) == pytest.approx(0.0)
     assert timeline["markers"](reset_snapshot) == pytest.approx(0.0)
+
+    setup.info["set_break_force_log10"](2.0)
+    setup.info["reset_joint"]()
+    assert joint.break_force == pytest.approx(100.0)
+    threshold_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert threshold_metrics["controls"]["break_force"] == pytest.approx(100.0)
+    assert threshold_metrics["controls"]["break_force_log10"] == pytest.approx(2.0)
+    threshold_snapshot = setup.info["replay_capture_state"]()
+    setup.info["set_break_force_log10"](-12.0)
+    assert joint.break_force == pytest.approx(break_force)
+    setup.info["replay_restore_state"](threshold_snapshot)
+    assert joint.break_force == pytest.approx(100.0)
+    restored_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert restored_metrics["controls"]["break_force_log10"] == pytest.approx(2.0)
 
 
 def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None:

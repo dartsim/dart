@@ -2,6 +2,25 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local continuation: row 26, `rigid_joint_breakage`, now exposes the
+public `Joint.break_force` parameter directly through a log-scale
+`Break force log10(N)` GUI slider. The row records the active break threshold
+in capture metrics and replay state, supports resetting with the current
+threshold, and keeps the existing locked-reset and weak-rearm paths. The
+workflow scope and PLAN-103 row now describe this as an AVBD-pinned
+editable-threshold breakage row rather than a fixed-threshold caveat; it still
+makes no sequential-impulse or IPC break-force parity claim. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_edits_break_force_threshold python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage -q`
+reported `4 passed`, and the adjacent docs/workflow consistency subset
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
+reported `3 passed`. Fresh single-scene visual evidence:
+`build/captures/rigid_joint_breakage_editable_threshold_1781324921` captured
+`rigid_joint_breakage` at 48 requested frames with UI, wrote 47 PNG frames plus
+`rigid_joint_breakage.png`, recorded `scene_metrics.event_count=48`, and its
+manifest reports workflow guidance scope
+`AVBD-pinned editable-threshold breakage row; no sequential-impulse or IPC
+break-force parity claim.`
+
 Remote publication checkpoint: use `git status -sb` as the source of truth for
 local/remote parity. The last recorded remote checkpoint before this
 validation-language correction was
