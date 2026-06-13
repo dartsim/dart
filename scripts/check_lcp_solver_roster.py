@@ -333,6 +333,25 @@ def parse_bound_solver_classes() -> dict[str, str]:
     }
 
 
+def check_bound_solver_classes(manifest_classes: list[str]) -> None:
+    expected_classes = set(manifest_classes)
+    binding_names = parse_bound_solver_classes()
+    bound_classes = set(binding_names)
+    extra_bound_classes = sorted(bound_classes - expected_classes)
+    if extra_bound_classes:
+        raise AssertionError(
+            "dartpy bindings contain non-manifest LCP solver classes: "
+            f"{extra_bound_classes}"
+        )
+
+    for class_name in manifest_classes:
+        bound_name = binding_names.get(class_name)
+        if bound_name != class_name:
+            raise AssertionError(
+                f"dartpy binding mismatch for {class_name}: {bound_name!r}"
+            )
+
+
 def parse_math_stub_solver_classes() -> set[str]:
     pattern = re.compile(r"^class ([A-Za-z0-9_]+)\(LcpSolver\):", re.MULTILINE)
     return set(pattern.findall(_read(DARTPY_MATH_STUB_PATH)))
@@ -400,12 +419,19 @@ def parse_init_stub_all_names() -> set[str]:
 
 
 def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
+    expected_classes = set(manifest_classes)
     math_stub_classes = parse_math_stub_solver_classes()
-    missing_math_stub = sorted(set(manifest_classes) - math_stub_classes)
+    missing_math_stub = sorted(expected_classes - math_stub_classes)
     if missing_math_stub:
         raise AssertionError(
             "python/stubs/dartpy/math.pyi is missing solver classes: "
             f"{missing_math_stub}"
+        )
+    extra_math_stub = sorted(math_stub_classes - expected_classes)
+    if extra_math_stub:
+        raise AssertionError(
+            "python/stubs/dartpy/math.pyi contains non-manifest solver classes: "
+            f"{extra_math_stub}"
         )
 
     math_stub_all_names = parse_math_stub_all_names()
@@ -833,14 +859,7 @@ def check_roster() -> None:
                 f"expected {entry.class_name}, got {demo_class_names[entry.name]}"
             )
 
-    binding_names = parse_bound_solver_classes()
-    for entry in manifest:
-        bound_name = binding_names.get(entry.class_name)
-        if bound_name != entry.class_name:
-            raise AssertionError(
-                f"dartpy binding mismatch for {entry.class_name}: {bound_name!r}"
-            )
-
+    check_bound_solver_classes(manifest_classes)
     check_python_stub_solver_classes(manifest_classes)
 
 

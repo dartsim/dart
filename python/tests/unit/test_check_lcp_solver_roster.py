@@ -101,6 +101,26 @@ def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
         module.check_demo_profile_evidence_required_columns()
 
 
+def test_lcp_solver_roster_rejects_extra_bound_solver_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_solver_classes",
+        lambda: {
+            "DantzigSolver": "DantzigSolver",
+            "ExtraSolver": "ExtraSolver",
+        },
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="dartpy bindings contain non-manifest LCP solver classes",
+    ):
+        module.check_bound_solver_classes(["DantzigSolver"])
+
+
 def test_lcp_solver_roster_rejects_missing_math_stub_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -114,6 +134,38 @@ def test_lcp_solver_roster_rejects_missing_math_stub_class(
     with pytest.raises(
         AssertionError,
         match="python/stubs/dartpy/math\\.pyi is missing solver classes",
+    ):
+        module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
+
+
+def test_lcp_solver_roster_rejects_extra_math_stub_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_solver_classes",
+        lambda: {"DantzigSolver", "LemkeSolver", "ExtraSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_all_names",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_math_imports",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_all_names",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="python/stubs/dartpy/math\\.pyi contains non-manifest solver classes",
     ):
         module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
 
