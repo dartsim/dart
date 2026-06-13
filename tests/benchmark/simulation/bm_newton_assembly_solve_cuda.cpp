@@ -84,6 +84,36 @@ struct OffDiagonalAssemblyFixture
   CpuOffDiagonalAssemblyResult cpu;
 };
 
+struct CpuEqualityReducedSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> reducedDiagonal;
+  std::vector<double> reducedGradient;
+  std::vector<double> reducedStep;
+  std::vector<double> reducedResidual;
+  std::vector<double> fullStep;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t fullDofCount = 0;
+  std::size_t reductionEntryCount = 0;
+  std::size_t reducedDofCount = 0;
+  std::size_t activeReducedDofCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+};
+
+struct EqualityReducedSolveFixture
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonEqualityReductionEntry> entries;
+  std::size_t bodyCount = 0;
+  std::size_t reducedDofCount = 0;
+  CpuEqualityReducedSolveResult cpu;
+};
+
 cuda::NewtonAssemblySolveRowInput makeRow(
     const int rowIndex, const std::size_t bodyCount)
 {
@@ -115,6 +145,16 @@ cuda::NewtonOffDiagonalAssemblyRowInput makeOffDiagonalRow(
                               + 0.0001 * static_cast<double>((entry % 6) + 1);
   }
   return row;
+}
+
+cuda::NewtonEqualityReductionEntry makeEqualityReductionEntry(
+    const std::size_t fullDof, const std::size_t reducedDof)
+{
+  cuda::NewtonEqualityReductionEntry entry;
+  entry.fullDofIndex = static_cast<std::uint32_t>(fullDof);
+  entry.reducedDofIndex = static_cast<std::uint32_t>(reducedDof);
+  entry.basisValue = (fullDof % 2 == 0) ? 1.0 : 0.5;
+  return entry;
 }
 
 void evaluateCpu(
@@ -159,6 +199,66 @@ void evaluateCpu(
         result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
     stepNormSquared += result.step[dof] * result.step[dof];
     residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+void evaluateCpuEqualityReducedSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonEqualityReductionEntry>& entries,
+    const std::size_t reducedDofCount,
+    CpuEqualityReducedSolveResult& result)
+{
+  CpuAssemblySolveResult full;
+  evaluateCpu(rows, bodyCount, full);
+
+  result = CpuEqualityReducedSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.fullDofCount = bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.reductionEntryCount = entries.size();
+  result.reducedDofCount = reducedDofCount;
+  result.assembledDiagonal = full.assembledDiagonal;
+  result.assembledGradient = full.assembledGradient;
+  result.reducedDiagonal.assign(reducedDofCount, 0.0);
+  result.reducedGradient.assign(reducedDofCount, 0.0);
+  result.reducedStep.assign(reducedDofCount, 0.0);
+  result.reducedResidual.assign(reducedDofCount, 0.0);
+  result.fullStep.assign(result.fullDofCount, 0.0);
+
+  for (const auto& entry : entries) {
+    result.reducedDiagonal[entry.reducedDofIndex]
+        += entry.basisValue * entry.basisValue
+           * result.assembledDiagonal[entry.fullDofIndex];
+    result.reducedGradient[entry.reducedDofIndex]
+        += entry.basisValue * result.assembledGradient[entry.fullDofIndex];
+  }
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < reducedDofCount; ++dof) {
+    const double effectiveDiagonal
+        = result.reducedDiagonal[dof] + kRegularization;
+    if (effectiveDiagonal > 1e-14) {
+      ++result.activeReducedDofCount;
+    }
+    result.reducedStep[dof] = -result.reducedGradient[dof] / effectiveDiagonal;
+    result.reducedResidual[dof] = effectiveDiagonal * result.reducedStep[dof]
+                                  + result.reducedGradient[dof];
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.reducedDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.reducedGradient[dof]));
+    stepNormSquared += result.reducedStep[dof] * result.reducedStep[dof];
+    residualNormSquared
+        += result.reducedResidual[dof] * result.reducedResidual[dof];
+  }
+
+  for (const auto& entry : entries) {
+    result.fullStep[entry.fullDofIndex]
+        += entry.basisValue * result.reducedStep[entry.reducedDofIndex];
   }
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
@@ -225,6 +325,32 @@ OffDiagonalAssemblyFixture makeOffDiagonalFixture(const int rowCount)
   return fixture;
 }
 
+EqualityReducedSolveFixture makeEqualityReducedFixture(const int rowCount)
+{
+  EqualityReducedSolveFixture fixture;
+  fixture.bodyCount
+      = std::max<std::size_t>(1, static_cast<std::size_t>(rowCount) / 8);
+  const std::size_t fullDofCount
+      = fixture.bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  fixture.reducedDofCount = std::max<std::size_t>(1, fullDofCount / 2);
+  fixture.rows.reserve(static_cast<std::size_t>(rowCount));
+  for (int row = 0; row < rowCount; ++row) {
+    fixture.rows.push_back(makeRow(row, fixture.bodyCount));
+  }
+  fixture.entries.reserve(fullDofCount);
+  for (std::size_t dof = 0; dof < fullDofCount; ++dof) {
+    fixture.entries.push_back(
+        makeEqualityReductionEntry(dof, dof % fixture.reducedDofCount));
+  }
+  evaluateCpuEqualityReducedSolve(
+      fixture.rows,
+      fixture.bodyCount,
+      fixture.entries,
+      fixture.reducedDofCount,
+      fixture.cpu);
+  return fixture;
+}
+
 template <typename Lhs, typename Rhs>
 double maxAbsDifference(const Lhs& lhs, const Rhs& rhs)
 {
@@ -259,6 +385,33 @@ double maxOffDiagonalOutputError(
   return maxAbsDifference(expected.assembledBlocks, actual.assembledBlocks);
 }
 
+double maxEqualityReducedOutputError(
+    const CpuEqualityReducedSolveResult& expected,
+    const cuda::NewtonEqualityReducedSolveResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledDiagonal, actual.assembledDiagonal));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.reducedDiagonal, actual.reducedDiagonal));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.reducedGradient, actual.reducedGradient));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.reducedStep, actual.reducedStep));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.reducedResidual, actual.reducedResidual));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.fullStep, actual.fullStep));
+  return maxError;
+}
+
 void recordCounters(
     benchmark::State& state,
     const AssemblySolveFixture& fixture,
@@ -291,6 +444,29 @@ void recordOffDiagonalCounters(
   state.counters["active_blocks"]
       = static_cast<double>(fixture.cpu.activeBlockCount);
   state.counters["max_block_abs"] = fixture.cpu.maxBlockAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordEqualityReducedCounters(
+    benchmark::State& state,
+    const EqualityReducedSolveFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["bodies"] = static_cast<double>(fixture.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.fullDofCount);
+  state.counters["reduction_entries"]
+      = static_cast<double>(fixture.cpu.reductionEntryCount);
+  state.counters["reduced_dofs"]
+      = static_cast<double>(fixture.cpu.reducedDofCount);
+  state.counters["active_reduced_dofs"]
+      = static_cast<double>(fixture.cpu.activeReducedDofCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["step_norm"] = fixture.cpu.stepNorm;
+  state.counters["residual_norm"] = fixture.cpu.residualNorm;
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
@@ -394,6 +570,79 @@ static void BM_NewtonOffDiagonalAssemblyCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonOffDiagonalAssemblyCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonEqualityReducedSolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeEqualityReducedFixture(static_cast<int>(state.range(0)));
+  CpuEqualityReducedSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuEqualityReducedSolve(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.entries,
+        fixture.reducedDofCount,
+        result);
+    benchmark::DoNotOptimize(result.reducedStep.data());
+  }
+
+  recordEqualityReducedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonEqualityReducedSolveCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonEqualityReducedSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeEqualityReducedFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonEqualityReducedSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonEqualityReducedSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.entries,
+        fixture.reducedDofCount,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.reducedStep.data());
+  }
+
+  recordEqualityReducedCounters(
+      state, fixture, maxEqualityReducedOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.fullDofCount);
+  state.counters["gpu_reduction_entries"]
+      = static_cast<double>(result.reductionEntryCount);
+  state.counters["gpu_reduced_dofs"]
+      = static_cast<double>(result.reducedDofCount);
+  state.counters["gpu_active_reduced_dofs"]
+      = static_cast<double>(result.activeReducedDofCount);
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["reduction_kernel_ns"] = result.timing.reductionKernelNs;
+  state.counters["solve_kernel_ns"] = result.timing.solveKernelNs;
+  state.counters["expansion_kernel_ns"] = result.timing.expansionKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonEqualityReducedSolveCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

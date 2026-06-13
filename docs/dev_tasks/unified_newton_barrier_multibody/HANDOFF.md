@@ -1,5 +1,36 @@
 # Unified Newton-Barrier Handoff
 
+## Equality-Reduced Assembly/Solve Packet Checkpoint (2026-06-12)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a
+reduced sparse equality-reduction row. The CUDA path assembles full-space
+diagonal rows, projects them through a sparse reduced-coordinate basis, solves
+the regularized reduced diagonal Newton step, and expands the step back to
+full coordinates.
+
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 full dofs,
+49,152 reduction entries, and 24,576 reduced dofs with
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=2.927032132859879e-15`, and
+`speedup=0.4504406756295252x` for the equality-reduced row. The top-level
+assembly/solve packet records `max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=3.026790431755041e-15`, and
+`speedup=0.2937796651929902x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest local gates:
+
+- focused assembly/solve packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+
 ## Edge-Edge Hessian PSD Packet Checkpoint (2026-06-12)
 
 The latest `origin/main` has been merged into
@@ -38,7 +69,7 @@ Use this prompt for the next fresh Codex session:
 ```text
 Continue PLAN-083 on branch simx/plan083-gpu-contact-candidate-packet / PR #2978. First read AGENTS.md, docs/ai/principles.md, docs/ai/orchestration.md, docs/dev_tasks/unified_newton_barrier_multibody/RESUME.md, and docs/dev_tasks/unified_newton_barrier_multibody/HANDOFF.md. Keep all PLAN-083 work consolidated on this branch/PR; do not open another PLAN-083 PR. Do not push, comment on PRs, resolve review threads, trigger CI, or delete branches without explicit maintainer approval.
 
-Current local packet evidence covers contact candidates, CCD/line-search, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, assembly/solve, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, rigid curved CCD/line-search rows, broader sparse Hessian assembly, equality-reduced/global sparse assembly and solve, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
+Current local packet evidence covers contact candidates, CCD/line-search, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, reduced diagonal/off-diagonal/equality-reduced assembly/solve, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, rigid curved CCD/line-search rows, broader sparse Hessian assembly, global sparse assembly and solve, nonlinear equality constraints, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
 ```
 
 ## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)
@@ -663,8 +694,8 @@ Likely next steps:
 
 1. Inspect `git status -sb`, `git log --oneline`, and PR #2978 before editing.
 2. Continue with sweep-and-prune broad-phase/runtime candidate buffers,
-   equality reduction, global sparse factorization, runtime scene rows, or
-   speedup-gate work only as honest `in-progress` evidence.
+   global sparse factorization, nonlinear equality constraints, runtime scene
+   rows, or speedup-gate work only as honest `in-progress` evidence.
 3. Before any push, merge latest
    `origin/main` into this published branch, rerun required gates, then push
    only with explicit maintainer approval.

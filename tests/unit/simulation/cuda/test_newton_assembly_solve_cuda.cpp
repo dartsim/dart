@@ -88,6 +88,46 @@ void evaluateExpected(
   }
 }
 
+void evaluateExpectedEqualityReduced(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonEqualityReductionEntry>& entries,
+    const std::size_t reducedDofCount,
+    const double regularization,
+    std::vector<double>& fullDiagonal,
+    std::vector<double>& fullGradient,
+    std::vector<double>& reducedDiagonal,
+    std::vector<double>& reducedGradient,
+    std::vector<double>& reducedStep,
+    std::vector<double>& fullStep)
+{
+  std::vector<double> ignoredStep;
+  evaluateExpected(
+      rows, bodyCount, regularization, fullDiagonal, fullGradient, ignoredStep);
+  reducedDiagonal.assign(reducedDofCount, 0.0);
+  reducedGradient.assign(reducedDofCount, 0.0);
+  reducedStep.assign(reducedDofCount, 0.0);
+  fullStep.assign(bodyCount * cuda::kNewtonAssemblySolveDofsPerBody, 0.0);
+
+  for (const auto& entry : entries) {
+    reducedDiagonal[entry.reducedDofIndex]
+        += entry.basisValue * entry.basisValue
+           * fullDiagonal[entry.fullDofIndex];
+    reducedGradient[entry.reducedDofIndex]
+        += entry.basisValue * fullGradient[entry.fullDofIndex];
+  }
+
+  for (std::size_t reduced = 0; reduced < reducedDofCount; ++reduced) {
+    reducedStep[reduced] = -reducedGradient[reduced]
+                           / (reducedDiagonal[reduced] + regularization);
+  }
+
+  for (const auto& entry : entries) {
+    fullStep[entry.fullDofIndex]
+        += entry.basisValue * reducedStep[entry.reducedDofIndex];
+  }
+}
+
 cuda::NewtonOffDiagonalAssemblyRowInput makeOffDiagonalRow(
     const std::uint32_t pair, const double base)
 {
@@ -235,5 +275,116 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidOffDiagonalRows)
   rows.front().hessianBlock[0] = std::numeric_limits<double>::infinity();
   EXPECT_THROW(
       cuda::evaluateNewtonOffDiagonalAssemblyCuda(rows, 1, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuEqualityReducedSolve)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeRow(0, 2.0, -0.5),
+      makeRow(1, 3.0, 0.25),
+      makeRow(0, 1.5, 0.75),
+  };
+  constexpr std::size_t bodyCount = 2;
+  constexpr std::size_t reducedDofCount = 4;
+  constexpr double regularization = 0.5;
+  const std::vector<cuda::NewtonEqualityReductionEntry> entries = {
+      {0, 0, 1.0},
+      {1, 1, 1.0},
+      {6, 1, 0.5},
+      {8, 2, -1.25},
+      {11, 3, 0.75},
+  };
+
+  cuda::NewtonEqualityReducedSolveResult result;
+  cuda::evaluateNewtonEqualityReducedSolveCuda(
+      rows, bodyCount, entries, reducedDofCount, regularization, result);
+
+  std::vector<double> expectedFullDiagonal;
+  std::vector<double> expectedFullGradient;
+  std::vector<double> expectedReducedDiagonal;
+  std::vector<double> expectedReducedGradient;
+  std::vector<double> expectedReducedStep;
+  std::vector<double> expectedFullStep;
+  evaluateExpectedEqualityReduced(
+      rows,
+      bodyCount,
+      entries,
+      reducedDofCount,
+      regularization,
+      expectedFullDiagonal,
+      expectedFullGradient,
+      expectedReducedDiagonal,
+      expectedReducedGradient,
+      expectedReducedStep,
+      expectedFullStep);
+
+  ASSERT_EQ(result.assembledDiagonal.size(), expectedFullDiagonal.size());
+  ASSERT_EQ(result.assembledGradient.size(), expectedFullGradient.size());
+  ASSERT_EQ(result.reducedDiagonal.size(), expectedReducedDiagonal.size());
+  ASSERT_EQ(result.reducedGradient.size(), expectedReducedGradient.size());
+  ASSERT_EQ(result.reducedStep.size(), expectedReducedStep.size());
+  ASSERT_EQ(result.fullStep.size(), expectedFullStep.size());
+  EXPECT_EQ(result.bodyCount, bodyCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.fullDofCount, expectedFullDiagonal.size());
+  EXPECT_EQ(result.reductionEntryCount, entries.size());
+  EXPECT_EQ(result.reducedDofCount, reducedDofCount);
+  EXPECT_EQ(result.activeReducedDofCount, reducedDofCount);
+  EXPECT_LT(result.residualNorm, 1e-12);
+
+  for (std::size_t index = 0; index < expectedFullDiagonal.size(); ++index) {
+    EXPECT_NEAR(
+        result.assembledDiagonal[index], expectedFullDiagonal[index], 1e-12)
+        << index;
+    EXPECT_NEAR(
+        result.assembledGradient[index], expectedFullGradient[index], 1e-12)
+        << index;
+    EXPECT_NEAR(result.fullStep[index], expectedFullStep[index], 1e-12)
+        << index;
+  }
+  for (std::size_t index = 0; index < reducedDofCount; ++index) {
+    EXPECT_NEAR(
+        result.reducedDiagonal[index], expectedReducedDiagonal[index], 1e-12)
+        << index;
+    EXPECT_NEAR(
+        result.reducedGradient[index], expectedReducedGradient[index], 1e-12)
+        << index;
+    EXPECT_NEAR(result.reducedStep[index], expectedReducedStep[index], 1e-12)
+        << index;
+    EXPECT_NEAR(result.reducedResidual[index], 0.0, 1e-12) << index;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidEqualityReductionEntries)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {makeRow(0, 1.0, 0.0)};
+  cuda::NewtonEqualityReducedSolveResult result;
+  std::vector<cuda::NewtonEqualityReductionEntry> entries = {{6, 0, 1.0}};
+  EXPECT_THROW(
+      cuda::evaluateNewtonEqualityReducedSolveCuda(
+          rows, 1, entries, 1, 0.1, result),
+      dart::simulation::InvalidArgumentException);
+
+  entries = {{0, 1, 1.0}};
+  EXPECT_THROW(
+      cuda::evaluateNewtonEqualityReducedSolveCuda(
+          rows, 1, entries, 1, 0.1, result),
+      dart::simulation::InvalidArgumentException);
+
+  entries = {{0, 0, std::numeric_limits<double>::quiet_NaN()}};
+  EXPECT_THROW(
+      cuda::evaluateNewtonEqualityReducedSolveCuda(
+          rows, 1, entries, 1, 0.1, result),
       dart::simulation::InvalidArgumentException);
 }

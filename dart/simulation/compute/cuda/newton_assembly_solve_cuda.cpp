@@ -58,6 +58,14 @@ cudaError_t launchNewtonOffDiagonalAssemblyRowsKernel(
     double* assembledBlocks,
     std::size_t rowCount);
 
+cudaError_t launchNewtonEqualityReductionKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* assembledDiagonal,
+    const double* assembledGradient,
+    double* reducedDiagonal,
+    double* reducedGradient,
+    std::size_t entryCount);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -66,6 +74,12 @@ cudaError_t launchNewtonDiagonalSolveKernel(
     std::size_t dofCount,
     double regularization,
     double epsilonForDivision);
+
+cudaError_t launchNewtonExpandEqualityReducedStepKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* reducedStep,
+    double* fullStep,
+    std::size_t entryCount);
 
 } // namespace detail
 namespace {
@@ -154,6 +168,44 @@ void validateOffDiagonalRows(
           row,
           entry);
     }
+  }
+}
+
+void validateEqualityReduction(
+    const std::vector<NewtonEqualityReductionEntry>& entries,
+    const std::size_t fullDofCount,
+    const std::size_t reducedDofCount)
+{
+  DART_SIMULATION_THROW_T_IF(
+      reducedDofCount == 0 && !entries.empty(),
+      sx::InvalidArgumentException,
+      "evaluateNewtonEqualityReducedSolveCuda requires reduced dofs for "
+      "reduction entries");
+
+  for (std::size_t row = 0; row < entries.size(); ++row) {
+    const auto& entry = entries[row];
+    DART_SIMULATION_THROW_T_IF(
+        entry.fullDofIndex >= fullDofCount,
+        sx::InvalidArgumentException,
+        "evaluateNewtonEqualityReducedSolveCuda entry {} full dof {} is "
+        "outside {} dofs",
+        row,
+        entry.fullDofIndex,
+        fullDofCount);
+    DART_SIMULATION_THROW_T_IF(
+        entry.reducedDofIndex >= reducedDofCount,
+        sx::InvalidArgumentException,
+        "evaluateNewtonEqualityReducedSolveCuda entry {} reduced dof {} is "
+        "outside {} reduced dofs",
+        row,
+        entry.reducedDofIndex,
+        reducedDofCount);
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(entry.basisValue) || entry.basisValue == 0.0,
+        sx::InvalidArgumentException,
+        "evaluateNewtonEqualityReducedSolveCuda entry {} has an invalid "
+        "basis value",
+        row);
   }
 }
 
@@ -326,6 +378,172 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
       ++result.activeBlockCount;
     }
   }
+}
+
+//==============================================================================
+void evaluateNewtonEqualityReducedSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<NewtonEqualityReductionEntry>& reductionEntries,
+    const std::size_t reducedDofCount,
+    const double regularization,
+    NewtonEqualityReducedSolveResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateRows(rows, bodyCount, regularization);
+  const std::size_t fullDofCount = bodyCount * kNewtonAssemblySolveDofsPerBody;
+  validateEqualityReduction(reductionEntries, fullDofCount, reducedDofCount);
+
+  result = NewtonEqualityReducedSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.fullDofCount = fullDofCount;
+  result.reductionEntryCount = reductionEntries.size();
+  result.reducedDofCount = reducedDofCount;
+  result.assembledDiagonal.assign(fullDofCount, 0.0);
+  result.assembledGradient.assign(fullDofCount, 0.0);
+  result.reducedDiagonal.assign(reducedDofCount, 0.0);
+  result.reducedGradient.assign(reducedDofCount, 0.0);
+  result.reducedStep.assign(reducedDofCount, 0.0);
+  result.reducedResidual.assign(reducedDofCount, 0.0);
+  result.fullStep.assign(fullDofCount, 0.0);
+
+  if (fullDofCount == 0 || reducedDofCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(rows.size());
+  DeviceBuffer<NewtonEqualityReductionEntry> deviceEntries(
+      reductionEntries.size());
+  DeviceBuffer<double> deviceDiagonal(fullDofCount);
+  DeviceBuffer<double> deviceGradient(fullDofCount);
+  DeviceBuffer<double> deviceReducedDiagonal(reducedDofCount);
+  DeviceBuffer<double> deviceReducedGradient(reducedDofCount);
+  DeviceBuffer<double> deviceReducedStep(reducedDofCount);
+  DeviceBuffer<double> deviceReducedResidual(reducedDofCount);
+  DeviceBuffer<double> deviceFullStep(fullDofCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton equality assembly rows copy");
+  deviceEntries.copyToDevice(
+      reductionEntries, "newton equality reduction entries copy");
+  throwIfCudaError(
+      cudaMemset(deviceDiagonal.data(), 0, deviceDiagonal.byteSize()),
+      "newton equality assembly diagonal zero");
+  throwIfCudaError(
+      cudaMemset(deviceGradient.data(), 0, deviceGradient.byteSize()),
+      "newton equality assembly gradient zero");
+  throwIfCudaError(
+      cudaMemset(
+          deviceReducedDiagonal.data(), 0, deviceReducedDiagonal.byteSize()),
+      "newton equality reduced diagonal zero");
+  throwIfCudaError(
+      cudaMemset(
+          deviceReducedGradient.data(), 0, deviceReducedGradient.byteSize()),
+      "newton equality reduced gradient zero");
+  throwIfCudaError(
+      cudaMemset(deviceFullStep.data(), 0, deviceFullStep.byteSize()),
+      "newton equality full step zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonAssemblyRowsKernel(
+          deviceRows.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          rows.size()),
+      "newton equality assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton equality assembly rows synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto reductionStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonEqualityReductionKernel(
+          deviceEntries.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          deviceReducedDiagonal.data(),
+          deviceReducedGradient.data(),
+          reductionEntries.size()),
+      "newton equality reduction kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton equality reduction synchronize");
+  const auto reductionEnd = Clock::now();
+
+  const auto solveStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonDiagonalSolveKernel(
+          deviceReducedDiagonal.data(),
+          deviceReducedGradient.data(),
+          deviceReducedStep.data(),
+          deviceReducedResidual.data(),
+          reducedDofCount,
+          regularization,
+          1e-14),
+      "newton equality reduced solve kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton equality reduced solve synchronize");
+  const auto solveEnd = Clock::now();
+
+  const auto expansionStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonExpandEqualityReducedStepKernel(
+          deviceEntries.data(),
+          deviceReducedStep.data(),
+          deviceFullStep.data(),
+          reductionEntries.size()),
+      "newton equality step expansion kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton equality step expansion synchronize");
+  const auto expansionEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceDiagonal.copyFromDevice(
+      result.assembledDiagonal, "newton equality assembled diagonal copy");
+  deviceGradient.copyFromDevice(
+      result.assembledGradient, "newton equality assembled gradient copy");
+  deviceReducedDiagonal.copyFromDevice(
+      result.reducedDiagonal, "newton equality reduced diagonal copy");
+  deviceReducedGradient.copyFromDevice(
+      result.reducedGradient, "newton equality reduced gradient copy");
+  deviceReducedStep.copyFromDevice(
+      result.reducedStep, "newton equality reduced step copy");
+  deviceReducedResidual.copyFromDevice(
+      result.reducedResidual, "newton equality reduced residual copy");
+  deviceFullStep.copyFromDevice(result.fullStep, "newton equality step copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.reductionKernelNs = elapsedNs(reductionStart, reductionEnd);
+  result.timing.solveKernelNs = elapsedNs(solveStart, solveEnd);
+  result.timing.expansionKernelNs = elapsedNs(expansionStart, expansionEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < reducedDofCount; ++dof) {
+    const double effectiveDiagonal
+        = result.reducedDiagonal[dof] + regularization;
+    if (effectiveDiagonal > 1e-14) {
+      ++result.activeReducedDofCount;
+    }
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.reducedDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.reducedGradient[dof]));
+    stepNormSquared += result.reducedStep[dof] * result.reducedStep[dof];
+    residualNormSquared
+        += result.reducedResidual[dof] * result.reducedResidual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
 }
 
 } // namespace dart::simulation::compute::cuda

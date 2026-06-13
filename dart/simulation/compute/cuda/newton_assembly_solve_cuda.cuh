@@ -56,12 +56,21 @@ struct NewtonOffDiagonalAssemblyRowInput
   double hessianBlock[kNewtonAssemblySolveBlockEntries] = {};
 };
 
+struct NewtonEqualityReductionEntry
+{
+  std::uint32_t fullDofIndex = 0;
+  std::uint32_t reducedDofIndex = 0;
+  double basisValue = 0.0;
+};
+
 struct NewtonAssemblySolveTiming
 {
   double setupNs = 0.0;
   double hostToDeviceNs = 0.0;
   double assemblyKernelNs = 0.0;
+  double reductionKernelNs = 0.0;
   double solveKernelNs = 0.0;
+  double expansionKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
 
@@ -91,6 +100,28 @@ struct NewtonOffDiagonalAssemblyResult
   NewtonAssemblySolveTiming timing;
 };
 
+struct NewtonEqualityReducedSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> reducedDiagonal;
+  std::vector<double> reducedGradient;
+  std::vector<double> reducedStep;
+  std::vector<double> reducedResidual;
+  std::vector<double> fullStep;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t fullDofCount = 0;
+  std::size_t reductionEntryCount = 0;
+  std::size_t reducedDofCount = 0;
+  std::size_t activeReducedDofCount = 0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  NewtonAssemblySolveTiming timing;
+};
+
 /// Evaluate a private reduced Newton assembly/solve packet on CUDA.
 ///
 /// The packet scatters diagonal 6-DOF row contributions into per-body
@@ -114,5 +145,20 @@ void evaluateNewtonOffDiagonalAssemblyCuda(
     const std::vector<NewtonOffDiagonalAssemblyRowInput>& rows,
     std::size_t pairCount,
     NewtonOffDiagonalAssemblyResult& result);
+
+/// Evaluate a private reduced equality-projected diagonal solve packet.
+///
+/// The packet assembles full-space diagonal rows, projects them through a
+/// sparse reduced-coordinate basis, solves the reduced regularized diagonal
+/// Newton step, and expands the step back to full coordinates. It intentionally
+/// does not cover global sparse factorization, nonlinear equality constraints,
+/// runtime scene assembly, or a public GPU solver backend.
+void evaluateNewtonEqualityReducedSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    std::size_t bodyCount,
+    const std::vector<NewtonEqualityReductionEntry>& reductionEntries,
+    std::size_t reducedDofCount,
+    double regularization,
+    NewtonEqualityReducedSolveResult& result);
 
 } // namespace dart::simulation::compute::cuda

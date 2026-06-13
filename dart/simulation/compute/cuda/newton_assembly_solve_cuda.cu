@@ -84,6 +84,30 @@ __global__ void newtonOffDiagonalAssemblyRowsKernel(
   atomicAdd(&assembledBlocks[outputIndex], input.hessianBlock[entry]);
 }
 
+__global__ void newtonEqualityReductionKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* assembledDiagonal,
+    const double* assembledGradient,
+    double* reducedDiagonal,
+    double* reducedGradient,
+    const std::size_t entryCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= entryCount) {
+    return;
+  }
+
+  const NewtonEqualityReductionEntry entry = entries[index];
+  const double basis = entry.basisValue;
+  atomicAdd(
+      &reducedDiagonal[entry.reducedDofIndex],
+      basis * basis * assembledDiagonal[entry.fullDofIndex]);
+  atomicAdd(
+      &reducedGradient[entry.reducedDofIndex],
+      basis * assembledGradient[entry.fullDofIndex]);
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -107,6 +131,24 @@ __global__ void newtonDiagonalSolveKernel(
   }
   step[index] = value;
   residual[index] = effectiveDiagonal * value + assembledGradient[index];
+}
+
+__global__ void newtonExpandEqualityReducedStepKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* reducedStep,
+    double* fullStep,
+    const std::size_t entryCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= entryCount) {
+    return;
+  }
+
+  const NewtonEqualityReductionEntry entry = entries[index];
+  atomicAdd(
+      &fullStep[entry.fullDofIndex],
+      entry.basisValue * reducedStep[entry.reducedDofIndex]);
 }
 
 } // namespace
@@ -149,6 +191,31 @@ cudaError_t launchNewtonOffDiagonalAssemblyRowsKernel(
 }
 
 //==============================================================================
+cudaError_t launchNewtonEqualityReductionKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* assembledDiagonal,
+    const double* assembledGradient,
+    double* reducedDiagonal,
+    double* reducedGradient,
+    const std::size_t entryCount)
+{
+  if (entryCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(entryCount, blockSize);
+  newtonEqualityReductionKernel<<<gridSize, blockSize>>>(
+      entries,
+      assembledDiagonal,
+      assembledGradient,
+      reducedDiagonal,
+      reducedGradient,
+      entryCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -172,6 +239,24 @@ cudaError_t launchNewtonDiagonalSolveKernel(
       dofCount,
       regularization,
       epsilonForDivision);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonExpandEqualityReducedStepKernel(
+    const NewtonEqualityReductionEntry* entries,
+    const double* reducedStep,
+    double* fullStep,
+    const std::size_t entryCount)
+{
+  if (entryCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(entryCount, blockSize);
+  newtonExpandEqualityReducedStepKernel<<<gridSize, blockSize>>>(
+      entries, reducedStep, fullStep, entryCount);
   return cudaGetLastError();
 }
 

@@ -42,6 +42,7 @@ REQUIRED_TIMING_KEYS = {
     "device_to_host",
     "readback",
 }
+EQUALITY_TIMING_KEYS = REQUIRED_TIMING_KEYS | {"reduction", "expansion"}
 
 
 class NewtonAssemblySolvePacketError(RuntimeError):
@@ -113,7 +114,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
-        "^BM_Newton(AssemblySolve|OffDiagonalAssembly)(Cpu|Cuda)"
+        "^BM_Newton(AssemblySolve|OffDiagonalAssembly|EqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
     )
     command = [
@@ -176,6 +177,8 @@ def _representative_rows(
         "diagonal_gpu": f"BM_NewtonAssemblySolveCuda/{row_count}",
         "off_diagonal_cpu": f"BM_NewtonOffDiagonalAssemblyCpu/{row_count}",
         "off_diagonal_gpu": f"BM_NewtonOffDiagonalAssemblyCuda/{row_count}",
+        "equality_cpu": f"BM_NewtonEqualityReducedSolveCpu/{row_count}",
+        "equality_gpu": f"BM_NewtonEqualityReducedSolveCuda/{row_count}",
     }
     expected_by_name = {name: key for key, name in expected_names.items()}
     found: dict[str, Mapping[str, Any]] = {}
@@ -239,10 +242,14 @@ def make_packet(
     gpu_row = representative_rows["diagonal_gpu"]
     off_diagonal_cpu_row = representative_rows["off_diagonal_cpu"]
     off_diagonal_gpu_row = representative_rows["off_diagonal_gpu"]
+    equality_cpu_row = representative_rows["equality_cpu"]
+    equality_gpu_row = representative_rows["equality_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     off_diagonal_cpu_ns = benchmark_timing_ns(off_diagonal_cpu_row)
     off_diagonal_gpu_ns = benchmark_timing_ns(off_diagonal_gpu_row)
+    equality_cpu_ns = benchmark_timing_ns(equality_cpu_row)
+    equality_gpu_ns = benchmark_timing_ns(equality_gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError("CPU benchmark timing is not positive")
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
@@ -255,19 +262,31 @@ def make_packet(
         raise NewtonAssemblySolvePacketError(
             "off-diagonal GPU benchmark timing is not positive"
         )
+    if not math.isfinite(equality_cpu_ns) or equality_cpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "equality-reduced CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(equality_gpu_ns) or equality_gpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "equality-reduced GPU benchmark timing is not positive"
+        )
 
     diagonal_max_error = _counter(gpu_row, "max_result_abs_error")
     off_diagonal_max_error = _counter(off_diagonal_gpu_row, "max_result_abs_error")
-    max_error = max(diagonal_max_error, off_diagonal_max_error)
+    equality_max_error = _counter(equality_gpu_row, "max_result_abs_error")
+    max_error = max(diagonal_max_error, off_diagonal_max_error, equality_max_error)
     if max_error > tolerance:
         raise NewtonAssemblySolvePacketError(
             f"assembly/solve max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
         )
 
     residual_norm = _counter(gpu_row, "gpu_residual_norm")
-    if residual_norm > residual_tolerance:
+    equality_residual_norm = _counter(equality_gpu_row, "gpu_residual_norm")
+    max_residual_norm = max(residual_norm, equality_residual_norm)
+    if max_residual_norm > residual_tolerance:
         raise NewtonAssemblySolvePacketError(
-            f"GPU residual norm {residual_norm:.3g} exceeds {residual_tolerance:.3g}"
+            f"GPU residual norm {max_residual_norm:.3g} exceeds "
+            f"{residual_tolerance:.3g}"
         )
 
     rows_count = _matching_int_counter(cpu_row, gpu_row, "rows", "gpu_rows")
@@ -299,9 +318,39 @@ def make_packet(
         "gpu_active_blocks",
     )
     block_entries = int(_counter(off_diagonal_cpu_row, "block_entries"))
+    equality_rows = _matching_int_counter(
+        equality_cpu_row, equality_gpu_row, "rows", "gpu_rows"
+    )
+    if equality_rows != row_count:
+        raise NewtonAssemblySolvePacketError(
+            f"expected {row_count} equality-reduced rows, got {equality_rows}"
+        )
+    equality_bodies = _matching_int_counter(
+        equality_cpu_row, equality_gpu_row, "bodies", "gpu_bodies"
+    )
+    equality_dofs = _matching_int_counter(
+        equality_cpu_row, equality_gpu_row, "dofs", "gpu_dofs"
+    )
+    reduction_entries = _matching_int_counter(
+        equality_cpu_row,
+        equality_gpu_row,
+        "reduction_entries",
+        "gpu_reduction_entries",
+    )
+    reduced_dofs = _matching_int_counter(
+        equality_cpu_row, equality_gpu_row, "reduced_dofs", "gpu_reduced_dofs"
+    )
+    active_reduced_dofs = _matching_int_counter(
+        equality_cpu_row,
+        equality_gpu_row,
+        "active_reduced_dofs",
+        "gpu_active_reduced_dofs",
+    )
+    equality_step_norm = _counter(equality_gpu_row, "gpu_step_norm")
     off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
     diagonal_speedup = cpu_ns / gpu_ns
-    speedup = min(diagonal_speedup, off_diagonal_speedup)
+    equality_speedup = equality_cpu_ns / equality_gpu_ns
+    speedup = min(diagonal_speedup, off_diagonal_speedup, equality_speedup)
     timing_ns = {
         "setup": _counter(gpu_row, "host_setup_ns"),
         "host_to_device": _counter(gpu_row, "host_to_device_ns"),
@@ -328,6 +377,21 @@ def make_packet(
         raise NewtonAssemblySolvePacketError(
             f"off-diagonal packet timing is missing {sorted(missing)}"
         )
+    equality_timing_ns = {
+        "setup": _counter(equality_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(equality_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(equality_gpu_row, "assembly_kernel_ns"),
+        "reduction": _counter(equality_gpu_row, "reduction_kernel_ns"),
+        "solve": _counter(equality_gpu_row, "solve_kernel_ns"),
+        "expansion": _counter(equality_gpu_row, "expansion_kernel_ns"),
+        "device_to_host": _counter(equality_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = EQUALITY_TIMING_KEYS - equality_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"equality-reduced packet timing is missing {sorted(missing)}"
+        )
 
     return {
         "newton_assembly_solve_packet": {
@@ -339,7 +403,7 @@ def make_packet(
             "active_dof_count": active_dofs,
             "max_result_abs_error": max_error,
             "result_abs_error_tolerance": tolerance,
-            "residual_norm": residual_norm,
+            "residual_norm": max_residual_norm,
             "residual_norm_tolerance": residual_tolerance,
             "step_norm": step_norm,
             "speedup": speedup,
@@ -374,6 +438,22 @@ def make_packet(
                 "timing_ns": off_diagonal_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(off_diagonal_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(off_diagonal_gpu_row),
+            },
+            "equality_reduced_diagonal_solve": {
+                "row_count": row_count,
+                "body_count": equality_bodies,
+                "full_dof_count": equality_dofs,
+                "reduction_entry_count": reduction_entries,
+                "reduced_dof_count": reduced_dofs,
+                "active_reduced_dof_count": active_reduced_dofs,
+                "max_result_abs_error": equality_max_error,
+                "residual_norm": equality_residual_norm,
+                "step_norm": equality_step_norm,
+                "speedup": equality_speedup,
+                "meets_speedup_gate": equality_speedup >= speedup_gate,
+                "timing_ns": equality_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(equality_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(equality_gpu_row),
             },
         },
         "benchmarks": rows,

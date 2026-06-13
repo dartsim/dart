@@ -93,8 +93,58 @@ def _benchmark_data(**overrides):
         solve_kernel_ns=0.0,
         device_to_host_ns=5.0,
     )
+    equality_cpu = _row(
+        "BM_NewtonEqualityReducedSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        reduction_entries=768,
+        reduced_dofs=384,
+        active_reduced_dofs=384,
+        max_diagonal=12.0,
+        max_gradient_abs=1.25,
+        step_norm=0.5,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    equality_gpu = _row(
+        "BM_NewtonEqualityReducedSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        reduction_entries=768,
+        reduced_dofs=384,
+        active_reduced_dofs=384,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_reduction_entries=768,
+        gpu_reduced_dofs=384,
+        gpu_active_reduced_dofs=384,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=2e-14,
+        max_result_abs_error=2e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        reduction_kernel_ns=4.0,
+        solve_kernel_ns=5.0,
+        expansion_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     gpu.update(overrides)
-    return {"benchmarks": [cpu, gpu, off_diagonal_cpu, off_diagonal_gpu]}
+    return {
+        "benchmarks": [
+            cpu,
+            gpu,
+            off_diagonal_cpu,
+            off_diagonal_gpu,
+            equality_cpu,
+            equality_gpu,
+        ]
+    }
 
 
 def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
@@ -115,13 +165,23 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 1e-12
-    assert row["residual_norm"] == 1e-14
+    assert row["max_result_abs_error"] == 2e-12
+    assert row["residual_norm"] == 2e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
     assert row["off_diagonal_sparse_block_assembly"]["pair_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["active_block_count"] == 64
     assert row["off_diagonal_sparse_block_assembly"]["max_result_abs_error"] == 1e-12
+    equality = row["equality_reduced_diagonal_solve"]
+    assert equality["body_count"] == 128
+    assert equality["full_dof_count"] == 768
+    assert equality["reduction_entry_count"] == 768
+    assert equality["reduced_dof_count"] == 384
+    assert equality["active_reduced_dof_count"] == 384
+    assert equality["max_result_abs_error"] == 2e-12
+    assert equality["residual_norm"] == 2e-14
+    assert equality["timing_ns"]["reduction"] == 4.0
+    assert equality["timing_ns"]["expansion"] == 6.0
 
 
 def test_newton_assembly_solve_packet_rejects_accuracy_failure() -> None:

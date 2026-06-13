@@ -2,6 +2,34 @@
 
 ## Current Status
 
+Latest equality-reduced assembly/solve checkpoint (2026-06-12): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+sparse equality-reduction row. The CUDA path assembles full-space diagonal
+rows, projects them through a sparse reduced-coordinate basis, solves the
+regularized reduced diagonal Newton step, and expands the step back to full
+coordinates. Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152
+full dofs, 49,152 reduction entries, and 24,576 reduced dofs with
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=2.927032132859879e-15`, and
+`speedup=0.4504406756295252x` for the equality-reduced row. The top-level
+assembly/solve packet records `max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=3.026790431755041e-15`, and
+`speedup=0.2937796651929902x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest validation passed:
+
+- focused assembly/solve packet pytest
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+
 Latest edge-edge Hessian PSD checkpoint (2026-06-12): the latest
 `origin/main` has been merged into
 `simx/plan083-gpu-contact-candidate-packet`, bringing in the DART 7
@@ -689,10 +717,11 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         keep the row in-progress because broader sparse Hessian assembly,
         additional runtime contact rows, full GPU `World::step`, and runtime
         speedup remain unproven.
-  - [x] Add private reduced diagonal assembly/solve and pair-slot off-diagonal
-        sparse-block assembly packets with exact CPU/GPU local-output parity;
-        keep the row in-progress because equality reduction, global sparse
-        factorization, runtime scene rows, and speedup remain unproven.
+  - [x] Add private reduced diagonal assembly/solve, pair-slot off-diagonal
+        sparse-block assembly, and sparse equality-reduced diagonal solve
+        packets with exact CPU/GPU local-output parity; keep the row
+        in-progress because global sparse factorization, nonlinear equality
+        constraints, runtime scene rows, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,
@@ -840,11 +869,12 @@ storage, or backend resources as public API.
    first, check hosted #2978 CI/review state for actionable failures, then
    continue runtime scene filtering, speedup-gate work, downstream
    additional primitive-family/runtime contact evidence, broader sparse
-   Hessian assembly, or assembly/solve evidence on the same PR.
+   Hessian assembly, or global sparse assembly/solve evidence on the same PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
-   equality reduction, and global Newton solving have concrete evidence.
+   global sparse factorization, and global Newton solving have concrete
+   evidence.
 3. Use the reduced ABD runtime-step, ABD/FEM coupled micro-solve, and GPU
    contact-stencil packets only as internal runtime evidence; broader ABD CPU
    packets still require scene-level runtime residuals, scene assets, full
