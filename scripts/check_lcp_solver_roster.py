@@ -94,16 +94,6 @@ REQUIRED_DARTPY_MATH_STUB_MEMBERS = {
         "get_friction_index_row_count",
         "get_friction_index_contact_count",
     },
-    "BoxedSemiSmoothNewtonSolverParameters": {
-        "max_line_search_steps",
-        "step_reduction",
-        "sufficient_decrease",
-        "min_step",
-        "jacobian_regularization",
-        "max_pgs_warm_start_iterations",
-        "pgs_warm_start_relaxation",
-        "max_friction_index_exact_solve_dimension",
-    },
 }
 DOCUMENTED_LCP_PATH_PATTERN = re.compile(
     r"(?P<path>dart/math/lcp/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+\.(?:hpp|cpp)"
@@ -1364,6 +1354,21 @@ def parse_bound_solver_classes() -> dict[str, str]:
     }
 
 
+def parse_bound_lcp_parameter_members() -> dict[str, set[str]]:
+    source = _read(DARTPY_BINDING_PATH)
+    class_pattern = re.compile(
+        r'nb::class_<[A-Za-z0-9_:]+::Parameters>\(\s*m\s*,\s*"'
+        r'(?P<class_name>[A-Za-z0-9_]+)"\s*\)'
+        r"(?P<body>.*?);",
+        re.DOTALL,
+    )
+    member_pattern = re.compile(r'\.def_rw\(\s*"(?P<member>[A-Za-z0-9_]+)"')
+    return {
+        match.group("class_name"): set(member_pattern.findall(match.group("body")))
+        for match in class_pattern.finditer(source)
+    }
+
+
 def check_bound_solver_classes(manifest_classes: list[str]) -> None:
     expected_classes = set(manifest_classes)
     binding_names = parse_bound_solver_classes()
@@ -1526,7 +1531,11 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
 
 def check_python_stub_lcp_api_surface() -> None:
     errors: list[str] = []
-    for class_name, expected_members in REQUIRED_DARTPY_MATH_STUB_MEMBERS.items():
+    required_members = {
+        **REQUIRED_DARTPY_MATH_STUB_MEMBERS,
+        **parse_bound_lcp_parameter_members(),
+    }
+    for class_name, expected_members in required_members.items():
         actual_members = parse_math_stub_class_members(class_name)
         missing_members = sorted(expected_members - actual_members)
         if missing_members:

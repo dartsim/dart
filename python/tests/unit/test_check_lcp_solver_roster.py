@@ -829,6 +829,20 @@ def test_lcp_solver_roster_rejects_extra_bound_solver_class(
         module.check_bound_solver_classes(["DantzigSolver"])
 
 
+def test_lcp_solver_roster_reads_bound_lcp_parameter_members() -> None:
+    module = _load_module()
+    members = module.parse_bound_lcp_parameter_members()
+
+    assert "epsilon_for_division" in members["PgsSolverParameters"]
+    assert "randomize_constraint_order" in members["PgsSolverParameters"]
+    assert "rho_init" in members["AdmmSolverParameters"]
+    assert "regularization" in members["SapSolverParameters"]
+    assert (
+        "max_friction_index_exact_solve_dimension"
+        in members["BoxedSemiSmoothNewtonSolverParameters"]
+    )
+
+
 def test_lcp_solver_roster_rejects_missing_math_stub_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -975,6 +989,8 @@ def test_lcp_solver_roster_rejects_missing_math_stub_lcp_api_member(
 ) -> None:
     module = _load_module()
 
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+
     def fake_class_members(class_name: str) -> set[str]:
         members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
         if class_name == "LcpProblem":
@@ -994,12 +1010,20 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_parameter_members",
+        lambda: {
+            "BoxedSemiSmoothNewtonSolverParameters": {
+                "max_friction_index_exact_solve_dimension"
+            }
+        },
+    )
 
     def fake_class_members(class_name: str) -> set[str]:
-        members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
         if class_name == "BoxedSemiSmoothNewtonSolverParameters":
-            members.remove("max_friction_index_exact_solve_dimension")
-        return members
+            return set()
+        return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
 
     monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
 
