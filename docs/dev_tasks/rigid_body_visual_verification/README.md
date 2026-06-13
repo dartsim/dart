@@ -995,6 +995,10 @@ Evidence supporting readiness:
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
   curated 36-row workflow, optional related/IPC-shelf/packet rows, public
   API-gap audit, capture commands, validation snapshot, and follow-up list.
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` is the
+  maintainer-facing PR body seed for the current branch. It points back to the
+  durable sidecar, py-demos README, generated manifests, current review-index
+  artifacts, and required acceptance checkbox.
 - The user-facing `python/examples/demos/README.md` describes the same ordered
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.
@@ -1034,6 +1038,8 @@ Remaining before retirement:
 - Get explicit maintainer acceptance that the maintained 36-row workflow plus
   optional packet groups, now totaling 52 rows when all optional groups are
   selected, are the completed scope for this dev task.
+- Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
+  body seed after push/PR creation is explicitly approved.
 - If accepted, do the cleanup in the completing PR: add only a short durable
   close-out note if the sidecar or Python README still lacks it, then
   `git rm -r docs/dev_tasks/rigid_body_visual_verification`.
@@ -2458,11 +2464,13 @@ passed and `git diff --check` was clean.
    `build/captures/rigid_workflow_optional_rows_37_52_1781309448/review_index.html`
    as the current static review artifacts; both were regenerated from current
    HEAD and passed local asset-link audits.
-4. Do not add new numbered rows unless a public API gap has been resolved and
+4. Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
+   body seed once push/PR creation is explicitly approved.
+5. Do not add new numbered rows unless a public API gap has been resolved and
    the durable PLAN-103 scope is updated first.
-5. Retire this dev-task folder only if the maintainer explicitly accepts the
+6. Retire this dev-task folder only if the maintainer explicitly accepts the
    current scope as complete.
-6. Do not push again unless the user explicitly approves pushing in that
+7. Do not push again unless the user explicitly approves pushing in that
    session; before pushing a PR branch, merge latest base rather than rebasing.
 
 ## Commit And Push Notes

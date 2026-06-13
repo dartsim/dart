@@ -86,6 +86,8 @@ Resume from this state:
 - Use the current-HEAD full row-01-through-row-36 packet plus the optional rows
   37-52 packet above as the current review-index scan artifacts. Treat older
   packet directories as historical completion evidence only.
+- Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
+  body seed after push/PR creation is explicitly approved.
   If more local progress is requested before pushing/review, audit the
   API-deferred gaps rather than adding speculative numbered rows.
 
@@ -100,6 +102,7 @@ Files touched by this row-36 slice:
 - `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`
 - `docs/dev_tasks/rigid_body_visual_verification/README.md`
 - `docs/dev_tasks/rigid_body_visual_verification/RESUME.md`
+- `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
 
 Row-36 loop-closure slice:
 
@@ -1158,8 +1161,10 @@ If the tree is clean with that slice present, the next concrete unblocked step
 is maintainer review/acceptance of the current scope or final cleanup in the
 same completing PR. The direct rigid-body impulse, sleep/wake or island
 activation, and loop-closure compliance rows remain deferred until public
-`dartpy` APIs exist. Do not push without explicit approval in the session that
-performs the push.
+`dartpy` APIs exist. Use
+`docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR body seed
+after push/PR creation is explicitly approved. Do not push without explicit
+approval in the session that performs the push.
 
 Replay capture-metadata checks for this slice:
 
