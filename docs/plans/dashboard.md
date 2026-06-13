@@ -350,16 +350,17 @@ its own line so status updates remain git-history friendly.
   primitive barrier-Hessian PSD-projection parity, reduced scene-owned
   point-triangle, point-edge, point-point, and edge-edge barrier-Hessian runtime
   rows, reduced diagonal assembly/solve plus
-  pair-slot off-diagonal sparse-block assembly plus sparse block residual
+  pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
+  sparse off-diagonal surface-edge assembly row plus sparse block residual
   matvec plus fixed-iteration sparse Jacobi solve plus capped sparse CG solve
   plus sparse equality-reduced diagonal solve parity plus a reduced scene-owned
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
   parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, analytic curved CCD, full scene-level
-  line search, runtime sparse Hessian assembly, direct/global sparse
-  factorization, nonlinear equality constraints, GPU `World::step`, paper-scale
-  assets, full runtime
+  line search, full runtime sparse Hessian graph construction and assembly,
+  direct/global sparse factorization, nonlinear equality constraints, GPU
+  `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer

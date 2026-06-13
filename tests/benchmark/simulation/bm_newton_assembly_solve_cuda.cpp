@@ -104,6 +104,14 @@ struct OffDiagonalAssemblyFixture
   CpuOffDiagonalAssemblyResult cpu;
 };
 
+struct SceneRuntimeOffDiagonalAssemblyFixture : OffDiagonalAssemblyFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sceneEdgePairCount = 0;
+};
+
 struct CpuSparseResidualResult
 {
   std::vector<double> assembledDiagonal;
@@ -247,6 +255,46 @@ cuda::NewtonOffDiagonalAssemblyRowInput makeOffDiagonalRow(
     row.hessianBlock[entry] = 0.0025 * static_cast<double>(signedBucket)
                               + 0.0001 * static_cast<double>((entry % 6) + 1);
   }
+  return row;
+}
+
+cuda::NewtonOffDiagonalAssemblyRowInput makeSceneRuntimeOffDiagonalRow(
+    const sx::DeformableBody& body,
+    const std::size_t pairIndex,
+    const std::size_t nodeA,
+    const std::size_t nodeB)
+{
+  cuda::NewtonOffDiagonalAssemblyRowInput row;
+  row.pairIndex = static_cast<std::uint32_t>(pairIndex);
+
+  const Eigen::Vector3d delta
+      = body.getPosition(nodeB) - body.getPosition(nodeA);
+  const Eigen::Vector3d velocityDelta
+      = body.getVelocity(nodeB) - body.getVelocity(nodeA);
+  const double length = std::max(delta.norm(), 1e-9);
+  const double massScale = 0.5 * (body.getMass(nodeA) + body.getMass(nodeB));
+
+  for (std::size_t localRow = 0;
+       localRow < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++localRow) {
+    const std::size_t rowAxis = localRow % 3u;
+    for (std::size_t localColumn = 0;
+         localColumn < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++localColumn) {
+      const std::size_t columnAxis = localColumn % 3u;
+      const double axisCoupling
+          = delta[rowAxis] * delta[columnAxis] / (length * length);
+      const double velocityCoupling
+          = velocityDelta[rowAxis] * velocityDelta[columnAxis];
+      const double diagonalBias = rowAxis == columnAxis ? 0.001 : 0.0001;
+      row.hessianBlock
+          [localRow * cuda::kNewtonAssemblySolveDofsPerBody + localColumn]
+          = diagonalBias * massScale + 0.00025 * axisCoupling
+            + 0.00005 * velocityCoupling
+            + 0.00001 * static_cast<double>(localRow + localColumn + 1u);
+    }
+  }
+
   return row;
 }
 
@@ -842,6 +890,41 @@ OffDiagonalAssemblyFixture makeOffDiagonalFixture(const int rowCount)
   return fixture;
 }
 
+SceneRuntimeOffDiagonalAssemblyFixture
+makeSceneRuntimeOffDiagonalAssemblyFixture(const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_sparse_off_diagonal_assembly",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeOffDiagonalAssemblyFixture fixture;
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.sceneNodeCount = body.getNodeCount();
+  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
+  fixture.rows.reserve(3u * fixture.sceneTriangleCount);
+
+  const auto appendEdgePair
+      = [&fixture, &body](const std::size_t nodeA, const std::size_t nodeB) {
+          fixture.rows.push_back(makeSceneRuntimeOffDiagonalRow(
+              body, fixture.sceneEdgePairCount, nodeA, nodeB));
+          ++fixture.sceneEdgePairCount;
+        };
+
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
+    appendEdgePair(surfaceTriangle.nodeA, surfaceTriangle.nodeB);
+    appendEdgePair(surfaceTriangle.nodeB, surfaceTriangle.nodeC);
+    appendEdgePair(surfaceTriangle.nodeC, surfaceTriangle.nodeA);
+  }
+
+  fixture.pairCount = fixture.sceneEdgePairCount;
+  evaluateCpuOffDiagonalAssembly(fixture.rows, fixture.pairCount, fixture.cpu);
+  return fixture;
+}
+
 SparseResidualFixture makeSparseResidualFixture(const int rowCount)
 {
   SparseResidualFixture fixture;
@@ -1113,6 +1196,20 @@ void recordOffDiagonalCounters(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
 }
 
+void recordSceneRuntimeOffDiagonalCounters(
+    benchmark::State& state,
+    const SceneRuntimeOffDiagonalAssemblyFixture& fixture,
+    const double maxError)
+{
+  recordOffDiagonalCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+}
+
 void recordSparseResidualCounters(
     benchmark::State& state,
     const SparseResidualFixture& fixture,
@@ -1375,6 +1472,70 @@ static void BM_NewtonOffDiagonalAssemblyCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonOffDiagonalAssemblyCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeOffDiagonalAssemblyCpu(benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeOffDiagonalAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  CpuOffDiagonalAssemblyResult result;
+
+  for (auto _ : state) {
+    evaluateCpuOffDiagonalAssembly(fixture.rows, fixture.pairCount, result);
+    benchmark::DoNotOptimize(result.assembledBlocks.data());
+  }
+
+  recordSceneRuntimeOffDiagonalCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeOffDiagonalAssemblyCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeOffDiagonalAssemblyCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeOffDiagonalAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  cuda::NewtonOffDiagonalAssemblyResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonOffDiagonalAssemblyCuda(
+        fixture.rows, fixture.pairCount, result);
+    benchmark::DoNotOptimize(result.assembledBlocks.data());
+  }
+
+  recordSceneRuntimeOffDiagonalCounters(
+      state, fixture, maxOffDiagonalOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_pairs"] = static_cast<double>(result.pairCount);
+  state.counters["gpu_active_blocks"]
+      = static_cast<double>(result.activeBlockCount);
+  state.counters["gpu_max_block_abs"] = result.maxBlockAbs;
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"]
+      = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["solve_kernel_ns"] = result.timing.solveKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeOffDiagonalAssemblyCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();
