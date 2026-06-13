@@ -363,8 +363,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     angular Jacobian terms when evaluating approach velocity and effective
     mass, skips zero-angular normal velocity/effective-mass work, avoids
     no-op angular velocity updates for centered normal rows, and returns early
-    when a normal impulse iteration produces no velocity change. During
-    simulation bake, the rigid contact stage now
+    when a normal impulse iteration produces no velocity change. Positional
+    contact correction also skips no-op writes to prescribed/static bodies.
+    During simulation bake, the rigid contact stage now
     reserves ordinary and AVBD contact scratch from the collision-shape capacity
     estimate and prewarms collision-query cache storage without generating
     prepare-time contacts; `execute()` remains the only path that assembles

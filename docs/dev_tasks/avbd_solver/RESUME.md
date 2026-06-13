@@ -1,6 +1,6 @@
 # Resume: AVBD Solver
 
-## Current Resume Handoff (2026-06-12)
+## Current Resume Handoff (2026-06-13)
 
 The user resumed after the previous literal-stop checkpoint by saying
 `continue`. This section is the current handoff snapshot and supersedes the
@@ -12,18 +12,74 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse normal contact solve now
-records whether each contact side has a nonzero normal angular Jacobian term,
-skips the corresponding zero-angular approach-velocity and effective-mass work,
-avoids no-op angular velocity updates for centered normal rows, and returns
-early from normal-impulse application when the clamped impulse delta is zero.
-The frictional tangent solve still uses the existing full contact-point
-velocity path. This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0`
-source-shaped row, where the centered frictionless contacts have zero angular
-normal Jacobian terms. This does not refresh the tracked friction-sweep packet,
-close the frictionless source-row CPU gap, or claim GPU parity.
+Latest local slice: the default sequential-impulse rigid contact position
+correction now skips no-op position writes to prescribed/static bodies while
+preserving the same inverse-mass-weighted correction for dynamic endpoints.
+This targets the static-ground side of the
+`BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. This does not
+refresh the tracked friction-sweep packet, close the frictionless source-row CPU
+gap, or claim GPU parity.
 
 Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=0 PYTHONPATH=build/default/cpp/Release/python LD_LIBRARY_PATH=build/default/cpp/Release/lib:.pixi/envs/default/lib pixi run python - <<'PY' ...`
+  profiled the Python `avbd_demo2d_dynamic_friction` source-shaped scene after
+  five steps. The last-step profile reported wall time 0.033 ms with
+  `rigid_body_contact` at 0.027 ms / 80.5% wall, so the frictionless row remains
+  contact-stage dominated. The explicit `PYTHONPATH`/`LD_LIBRARY_PATH` were
+  required because the ambient dartpy import path did not resolve the in-tree
+  build's runtime libraries.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-current-20260613.json --benchmark_out_format=json'`
+  passed before this kept edit. It recorded a 7.62 us median CPU step under
+  load average `7.06, 7.73, 8.81` with CPU scaling enabled and 10.3% CV.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-after-static-position-write-guard.json --benchmark_out_format=json'`
+  passed after this kept edit. It recorded a 7.78 us median CPU step under load
+  average `19.85, 12.52, 9.51` with CPU scaling enabled and 2.9% CV. This is
+  path smoke only because same-source native timing, visual captures, and
+  packet regeneration were not rerun, and the host was busy with other DART
+  builds.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run test-unit` passed, 161 tests.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The report passed all seven categories: linting, build, unit tests,
+  simulation tests, Python tests, documentation, and CUDA tests. The run
+  overlapped external DART/CUDA load; slow stages included
+  `test_rigid_ipc_paper_experiments` at 468.77 s, `test_world` at 254.32 s,
+  the simulation-label `test_lcp_jacobi_batch_cuda` at 519.43 s, and the final
+  CUDA smoke `test_lcp_jacobi_batch_cuda` at 395.53 s. The documentation stage
+  emitted four existing autodoc warnings about the generated
+  `dartpy._world_render_bridge` stub import, but the command passed. Final CUDA
+  benchmark smokes also passed under CPU-scaling warnings and load averages
+  around 9-11, so treat those timings as smoke evidence only.
+
+Rejected local probes that were reverted before this handoff:
+
+- A normal-only convergence-exit prototype returned whether any normal impulse
+  changed and broke after a no-change sweep. Focused tests passed, but `/0`
+  benchmark smoke regressed to 14.44-14.75 us medians under CPU scaling.
+- An independent single-normal-sweep prototype detected one dynamic body
+  against one prescribed body with no angular normal term. The full-constraint
+  scan version measured 7.81 us median and the scratch-list version regressed
+  to 14.10 us median under CPU scaling. Neither was kept.
+
+Next preferred bounded work: avoid more normal-iteration-control changes unless
+fresh profiling points there. The remaining `/0` gap is still contact-stage
+dominated; inspect collision query / contact assembly fixed costs, or switch to
+GPU parity preparation if no safe CPU cut remains under cleaner host load.
+
+Previous local checkpoint: commit `2d4357176b4` records the default
+sequential-impulse normal contact solve recording whether each contact side has
+a nonzero normal angular Jacobian term, skipping the corresponding zero-angular
+approach-velocity and effective-mass work, avoiding no-op angular velocity
+updates for centered normal rows, and returning early from normal-impulse
+application when the clamped impulse delta is zero.
+
+Validation for commit `2d4357176b4`:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
   passed.
@@ -49,10 +105,6 @@ Validation for the latest local slice:
   CUDA smoke `test_lcp_jacobi_batch_cuda` at 295.82 s. The documentation stage
   emitted four existing autodoc warnings about the generated
   `dartpy._world_render_bridge` stub import, but the command passed.
-
-Next preferred bounded work: continue the per-step frictionless max-friction-0
-CPU audit under cleaner host load, or switch to GPU parity preparation if the
-CPU path has no safe bounded next cut.
 
 Previous local checkpoint: commit `5101bd44a92` records the default
 sequential-impulse normal contact solve storing each contact's `arm x normal`

@@ -9,6 +9,21 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-13): the default sequential-impulse rigid
+  contact position correction now skips no-op position writes to
+  prescribed/static bodies while preserving the same inverse-mass-weighted
+  correction for dynamic endpoints. This targets the static-ground side of the
+  `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row. Focused contact
+  behavior and baked allocator tests passed, and a `/0` benchmark smoke
+  recorded a 7.78 us median CPU step under load average `19.85, 12.52, 9.51`
+  with CPU scaling enabled. Full validation completed on 2026-06-13:
+  `pixi run lint`, `pixi run build`, `pixi run test-unit`, and
+  `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The CUDA run overlapped external DART/CUDA load, had CPU-scaling benchmark
+  warnings, and retained the existing four `dartpy._world_render_bridge`
+  autodoc warnings during docs. This is local path evidence only. It does not
+  refresh the tracked friction-sweep packet, close the frictionless source-row
+  CPU gap, or claim GPU parity.
 - Latest resumed checkpoint (2026-06-12): the default sequential-impulse
   normal contact solve now records whether each side of a contact has a nonzero
   normal angular Jacobian term, skips the corresponding zero-angular

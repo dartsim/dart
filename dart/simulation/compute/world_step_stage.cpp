@@ -10050,8 +10050,12 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const Eigen::Vector3d correction
         = (correctionFactor * penetration / totalInverseMass)
           * constraint.normal;
-    constraint.transformA->position -= constraint.invMassA * correction;
-    constraint.transformB->position += constraint.invMassB * correction;
+    if (!constraint.staticA) {
+      constraint.transformA->position -= constraint.invMassA * correction;
+    }
+    if (!constraint.staticB) {
+      constraint.transformB->position += constraint.invMassB * correction;
+    }
   }
 }
 
