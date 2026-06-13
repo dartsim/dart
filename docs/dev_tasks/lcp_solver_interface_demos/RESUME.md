@@ -1,9 +1,76 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality - 2026-06-13 Solver Family Evidence Counters
+## Current Reality - 2026-06-13 Live Performance Profile Refresh
 
 This is the latest hand-off. Older sections below are historical checkpoints
 and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current base before this checkpoint:
+  `d04616238f5 Expose LCP solver family evidence counters`
+- Current branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 1]`
+- Checkpoint target: `Refresh live LCP performance profiles`
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this slice changes:
+
+- Ran the live profile refresh:
+  `pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900`.
+- Refreshed the checked `performance_profile_evidence.csv`,
+  `performance_profile_standard.csv`, `performance_profile_boxed.csv`, and
+  `performance_profile_frictionindex.csv` artifacts from current benchmark
+  output.
+- Updated the Python `lcp_physics` performance-profile summary and panel tests
+  to match the refreshed live evidence.
+- Updated `CHANGELOG.md` for the refreshed profile artifacts/demo summary.
+
+Verification completed so far:
+
+```bash
+pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- Live refresh passed and saved all four profile CSV artifacts.
+- Focused profile, roster, and py-demo panel tests: `57 passed`.
+- Repository lint: passed, including `lint-lcp-solver-roster`.
+- Whitespace check: passed.
+- Current largest average ratios from the refreshed evidence:
+  - Standard: `MPRGP 1.48`, `Pgs 1.33`, `RedBlackGaussSeidel 1.32`.
+  - Boxed: `RedBlackGaussSeidel 1.58`, `SymmetricPsor 1.54`,
+    `ShockPropagation 1.47`.
+  - FrictionIndex: `ShockPropagation 1.55`, `Sap 1.48`, `Admm 1.46`.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is still uncommitted, run the focused profile/roster/py-demo
+tests, `pixi run lint`, and `git diff --check`, then commit it with
+`Refresh live LCP performance profiles`. Continue only from another bounded
+DART 7 LCP interface/demo/performance gap; the broad objective remains
+incomplete.
+
+## Current Reality - 2026-06-13 Solver Family Evidence Counters
+
+Historical checkpoint section. It was the latest hand-off before the live
+performance-profile refresh.
+
+This was the latest hand-off before the live refresh. Older sections below are
+historical checkpoints and may retain their original "latest" wording from the
+time they were written.
 
 Current branch:
 

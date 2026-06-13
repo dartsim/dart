@@ -3765,6 +3765,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     evidence, the checked performance-profile CSV, roster lint, and Python
     `lcp_physics` evidence-schema panel so pivoting, projection, Newton, and
     other solver families can be grouped without parsing display names.
+  - Regenerated the LCP performance-profile artifacts from live
+    `BM_LcpCompare` results and refreshed the Python `lcp_physics` profile
+    summary so the demo reflects the current Standard, Boxed, and
+    FrictionIndex hot rows.
   - Extended the checked LCP performance-profile evidence CSV with solver
     iteration and bound-violation metrics, and tightened the roster lint gate
     to reject stale or invalid row-level metric evidence.

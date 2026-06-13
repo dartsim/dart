@@ -1,9 +1,71 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-13 Current Continuation - Solver Family Evidence Counters
+## 2026-06-13 Current Continuation - Live Performance Profile Refresh
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current base before this checkpoint:
+  `d04616238f5 Expose LCP solver family evidence counters`.
+- Current branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 1]`.
+- Checkpoint target: `Refresh live LCP performance profiles`.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Benchmark refresh:
+
+- Ran the live performance-profile refresh instead of reusing the cached JSON:
+  `pixi run python scripts/lcp_performance_profile.py --run --cache build/lcp_profile_full.json --output docs/background/lcp/figures --benchmark-timeout 900`.
+- The command regenerated `build/lcp_profile_full.json` and refreshed the
+  checked profile artifacts:
+  `performance_profile_evidence.csv`, `performance_profile_standard.csv`,
+  `performance_profile_boxed.csv`, and `performance_profile_frictionindex.csv`.
+- The Python `lcp_physics` performance-profile metadata and panel assertions
+  were updated to match the refreshed profile rather than the older cached
+  profile.
+
+Current profile signal from the live run:
+
+- Standard: no solver average is above `1.6x`; `MPRGP` is the largest current
+  row at about `1.48x`, followed by `Pgs`, `RedBlackGaussSeidel`, `Lemke`,
+  `Baraff`, `PenalizedFischerBurmeisterNewton`, `Tgs`, and `NNCG`.
+- Boxed: no solver average is above `1.6x`; `RedBlackGaussSeidel` is about
+  `1.58x`, `SymmetricPsor` about `1.54x`, and `ShockPropagation` about
+  `1.47x`.
+- FrictionIndex: no solver average is above `1.6x`; `ShockPropagation` is
+  about `1.55x`, `Sap` about `1.48x`, and `Admm` about `1.46x`.
+
+Verification completed so far:
+
+- Live profile refresh command above passed and saved all four CSV artifacts.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_py_demo_panels.py -q`
+  passed with `57 passed`.
+- `pixi run lint` passed, including `lint-lcp-solver-roster`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is still uncommitted, run the focused profile/roster/py-demo
+   tests, `pixi run lint`, and `git diff --check`, then commit it with
+   `Refresh live LCP performance profiles`.
+3. Continue from the next bounded performance/interface/demo gap. The strongest
+   next performance target from this refresh is Boxed `RedBlackGaussSeidel` /
+   `SymmetricPsor`, or FrictionIndex `ShockPropagation` / `Sap` / `Admm`.
+4. Do not retry the rejected SAP FrictionIndex exact shortcut or
+   ShockPropagation exact-path probe without a materially different hypothesis.
+
+## 2026-06-13 Current Continuation - Solver Family Evidence Counters
+
+Historical checkpoint section. It was the latest hand-off before the live
+performance-profile refresh.
+
+This was the latest hand-off state before the live refresh. Sections below are
+historical checkpoints and may describe their own local "current" state.
 
 Current branch state:
 
