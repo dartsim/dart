@@ -2183,7 +2183,7 @@ def _workflow_search_score(guide: RigidWorkflowGuide, tokens: tuple[str, ...]) -
     return 0
 
 
-def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
+def _workflow_ranked_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
     tokens = _workflow_search_tokens(query)
     if not tokens:
         return ()
@@ -2196,7 +2196,11 @@ def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
             matches.append((score, candidate))
 
     matches.sort(key=lambda item: (-item[0], item[1].index))
-    return tuple(candidate for _score, candidate in matches[:6])
+    return tuple(candidate for _score, candidate in matches)
+
+
+def _workflow_matching_guides(query: str) -> tuple[RigidWorkflowGuide, ...]:
+    return _workflow_ranked_matching_guides(query)[:6]
 
 
 def _workflow_search_rows(
@@ -2209,8 +2213,21 @@ def _workflow_search_rows(
     if changed:
         query = str(next_query)
 
+    stripped_query = query.strip()
     tokens = _workflow_search_tokens(query)
-    matches = _workflow_matching_guides(query)
+    all_matches = _workflow_ranked_matching_guides(query)
+    matches = all_matches[:6]
+    if stripped_query and matches:
+        if len(all_matches) > len(matches):
+            builder.text(
+                f"Showing {len(matches)} of {len(all_matches)} matching "
+                f"workflow rows for {stripped_query}."
+            )
+        else:
+            builder.text(
+                f"Showing {len(matches)} matching workflow rows for "
+                f"{stripped_query}."
+            )
     for match in matches:
         selected = match.scene_id == guide.scene_id
         related_matches = ()
@@ -2249,7 +2266,7 @@ def _workflow_search_rows(
             tooltip = f"{tooltip} Search match: {reason}."
         builder.item_tooltip(tooltip)
 
-    if query.strip() and not matches:
+    if stripped_query and not matches:
         builder.text(
             "No matching workflow rows; try a row number, scene id, solver, "
             "contact, backend, or API name."

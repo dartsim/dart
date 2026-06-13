@@ -4,15 +4,24 @@
 
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
-handoff covers the latest search-discovery commits above pushed checkpoint
-`cb5deee7bfd`; this turn has explicit user approval to publish them to
-`origin` after merging latest `origin/main`. Fresh sessions should verify the
-exact remote state with `git status -sb` and `git log -5 --oneline`. There is
-still no PR for this branch. Do not push new commits, create a PR, set a
-milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
-GitHub state without explicit maintainer/user approval.
+handoff starts from pushed checkpoint
+`02a84363313 Explain rigid workflow search matches` and adds a local
+search-result-count follow-up. Fresh sessions should verify the exact local and
+remote state with `git status -sb` and `git log -5 --oneline`. There is still
+no PR for this branch. Do not push new commits, create a PR, set a milestone,
+rerun CI, comment on reviews, resolve threads, or mutate any other GitHub state
+without explicit maintainer/user approval.
 
-Latest branch continuation: rigid workflow search now covers more terms users
+Latest local continuation: the in-viewer `Rigid Workflow` filter now counts
+the full ranked result set while still showing only the top six rows, so broad
+queries such as `contact` display an explicit `Showing 6 of N matching workflow
+rows` line before the selectable results. Search-result tooltips still name the
+match source, and empty-result feedback still suggests row numbers, scene ids,
+solver, contact, backend, or API names. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_summarizes_limited_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_empty_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `12 passed`. This local slice is not pushed yet.
+
+Latest pushed search-discovery continuation: rigid workflow search now covers more terms users
 type while diagnosing performance, contact/material parameters, collision
 queries, dynamics terms, impulses, stack behavior, and closed chains.
 `throughput` routes to `rigid_contact_scale_budget`; `latency` and

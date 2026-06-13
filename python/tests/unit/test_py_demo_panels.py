@@ -2036,6 +2036,34 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
     assert context.scene_switch_requests == ["rigid_friction_threshold"]
 
 
+def test_rigid_workflow_panel_summarizes_limited_search_results() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow broad search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(text_input_values={"Find row": "contact"})
+
+    workflow_panel.build(builder, context)
+
+    summary_events = [
+        event
+        for event in builder.events
+        if event.startswith("text:Showing 6 of ")
+        and event.endswith(" matching workflow rows for contact.")
+    ]
+    assert summary_events
+    total_matches = int(summary_events[0].split(" of ", 1)[1].split(" ", 1)[0])
+    assert total_matches > 6
+    assert context.scene_switch_requests == []
+
+
 def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
     contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
     solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]

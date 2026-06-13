@@ -167,6 +167,9 @@ same rows as their documented snake_case or singular forms.
 Search-result tooltips name the match source, such as maintained alias, row
 number, user question, related evidence, or scope caveat, so users can see why
 the navigator chose a row before switching scenes.
+Broad queries keep the list compact by showing the top six ranked rows, but the
+panel also states the full match count so users can tell when a term like
+`contact` or `solver` has more rows than are visible.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Scope caveats

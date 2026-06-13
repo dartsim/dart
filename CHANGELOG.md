@@ -61,9 +61,11 @@
     rigid workflow panel now shows each row's capture command, and the rigid
     workflow search recognizes DART 7 user terminology such as
     `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and
-    backend/executor aliases. Adjacent comparison/parameter rows now label
-    their comparison axis and held-fixed controls in both the panel and capture
-    metrics. Add `--include-related` and `--include-packets` to append
+    backend/executor aliases, while broad searches now show the full ranked
+    match count when the compact panel caps the visible result list. Adjacent
+    comparison/parameter rows now label their comparison axis and held-fixed
+    controls in both the panel and capture metrics. Add `--include-related` and
+    `--include-packets` to append
     non-numbered related evidence routes and capture-first rigid IPC packets
     to the same rigid workflow capture/review packet, and row-range options for
     targeted reruns after a long workflow capture fails or needs inspection.

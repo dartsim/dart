@@ -942,6 +942,12 @@ Evidence recorded for this slice:
   dev-task folder is therefore close to cleanup, but it should remain until the
   maintainer accepts this scoped workflow as complete and the completing PR
   removes `docs/dev_tasks/rigid_body_visual_verification` in the same change.
+- Latest workflow-search count follow-up: the in-viewer `Rigid Workflow` filter
+  now counts the full ranked result set while still showing only the top six
+  rows, so broad queries such as `contact` display a `Showing 6 of N matching
+workflow rows` line before the selectable results. This keeps the navigator
+  compact while making capped result sets visible. The focused panel/search and
+  README-order guard reported `12 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure
