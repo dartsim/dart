@@ -81,6 +81,12 @@ REQUIRED_EVIDENCE_COLUMNS = (
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
 DARTPY_INIT_STUB_PATH = ROOT / "python/stubs/dartpy/__init__.pyi"
+BOUND_LCP_CORE_CLASS_NAMES = (
+    "LcpResult",
+    "LcpOptions",
+    "LcpProblem",
+    "LcpSolver",
+)
 REQUIRED_DARTPY_MATH_STUB_MEMBERS = {
     "LcpProblem": {
         "size",
@@ -1367,6 +1373,93 @@ def parse_bound_parameterized_solver_classes() -> dict[str, str]:
     }
 
 
+def _extract_bound_class_body(source: str, class_name: str) -> str:
+    pattern = re.compile(
+        r'nb::class_<[^>]+>\(\s*m\s*,\s*"' + re.escape(class_name) + r'"\s*\)'
+    )
+    match = pattern.search(source)
+    if not match:
+        raise AssertionError(
+            f"{_display_path(DARTPY_BINDING_PATH)} is missing bound class {class_name}"
+        )
+
+    paren_depth = 0
+    quote: str | None = None
+    escaped = False
+    line_comment = False
+    block_comment = False
+    index = match.end()
+    while index < len(source):
+        char = source[index]
+        next_char = source[index + 1] if index + 1 < len(source) else ""
+
+        if line_comment:
+            if char == "\n":
+                line_comment = False
+            index += 1
+            continue
+        if block_comment:
+            if char == "*" and next_char == "/":
+                block_comment = False
+                index += 2
+                continue
+            index += 1
+            continue
+        if quote is not None:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = None
+            index += 1
+            continue
+
+        if char == "/" and next_char == "/":
+            line_comment = True
+            index += 2
+            continue
+        if char == "/" and next_char == "*":
+            block_comment = True
+            index += 2
+            continue
+        if char in {'"', "'"}:
+            quote = char
+        elif char == "(":
+            paren_depth += 1
+        elif char == ")":
+            paren_depth -= 1
+        elif char == ";" and paren_depth == 0:
+            return source[match.end() : index]
+
+        index += 1
+
+    raise AssertionError(
+        f"{_display_path(DARTPY_BINDING_PATH)} has unterminated bound class "
+        f"{class_name}"
+    )
+
+
+def parse_bound_lcp_core_class_members() -> dict[str, set[str]]:
+    source = _read(DARTPY_BINDING_PATH)
+    member_pattern = re.compile(
+        r'\.def(?:_(?:ro|rw|prop_rw|static))?\(\s*"'
+        r'(?P<member>[A-Za-z_][A-Za-z0-9_]*)"',
+        re.DOTALL,
+    )
+    members: dict[str, set[str]] = {}
+    for class_name in BOUND_LCP_CORE_CLASS_NAMES:
+        class_members = set(
+            member_pattern.findall(_extract_bound_class_body(source, class_name))
+        )
+        members[class_name] = {
+            member
+            for member in class_members
+            if not (member.startswith("__") and member.endswith("__"))
+        }
+    return members
+
+
 def parse_bound_lcp_parameter_members() -> dict[str, set[str]]:
     source = _read(DARTPY_BINDING_PATH)
     class_pattern = re.compile(
@@ -1561,10 +1654,10 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
 def check_python_stub_lcp_api_surface() -> None:
     errors: list[str] = []
     parameter_members = parse_bound_lcp_parameter_members()
-    required_members = {
-        **REQUIRED_DARTPY_MATH_STUB_MEMBERS,
-        **parameter_members,
-    }
+    required_members = parse_bound_lcp_core_class_members()
+    for class_name, expected_members in REQUIRED_DARTPY_MATH_STUB_MEMBERS.items():
+        required_members.setdefault(class_name, set()).update(expected_members)
+    required_members.update(parameter_members)
     for class_name, expected_members in required_members.items():
         actual_members = parse_math_stub_class_members(class_name)
         missing_members = sorted(expected_members - actual_members)

@@ -854,6 +854,21 @@ def test_lcp_solver_roster_reads_bound_parameterized_solver_classes() -> None:
     assert "StaggeringSolver" not in bound
 
 
+def test_lcp_solver_roster_reads_bound_lcp_core_class_members() -> None:
+    module = _load_module()
+    members = module.parse_bound_lcp_core_class_members()
+
+    assert {"status", "iterations", "succeeded"} <= members["LcpResult"]
+    assert {"max_iterations", "with_relaxation", "high_accuracy"} <= members[
+        "LcpOptions"
+    ]
+    assert {"A", "b", "size", "get_friction_index_contact_count"} <= members[
+        "LcpProblem"
+    ]
+    assert {"solve", "default_options", "supports_problem"} <= members["LcpSolver"]
+    assert "__repr__" not in members["LcpResult"]
+
+
 def test_lcp_solver_roster_rejects_missing_math_stub_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1002,6 +1017,11 @@ def test_lcp_solver_roster_rejects_missing_math_stub_lcp_api_member(
 
     monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
     monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {"LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])},
+    )
 
     def fake_class_members(class_name: str) -> set[str]:
         members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
@@ -1036,6 +1056,11 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
         "parse_bound_parameterized_solver_classes",
         lambda: {"BoxedSemiSmoothNewtonSolver": "BoxedSemiSmoothNewtonSolver"},
     )
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {"LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])},
+    )
 
     def fake_class_members(class_name: str) -> set[str]:
         if class_name == "BoxedSemiSmoothNewtonSolverParameters":
@@ -1058,6 +1083,13 @@ def test_lcp_solver_roster_rejects_missing_math_all_lcp_api_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {
+            "LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        },
+    )
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_parameter_members",
@@ -1083,10 +1115,44 @@ def test_lcp_solver_roster_rejects_missing_math_all_lcp_api_class(
         module.check_python_stub_lcp_api_surface()
 
 
+def test_lcp_solver_roster_rejects_missing_bound_core_lcp_api_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {"LcpOptions": {"high_accuracy"}},
+    )
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
+    monkeypatch.setattr(
+        module, "parse_math_stub_all_names", lambda: {"LcpOptions", "LcpProblem"}
+    )
+
+    def fake_class_members(class_name: str) -> set[str]:
+        if class_name == "LcpProblem":
+            return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])
+        return set()
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match="LcpOptions is missing members \\['high_accuracy'\\]",
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
 def test_lcp_solver_roster_rejects_missing_parameter_class_for_parameterized_solver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {"LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])},
+    )
     monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
     monkeypatch.setattr(
         module,
@@ -1110,6 +1176,11 @@ def test_lcp_solver_roster_rejects_wrong_solver_parameter_stub_annotation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_core_class_members",
+        lambda: {"LcpProblem": set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS["LcpProblem"])},
+    )
     monkeypatch.setattr(
         module,
         "parse_bound_lcp_parameter_members",
