@@ -62,6 +62,9 @@ public:
         loData(DoubleAllocator{allocator}),
         hiData(DoubleAllocator{allocator}),
         findexData(IntAllocator{allocator}),
+        w(DoubleAllocator{allocator}),
+        loEff(DoubleAllocator{allocator}),
+        hiEff(DoubleAllocator{allocator}),
         lcp(allocator)
     {
     }
@@ -73,9 +76,9 @@ public:
     std::vector<double, DoubleAllocator> loData;
     std::vector<double, DoubleAllocator> hiData;
     std::vector<int, IntAllocator> findexData;
-    Eigen::VectorXd w;
-    Eigen::VectorXd loEff;
-    Eigen::VectorXd hiEff;
+    std::vector<double, DoubleAllocator> w;
+    std::vector<double, DoubleAllocator> loEff;
+    std::vector<double, DoubleAllocator> hiEff;
     DantzigLcpScratch<double> lcp;
 
     void clear() noexcept;

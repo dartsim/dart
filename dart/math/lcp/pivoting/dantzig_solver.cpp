@@ -55,9 +55,9 @@ void DantzigSolver::Scratch::clear() noexcept
   loData.clear();
   hiData.clear();
   findexData.clear();
-  w.resize(0);
-  loEff.resize(0);
-  hiEff.resize(0);
+  w.clear();
+  loEff.clear();
+  hiEff.clear();
   lcp.clear();
 }
 
@@ -172,19 +172,26 @@ LcpResult DantzigSolver::solve(
   for (int i = 0; i < n; ++i) {
     x[i] = scratch.xdata[static_cast<std::size_t>(i)];
   }
-  scratch.w.resize(n);
+  scratch.w.resize(vectorSize);
+  Eigen::Map<Eigen::VectorXd> wEval(scratch.w.data(), n);
   for (int row = 0; row < n; ++row) {
     double value = -b[row];
     for (int col = 0; col < n; ++col) {
       value += A(row, col) * x[col];
     }
-    scratch.w[row] = value;
+    wEval[row] = value;
   }
   result.iterations = 1;
 
+  scratch.loEff.resize(vectorSize);
+  scratch.hiEff.resize(vectorSize);
+  const Eigen::Map<const Eigen::VectorXd> xEval(x.data(), n);
+  Eigen::Map<Eigen::VectorXd> loEff(scratch.loEff.data(), n);
+  Eigen::Map<Eigen::VectorXd> hiEff(scratch.hiEff.data(), n);
+
   std::string boundsMessage;
-  const bool boundsOk = detail::computeEffectiveBounds(
-      lo, hi, findex, x, scratch.loEff, scratch.hiEff, &boundsMessage);
+  const bool boundsOk = detail::computeEffectiveBoundsInto(
+      lo, hi, findex, xEval, loEff, hiEff, &boundsMessage);
   if (!boundsOk) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = boundsMessage;
@@ -194,10 +201,10 @@ LcpResult DantzigSolver::solve(
   const double absTol = (options.absoluteTolerance > 0)
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
-  result.residual = detail::naturalResidualInfinityNorm(
-      x, scratch.w, scratch.loEff, scratch.hiEff);
-  result.complementarity = detail::complementarityInfinityNorm(
-      x, scratch.w, scratch.loEff, scratch.hiEff, absTol);
+  result.residual
+      = detail::naturalResidualInfinityNormView(xEval, wEval, loEff, hiEff);
+  result.complementarity = detail::complementarityInfinityNormView(
+      xEval, wEval, loEff, hiEff, absTol);
   result.status = success ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
@@ -206,13 +213,8 @@ LcpResult DantzigSolver::solve(
                                : mDefaultOptions.complementarityTolerance;
     const double validationTol = std::max(absTol, compTol);
     std::string validationMessage;
-    const bool feasible = detail::validateSolution(
-        x,
-        scratch.w,
-        scratch.loEff,
-        scratch.hiEff,
-        validationTol,
-        &validationMessage);
+    const bool feasible = detail::validateSolutionView(
+        xEval, wEval, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
     if (!feasible) {
       result.status = LcpSolverStatus::NumericalError;

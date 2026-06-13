@@ -203,11 +203,85 @@ inline bool computeEffectiveBounds(
   return true;
 }
 
-inline double naturalResidualInfinityNorm(
-    const Eigen::VectorXd& x,
-    const Eigen::VectorXd& w,
+template <typename XDerived, typename LoEffDerived, typename HiEffDerived>
+inline bool computeEffectiveBoundsInto(
     const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi)
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    const Eigen::MatrixBase<XDerived>& x,
+    Eigen::MatrixBase<LoEffDerived>& loEff,
+    Eigen::MatrixBase<HiEffDerived>& hiEff,
+    std::string* message = nullptr)
+{
+  const Eigen::Index n = x.size();
+  auto& loEffOut = loEff.derived();
+  auto& hiEffOut = hiEff.derived();
+
+  if (lo.size() != n || hi.size() != n || findex.size() != n
+      || loEffOut.size() != n || hiEffOut.size() != n) {
+    if (message) {
+      *message = "Invalid LCP problem dimensions";
+    }
+    return false;
+  }
+
+  loEffOut = lo;
+  hiEffOut = hi;
+
+  for (Eigen::Index i = 0; i < n; ++i) {
+    const int ref = findex[i];
+    if (ref < 0) {
+      continue;
+    }
+
+    if (ref >= n) {
+      if (message) {
+        *message = "Invalid friction index entry";
+      }
+      return false;
+    }
+
+    if (ref == i) {
+      if (message) {
+        *message = "Invalid friction index entry: self reference";
+      }
+      return false;
+    }
+
+    const double scale = x[ref];
+    const double mu = std::abs(hi[i]);
+    if (!std::isfinite(scale)) {
+      if (message) {
+        *message = "Invalid friction index reference value";
+      }
+      return false;
+    }
+
+    if (!std::isfinite(mu)) {
+      if (message) {
+        *message = "Invalid friction coefficient (hi) for friction index entry";
+      }
+      return false;
+    }
+
+    const double bound = mu * std::abs(scale);
+    loEffOut[i] = -bound;
+    hiEffOut[i] = bound;
+  }
+
+  return true;
+}
+
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline double naturalResidualInfinityNormView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi)
 {
   const Eigen::Index n = x.size();
   DART_ASSERT(w.size() == n);
@@ -226,11 +300,25 @@ inline double naturalResidualInfinityNorm(
   return maxResidual;
 }
 
-inline double complementarityInfinityNorm(
+inline double naturalResidualInfinityNorm(
     const Eigen::VectorXd& x,
     const Eigen::VectorXd& w,
     const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
+    const Eigen::VectorXd& hi)
+{
+  return naturalResidualInfinityNormView(x, w, lo, hi);
+}
+
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline double complementarityInfinityNormView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
     double tol)
 {
   const Eigen::Index n = x.size();
@@ -278,11 +366,26 @@ inline double complementarityInfinityNorm(
   return maxViolation;
 }
 
-inline bool validateSolution(
+inline double complementarityInfinityNorm(
     const Eigen::VectorXd& x,
     const Eigen::VectorXd& w,
     const Eigen::VectorXd& lo,
     const Eigen::VectorXd& hi,
+    double tol)
+{
+  return complementarityInfinityNormView(x, w, lo, hi, tol);
+}
+
+template <
+    typename XDerived,
+    typename WDerived,
+    typename LoDerived,
+    typename HiDerived>
+inline bool validateSolutionView(
+    const Eigen::MatrixBase<XDerived>& x,
+    const Eigen::MatrixBase<WDerived>& w,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
     double tol,
     std::string* message = nullptr)
 {
@@ -355,6 +458,17 @@ inline bool validateSolution(
   }
 
   return true;
+}
+
+inline bool validateSolution(
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& w,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    double tol,
+    std::string* message = nullptr)
+{
+  return validateSolutionView(x, w, lo, hi, tol, message);
 }
 
 } // namespace dart::math::detail

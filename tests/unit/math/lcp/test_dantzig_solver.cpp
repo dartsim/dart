@@ -495,6 +495,10 @@ TEST(DantzigSolver, ScratchUsesProvidedAllocatorForDantzigWorkBuffers)
     DantzigSolver::Scratch scratch(allocator);
 
     ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+    const DantzigSolver::Scratch::DoubleAllocator doubleAllocator{allocator};
+    EXPECT_EQ(scratch.w.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.loEff.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.hiEff.get_allocator(), doubleAllocator);
     EXPECT_GT(allocator.allocationCount, 0u)
         << "allocator-aware Dantzig scratch should allocate work buffers "
            "through the provided allocator";
@@ -510,6 +514,21 @@ TEST(DantzigSolver, ScratchUsesProvidedAllocatorForDantzigWorkBuffers)
         << "same-shape Dantzig solves should reuse provided-allocator scratch";
     EXPECT_EQ(
         allocator.alignedAllocationCount, alignedAllocationsAfterFirstSolve);
+
+    x.setZero();
+    std::size_t heapAllocations = 0;
+    std::size_t heapBytes = 0;
+    {
+      ScopedHeapAllocationCounter heapCounter;
+      ASSERT_TRUE(solver.solve(problem, x, scratch, options).succeeded());
+      heapAllocations = heapCounter.allocations();
+      heapBytes = heapCounter.bytes();
+    }
+
+    EXPECT_EQ(heapAllocations, 0u)
+        << "allocator-backed same-shape Dantzig scratch should avoid global "
+           "heap allocations after warmup; allocated "
+        << heapBytes << " bytes";
   }
 
   EXPECT_EQ(allocator.deallocationCount, allocator.allocationCount);
