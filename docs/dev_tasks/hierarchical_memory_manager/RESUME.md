@@ -1,5 +1,61 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Articulated Point-Joint Link-Index Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the variational articulated point-joint constraint-gather
+path now reuses a World-allocator-backed large-structure link-index map from
+`VariationalCompliantLoopScratch` instead of rebuilding a default-allocator
+`std::unordered_map` whenever a point-joint structure has more than 16 links.
+The map is populated during bake/prepare, retained across same-shape steps, and
+revalidated before reuse so topology changes still rebuild it correctly.
+
+The fix has these parts:
+
+- `VariationalCompliantLoopScratch` owns a `LinkIndexMap` constructed with the
+  configured memory allocator;
+- `appendAvbdRigidWorldArticulatedPointJointConstraints()` reuses the scratch
+  map when provided, falls back to a local default-allocator map only for
+  scratch-less callers, and skips rebuilding when the current structure-link
+  order already matches the cached map;
+- `World.VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator`
+  builds a long variational multibody with a world-fixed articulated point
+  joint, enters simulation mode before measurement, and verifies same-shape
+  steps do not grow the base allocator or registry storage;
+- `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` now includes
+  the same long articulated point-joint scene so the 16-link map threshold is
+  covered by the monolithic no-global-heap baked-step gate.
+
+This still does not claim that public variational diagnostic helpers such as
+`computeMultibodyMechanicalEnergy()` or public return-by-value containers are
+under the World allocator. The closed gap is only the DART-owned large-structure
+link-index lookup used while gathering articulated point-joint constraints on
+the variational `World::step` path.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' \
+  --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Differentiable Torque Scratch Allocator)
 
 Resume from exactly one branch:

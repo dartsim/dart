@@ -846,7 +846,8 @@ struct VariationalCompliantLoopScratch
       linearInventory(allocator),
       angularInventory(allocator),
       linearDescriptors(DescriptorAllocator{allocator}),
-      angularDescriptors(DescriptorAllocator{allocator})
+      angularDescriptors(DescriptorAllocator{allocator}),
+      structureLinkIndex(makeLinkIndexMap(allocator))
   {
   }
 
@@ -865,6 +866,8 @@ struct VariationalCompliantLoopScratch
   dvbd::AvbdScalarRowInventory angularInventory;
   DescriptorVector linearDescriptors;
   DescriptorVector angularDescriptors;
+  // Kept populated across same-shape steps so map nodes do not churn.
+  LinkIndexMap structureLinkIndex;
 };
 
 VariationalCompliantLoopScratch& getOrCreateVariationalCompliantLoopScratch(
@@ -914,20 +917,39 @@ void appendAvbdRigidWorldArticulatedPointJointConstraints(
   const auto& structure
       = registry.get<comps::MultibodyStructure>(structureEntity);
   constexpr std::size_t kStructureLinkIndexMapThreshold = 16u;
-  std::unordered_map<entt::entity, int> structureLinkIndex;
+  LinkIndexMap localStructureLinkIndex
+      = makeLinkIndexMap(dart::common::MemoryAllocator::GetDefault());
+  LinkIndexMap* structureLinkIndex = nullptr;
   if (structure.links.size() > kStructureLinkIndexMapThreshold) {
-    structureLinkIndex.reserve(structure.links.size());
-    for (std::size_t i = 0; i < structure.links.size(); ++i) {
-      structureLinkIndex.emplace(structure.links[i], static_cast<int>(i));
+    structureLinkIndex = compliantScratch != nullptr
+                             ? &compliantScratch->structureLinkIndex
+                             : &localStructureLinkIndex;
+    bool indexMatches = structureLinkIndex->size() == structure.links.size();
+    if (indexMatches) {
+      for (std::size_t i = 0; i < structure.links.size(); ++i) {
+        const auto it = structureLinkIndex->find(structure.links[i]);
+        if (it == structureLinkIndex->end() || it->second != i) {
+          indexMatches = false;
+          break;
+        }
+      }
+    }
+    if (!indexMatches) {
+      structureLinkIndex->clear();
+      structureLinkIndex->reserve(structure.links.size());
+      for (std::size_t i = 0; i < structure.links.size(); ++i) {
+        structureLinkIndex->emplace(structure.links[i], i);
+      }
     }
   }
   const auto linkIndexInStructure = [&](entt::entity link) -> int {
     if (link == entt::null) {
       return -1;
     }
-    if (!structureLinkIndex.empty()) {
-      const auto it = structureLinkIndex.find(link);
-      return it == structureLinkIndex.end() ? -1 : it->second;
+    if (structureLinkIndex != nullptr && !structureLinkIndex->empty()) {
+      const auto it = structureLinkIndex->find(link);
+      return it == structureLinkIndex->end() ? -1
+                                             : static_cast<int>(it->second);
     }
     const auto it
         = std::find(structure.links.begin(), structure.links.end(), link);

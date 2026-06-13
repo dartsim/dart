@@ -278,6 +278,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     rigid AVBD contact stage now also reuses its extracted point-joint input
     scratch, solve-row scratch, and per-body row-index scratch, and avoids
     copying already-predicted inertial targets in the World contact path. The
+    variational articulated point-joint stage now also reuses an
+    allocator-backed large-structure link-index map from compliant-loop scratch,
+    so same-shape baked steps do not rebuild default STL lookup storage.
     rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the

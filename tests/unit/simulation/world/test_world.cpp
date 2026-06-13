@@ -4952,6 +4952,33 @@ void configureVariationalLoopClosureChainScene(dart::simulation::World& world)
        .dynamics = sx::ClosureDynamicsPolicy::Solve});
 }
 
+void configureLongVariationalArticulatedPointJointScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setMultibodyOptions({"variational integrator"});
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0e-3);
+
+  auto robot = world.addMultibody("long_point_joint_chain");
+  auto parent = robot.addLink("base");
+  for (int i = 0; i < 18; ++i) {
+    sx::JointSpec spec;
+    spec.name = "hinge_" + std::to_string(i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis
+        = (i % 2 == 0) ? Eigen::Vector3d::UnitY() : Eigen::Vector3d::UnitZ();
+    spec.transformFromParent.translation() = Eigen::Vector3d(0.05, 0.0, 0.0);
+    auto link = robot.addLink("link_" + std::to_string(i), parent, spec);
+    link.setMass(0.2);
+    link.setInertia(Eigen::Vector3d(0.01, 0.01, 0.01).asDiagonal());
+    parent = link;
+  }
+
+  world.addArticulatedFixedJoint("tip_world_anchor", parent);
+}
+
 void configureCompliantVariationalContactSliderScene(
     dart::simulation::World& world)
 {
@@ -5486,6 +5513,38 @@ TEST(World, EnterSimulationModeReservesCompliantVariationalContactScratch)
 
   expectCompliantVariationalContactScratchBaked(
       registry, &world.getMemoryManager().getFreeAllocator());
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+
+  for (int i = 0; i < 3; ++i) {
+    world.step();
+    expectRegistryStorageCapacitiesUnchanged(capacities, registry);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+}
+
+TEST(World, VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.multibodyOptions.integrationFamily = "variational integrator";
+  sx::World world(options);
+  configureLongVariationalArticulatedPointJointScene(world);
+
+  world.enterSimulationMode();
+
+  const auto& registry = sx::detail::registryOf(world);
+  const auto capacities = registryStorageCapacities(registry);
 
   const auto allocationsAfterBake = allocator.allocationCount;
   const auto deallocationsAfterBake = allocator.deallocationCount;
@@ -7409,6 +7468,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "multibody variational loop-closure scratch",
       configureVariationalLoopClosureChainScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational articulated point-joint link-index scratch",
+      configureLongVariationalArticulatedPointJointScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "single deformable particle", [](sx::World& world) {
