@@ -132,6 +132,7 @@ def build() -> SceneSetup:
             "row": "rigid_ipc_tunnel",
             "related_source_row": "rigid_solver_compare",
             "solver": "rigid_ipc",
+            "executor": "World.step default",
             "scope": "focused_no_tunneling_capability",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),

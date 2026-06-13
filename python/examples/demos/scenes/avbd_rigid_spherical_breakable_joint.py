@@ -192,6 +192,7 @@ def build() -> SceneSetup:
         return {
             "row": "avbd_rigid_spherical_breakable_joint",
             "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
             "constraint": "spherical_break_force_anchor_lifecycle",
             "related_source_row": "rigid_joint_breakage",
             "time_step_ms": _TIME_STEP * 1000.0,

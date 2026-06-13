@@ -131,6 +131,7 @@ def build() -> SceneSetup:
         return {
             "row": "rigid_ipc_slide",
             "solver": "rigid_ipc",
+            "executor": "World.step default",
             "scope": "friction_braked_tangential_slide",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),

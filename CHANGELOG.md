@@ -92,6 +92,10 @@
     signal, and scope notes. The workflow manifest and review index now also
     report guidance completeness for the selected packet so unlabeled rows are
     visible before relying on the packet as reviewer-facing evidence. The
+    workflow manifest and review index now also report scene-metrics
+    completeness, require resolved solver identity to include both solver family
+    and solver context, and fail non-dry-run workflow packets when captured rows
+    miss latest scene metrics or valid solver identity. The
     in-viewer panel and generated review cards now also separate live
     `py-demos --scene` open commands from reproducible `py-demo-capture`
     commands, so users can jump from a packet row back into interactive

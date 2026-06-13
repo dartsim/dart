@@ -170,6 +170,7 @@ def build() -> SceneSetup:
         return {
             "row": "avbd_rigid_fixed_joint_contact",
             "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
             "constraint": "fixed_joint_contact_path",
             "related_source_row": "contact",
             "time_step_ms": _TIME_STEP * 1000.0,

@@ -195,6 +195,7 @@ class _RigidBodyBaseline:
             "contact_count": contact_count,
             "step_ms": step_ms,
             "solver": self._solver_label(),
+            "executor": "World.step default",
         }
 
     def reset(self, *, clear_replay: bool = True) -> None:
@@ -250,6 +251,7 @@ class _RigidBodyBaseline:
         return {
             "row": "rigid_body",
             "solver": self._solver_label(),
+            "executor": "World.step default",
             "solver_enum": self._solver().name,
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),

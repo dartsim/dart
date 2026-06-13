@@ -2,18 +2,29 @@
 
 ## Current Handoff (2026-06-12)
 
-Remote publication checkpoint: after the explicit `push to origin` instruction
-and the final local handoff amend, `origin/feature/rigid-body-gui-visual-verification`
-points to `d44031e7040 Refresh rigid workflow review handoff`. Fresh
+Remote publication checkpoint: after the explicit `push to origin` instruction,
+`origin/feature/rigid-body-gui-visual-verification` points to
+`16d4032c1e2 Enforce rigid workflow solver identity evidence`. Fresh
 `gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
-still report no PR for the branch. The most recent pre-push target-branch merge was
-`git fetch origin main && git merge --no-edit origin/main`, and Git reported
-`Already up to date`, so the branch remained aligned with the PR #2986 DART 7
-architecture/work-packet harness at publication time. This current-state docs
-correction may be an unpublished local commit on top of that remote checkpoint;
-rerun `git status -sb` before acting. The push approval did not approve PR
+still report no PR for the branch. The most recent pre-push target-branch merge
+was `git fetch origin main && git merge --no-edit origin/main`, and Git
+reported `Already up to date`, so the branch remained aligned with the PR #2986
+DART 7 architecture/work-packet harness at publication time. Rerun
+`git status -sb` before acting because later local continuation commits may be
+unpushed. The push approval did not approve PR
 creation, milestone mutation, CI reruns, review comments, thread resolution, or
 other GitHub review-state changes.
+
+Latest unpublished local continuation: the rigid workflow evidence contract is
+being tightened to match the DART 7 work-packet harness. Workflow manifests and
+review indexes now treat latest scene metrics as required evidence for captured
+rows, resolved solver identity must include both solver-family and context
+fields, and formerly weak rigid/related rows now publish explicit executor or
+not-applicable context markers in their capture metrics. PLAN-103 now records a
+formal `WP-103.1` work-packet section with objective, scope, non-goals,
+acceptance evidence, gates, dependencies, and evidence pointers. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_resolved_solver_identity_requires_solver_family_and_context python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_scene_metrics_are_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
+reported `11 passed`.
 
 Latest local continuation: a read-only artifact audit rechecked the current
 review packet manifests and static review indexes. The full rows 01-36 packet
@@ -76,7 +87,7 @@ validation-evidence commit `84897c2fde5 Record rigid workflow validation
 evidence`, the local branch was ahead of
 `origin/feature/rigid-body-gui-visual-verification` and `gh pr list --head
 "$(git branch --show-current)"` returned no PR. That is superseded by the
-current pushed `d44031e7040` state above.
+current pushed `16d4032c1e2` state above.
 
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest
@@ -455,7 +466,10 @@ Repository state notes:
 Recommended next action: use the full row-01-through-row-36 packet plus the
 optional rows 37-52 packet as maintainer-review evidence for the current rigid
 workflow. If more local progress is requested before pushing/review, audit the
-API-deferred gaps rather than adding speculative numbered rows.
+API-deferred gaps rather than adding speculative numbered rows. One current
+non-speculative candidate is a separate differentiable pre-contact surrogate
+visual row: `ContactGradientMode.PRE_CONTACT_SURROGATE` is public and tested,
+but the GUI currently routes contact-gradient UX through `diff_drone_liftoff`.
 
 Previous checkpoint: row 25 gives the fixed-joint verifier the same reviewable
 comparison shape as the surrounding rigid workflow rows. `rigid_fixed_joint`

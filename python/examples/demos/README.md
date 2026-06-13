@@ -175,12 +175,16 @@ selected packet. Successful scene captures also promote a machine-readable
 `resolved_solver_identity` block from the latest scene metrics into the
 per-scene manifest; workflow manifests count those identities and list any
 captured row missing one, while the review cards show the resolved solver
-summary beside the row's axis and controls. Non-dry-run workflow packets return
-failure status when a captured row misses solver identity evidence, and the
+summary beside the row's axis and controls. Workflow packets require that
+identity to include both a solver-family field and a context field such as
+executor, contact method, same-solver marker, or held-fixed configuration.
+Workflow manifests also count rows with latest scene metrics and list any
+captured row missing metrics. Non-dry-run workflow packets return failure status
+when a captured row misses scene metrics or solver identity evidence, and the
 review index highlights those rows before a reviewer treats the packet as
 complete. The panel also includes a current-row motion packet command; workflow
-packets pass `--video --fps` through to the selected row captures and the
-review index links MP4 artifacts when `ffmpeg` is available.
+packets pass `--video --fps` through to the selected row captures and the review
+index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,
@@ -1046,8 +1050,9 @@ For scenes that expose `SceneSetup.info["capture_metrics"]`,
 scene-owned physics/runtime stream in `manifest.json`: first and latest events,
 per-key presence counts, numeric ranges for top-level metrics, and the
 `resolved_solver_identity` derived from the latest solver/contact/executor
-metrics. The step diagnostics and contact-scale budget rows use that path for
-profiling, memory, contact, and frame-budget evidence; the IPC no-tunneling
+metrics. Workflow captures treat those metrics as required evidence for
+completed rows. The step diagnostics and contact-scale budget rows use that path
+for profiling, memory, contact, and frame-budget evidence; the IPC no-tunneling
 route uses it for clearance and through-wall margin evidence; and the stack
 packet uses it for clearance, drift, wall time, and benchmark metadata. The
 differentiable contact-gradient route uses it for target/rest height, analytic

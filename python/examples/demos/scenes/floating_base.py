@@ -86,6 +86,7 @@ def build() -> SceneSetup:
             "category": "World Rigid Body",
             "related_source_row": "rigid_free_flight",
             "solver": "floating_joint_se3",
+            "executor": "World.step default",
             "scope": "broader_floating_joint_drift_spin",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(world.time),

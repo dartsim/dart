@@ -178,6 +178,7 @@ def build() -> SceneSetup:
             "row": "rigid_ipc_edge_drop",
             "related_source_row": "rigid_solver_compare",
             "solver": "rigid_ipc",
+            "executor": "World.step default",
             "scope": "degenerate_edge_contact_capability",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),

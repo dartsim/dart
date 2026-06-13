@@ -106,6 +106,7 @@ def build() -> SceneSetup:
         return {
             "row": "avbd_rigid_revolute_motor",
             "solver": "avbd_rigid_joints",
+            "executor": "World.step default",
             "actuator": "revolute_velocity_motor",
             "related_source_row": "rigid_joint_motor_limits",
             "time_step_ms": _TIME_STEP * 1000.0,

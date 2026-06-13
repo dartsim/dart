@@ -640,6 +640,16 @@ _SOLVER_IDENTITY_KEYS = (
 )
 
 
+_SOLVER_FAMILY_IDENTITY_KEYS = ("solver", "solver_pair")
+_SOLVER_CONTEXT_IDENTITY_KEYS = (
+    "contact_solver_method",
+    "same_solver",
+    "executor",
+    "executor_pair",
+    "held_fixed",
+)
+
+
 def _json_like_value(value: object) -> object | None:
     if value is None or isinstance(value, str | bool | int | float):
         return value
@@ -658,6 +668,16 @@ def _json_like_value(value: object) -> object | None:
     return None
 
 
+def _valid_resolved_solver_identity(
+    identity: dict[str, object],
+) -> dict[str, object] | None:
+    has_solver_family = any(key in identity for key in _SOLVER_FAMILY_IDENTITY_KEYS)
+    has_context = any(key in identity for key in _SOLVER_CONTEXT_IDENTITY_KEYS)
+    if not has_solver_family or not has_context:
+        return None
+    return identity
+
+
 def _resolved_solver_identity_from_metrics(
     metrics: dict[str, object],
 ) -> dict[str, object] | None:
@@ -668,12 +688,8 @@ def _resolved_solver_identity_from_metrics(
         value = _json_like_value(metrics[key])
         if value is not None:
             identity[key] = value
-    if not any(
-        key in identity for key in ("solver", "solver_pair", "contact_solver_method")
-    ):
-        return None
     identity["source"] = "scene_capture_metrics.latest.metrics"
-    return identity
+    return _valid_resolved_solver_identity(identity)
 
 
 def _read_scene_resolved_solver_identity(
@@ -689,7 +705,10 @@ def _read_scene_resolved_solver_identity(
         return None
     identity = payload.get("resolved_solver_identity")
     if isinstance(identity, dict):
-        return {key: value for key, value in identity.items() if isinstance(key, str)}
+        filtered = {
+            key: value for key, value in identity.items() if isinstance(key, str)
+        }
+        return _valid_resolved_solver_identity(filtered)
     scene_metrics = payload.get("scene_metrics")
     if isinstance(scene_metrics, dict):
         latest = scene_metrics.get("latest")
@@ -698,6 +717,39 @@ def _read_scene_resolved_solver_identity(
             if isinstance(metrics, dict):
                 return _resolved_solver_identity_from_metrics(metrics)
     return None
+
+
+def _read_scene_metrics_evidence(
+    manifest_path: pathlib.Path,
+) -> dict[str, object] | None:
+    if not manifest_path.is_file():
+        return None
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    scene_metrics = payload.get("scene_metrics")
+    if not isinstance(scene_metrics, dict):
+        return None
+    latest = scene_metrics.get("latest")
+    if not isinstance(latest, dict):
+        return None
+    metrics = latest.get("metrics")
+    if not isinstance(metrics, dict) or not metrics:
+        return None
+
+    evidence: dict[str, object] = {
+        "latest_metric_count": len(metrics),
+    }
+    event_count = scene_metrics.get("event_count")
+    if isinstance(event_count, int):
+        evidence["event_count"] = event_count
+    metric_key_counts = scene_metrics.get("metric_key_counts")
+    if isinstance(metric_key_counts, dict):
+        evidence["metric_key_count"] = len(metric_key_counts)
+    return evidence
 
 
 def _append_event(
@@ -1771,6 +1823,24 @@ def _attach_workflow_resolved_solver_identities(
             capture["resolved_solver_identity"] = identity
 
 
+def _attach_workflow_scene_metrics_evidence(
+    captures: list[dict[str, object]],
+) -> None:
+    for capture in captures:
+        if capture.get("status") != "captured":
+            capture.pop("scene_metrics_evidence", None)
+            continue
+        manifest_value = capture.get("manifest")
+        if not isinstance(manifest_value, str):
+            capture.pop("scene_metrics_evidence", None)
+            continue
+        evidence = _read_scene_metrics_evidence(pathlib.Path(manifest_value))
+        if evidence is None:
+            capture.pop("scene_metrics_evidence", None)
+        else:
+            capture["scene_metrics_evidence"] = evidence
+
+
 def _workflow_missing_solver_identity_rows(
     captures: list[dict[str, object]], *, dry_run: bool
 ) -> list[dict[str, object]]:
@@ -1795,7 +1865,41 @@ def _workflow_missing_solver_identity_rows(
     return missing_rows
 
 
+def _workflow_missing_scene_metrics_rows(
+    captures: list[dict[str, object]], *, dry_run: bool
+) -> list[dict[str, object]]:
+    if dry_run:
+        return []
+    missing_rows: list[dict[str, object]] = []
+    for capture in captures:
+        if capture.get("status") != "captured":
+            continue
+        if isinstance(capture.get("scene_metrics_evidence"), dict):
+            continue
+        missing_rows.append(
+            {
+                "order": capture.get("order"),
+                "count": capture.get("count"),
+                "scene": capture.get("scene"),
+                "workflow_group": capture.get("workflow_group"),
+                "workflow_label": capture.get("workflow_label"),
+                "manifest": capture.get("manifest"),
+            }
+        )
+    return missing_rows
+
+
 def _workflow_solver_identity_status(
+    missing: list[dict[str, object]], *, dry_run: bool
+) -> str:
+    if dry_run:
+        return "not required"
+    if not missing:
+        return "complete"
+    return f"missing {len(missing)}"
+
+
+def _workflow_scene_metrics_status(
     missing: list[dict[str, object]], *, dry_run: bool
 ) -> str:
     if dry_run:
@@ -1832,6 +1936,38 @@ def _workflow_solver_identity_warning(missing: list[dict[str, object]]) -> str:
         "their scene manifest. Treat the packet as incomplete DART 7 harness "
         "evidence until each row records the solver/contact/executor "
         "configuration that actually ran.</p>"
+        f"<ul>{''.join(items)}</ul>"
+        "</section>"
+    )
+
+
+def _workflow_scene_metrics_warning(missing: list[dict[str, object]]) -> str:
+    if not missing:
+        return ""
+    items: list[str] = []
+    for entry in missing:
+        order = entry.get("order", "?")
+        scene = entry.get("scene", "unknown")
+        manifest = entry.get("manifest", "")
+        manifest_html = ""
+        if isinstance(manifest, str) and manifest:
+            manifest_html = (
+                '<p class="command-label">scene manifest</p>'
+                f"<pre>{html.escape(manifest)}</pre>"
+            )
+        items.append(
+            "<li>"
+            f"{html.escape(str(order))} {html.escape(str(scene))}"
+            f"{manifest_html}"
+            "</li>"
+        )
+    return (
+        '<section class="scene-metrics-warning">'
+        "<h2>Rows Missing Scene Metrics</h2>"
+        "<p>These captured rows did not publish latest scene metrics in their "
+        "scene manifest. Treat the packet as incomplete DART 7 harness "
+        "evidence until each row records the runtime metrics that make the "
+        "visual result reviewable.</p>"
         f"<ul>{''.join(items)}</ul>"
         "</section>"
     )
@@ -2070,6 +2206,10 @@ def _write_workflow_review_index(
         captures, dry_run=dry_run
     )
     solver_identity_warning = _workflow_solver_identity_warning(solver_identity_missing)
+    scene_metrics_missing = _workflow_missing_scene_metrics_rows(
+        captures, dry_run=dry_run
+    )
+    scene_metrics_warning = _workflow_scene_metrics_warning(scene_metrics_missing)
     failed_rows = _workflow_failed_rows(captures)
     failure_summary = _workflow_failure_summary(failed_rows)
     workflow_command_html = (
@@ -2110,6 +2250,10 @@ def _write_workflow_review_index(
                 _workflow_solver_identity_status(
                     solver_identity_missing, dry_run=dry_run
                 ),
+            ),
+            _workflow_badge(
+                "scene metrics",
+                _workflow_scene_metrics_status(scene_metrics_missing, dry_run=dry_run),
             ),
             _workflow_badge("complete", completed),
             _workflow_badge("failed", failed),
@@ -2183,6 +2327,13 @@ def _write_workflow_review_index(
       border-radius: 6px;
       background: #fff8c5;
     }}
+    .scene-metrics-warning {{
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #f0b429;
+      border-radius: 6px;
+      background: #fff8c5;
+    }}
     .failure-summary {{
       margin: 0 0 16px;
       padding: 12px;
@@ -2192,17 +2343,20 @@ def _write_workflow_review_index(
     }}
     .failure-summary h2,
     .guidance-warning h2,
-    .solver-identity-warning h2 {{
+    .solver-identity-warning h2,
+    .scene-metrics-warning h2 {{
       margin-bottom: 8px;
     }}
     .failure-summary p,
     .guidance-warning p,
-    .solver-identity-warning p {{
+    .solver-identity-warning p,
+    .scene-metrics-warning p {{
       margin: 0 0 8px;
     }}
     .failure-summary ul,
     .guidance-warning ul,
-    .solver-identity-warning ul {{
+    .solver-identity-warning ul,
+    .scene-metrics-warning ul {{
       margin: 0;
       padding-left: 20px;
     }}
@@ -2324,6 +2478,7 @@ def _write_workflow_review_index(
     {failure_summary}
     {guidance_warning}
     {solver_identity_warning}
+    {scene_metrics_warning}
     <section class="grid">
 {cards}
     </section>
@@ -2350,6 +2505,7 @@ def _write_workflow_manifest(
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest = output_dir / "manifest.json"
     _attach_workflow_resolved_solver_identities(captures)
+    _attach_workflow_scene_metrics_evidence(captures)
     review_index = _write_workflow_review_index(
         output_dir,
         dry_run=dry_run,
@@ -2395,10 +2551,18 @@ def _write_workflow_manifest(
     solver_identity_missing = _workflow_missing_solver_identity_rows(
         captures, dry_run=dry_run
     )
+    scene_metrics_missing = _workflow_missing_scene_metrics_rows(
+        captures, dry_run=dry_run
+    )
     solver_identity_count = sum(
         1
         for capture in captures
         if isinstance(capture.get("resolved_solver_identity"), dict)
+    )
+    scene_metrics_count = sum(
+        1
+        for capture in captures
+        if isinstance(capture.get("scene_metrics_evidence"), dict)
     )
     _write_json(
         manifest,
@@ -2437,6 +2601,16 @@ def _write_workflow_manifest(
             "resolved_solver_identity_count": solver_identity_count,
             "resolved_solver_identity_missing_count": len(solver_identity_missing),
             "resolved_solver_identity_missing_rows": solver_identity_missing,
+            "scene_metrics_complete": (
+                None
+                if dry_run
+                else completed == len(captures)
+                and failed == 0
+                and not scene_metrics_missing
+            ),
+            "scene_metrics_count": scene_metrics_count,
+            "scene_metrics_missing_count": len(scene_metrics_missing),
+            "scene_metrics_missing_rows": scene_metrics_missing,
             "elapsed_s": round(time.monotonic() - started_at, 3),
             "output_dir": str(output_dir),
             "artifacts": {
@@ -2535,11 +2709,17 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
                 return rc if rc != 0 else 1
 
     _attach_workflow_resolved_solver_identities(captures)
+    _attach_workflow_scene_metrics_evidence(captures)
     solver_identity_missing = _workflow_missing_solver_identity_rows(
         captures, dry_run=False
     )
+    scene_metrics_missing = _workflow_missing_scene_metrics_rows(
+        captures, dry_run=False
+    )
     final_status = (
-        "failed" if first_failure_rc or solver_identity_missing else "complete"
+        "failed"
+        if first_failure_rc or solver_identity_missing or scene_metrics_missing
+        else "complete"
     )
     manifest = _write_workflow_manifest(
         output_dir,
@@ -2554,7 +2734,7 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
     print(f"workflow manifest: {manifest}", flush=True)
     if first_failure_rc:
         return first_failure_rc
-    return 1 if solver_identity_missing else 0
+    return 1 if solver_identity_missing or scene_metrics_missing else 0
 
 
 def main(argv: list[str] | None = None) -> int:

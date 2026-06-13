@@ -116,6 +116,7 @@ def build() -> SceneSetup:
         return {
             "row": "rigid_ipc",
             "solver": "rigid_ipc",
+            "executor": "World.step default",
             "scope": "basic_box_ground_barrier_settle",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),

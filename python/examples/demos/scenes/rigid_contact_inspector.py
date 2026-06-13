@@ -550,6 +550,7 @@ class _RigidContactInspector:
         return {
             "row": "rigid_contact_inspector",
             "solver": "collision_query",
+            "executor": "not_applicable_collision_query",
             "contact_scope": "shape_pair_manifold_fields",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),

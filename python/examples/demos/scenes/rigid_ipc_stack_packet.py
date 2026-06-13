@@ -265,6 +265,7 @@ class _RigidIpcStackPacket:
                 "friction": float(self.friction),
                 "row": self.spec.scene_id,
                 "solver": "ipc",
+                "executor": "World.step default",
                 "top_mass": float(self.boxes[-1].mass),
                 "world_time": float(self.world.time),
             }

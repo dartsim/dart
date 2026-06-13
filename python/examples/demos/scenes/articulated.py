@@ -132,6 +132,7 @@ def build() -> SceneSetup:
             "category": "World Rigid Body",
             "related_source_row": "rigid_multibody_dynamics_terms",
             "solver": "articulated_sx_world",
+            "executor": "World.step default",
             "scope": "broader_two_link_arm",
             "time_step_ms": float(world.time_step) * 1000.0,
             "world_time": float(world.time),

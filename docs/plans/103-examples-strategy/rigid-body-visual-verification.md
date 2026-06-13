@@ -5,6 +5,39 @@ for PLAN-103. It records which scenes answer which user debugging questions,
 how to regenerate visual evidence, and which automated tests keep the workflow
 from drifting.
 
+## Work Packet
+
+#### WP-103.1 Rigid-body visual verification workflow
+
+- Objective: the Python `py-demos` rigid-body category is a curated DART 7
+  visual-verification workflow with reviewable screenshots, row guidance,
+  scene metrics, resolved solver identity, and replay/debug evidence.
+- Scope: `python/examples/demos/` rigid-body scenes, runner workflow metadata,
+  `scripts/capture_py_demo.py`, focused Python tests, this PLAN-103 sidecar,
+  `python/examples/demos/README.md`, `CHANGELOG.md`, and active handoff docs
+  under `docs/dev_tasks/rigid_body_visual_verification/`.
+- Non-goals: new C++ `dart-demos` rows, public APIs for unsupported direct
+  rigid-body impulse/sleep/island/loop-closure compliance behavior, benchmark
+  replacement, or maintainer acceptance/PR publication without explicit
+  approval.
+- Acceptance evidence: default 36-row and optional 52-row workflow manifests
+  report complete guidance, scene metrics, and resolved solver identity; static
+  review indexes resolve their local assets; focused capture and docs drift
+  tests pass; broad default and CUDA validation evidence is recorded before PR
+  publication.
+- Gates: `pixi run lint`, focused `python/tests/unit/test_capture_py_demo.py`
+  capture-helper guards, focused `python/tests/integration/test_demos_cycle.py`
+  workflow/docs drift guards, `pixi run test-all`, and CUDA `pixi run -e cuda
+test-all` on a host with visible CUDA runtime.
+- Dependencies: PLAN-103 policy in
+  [`../103-examples-strategy.md`](../103-examples-strategy.md), DART 7
+  evidence rules from PLAN-091/PR #2986, and current public `dartpy.simulation`
+  rigid API availability.
+- Evidence: current local evidence is recorded below and in
+  `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`; external
+  PR creation, milestone mutation, maintainer acceptance, and dev-task cleanup
+  remain open until explicitly approved and completed.
+
 ## Scope
 
 The workflow covers DART 7 `World` rigid dynamics as an interactive Python
@@ -98,9 +131,14 @@ machine-readable `resolved_solver_identity` block from
 manifests record `resolved_solver_identity_complete`,
 `resolved_solver_identity_count`, and missing-row details so DART 7 review
 packets can prove which solver/contact/executor configuration actually ran.
-Non-dry-run workflow packets return failure status if any captured row misses
-that identity evidence, and `review_index.html` highlights those rows alongside
-missing guidance or failed-row summaries.
+The identity contract now requires both a solver-family field and a context
+field such as executor, contact method, same-solver marker, or held-fixed
+configuration. Workflow manifests also record `scene_metrics_complete`,
+`scene_metrics_count`, and missing-row details so a screenshot packet cannot
+look green while a captured row lacks runtime metrics. Non-dry-run workflow
+packets return failure status if any captured row misses scene metrics or
+resolved solver identity evidence, and `review_index.html` highlights those
+rows alongside missing guidance or failed-row summaries.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
@@ -452,13 +490,15 @@ Evidence recorded for this slice:
   read-only HTML asset audit found 0 missing local assets: 181/181 links for
   rows 01-36 and 81/81 links for rows 37-52.
 
-- Latest DART 7 harness alignment: `py-demo-capture` now writes
-  `resolved_solver_identity` into successful per-scene manifests, attaches it
-  to captured workflow rows, summarizes identity completeness in workflow
-  manifests, and shows the resolved solver summary in `review_index.html`.
+- Latest DART 7 harness alignment: `py-demo-capture` now writes validated
+  `resolved_solver_identity` into successful per-scene manifests, requires
+  solver-family plus context fields for workflow completeness, attaches
+  identity and scene-metrics evidence to captured workflow rows, summarizes
+  both identity and scene-metrics completeness in workflow manifests, and shows
+  resolved-solver summaries or warning blocks in `review_index.html`.
   Focused guard:
-  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds -q`
-  reported `4 passed`. A full GUI packet regeneration attempt under
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_resolved_solver_identity_requires_solver_family_and_context python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_scene_metrics_are_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
+  reported `11 passed`. A full GUI packet regeneration attempt under
   `build/captures/rigid_workflow_rows_01_36_1781311276` failed at row 1 with
   `return_code=-7` before scene metrics were written, so the complete packet
   paths above remain the latest successful visual artifacts and should be
@@ -1790,4 +1830,7 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   not grow into an IPC restitution claim or a duplicate stick/slip threshold.
 - Keep differentiable contact-gradient mode UX routed to the existing
   `diff_drone_liftoff` scene unless users need a distinct rigid workflow row
-  with additional public controls such as pre-contact surrogate mode.
+  with additional public controls such as pre-contact surrogate mode. Current
+  API evidence shows `ContactGradientMode.PRE_CONTACT_SURROGATE` is public and
+  tested, so a small `diff_pre_contact_surrogate` row is a valid future
+  non-speculative addition.

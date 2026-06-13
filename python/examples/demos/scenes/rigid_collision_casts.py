@@ -541,6 +541,7 @@ class _RigidCollisionCasts:
         return {
             "row": "rigid_collision_casts",
             "solver": "collision_query",
+            "executor": "not_applicable_collision_query",
             "query_scope": "raycast_sphere_cast_capsule_cast",
             "time_step_ms": _TIME_STEP * 1000.0,
             "world_time": float(self.world.time),
