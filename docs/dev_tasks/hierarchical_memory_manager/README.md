@@ -1,5 +1,64 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Mechanical-Energy Velocity Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the variational multibody mechanical-energy diagnostic now
+has a scratch-aware overload that reuses caller-owned
+`compute::MultibodyVariationalTreeScratch` and
+`compute::VariationalStepScratch`. Repeated same-shape energy samples can keep
+the DART-owned variational tree storage and spatial-velocity vector capacity
+instead of rebuilding those default-allocator diagnostic temporaries on every
+call. The existing no-scratch `computeMultibodyMechanicalEnergy(...)` overload
+remains source-compatible and delegates through local scratch objects.
+
+The fix has these parts:
+
+- `computeMultibodyMechanicalEnergy(...)` now has an overload that accepts
+  caller-owned variational tree and step scratch;
+- the energy path gathers only generalized velocity and fills
+  `VariationalStepScratch::currentSpatialVelocities`, avoiding the broader
+  integration-only position/force/residual scratch bundle;
+- the old no-scratch overload delegates to the scratch-aware implementation;
+- `World.VariationalMechanicalEnergyScratchUsesProvidedAllocator` verifies the
+  first diagnostic call grows provided allocator-backed scratch and a
+  same-shape second call reuses capacity without global-heap allocation.
+
+This still does not claim that every Eigen dynamic buffer in variational
+diagnostics is backed by the DART allocator, that public no-scratch diagnostic
+calls reuse World-owned storage, or that all simulation-loop energy/profiling
+payloads are allocation-free. The closed gap is the DART-owned variational tree
+storage and spatial-velocity vector used by repeated mechanical-energy
+diagnostics.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release \
+  --target test_world test_variational_integration -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalMechanicalEnergyScratchUsesProvidedAllocator' \
+  --gtest_color=no
+./build/default/cpp/Release/bin/test_variational_integration \
+  --gtest_filter='VariationalIntegration.PendulumConservesEnergyOverLongHorizon:VariationalIntegration.PassiveChainEnergyCoverageSmoke' \
+  --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Contact-Free Coordinate Scratch)
 
 Resume from exactly one branch:
@@ -50,12 +109,6 @@ pixi run cmake --build build/default/cpp/Release --target test_world test_diff_s
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-13, Inverse-Dynamics Derivative Scratch)
 

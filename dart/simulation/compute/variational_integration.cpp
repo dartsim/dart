@@ -1362,6 +1362,25 @@ void gatherState(
   }
 }
 
+void gatherVelocity(
+    const detail::WorldRegistry& registry,
+    const VarTree& tree,
+    Eigen::VectorXd& velocity)
+{
+  const auto dof = static_cast<Eigen::Index>(tree.dofCount);
+  velocity.resize(dof);
+  velocity.setZero();
+  for (const auto& link : tree.links) {
+    if (link.dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(link.joint);
+    const auto seg = static_cast<Eigen::Index>(link.dofOffset);
+    const auto n = static_cast<Eigen::Index>(link.dof);
+    velocity.segment(seg, n) = joint.velocity;
+  }
+}
+
 bool isVariationalVelocityProjectionJoint(const comps::Joint& joint)
 {
   return joint.actuatorType == comps::ActuatorType::Velocity
@@ -1637,14 +1656,6 @@ void currentSpatialVelocitiesInto(
                  static_cast<Eigen::Index>(link.dof));
     }
   }
-}
-
-std::vector<Vector6> currentSpatialVelocities(
-    const VarTree& tree, const Eigen::VectorXd& velocity)
-{
-  std::vector<Vector6> v;
-  currentSpatialVelocitiesInto(tree, velocity, v);
-  return v;
 }
 
 // Evaluate the forced discrete Euler-Lagrange residual f(qNext) in O(n) via a
@@ -4007,22 +4018,37 @@ double computeMultibodyMechanicalEnergy(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
+  MultibodyVariationalTreeScratch treeScratch;
+  VariationalStepScratch stepScratch;
+  return computeMultibodyMechanicalEnergy(
+      registry, structure, gravity, treeScratch, stepScratch);
+}
+
+//==============================================================================
+double computeMultibodyMechanicalEnergy(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalStepScratch& stepScratch)
+{
   if (structure.links.empty()) {
     return 0.0;
   }
-  const VarTree tree = buildVarTree(registry, structure);
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
 
-  Eigen::VectorXd position;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd appliedForce;
-  gatherState(registry, tree, position, velocity, appliedForce);
-  const std::vector<Vector6> v = currentSpatialVelocities(tree, velocity);
+  stepScratch.currentSpatialVelocities.resize(tree.links.size());
+  gatherVelocity(registry, tree, stepScratch.velocity);
+  currentSpatialVelocitiesInto(
+      tree, stepScratch.velocity, stepScratch.currentSpatialVelocities);
 
   double kinetic = 0.0;
   double potential = 0.0;
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     const auto& link = tree.links[i];
-    kinetic += 0.5 * v[i].dot(link.inertia * v[i]);
+    const Vector6& spatialVelocity = stepScratch.currentSpatialVelocities[i];
+    kinetic += 0.5 * spatialVelocity.dot(link.inertia * spatialVelocity);
     const auto& linkComp = registry.get<comps::Link>(structure.links[i]);
     const Eigen::Vector3d comWorld
         = link.worldTransform * linkComp.mass.localCenterOfMass;

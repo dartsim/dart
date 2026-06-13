@@ -287,6 +287,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     the free allocator for same-shape differentiable steps. It now also keeps
     contact-free coordinate collection in World-owned scratch instead of
     rebuilding a default-allocator vector for every differentiable step.
+    Variational mechanical-energy diagnostics can now reuse caller-owned
+    variational tree and step scratch, including allocator-backed spatial
+    velocity storage, instead of rebuilding that DART-owned diagnostic scratch
+    on each same-shape energy sample.
     The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the

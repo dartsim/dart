@@ -713,6 +713,17 @@ DART_SIMULATION_API VariationalSolveReport integrateMultibodyVariational(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
+/// Scratch-aware overload for repeated diagnostics on the same multibody shape.
+/// The caller retains tree and step scratch capacity across calls; the
+/// no-scratch overload above remains source-compatible and uses local default
+/// scratch objects.
+[[nodiscard]] DART_SIMULATION_API double computeMultibodyMechanicalEnergy(
+    const detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalStepScratch& stepScratch);
+
 /// O(n) product `M(q)^{-1} * impulse` for one multibody at its current
 /// configuration, via the articulated-body algorithm (zero velocity/gravity).
 /// This is the linear-time inverse-mass apply that powers the variational
