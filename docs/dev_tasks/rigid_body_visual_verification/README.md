@@ -2,18 +2,19 @@
 
 ## Current Handoff (2026-06-12)
 
-Remote publication checkpoint: after the explicit `push to origin` instruction,
-`origin/feature/rigid-body-gui-visual-verification` points to
-`6bafd605907 Add pre-contact surrogate visual demo`. Fresh
+Remote publication checkpoint: use `git status -sb` as the source of truth for
+local/remote parity. The last recorded remote checkpoint before this
+validation-language correction was
+`6bafd605907 Add pre-contact surrogate visual demo`; later handoff/docs commits
+may be present when the branch matches
+`origin/feature/rigid-body-gui-visual-verification`. Fresh
 `gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
-still report no PR for the branch. The most recent pre-push target-branch merge
-was `git fetch origin main && git merge --no-edit origin/main`, and Git
+still reported no PR for the branch. The most recent pre-push target-branch
+merge was `git fetch origin main && git merge --no-edit origin/main`, and Git
 reported `Already up to date`, so the branch remained aligned with the PR #2986
-DART 7 architecture/work-packet harness at publication time. Rerun
-`git status -sb` before acting because later local continuation commits may be
-unpushed. The push approval did not approve PR
-creation, milestone mutation, CI reruns, review comments, thread resolution, or
-other GitHub review-state changes.
+DART 7 architecture/work-packet harness at publication time. The push approval
+did not approve PR creation, milestone mutation, CI reruns, review comments,
+thread resolution, or other GitHub review-state changes.
 
 Latest local evidence refresh: the optional extended workflow packet was
 regenerated after `diff_pre_contact_surrogate` landed in the related-evidence
@@ -86,7 +87,9 @@ reported `6 passed`.
 Latest validation follow-up: after the earlier stop-only handoff left the
 branch clean and pushed at `802b5d282b8`, broad validation was rerun from the
 then-current `HEAD` using the DART safe parallelism cap (`DART_SAFE_JOBS=5`).
-Default
+That broad validation predates the latest pre-contact surrogate and
+docs/evidence continuation commits, so treat it as branch-level broad evidence
+rather than exact current-head broad validation. Default
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed with all six wrapper gates passing: linting, build, unit tests,
 simulation tests, Python tests, and documentation, ending with
@@ -98,12 +101,12 @@ green: `test_world` in 141.77 seconds and `test_rigid_ipc_paper_experiments`
 in 304.21 seconds. The only local diff after validation was markdown formatter
 cleanup in this dev-task audit, followed by this evidence refresh.
 
-Historical publication state before the latest approved push: after the
+Historical publication state before the later approved pushes: after the
 validation-evidence commit `84897c2fde5 Record rigid workflow validation
 evidence`, the local branch was ahead of
 `origin/feature/rigid-body-gui-visual-verification` and `gh pr list --head
 "$(git branch --show-current)"` returned no PR. That is superseded by the
-current pushed `6bafd605907` state above.
+newer remote checkpoints recorded above.
 
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest

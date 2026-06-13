@@ -2,17 +2,19 @@
 
 ## Current Handoff (2026-06-12)
 
-Remote publication checkpoint: after the explicit `push to origin` instruction,
-`origin/feature/rigid-body-gui-visual-verification` points to
-`6bafd605907 Add pre-contact surrogate visual demo`. Fresh
+Remote publication checkpoint: use `git status -sb` as the source of truth for
+local/remote parity. The last recorded remote checkpoint before this
+validation-language correction was
+`6bafd605907 Add pre-contact surrogate visual demo`; later handoff/docs commits
+may be present when the branch matches
+`origin/feature/rigid-body-gui-visual-verification`. Fresh
 `gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
-still report no PR for the branch. The latest pre-push `git fetch origin main
+still reported no PR for the branch. The latest pre-push `git fetch origin main
 && git merge --no-edit origin/main` reported `Already up to date`, so the
 branch remained aligned with the PR #2986 DART 7 architecture/work-packet
-harness at publication time. Rerun `git status -sb` before acting because later
-local continuation commits may be unpushed. The approved push did not approve PR
-creation, milestone mutation, CI reruns, review comments, thread resolution, or
-other GitHub review-state changes.
+harness at publication time. The approved push did not approve PR creation,
+milestone mutation, CI reruns, review comments, thread resolution, or other
+GitHub review-state changes.
 
 Latest local evidence refresh: the optional extended workflow packet was
 regenerated after `diff_pre_contact_surrogate` landed in the related-evidence
@@ -82,10 +84,12 @@ Fresh focused guard for that audit:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
 reported `6 passed`.
 
-Latest validation follow-up: current `HEAD` has fresh broad validation evidence
-after the previous stop-only handoff. From branch
-`feature/rigid-body-gui-visual-verification`, with `DART_SAFE_JOBS=5`, the
-default command
+Latest validation follow-up: the latest broad validation evidence predates the
+current local `HEAD` (`72a0d24ad39 Record optional rigid workflow packet
+evidence`) and the pre-contact surrogate continuation, so treat it as
+branch-level broad evidence rather than exact current-head broad validation.
+From branch `feature/rigid-body-gui-visual-verification`, with
+`DART_SAFE_JOBS=5`, the default command
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed successfully: linting, build, unit tests, simulation tests, Python
 tests, and documentation all passed. Because `nvidia-smi -L` reported
@@ -94,13 +98,13 @@ tests, and documentation all passed. Because `nvidia-smi -L` reported
 was also run and exited successfully. The previous stopped validation attempt
 remains useful archaeology only; do not report it as the latest state.
 
-Historical publication state before the latest approved push: after committing
+Historical publication state before the later approved pushes: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
 ahead of `origin/feature/rigid-body-gui-visual-verification`, and
 `gh pr list --head "$(git branch --show-current)"` returned no PR. That is now
-superseded by the pushed `6bafd605907` state above. Future sessions must rerun
-`git status -sb` and must get explicit approval before pushing newer local
-commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
+superseded by the newer remote checkpoints recorded above. Future sessions must
+rerun `git status -sb` and must get explicit approval before pushing newer
+local commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
 mutating GitHub review state.
 
 Stop/push handoff: the newest instruction was to stop code changes, stop
@@ -242,9 +246,10 @@ latest signals into the workflow review index.
 Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
-- Expect branch `feature/rigid-body-gui-visual-verification` to have no PR and
-  possibly unpublished local continuation commits ahead of origin.
-- Latest pushed checkpoint is
+- Expect branch `feature/rigid-body-gui-visual-verification`; verify
+  local/remote parity with `git status -sb`.
+- The latest recorded PR checks found no PR for the branch. The last remote
+  checkpoint before this validation-language correction was
   `6bafd605907 Add pre-contact surrogate visual demo`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
