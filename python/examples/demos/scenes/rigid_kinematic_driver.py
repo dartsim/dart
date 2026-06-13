@@ -440,6 +440,7 @@ class _RigidKinematicDriver:
             },
             "controls": {
                 "drive_speed": float(self.drive_speed),
+                "executor_index": int(self.executor_index),
                 "grip_friction": float(self.grip_friction),
             },
             "case_pair": [case.label for case in self.cases],
@@ -714,7 +715,7 @@ class _RigidKinematicDriver:
         if changed_friction:
             self.grip_friction = float(grip_friction)
 
-        if changed_speed or changed_friction:
+        if changed_executor or changed_speed or changed_friction:
             self._reset()
 
         if builder.button("Reset driver"):

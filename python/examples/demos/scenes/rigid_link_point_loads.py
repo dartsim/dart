@@ -588,7 +588,7 @@ class _RigidLinkPointLoads:
         changed_yaw, yaw_degrees = self._slider(
             builder, "Yawed body angle", self.yaw_degrees, 0.0, 120.0
         )
-        if changed_force or changed_offset or changed_yaw:
+        if changed_executor or changed_force or changed_offset or changed_yaw:
             self.force_magnitude = force_magnitude
             self.point_offset = point_offset
             self.yaw_degrees = yaw_degrees

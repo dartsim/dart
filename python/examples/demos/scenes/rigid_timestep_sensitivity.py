@@ -561,7 +561,7 @@ class _RigidTimeStepSensitivity:
             self.base_time_step = float(base_time_step)
         if changed_gravity:
             self.gravity_scale = float(gravity_scale)
-        if changed_solver or changed_dt or changed_gravity:
+        if changed_solver or changed_executor or changed_dt or changed_gravity:
             self._reset()
 
         if builder.button("Reset timestep run"):

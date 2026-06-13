@@ -459,6 +459,7 @@ class _RigidKinematicNormalPush:
                 "time_step_ms": _TIME_STEP * 1000.0,
             },
             "controls": {
+                "executor_index": int(self.executor_index),
                 "push_speed": float(self.push_speed),
                 "target_mass": float(self.target_mass),
             },
@@ -702,7 +703,7 @@ class _RigidKinematicNormalPush:
         if changed_mass:
             self.target_mass = float(target_mass)
 
-        if changed_speed or changed_mass:
+        if changed_executor or changed_speed or changed_mass:
             self._reset()
 
         if builder.button("Reset normal push"):

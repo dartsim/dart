@@ -655,7 +655,8 @@ class _RigidFreeFlight:
         if changed_inertia:
             self.inertia_ratio = float(inertia_ratio)
         if (
-            changed_speed
+            changed_executor
+            or changed_speed
             or changed_angle
             or changed_gravity
             or changed_spin

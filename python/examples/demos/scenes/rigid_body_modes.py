@@ -543,7 +543,13 @@ class _RigidBodyModes:
             self.force_magnitude = float(force_magnitude)
         if changed_drive:
             self.drive_speed = float(drive_speed)
-        if changed_solver or changed_gravity or changed_force or changed_drive:
+        if (
+            changed_solver
+            or changed_executor
+            or changed_gravity
+            or changed_force
+            or changed_drive
+        ):
             self._reset()
 
         if builder.button("Reset modes"):

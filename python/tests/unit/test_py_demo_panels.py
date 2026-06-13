@@ -6,6 +6,7 @@ import pytest
 from examples.demos._world_bridge import WorldRenderBridge
 from examples.demos.registry import make_demo_scenes
 from examples.demos.runner import (
+    CAPTURE_METRICS_INFO_KEY,
     DEFAULT_INITIAL_SCENE_ID,
     DEFAULT_SCENE_BUILD_TIMEOUT_MS,
     PythonDemoScene,
@@ -1375,6 +1376,66 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
 
         for event in expected_events:
             assert event in builder.events
+
+
+@pytest.mark.parametrize(
+    ("scene_module", "controller_key"),
+    [
+        (rigid_body_modes, "rigid_body_modes_controller"),
+        (rigid_free_flight, "rigid_free_flight_controller"),
+        (rigid_frame_hierarchy, "rigid_frame_hierarchy_controller"),
+        (rigid_timestep_sensitivity, "rigid_timestep_sensitivity_controller"),
+        (rigid_step_diagnostics, "rigid_step_diagnostics_controller"),
+        (rigid_contact_scale_budget, "rigid_contact_scale_budget_controller"),
+        (rigid_solver_compare, "rigid_solver_compare_controller"),
+        (rigid_restitution_ladder, "rigid_restitution_ladder_controller"),
+        (rigid_material_mixing, "rigid_material_mixing_controller"),
+        (rigid_contact_solver_compare, "rigid_contact_solver_compare_controller"),
+        (contact, "rigid_link_contact_controller"),
+        (rigid_contact_manipulation, "rigid_contact_manipulation_controller"),
+        (rigid_kinematic_driver, "rigid_kinematic_driver_controller"),
+        (rigid_kinematic_normal_push, "rigid_kinematic_normal_push_controller"),
+        (rigid_external_loads, "rigid_external_loads_controller"),
+        (rigid_link_point_loads, "rigid_link_point_loads_controller"),
+        (rigid_distance_spring, "rigid_distance_spring_controller"),
+        (
+            rigid_joint_passive_parameters,
+            "rigid_joint_passive_parameters_controller",
+        ),
+        (rigid_screw_joint_pitch, "rigid_screw_joint_pitch_controller"),
+    ],
+)
+def test_rigid_executor_panel_edits_reset_visual_runs(
+    scene_module: object, controller_key: str
+) -> None:
+    _require_simulation_symbols(
+        "RigidBodySolver", "ContactSolverMethod", "World", "JointSpec"
+    )
+
+    setup = scene_module.build()
+    controller = setup.info[controller_key]
+    if len(controller._executors) < 2:
+        pytest.skip("executor alternatives unavailable in this build")
+    assert setup.pre_step is not None
+
+    world = setup.info["sx_world"]
+    setup.pre_step()
+    assert world.time > 0.0
+
+    target_executor = len(controller._executors) - 1
+    builder = _ScriptedPanelBuilder(select_values={"Executor": target_executor})
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("select:Executor:") for event in builder.events)
+    assert controller.executor_index == target_executor
+    assert world.time == pytest.approx(0.0)
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    expected_executor = controller._executors[target_executor][0]
+    assert capture_metrics["executor"] == expected_executor
+    assert capture_metrics["controls"]["executor_index"] == pytest.approx(
+        float(target_executor)
+    )
 
 
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:

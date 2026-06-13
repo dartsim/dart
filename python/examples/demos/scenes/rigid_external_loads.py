@@ -526,7 +526,13 @@ class _RigidExternalLoads:
         changed_inertia, inertia_ratio = self._slider_with_reset(
             builder, "High inertia ratio", self.inertia_ratio, 1.0, 10.0
         )
-        if changed_force or changed_torque or changed_mass or changed_inertia:
+        if (
+            changed_executor
+            or changed_force
+            or changed_torque
+            or changed_mass
+            or changed_inertia
+        ):
             self.force_magnitude = force_magnitude
             self.torque_magnitude = torque_magnitude
             self.mass_ratio = mass_ratio

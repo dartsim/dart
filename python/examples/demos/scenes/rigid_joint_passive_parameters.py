@@ -815,7 +815,8 @@ class _RigidJointPassiveParameterVerifier:
             "Armature", float(self.armature), 0.0, 12.0
         )
         if (
-            changed_spring
+            changed_executor
+            or changed_spring
             or changed_damping
             or changed_rest
             or changed_friction

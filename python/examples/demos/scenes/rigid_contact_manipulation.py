@@ -406,6 +406,7 @@ class _RigidContactManipulation:
                 "workspace": "matched table pusher lanes",
             },
             "controls": {
+                "executor_index": int(self.executor_index),
                 "friction": float(self.friction),
                 "launch_speed": float(self.launch_speed),
                 "pusher_mass": float(self.pusher_mass),
@@ -680,7 +681,7 @@ class _RigidContactManipulation:
         if changed_mass:
             self.pusher_mass = float(pusher_mass)
 
-        if changed_speed or changed_friction or changed_mass:
+        if changed_executor or changed_speed or changed_friction or changed_mass:
             self._reset()
 
         if builder.button("Reset push"):

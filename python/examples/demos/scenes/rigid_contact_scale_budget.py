@@ -366,6 +366,12 @@ class _RigidContactScaleBudget:
         return {
             "budget_ms": float(self.budget_ms),
             "comparison_axis": "contact_workload_size",
+            "controls": {
+                "budget_ms": float(self.budget_ms),
+                "executor_index": int(self.executor_index),
+                "friction": float(self.friction),
+                "solver_index": int(self.solver_index),
+            },
             "dense_single_ratio": (
                 float(self._dense_single_ratio[-1])
                 if self._dense_single_ratio
@@ -544,7 +550,7 @@ class _RigidContactScaleBudget:
             self.budget_ms = float(budget_ms)
         if changed_friction:
             self.friction = float(friction)
-        if changed_solver or changed_friction:
+        if changed_solver or changed_executor or changed_friction:
             self.reset(clear_replay=True)
         else:
             self._clamp_controls()

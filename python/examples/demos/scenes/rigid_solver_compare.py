@@ -416,10 +416,10 @@ class _RigidSolverComparison:
 
     def build_panel(self, builder: Any, context: Any) -> None:
         choices = [label for label, _executor in self._executors]
-        changed, executor_index = builder.select(
+        changed_executor, executor_index = builder.select(
             "Executor", int(self.executor_index), choices
         )
-        if changed:
+        if changed_executor:
             self.executor_index = int(executor_index)
 
         changed, launch_speed = builder.slider(
@@ -448,6 +448,9 @@ class _RigidSolverComparison:
             self.restitution = float(restitution)
             for case in self.cases:
                 self._apply_parameters(case)
+
+        if changed_executor:
+            self._reset()
 
         if builder.button("Reset comparison"):
             self._reset()

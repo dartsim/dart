@@ -762,7 +762,13 @@ class _RigidScrewJointPitchVerifier:
         changed_inertia, axial_inertia = builder.slider(
             "Axial inertia", float(self.axial_inertia), 0.03, 0.80
         )
-        if changed_pitch or changed_gravity or changed_mass or changed_inertia:
+        if (
+            changed_executor
+            or changed_pitch
+            or changed_gravity
+            or changed_mass
+            or changed_inertia
+        ):
             self.pitch_scale = float(pitch_scale)
             self.gravity_scale = float(gravity_scale)
             self.moving_mass = float(moving_mass)

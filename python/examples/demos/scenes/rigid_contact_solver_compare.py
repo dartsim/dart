@@ -559,7 +559,8 @@ class _RigidContactSolverCompare:
             self.initial_tilt_deg = float(initial_tilt)
 
         if (
-            changed_speed
+            changed_executor
+            or changed_speed
             or changed_friction
             or changed_restitution
             or changed_tilt

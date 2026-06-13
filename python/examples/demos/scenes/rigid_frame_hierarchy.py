@@ -491,7 +491,8 @@ class _RigidFrameHierarchy:
         if changed_local_yaw:
             self.local_yaw_deg = float(local_yaw_deg)
         if (
-            changed_yaw
+            changed_executor
+            or changed_yaw
             or changed_radius
             or changed_offset_x
             or changed_offset_y

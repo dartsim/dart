@@ -445,6 +445,10 @@ class _RigidStepDiagnostics:
     def capture_metrics(self) -> dict[str, Any]:
         return {
             "comparison_axis": "workload_shape",
+            "controls": {
+                "executor_index": int(self.executor_index),
+                "solver_index": int(self.solver_index),
+            },
             "executor": self._executor_label(),
             "held_fixed": {
                 "solver": self._solver_label(),
@@ -605,7 +609,7 @@ class _RigidStepDiagnostics:
             self.solver_index = int(solver_index)
         if changed_executor:
             self.executor_index = int(executor_index)
-        if changed_solver:
+        if changed_solver or changed_executor:
             self._reset()
 
         if builder.button("Reset diagnostics"):

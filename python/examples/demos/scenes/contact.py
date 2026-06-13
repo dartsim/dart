@@ -663,6 +663,7 @@ class _RigidLinkContact:
             self.push_speed = float(push_speed)
         if (
             builder.button("Reset link contact")
+            or changed_executor
             or changed_friction
             or changed_restitution
             or changed_drop

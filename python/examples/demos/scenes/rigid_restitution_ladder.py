@@ -483,7 +483,7 @@ class _RigidRestitutionLadder:
         if changed_scale:
             self.restitution_scale = float(restitution_scale)
 
-        if changed_solver or changed_height or changed_scale:
+        if changed_solver or changed_executor or changed_height or changed_scale:
             self._reset()
 
         if builder.button("Reset bounce"):

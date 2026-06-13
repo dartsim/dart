@@ -614,7 +614,8 @@ class _RigidMaterialMixing:
         if changed_high_mu:
             self.high_friction = float(high_friction)
         if (
-            changed_impact
+            changed_executor
+            or changed_impact
             or changed_tangent
             or changed_low_e
             or changed_high_e

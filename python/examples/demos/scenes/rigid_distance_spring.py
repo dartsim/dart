@@ -470,6 +470,7 @@ class _RigidDistanceSpring:
                 "time_step_ms": _TIME_STEP * 1000.0,
             },
             "controls": {
+                "executor_index": int(self.executor_index),
                 "gravity_scale": float(self.gravity_scale),
                 "initial_stretch": float(self.initial_stretch),
                 "offset_stiffness": float(self.offset_stiffness),
@@ -681,7 +682,8 @@ class _RigidDistanceSpring:
         if changed_gravity:
             self.gravity_scale = float(gravity_scale)
         if (
-            changed_stretch
+            changed_executor
+            or changed_stretch
             or changed_gravity
             or changed_rest_length
             or changed_soft

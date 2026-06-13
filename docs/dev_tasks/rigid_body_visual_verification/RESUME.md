@@ -2,14 +2,29 @@
 
 ## Current Handoff (2026-06-12)
 
-Current branch snapshot after this slice: `feature/rigid-body-gui-visual-verification`
-is clean and ahead of `origin/feature/rigid-body-gui-visual-verification` by two
-local commits, latest `Reset loop closure executor edits` after
-`Guard rigid joint panel controls`. There is still no PR for this branch. Do
-not push, create a PR, set a milestone, rerun CI, or mutate review state
-without explicit maintainer/user approval.
+Current branch snapshot after this slice:
+`feature/rigid-body-gui-visual-verification` is expected to be clean and one
+local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Reset rigid executor panel edits`. The previous local commits
+`Reset loop closure executor edits` and `Guard rigid joint panel controls` were
+pushed to origin before this continuation. There is still no PR for this
+branch. Do not push, create a PR, set a milestone, rerun CI, or mutate review
+state without explicit maintainer/user approval.
 
-Latest local continuation: rows 35-36 now close the editable-control guard for
+Latest local continuation: executor-driven rigid GUI panels now treat
+`Executor` as a run-defining visual-control edit. Nineteen panels, including
+body modes, free flight, frame hierarchy, timestep/diagnostics/contact-budget,
+solver/contact comparisons, link contact, manipulation, kinematic drivers,
+external/point loads, distance springs, passive joints, and screw pitch, reset
+the visual run on executor-only edits instead of mixing old timelines with the
+new executor selection. Capture metrics also record `controls.executor_index`
+for the rows that previously omitted it. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs -q`
+reported `19 passed`; the adjacent panel/replay/docs guard
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `23 passed`. No new visual packet was generated in this slice.
+
+Latest pushed continuation: rows 35-36 now close the editable-control guard for
 the numbered World Rigid Body workflow. Row 35,
 `rigid_multibody_solver_family`, and row 36, `rigid_loop_closure`, have panel
 guards for their gravity controls and focused panel-edit tests proving executor
