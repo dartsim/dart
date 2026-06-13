@@ -145,7 +145,9 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
 {
   using NormalAllocator = dart::common::StlAllocator<BoxedLcpContactNormal>;
   using DoubleAllocator = dart::common::StlAllocator<double>;
+  using IntAllocator = dart::common::StlAllocator<int>;
   using DoubleVector = std::vector<double, DoubleAllocator>;
+  using IntVector = std::vector<int, IntAllocator>;
   using BodyColumnPair = std::pair<const entt::entity, std::size_t>;
   using BodyColumnAllocator = dart::common::StlAllocator<BodyColumnPair>;
   using BodyColumnMap = std::unordered_map<
@@ -164,6 +166,13 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
           std::hash<entt::entity>{},
           std::equal_to<entt::entity>{},
           BodyColumnAllocator{allocator}),
+      systemA(DoubleAllocator{allocator}),
+      systemB(DoubleAllocator{allocator}),
+      systemLo(DoubleAllocator{allocator}),
+      systemHi(DoubleAllocator{allocator}),
+      systemF(DoubleAllocator{allocator}),
+      systemFindex(IntAllocator{allocator}),
+      systemJ(DoubleAllocator{allocator}),
       Minv(DoubleAllocator{allocator}),
       vFree(DoubleAllocator{allocator}),
       JMinv(DoubleAllocator{allocator}),
@@ -179,6 +188,13 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
   std::vector<BoxedLcpContactNormal, NormalAllocator> normals;
   BodyColumnMap bodyColumn;
   BoxedLcpContactSnapshot snapshot;
+  DoubleVector systemA;
+  DoubleVector systemB;
+  DoubleVector systemLo;
+  DoubleVector systemHi;
+  DoubleVector systemF;
+  IntVector systemFindex;
+  DoubleVector systemJ;
   DoubleVector Minv;
   DoubleVector vFree;
   DoubleVector JMinv;
@@ -215,6 +231,12 @@ DART_SIMULATION_API void reserveBoxedLcpContactScratch(
 
 [[nodiscard]] DART_SIMULATION_API BoxedLcpContactSnapshot&
 solveBoxedLcpContacts(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    double timeStep,
+    BoxedLcpContactScratch& scratch);
+
+DART_SIMULATION_API void applyBoxedLcpContacts(
     detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     double timeStep,

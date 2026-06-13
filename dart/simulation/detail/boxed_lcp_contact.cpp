@@ -134,23 +134,24 @@ void BoxedLcpContactScratch::reserve(
     return;
   }
 
-  snapshot.A.resize(rows, rows);
-  snapshot.b.resize(rows);
-  snapshot.lo.resize(rows);
-  snapshot.hi.resize(rows);
-  snapshot.findex.resize(rows);
-  snapshot.f.resize(rows);
-  snapshot.J.resize(rows, dofs);
+  const auto vectorSize = static_cast<std::size_t>(rows);
+  const auto rowMatrixSize = vectorSize * vectorSize;
   const auto dofSize = static_cast<std::size_t>(dofs);
   const auto dofMatrixSize = dofSize * dofSize;
-  const auto rowDofMatrixSize = static_cast<std::size_t>(rows) * dofSize;
+  const auto rowDofMatrixSize = vectorSize * dofSize;
+  systemA.resize(rowMatrixSize);
+  systemB.resize(vectorSize);
+  systemLo.resize(vectorSize);
+  systemHi.resize(vectorSize);
+  systemF.resize(vectorSize);
+  systemFindex.resize(vectorSize);
+  systemJ.resize(rowDofMatrixSize);
   Minv.resize(dofMatrixSize);
   vFree.resize(dofSize);
   JMinv.resize(rowDofMatrixSize);
   jtImpulse.resize(dofSize);
   deltaV.resize(dofSize);
 
-  const auto vectorSize = static_cast<std::size_t>(rows);
   const auto nSkip
       = static_cast<std::size_t>(math::padding(static_cast<int>(rows)));
   const auto matrixSize = vectorSize * nSkip;
@@ -182,6 +183,13 @@ void BoxedLcpContactScratch::clearProblem()
 {
   normals.clear();
   bodyColumn.clear();
+  systemA.clear();
+  systemB.clear();
+  systemLo.clear();
+  systemHi.clear();
+  systemF.clear();
+  systemFindex.clear();
+  systemJ.clear();
   snapshot.A.resize(0, 0);
   snapshot.b.resize(0);
   snapshot.lo.resize(0);
@@ -250,12 +258,15 @@ BoxedLcpContactSnapshot solveBoxedLcpContacts(
   return std::move(snapshot);
 }
 
+namespace {
+
 //==============================================================================
-BoxedLcpContactSnapshot& solveBoxedLcpContacts(
+BoxedLcpContactSnapshot& solveBoxedLcpContactsImpl(
     detail::WorldRegistry& registry,
     std::span<const Contact> contacts,
     double timeStep,
-    BoxedLcpContactScratch& scratch)
+    BoxedLcpContactScratch& scratch,
+    bool populateSnapshot)
 {
   if (contacts.empty()) {
     scratch.clearProblem();
@@ -414,8 +425,9 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
   // corresponding tangential relative velocity:
   //   J_row v = (v_B + ω_B × armB - v_A - ω_A × armA) · d   (d =
   //   normal/tangent).
-  auto& J = snapshot.J;
-  J.resize(rows, dofs);
+  scratch.systemJ.resize(
+      static_cast<std::size_t>(rows) * static_cast<std::size_t>(dofs));
+  Eigen::Map<Eigen::MatrixXd> J(scratch.systemJ.data(), rows, dofs);
   J.setZero();
   const auto fillRow = [&](Eigen::Index row,
                            const BoxedLcpContactNormal& contact,
@@ -452,11 +464,12 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
       static_cast<std::size_t>(rows) * static_cast<std::size_t>(dofs));
   Eigen::Map<Eigen::MatrixXd> JMinv(scratch.JMinv.data(), rows, dofs);
   JMinv.noalias() = J * Minv;
-  auto& A = snapshot.A;
-  A.resize(rows, rows);
+  scratch.systemA.resize(
+      static_cast<std::size_t>(rows) * static_cast<std::size_t>(rows));
+  Eigen::Map<Eigen::MatrixXd> A(scratch.systemA.data(), rows, rows);
   A.noalias() = JMinv * J.transpose();
-  auto& b = snapshot.b;
-  b.resize(rows);
+  scratch.systemB.resize(static_cast<std::size_t>(rows));
+  Eigen::Map<Eigen::VectorXd> b(scratch.systemB.data(), rows);
   b.noalias() = J * vFree;
   b = -b;
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -479,14 +492,14 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
 
   // Normal rows: lo = 0, hi = +∞, findex = -1 (push-only, no coupling).
   // Friction rows: lo = -mu, hi = +mu, findex = owning normal row.
-  auto& lo = snapshot.lo;
-  auto& hi = snapshot.hi;
-  auto& findex = snapshot.findex;
-  lo.resize(rows);
+  scratch.systemLo.resize(static_cast<std::size_t>(rows));
+  scratch.systemHi.resize(static_cast<std::size_t>(rows));
+  scratch.systemFindex.resize(static_cast<std::size_t>(rows));
+  Eigen::Map<Eigen::VectorXd> lo(scratch.systemLo.data(), rows);
+  Eigen::Map<Eigen::VectorXd> hi(scratch.systemHi.data(), rows);
+  Eigen::Map<Eigen::VectorXi> findex(scratch.systemFindex.data(), rows);
   lo.setZero();
-  hi.resize(rows);
   hi.setConstant(std::numeric_limits<double>::infinity());
-  findex.resize(rows);
   findex.setConstant(-1);
   for (Eigen::Index i = 0; i < n; ++i) {
     const double mu = normals[static_cast<std::size_t>(i)].friction;
@@ -503,8 +516,8 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
   math::LcpOptions options;
   options.warmStart = false;
   options.validateSolution = false;
-  auto& f = snapshot.f;
-  f.resize(rows);
+  scratch.systemF.resize(static_cast<std::size_t>(rows));
+  Eigen::Map<Eigen::VectorXd> f(scratch.systemF.data(), rows);
   f.setZero();
   solver.solve(A, b, lo, hi, findex, f, scratch.dantzig, options);
   for (Eigen::Index i = 0; i < n; ++i) {
@@ -534,9 +547,52 @@ BoxedLcpContactSnapshot& solveBoxedLcpContacts(
     velocity.angular += deltaV.segment<3>(base + 3);
   }
 
-  snapshot.bodyCount = bodyCount;
-  snapshot.contactCount = static_cast<std::size_t>(n);
+  if (populateSnapshot) {
+    snapshot.A = A;
+    snapshot.b = b;
+    snapshot.lo = lo;
+    snapshot.hi = hi;
+    snapshot.findex = findex;
+    snapshot.f = f;
+    snapshot.J = J;
+    snapshot.bodyCount = bodyCount;
+    snapshot.contactCount = static_cast<std::size_t>(n);
+  } else {
+    snapshot.A.resize(0, 0);
+    snapshot.b.resize(0);
+    snapshot.lo.resize(0);
+    snapshot.hi.resize(0);
+    snapshot.findex.resize(0);
+    snapshot.f.resize(0);
+    snapshot.J.resize(0, 0);
+    snapshot.bodyCount = 0;
+    snapshot.contactCount = 0;
+  }
   return snapshot;
+}
+
+} // namespace
+
+//==============================================================================
+BoxedLcpContactSnapshot& solveBoxedLcpContacts(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    double timeStep,
+    BoxedLcpContactScratch& scratch)
+{
+  return solveBoxedLcpContactsImpl(
+      registry, contacts, timeStep, scratch, /*populateSnapshot=*/true);
+}
+
+//==============================================================================
+void applyBoxedLcpContacts(
+    detail::WorldRegistry& registry,
+    std::span<const Contact> contacts,
+    double timeStep,
+    BoxedLcpContactScratch& scratch)
+{
+  (void)solveBoxedLcpContactsImpl(
+      registry, contacts, timeStep, scratch, /*populateSnapshot=*/false);
 }
 
 } // namespace dart::simulation::detail

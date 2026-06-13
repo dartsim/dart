@@ -70,12 +70,18 @@ inline double projectToBounds(double value, double lo, double hi)
   return value;
 }
 
-inline bool validateProblem(
-    const Eigen::MatrixXd& A,
-    const Eigen::VectorXd& b,
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
+template <
+    typename ADerived,
+    typename BDerived,
+    typename LoDerived,
+    typename HiDerived,
+    typename FindexDerived>
+inline bool validateProblemView(
+    const Eigen::MatrixBase<ADerived>& A,
+    const Eigen::MatrixBase<BDerived>& b,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
+    const Eigen::MatrixBase<FindexDerived>& findex,
     std::string* message = nullptr)
 {
   const bool dimensionMismatch
@@ -129,6 +135,17 @@ inline bool validateProblem(
   }
 
   return true;
+}
+
+inline bool validateProblem(
+    const Eigen::MatrixXd& A,
+    const Eigen::VectorXd& b,
+    const Eigen::VectorXd& lo,
+    const Eigen::VectorXd& hi,
+    const Eigen::VectorXi& findex,
+    std::string* message = nullptr)
+{
+  return validateProblemView(A, b, lo, hi, findex, message);
 }
 
 inline bool validateProblem(
@@ -203,11 +220,17 @@ inline bool computeEffectiveBounds(
   return true;
 }
 
-template <typename XDerived, typename LoEffDerived, typename HiEffDerived>
+template <
+    typename LoDerived,
+    typename HiDerived,
+    typename FindexDerived,
+    typename XDerived,
+    typename LoEffDerived,
+    typename HiEffDerived>
 inline bool computeEffectiveBoundsInto(
-    const Eigen::VectorXd& lo,
-    const Eigen::VectorXd& hi,
-    const Eigen::VectorXi& findex,
+    const Eigen::MatrixBase<LoDerived>& lo,
+    const Eigen::MatrixBase<HiDerived>& hi,
+    const Eigen::MatrixBase<FindexDerived>& findex,
     const Eigen::MatrixBase<XDerived>& x,
     Eigen::MatrixBase<LoEffDerived>& loEff,
     Eigen::MatrixBase<HiEffDerived>& hiEff,

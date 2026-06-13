@@ -1,5 +1,75 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Boxed-LCP Contact Snapshot Payload Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: boxed-LCP contact assembly now keeps the LCP snapshot
+payload used by the world-step solve in allocator-backed
+`BoxedLcpContactScratch` vectors. The reusable scratch owns `systemA`,
+`systemB`, `systemLo`, `systemHi`, `systemFindex`, `systemF`, and `systemJ`
+alongside the prior dense temporary buffers. The new
+`applyBoxedLcpContacts(...)` world-step entry point maps those buffers as Eigen
+views, solves into `systemF`, applies impulses, and intentionally leaves the
+diagnostic `BoxedLcpContactSnapshot` empty. The existing
+`solveBoxedLcpContacts(...)` helpers still populate the Eigen snapshot for
+diagnostics, CUDA fixtures, and tests by copying from scratch after the solve.
+
+The fix has these parts:
+
+- `BoxedLcpContactScratch` uses local `DoubleVector` and `IntVector` aliases for
+  allocator-backed boxed-LCP system payload buffers;
+- `BoxedLcpContactScratch::reserve(...)` sizes the scratch-owned LCP payload and
+  no longer preallocates Eigen-owned diagnostic snapshot members;
+- `DantzigSolver` exposes a non-virtual `Eigen::Ref` solve overload so callers
+  can solve directly into mapped scratch storage while preserving the existing
+  owning-`Eigen::VectorXd` API;
+- `RigidBodyContactStage` calls `applyBoxedLcpContacts(...)` for the boxed-LCP
+  world-step path, avoiding diagnostic snapshot payload writes during baked
+  steps;
+- `World.BoxedLcpContactScratchUsesProvidedAllocator` verifies allocator-backed
+  system payload storage and an empty diagnostic snapshot after reserve, while
+  `World.BoxedLcpContactApplySkipsDiagnosticSnapshotPayload` verifies the
+  no-snapshot solve still applies a contact impulse.
+
+This still does not claim that diagnostic `BoxedLcpContactSnapshot` Eigen
+payloads borrow a DART allocator, that the one-shot return-by-value boxed-LCP
+helper is allocation-free, or that arbitrary LCP solver APIs accept custom
+allocators. The closed gap is the boxed-LCP world-step assembly/solve payload
+owned by reusable DART scratch.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.BoxedLcpContactScratchUsesProvidedAllocator:World.BoxedLcpContactApplySkipsDiagnosticSnapshotPayload:World.BakedBoxedLcpFallbackContactsDoNotGrowWorldBaseAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap'
+build/default/cpp/Release/bin/test_boxed_lcp_contact \
+  --gtest_filter='BoxedLcpContact.WorldContactSnapshotSatisfiesLcpContract:BoxedLcpContact.TwoSphereWorldContactSnapshotSatisfiesLcpContract'
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_dantzig_solver
+pixi run lint
+git diff --check
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+The CUDA `test-all` run passed with the existing no-GUI
+`dartpy._world_render_bridge` autodoc warnings during documentation generation
+and CPU-scaling benchmark warnings during CUDA benchmark smoke. Before
+publishing or opening a PR from this branch, get explicit maintainer approval
+before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Boxed-LCP Contact Scratch Temporary Allocator)
 
 Resume from exactly one branch:

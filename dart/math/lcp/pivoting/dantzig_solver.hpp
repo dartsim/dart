@@ -110,6 +110,16 @@ public:
       Scratch& scratch,
       const LcpOptions& options);
 
+  LcpResult solve(
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& lo,
+      const Eigen::Ref<const Eigen::VectorXd>& hi,
+      const Eigen::Ref<const Eigen::VectorXi>& findex,
+      Eigen::Ref<Eigen::VectorXd> x,
+      Scratch& scratch,
+      const LcpOptions& options);
+
   std::string getName() const override;
   std::string getCategory() const override;
 };

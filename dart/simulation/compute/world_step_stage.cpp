@@ -10515,7 +10515,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
           createContactScratch(m_memoryManager),
           ContactScratchDeleter{m_memoryManager});
     }
-    (void)detail::solveBoxedLcpContacts(
+    detail::applyBoxedLcpContacts(
         registry, contacts, world.getTimeStep(), m_contactScratch->boxedLcp);
     resolveRigidBodyContactPositions(registry, contacts, world.getTimeStep());
     return;

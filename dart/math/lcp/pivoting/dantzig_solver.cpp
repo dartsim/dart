@@ -127,6 +127,47 @@ LcpResult DantzigSolver::solve(
   if (x.size() != n) {
     x = Eigen::VectorXd::Zero(n);
   }
+
+  Eigen::Ref<Eigen::VectorXd> xRef(x);
+  return solve(A, b, lo, hi, findex, xRef, scratch, options);
+}
+
+//==============================================================================
+LcpResult DantzigSolver::solve(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b,
+    const Eigen::Ref<const Eigen::VectorXd>& lo,
+    const Eigen::Ref<const Eigen::VectorXd>& hi,
+    const Eigen::Ref<const Eigen::VectorXi>& findex,
+    Eigen::Ref<Eigen::VectorXd> x,
+    Scratch& scratch,
+    const LcpOptions& options)
+{
+  LcpResult result;
+
+  std::string problemMessage;
+  if (!detail::validateProblemView(A, b, lo, hi, findex, &problemMessage)) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = problemMessage;
+    return result;
+  }
+
+  const Eigen::Index n = b.size();
+  if (x.size() != n) {
+    result.status = LcpSolverStatus::InvalidProblem;
+    result.message = "Solution vector dimensions inconsistent";
+    return result;
+  }
+
+  if (n == 0) {
+    result.status = LcpSolverStatus::Success;
+    result.iterations = 0;
+    result.residual = 0.0;
+    result.complementarity = 0.0;
+    result.validated = options.validateSolution;
+    return result;
+  }
+
   const int nSkip = padding(static_cast<int>(n));
 
   const auto vectorSize = static_cast<std::size_t>(n);
@@ -166,9 +207,6 @@ LcpResult DantzigSolver::solve(
       scratch.lcp,
       options.earlyTermination);
 
-  if (x.size() != n) {
-    x.resize(n);
-  }
   for (int i = 0; i < n; ++i) {
     x[i] = scratch.xdata[static_cast<std::size_t>(i)];
   }
@@ -185,13 +223,12 @@ LcpResult DantzigSolver::solve(
 
   scratch.loEff.resize(vectorSize);
   scratch.hiEff.resize(vectorSize);
-  const Eigen::Map<const Eigen::VectorXd> xEval(x.data(), n);
   Eigen::Map<Eigen::VectorXd> loEff(scratch.loEff.data(), n);
   Eigen::Map<Eigen::VectorXd> hiEff(scratch.hiEff.data(), n);
 
   std::string boundsMessage;
   const bool boundsOk = detail::computeEffectiveBoundsInto(
-      lo, hi, findex, xEval, loEff, hiEff, &boundsMessage);
+      lo, hi, findex, x, loEff, hiEff, &boundsMessage);
   if (!boundsOk) {
     result.status = LcpSolverStatus::InvalidProblem;
     result.message = boundsMessage;
@@ -202,9 +239,9 @@ LcpResult DantzigSolver::solve(
                             ? options.absoluteTolerance
                             : mDefaultOptions.absoluteTolerance;
   result.residual
-      = detail::naturalResidualInfinityNormView(xEval, wEval, loEff, hiEff);
-  result.complementarity = detail::complementarityInfinityNormView(
-      xEval, wEval, loEff, hiEff, absTol);
+      = detail::naturalResidualInfinityNormView(x, wEval, loEff, hiEff);
+  result.complementarity
+      = detail::complementarityInfinityNormView(x, wEval, loEff, hiEff, absTol);
   result.status = success ? LcpSolverStatus::Success : LcpSolverStatus::Failed;
 
   if (options.validateSolution && result.status == LcpSolverStatus::Success) {
@@ -214,7 +251,7 @@ LcpResult DantzigSolver::solve(
     const double validationTol = std::max(absTol, compTol);
     std::string validationMessage;
     const bool feasible = detail::validateSolutionView(
-        xEval, wEval, loEff, hiEff, validationTol, &validationMessage);
+        x, wEval, loEff, hiEff, validationTol, &validationMessage);
     result.validated = true;
     if (!feasible) {
       result.status = LcpSolverStatus::NumericalError;

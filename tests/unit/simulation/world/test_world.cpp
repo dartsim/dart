@@ -4312,25 +4312,74 @@ TEST(World, BoxedLcpContactScratchUsesProvidedAllocator)
 
     const sxdetail::BoxedLcpContactScratch::DoubleAllocator doubleAllocator{
         memoryManager.getFreeAllocator()};
+    const sxdetail::BoxedLcpContactScratch::IntAllocator intAllocator{
+        memoryManager.getFreeAllocator()};
+    EXPECT_EQ(scratch.systemA.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.systemB.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.systemLo.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.systemHi.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.systemF.get_allocator(), doubleAllocator);
+    EXPECT_EQ(scratch.systemFindex.get_allocator(), intAllocator);
+    EXPECT_EQ(scratch.systemJ.get_allocator(), doubleAllocator);
     EXPECT_EQ(scratch.Minv.get_allocator(), doubleAllocator);
     EXPECT_EQ(scratch.vFree.get_allocator(), doubleAllocator);
     EXPECT_EQ(scratch.JMinv.get_allocator(), doubleAllocator);
     EXPECT_EQ(scratch.jtImpulse.get_allocator(), doubleAllocator);
     EXPECT_EQ(scratch.deltaV.get_allocator(), doubleAllocator);
 
+    EXPECT_EQ(scratch.systemA.size(), rows * rows);
+    EXPECT_EQ(scratch.systemB.size(), rows);
+    EXPECT_EQ(scratch.systemLo.size(), rows);
+    EXPECT_EQ(scratch.systemHi.size(), rows);
+    EXPECT_EQ(scratch.systemF.size(), rows);
+    EXPECT_EQ(scratch.systemFindex.size(), rows);
+    EXPECT_EQ(scratch.systemJ.size(), rows * dofs);
     EXPECT_EQ(scratch.Minv.size(), dofs * dofs);
     EXPECT_EQ(scratch.vFree.size(), dofs);
     EXPECT_EQ(scratch.JMinv.size(), rows * dofs);
     EXPECT_EQ(scratch.jtImpulse.size(), dofs);
     EXPECT_EQ(scratch.deltaV.size(), dofs);
+    EXPECT_EQ(scratch.snapshot.A.size(), 0)
+        << "reserve should not preallocate Eigen-owned diagnostic snapshot "
+           "payloads on the boxed-LCP world-step path";
+    EXPECT_EQ(scratch.snapshot.J.size(), 0);
+    EXPECT_EQ(scratch.snapshot.f.size(), 0);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterScratch + 17u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterScratch + 24u)
         << "allocator-aware boxed-LCP contact scratch should reserve nested "
            "contact temporaries plus Dantzig work arrays and state storage "
            "from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeScratch);
+}
+
+TEST(World, BoxedLcpContactApplySkipsDiagnosticSnapshotPayload)
+{
+  namespace sx = dart::simulation;
+  namespace sxdetail = dart::simulation::detail;
+
+  sx::World world;
+  configureRigidBoxedLcpContactRowsScene(world);
+  auto sphere = world.getRigidBody("rigid_boxed_lcp_sphere");
+  ASSERT_TRUE(sphere.has_value());
+
+  world.enterSimulationMode();
+  const std::vector<sx::Contact> contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+
+  sxdetail::BoxedLcpContactScratch scratch(
+      world.getMemoryManager().getFreeAllocator());
+  sxdetail::applyBoxedLcpContacts(
+      sxdetail::registryOf(world), contacts, world.getTimeStep(), scratch);
+
+  EXPECT_GT(sphere->getLinearVelocity().z(), 0.0);
+  EXPECT_GT(scratch.systemA.size(), 0u);
+  EXPECT_GT(scratch.systemJ.size(), 0u);
+  EXPECT_EQ(scratch.snapshot.A.size(), 0);
+  EXPECT_EQ(scratch.snapshot.b.size(), 0);
+  EXPECT_EQ(scratch.snapshot.f.size(), 0);
+  EXPECT_EQ(scratch.snapshot.J.size(), 0);
 }
 
 TEST(World, RigidBodyContactAvbdStageScratchUsesProvidedAllocator)
