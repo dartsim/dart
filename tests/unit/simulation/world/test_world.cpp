@@ -3607,6 +3607,69 @@ TEST(World, NumDofsDynamicBodyCollectionUsesWorldAllocator)
          "the World free allocator";
 }
 
+#ifdef DART_HAS_DIFF
+TEST(World, DifferentiableMultibodyTorqueScratchUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.001);
+
+  auto robot = world.addMultibody("diff_allocator_chain");
+  auto parent = robot.addLink("diff_allocator_base");
+  constexpr std::size_t kJointCount = 384u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.01, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:03}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:03}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.01));
+    joint.setForce(Eigen::VectorXd::Constant(1, 0.25));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const auto liveBytesBeforeStep = freeList.getAllocatedSize();
+
+  world.step();
+  const auto derivatives = world.getStepDerivatives();
+  const auto liveBytesAfterFirstStep = freeList.getAllocatedSize();
+
+  EXPECT_EQ(
+      derivatives.controlJacobian.cols(),
+      static_cast<Eigen::Index>(kJointCount));
+  EXPECT_GT(liveBytesAfterFirstStep, liveBytesBeforeStep)
+      << "differentiable multibody torque scratch should grow reusable "
+         "World-owned storage on the first differentiable step";
+
+  const auto liveBytesBeforeSecondStep = freeList.getAllocatedSize();
+  const auto peakBytesBeforeSecondStep = freeList.getPeakAllocatedSize();
+  world.step();
+
+  EXPECT_EQ(freeList.getAllocatedSize(), liveBytesBeforeSecondStep)
+      << "differentiable multibody torque scratch should retain and reuse "
+         "its World-owned capacity across steps";
+  EXPECT_EQ(freeList.getPeakAllocatedSize(), peakBytesBeforeSecondStep)
+      << "reusing differentiable multibody torque scratch should not grow "
+         "the World free-list peak on a same-size follow-up step";
+}
+#endif
+
 TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
 {
   namespace sx = dart::simulation;

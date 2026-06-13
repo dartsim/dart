@@ -162,7 +162,7 @@ StepDerivatives contactFreeStepDerivatives(
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::VectorXd& tau)
+    const Eigen::Ref<const Eigen::VectorXd>& tau)
 {
   StepDerivatives derivatives;
 

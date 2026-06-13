@@ -109,6 +109,6 @@ namespace dart::simulation::detail {
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const Eigen::VectorXd& tau);
+    const Eigen::Ref<const Eigen::VectorXd>& tau);
 
 } // namespace dart::simulation::detail

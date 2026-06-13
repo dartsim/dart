@@ -589,6 +589,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Routed experimental `World` dynamic rigid-body collection scratch for
     state/control vector helpers through the World free allocator, and added
     no-global-heap plus peak/live coverage through `getNumDofs()`.
+  - Reused experimental differentiable `World` multibody torque collection
+    scratch through World-owned free-list storage, passed that scratch into the
+    contact-free smooth Jacobian helper without an owning `Eigen::VectorXd`
+    copy, and made the diff-only contact-parameter helper accept a span so it
+    can consume allocator-backed World parameter registration storage.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory

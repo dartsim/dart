@@ -3270,6 +3270,7 @@ detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
   : memoryAllocator(allocator),
     registry(detail::WorldRegistryAllocator{allocator}),
     differentiableParameters(DifferentiableParameterAllocator{allocator}),
+    differentiableTorqueScratch(DifferentiableTorqueAllocator{allocator}),
     ignoredCollisionPairs(
         std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator})
 {
@@ -5710,8 +5711,9 @@ void World::captureStepDerivatives()
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultibodyStructure>(entity);
 
-    Eigen::VectorXd tau;
-    std::vector<double> torques;
+    auto& torques = m_storage->differentiableTorqueScratch;
+    torques.clear();
+    torques.reserve(structure.links.size());
     for (const auto linkEntity : structure.links) {
       const auto& link = m_storage->registry.get<comps::Link>(linkEntity);
       if (link.parentJoint == entt::null) {
@@ -5726,7 +5728,7 @@ void World::captureStepDerivatives()
     if (torques.empty()) {
       continue;
     }
-    tau = Eigen::Map<const Eigen::VectorXd>(
+    const Eigen::Map<const Eigen::VectorXd> tau(
         torques.data(), static_cast<Eigen::Index>(torques.size()));
 
     m_storage->stepDerivatives = detail::contactFreeStepDerivatives(

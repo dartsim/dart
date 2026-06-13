@@ -191,7 +191,7 @@ contactStepDerivativesWithParameters(
     std::span<const Contact> contacts,
     const Eigen::Vector3d& gravity,
     double timeStep,
-    const std::vector<ParameterRegistration>& parameters,
+    std::span<const ParameterRegistration> parameters,
     ContactGradientMode mode = ContactGradientMode::Analytic);
 
 } // namespace dart::simulation::detail

@@ -58,6 +58,7 @@ struct WorldStorage
   using DifferentiableParameter = std::pair<entt::entity, PhysicalParameter>;
   using DifferentiableParameterAllocator
       = dart::common::StlAllocator<DifferentiableParameter>;
+  using DifferentiableTorqueAllocator = dart::common::StlAllocator<double>;
   using CollisionPairKey = std::pair<entt::entity, entt::entity>;
   using CollisionPairAllocator = dart::common::StlAllocator<CollisionPairKey>;
   using IgnoredCollisionPairSet = std::set<
@@ -80,6 +81,12 @@ struct WorldStorage
   /// either way); only consumed when differentiable support is compiled.
   std::vector<DifferentiableParameter, DifferentiableParameterAllocator>
       differentiableParameters;
+
+  /// Reusable torque collection scratch for differentiable multibody
+  /// derivatives. This avoids rebuilding a default-allocator std::vector on
+  /// every differentiable step.
+  std::vector<double, DifferentiableTorqueAllocator>
+      differentiableTorqueScratch;
 
   /// Cached explicit Jacobians of the most recent differentiable step.
   /// Populated only when the World opted into differentiable simulation and

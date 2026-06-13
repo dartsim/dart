@@ -1,5 +1,68 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Differentiable Torque Scratch Allocator)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the contact-free differentiable multibody derivative path
+now reuses `WorldStorage::differentiableTorqueScratch`, an allocator-backed
+`std::vector<double>` owned by the World free allocator, instead of rebuilding
+default-allocator torque collection storage on every differentiable step. The
+smooth Jacobian helper now accepts the applied torque vector through
+`Eigen::Ref`, so `World::captureStepDerivatives()` maps the reusable scratch
+directly instead of copying it into an owning `Eigen::VectorXd`.
+
+The fix has these parts:
+
+- `WorldStorage` owns reusable differentiable torque scratch constructed with
+  `common::StlAllocator<double>` from the World memory allocator;
+- `World::captureStepDerivatives()` clears/reserves/fills that scratch for the
+  construction-order joint efforts, maps it into Eigen, and leaves the capacity
+  available for same-shape follow-up differentiable steps;
+- `detail::contactFreeStepDerivatives()` accepts
+  `Eigen::Ref<const Eigen::VectorXd>` so the mapped scratch can flow through the
+  internal smooth Jacobian path without an extra owning torque copy;
+- `detail::contactStepDerivativesWithParameters()` accepts
+  `std::span<const ParameterRegistration>` so the diff-only contact-parameter
+  path consumes allocator-backed `WorldStorage::differentiableParameters`
+  without requiring a default-allocator `std::vector`;
+- `World.DifferentiableMultibodyTorqueScratchUsesWorldAllocator` builds a large
+  differentiable revolute chain, enters simulation mode before measurement,
+  verifies the first differentiable step grows reusable World-owned scratch,
+  verifies the control Jacobian column count, and verifies a same-size second
+  step reuses that free-list capacity without growing live bytes or peak bytes.
+
+This still does not claim that derivative Eigen result storage is under the
+World allocator. `StepDerivatives` remains an Eigen value payload and the
+Jacobian assembly still allocates Eigen matrices outside this slice. The closed
+gap is the DART-owned torque collection scratch and the avoidable owning torque
+copy in the internal contact-free differentiable multibody path.
+
+Validation for this slice:
+
+```bash
+DART_BUILD_DIFF_OVERRIDE=ON pixi run config
+pixi run cmake --build build/default/cpp/Release --target test_world test_diff_smooth_jacobian -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.DifferentiableMultibodyTorqueScratchUsesWorldAllocator:World.NumDofsDynamicBodyCollectionUsesWorldAllocator:World.SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator:World.WorldPersistentStorageUsesWorldFreeAllocator' \
+  --gtest_color=no
+./build/default/cpp/Release/bin/test_diff_smooth_jacobian --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Dynamic-Body Query Allocator)
 
 Resume from exactly one branch:
@@ -50,12 +113,6 @@ pixi run cmake --build build/default/cpp/Release --target test_world -j 8
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-13, Ignored-Pair Save Allocator)
 
