@@ -1155,6 +1155,16 @@ def test_lcp_physics_profile_evidence_schema_rows_cover_required_columns() -> No
     assert len(documented_fields) == len(set(documented_fields))
 
 
+def test_lcp_physics_profile_evidence_schema_is_exposed_in_info() -> None:
+    _require_simulation_symbols("World", "ContactSolverMethod")
+
+    setup = lcp_physics.build()
+
+    assert setup.info["performance_profile_evidence_schema_rows"] == [
+        dict(row) for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    ]
+
+
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     _require_simulation_symbols("World", "ContactSolverMethod")
 
@@ -1548,25 +1558,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         row["fields"]: row
         for row in info["performance_profile_evidence_schema_rows"]
     }
-    assert (
-        "solver_identity_schema_version, solver_manifest_index"
-        in evidence_schema_by_fields
-    )
-    assert (
-        "solver_family_pivoting, solver_family_projection, "
-        "solver_family_newton, solver_family_other"
-        in evidence_schema_by_fields
-    )
-    assert (
-        "solver_supports_standard, solver_supports_boxed, "
-        "solver_supports_friction_index, solver_supports_problem"
-        in evidence_schema_by_fields
-    )
-    assert "lcp_dimension, contact_count" in evidence_schema_by_fields
-    assert (
-        "residual, complementarity, bound_violation"
-        in evidence_schema_by_fields
-    )
+    assert set(evidence_schema_by_fields) == {
+        row["fields"] for row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS
+    }
     evidence_summary_by_surface = {
         row["surface"]: row
         for row in info["performance_profile_evidence_summary_rows"]
@@ -1882,16 +1876,9 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "table:lcp_performance_profile_evidence_schema:Field(s),Meaning"
         in builder.events
     )
-    for evidence_field in (
-        "solver_identity_schema_version, solver_manifest_index",
-        "solver_family_pivoting, solver_family_projection, "
-        "solver_family_newton, solver_family_other",
-        "solver_supports_standard, solver_supports_boxed, "
-        "solver_supports_friction_index, solver_supports_problem",
-        "lcp_dimension, contact_count",
-        "residual, complementarity, bound_violation",
-    ):
-        assert any(evidence_field in event for event in builder.events)
+    for schema_row in lcp_physics._PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS:
+        assert any(schema_row["fields"] in event for event in builder.events)
+        assert any(schema_row["meaning"] in event for event in builder.events)
     assert (
         "table:lcp_performance_profile_evidence_summary:Surface,Rows,Solvers,"
         "LCP dimensions,Contacts,OK,Max it,Max residual,Max comp,Max bound"
