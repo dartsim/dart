@@ -16,6 +16,14 @@ green: `test_world` in 141.77 seconds and `test_rigid_ipc_paper_experiments`
 in 304.21 seconds. The only local diff after validation was markdown formatter
 cleanup in this dev-task audit, followed by this evidence refresh.
 
+Publication state: after the validation-evidence commit
+`84897c2fde5 Record rigid workflow validation evidence`, the local branch was
+ahead of `origin/feature/rigid-body-gui-visual-verification` and `gh pr list
+--head "$(git branch --show-current)"` returned no PR. Do not infer push or PR
+approval from the persistent goal context; a future session still needs
+explicit approval before pushing any new local commits, creating a PR, setting
+the `DART 7.0` milestone, rerunning CI, or mutating review state.
+
 Stop/push handoff: the current session was redirected to stop code changes and
 stop further verification, update only the dev-task handoff docs, merge latest
 `origin/main`, and push to `origin`. The running broad validation command

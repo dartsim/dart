@@ -14,6 +14,14 @@ tests, and documentation all passed. Because `nvidia-smi -L` reported
 was also run and exited successfully. The previous stopped validation attempt
 remains useful archaeology only; do not report it as the latest state.
 
+Publication state: after committing
+`84897c2fde5 Record rigid workflow validation evidence`, the local branch was
+ahead of `origin/feature/rigid-body-gui-visual-verification`, and
+`gh pr list --head "$(git branch --show-current)"` returned no PR. Future
+sessions must re-run `git status -sb` and must get explicit approval before
+pushing newer local commits, creating a PR, setting the `DART 7.0` milestone,
+rerunning CI, or mutating GitHub review state.
+
 Stop/push handoff: the newest instruction was to stop code changes, stop
 further verification, update only the handoff docs, merge latest `origin/main`,
 push to `origin`, and stop. The active broad validation process was terminated
@@ -28,10 +36,10 @@ tests. This is not a completed `test-all` result. CUDA validation was not run.
 Do not report this stopped run as green; a future session should rerun whatever
 validation the maintainer asks for.
 
-Latest merge/push state for the handoff: `git fetch origin main &&
-git merge --no-edit origin/main` reported `Already up to date`. The current
-session has explicit approval to push this branch to `origin`, but not to
-create a PR, set a milestone, rerun CI, mutate review threads, or treat the
+Latest merge/push state for the previous stop-only handoff: `git fetch origin
+main && git merge --no-edit origin/main` reported `Already up to date`. That
+session had explicit approval to push that handoff state to `origin`, but not
+to create a PR, set a milestone, rerun CI, mutate review threads, or treat the
 dev-task as complete. This docs-only handoff refresh intentionally skipped
 additional verification because the user explicitly requested no further
 verification in that session. This is superseded by the successful validation
@@ -154,9 +162,10 @@ Resume from this state:
 
 - Start with `git status -sb` and `git log -5 --oneline`.
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR.
-- Latest pushed checkpoint before this validation-evidence refresh was
-  `802b5d282b8 Update rigid workflow handoff state`; inspect any newer diff
-  first.
+- Latest pushed checkpoint before the validation-evidence refresh was
+  `802b5d282b8 Update rigid workflow handoff state`. The validation-evidence
+  commit `84897c2fde5 Record rigid workflow validation evidence` was local and
+  ahead of origin when this note was written; inspect any newer commits first.
 - Do not push without explicit approval in the session that performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
   and
