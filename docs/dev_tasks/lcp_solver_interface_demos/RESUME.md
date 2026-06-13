@@ -1,11 +1,92 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 SAP Matvec Reuse Verification
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The SAP matvec-reuse source
+   edit is now committed at
+   `700afe3d46b Checkpoint SAP matvec handoff WIP`; it is not dirty worktree
+   state.
+3. Correctness and benchmark contract checks pass for the SAP checkpoint, but
+   timing evidence is inconclusive because the host was under heavy unrelated
+   build load. Do not claim a SAP performance win from this checkpoint.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current tip:
+  `700afe3d46b Checkpoint SAP matvec handoff WIP`
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `dart/math/lcp/other/sap_solver.cpp` reuses `ax = A * x` for the current
+  SAP quadratic cost and gradient.
+- It also reuses `axNew = A * xNew` for Armijo candidate cost evaluation.
+- No algorithm policy, exact-path gate, tolerance, benchmark option, or public
+  API was intentionally changed.
+
+Verification completed in this continuation:
+
+```bash
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers --gtest_filter='*Sap*'
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCP_COMPARE
+build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/(Boxed|FrictionIndex)/Sap/(12|24|48|4|16|64)$' --benchmark_format=json --benchmark_min_time=0.005s
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- Focused SAP C++ tests: 3 tests passed.
+- LCP comparison benchmark target compile: passed.
+- SAP benchmark slice: all six rows reported `contract_ok=1`, expected
+  solver-family metadata, and expected solver iteration counts (`0` for boxed
+  exact-path rows, `2` for FrictionIndex rows).
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+- Sampled post-edit row timings on the loaded host were about:
+  - Boxed `Sap/12`: `1576.0 ns`.
+  - Boxed `Sap/24`: `4142.9 ns`.
+  - Boxed `Sap/48`: `15816.9 ns`.
+  - FrictionIndex `Sap/4`: `1606.8 ns`.
+  - FrictionIndex `Sap/16`: `15090.5 ns`.
+  - FrictionIndex `Sap/64`: `318602.3 ns`.
+- The host was under load (`load_avg` about `17.7`, with an unrelated `task_1`
+  CUDA build still running), so use these timings only as contract evidence,
+  not as a reliable before/after performance comparison.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+Then continue the broader LCP interface/demo audit from the next concrete gap.
+If files change again before committing, rerun `pixi run lint` and
+`git diff --check`. Do not retry the earlier rejected SAP FrictionIndex exact
+shortcut or ShockPropagation exact-path probe without a materially different
+hypothesis.
+
 ## Current Reality - 2026-06-12 Stop Handoff: SAP Matvec Reuse WIP
 
-This is the latest hand-off. The user explicitly stopped further code work and
-asked to keep the hand-off docs current. Older sections below are historical
-checkpoints and may retain their original "latest" wording from the time they
-were written.
+Historical checkpoint section. It was the latest hand-off before the SAP
+matvec-reuse verification continuation.
 
 Fresh AI session start here:
 

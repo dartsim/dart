@@ -1,10 +1,95 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - SAP Matvec Reuse Verification
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `700afe3d46b Checkpoint SAP matvec handoff WIP` as the current code
+   checkpoint: the SAP matvec-reuse source edit is committed locally and on the
+   tracking branch, not dirty worktree state.
+3. Do not claim a SAP performance win from the checkpoint yet. Focused
+   correctness and benchmark contract checks pass, but the timing comparison is
+   inconclusive on the loaded host.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current tip:
+  `700afe3d46b Checkpoint SAP matvec handoff WIP`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+SAP matvec-reuse status:
+
+- `dart/math/lcp/other/sap_solver.cpp` reuses `ax = A * x` for the current
+  quadratic cost and gradient, and reuses `axNew = A * xNew` for Armijo
+  candidate cost evaluation.
+- No algorithm policy, exact-path gate, tolerance, benchmark option, or public
+  API was intentionally changed.
+- The focused SAP tests and SAP benchmark contract slice now pass after the
+  checkpoint.
+
+Verification completed in this continuation:
+
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`
+  passed.
+- `build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_lcp_validation_and_solvers --gtest_filter='*Sap*'`
+  passed with 3 tests:
+  `BoxedProjectedActiveSetFastPath.SapUsesLinearSolve`,
+  `SapSolverCoverage.DefaultCustomZeroRhsAndEdgeCases`, and
+  `SapSolverCoverage.RegularizesIndefiniteHessian`.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCP_COMPARE`
+  passed.
+- `build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/(Boxed|FrictionIndex)/Sap/(12|24|48|4|16|64)$' --benchmark_format=json --benchmark_min_time=0.005s`
+  passed; all six rows reported `contract_ok=1`, expected SAP solver-family
+  metadata, and expected solver iteration counts (`0` for boxed exact-path
+  rows, `2` for FrictionIndex rows).
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Post-edit timing signal:
+
+- The benchmark host was under load (`load_avg` about `17.7`, with an unrelated
+  `task_1` CUDA build still running), so the timing comparison is not clean
+  performance evidence.
+- The sampled post-edit rows were about:
+  - Boxed `Sap/12`: `1576.0 ns`, `iterations=0`, `contract_ok=1`.
+  - Boxed `Sap/24`: `4142.9 ns`, `iterations=0`, `contract_ok=1`.
+  - Boxed `Sap/48`: `15816.9 ns`, `iterations=0`, `contract_ok=1`.
+  - FrictionIndex `Sap/4`: `1606.8 ns`, `iterations=2`,
+    `contract_ok=1`.
+  - FrictionIndex `Sap/16`: `15090.5 ns`, `iterations=2`,
+    `contract_ok=1`.
+  - FrictionIndex `Sap/64`: `318602.3 ns`, `iterations=2`,
+    `contract_ok=1`.
+- The boxed rows exercise SAP's exact fast path and are not expected to benefit
+  from the iterative matvec reuse.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on the
+   older WIP handoff below.
+2. If files change again before a local commit, rerun `pixi run lint` and
+   `git diff --check`.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+4. Do not retry the earlier rejected SAP FrictionIndex exact shortcut or
+   ShockPropagation exact-path probe without a materially different hypothesis.
+
 ## 2026-06-12 Current Stop Handoff - SAP Matvec Reuse WIP
 
-This is the latest hand-off state. The user explicitly stopped further code
-work and asked to keep the hand-off docs current. Sections below are historical
-checkpoints and may describe their own local "current" state.
+Historical checkpoint section. It was the latest hand-off before the SAP
+matvec-reuse verification continuation.
 
 Fresh AI session priority:
 
