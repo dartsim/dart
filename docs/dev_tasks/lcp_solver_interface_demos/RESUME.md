@@ -1,5 +1,89 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Benchmark Coverage Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `9bcb6d09ff5 Expose LCP CUDA benchmark packets`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   benchmark coverage-guard fix does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `9bcb6d09ff5 Expose LCP CUDA benchmark packets`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now turns the previous one-off
+  uncovered benchmark audit into a permanent roster invariant.
+- The roster checker still rejects demo benchmark filters that do not map to a
+  registered `BM_LCP_COMPARE`/`BM_Lcp*` base, and now also rejects registered
+  benchmark bases that have no demo-side representative filter prefix.
+- `python/tests/unit/test_check_lcp_solver_roster.py` now covers that missing
+  representative-filter drift path with a focused negative test.
+- This checkpoint does not add benchmark packets or intentionally change solver
+  implementations, benchmark registration code, generated profile/evidence
+  CSVs, bindings, stubs, public APIs, or demo scene metadata.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'benchmark_filter or uncovered'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused benchmark-filter guard tests: passed with 3 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full roster unit test file: passed with 30 tests.
+- `pixi run lint`: passed, including the LCP solver roster check.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- `pixi run -e cuda test-all`: passed on this Linux host with an NVIDIA RTX
+  5000 Ada visible via `nvidia-smi`; the CUDA gate included lint, build, C++
+  unit tests, simulation tests, Python tests, documentation, CUDA-labeled
+  tests, and CUDA benchmark smoke wrappers. The documentation phase still
+  emitted the existing 4 autodoc warnings for `dartpy._world_render_bridge`,
+  but the full gate passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the full
+roster unit test, roster check, `pixi run lint`, `git diff --check`,
+`pixi run build`, and any broader gate warranted by the final diff, then commit
+the focused script/test/docs change. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 CUDA Benchmark Packets
 
 This is the latest hand-off. Older sections below are historical checkpoints

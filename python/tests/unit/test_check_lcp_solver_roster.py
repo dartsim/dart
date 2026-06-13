@@ -151,6 +151,28 @@ def test_lcp_solver_roster_rejects_unknown_demo_benchmark_filter(
         module.check_demo_benchmark_filters()
 
 
+def test_lcp_solver_roster_rejects_uncovered_demo_benchmark_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_lcp_compare_benchmark_bases",
+        lambda: {"BM_LcpCoveredBatch", "BM_LcpMissingBatch"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_benchmark_filter_tokens",
+        lambda: ["BM_LcpCovered"],
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="registered benchmarks are not covered by lcp_physics",
+    ):
+        module.check_demo_benchmark_filters()
+
+
 def test_lcp_solver_roster_rejects_extra_bound_solver_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

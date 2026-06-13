@@ -332,6 +332,7 @@ def check_demo_benchmark_filters() -> None:
     if not registered_bases:
         raise AssertionError(f"no benchmark names parsed from {BM_LCP_COMPARE_PATH}")
 
+    demo_bases: list[str] = []
     unknown_tokens: list[str] = []
     for token in parse_demo_benchmark_filter_tokens():
         base = _benchmark_filter_base(token)
@@ -339,11 +340,24 @@ def check_demo_benchmark_filters() -> None:
             registered_base.startswith(base) for registered_base in registered_bases
         ):
             unknown_tokens.append(token)
+        else:
+            demo_bases.append(base)
 
     if unknown_tokens:
         raise AssertionError(
             "lcp_physics benchmark filters do not match BM_LCP_COMPARE "
             f"benchmarks: {unknown_tokens}"
+        )
+
+    uncovered_bases = sorted(
+        registered_base
+        for registered_base in registered_bases
+        if not any(registered_base.startswith(demo_base) for demo_base in demo_bases)
+    )
+    if uncovered_bases:
+        raise AssertionError(
+            "BM_LCP_COMPARE registered benchmarks are not covered by "
+            f"lcp_physics benchmark filters: {uncovered_bases}"
         )
 
 
