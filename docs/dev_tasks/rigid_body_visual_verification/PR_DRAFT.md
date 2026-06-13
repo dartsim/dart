@@ -105,6 +105,10 @@ rigid-body visual verification surface for the current cycle.
   latest signals, so selected contact counts/depths, query-filter counts,
   ignored-pair state, ray hit fractions, swept-probe times of impact, and cast
   margins are visible from the static review packet.
+- Promotes optional rows 37-53 into workflow review-card latest signals, so
+  World related, focused Rigid IPC, direct IPC shelf, capture-first stack,
+  differentiable contact-gradient, and AVBD related rows show their actual
+  health metrics instead of only generic solver/executor/contact metadata.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -152,6 +156,9 @@ rigid-body visual verification surface for the current cycle.
 - Focused baseline/free-flight latest-signal guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_baseline_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_free_flight_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_body_frame_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values python/tests/integration/test_demos_cycle.py::test_rigid_body_baseline_reports_restartable_first_run_diagnostics -q`
   reported `6 passed`.
+- Focused optional rows latest-signal guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_related_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_ipc_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_capture_first_stack_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_joint_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_diff_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_baseline_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_free_flight_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values -q`
+  reported `9 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `23 passed`.
@@ -279,13 +286,13 @@ rigid-body visual verification surface for the current cycle.
   `resolved_solver_identity_count=36`, 2388 PNG frames; `review_index.html`
   includes the latest backend-diagnostics and contact-query/collision-cast
   review-card summaries).
-- Current optional rows 37-53 packet after `diff_pre_contact_surrogate` was
-  added:
-  `build/captures/rigid_workflow_optional_rows_37_53_1781334179`
+- Current optional rows 37-53 packet after the optional latest-signal refresh:
+  `build/captures/rigid_workflow_optional_signal_highlights_1781338541`
   (`status=complete`, `capture_count=17`, `failed_count=0`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `resolved_solver_identity_complete=true`,
-  `resolved_solver_identity_count=17`, 1027 PNG frames).
+  `resolved_solver_identity_count=17`; `review_index.html` shows promoted
+  optional health signals and passed an 86/86 local-link audit).
 - Read-only per-scene metrics audit: both current packet directories have
   latest scene metrics for every captured row (36/36 and 17/17).
 - Static review-index asset audit: 0 missing local assets for both current

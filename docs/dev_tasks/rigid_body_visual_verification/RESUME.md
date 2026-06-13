@@ -3,13 +3,32 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot before this slice:
-`feature/rigid-body-gui-visual-verification` was clean at `0548e068cb8`, one
-local commit ahead of `origin/feature/rigid-body-gui-visual-verification`
-(`b187cc2bd8d`). After this slice is committed, expect two local commits ahead
-of origin until a maintainer approves another push. There is still no PR for
-this branch. Do not push, create a PR, set a milestone, rerun CI, comment on
-reviews, resolve threads, or mutate any other GitHub state without explicit
-maintainer/user approval.
+`feature/rigid-body-gui-visual-verification` was clean at `d919b66940b` and
+matched `origin/feature/rigid-body-gui-visual-verification` after the latest
+user-approved push. `origin/main` is already an ancestor of the branch; a local
+`git fetch origin && git merge origin/main --no-edit` reported
+`Already up to date`. After this optional-signal slice is committed, expect one
+local commit ahead of origin until a maintainer approves another push. There is
+still no PR for this branch. Do not push, create a PR, set a milestone, rerun
+CI, comment on reviews, resolve threads, or mutate any other GitHub state
+without explicit maintainer/user approval.
+
+Latest local continuation: workflow review-card `latest signals` now promote
+optional-row health signals instead of collapsing rows 37-53 to generic
+solver/executor/contact metadata. The highlighter covers World related rows
+(`floating_base`, `articulated`), focused Rigid IPC capability rows, direct IPC
+shelf rows, capture-first IPC stack packets, differentiable contact-gradient
+routes, and AVBD related joint/motor rows. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_related_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_ipc_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_capture_first_stack_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_joint_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_optional_diff_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_baseline_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_free_flight_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values -q`
+reported `9 passed`. Fresh optional rows 37-53 workflow evidence:
+`build/captures/rigid_workflow_optional_signal_highlights_1781338541`
+completed with `status=complete`, `capture_count=17`, `completed_count=17`,
+`failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`,
+`scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=17`, and `review_index.html` showing promoted
+signals such as linear speed, min tunnel margin, capture-first/frame-budget
+stack metrics, differentiable fallback metrics, and AVBD target/measured speed.
+A static review-index audit found 86/86 local links present.
 
 Latest local continuation: workflow review-card `latest signals` now promote
 the first-screen baseline and free-flight row diagnostics. Row 1 surfaces
@@ -106,14 +125,14 @@ documentation, and CUDA tests. This CUDA run predates the backend/executor
 search-routing slice above, which is limited to workflow search/docs/tests.
 
 Latest artifact refresh: after the backend/executor search-routing,
-backend-diagnostics, and contact-query review-card slices, the full rows 01-36
-packet was regenerated at
+backend-diagnostics, contact-query review-card, and optional-signal slices, the
+full rows 01-36 packet remains current at
 `build/captures/rigid_workflow_rows_01_36_1781335894` and the optional rows
-37-53 packet remains current at
-`build/captures/rigid_workflow_optional_rows_37_53_1781334179`. Their manifests
-report complete scene metrics, complete resolved solver identity, zero failed
-rows, and the static review-index asset audit found 181/181 and 86/86 local
-links present respectively.
+37-53 packet is current at
+`build/captures/rigid_workflow_optional_signal_highlights_1781338541`. Their
+manifests report complete scene metrics, complete resolved solver identity,
+zero failed rows, and the static review-index asset audit found 181/181 and
+86/86 local links present respectively.
 
 Previous pushed continuation: non-numbered World related shelf rows now publish
 their user-editable controls in capture metrics. `floating_base` records
@@ -283,7 +302,7 @@ GitHub review-state changes.
 
 Latest local evidence refresh: the optional extended workflow packet was
 regenerated after `diff_pre_contact_surrogate` landed in the related-evidence
-set. `build/captures/rigid_workflow_optional_rows_37_53_1781334179` selected
+set. `build/captures/rigid_workflow_optional_signal_highlights_1781338541` selected
 rows 37-53 from the fully extended 53-row packet with related evidence, direct
 Rigid IPC shelf rows, and capture-first packet groups requested and selected.
 Its manifest reports `status=complete`, `capture_count=17`,
@@ -419,7 +438,7 @@ harness scene-metrics contract update, the full numbered packet regenerated at
 `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`,
 `resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 2388 frame
 PNGs. The current optional rows 37-53 packet
-`build/captures/rigid_workflow_optional_rows_37_53_1781334179` completed with
+`build/captures/rigid_workflow_optional_signal_highlights_1781338541` completed with
 `status=complete`, `capture_count=17`, `completed_count=17`,
 `failed_count=0`, `workflow_total_count=53`, `workflow_row_start=37`,
 `workflow_row_end=53`, `include_related=true`, `include_ipc_shelf=true`,
@@ -520,7 +539,7 @@ Resume from this state:
   performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781335894/review_index.html`
   and
-  `build/captures/rigid_workflow_optional_rows_37_53_1781334179/review_index.html`
+  `build/captures/rigid_workflow_optional_signal_highlights_1781338541/review_index.html`
   as the current identity-complete review-index scan artifacts. Treat older
   packet directories as historical completion or failure evidence only.
 - Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR

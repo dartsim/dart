@@ -1773,6 +1773,263 @@ def test_rigid_workflow_latest_signals_prioritize_collision_cast_values() -> Non
     ]
 
 
+def test_rigid_workflow_latest_signals_prioritize_optional_related_values() -> None:
+    floating_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "angular_speed": 2.0,
+            "body_x": 0.1,
+            "body_y": 0.2,
+            "body_z": 0.3,
+            "dofs": 6,
+            "executor": "World.step default",
+            "linear_speed": 0.7,
+            "solver": "floating_joint_se3",
+            "spin_command": 2.0,
+        }
+    )
+    articulated_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "dofs": 2,
+            "executor": "World.step default",
+            "forearm_height": 0.42,
+            "link_count": 2,
+            "max_joint_speed": 1.6,
+            "shoulder_damping": 0.1,
+            "shoulder_position": 0.25,
+            "shoulder_speed": 1.2,
+            "solver": "articulated_sx_world",
+            "wrist_damping": 0.2,
+            "wrist_position_norm": 0.3,
+            "wrist_speed": 0.8,
+        }
+    )
+
+    assert floating_highlights[:8] == [
+        "linear speed: 0.7",
+        "angular speed: 2",
+        "body x: 0.1",
+        "body y: 0.2",
+        "body z: 0.3",
+        "spin command: 2",
+        "dofs: 6",
+        "solver: floating_joint_se3",
+    ]
+    assert articulated_highlights[:8] == [
+        "dofs: 2",
+        "link count: 2",
+        "max joint speed: 1.6",
+        "forearm height: 0.42",
+        "shoulder speed: 1.2",
+        "wrist speed: 0.8",
+        "shoulder damping: 0.1",
+        "wrist damping: 0.2",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_optional_ipc_values() -> None:
+    tunnel_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "box_speed": 0.03,
+            "box_vx": 0.02,
+            "box_x": 0.75,
+            "clearance": 0.00012,
+            "contact_count": 0,
+            "executor": "World.step default",
+            "launch_speed": 8.0,
+            "max_contact_count": 0,
+            "max_step_ms": 4.2,
+            "max_wall_crossing": 0.0,
+            "min_clearance": 0.0001,
+            "min_tunnel_margin": 0.5,
+            "solver": "rigid_ipc",
+            "status": "barrier-held",
+            "step_ms": 0.42,
+            "tunnel_margin": 0.51,
+        }
+    )
+    pile_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "box_count": 5,
+            "clearance": 0.002,
+            "contact_count": 4,
+            "friction": 0.45,
+            "max_contact_count": 7,
+            "max_history_speed": 0.6,
+            "max_span_x": 1.7,
+            "max_step_ms": 12.0,
+            "mean_height": 0.8,
+            "min_history_clearance": 0.001,
+            "min_mean_height": 0.7,
+            "solver": "rigid_ipc",
+            "span_x": 1.4,
+            "status": "finite",
+        }
+    )
+
+    assert tunnel_highlights[:8] == [
+        "min tunnel margin: 0.5",
+        "max wall crossing: 0",
+        "min clearance: 0.0001",
+        "clearance: 0.00012",
+        "max contact count: 0",
+        "contact count: 0",
+        "max step ms: 4.2",
+        "step ms: 0.42",
+    ]
+    assert pile_highlights[:8] == [
+        "box count: 5",
+        "clearance: 0.002",
+        "max contact count: 7",
+        "contact count: 4",
+        "max step ms: 12",
+        "mean height: 0.8",
+        "min mean height: 0.7",
+        "span x: 1.4",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_capture_first_stack_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "benchmark": "bm_rigid_ipc_solver",
+            "box_count": 4,
+            "capture_first": True,
+            "contact_count": 0,
+            "executor": "World.step default",
+            "frame_budget_ms": 33.3,
+            "friction": 0.8,
+            "height_error": -0.01,
+            "max_speed": 0.05,
+            "min_clearance": 0.00027,
+            "solver": "ipc",
+            "status": "capture-first",
+            "step_ms": 336.9,
+            "top_drift": 0.00036,
+            "top_mass": 2.05,
+        }
+    )
+
+    assert highlights[:8] == [
+        "capture first: true",
+        "frame budget ms: 33.3",
+        "box count: 4",
+        "min clearance: 0.00027",
+        "top drift: 0.00036",
+        "height error: -0.01",
+        "max speed: 0.05",
+        "contact count: 0",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_optional_joint_values() -> None:
+    breakable_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "anchor_offset_error": 0.46,
+            "break_force": 1e-12,
+            "broken": 1,
+            "executor": "World.step default",
+            "orientation_drift": 2.36,
+            "payload_height": 0.6,
+            "payload_speed": 2.9,
+            "reset_break_force": 1e12,
+            "solver": "avbd_rigid_joints",
+            "status": "broken",
+        }
+    )
+    motor_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "abs_speed_error": 1e-12,
+            "actuator": "prismatic_velocity_motor",
+            "axis_position": 0.71,
+            "executor": "World.step default",
+            "max_force": 800.0,
+            "measured_speed": 0.8,
+            "orthogonal_drift": 0.0,
+            "solver": "avbd_rigid_joints",
+            "speed_error": -1e-12,
+            "target_speed": 0.8,
+        }
+    )
+
+    assert breakable_highlights[:8] == [
+        "anchor offset error: 0.46",
+        "break force: 1e-12",
+        "broken: 1",
+        "orientation drift: 2.36",
+        "payload height: 0.6",
+        "payload speed: 2.9",
+        "reset break force: 1e+12",
+        "status: broken",
+    ]
+    assert motor_highlights[:8] == [
+        "target speed: 0.8",
+        "measured speed: 0.8",
+        "abs speed error: 1e-12",
+        "speed error: -1e-12",
+        "axis position: 0.71",
+        "orthogonal drift: 0",
+        "max force: 800",
+        "actuator: prismatic_velocity_motor",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_optional_diff_values() -> None:
+    liftoff_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "aware_final_z": 0.2,
+            "aware_last_thrust_gradient": 0.0,
+            "aware_loss": 0.0,
+            "aware_target_error": 1.3,
+            "aware_thrust": 0.0,
+            "contact_solver_method": "BOXED_LCP",
+            "height_gap": 0.0,
+            "naive_final_z": 0.2,
+            "naive_loss": 0.0,
+            "naive_target_error": 1.3,
+            "solver": "boxed_lcp_contact_gradient_modes",
+            "status": "fallback",
+            "target_error_gap": 0.0,
+            "thrust_gap": 0.0,
+        }
+    )
+    surrogate_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "contact_solver_method": "BOXED_LCP",
+            "differentiable_available": False,
+            "forward_state_max_abs_diff": 0.0,
+            "post_step_clearance": 0.499,
+            "solver": "boxed_lcp_pre_contact_surrogate",
+            "status": "fallback",
+            "surrogate_block_magnitude": 0.0,
+            "surrogate_delta_dvzprime_dvz": 0.0,
+            "surrogate_dvzprime_dvz": 1.0,
+            "surrogate_next_z": 0.999,
+            "thresholds_pass": False,
+        }
+    )
+
+    assert liftoff_highlights[:8] == [
+        "aware final z: 0.2",
+        "aware target error: 1.3",
+        "aware loss: 0",
+        "aware thrust: 0",
+        "aware last thrust gradient: 0",
+        "naive final z: 0.2",
+        "naive target error: 1.3",
+        "naive loss: 0",
+    ]
+    assert surrogate_highlights[:8] == [
+        "surrogate next z: 0.999",
+        "surrogate dvzprime dvz: 1",
+        "surrogate block magnitude: 0",
+        "surrogate delta dvzprime dvz: 0",
+        "post step clearance: 0.499",
+        "forward state max abs diff: 0",
+        "thresholds pass: false",
+        "differentiable available: false",
+    ]
+
+
 def test_rigid_workflow_latest_signals_prioritize_normal_push_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {

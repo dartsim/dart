@@ -508,24 +508,21 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 Evidence recorded for this slice:
 
 - Latest optional 53-row packet refresh:
-  `diff_pre_contact_surrogate` now covers the public
-  approaching-but-not-touching `ContactGradientMode.PRE_CONTACT_SURROGATE`
-  diagnostic in the Differentiable shelf and is included in the optional
-  related-evidence packet. The current optional packet
-  `build/captures/rigid_workflow_optional_rows_37_53_1781334179` selected rows
-  37-53 with related evidence, direct Rigid IPC shelf, and capture-first packet
-  groups requested and selected. It reported `status=complete`,
-  `capture_count=17`, `completed_count=17`, `failed_count=0`,
-  `workflow_total_count=53`, `workflow_row_start=37`,
+  the current optional packet
+  `build/captures/rigid_workflow_optional_signal_highlights_1781338541`
+  selected rows 37-53 with related evidence, direct Rigid IPC shelf, and
+  capture-first packet groups requested and selected. It reported
+  `status=complete`, `capture_count=17`, `completed_count=17`,
+  `failed_count=0`, `workflow_total_count=53`, `workflow_row_start=37`,
   `workflow_row_end=53`, `continue_on_failure=false`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
-  `resolved_solver_identity_count=17`, `failed_rows=[]`, and 17 captured
-  manifests. A read-only static review audit checked 86 local `href`/`src`
-  targets in `review_index.html` with 0 missing links. Focused guards reported
-  `8 passed, 1 skipped` for the new scene, related route, metrics, panel, and
-  public diff-path tests in the default diff-OFF build, plus `6 passed` for
-  capture-plan/docs drift guards.
+  `resolved_solver_identity_count=17`, and `failed_rows=[]`. Its
+  `review_index.html` now promotes World related, focused Rigid IPC, direct IPC
+  shelf, capture-first stack, differentiable contact-gradient, and AVBD related
+  row health signals instead of only generic solver/executor/contact metadata.
+  A read-only static review audit checked 86 local `href`/`src` targets with 0
+  missing links. The optional latest-signal guard reported `9 passed`.
 
 - Historical pre-surrogate packet refresh: after the workflow-command provenance and
   review-index link-normalization fix, the full numbered workflow packet
