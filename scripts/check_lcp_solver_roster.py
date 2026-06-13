@@ -1354,6 +1354,19 @@ def parse_bound_solver_classes() -> dict[str, str]:
     }
 
 
+def parse_bound_parameterized_solver_classes() -> dict[str, str]:
+    pattern = re.compile(
+        r"bindParameterizedLcpSolverClass"
+        r"<\s*(?P<class_name>[A-Za-z0-9_]+)\s*>\s*"
+        r'\(\s*m\s*,\s*"(?P<python_name>[A-Za-z0-9_]+)"\s*\)',
+        re.DOTALL,
+    )
+    return {
+        match.group("class_name"): match.group("python_name")
+        for match in pattern.finditer(_read(DARTPY_BINDING_PATH))
+    }
+
+
 def parse_bound_lcp_parameter_members() -> dict[str, set[str]]:
     source = _read(DARTPY_BINDING_PATH)
     class_pattern = re.compile(
@@ -1456,6 +1469,22 @@ def parse_math_stub_class_members(class_name: str) -> set[str]:
     )
 
 
+def parse_math_stub_class_annotations(class_name: str) -> dict[str, str]:
+    module = _parse_stub(DARTPY_MATH_STUB_PATH)
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        annotations: dict[str, str] = {}
+        for item in node.body:
+            if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                annotations[item.target.id] = ast.unparse(item.annotation)
+        return annotations
+
+    raise AssertionError(
+        f"{_display_path(DARTPY_MATH_STUB_PATH)} is missing {class_name}"
+    )
+
+
 def _parse_init_stub() -> ast.Module:
     return _parse_stub(DARTPY_INIT_STUB_PATH)
 
@@ -1531,15 +1560,34 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
 
 def check_python_stub_lcp_api_surface() -> None:
     errors: list[str] = []
+    parameter_members = parse_bound_lcp_parameter_members()
     required_members = {
         **REQUIRED_DARTPY_MATH_STUB_MEMBERS,
-        **parse_bound_lcp_parameter_members(),
+        **parameter_members,
     }
     for class_name, expected_members in required_members.items():
         actual_members = parse_math_stub_class_members(class_name)
         missing_members = sorted(expected_members - actual_members)
         if missing_members:
             errors.append(f"{class_name} is missing members {missing_members}")
+
+    for _, solver_name in parse_bound_parameterized_solver_classes().items():
+        expected_parameter_class = f"{solver_name}Parameters"
+        if expected_parameter_class not in parameter_members:
+            errors.append(
+                f"{solver_name} parameters property has no bound "
+                f"{expected_parameter_class} class"
+            )
+            continue
+
+        annotations = parse_math_stub_class_annotations(solver_name)
+        actual_parameter_class = annotations.get("parameters")
+        if actual_parameter_class != expected_parameter_class:
+            errors.append(
+                f"{solver_name}.parameters is annotated as "
+                f"{actual_parameter_class!r}; expected "
+                f"{expected_parameter_class!r}"
+            )
 
     if errors:
         raise AssertionError(

@@ -843,6 +843,17 @@ def test_lcp_solver_roster_reads_bound_lcp_parameter_members() -> None:
     )
 
 
+def test_lcp_solver_roster_reads_bound_parameterized_solver_classes() -> None:
+    module = _load_module()
+    bound = module.parse_bound_parameterized_solver_classes()
+
+    assert bound["PgsSolver"] == "PgsSolver"
+    assert bound["BoxedSemiSmoothNewtonSolver"] == "BoxedSemiSmoothNewtonSolver"
+    assert bound["SapSolver"] == "SapSolver"
+    assert "DantzigSolver" not in bound
+    assert "StaggeringSolver" not in bound
+
+
 def test_lcp_solver_roster_rejects_missing_math_stub_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -990,6 +1001,7 @@ def test_lcp_solver_roster_rejects_missing_math_stub_lcp_api_member(
     module = _load_module()
 
     monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(module, "parse_bound_parameterized_solver_classes", lambda: {})
 
     def fake_class_members(class_name: str) -> set[str]:
         members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
@@ -1019,6 +1031,11 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
             }
         },
     )
+    monkeypatch.setattr(
+        module,
+        "parse_bound_parameterized_solver_classes",
+        lambda: {"BoxedSemiSmoothNewtonSolver": "BoxedSemiSmoothNewtonSolver"},
+    )
 
     def fake_class_members(class_name: str) -> set[str]:
         if class_name == "BoxedSemiSmoothNewtonSolverParameters":
@@ -1032,6 +1049,66 @@ def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
         match=(
             "BoxedSemiSmoothNewtonSolverParameters is missing members "
             "\\['max_friction_index_exact_solve_dimension'\\]"
+        ),
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
+def test_lcp_solver_roster_rejects_missing_parameter_class_for_parameterized_solver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(module, "parse_bound_lcp_parameter_members", lambda: {})
+    monkeypatch.setattr(
+        module,
+        "parse_bound_parameterized_solver_classes",
+        lambda: {"PgsSolver": "PgsSolver"},
+    )
+
+    def fake_class_members(class_name: str) -> set[str]:
+        return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match="PgsSolver parameters property has no bound PgsSolverParameters class",
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
+def test_lcp_solver_roster_rejects_wrong_solver_parameter_stub_annotation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_bound_lcp_parameter_members",
+        lambda: {"PgsSolverParameters": {"epsilon_for_division"}},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_bound_parameterized_solver_classes",
+        lambda: {"PgsSolver": "PgsSolver"},
+    )
+
+    def fake_class_members(class_name: str) -> set[str]:
+        if class_name == "PgsSolverParameters":
+            return {"epsilon_for_division"}
+        return set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_class_annotations",
+        lambda _: {"parameters": "WrongParameters"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match=(
+            "PgsSolver\\.parameters is annotated as 'WrongParameters'; "
+            "expected 'PgsSolverParameters'"
         ),
     ):
         module.check_python_stub_lcp_api_surface()
