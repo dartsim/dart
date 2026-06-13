@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import dartpy as dart
+import dartpy.math as dart_math
 
 SOLVER_TYPES = (
     dart.DantzigSolver,
@@ -68,6 +69,33 @@ FINDEX_SOLVERS = {
     dart.SapSolver,
     dart.BoxedSemiSmoothNewtonSolver,
 }
+
+
+def test_lcp_core_types_and_helpers_are_promoted_to_top_level() -> None:
+    promoted_names = (
+        "LcpProblem",
+        "LcpResult",
+        "LcpOptions",
+        "LcpSolver",
+        "LcpSolverStatus",
+        "LcpProblemType",
+        "lcp_solver_status_to_string",
+        "lcp_problem_type_to_string",
+    )
+
+    for name in promoted_names:
+        assert getattr(dart, name) is getattr(dart_math, name)
+
+    assert dart.lcp_solver_status_to_string(dart.LcpSolverStatus.SUCCESS) == "Success"
+    assert (
+        dart.lcp_solver_status_to_string(dart.LcpSolverStatus.INVALID_PROBLEM)
+        == "InvalidProblem"
+    )
+    assert dart.lcp_problem_type_to_string(dart.LcpProblemType.STANDARD) == "Standard"
+    assert (
+        dart.lcp_problem_type_to_string(dart.LcpProblemType.FRICTION_INDEX)
+        == "FrictionIndex"
+    )
 
 
 def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
