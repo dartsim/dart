@@ -389,6 +389,40 @@ def _benchmark_data(**overrides):
         kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_combined_cpu = _row(
+        "BM_Plan083SceneRuntimeCombinedCandidateBufferCpu/1024",
+        candidates=48,
+        point_triangle_candidates=32,
+        edge_edge_candidates=16,
+        points=320,
+        triangles=96,
+        edges=288,
+        scene_bodies=1,
+        max_result_abs_error=0.0,
+    )
+    scene_combined_gpu = _row(
+        "BM_Plan083SceneRuntimeCombinedCandidateBufferCuda/1024",
+        real_time=5.0,
+        cpu_time=5.0,
+        candidates=48,
+        point_triangle_candidates=32,
+        edge_edge_candidates=16,
+        points=320,
+        triangles=96,
+        edges=288,
+        scene_bodies=1,
+        gpu_candidates=48,
+        gpu_point_triangle_candidates=32,
+        gpu_edge_edge_candidates=16,
+        gpu_points=320,
+        gpu_triangles=96,
+        gpu_edges=288,
+        max_result_abs_error=1e-14,
+        host_setup_ns=2.0,
+        host_to_device_ns=4.0,
+        kernel_ns=6.0,
+        device_to_host_ns=8.0,
+    )
     point_gpu.update(overrides)
     return {
         "benchmarks": [
@@ -420,6 +454,8 @@ def _benchmark_data(**overrides):
             scene_runtime_point_gpu,
             scene_runtime_edge_cpu,
             scene_runtime_edge_gpu,
+            scene_combined_cpu,
+            scene_combined_gpu,
         ]
     }
 
@@ -455,6 +491,7 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         "edge_edge_runtime_sweep_buffer",
         "point_triangle_scene_runtime_buffer",
         "edge_edge_scene_runtime_buffer",
+        "combined_scene_runtime_candidate_filter",
     }
     assert (
         row["candidate_construction"]["point_triangle_all_pairs_mask"]["accepted_count"]
@@ -558,6 +595,12 @@ def test_plan083_gpu_contact_candidate_packet_accepts_parity_rows() -> None:
         ]
         == 1
     )
+    combined = row["candidate_construction"]["combined_scene_runtime_candidate_filter"]
+    assert combined["candidate_count"] == 48
+    assert combined["point_triangle_candidate_count"] == 32
+    assert combined["edge_edge_candidate_count"] == 16
+    assert combined["scene_body_count"] == 1
+    assert combined["max_result_abs_error"] == 1e-14
 
 
 def test_plan083_gpu_contact_candidate_packet_rejects_accuracy_failure() -> None:
@@ -691,6 +734,31 @@ def test_plan083_gpu_contact_candidate_packet_rejects_runtime_buffer_mismatch() 
         assert "runtime point-triangle candidate buffer" in str(exc)
     else:
         raise AssertionError("expected runtime buffer failure")
+
+
+def test_plan083_gpu_contact_candidate_packet_rejects_combined_runtime_mismatch() -> (
+    None
+):
+    module = _load_module()
+    data = _benchmark_data()
+    combined_gpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeCombinedCandidateBufferCuda/1024"
+    )
+    combined_gpu["gpu_point_triangle_candidates"] = 31
+
+    try:
+        module.make_packet(
+            data,
+            stencil_count=1024,
+            tolerance=1e-10,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuContactCandidatePacketError as exc:
+        assert "point-triangle candidate count mismatch" in str(exc)
+    else:
+        raise AssertionError("expected combined runtime mismatch")
 
 
 def test_plan083_gpu_contact_candidate_packet_records_speedup_gate_miss() -> None:

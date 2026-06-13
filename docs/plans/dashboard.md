@@ -339,10 +339,12 @@ its own line so status updates remain git-history friendly.
   metadata, compact device-sorted sweep-and-prune broad-phase packets, plus
   compact runtime sweep-buffer endpoint-distance packets, reduced
   scene-owned runtime candidate-buffer packets, and reduced scene-owned
-  runtime sweep broad-phase packets, endpoint-linear point-triangle/edge-edge
-  CCD/line-search parity plus sampled rigid-curved point-triangle/edge-edge
-  CCD/line-search parity plus reduced scene-owned runtime point-triangle/
-  edge-edge CCD rows, scalar barrier/friction local-kernel parity
+  runtime sweep broad-phase packets, plus a reduced combined scene runtime
+  candidate-filter row extracted from the same DART `World` surface,
+  endpoint-linear point-triangle/edge-edge CCD/line-search parity plus sampled
+  rigid-curved point-triangle/edge-edge CCD/line-search parity plus reduced
+  scene-owned runtime point-triangle/edge-edge CCD rows, scalar
+  barrier/friction local-kernel parity
   plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
   tangent-stencil parity, point-triangle/point-point/point-edge/edge-edge

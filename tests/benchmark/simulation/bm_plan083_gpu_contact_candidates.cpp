@@ -1138,6 +1138,33 @@ void recordRuntimeEdgeEdgeCandidateBufferCounters(
           * fixture.edgeEdgeEndpointSquaredDistances.size()));
 }
 
+void recordCombinedRuntimeCandidateBufferCounters(
+    benchmark::State& state,
+    const RuntimeSweepCandidateBufferFixture& fixture,
+    const double maxError)
+{
+  const std::size_t pointTriangleCandidates
+      = fixture.pointTriangleEndpointSquaredDistances.size();
+  const std::size_t edgeEdgeCandidates
+      = fixture.edgeEdgeEndpointSquaredDistances.size();
+  state.counters["candidates"]
+      = static_cast<double>(pointTriangleCandidates + edgeEdgeCandidates);
+  state.counters["point_triangle_candidates"]
+      = static_cast<double>(pointTriangleCandidates);
+  state.counters["edge_edge_candidates"]
+      = static_cast<double>(edgeEdgeCandidates);
+  state.counters["points"]
+      = static_cast<double>(fixture.startPositions.size() / 3u);
+  state.counters["triangles"] = static_cast<double>(fixture.triangles.size());
+  state.counters["edges"]
+      = static_cast<double>(fixture.edgeIndices.size() / 2u);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations() * (pointTriangleCandidates + edgeEdgeCandidates)));
+}
+
 } // namespace
 
 //==============================================================================
@@ -2313,6 +2340,158 @@ static void BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda(
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCandidateBufferCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCandidateBufferCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeCandidateBufferFixture(
+      static_cast<int>(state.range(0)));
+
+  std::size_t candidateCount = 0;
+  for (auto _ : state) {
+    candidateCount = 0;
+    for (std::size_t i = 0; i < fixture.candidatePointIndices.size(); ++i) {
+      const std::uint32_t point = fixture.candidatePointIndices[i];
+      const std::size_t triangle = fixture.candidateTriangleIndices[i];
+      const std::size_t tri = 3u * triangle;
+      const auto startDistance = dc::pointTriangleSquaredDistance(
+          pointAt(fixture.startPositions, point),
+          pointAt(fixture.startPositions, fixture.triangleIndices[tri]),
+          pointAt(fixture.startPositions, fixture.triangleIndices[tri + 1u]),
+          pointAt(fixture.startPositions, fixture.triangleIndices[tri + 2u]));
+      const auto endDistance = dc::pointTriangleSquaredDistance(
+          pointAt(fixture.endPositions, point),
+          pointAt(fixture.endPositions, fixture.triangleIndices[tri]),
+          pointAt(fixture.endPositions, fixture.triangleIndices[tri + 1u]),
+          pointAt(fixture.endPositions, fixture.triangleIndices[tri + 2u]));
+      double endpointSquaredDistance = std::min(
+          startDistance.squaredDistance, endDistance.squaredDistance);
+      benchmark::DoNotOptimize(endpointSquaredDistance);
+      ++candidateCount;
+    }
+    for (std::size_t i = 0; i < fixture.candidateEdgeAIndices.size(); ++i) {
+      const std::size_t edgeA = fixture.candidateEdgeAIndices[i];
+      const std::size_t edgeB = fixture.candidateEdgeBIndices[i];
+      const std::uint32_t a0 = fixture.edgeIndices[2u * edgeA];
+      const std::uint32_t a1 = fixture.edgeIndices[2u * edgeA + 1u];
+      const std::uint32_t b0 = fixture.edgeIndices[2u * edgeB];
+      const std::uint32_t b1 = fixture.edgeIndices[2u * edgeB + 1u];
+      const auto startDistance = dc::edgeEdgeSquaredDistance(
+          pointAt(fixture.startPositions, a0),
+          pointAt(fixture.startPositions, a1),
+          pointAt(fixture.startPositions, b0),
+          pointAt(fixture.startPositions, b1));
+      const auto endDistance = dc::edgeEdgeSquaredDistance(
+          pointAt(fixture.endPositions, a0),
+          pointAt(fixture.endPositions, a1),
+          pointAt(fixture.endPositions, b0),
+          pointAt(fixture.endPositions, b1));
+      double endpointSquaredDistance = std::min(
+          startDistance.squaredDistance, endDistance.squaredDistance);
+      benchmark::DoNotOptimize(endpointSquaredDistance);
+      ++candidateCount;
+    }
+  }
+
+  benchmark::DoNotOptimize(candidateCount);
+  recordCombinedRuntimeCandidateBufferCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCandidateBufferCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCandidateBufferCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeCandidateBufferFixture(
+      static_cast<int>(state.range(0)));
+  cuda::SweptPointTriangleCandidateBufferResult pointTriangleResult;
+  cuda::SweptEdgeEdgeCandidateBufferResult edgeEdgeResult;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluateSweptPointTriangleCandidateBufferCuda(
+        fixture.startPositions,
+        fixture.endPositions,
+        fixture.triangleIndices,
+        fixture.candidatePointIndices,
+        fixture.candidateTriangleIndices,
+        pointTriangleResult);
+    cuda::evaluateSweptEdgeEdgeCandidateBufferCuda(
+        fixture.startPositions,
+        fixture.endPositions,
+        fixture.edgeIndices,
+        fixture.candidateEdgeAIndices,
+        fixture.candidateEdgeBIndices,
+        edgeEdgeResult);
+    benchmark::DoNotOptimize(
+        pointTriangleResult.endpointSquaredDistances.data());
+    benchmark::DoNotOptimize(edgeEdgeResult.endpointSquaredDistances.data());
+  }
+
+  if (pointTriangleResult.endpointSquaredDistances.size()
+      == fixture.pointTriangleEndpointSquaredDistances.size()) {
+    for (std::size_t i = 0;
+         i < fixture.pointTriangleEndpointSquaredDistances.size();
+         ++i) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              pointTriangleResult.endpointSquaredDistances[i]
+              - fixture.pointTriangleEndpointSquaredDistances[i]));
+    }
+  } else {
+    maxError = std::numeric_limits<double>::infinity();
+  }
+  if (edgeEdgeResult.endpointSquaredDistances.size()
+      == fixture.edgeEdgeEndpointSquaredDistances.size()) {
+    for (std::size_t i = 0; i < fixture.edgeEdgeEndpointSquaredDistances.size();
+         ++i) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              edgeEdgeResult.endpointSquaredDistances[i]
+              - fixture.edgeEdgeEndpointSquaredDistances[i]));
+    }
+  } else {
+    maxError = std::numeric_limits<double>::infinity();
+  }
+
+  recordCombinedRuntimeCandidateBufferCounters(state, fixture, maxError);
+  state.counters["gpu_candidates"] = static_cast<double>(
+      pointTriangleResult.pairCount + edgeEdgeResult.pairCount);
+  state.counters["gpu_point_triangle_candidates"]
+      = static_cast<double>(pointTriangleResult.pairCount);
+  state.counters["gpu_edge_edge_candidates"]
+      = static_cast<double>(edgeEdgeResult.pairCount);
+  state.counters["gpu_points"]
+      = static_cast<double>(pointTriangleResult.pointCount);
+  state.counters["gpu_triangles"]
+      = static_cast<double>(pointTriangleResult.triangleCount);
+  state.counters["gpu_edges"] = static_cast<double>(edgeEdgeResult.edgeCount);
+  state.counters["host_setup_ns"]
+      = pointTriangleResult.timing.setupNs + edgeEdgeResult.timing.setupNs;
+  state.counters["host_to_device_ns"]
+      = pointTriangleResult.timing.hostToDeviceNs
+        + edgeEdgeResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"]
+      = pointTriangleResult.timing.kernelNs + edgeEdgeResult.timing.kernelNs;
+  state.counters["device_to_host_ns"]
+      = pointTriangleResult.timing.deviceToHostNs
+        + edgeEdgeResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCandidateBufferCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

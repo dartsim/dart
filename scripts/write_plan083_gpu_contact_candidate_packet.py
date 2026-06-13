@@ -119,7 +119,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "RuntimePointTriangleCandidateBuffer|"
         "RuntimeEdgeEdgeCandidateBuffer|"
         "SceneRuntimePointTriangleCandidateBuffer|"
-        "SceneRuntimeEdgeEdgeCandidateBuffer"
+        "SceneRuntimeEdgeEdgeCandidateBuffer|"
+        "SceneRuntimeCombinedCandidateBuffer"
         ")(Cpu|Cuda)"
         f"/{args.stencil_count}(/real_time)?$"
     )
@@ -292,6 +293,15 @@ def _expected_scene_runtime_edge_edge_candidate_buffer_row_names(
     )
 
 
+def _expected_scene_runtime_combined_candidate_buffer_row_names(
+    pair_count: int,
+) -> tuple[str, str]:
+    return (
+        f"BM_Plan083SceneRuntimeCombinedCandidateBufferCpu/{pair_count}",
+        f"BM_Plan083SceneRuntimeCombinedCandidateBufferCuda/{pair_count}",
+    )
+
+
 def _representative_rows(
     rows: list[Mapping[str, Any]], stencil_count: int
 ) -> dict[str, Mapping[str, Any]]:
@@ -322,6 +332,9 @@ def _representative_rows(
     )
     expected_names.update(
         _expected_scene_runtime_edge_edge_candidate_buffer_row_names(stencil_count)
+    )
+    expected_names.update(
+        _expected_scene_runtime_combined_candidate_buffer_row_names(stencil_count)
     )
     found: dict[str, Mapping[str, Any]] = {}
     errors: list[str] = []
@@ -980,6 +993,117 @@ def _validate_runtime_edge_edge_candidate_buffer(
     }
 
 
+def _validate_scene_runtime_combined_candidate_buffer(
+    *,
+    cpu_row: Mapping[str, Any],
+    gpu_row: Mapping[str, Any],
+    tolerance: float,
+    speedup_gate: float,
+) -> dict[str, Any]:
+    label = "combined scene runtime candidate filter"
+    cpu_ns = benchmark_timing_ns(cpu_row)
+    gpu_ns = benchmark_timing_ns(gpu_row)
+    if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} GPU benchmark timing is not positive"
+        )
+
+    max_error = _counter(gpu_row, "max_result_abs_error")
+    if max_error > tolerance:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} max error {max_error:.3g} exceeds tolerance {tolerance:.3g}"
+        )
+
+    cpu_candidates = int(_counter(cpu_row, "candidates"))
+    gpu_candidates = int(_counter(gpu_row, "gpu_candidates"))
+    if cpu_candidates != gpu_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU candidate count mismatch: "
+            f"{cpu_candidates}/{gpu_candidates}"
+        )
+
+    cpu_point_triangle_candidates = int(_counter(cpu_row, "point_triangle_candidates"))
+    gpu_point_triangle_candidates = int(
+        _counter(gpu_row, "gpu_point_triangle_candidates")
+    )
+    if cpu_point_triangle_candidates != gpu_point_triangle_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU point-triangle candidate count mismatch: "
+            f"{cpu_point_triangle_candidates}/{gpu_point_triangle_candidates}"
+        )
+
+    cpu_edge_edge_candidates = int(_counter(cpu_row, "edge_edge_candidates"))
+    gpu_edge_edge_candidates = int(_counter(gpu_row, "gpu_edge_edge_candidates"))
+    if cpu_edge_edge_candidates != gpu_edge_edge_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU edge-edge candidate count mismatch: "
+            f"{cpu_edge_edge_candidates}/{gpu_edge_edge_candidates}"
+        )
+
+    if cpu_candidates != cpu_point_triangle_candidates + cpu_edge_edge_candidates:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} candidate total {cpu_candidates} does not match "
+            f"point-triangle plus edge-edge count "
+            f"{cpu_point_triangle_candidates + cpu_edge_edge_candidates}"
+        )
+
+    cpu_points = int(_counter(cpu_row, "points"))
+    gpu_points = int(_counter(gpu_row, "gpu_points"))
+    cpu_triangles = int(_counter(cpu_row, "triangles"))
+    gpu_triangles = int(_counter(gpu_row, "gpu_triangles"))
+    cpu_edges = int(_counter(cpu_row, "edges"))
+    gpu_edges = int(_counter(gpu_row, "gpu_edges"))
+    if (
+        cpu_points != gpu_points
+        or cpu_triangles != gpu_triangles
+        or cpu_edges != gpu_edges
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU shape mismatch: "
+            f"points {cpu_points}/{gpu_points}, "
+            f"triangles {cpu_triangles}/{gpu_triangles}, "
+            f"edges {cpu_edges}/{gpu_edges}"
+        )
+
+    cpu_scene_bodies = int(_counter(cpu_row, "scene_bodies"))
+    gpu_scene_bodies = int(_counter(gpu_row, "scene_bodies"))
+    if cpu_scene_bodies != gpu_scene_bodies:
+        raise Plan083GpuContactCandidatePacketError(
+            f"{label} CPU/GPU scene body mismatch: "
+            f"{cpu_scene_bodies}/{gpu_scene_bodies}"
+        )
+
+    speedup = cpu_ns / gpu_ns
+    timing_ns = {
+        "setup": _counter(gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(gpu_row, "host_to_device_ns"),
+        "kernel": _counter(gpu_row, "kernel_ns"),
+        "solve": 0.0,
+        "device_to_host": _counter(gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+
+    return {
+        "candidate_count": cpu_candidates,
+        "point_triangle_candidate_count": cpu_point_triangle_candidates,
+        "edge_edge_candidate_count": cpu_edge_edge_candidates,
+        "point_count": cpu_points,
+        "triangle_count": cpu_triangles,
+        "edge_count": cpu_edges,
+        "scene_body_count": cpu_scene_bodies,
+        "max_result_abs_error": max_error,
+        "speedup": speedup,
+        "meets_speedup_gate": speedup >= speedup_gate,
+        "timing_ns": timing_ns,
+        "cpu_benchmark_row": _packet_row_name(cpu_row),
+        "gpu_benchmark_row": _packet_row_name(gpu_row),
+    }
+
+
 def make_packet(
     benchmark_data: dict[str, Any],
     *,
@@ -1140,6 +1264,43 @@ def make_packet(
             label="scene runtime edge-edge candidate buffer",
         )
     )
+    scene_combined_cpu, scene_combined_gpu = (
+        _expected_scene_runtime_combined_candidate_buffer_row_names(stencil_count)
+    )
+    combined_scene_runtime_candidate_filter = (
+        _validate_scene_runtime_combined_candidate_buffer(
+            cpu_row=representative_rows[scene_combined_cpu],
+            gpu_row=representative_rows[scene_combined_gpu],
+            tolerance=tolerance,
+            speedup_gate=speedup_gate,
+        )
+    )
+    if (
+        combined_scene_runtime_candidate_filter["point_triangle_candidate_count"]
+        != scene_runtime_point_triangle_candidate_buffer["candidate_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime candidate filter point-triangle count does "
+            "not match the point-triangle scene runtime buffer row"
+        )
+    if (
+        combined_scene_runtime_candidate_filter["edge_edge_candidate_count"]
+        != scene_runtime_edge_edge_candidate_buffer["candidate_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime candidate filter edge-edge count does not "
+            "match the edge-edge scene runtime buffer row"
+        )
+    if (
+        combined_scene_runtime_candidate_filter["scene_body_count"]
+        != scene_runtime_point_triangle_candidate_buffer["scene_body_count"]
+        or combined_scene_runtime_candidate_filter["scene_body_count"]
+        != scene_runtime_edge_edge_candidate_buffer["scene_body_count"]
+    ):
+        raise Plan083GpuContactCandidatePacketError(
+            "combined scene runtime candidate filter scene body count does not "
+            "match the per-family scene runtime buffer rows"
+        )
     candidate_construction = {
         "point_triangle_all_pairs_mask": point_triangle_candidate_construction,
         "edge_edge_all_pairs_mask": edge_edge_candidate_construction,
@@ -1159,6 +1320,9 @@ def make_packet(
             scene_runtime_point_triangle_candidate_buffer
         ),
         "edge_edge_scene_runtime_buffer": scene_runtime_edge_edge_candidate_buffer,
+        "combined_scene_runtime_candidate_filter": (
+            combined_scene_runtime_candidate_filter
+        ),
     }
 
     point_triangle = primitive_families["point_triangle"]

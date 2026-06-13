@@ -2,6 +2,44 @@
 
 ## Current Status
 
+Latest combined scene runtime candidate-filter checkpoint (2026-06-13): work
+continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
+PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private contact-candidate packet with a reduced
+combined scene runtime candidate-filter row. The benchmark builds the same DART
+`World` deformable surface used by the existing scene-owned runtime candidate
+rows, extracts point-triangle and edge-edge candidate buffers once, and evaluates
+both existing CUDA runtime candidate-buffer distance paths in one aggregate row.
+This is reduced packet evidence only; it does not prove full runtime scene
+filtering, GPU `World::step` contact candidate construction, or a top-level
+speedup claim.
+
+Fresh packet evidence records one scene body, 2,560 points, 768 surface
+triangles, 2,304 surface edges, and 2,048 total runtime candidates:
+512 point-triangle and 1,536 edge-edge. The combined row records
+`max_result_abs_error=5.551115123125783e-17` and
+`speedup=0.23130939805056844x` (`meets_speedup_gate=false`). The top-level
+contact-candidate packet records `max_result_abs_error=5.551115123125783e-17`
+and `speedup=0.02137317646447672x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python -m pytest tests/test_plan083_gpu_contact_candidate_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run -e cuda build-cuda Release`
+- `pixi run -e cuda python scripts/write_plan083_gpu_contact_candidate_packet.py`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m json.tool docs/plans/083-unified-newton-barrier-multibody/gpu-parity-packet.json >/dev/null`
+- `ctest --test-dir build/cuda/cpp/Release --output-on-failure -R '^test_contact_candidate_filter_cuda$'`
+- `git diff --check`
+- `pixi run lint`
+
 Latest combined scene runtime barrier-Hessian checkpoint (2026-06-13): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
