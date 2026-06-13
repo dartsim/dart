@@ -1072,6 +1072,32 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     assert evidence_summary_by_surface["FrictionIndex"]["contacts"] == "4, 16, 64"
     assert evidence_summary_by_surface["FrictionIndex"]["contract_ok"] == "48/48"
+    solver_guidance_by_family = {
+        row["family"]: row for row in info["solver_guidance_rows"]
+    }
+    assert set(solver_guidance_by_family) == {
+        "Pivoting and direct",
+        "Projection iterations",
+        "Block/contact structure",
+        "Newton, interior, and QP",
+        "Accelerated and splitting",
+    }
+    assert "Dantzig" in solver_guidance_by_family["Pivoting and direct"]["solvers"]
+    assert (
+        "real-time approximate solves"
+        in solver_guidance_by_family["Projection iterations"]["best_fit"]
+    )
+    assert (
+        "contact piles"
+        in solver_guidance_by_family["Block/contact structure"]["best_fit"]
+    )
+    assert (
+        "high-accuracy standard rows"
+        in solver_guidance_by_family["Newton, interior, and QP"]["best_fit"]
+    )
+    assert "rho" in solver_guidance_by_family["Accelerated and splitting"][
+        "tradeoff"
+    ]
     assert profile_by_surface["Standard"]["artifact"].endswith(
         "performance_profile_standard.csv"
     )
@@ -1352,6 +1378,19 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "Iterations,Error,Residual,Complementarity,us"
         in builder.events
     )
+    assert (
+        "table:lcp_solver_selection_guide:Family,Solvers,Best fit,Strength,"
+        "Tradeoff,Evidence cue"
+        in builder.events
+    )
+    for guidance_text in (
+        "Pivoting and direct",
+        "Projection iterations",
+        "Block/contact structure",
+        "Newton, interior, and QP",
+        "Accelerated and splitting",
+    ):
+        assert any(guidance_text in event for event in builder.events)
     assert (
         "table:lcp_solver_profile:Solver,Native cases,OK,Total us,Worst error,"
         "Worst residual,Slowest case"

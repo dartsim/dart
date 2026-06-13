@@ -640,6 +640,53 @@ _SOLVER_SUPPORT_ROWS: tuple[dict[str, Any], ...] = (
     },
 )
 
+_SOLVER_GUIDANCE_ROWS: tuple[dict[str, str], ...] = (
+    {
+        "family": "Pivoting and direct",
+        "solvers": "Direct, Dantzig, Lemke, Baraff",
+        "best_fit": "small, reference, ill-conditioned, or exact rows",
+        "strength": "robust exact or near-exact baselines for validating others",
+        "tradeoff": "cubic-style scaling makes large dense rows expensive",
+        "evidence": "Standard and Boxed profile leaders include Dantzig/direct rows",
+    },
+    {
+        "family": "Projection iterations",
+        "solvers": "Pgs, Tgs, SymmetricPsor, Jacobi, RedBlackGaussSeidel",
+        "best_fit": "real-time approximate solves and parallel-friendly sweeps",
+        "strength": "cheap iterations, warm-start friendly, predictable budgets",
+        "tradeoff": "needs tuning and can leave larger residuals on hard rows",
+        "evidence": "Projection rows anchor the Boxed and FrictionIndex leading group",
+    },
+    {
+        "family": "Block/contact structure",
+        "solvers": "BGS, BlockedJacobi, Staggering, ShockPropagation",
+        "best_fit": "contact piles, friction blocks, stacks, and layered scenes",
+        "strength": "uses per-contact or layer structure instead of flat scalar rows",
+        "tradeoff": "structure assumptions can be weaker on generic dense LCP rows",
+        "evidence": "Contact packet and FrictionIndex rows expose block/layer behavior",
+    },
+    {
+        "family": "Newton, interior, and QP",
+        "solvers": (
+            "MinimumMapNewton, FischerBurmeisterNewton, "
+            "PenalizedFischerBurmeisterNewton, BoxedSemiSmoothNewton, "
+            "InteriorPoint, MPRGP"
+        ),
+        "best_fit": "high-accuracy standard rows, strict-interior rows, SPD cases",
+        "strength": "fast local convergence when assumptions and linear solves are good",
+        "tradeoff": "more setup, linear algebra cost, and form-specific support",
+        "evidence": "Profile evidence separates standard-only and boxed/findex support",
+    },
+    {
+        "family": "Accelerated and splitting",
+        "solvers": "Apgd, NNCG, SubspaceMinimization, Admm, Sap",
+        "best_fit": "larger bounded rows, regularized rows, and tunable approximations",
+        "strength": "balances scalability, smoothness, and robust fallback behavior",
+        "tradeoff": "sensitive to restart, rho, regularization, and warm-start tuning",
+        "evidence": "Parameter sweeps and profile laggards show where tuning matters",
+    },
+)
+
 _SOLVER_CLASS_NAMES: dict[str, str] = {
     "Dantzig": "DantzigSolver",
     "Lemke": "LemkeSolver",
@@ -2134,6 +2181,28 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, f"{row['elapsed_us']:.1f}")
                 builder.end_table()
 
+        if builder.collapsing_header("Solver selection guide", default_open=False):
+            if builder.begin_table(
+                "lcp_solver_selection_guide",
+                [
+                    "Family",
+                    "Solvers",
+                    "Best fit",
+                    "Strength",
+                    "Tradeoff",
+                    "Evidence cue",
+                ],
+            ):
+                for row in _SOLVER_GUIDANCE_ROWS:
+                    builder.table_next_row()
+                    _write_table_cell(builder, row["family"])
+                    _write_table_cell(builder, row["solvers"])
+                    _write_table_cell(builder, row["best_fit"])
+                    _write_table_cell(builder, row["strength"])
+                    _write_table_cell(builder, row["tradeoff"])
+                    _write_table_cell(builder, row["evidence"])
+                builder.end_table()
+
         if builder.collapsing_header("Solver comparison profile", default_open=False):
             if builder.begin_table(
                 "lcp_solver_profile",
@@ -2204,6 +2273,7 @@ def build() -> SceneSetup:
                 dict(row) for row in performance_profile_evidence_summary_rows
             ],
             "solver_rows": _copy_rows(_SOLVER_SUPPORT_ROWS),
+            "solver_guidance_rows": _copy_rows(_SOLVER_GUIDANCE_ROWS),
             "standalone_solver_rows": [dict(row) for row in standalone_solver_rows],
             "standalone_problem_rows": [
                 dict(row) for row in standalone_problem_rows

@@ -1,5 +1,69 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Solver Selection Guidance Panel
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable. `git merge --no-edit origin/main`
+  reported `Already up to date`, so the branch is current with the PR #2986
+  DART 7 work-packet harness on `origin/main` (`bb851f453606`).
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 87]`
+- Last committed checkpoint:
+  `5d9ac41a227 Expose LCP profile evidence coverage summary`
+- Checkpoint target:
+  `Expose LCP solver selection guidance`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 88 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `python/examples/demos/scenes/lcp_physics.py` adds a Solver selection guide
+  table to the LCP panel.
+- The table maps solver families to representative best-fit cases, strengths,
+  tradeoffs, and current profile-evidence cues, making solver pros/cons visible
+  in the demo instead of only in background docs.
+- `python/tests/unit/test_py_demo_panels.py` checks both setup metadata and
+  headless panel rendering for the guidance table.
+
+Verification completed:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_py_demo_panels.py -q
+pixi run lint
+git diff --check
+```
+
+Results:
+
+- Focused py-demo panel tests: `43 passed`.
+- `pixi run lint`: passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is uncommitted, review the verification above and commit it with
+`Expose LCP solver selection guidance`. Continue from a fresh bounded DART 7
+LCP interface/demo gap; avoid retrying the rejected SAP FrictionIndex exact
+shortcut or ShockPropagation exact-path probe without a materially different
+hypothesis. Do not push without explicit maintainer/user approval.
+
 ## Current Reality - 2026-06-12 Profile Evidence Coverage Summary
 
 This is the latest hand-off. Older sections below are historical checkpoints
