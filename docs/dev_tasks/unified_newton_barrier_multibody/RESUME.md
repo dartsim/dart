@@ -24,6 +24,10 @@ packet records `speedup=0.17984862275960234x`
 (`meets_speedup_gate=false`), so the durable GPU packet row remains
 `in-progress`.
 
+Fresh-session prompt: use the "Fresh Codex Goal Prompt" section in
+`docs/dev_tasks/unified_newton_barrier_multibody/HANDOFF.md` before selecting
+the next bounded packet-style slice.
+
 Resumed barrier-Hessian packet checkpoint (2026-06-12): the maintainer gave a
 fresh `continue` instruction after the stop-only handoff. Work may resume
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978, while

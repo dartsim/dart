@@ -31,6 +31,16 @@ Latest local gates so far:
 - `pixi run -e cuda run-cpp-target test_barrier_friction_kernel_cuda`
 - `pixi run -e cuda bm-plan083-gpu-barrier-friction-packet`
 
+## Fresh Codex Goal Prompt
+
+Use this prompt for the next fresh Codex session:
+
+```text
+Continue PLAN-083 on branch simx/plan083-gpu-contact-candidate-packet / PR #2978. First read AGENTS.md, docs/ai/principles.md, docs/ai/orchestration.md, docs/dev_tasks/unified_newton_barrier_multibody/RESUME.md, and docs/dev_tasks/unified_newton_barrier_multibody/HANDOFF.md. Keep all PLAN-083 work consolidated on this branch/PR; do not open another PLAN-083 PR. Do not push, comment on PRs, resolve review threads, trigger CI, or delete branches without explicit maintainer approval.
+
+Current local packet evidence covers contact candidates, CCD/line-search, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, assembly/solve, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, rigid curved CCD/line-search rows, broader sparse Hessian assembly, equality-reduced/global sparse assembly and solve, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
+```
+
 ## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)
 
 The maintainer gave a fresh `continue` instruction after the stop-only
