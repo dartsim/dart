@@ -369,6 +369,9 @@
     contact-free World multibody spring/rest, damping, Coulomb friction, and
     armature behavior for rigid links with acceleration and energy diagnostics
     that are exported through the capture-metrics manifest path.
+  - Exposed separate hold-force and armature-drive-force controls in
+    `rigid_joint_passive_parameters`, so the passive joint parameter row can
+    tune stiction effort and direct-versus-armature drive response from the GUI.
   - Added `rigid_screw_joint_pitch` to Python `py-demos`, showing World
     multibody screw-pitch coupling with zero, fine, coarse, and reverse pitch
     lanes plus gravity, mass, axial-inertia, pitch-ratio, effective-mass, and

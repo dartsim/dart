@@ -1287,6 +1287,8 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_joint_passive_parameters,
             (
+                "slider:Hold force:0.0:12.0",
+                "slider:Armature drive force:0.0:18.0",
                 "text:comparison axis: passive joint parameter family",
                 "text:held fixed: World prismatic joints | gravity off | contacts off | link mass 2.0 | time step 4.0 ms",
             ),
@@ -2167,6 +2169,51 @@ def test_rigid_joint_breakage_panel_edits_break_force_threshold() -> None:
     assert capture_metrics["controls"]["break_force"] == pytest.approx(100.0)
     assert capture_metrics["controls"]["break_force_log10"] == pytest.approx(2.0)
     assert capture_metrics["metrics"]["break_force_log10"] == pytest.approx(2.0)
+
+
+def test_rigid_joint_passive_parameters_panel_edits_drive_forces() -> None:
+    _require_simulation_symbols("World", "JointSpec")
+
+    setup = rigid_joint_passive_parameters.build()
+    controller = setup.info["rigid_joint_passive_parameters_controller"]
+
+    builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Hold force": 8.0,
+            "Armature drive force": 12.0,
+        },
+    )
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Hold force:0.0:12.0" in builder.events
+    assert "slider:Armature drive force:0.0:18.0" in builder.events
+    assert controller.hold_force == pytest.approx(8.0)
+    assert controller.armature_force == pytest.approx(12.0)
+    stiction = next(lane for lane in controller.lanes if lane.key == "stiction")
+    armature_reference = next(
+        lane for lane in controller.lanes if lane.key == "armature_reference"
+    )
+    armature_heavy = next(
+        lane for lane in controller.lanes if lane.key == "armature_heavy"
+    )
+    assert stiction.joint.force.tolist() == pytest.approx([8.0])
+    assert armature_reference.joint.force.tolist() == pytest.approx([12.0])
+    assert armature_heavy.joint.force.tolist() == pytest.approx([12.0])
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["controls"]["hold_force"] == pytest.approx(8.0)
+    assert capture_metrics["controls"]["armature_force"] == pytest.approx(12.0)
+    assert capture_metrics["lanes"]["stiction"]["metrics"]["force"] == pytest.approx(
+        8.0
+    )
+    assert capture_metrics["lanes"]["stiction"]["metrics"][
+        "status"
+    ] == "force exceeds friction"
+    assert capture_metrics["lanes"]["slip"]["metrics"]["status"] == (
+        "force exceeds friction"
+    )
+    assert capture_metrics["lanes"]["armature_heavy"]["metrics"][
+        "force"
+    ] == pytest.approx(12.0)
 
 
 def test_robot_puppet_world_scenes_expose_pose_panels() -> None:

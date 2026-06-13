@@ -354,6 +354,10 @@ class _RigidJointPassiveParameterVerifier:
         if lane.kind == "damped":
             return "damping dissipates"
         if lane.kind == "stiction":
+            force = abs(_joint_scalar(lane.joint.force))
+            friction = abs(_joint_scalar(lane.joint.coulomb_friction))
+            if force > friction:
+                return "force exceeds friction"
             return "held by friction"
         if lane.kind == "slip":
             return "force exceeds friction"
@@ -798,8 +802,14 @@ class _RigidJointPassiveParameterVerifier:
         changed_friction, coulomb_friction = builder.slider(
             "Coulomb friction", float(self.coulomb_friction), 0.0, 12.0
         )
+        changed_hold, hold_force = builder.slider(
+            "Hold force", float(self.hold_force), 0.0, 12.0
+        )
         changed_slip, slip_force = builder.slider(
             "Slip force", float(self.slip_force), 0.0, 18.0
+        )
+        changed_armature_force, armature_force = builder.slider(
+            "Armature drive force", float(self.armature_force), 0.0, 18.0
         )
         changed_armature, armature = builder.slider(
             "Armature", float(self.armature), 0.0, 12.0
@@ -809,14 +819,18 @@ class _RigidJointPassiveParameterVerifier:
             or changed_damping
             or changed_rest
             or changed_friction
+            or changed_hold
             or changed_slip
+            or changed_armature_force
             or changed_armature
         ):
             self.spring_stiffness = float(spring_stiffness)
             self.damping_coefficient = float(damping_coefficient)
             self.rest_position = float(rest_position)
             self.coulomb_friction = float(coulomb_friction)
+            self.hold_force = float(hold_force)
             self.slip_force = float(slip_force)
+            self.armature_force = float(armature_force)
             self.armature = float(armature)
             self.reset(clear_replay=True)
 
@@ -832,7 +846,8 @@ class _RigidJointPassiveParameterVerifier:
         builder.text("solver: World multibody joints | gravity: off | contacts: off")
         builder.text(f"world time: {self.world.time:.3f} s")
         builder.text(
-            "spring/rest/damping, Coulomb friction, and armature are passive joint parameters"
+            "spring/rest/damping, Coulomb friction, drive forces, and armature "
+            "are passive joint parameters"
         )
         for key in (
             "spring_only",

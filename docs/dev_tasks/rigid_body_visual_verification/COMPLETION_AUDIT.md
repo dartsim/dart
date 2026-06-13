@@ -7,6 +7,19 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: row 30,
+`rigid_joint_passive_parameters`, now exposes the passive-joint force controls
+that were already modeled in capture and replay state. The GUI adds
+`Hold force` for the stiction lane and `Armature drive force` for the
+direct-versus-armature lanes, applies both through the existing reset path, and
+keeps capture metrics recording `hold_force` and `armature_force`. Focused
+passive-row guards reported `5 passed`. Fresh single-scene visual evidence
+lives at `build/captures/rigid_joint_passive_controls_1781325827`: 120
+requested UI frames, 119 PNG frames written, screenshot written,
+`scene_metrics.event_count=120`, and latest scene metrics containing
+`hold_force=3.0` plus `armature_force=6.0` under the contact-free
+passive-parameter row scope.
+
 Latest local implementation slice: row 2, `rigid_body_modes`, now exposes the
 same explicit comparison-axis and held-fixed context pattern used by the later
 rigid workflow rows. The panel and capture metrics label

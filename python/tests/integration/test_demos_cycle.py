@@ -4681,7 +4681,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     passive_joint.damping_coefficient = 4.5
     passive_joint.rest_position = 0.12
     passive_joint.coulomb_friction = 7.5
+    passive_joint.hold_force = 4.5
     passive_joint.slip_force = 11.0
+    passive_joint.armature_force = 9.5
     passive_joint.armature = 8.0
     passive_joint_state = passive_joint.capture_replay_state()
     passive_joint.executor_index = 0
@@ -4689,7 +4691,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     passive_joint.damping_coefficient = 0.5
     passive_joint.rest_position = -0.10
     passive_joint.coulomb_friction = 2.0
+    passive_joint.hold_force = 1.0
     passive_joint.slip_force = 3.0
+    passive_joint.armature_force = 2.0
     passive_joint.armature = 1.0
     passive_joint.restore_replay_state(passive_joint_state)
     assert passive_joint.executor_index == len(passive_joint._executors) - 1
@@ -4697,12 +4701,17 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert passive_joint.damping_coefficient == pytest.approx(4.5)
     assert passive_joint.rest_position == pytest.approx(0.12)
     assert passive_joint.coulomb_friction == pytest.approx(7.5)
+    assert passive_joint.hold_force == pytest.approx(4.5)
     assert passive_joint.slip_force == pytest.approx(11.0)
+    assert passive_joint.armature_force == pytest.approx(9.5)
     assert passive_joint.armature == pytest.approx(8.0)
     damped = next(
         lane for lane in passive_joint.lanes if lane.key == "spring_damper"
     )
     stiction = next(lane for lane in passive_joint.lanes if lane.key == "stiction")
+    armature_reference = next(
+        lane for lane in passive_joint.lanes if lane.key == "armature_reference"
+    )
     armature = next(
         lane for lane in passive_joint.lanes if lane.key == "armature_heavy"
     )
@@ -4710,6 +4719,9 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     assert damped.joint.damping_coefficient.tolist() == pytest.approx([4.5])
     assert damped.joint.rest_position.tolist() == pytest.approx([0.12])
     assert stiction.joint.coulomb_friction.tolist() == pytest.approx([7.5])
+    assert stiction.joint.force.tolist() == pytest.approx([4.5])
+    assert armature_reference.joint.force.tolist() == pytest.approx([9.5])
+    assert armature.joint.force.tolist() == pytest.approx([9.5])
     assert armature.joint.armature.tolist() == pytest.approx([8.0])
 
     screw_joint = screw_joint_build().info["rigid_screw_joint_pitch_controller"]
@@ -5944,8 +5956,14 @@ def test_rigid_joint_passive_parameters_order_passive_response() -> None:
     assert capture_metrics["controls"]["coulomb_friction"] == pytest.approx(
         controller.coulomb_friction
     )
+    assert capture_metrics["controls"]["hold_force"] == pytest.approx(
+        controller.hold_force
+    )
     assert capture_metrics["controls"]["slip_force"] == pytest.approx(
         controller.slip_force
+    )
+    assert capture_metrics["controls"]["armature_force"] == pytest.approx(
+        controller.armature_force
     )
     assert capture_metrics["controls"]["armature"] == pytest.approx(
         controller.armature

@@ -52,6 +52,9 @@ rigid-body visual verification surface for the current cycle.
 - Tightens the row-2 body-mode verifier so the first early workflow comparison
   row now publishes the same `comparison_axis` and held-fixed context pattern
   used by later rigid workflow rows.
+- Exposes the row-30 passive-joint hold-force and armature-drive-force controls
+  in the GUI, matching the existing capture/replay state for the stiction and
+  direct-versus-armature lanes.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -78,6 +81,9 @@ rigid-body visual verification surface for the current cycle.
 - Focused body-mode comparison-axis guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `4 passed`.
+- Focused passive-joint force-control guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_joint_passive_parameters_panel_edits_drive_forces python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `5 passed`.
 - Adjacent rigid workflow docs consistency guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `3 passed`.
@@ -91,6 +97,12 @@ rigid-body visual verification surface for the current cycle.
   captured `rigid_joint_breakage` at 48 requested UI frames, wrote 47 PNG
   frames plus `rigid_joint_breakage.png`, and recorded
   `scene_metrics.event_count=48` with editable-threshold workflow guidance.
+- Fresh row-30 single-scene visual evidence:
+  `build/captures/rigid_joint_passive_controls_1781325827` captured
+  `rigid_joint_passive_parameters` at 120 requested UI frames, wrote 119 PNG
+  frames plus `rigid_joint_passive_parameters.png`, and recorded
+  `scene_metrics.event_count=120` with default `hold_force=3.0` and
+  `armature_force=6.0` controls in latest scene metrics.
 - Current-head broad default validation:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,

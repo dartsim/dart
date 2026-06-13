@@ -2,6 +2,21 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local continuation: row 30, `rigid_joint_passive_parameters`, now
+exposes the passive-joint force controls that were already modeled in capture
+and replay state. The GUI adds `Hold force` for the stiction lane and
+`Armature drive force` for the direct-versus-armature lanes, applies them
+through the existing reset path, and keeps capture metrics recording
+`hold_force` and `armature_force`. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_joint_passive_parameters_panel_edits_drive_forces python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `5 passed`. Fresh single-scene visual evidence:
+`build/captures/rigid_joint_passive_controls_1781325827` captured
+`rigid_joint_passive_parameters` at 120 requested UI frames, wrote 119 PNG
+frames plus `rigid_joint_passive_parameters.png`, recorded
+`scene_metrics.event_count=120`, and its latest scene metrics include default
+`hold_force=3.0` and `armature_force=6.0` controls under the contact-free
+passive-parameter row scope.
+
 Latest local continuation: row 2, `rigid_body_modes`, now follows the
 comparison-axis contract used by the later rigid workflow rows. Its panel and
 capture metrics expose `comparison_axis=rigid_body_mode_semantics` plus
