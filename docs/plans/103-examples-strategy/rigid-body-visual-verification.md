@@ -427,6 +427,23 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
+- Latest current-HEAD packet refresh: after the workflow-command provenance and
+  review-index link-normalization fix, the full numbered workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781309127` completed rows 01-36
+  with `status=complete`, `capture_count=36`, `completed_count=36`,
+  `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
+  `guidance_missing_count=0`, and `failed_rows=[]`. The optional extended
+  packet `build/captures/rigid_workflow_optional_rows_37_52_1781309448`
+  selected rows 37-52 with related evidence, direct Rigid IPC shelf, and
+  capture-first packet groups requested; it reported `status=complete`,
+  `capture_count=16`, `completed_count=16`, `failed_count=0`,
+  `workflow_total_count=52`, `workflow_row_start=37`,
+  `workflow_row_end=52`, `continue_on_failure=true`,
+  `guidance_complete=true`, `guidance_missing_count=0`, and `failed_rows=[]`.
+  The generated review indexes include top-level workflow commands and a
+  read-only HTML asset audit found 0 missing local assets: 181/181 links for
+  rows 01-36 and 81/81 links for rows 37-52.
+
 - Latest review-index provenance/link guard: the workflow manifest and
   `review_index.html` now record the exact top-level workflow packet command,
   and `_workflow_scene_manifest_summary` normalizes workspace-relative
@@ -443,8 +460,8 @@ Evidence recorded for this slice:
   render exactly one screenshot thumbnail for each captured row.
 
 - Latest full numbered workflow packet evidence: after the row-36
-  loop-closure implementation commit, the real workflow packet
-  `build/captures/rigid_workflow_rows_01_36_1781305407` captured rows 01-36
+  loop-closure implementation commit, the current-HEAD workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781309127` captured rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, and `failed_rows=[]`. The packet wrote
@@ -452,9 +469,10 @@ Evidence recorded for this slice:
   frame PNGs; the first row was `rigid_body` and the last row was
   `rigid_loop_closure`.
 
-- Latest optional extended workflow packet evidence: the real workflow packet
-  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` selected rows
-  37-52 from the fully extended 52-row packet with related evidence, direct
+- Latest optional extended workflow packet evidence: the current-HEAD workflow
+  packet `build/captures/rigid_workflow_optional_rows_37_52_1781309448`
+  selected rows 37-52 from the fully extended 52-row packet with related
+  evidence, direct
   Rigid IPC shelf, and capture-first packet groups requested and selected. It
   reported `status=complete`, `capture_count=16`, `completed_count=16`,
   `failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,

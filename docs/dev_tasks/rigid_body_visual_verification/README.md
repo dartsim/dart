@@ -2,16 +2,38 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local follow-up: regenerated the current-HEAD review packets after the
+workflow-command provenance and review-index link-normalization fix. The full
+numbered packet
+`build/captures/rigid_workflow_rows_01_36_1781309127` completed with
+`status=complete`, `capture_count=36`, `completed_count=36`,
+`failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
+`guidance_missing_count=0`, and `failed_rows=[]`. It wrote
+`manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
+frame PNGs; the first row was `rigid_body` and the last was
+`rigid_loop_closure`. The optional extended packet
+`build/captures/rigid_workflow_optional_rows_37_52_1781309448` completed with
+`status=complete`, `capture_count=16`, `completed_count=16`,
+`failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,
+`workflow_row_end=52`, `include_related=true`, `include_ipc_shelf=true`,
+`include_packets=true`, `continue_on_failure=true`,
+`guidance_complete=true`, `guidance_missing_count=0`, and `failed_rows=[]`.
+It wrote `manifest.json`, `review_index.html`, 16 docked row screenshots, and
+1004 frame PNGs; the first selected scene was `floating_base` and the last was
+`rigid_ipc_heavy_stack_packet`. A read-only HTML asset audit found 0 missing
+local assets in both review indexes: 181/181 links for rows 01-36 and 81/81
+links for rows 37-52. These packets supersede the older
+`1781305407`/`1781305860` packet paths as review-index scan artifacts; keep the
+older packet paths only as historical completion evidence.
+
 Latest local follow-up: the workflow packet manifest and review index now
 record the exact top-level `pixi run py-demo-capture -- --rigid-workflow ...`
 command that produced the packet, and review-index screenshot/frame/video links
 now normalize workspace-relative artifact paths from per-scene manifests so
 they resolve from `review_index.html`. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_request_video_commands python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos -q`
-reported `4 passed`. Existing `build/captures/...` packets remain historical
-evidence from the previous generator; regenerate the 36-row and optional
-37-52 packets from this HEAD before treating the static HTML as the final
-maintainer-review artifact.
+reported `4 passed`. The regenerated packets above exercise this fix from the
+current HEAD.
 
 Latest local follow-up: fetched `origin/main` and merged it into
 `feature/rigid-body-gui-visual-verification`; Git reported the branch was
@@ -56,7 +78,7 @@ latest signals into the workflow review index.
 Evidence for this slice:
 
 - Fresh full numbered workflow packet:
-  `build/captures/rigid_workflow_rows_01_36_1781305407` completed with
+  `build/captures/rigid_workflow_rows_01_36_1781309127` completed with
   `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, and `failed_rows=[]`. It wrote
@@ -64,7 +86,7 @@ Evidence for this slice:
   frame PNGs across rows 01-36; the first row was `rigid_body` and the last row
   was `rigid_loop_closure`.
 - Fresh optional extended workflow packet:
-  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` completed with
+  `build/captures/rigid_workflow_optional_rows_37_52_1781309448` completed with
   `status=complete`, `capture_count=16`, `completed_count=16`,
   `failed_count=0`, `workflow_total_count=52`, `workflow_row_start=37`,
   `workflow_row_end=52`, `include_related=true`, `include_ipc_shelf=true`,
@@ -975,18 +997,17 @@ Evidence supporting readiness:
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.
 - The fresh full workflow capture
-  `build/captures/rigid_workflow_rows_01_36_1781305407` completed all 36
+  `build/captures/rigid_workflow_rows_01_36_1781309127` completed all 36
   numbered rows with `failed_count=0`, guidance complete, docked screenshots,
   frame sequences, and a generated `review_index.html`.
 - The fresh optional extended packet
-  `build/captures/rigid_workflow_optional_rows_37_52_1781305860` completed rows
+  `build/captures/rigid_workflow_optional_rows_37_52_1781309448` completed rows
   37-52 with `failed_count=0`, guidance complete, and all selected related,
   direct IPC shelf, and capture-first packet groups present, including the
   heavy stack packet at row 52.
-- The historical packet HTML above was generated before the current
-  review-index link-normalization and top-level command-provenance fix. Use it
-  as capture-completion evidence, but regenerate the packets from current HEAD
-  before sending `review_index.html` as the final scan artifact.
+- The generated review indexes above were produced after the current
+  review-index link-normalization and top-level command-provenance fix. The
+  link audit found 0 missing local assets in both review indexes.
 - Long optional packets now have an explicit failure-recovery path:
   `--continue-on-failure` records `failed_rows`, review-index Failed Rows
   summaries, and workflow row-range rerun commands that preserve
@@ -1036,9 +1057,9 @@ Acceptance decision packet:
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Latest committed local checkpoint before the current uncommitted provenance
-  work was `10e72ec9e2a Guard rigid workflow review thumbnails`; the branch had
-  no associated pull request and was 36 commits ahead of
+- Latest committed local checkpoint before the current uncommitted packet
+  evidence docs is `1cae9f769cc Record rigid workflow review provenance`; the
+  branch had no associated pull request and was 37 commits ahead of
   `origin/feature/rigid-body-gui-visual-verification`.
 - Earlier branch snapshots below are historical archaeology from the
   multi-session implementation and should not override the current handoff,
