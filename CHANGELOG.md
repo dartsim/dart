@@ -1007,6 +1007,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Ensured the aggregate CMake `tests` target builds simulation-experimental
     test executables when that component is enabled, so local and CI test runs
     do not execute stale or missing binaries.
+  - Pinned Windows CI to the `windows-2025-vs2026` runner image during the
+    `windows-latest` Visual Studio 2026 migration and made `GroupProduct`
+    static size sums robust on MSVC 19.51.
   - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
   - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Exported existing FCL, joint Coulomb friction, and MJCF detail parser declarations on Windows so shared-library consumers and tests can link the header-declared symbols consistently. ([#2648](https://github.com/dartsim/dart/pull/2648))

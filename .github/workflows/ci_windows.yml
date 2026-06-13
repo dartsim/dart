@@ -36,10 +36,10 @@ jobs:
     needs: changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Tests (${{ matrix.build_type }})
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     env:
-      # windows-latest currently resolves to the VS 2026 image; keep the
-      # Pixi task override explicit while local Windows builds default to VS 2022.
+      # Pin the VS 2026 image while windows-latest migrates gradually.
+      # Local Windows Pixi tasks continue to default to VS 2022.
       DART_WINDOWS_CMAKE_GENERATOR: Visual Studio 18 2026
     # Fail fast on a regression instead of waiting for the ~6h default kill.
     # Sized generously for a first cold-sccache Ninja build.
