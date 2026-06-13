@@ -114,6 +114,9 @@ def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
     assert "BM_LcpMildIllConditioned" in tokens
     assert "BM_LcpMildIllConditionedBatchSerial" in tokens
     assert "BM_LcpMildIllConditionedBatchParallel" in tokens
+    assert "BM_LcpNearSingular" in tokens
+    assert "BM_LcpNearSingularBatchSerial" in tokens
+    assert "BM_LcpNearSingularBatchParallel" in tokens
     assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
     assert "BM_LcpArticulatedUnifiedContact" in tokens
 

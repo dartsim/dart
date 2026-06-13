@@ -1880,6 +1880,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert benchmark_by_packet["contact_normal_standard_sweep"][
         "benchmark_filter"
     ] == "BM_LcpContactNormalStandardSweep"
+    assert benchmark_by_packet["near_singular"]["benchmark_filter"] == (
+        "BM_LcpNearSingular|"
+        "BM_LcpNearSingularBatchSerial|"
+        "BM_LcpNearSingularBatchParallel"
+    )
     assert benchmark_by_packet["singular_degenerate_scale"][
         "benchmark_filter"
     ] == (

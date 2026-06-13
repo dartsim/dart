@@ -171,8 +171,12 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
         "packet": "near_singular",
         "surface": "standard/boxed",
-        "benchmark_filter": "BM_LcpNearSingular",
-        "coverage": "conditioning and regularization pressure",
+        "benchmark_filter": (
+            "BM_LcpNearSingular|"
+            "BM_LcpNearSingularBatchSerial|"
+            "BM_LcpNearSingularBatchParallel"
+        ),
+        "coverage": "conditioning, regularization, and batch pressure",
     },
     {
         "packet": "mild_ill_conditioned",
