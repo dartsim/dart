@@ -1386,6 +1386,34 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert "max_friction_index_exact_solve_dimension" in parameter_by_solver[
         "BoxedSemiSmoothNewton"
     ]["parameters"]
+    for parameter_row in parameter_rows:
+        parameter_names = parameter_row["parameters"].split(", ")
+        default_names = [
+            default_value.split("=", 1)[0]
+            for default_value in parameter_row["defaults"].split(", ")
+        ]
+        assert default_names == parameter_names
+    assert parameter_by_solver["Pgs"]["defaults"] == (
+        "epsilon_for_division=1e-09, randomize_constraint_order=false"
+    )
+    assert parameter_by_solver["Apgd"]["defaults"] == (
+        "epsilon_for_division=1e-09, adaptive_restart=true, "
+        "restart_check_interval=5"
+    )
+    assert parameter_by_solver["ShockPropagation"]["defaults"] == (
+        "block_sizes=[], layers=[]"
+    )
+    assert (
+        "max_friction_index_exact_solve_dimension=48"
+        in parameter_by_solver["BoxedSemiSmoothNewton"]["defaults"]
+    )
+    assert parameter_by_solver["Admm"]["defaults"] == (
+        "rho_init=4, mu_prox=1e-09, adaptive_rho_tolerance=5, adaptive_rho=true"
+    )
+    assert parameter_by_solver["Sap"]["defaults"] == (
+        "regularization=1e-04, armijos_parameter=1e-04, "
+        "backtracking_factor=0.5, max_line_search_iterations=20"
+    )
     assert parameter_by_solver["Pgs"]["benchmark_filter"] == "BM_LcpPgsRelaxationSweep"
     assert parameter_by_solver["Jacobi"]["benchmark_filter"] == (
         "BM_LcpJacobiSolverThreading"
