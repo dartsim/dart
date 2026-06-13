@@ -34,6 +34,7 @@ _BENCHMARK_COMMAND = (
 _STANDALONE_LCP_SOLVERS_EXPOSED_IN_DARTPY = True
 _STANDALONE_SMOKE_EXPECTED = np.array([1.0, 0.5, 2.0])
 _STANDALONE_SUCCESS_STATUSES = {"Success", "MaxIterations"}
+_STANDALONE_PROBLEM_SUITE_LABEL = "Representative solver suite"
 
 _LIVE_PACKET_ROWS: tuple[dict[str, str], ...] = (
     {
@@ -87,7 +88,7 @@ _REPRESENTATIVE_REQUIREMENT_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "requirement": "Scalability smoke",
-        "live_packet": "Representative solver suite",
+        "live_packet": _STANDALONE_PROBLEM_SUITE_LABEL,
         "benchmark_packet": "batch_scale, moderate_scale_standard",
         "metrics": "lcp_dimension, elapsed time, residual, complementarity",
         "evidence": "standalone moderate-scale row plus batch benchmark packets",
@@ -2615,7 +2616,9 @@ def build() -> SceneSetup:
                     _write_table_cell(builder, f"{row['solution_error']:.2e}")
                 builder.end_table()
 
-        if builder.collapsing_header("Representative solver suite", default_open=False):
+        if builder.collapsing_header(
+            _STANDALONE_PROBLEM_SUITE_LABEL, default_open=False
+        ):
             if builder.begin_table(
                 "lcp_representative_solver_suite",
                 [

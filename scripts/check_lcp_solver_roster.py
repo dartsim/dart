@@ -162,22 +162,26 @@ def parse_documented_manifest_names() -> list[str]:
     return names
 
 
-def _literal_assignment(module: ast.Module, name: str) -> Any:
+def _assignment_value(module: ast.Module, name: str) -> ast.AST:
     for node in module.body:
         if isinstance(node, ast.Assign):
             if any(
                 isinstance(target, ast.Name) and target.id == name
                 for target in node.targets
             ):
-                return ast.literal_eval(node.value)
+                return node.value
         if (
             isinstance(node, ast.AnnAssign)
             and isinstance(node.target, ast.Name)
             and node.target.id == name
             and node.value is not None
         ):
-            return ast.literal_eval(node.value)
+            return node.value
     raise AssertionError(f"{LCP_DEMO_PATH} is missing assignment {name}")
+
+
+def _literal_assignment(module: ast.Module, name: str) -> Any:
+    return ast.literal_eval(_assignment_value(module, name))
 
 
 def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
@@ -318,6 +322,67 @@ def parse_demo_benchmark_filter_tokens() -> list[str]:
     return tokens
 
 
+def parse_demo_live_packet_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return list(_literal_assignment(module, "_LIVE_PACKET_ROWS"))
+
+
+def parse_demo_benchmark_packet_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return list(_literal_assignment(module, "_BENCHMARK_PACKET_ROWS"))
+
+
+def parse_demo_standalone_problem_suite_label() -> str:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return str(_literal_assignment(module, "_STANDALONE_PROBLEM_SUITE_LABEL"))
+
+
+def parse_demo_standalone_problem_case_names() -> list[str]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    value = _assignment_value(module, "_STANDALONE_PROBLEM_CASES")
+    if not isinstance(value, ast.Tuple):
+        raise AssertionError(
+            f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES is not a tuple literal"
+        )
+
+    names: list[str] = []
+    for element in value.elts:
+        if not isinstance(element, ast.Call):
+            raise AssertionError(
+                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains "
+                f"non-call entry: {ast.dump(element)}"
+            )
+        keywords = {keyword.arg: keyword.value for keyword in element.keywords}
+        name_node = keywords.get("name")
+        if not isinstance(name_node, ast.Constant) or not isinstance(
+            name_node.value, str
+        ):
+            raise AssertionError(
+                f"{LCP_DEMO_PATH} _STANDALONE_PROBLEM_CASES contains an entry "
+                "without a literal name"
+            )
+        names.append(name_node.value)
+    return names
+
+
+def parse_demo_representative_requirement_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    env = {
+        "_STANDALONE_PROBLEM_SUITE_LABEL": _literal_assignment(
+            module, "_STANDALONE_PROBLEM_SUITE_LABEL"
+        )
+    }
+    rows = _evaluate_demo_expression(
+        _assignment_value(module, "_REPRESENTATIVE_REQUIREMENT_ROWS"),
+        env,
+    )
+    return list(rows)
+
+
+def _split_demo_reference_list(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 def parse_lcp_compare_benchmark_bases() -> set[str]:
     return set(
         re.findall(
@@ -358,6 +423,68 @@ def check_demo_benchmark_filters() -> None:
         raise AssertionError(
             "BM_LCP_COMPARE registered benchmarks are not covered by "
             f"lcp_physics benchmark filters: {uncovered_bases}"
+        )
+
+
+def check_demo_representative_requirements() -> None:
+    live_rows = parse_demo_live_packet_rows()
+    benchmark_rows = parse_demo_benchmark_packet_rows()
+    requirement_rows = parse_demo_representative_requirement_rows()
+    standalone_problem_names = set(parse_demo_standalone_problem_case_names())
+    standalone_suite_label = parse_demo_standalone_problem_suite_label()
+
+    live_packets = [row["packet"] for row in live_rows]
+    benchmark_packets = [row["packet"] for row in benchmark_rows]
+    requirements = [row["requirement"] for row in requirement_rows]
+    assert_unique(live_packets, "lcp_physics live packet rows")
+    assert_unique(benchmark_packets, "lcp_physics benchmark packet rows")
+    assert_unique(requirements, "lcp_physics representative requirement rows")
+
+    allowed_live_packets = set(live_packets) | {standalone_suite_label}
+    allowed_benchmark_packets = set(benchmark_packets) | standalone_problem_names
+    required_fields = (
+        "requirement",
+        "live_packet",
+        "benchmark_packet",
+        "metrics",
+        "evidence",
+    )
+    errors: list[str] = []
+    for index, row in enumerate(requirement_rows, start=1):
+        requirement = row.get("requirement", f"row {index}")
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{requirement}: missing fields {missing_fields}")
+            continue
+
+        unknown_live_packets = [
+            packet
+            for packet in _split_demo_reference_list(row["live_packet"])
+            if packet not in allowed_live_packets
+        ]
+        if unknown_live_packets:
+            errors.append(
+                f"{requirement}: unknown live packet references "
+                f"{unknown_live_packets}"
+            )
+
+        unknown_benchmark_packets = [
+            packet
+            for packet in _split_demo_reference_list(row["benchmark_packet"])
+            if packet not in allowed_benchmark_packets
+        ]
+        if unknown_benchmark_packets:
+            errors.append(
+                f"{requirement}: unknown benchmark/standalone references "
+                f"{unknown_benchmark_packets}"
+            )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics representative requirement rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
         )
 
 
@@ -958,6 +1085,7 @@ def check_roster() -> None:
     check_performance_profile_headers(manifest)
     check_performance_profile_evidence(manifest)
     check_demo_benchmark_filters()
+    check_demo_representative_requirements()
     check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]

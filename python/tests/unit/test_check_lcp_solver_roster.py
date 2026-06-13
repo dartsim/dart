@@ -173,6 +173,112 @@ def test_lcp_solver_roster_rejects_uncovered_demo_benchmark_base(
         module.check_demo_benchmark_filters()
 
 
+def test_lcp_solver_roster_reads_demo_representative_requirement_links() -> None:
+    module = _load_module()
+
+    live_packets = {row["packet"] for row in module.parse_demo_live_packet_rows()}
+    benchmark_packets = {
+        row["packet"] for row in module.parse_demo_benchmark_packet_rows()
+    }
+    standalone_problem_cases = set(module.parse_demo_standalone_problem_case_names())
+    requirement_by_name = {
+        row["requirement"]: row
+        for row in module.parse_demo_representative_requirement_rows()
+    }
+
+    assert "Sliding friction" in live_packets
+    assert "world_stack" in benchmark_packets
+    assert "mass_ratio_boxed" in standalone_problem_cases
+    assert requirement_by_name["Scalability smoke"]["live_packet"] == (
+        module.parse_demo_standalone_problem_suite_label()
+    )
+    assert set(
+        module._split_demo_reference_list(
+            requirement_by_name["High mass-ratio stack"]["benchmark_packet"]
+        )
+    ) == {"world_stack", "mass_ratio_boxed"}
+    module.check_demo_representative_requirements()
+
+
+def test_lcp_solver_roster_rejects_stale_requirement_live_packet(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_demo_live_packet_rows",
+        lambda: [{"packet": "Known live packet"}],
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_benchmark_packet_rows",
+        lambda: [{"packet": "known_benchmark_packet"}],
+    )
+    monkeypatch.setattr(module, "parse_demo_standalone_problem_case_names", lambda: [])
+    monkeypatch.setattr(
+        module,
+        "parse_demo_standalone_problem_suite_label",
+        lambda: "Representative solver suite",
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_representative_requirement_rows",
+        lambda: [
+            {
+                "requirement": "Stale live reference",
+                "live_packet": "Missing live packet",
+                "benchmark_packet": "known_benchmark_packet",
+                "metrics": "metric",
+                "evidence": "evidence",
+            }
+        ],
+    )
+
+    with pytest.raises(AssertionError, match="unknown live packet references"):
+        module.check_demo_representative_requirements()
+
+
+def test_lcp_solver_roster_rejects_stale_requirement_benchmark_packet(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_demo_live_packet_rows",
+        lambda: [{"packet": "Known live packet"}],
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_benchmark_packet_rows",
+        lambda: [{"packet": "known_benchmark_packet"}],
+    )
+    monkeypatch.setattr(module, "parse_demo_standalone_problem_case_names", lambda: [])
+    monkeypatch.setattr(
+        module,
+        "parse_demo_standalone_problem_suite_label",
+        lambda: "Representative solver suite",
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_representative_requirement_rows",
+        lambda: [
+            {
+                "requirement": "Stale benchmark reference",
+                "live_packet": "Known live packet",
+                "benchmark_packet": "missing_benchmark_packet",
+                "metrics": "metric",
+                "evidence": "evidence",
+            }
+        ],
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="unknown benchmark/standalone references",
+    ):
+        module.check_demo_representative_requirements()
+
+
 def test_lcp_solver_roster_rejects_extra_bound_solver_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
