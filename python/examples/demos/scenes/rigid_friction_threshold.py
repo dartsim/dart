@@ -299,6 +299,7 @@ class _RigidFrictionThreshold:
             "controls": {
                 "angle_deg": float(self.angle_deg),
                 "controlled_mu": float(self.controlled_mu),
+                "executor_index": int(self.executor_index),
                 "threshold_mu": float(self._threshold()),
             },
             "below_distance": float(self._last_metrics["below"]["distance"]),
@@ -436,10 +437,10 @@ class _RigidFrictionThreshold:
 
     def build_panel(self, builder: Any, context: Any) -> None:
         choices = [label for label, _executor in self._executors]
-        changed, executor_index = builder.select(
+        changed_executor, executor_index = builder.select(
             "Executor", int(self.executor_index), choices
         )
-        if changed:
+        if changed_executor:
             self.executor_index = int(executor_index)
 
         changed_angle, angle_deg = builder.slider(
@@ -455,7 +456,7 @@ class _RigidFrictionThreshold:
         if changed_mu:
             self.controlled_mu = float(controlled_mu)
 
-        if changed_angle or changed_mu:
+        if changed_executor or changed_angle or changed_mu:
             self._reset()
 
         if builder.button("Reset ramp test"):

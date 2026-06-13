@@ -3,15 +3,24 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and one
-local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Reset rigid executor panel edits`. The previous local commits
-`Reset loop closure executor edits` and `Guard rigid joint panel controls` were
-pushed to origin before this continuation. There is still no PR for this
-branch. Do not push, create a PR, set a milestone, rerun CI, or mutate review
-state without explicit maintainer/user approval.
+`feature/rigid-body-gui-visual-verification` is expected to be clean and two
+local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Complete rigid executor panel guard` after
+`Reset rigid executor panel edits`. The pushed origin branch is still at
+`Reset loop closure executor edits`. There is still no PR for this branch. Do
+not push, create a PR, set a milestone, rerun CI, or mutate review state
+without explicit maintainer/user approval.
 
-Latest local continuation: executor-driven rigid GUI panels now treat
+Latest local continuation: the executor-switch guard now covers all audited
+executor-select rigid rows that are safe to construct without loop-closure
+feature gating. Twenty-four panels, including the originally missed friction
+threshold, spin/roll coupling, and stack-stability rows, reset the visual run on
+executor-only edits and publish `controls.executor_index` in capture metrics.
+Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs -q`
+reported `24 passed`. No new visual packet was generated in this slice.
+
+Previous local continuation: executor-driven rigid GUI panels now treat
 `Executor` as a run-defining visual-control edit. Nineteen panels, including
 body modes, free flight, frame hierarchy, timestep/diagnostics/contact-budget,
 solver/contact comparisons, link contact, manipulation, kinematic drivers,

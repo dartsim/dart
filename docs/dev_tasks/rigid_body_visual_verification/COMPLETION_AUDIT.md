@@ -20,14 +20,14 @@ does not add a new visual packet; the existing rows 01-36 packet remains the
 latest broad visual artifact.
 
 Latest local implementation slice: executor-driven rigid GUI panels now treat
-`Executor` as a run-defining visual-control edit. Nineteen panels reset the
-visual run on executor-only edits instead of mixing prior timelines and world
-time with a newly selected executor, and rows that previously omitted the
-executor control now publish `controls.executor_index` in capture metrics.
-Focused executor-switch panel guards reported `19 passed`, and the adjacent
-panel/replay/docs guard reported `23 passed`. This slice does not add a new
-visual packet; the existing rows 01-36 and optional rows 37-53 packets remain
-the latest broad static review artifacts.
+`Executor` as a run-defining visual-control edit. Twenty-four executor-select
+panels reset the visual run on executor-only edits instead of mixing prior
+timelines and world time with a newly selected executor, and rows that
+previously omitted the executor control now publish `controls.executor_index`
+in capture metrics. Focused executor-switch panel guards reported `24 passed`,
+and the adjacent panel/replay/docs guard reported `23 passed`. This slice does
+not add a new visual packet; the existing rows 01-36 and optional rows 37-53
+packets remain the latest broad static review artifacts.
 
 Latest local implementation slice: rows 35-36 now close the editable-control
 guard for the numbered World Rigid Body workflow. Row 35,

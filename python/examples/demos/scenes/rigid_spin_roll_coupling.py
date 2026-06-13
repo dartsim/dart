@@ -362,6 +362,7 @@ class _RigidSpinRollCoupling:
             },
             "controls": {
                 "backspin_ratio": float(self.backspin_ratio),
+                "executor_index": int(self.executor_index),
                 "friction": float(self.friction),
                 "launch_speed": float(self.launch_speed),
             },
@@ -525,10 +526,10 @@ class _RigidSpinRollCoupling:
 
     def build_panel(self, builder: Any, context: Any) -> None:
         choices = [label for label, _executor in self._executors]
-        changed, executor_index = builder.select(
+        changed_executor, executor_index = builder.select(
             "Executor", int(self.executor_index), choices
         )
-        if changed:
+        if changed_executor:
             self.executor_index = int(executor_index)
 
         changed_friction, friction = builder.slider(
@@ -546,7 +547,7 @@ class _RigidSpinRollCoupling:
             self.launch_speed = float(launch_speed)
         if changed_backspin:
             self.backspin_ratio = float(backspin_ratio)
-        if changed_friction or changed_speed or changed_backspin:
+        if changed_executor or changed_friction or changed_speed or changed_backspin:
             self.reset()
 
         if builder.button("Reset spin/roll test"):

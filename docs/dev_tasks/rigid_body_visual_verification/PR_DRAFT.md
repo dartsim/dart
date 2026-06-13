@@ -67,7 +67,7 @@ rigid-body visual verification surface for the current cycle.
   executor/gravity panel-edit guards, and loop closure resets/clears replay on
   executor-only edits while showing the active executor in the panel.
 - Normalizes executor-only panel edits across the broader rigid GUI workflow:
-  executor changes now reset the visual run for 19 executor-driven panels, and
+  executor changes now reset the visual run for 24 executor-select panels, and
   rows that previously omitted it now publish `controls.executor_index` in
   capture metrics so review packets identify the selected executor.
 - Extends the workflow panel and capture helper with open-live commands,
@@ -89,7 +89,7 @@ rigid-body visual verification surface for the current cycle.
 - `pixi run lint`
 - Focused executor-switch panel guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs -q`
-  reported `19 passed`.
+  reported `24 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `23 passed`.

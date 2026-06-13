@@ -348,6 +348,7 @@ class _RigidStackStability:
                 "top_mass_ratio": float(self.top_mass_ratio),
             },
             "controls": {
+                "executor_index": int(self.executor_index),
                 "friction": float(self.friction),
                 "top_mass_ratio": float(self.top_mass_ratio),
             },
@@ -552,10 +553,10 @@ class _RigidStackStability:
 
     def build_panel(self, builder: Any, context: Any) -> None:
         choices = [label for label, _executor in self._executors]
-        changed, executor_index = builder.select(
+        changed_executor, executor_index = builder.select(
             "Executor", int(self.executor_index), choices
         )
-        if changed:
+        if changed_executor:
             self.executor_index = int(executor_index)
 
         changed_ratio, top_mass_ratio = builder.slider(
@@ -570,7 +571,7 @@ class _RigidStackStability:
         if changed_friction:
             self.friction = float(friction)
 
-        if changed_ratio or changed_friction:
+        if changed_executor or changed_ratio or changed_friction:
             self._reset()
 
         if builder.button("Reset stack"):

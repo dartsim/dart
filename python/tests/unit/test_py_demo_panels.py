@@ -1391,6 +1391,9 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (rigid_restitution_ladder, "rigid_restitution_ladder_controller"),
         (rigid_material_mixing, "rigid_material_mixing_controller"),
         (rigid_contact_solver_compare, "rigid_contact_solver_compare_controller"),
+        (rigid_friction_threshold, "rigid_friction_threshold_controller"),
+        (rigid_spin_roll_coupling, "rigid_spin_roll_coupling_controller"),
+        (rigid_stack_stability, "rigid_stack_stability_controller"),
         (contact, "rigid_link_contact_controller"),
         (rigid_contact_manipulation, "rigid_contact_manipulation_controller"),
         (rigid_kinematic_driver, "rigid_kinematic_driver_controller"),
@@ -1403,6 +1406,8 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
             "rigid_joint_passive_parameters_controller",
         ),
         (rigid_screw_joint_pitch, "rigid_screw_joint_pitch_controller"),
+        (rigid_multibody_dynamics_terms, "rigid_multibody_dynamics_terms_controller"),
+        (rigid_link_center_of_mass, "rigid_link_center_of_mass_controller"),
     ],
 )
 def test_rigid_executor_panel_edits_reset_visual_runs(
