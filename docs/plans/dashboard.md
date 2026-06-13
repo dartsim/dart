@@ -361,8 +361,9 @@ its own line so status updates remain git-history friendly.
   plus a reduced scene-owned sparse CG row plus bounded reduced direct sparse
   factor solve plus reduced scene-owned bounded direct sparse factor solve plus
   sparse equality-reduced diagonal solve parity plus a reduced scene-owned
-  sparse graph unique-edge dedup row plus a reduced scene-owned diagonal
-  assembly/solve row, reduced hanging-bridge scene
+  equality-reduced diagonal solve row plus a reduced scene-owned sparse graph
+  unique-edge dedup row plus a reduced scene-owned diagonal assembly/solve row,
+  reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, analytic curved CCD, full scene-level

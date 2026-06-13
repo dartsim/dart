@@ -2,6 +2,45 @@
 
 ## Current Reality (2026-06-13)
 
+Latest scene-owned equality-reduced diagonal solve checkpoint (2026-06-13):
+work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
+#2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
+push, PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned equality-reduced diagonal solve row. The benchmark builds the same
+DART `World` deformable surface used by the scene-owned sparse graph rows,
+emits one diagonal Newton row per scene node, maps each node's six local DOFs
+into three reduced axis coordinates, and runs the existing private
+equality-projected diagonal solve on CPU and CUDA. This is reduced packet
+evidence only; it does not prove production sparse equality reduction, full
+runtime sparse Hessian construction/assembly, unbounded production
+direct/global sparse factorization, production nonlinear equality convergence
+policy/solving, GPU `World::step` assembly/solve integration, or a top-level
+speedup claim.
+
+Fresh packet evidence records `scene_node_count=2560`,
+`scene_triangle_count=768`, `full_dof_count=15360`,
+`reduction_entry_count=15360`, `reduced_dof_count=7680`,
+`active_reduced_dof_count=7680`,
+`max_result_abs_error=8.865239993401835e-16`,
+`residual_norm=1.096424743963087e-14`,
+`step_norm=74.55094721551956`, and
+`speedup=0.028643430542350582x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records `max_result_abs_error=2.9103830456733704e-11`,
+`residual_norm=3.6960887605500504e-13`, and
+`speedup=0.00027005298586267053x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+
 Latest scene-owned sparse graph edge-dedup checkpoint (2026-06-13): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
@@ -1486,11 +1525,12 @@ parity, reduced scene-owned point-triangle, point-edge, point-point, and
 edge-edge barrier-Hessian runtime rows,
 reduced assembly/solve parity including sparse block residual and sparse
 Jacobi, sparse CG, sparse equality-reduced diagonal solve rows, a reduced
-scene-owned diagonal assembly/solve row, and a reduced scene-owned sparse
-off-diagonal surface-edge assembly row, a reduced scene-owned sparse residual
-row, a reduced scene-owned sparse Jacobi row, a reduced scene-owned sparse CG
-row, reduced scene state-batch parity, and reduced ABD complex-geometry/FEM coupling
-evidence. Keep rows `in-progress` unless their full row policy is satisfied:
+scene-owned equality-reduced diagonal solve row, a reduced scene-owned diagonal
+assembly/solve row, and a reduced scene-owned sparse off-diagonal surface-edge
+assembly row, a reduced scene-owned sparse residual row, a reduced scene-owned
+sparse Jacobi row, a reduced scene-owned sparse CG row, reduced scene
+state-batch parity, and reduced ABD complex-geometry/FEM coupling evidence.
+Keep rows `in-progress` unless their full row policy is satisfied:
 additional runtime contact rows, GPU sweep-and-prune broad-phase construction,
 analytic curved CCD, full scene-level line search, full runtime scene
 filtering, GPU
@@ -1508,9 +1548,10 @@ runtime scene filtering and speedup-gate work; the next barrier/friction packet
 gaps are additional runtime contact rows, full runtime sparse Hessian graph
 construction and assembly beyond the reduced dedup row, and speedup-gate work;
 the next assembly/solve gaps
-are full runtime sparse Hessian graph construction and assembly, direct/global
-sparse factorization, production nonlinear equality convergence policy/solving,
-GPU `World::step` assembly/solve integration, and speedup-gate work. The CCD row
+are full runtime sparse Hessian graph construction and assembly, production
+sparse equality reduction, direct/global sparse factorization, production
+nonlinear equality convergence policy/solving, GPU `World::step` assembly/solve
+integration, and speedup-gate work. The CCD row
 still needs
 analytic curved CCD, full scene-level line-search feasibility,
 and runtime speedup. Do not mark these rows measured until the top-level speed

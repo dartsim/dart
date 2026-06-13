@@ -2,6 +2,45 @@
 
 ## Current Status
 
+Latest scene-owned equality-reduced diagonal solve checkpoint (2026-06-13):
+work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
+#2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
+push, PR-comment, resolve review threads, trigger CI, open or close PRs, delete
+branches, or claim unrelated PLAN-091 packets without explicit maintainer
+approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned equality-reduced diagonal solve row. The benchmark builds the same
+DART `World` deformable surface used by the scene-owned sparse graph rows,
+emits one diagonal Newton row per scene node, maps each node's six local DOFs
+into three reduced axis coordinates, and runs the existing private
+equality-projected diagonal solve on CPU and CUDA. This is reduced packet
+evidence only; it does not prove production sparse equality reduction, full
+runtime sparse Hessian construction/assembly, unbounded production
+direct/global sparse factorization, production nonlinear equality convergence
+policy/solving, GPU `World::step` assembly/solve integration, or a top-level
+speedup claim.
+
+Fresh packet evidence records `scene_node_count=2560`,
+`scene_triangle_count=768`, `full_dof_count=15360`,
+`reduction_entry_count=15360`, `reduced_dof_count=7680`,
+`active_reduced_dof_count=7680`,
+`max_result_abs_error=8.865239993401835e-16`,
+`residual_norm=1.096424743963087e-14`,
+`step_norm=74.55094721551956`, and
+`speedup=0.028643430542350582x` (`meets_speedup_gate=false`). The top-level
+assembly/solve packet records `max_result_abs_error=2.9103830456733704e-11`,
+`residual_norm=3.6960887605500504e-13`, and
+`speedup=0.00027005298586267053x` (`meets_speedup_gate=false`), so the durable
+GPU packet row remains `in-progress`.
+
+Current validation passed:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py -q`
+- `pixi run -e cuda build-cuda`
+- `pixi run -e cuda python scripts/write_newton_assembly_solve_packet.py`
+
 Latest scene-owned sparse graph edge-dedup checkpoint (2026-06-13): work
 continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
@@ -1130,12 +1169,12 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         fixed-iteration sparse Jacobi solve, reduced scene-owned sparse Jacobi
         solve, capped sparse CG solve, reduced scene-owned sparse CG solve,
         reduced scene-owned nonlinear distance-equality assembly/solve, and
-        sparse equality-reduced diagonal solve packets with exact CPU/GPU
-        local-output parity; keep the row in-progress because full runtime
-        sparse Hessian graph construction and assembly, direct/global sparse
-        factorization, production nonlinear equality convergence policy/solving,
-        GPU `World::step` assembly/solve integration, and speedup remain
-        unproven.
+        sparse equality-reduced diagonal solve plus reduced scene-owned
+        equality-reduced diagonal solve packets with exact CPU/GPU local-output
+        parity; keep the row in-progress because full runtime sparse Hessian
+        graph construction and assembly, direct/global sparse factorization,
+        production nonlinear equality convergence policy/solving, GPU
+        `World::step` assembly/solve integration, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,

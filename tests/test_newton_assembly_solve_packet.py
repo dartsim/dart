@@ -940,6 +940,56 @@ def _benchmark_data(**overrides):
         expansion_kernel_ns=6.0,
         device_to_host_ns=7.0,
     )
+    scene_equality_cpu = _row(
+        "BM_NewtonSceneRuntimeEqualityReducedSolveCpu/1024",
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        reduction_entries=1920,
+        reduced_dofs=960,
+        active_reduced_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        max_diagonal=13.0,
+        max_gradient_abs=1.5,
+        step_norm=0.75,
+        residual_norm=0.0,
+        max_result_abs_error=0.0,
+    )
+    scene_equality_gpu = _row(
+        "BM_NewtonSceneRuntimeEqualityReducedSolveCuda/1024",
+        real_time=8.0,
+        cpu_time=8.0,
+        rows=320,
+        bodies=320,
+        dofs=1920,
+        reduction_entries=1920,
+        reduced_dofs=960,
+        active_reduced_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        gpu_rows=320,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_reduction_entries=1920,
+        gpu_reduced_dofs=960,
+        gpu_active_reduced_dofs=960,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_step_norm=0.75,
+        gpu_residual_norm=4e-14,
+        max_result_abs_error=3e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        reduction_kernel_ns=4.0,
+        solve_kernel_ns=5.0,
+        expansion_kernel_ns=6.0,
+        device_to_host_ns=7.0,
+    )
     gpu.update(overrides)
     return {
         "benchmarks": [
@@ -979,6 +1029,8 @@ def _benchmark_data(**overrides):
             scene_direct_sparse_gpu,
             equality_cpu,
             equality_gpu,
+            scene_equality_cpu,
+            scene_equality_gpu,
         ]
     }
 
@@ -1302,6 +1354,21 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert equality["residual_norm"] == 2e-14
     assert equality["timing_ns"]["reduction"] == 4.0
     assert equality["timing_ns"]["expansion"] == 6.0
+    scene_equality = row["scene_runtime_equality_reduced_diagonal_solve"]
+    assert scene_equality["row_count"] == 320
+    assert scene_equality["nominal_row_count"] == 1024
+    assert scene_equality["scene_body_count"] == 1
+    assert scene_equality["scene_node_count"] == 320
+    assert scene_equality["scene_triangle_count"] == 96
+    assert scene_equality["body_count"] == 320
+    assert scene_equality["full_dof_count"] == 1920
+    assert scene_equality["reduction_entry_count"] == 1920
+    assert scene_equality["reduced_dof_count"] == 960
+    assert scene_equality["active_reduced_dof_count"] == 960
+    assert scene_equality["max_result_abs_error"] == 3e-12
+    assert scene_equality["residual_norm"] == 4e-14
+    assert scene_equality["timing_ns"]["reduction"] == 4.0
+    assert scene_equality["timing_ns"]["expansion"] == 6.0
 
 
 def test_newton_assembly_solve_packet_rejects_accuracy_failure() -> None:

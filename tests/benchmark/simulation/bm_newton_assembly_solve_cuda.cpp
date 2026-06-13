@@ -450,6 +450,13 @@ struct EqualityReducedSolveFixture
   CpuEqualityReducedSolveResult cpu;
 };
 
+struct SceneRuntimeEqualityReducedSolveFixture : EqualityReducedSolveFixture
+{
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneNodeCount = 0;
+  std::size_t sceneTriangleCount = 0;
+};
+
 cuda::NewtonAssemblySolveRowInput makeRow(
     const int rowIndex, const std::size_t bodyCount)
 {
@@ -1204,7 +1211,7 @@ void evaluateCpuSceneNonlinearEqualityConvergence(
 }
 
 template <typename Fixture>
-void populateSceneRuntimeSparseGraphFixture(
+void populateSceneRuntimeDiagonalRows(
     Fixture& fixture, const sx::World& world, const sx::DeformableBody& body)
 {
   fixture.sceneBodyCount = world.getDeformableBodyCount();
@@ -1226,6 +1233,13 @@ void populateSceneRuntimeSparseGraphFixture(
     fixture.rows.push_back(
         makeSceneRuntimeAssemblyRow(body, node, incidentTriangleCounts[node]));
   }
+}
+
+template <typename Fixture>
+void populateSceneRuntimeSparseGraphFixture(
+    Fixture& fixture, const sx::World& world, const sx::DeformableBody& body)
+{
+  populateSceneRuntimeDiagonalRows(fixture, world, body);
 
   fixture.blocks.reserve(3u * fixture.sceneTriangleCount);
   const auto appendSparseBlock
@@ -1250,6 +1264,18 @@ cuda::NewtonEqualityReductionEntry makeEqualityReductionEntry(
   entry.fullDofIndex = static_cast<std::uint32_t>(fullDof);
   entry.reducedDofIndex = static_cast<std::uint32_t>(reducedDof);
   entry.basisValue = (fullDof % 2 == 0) ? 1.0 : 0.5;
+  return entry;
+}
+
+cuda::NewtonEqualityReductionEntry makeSceneRuntimeEqualityReductionEntry(
+    const std::size_t fullDof,
+    const std::size_t reducedDof,
+    const std::size_t localDof)
+{
+  cuda::NewtonEqualityReductionEntry entry;
+  entry.fullDofIndex = static_cast<std::uint32_t>(fullDof);
+  entry.reducedDofIndex = static_cast<std::uint32_t>(reducedDof);
+  entry.basisValue = (localDof < 3u) ? 1.0 : 0.25;
   return entry;
 }
 
@@ -2362,6 +2388,40 @@ EqualityReducedSolveFixture makeEqualityReducedFixture(const int rowCount)
   return fixture;
 }
 
+SceneRuntimeEqualityReducedSolveFixture makeSceneRuntimeEqualityReducedFixture(
+    const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_equality_reduced",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeEqualityReducedSolveFixture fixture;
+  populateSceneRuntimeDiagonalRows(fixture, world, body);
+  fixture.reducedDofCount = 3u * fixture.sceneNodeCount;
+  const std::size_t fullDofCount
+      = fixture.bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  fixture.entries.reserve(fullDofCount);
+  for (std::size_t node = 0; node < fixture.sceneNodeCount; ++node) {
+    const std::size_t fullOffset = node * cuda::kNewtonAssemblySolveDofsPerBody;
+    const std::size_t reducedOffset = node * 3u;
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      fixture.entries.push_back(makeSceneRuntimeEqualityReductionEntry(
+          fullOffset + dof, reducedOffset + (dof % 3u), dof));
+    }
+  }
+
+  evaluateCpuEqualityReducedSolve(
+      fixture.rows,
+      fixture.bodyCount,
+      fixture.entries,
+      fixture.reducedDofCount,
+      fixture.cpu);
+  return fixture;
+}
+
 template <typename Lhs, typename Rhs>
 double maxAbsDifference(const Lhs& lhs, const Rhs& rhs)
 {
@@ -3189,6 +3249,18 @@ void recordEqualityReducedCounters(
   state.counters["max_result_abs_error"] = maxError;
   state.SetItemsProcessed(
       static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordSceneRuntimeEqualityReducedCounters(
+    benchmark::State& state,
+    const SceneRuntimeEqualityReducedSolveFixture& fixture,
+    const double maxError)
+{
+  recordEqualityReducedCounters(state, fixture, maxError);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
 }
 
 } // namespace
@@ -4478,6 +4550,85 @@ static void BM_NewtonEqualityReducedSolveCuda(benchmark::State& state)
 }
 BENCHMARK(BM_NewtonEqualityReducedSolveCuda)
     ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeEqualityReducedSolveCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeEqualityReducedFixture(
+      static_cast<int>(state.range(0)));
+  CpuEqualityReducedSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuEqualityReducedSolve(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.entries,
+        fixture.reducedDofCount,
+        result);
+    benchmark::DoNotOptimize(result.reducedStep.data());
+  }
+
+  recordSceneRuntimeEqualityReducedCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeEqualityReducedSolveCpu)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeEqualityReducedSolveCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeEqualityReducedFixture(
+      static_cast<int>(state.range(0)));
+  cuda::NewtonEqualityReducedSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonEqualityReducedSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.entries,
+        fixture.reducedDofCount,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.reducedStep.data());
+  }
+
+  recordSceneRuntimeEqualityReducedCounters(
+      state, fixture, maxEqualityReducedOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.fullDofCount);
+  state.counters["gpu_reduction_entries"]
+      = static_cast<double>(result.reductionEntryCount);
+  state.counters["gpu_reduced_dofs"]
+      = static_cast<double>(result.reducedDofCount);
+  state.counters["gpu_active_reduced_dofs"]
+      = static_cast<double>(result.activeReducedDofCount);
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"]
+      = static_cast<double>(fixture.sceneNodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["reduction_kernel_ns"] = result.timing.reductionKernelNs;
+  state.counters["solve_kernel_ns"] = result.timing.solveKernelNs;
+  state.counters["expansion_kernel_ns"] = result.timing.expansionKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeEqualityReducedSolveCuda)
     ->Arg(65536)
     ->UseRealTime();
 

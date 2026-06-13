@@ -191,7 +191,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "SceneRuntimeNonlinearEqualityConvergence|SparseResidual|"
         "SceneRuntimeSparseResidual|SparseJacobiSolve|SceneRuntimeSparseJacobiSolve|"
         "SparseCgSolve|SceneRuntimeSparseCgSolve|DirectSparseSolve|"
-        "SceneRuntimeDirectSparseSolve|EqualityReducedSolve)(Cpu|Cuda)"
+        "SceneRuntimeDirectSparseSolve|EqualityReducedSolve|"
+        "SceneRuntimeEqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
     )
     command = [
@@ -322,6 +323,12 @@ def _representative_rows(
         ),
         "equality_cpu": f"BM_NewtonEqualityReducedSolveCpu/{row_count}",
         "equality_gpu": f"BM_NewtonEqualityReducedSolveCuda/{row_count}",
+        "scene_equality_cpu": (
+            f"BM_NewtonSceneRuntimeEqualityReducedSolveCpu/{row_count}"
+        ),
+        "scene_equality_gpu": (
+            f"BM_NewtonSceneRuntimeEqualityReducedSolveCuda/{row_count}"
+        ),
     }
     expected_by_name = {name: key for key, name in expected_names.items()}
     found: dict[str, Mapping[str, Any]] = {}
@@ -433,6 +440,8 @@ def make_packet(
     scene_direct_sparse_gpu_row = representative_rows["scene_direct_sparse_gpu"]
     equality_cpu_row = representative_rows["equality_cpu"]
     equality_gpu_row = representative_rows["equality_gpu"]
+    scene_equality_cpu_row = representative_rows["scene_equality_cpu"]
+    scene_equality_gpu_row = representative_rows["scene_equality_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
     gpu_ns = benchmark_timing_ns(gpu_row)
     scene_assembly_cpu_ns = benchmark_timing_ns(scene_assembly_cpu_row)
@@ -485,6 +494,8 @@ def make_packet(
     scene_direct_sparse_gpu_ns = benchmark_timing_ns(scene_direct_sparse_gpu_row)
     equality_cpu_ns = benchmark_timing_ns(equality_cpu_row)
     equality_gpu_ns = benchmark_timing_ns(equality_gpu_row)
+    scene_equality_cpu_ns = benchmark_timing_ns(scene_equality_cpu_row)
+    scene_equality_gpu_ns = benchmark_timing_ns(scene_equality_gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError("CPU benchmark timing is not positive")
     if not math.isfinite(gpu_ns) or gpu_ns <= 0.0:
@@ -671,6 +682,14 @@ def make_packet(
         raise NewtonAssemblySolvePacketError(
             "equality-reduced GPU benchmark timing is not positive"
         )
+    if not math.isfinite(scene_equality_cpu_ns) or scene_equality_cpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(scene_equality_gpu_ns) or scene_equality_gpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced GPU benchmark timing is not positive"
+        )
 
     diagonal_max_error = _counter(gpu_row, "max_result_abs_error")
     scene_assembly_max_error = _counter(scene_assembly_gpu_row, "max_result_abs_error")
@@ -712,6 +731,7 @@ def make_packet(
         scene_direct_sparse_gpu_row, "max_result_abs_error"
     )
     equality_max_error = _counter(equality_gpu_row, "max_result_abs_error")
+    scene_equality_max_error = _counter(scene_equality_gpu_row, "max_result_abs_error")
     max_error = max(
         diagonal_max_error,
         scene_assembly_max_error,
@@ -731,6 +751,7 @@ def make_packet(
         direct_sparse_max_error,
         scene_direct_sparse_max_error,
         equality_max_error,
+        scene_equality_max_error,
     )
     if max_error > tolerance:
         raise NewtonAssemblySolvePacketError(
@@ -752,6 +773,7 @@ def make_packet(
         scene_direct_sparse_gpu_row, "gpu_residual_norm"
     )
     equality_residual_norm = _counter(equality_gpu_row, "gpu_residual_norm")
+    scene_equality_residual_norm = _counter(scene_equality_gpu_row, "gpu_residual_norm")
     max_residual_norm = max(
         residual_norm,
         scene_assembly_residual_norm,
@@ -762,6 +784,7 @@ def make_packet(
         direct_sparse_residual_norm,
         scene_direct_sparse_residual_norm,
         equality_residual_norm,
+        scene_equality_residual_norm,
     )
     if max_residual_norm > residual_tolerance:
         raise NewtonAssemblySolvePacketError(
@@ -2192,6 +2215,73 @@ def make_packet(
         "gpu_active_reduced_dofs",
     )
     equality_step_norm = _counter(equality_gpu_row, "gpu_step_norm")
+    scene_equality_rows = _matching_int_counter(
+        scene_equality_cpu_row, scene_equality_gpu_row, "rows", "gpu_rows"
+    )
+    if scene_equality_rows <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced row count is zero"
+        )
+    scene_equality_bodies = _matching_int_counter(
+        scene_equality_cpu_row, scene_equality_gpu_row, "bodies", "gpu_bodies"
+    )
+    scene_equality_dofs = _matching_int_counter(
+        scene_equality_cpu_row, scene_equality_gpu_row, "dofs", "gpu_dofs"
+    )
+    scene_equality_reduction_entries = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "reduction_entries",
+        "gpu_reduction_entries",
+    )
+    scene_equality_reduced_dofs = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "reduced_dofs",
+        "gpu_reduced_dofs",
+    )
+    scene_equality_active_reduced_dofs = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "active_reduced_dofs",
+        "gpu_active_reduced_dofs",
+    )
+    scene_equality_scene_bodies = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "scene_bodies",
+        "gpu_scene_bodies",
+    )
+    scene_equality_scene_nodes = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "scene_nodes",
+        "gpu_scene_nodes",
+    )
+    scene_equality_scene_triangles = _matching_int_counter(
+        scene_equality_cpu_row,
+        scene_equality_gpu_row,
+        "scene_triangles",
+        "gpu_scene_triangles",
+    )
+    if scene_equality_scene_nodes != scene_equality_bodies:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced node count "
+            f"{scene_equality_scene_nodes} != bodies {scene_equality_bodies}"
+        )
+    if scene_equality_dofs != scene_equality_scene_nodes * 6:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced dofs do not match six dofs per node"
+        )
+    if scene_equality_reduction_entries != scene_equality_dofs:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced reduction entries do not match full dofs"
+        )
+    if scene_equality_reduced_dofs != scene_equality_scene_nodes * 3:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime equality-reduced dofs do not match three per node"
+        )
+    scene_equality_step_norm = _counter(scene_equality_gpu_row, "gpu_step_norm")
     off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
     scene_off_diagonal_speedup = scene_off_diagonal_cpu_ns / scene_off_diagonal_gpu_ns
     scene_sparse_graph_speedup = scene_sparse_graph_cpu_ns / scene_sparse_graph_gpu_ns
@@ -2225,6 +2315,7 @@ def make_packet(
         scene_direct_sparse_cpu_ns / scene_direct_sparse_gpu_ns
     )
     equality_speedup = equality_cpu_ns / equality_gpu_ns
+    scene_equality_speedup = scene_equality_cpu_ns / scene_equality_gpu_ns
     speedup = min(
         diagonal_speedup,
         scene_assembly_speedup,
@@ -2244,6 +2335,7 @@ def make_packet(
         direct_sparse_speedup,
         scene_direct_sparse_speedup,
         equality_speedup,
+        scene_equality_speedup,
     )
     timing_ns = {
         "setup": _counter(gpu_row, "host_setup_ns"),
@@ -2554,6 +2646,21 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"equality-reduced packet timing is missing {sorted(missing)}"
+        )
+    scene_equality_timing_ns = {
+        "setup": _counter(scene_equality_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(scene_equality_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(scene_equality_gpu_row, "assembly_kernel_ns"),
+        "reduction": _counter(scene_equality_gpu_row, "reduction_kernel_ns"),
+        "solve": _counter(scene_equality_gpu_row, "solve_kernel_ns"),
+        "expansion": _counter(scene_equality_gpu_row, "expansion_kernel_ns"),
+        "device_to_host": _counter(scene_equality_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = EQUALITY_TIMING_KEYS - scene_equality_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"scene equality-reduced packet timing is missing {sorted(missing)}"
         )
 
     return {
@@ -3009,6 +3116,26 @@ def make_packet(
                 "timing_ns": equality_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(equality_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(equality_gpu_row),
+            },
+            "scene_runtime_equality_reduced_diagonal_solve": {
+                "row_count": scene_equality_rows,
+                "nominal_row_count": row_count,
+                "scene_body_count": scene_equality_scene_bodies,
+                "scene_node_count": scene_equality_scene_nodes,
+                "scene_triangle_count": scene_equality_scene_triangles,
+                "body_count": scene_equality_bodies,
+                "full_dof_count": scene_equality_dofs,
+                "reduction_entry_count": scene_equality_reduction_entries,
+                "reduced_dof_count": scene_equality_reduced_dofs,
+                "active_reduced_dof_count": scene_equality_active_reduced_dofs,
+                "max_result_abs_error": scene_equality_max_error,
+                "residual_norm": scene_equality_residual_norm,
+                "step_norm": scene_equality_step_norm,
+                "speedup": scene_equality_speedup,
+                "meets_speedup_gate": scene_equality_speedup >= speedup_gate,
+                "timing_ns": scene_equality_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(scene_equality_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(scene_equality_gpu_row),
             },
         },
         "benchmarks": rows,
