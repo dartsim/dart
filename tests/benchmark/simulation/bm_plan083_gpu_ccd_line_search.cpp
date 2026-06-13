@@ -104,6 +104,12 @@ struct SceneEdgeEdgeCcdFixture : EdgeEdgeCcdFixture
   std::size_t sourceEdgeEdgeCandidateCount = 0;
 };
 
+struct CombinedSceneRuntimeCcdFixture
+{
+  ScenePointTriangleCcdFixture pointTriangle;
+  SceneEdgeEdgeCcdFixture edgeEdge;
+};
+
 template <typename Pair>
 struct RigidCurvedCcdFixture
 {
@@ -468,29 +474,14 @@ SceneRuntimeCcdSurface makeSceneRuntimeCcdSurface(const int sampleCount)
   return surface;
 }
 
-bool isStaticNode(
-    const SceneRuntimeCcdSurface& surface, const std::size_t nodeIndex)
-{
-  return (surface.end[nodeIndex] - surface.start[nodeIndex]).squaredNorm()
-         <= 1e-24;
-}
-
 bool isStaticTriangle(
     const SceneRuntimeCcdSurface& surface,
-    const sx::DeformableSurfaceTriangle& triangle)
-{
-  return isStaticNode(surface, triangle.nodeA)
-         && isStaticNode(surface, triangle.nodeB)
-         && isStaticNode(surface, triangle.nodeC);
-}
+    const sx::DeformableSurfaceTriangle& triangle);
 
-ScenePointTriangleCcdFixture makeSceneRuntimePointTriangleCcdFixture(
-    const int sampleCount)
+void populateSceneRuntimePointTriangleCcdFixture(
+    const SceneRuntimeCcdSurface& surface,
+    ScenePointTriangleCcdFixture& fixture)
 {
-  const SceneRuntimeCcdSurface surface
-      = makeSceneRuntimeCcdSurface(sampleCount);
-
-  ScenePointTriangleCcdFixture fixture;
   fixture.sceneBodyCount = surface.sceneBodyCount;
   fixture.sceneNodeCount = surface.sceneNodeCount;
   fixture.sceneTriangleCount = surface.sceneTriangleCount;
@@ -518,16 +509,11 @@ ScenePointTriangleCcdFixture makeSceneRuntimePointTriangleCcdFixture(
   }
 
   populateCpuPairResults(fixture);
-  return fixture;
 }
 
-SceneEdgeEdgeCcdFixture makeSceneRuntimeEdgeEdgeCcdFixture(
-    const int sampleCount)
+void populateSceneRuntimeEdgeEdgeCcdFixture(
+    const SceneRuntimeCcdSurface& surface, SceneEdgeEdgeCcdFixture& fixture)
 {
-  const SceneRuntimeCcdSurface surface
-      = makeSceneRuntimeCcdSurface(sampleCount);
-
-  SceneEdgeEdgeCcdFixture fixture;
   fixture.sceneBodyCount = surface.sceneBodyCount;
   fixture.sceneNodeCount = surface.sceneNodeCount;
   fixture.sceneTriangleCount = surface.sceneTriangleCount;
@@ -550,6 +536,55 @@ SceneEdgeEdgeCcdFixture makeSceneRuntimeEdgeEdgeCcdFixture(
   }
 
   populateCpuPairResults(fixture);
+}
+
+bool isStaticNode(
+    const SceneRuntimeCcdSurface& surface, const std::size_t nodeIndex)
+{
+  return (surface.end[nodeIndex] - surface.start[nodeIndex]).squaredNorm()
+         <= 1e-24;
+}
+
+bool isStaticTriangle(
+    const SceneRuntimeCcdSurface& surface,
+    const sx::DeformableSurfaceTriangle& triangle)
+{
+  return isStaticNode(surface, triangle.nodeA)
+         && isStaticNode(surface, triangle.nodeB)
+         && isStaticNode(surface, triangle.nodeC);
+}
+
+ScenePointTriangleCcdFixture makeSceneRuntimePointTriangleCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  ScenePointTriangleCcdFixture fixture;
+  populateSceneRuntimePointTriangleCcdFixture(surface, fixture);
+  return fixture;
+}
+
+SceneEdgeEdgeCcdFixture makeSceneRuntimeEdgeEdgeCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  SceneEdgeEdgeCcdFixture fixture;
+  populateSceneRuntimeEdgeEdgeCcdFixture(surface, fixture);
+  return fixture;
+}
+
+CombinedSceneRuntimeCcdFixture makeSceneRuntimeCombinedCcdFixture(
+    const int sampleCount)
+{
+  const SceneRuntimeCcdSurface surface
+      = makeSceneRuntimeCcdSurface(sampleCount);
+
+  CombinedSceneRuntimeCcdFixture fixture;
+  populateSceneRuntimePointTriangleCcdFixture(surface, fixture.pointTriangle);
+  populateSceneRuntimeEdgeEdgeCcdFixture(surface, fixture.edgeEdge);
   return fixture;
 }
 
@@ -691,6 +726,49 @@ void recordSceneRuntimeCounters(
       = static_cast<double>(fixture.sceneTriangleCount);
   state.counters["runtime_edge_edge_candidates"]
       = static_cast<double>(fixture.sourceEdgeEdgeCandidateCount);
+}
+
+void recordCombinedSceneRuntimeCounters(
+    benchmark::State& state,
+    const CombinedSceneRuntimeCcdFixture& fixture,
+    const double maxError)
+{
+  const auto& pointTriangle = fixture.pointTriangle;
+  const auto& edgeEdge = fixture.edgeEdge;
+  const std::size_t totalPairCount
+      = pointTriangle.pairs.size() + edgeEdge.pairs.size();
+  const std::size_t totalHitCount = pointTriangle.hitCount + edgeEdge.hitCount;
+
+  state.counters["pairs"] = static_cast<double>(totalPairCount);
+  state.counters["point_triangle_pairs"]
+      = static_cast<double>(pointTriangle.pairs.size());
+  state.counters["edge_edge_pairs"]
+      = static_cast<double>(edgeEdge.pairs.size());
+  state.counters["hits"] = static_cast<double>(totalHitCount);
+  state.counters["point_triangle_hits"]
+      = static_cast<double>(pointTriangle.hitCount);
+  state.counters["edge_edge_hits"] = static_cast<double>(edgeEdge.hitCount);
+  state.counters["min_step_bound"]
+      = std::min(pointTriangle.minStepBound, edgeEdge.minStepBound);
+  state.counters["max_result_abs_error"] = maxError;
+  state.counters["scene_bodies"]
+      = static_cast<double>(pointTriangle.sceneBodyCount);
+  state.counters["scene_nodes"]
+      = static_cast<double>(pointTriangle.sceneNodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(pointTriangle.sceneTriangleCount);
+  state.counters["runtime_point_triangle_candidates"]
+      = static_cast<double>(pointTriangle.sourcePointTriangleCandidateCount);
+  state.counters["static_triangle_point_triangle_candidates"]
+      = static_cast<double>(
+          pointTriangle.staticTrianglePointTriangleCandidateCount);
+  state.counters["moving_triangle_point_triangle_candidates"]
+      = static_cast<double>(
+          pointTriangle.movingTrianglePointTriangleCandidateCount);
+  state.counters["runtime_edge_edge_candidates"]
+      = static_cast<double>(edgeEdge.sourceEdgeEdgeCandidateCount);
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * totalPairCount));
 }
 
 template <typename Pair>
@@ -967,6 +1045,105 @@ static void BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda(
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu(
+    benchmark::State& state)
+{
+  const auto fixture
+      = makeSceneRuntimeCombinedCcdFixture(static_cast<int>(state.range(0)));
+
+  std::size_t hitCount = 0;
+  double minStepBound = 1.0;
+  for (auto _ : state) {
+    hitCount = 0;
+    minStepBound = 1.0;
+    for (const auto& pair : fixture.pointTriangle.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+    for (const auto& pair : fixture.edgeEdge.pairs) {
+      const auto result = cpuResult(pair);
+      if (result.hit) {
+        ++hitCount;
+        minStepBound = std::min(minStepBound, result.stepBound);
+      }
+      double stepBound = result.stepBound;
+      benchmark::DoNotOptimize(stepBound);
+    }
+  }
+
+  benchmark::DoNotOptimize(hitCount);
+  benchmark::DoNotOptimize(minStepBound);
+  recordCombinedSceneRuntimeCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSceneRuntimeCombinedCcdFixture(static_cast<int>(state.range(0)));
+  cuda::PointTriangleCcdLineSearchResult pointTriangleResult;
+  cuda::EdgeEdgeCcdLineSearchResult edgeEdgeResult;
+  double maxError = 0.0;
+
+  for (auto _ : state) {
+    cuda::evaluatePointTriangleCcdLineSearchCuda(
+        fixture.pointTriangle.pairs,
+        cuda::CcdLineSearchOptions{},
+        pointTriangleResult);
+    cuda::evaluateEdgeEdgeCcdLineSearchCuda(
+        fixture.edgeEdge.pairs, cuda::CcdLineSearchOptions{}, edgeEdgeResult);
+    benchmark::DoNotOptimize(pointTriangleResult.stepBounds.data());
+    benchmark::DoNotOptimize(pointTriangleResult.hits.data());
+    benchmark::DoNotOptimize(edgeEdgeResult.stepBounds.data());
+    benchmark::DoNotOptimize(edgeEdgeResult.hits.data());
+  }
+
+  maxError = std::max(
+      maxAbsDifference(
+          pointTriangleResult.stepBounds, fixture.pointTriangle.cpuStepBounds),
+      maxAbsDifference(
+          edgeEdgeResult.stepBounds, fixture.edgeEdge.cpuStepBounds));
+  recordCombinedSceneRuntimeCounters(state, fixture, maxError);
+  state.counters["gpu_hits"] = static_cast<double>(
+      pointTriangleResult.hitCount + edgeEdgeResult.hitCount);
+  state.counters["gpu_point_triangle_hits"]
+      = static_cast<double>(pointTriangleResult.hitCount);
+  state.counters["gpu_edge_edge_hits"]
+      = static_cast<double>(edgeEdgeResult.hitCount);
+  state.counters["gpu_min_step_bound"]
+      = std::min(pointTriangleResult.minStepBound, edgeEdgeResult.minStepBound);
+  state.counters["host_setup_ns"]
+      = pointTriangleResult.timing.setupNs + edgeEdgeResult.timing.setupNs;
+  state.counters["host_to_device_ns"]
+      = pointTriangleResult.timing.hostToDeviceNs
+        + edgeEdgeResult.timing.hostToDeviceNs;
+  state.counters["kernel_ns"]
+      = pointTriangleResult.timing.kernelNs + edgeEdgeResult.timing.kernelNs;
+  state.counters["device_to_host_ns"]
+      = pointTriangleResult.timing.deviceToHostNs
+        + edgeEdgeResult.timing.deviceToHostNs;
+}
+BENCHMARK(BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

@@ -109,7 +109,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
         "^BM_Plan083"
         "("
         "EdgeEdge|RigidCurvedPointTriangle|RigidCurvedEdgeEdge|"
-        "SceneRuntimePointTriangle|SceneRuntimeEdgeEdge"
+        "SceneRuntimePointTriangle|SceneRuntimeEdgeEdge|SceneRuntimeCombined"
         ")?"
         "CcdLineSearch(Cpu|Cuda)"
         f"/{args.pair_count}(/real_time)?$"
@@ -193,6 +193,10 @@ def _expected_row_names(pair_count: int) -> dict[str, tuple[str, str]]:
         "scene_runtime_edge_edge": (
             f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCpu/{pair_count}",
             f"BM_Plan083SceneRuntimeEdgeEdgeCcdLineSearchCuda/{pair_count}",
+        ),
+        "scene_runtime_combined": (
+            f"BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu/{pair_count}",
+            f"BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda/{pair_count}",
         ),
     }
 
@@ -297,6 +301,19 @@ def _validate_primitive_family(
             )
         if family == "scene_runtime_edge_edge":
             required_scene_counters.append("runtime_edge_edge_candidates")
+        if family == "scene_runtime_combined":
+            required_scene_counters.extend(
+                [
+                    "point_triangle_pairs",
+                    "edge_edge_pairs",
+                    "point_triangle_hits",
+                    "edge_edge_hits",
+                    "runtime_point_triangle_candidates",
+                    "static_triangle_point_triangle_candidates",
+                    "moving_triangle_point_triangle_candidates",
+                    "runtime_edge_edge_candidates",
+                ]
+            )
         for key in required_scene_counters:
             cpu_value = int(_counter(cpu_row, key))
             gpu_value = int(_counter(gpu_row, key))
@@ -337,6 +354,56 @@ def _validate_primitive_family(
                 f"{scene_counters['runtime_edge_edge_candidates']} "
                 f"!= pairs {cpu_pairs}"
             )
+        if family == "scene_runtime_combined":
+            if (
+                scene_counters["point_triangle_pairs"]
+                + scene_counters["edge_edge_pairs"]
+                != cpu_pairs
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} point-triangle/edge-edge pair counts "
+                    f"{scene_counters['point_triangle_pairs']} + "
+                    f"{scene_counters['edge_edge_pairs']} != pairs {cpu_pairs}"
+                )
+            if scene_counters["point_triangle_hits"] + scene_counters[
+                "edge_edge_hits"
+            ] != int(cpu_hits):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} point-triangle/edge-edge hit counts "
+                    f"{scene_counters['point_triangle_hits']} + "
+                    f"{scene_counters['edge_edge_hits']} != hits {int(cpu_hits)}"
+                )
+            if (
+                scene_counters["runtime_point_triangle_candidates"]
+                != scene_counters["point_triangle_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} runtime point-triangle candidate count "
+                    f"{scene_counters['runtime_point_triangle_candidates']} "
+                    f"!= point-triangle pairs "
+                    f"{scene_counters['point_triangle_pairs']}"
+                )
+            if (
+                scene_counters["static_triangle_point_triangle_candidates"]
+                + scene_counters["moving_triangle_point_triangle_candidates"]
+                != scene_counters["point_triangle_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} static/moving point-triangle candidate counts "
+                    f"{scene_counters['static_triangle_point_triangle_candidates']} "
+                    f"+ {scene_counters['moving_triangle_point_triangle_candidates']} "
+                    f"!= point-triangle pairs "
+                    f"{scene_counters['point_triangle_pairs']}"
+                )
+            if (
+                scene_counters["runtime_edge_edge_candidates"]
+                != scene_counters["edge_edge_pairs"]
+            ):
+                raise Plan083GpuCcdLineSearchPacketError(
+                    f"{family} runtime edge-edge candidate count "
+                    f"{scene_counters['runtime_edge_edge_candidates']} "
+                    f"!= edge-edge pairs {scene_counters['edge_edge_pairs']}"
+                )
 
     segment_count = cpu_pairs
     samples_per_pair = 1
@@ -430,6 +497,43 @@ def make_packet(
             tolerance=tolerance,
             speedup_gate=speedup_gate,
         )
+
+    scene_point_triangle = primitive_families["scene_runtime_point_triangle"]
+    scene_edge_edge = primitive_families["scene_runtime_edge_edge"]
+    scene_combined = primitive_families["scene_runtime_combined"]
+    if (
+        scene_combined["point_triangle_pairs"] != scene_point_triangle["pair_count"]
+        or scene_combined["point_triangle_hits"] != scene_point_triangle["hit_count"]
+        or scene_combined["runtime_point_triangle_candidates"]
+        != scene_point_triangle["runtime_point_triangle_candidates"]
+        or scene_combined["static_triangle_point_triangle_candidates"]
+        != scene_point_triangle["static_triangle_point_triangle_candidates"]
+        or scene_combined["moving_triangle_point_triangle_candidates"]
+        != scene_point_triangle["moving_triangle_point_triangle_candidates"]
+    ):
+        raise Plan083GpuCcdLineSearchPacketError(
+            "combined scene runtime CCD row point-triangle counters do not "
+            "match the point-triangle scene runtime row"
+        )
+    if (
+        scene_combined["edge_edge_pairs"] != scene_edge_edge["pair_count"]
+        or scene_combined["edge_edge_hits"] != scene_edge_edge["hit_count"]
+        or scene_combined["runtime_edge_edge_candidates"]
+        != scene_edge_edge["runtime_edge_edge_candidates"]
+    ):
+        raise Plan083GpuCcdLineSearchPacketError(
+            "combined scene runtime CCD row edge-edge counters do not match "
+            "the edge-edge scene runtime row"
+        )
+    for key in ("scene_bodies", "scene_nodes", "scene_triangles"):
+        if (
+            scene_combined[key] != scene_point_triangle[key]
+            or scene_combined[key] != scene_edge_edge[key]
+        ):
+            raise Plan083GpuCcdLineSearchPacketError(
+                "combined scene runtime CCD row scene counters do not match "
+                "the per-family scene runtime rows"
+            )
 
     point_triangle = primitive_families["point_triangle"]
     max_error = max(

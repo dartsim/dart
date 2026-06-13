@@ -189,6 +189,51 @@ def _benchmark_data(**overrides):
         kernel_ns=3.6,
         device_to_host_ns=4.6,
     )
+    scene_combined_cpu = _row(
+        "BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu/1024",
+        pairs=640,
+        point_triangle_pairs=256,
+        edge_edge_pairs=384,
+        hits=384,
+        point_triangle_hits=192,
+        edge_edge_hits=192,
+        min_step_bound=0.35,
+        max_result_abs_error=0.0,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_point_triangle_candidates=256,
+        static_triangle_point_triangle_candidates=128,
+        moving_triangle_point_triangle_candidates=128,
+        runtime_edge_edge_candidates=384,
+    )
+    scene_combined_gpu = _row(
+        "BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        pairs=640,
+        point_triangle_pairs=256,
+        edge_edge_pairs=384,
+        hits=384,
+        point_triangle_hits=192,
+        edge_edge_hits=192,
+        gpu_hits=384,
+        gpu_point_triangle_hits=192,
+        gpu_edge_edge_hits=192,
+        min_step_bound=0.35,
+        max_result_abs_error=7e-12,
+        scene_bodies=1,
+        scene_nodes=2560,
+        scene_triangles=768,
+        runtime_point_triangle_candidates=256,
+        static_triangle_point_triangle_candidates=128,
+        moving_triangle_point_triangle_candidates=128,
+        runtime_edge_edge_candidates=384,
+        host_setup_ns=2.7,
+        host_to_device_ns=4.7,
+        kernel_ns=6.7,
+        device_to_host_ns=8.7,
+    )
     for row in (
         gpu,
         edge_gpu,
@@ -196,6 +241,7 @@ def _benchmark_data(**overrides):
         curved_edge_gpu,
         scene_pt_gpu,
         scene_ee_gpu,
+        scene_combined_gpu,
     ):
         row.update(overrides)
     return {
@@ -212,6 +258,8 @@ def _benchmark_data(**overrides):
             scene_pt_gpu,
             scene_ee_cpu,
             scene_ee_gpu,
+            scene_combined_cpu,
+            scene_combined_gpu,
         ]
     }
 
@@ -229,11 +277,11 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
     row = packet["plan083_gpu_ccd_line_search_packet"]
     assert row["row_id"] == "ccd-line-search"
     assert row["same_scene_cpu_gpu"] is True
-    assert row["pair_count"] == 4736
-    assert row["segment_count"] == 19072
-    assert row["hit_count"] == 2816
+    assert row["pair_count"] == 5376
+    assert row["segment_count"] == 19712
+    assert row["hit_count"] == 3200
     assert row["min_step_bound"] == 0.125
-    assert row["max_result_abs_error"] == 6e-12
+    assert row["max_result_abs_error"] == 7e-12
     assert set(row["primitive_families"]) == {
         "point_triangle",
         "edge_edge",
@@ -241,6 +289,7 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
         "rigid_curved_edge_edge",
         "scene_runtime_point_triangle",
         "scene_runtime_edge_edge",
+        "scene_runtime_combined",
     }
     assert (
         row["primitive_families"]["rigid_curved_point_triangle"]["segment_count"]
@@ -274,6 +323,15 @@ def test_plan083_gpu_ccd_line_search_packet_accepts_parity_rows() -> None:
         ]
         == 384
     )
+    combined = row["primitive_families"]["scene_runtime_combined"]
+    assert combined["pair_count"] == 640
+    assert combined["point_triangle_pairs"] == 256
+    assert combined["edge_edge_pairs"] == 384
+    assert combined["hit_count"] == 384
+    assert combined["point_triangle_hits"] == 192
+    assert combined["edge_edge_hits"] == 192
+    assert combined["runtime_point_triangle_candidates"] == 256
+    assert combined["runtime_edge_edge_candidates"] == 384
     assert row["meets_speedup_gate"] is True
 
 
@@ -322,3 +380,35 @@ def test_plan083_gpu_ccd_line_search_packet_records_speedup_gate_miss() -> None:
     row = packet["plan083_gpu_ccd_line_search_packet"]
     assert row["speedup"] == 0.5
     assert row["meets_speedup_gate"] is False
+
+
+def test_plan083_gpu_ccd_line_search_packet_rejects_combined_scene_mismatch() -> None:
+    module = _load_module()
+    data = _benchmark_data()
+    combined_cpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeCombinedCcdLineSearchCpu/1024"
+    )
+    combined_gpu = next(
+        row
+        for row in data["benchmarks"]
+        if row["name"] == "BM_Plan083SceneRuntimeCombinedCcdLineSearchCuda/1024"
+    )
+    for row in (combined_cpu, combined_gpu):
+        row["pairs"] = 639
+        row["point_triangle_pairs"] = 255
+        row["runtime_point_triangle_candidates"] = 255
+        row["moving_triangle_point_triangle_candidates"] = 127
+
+    try:
+        module.make_packet(
+            data,
+            pair_count=1024,
+            tolerance=1e-8,
+            speedup_gate=1.25,
+        )
+    except module.Plan083GpuCcdLineSearchPacketError as exc:
+        assert "point-triangle counters" in str(exc)
+    else:
+        raise AssertionError("expected combined scene mismatch")

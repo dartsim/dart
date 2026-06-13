@@ -344,7 +344,8 @@ its own line so status updates remain git-history friendly.
   surface,
   endpoint-linear point-triangle/edge-edge CCD/line-search parity plus sampled
   rigid-curved point-triangle/edge-edge CCD/line-search parity plus reduced
-  scene-owned runtime point-triangle/edge-edge CCD rows, scalar
+  scene-owned runtime point-triangle/edge-edge CCD rows plus a reduced combined
+  scene runtime CCD line-search row, scalar
   barrier/friction local-kernel parity
   plus point-triangle
   primitive barrier-gradient and point-triangle/edge-edge/point-edge/point-point
@@ -370,7 +371,8 @@ its own line so status updates remain git-history friendly.
   reduced hanging-bridge scene
   state-batch CPU/GPU parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps runtime scene
-  filtering, analytic curved CCD, full scene-level line search, full runtime
+  filtering, analytic curved CCD, production scene-level line search inside
+  `World::step`, full runtime
   sparse Hessian graph construction and assembly beyond the reduced dedup row,
   unbounded production direct/global sparse factorization, production nonlinear equality convergence
   policy/solving, GPU `World::step`, paper-scale assets, full runtime
