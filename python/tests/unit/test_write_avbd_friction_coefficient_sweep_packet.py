@@ -157,6 +157,7 @@ def _write_capture_manifest(
     tmp_path: Path,
     max_friction: float,
     *,
+    env_max_friction: str | None = None,
     wrong_scene: bool = False,
 ) -> Path:
     arg = int(round(max_friction * 10.0))
@@ -176,7 +177,9 @@ def _write_capture_manifest(
         "metadata": {"max_friction": f"{max_friction:g}"},
         "scene": "wrong" if wrong_scene else "avbd_demo2d_dynamic_friction",
         "scene_environment": {
-            "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION": f"{max_friction:g}"
+            "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION": (
+                f"{max_friction:g}" if env_max_friction is None else env_max_friction
+            )
         },
         "schema_version": 1,
         "show_ui": False,
@@ -216,7 +219,14 @@ def test_avbd_friction_coefficient_sweep_packet_records_rows(
     )
 
     packet = json.loads(output.read_text(encoding="utf-8"))
+    assert packet["schema_version"] == 2
     assert packet["packet"] == "avbd_friction_coefficient_sweep"
+    assert packet["resolved_solver_identity"] == {
+        "avbd_rigid_contact_config_emplaced": False,
+        "recorded_from": "friction coefficient sweep benchmark scene counters",
+        "rigid_contact_solver": "sequential_impulse",
+        "rigid_point_joint_solver": "none",
+    }
     assert packet["scene"] == "avbd_demo2d_dynamic_friction"
     assert packet["target"]["paper_gap"] == "friction coefficient comparison"
     assert packet["target"]["complete_paper_reproduction"] is False
@@ -268,6 +278,52 @@ def test_avbd_friction_coefficient_sweep_packet_records_visual_sweep(
     assert "per-coefficient visual capture or video evidence" not in packet[
         "remaining_gates"
     ]
+
+
+def test_avbd_friction_coefficient_sweep_packet_accepts_equivalent_capture_env(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT,
+        "write_avbd_friction_sweep_packet_equivalent_capture_env",
+    )
+    manifest = _write_capture_manifest(tmp_path, 1.0, env_max_friction="1.0")
+
+    capture = module._validate_capture_manifest(manifest, 1.0)
+
+    assert capture["max_friction"] == 1.0
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_mismatched_capture_env(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT,
+        "write_avbd_friction_sweep_packet_mismatched_capture_env",
+    )
+    manifest = _write_capture_manifest(tmp_path, 1.0, env_max_friction="1.5")
+
+    with pytest.raises(
+        module.AvbdFrictionCoefficientSweepPacketError,
+        match="Dynamic Friction scene env",
+    ):
+        module._validate_capture_manifest(manifest, 1.0)
+
+
+def test_avbd_friction_coefficient_sweep_packet_rejects_nonnumeric_capture_env(
+    tmp_path: Path,
+) -> None:
+    module = _load_module(
+        PACKET_SCRIPT,
+        "write_avbd_friction_sweep_packet_nonnumeric_capture_env",
+    )
+    manifest = _write_capture_manifest(tmp_path, 1.0, env_max_friction="fast")
+
+    with pytest.raises(
+        module.AvbdFrictionCoefficientSweepPacketError,
+        match="Dynamic Friction scene env",
+    ):
+        module._validate_capture_manifest(manifest, 1.0)
 
 
 def test_avbd_friction_coefficient_sweep_packet_records_reference_sweep(

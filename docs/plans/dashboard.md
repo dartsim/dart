@@ -22,11 +22,20 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Execute all five WS0 evidence-integrity packets first, in plan
-  document order (WP-091.1 solver-identity recording and AVBD relabel,
-  WP-091.2 golden trajectories, WP-091.3 architecture-claim lint, WP-091.4
-  legacy freeze, WP-091.5 plan-ID renumber), then open WS1 with WP-091.10
-  (virtual finalize/prepare on the stage contract). Packets are
+- Next step: WP-091.1 (solver-identity recording and AVBD relabel) is
+  `[claimed]` — implemented and awaiting an independent/maintainer acceptance
+  pass. The AVBD packet family now has a shared schema contract that
+  machine-records resolved solver identity at schema version 2, enforced for
+  new packet files by `pixi run check-avbd-packets` in the `check-lint`
+  aggregate, and the six mirrored contact-scene claim sites are relabeled;
+  writer-script migration to emit the new field is a recorded follow-up (see
+  the packet Evidence bullet). After WP-091.1 is accepted, execute the
+  remaining four WS0 evidence-integrity packets in plan document order:
+  WP-091.2 golden trajectories (next; behavior-lock guardrail that hard-gates
+  the refactor-heavy packets), WP-091.3 architecture-claim lint, WP-091.4
+  legacy freeze (blocked on maintainer Decision 5 direction), WP-091.5
+  plan-ID renumber. Then open WS1 with WP-091.10 (virtual finalize/prepare on
+  the stage contract). Packets are
   orchestrator-authored per [`../ai/orchestration.md`](../ai/orchestration.md)
   and picked up via `dart-execute-packet`; availability follows each packet's
   own Dependencies line. The standing rule applies now: new solver-family
@@ -622,8 +631,26 @@ its own line so status updates remain git-history friendly.
   [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
   and a rendered
   [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
-  The same-hardware comparison and GPU gates remain open.
-  Public
+  The same-hardware comparison and GPU gates remain open. Solver-identity
+  relabel (PLAN-091 WP-091.1): no
+  `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene emplaces the internal
+  AVBD rigid-contact opt-in config (`comps::RigidAvbdContactConfig`), because
+  AVBD contact is not facade-selectable, so every rigid contact in the
+  source-row scenes below ran DART's default sequential-impulse contact path.
+  The native-runner timing ratios for contact scenes are whole-pipeline
+  `World::step` comparisons, not AVBD-contact-solver comparisons: the
+  pure-contact rows (2D Dynamic Friction, Static Friction, Pyramid, Cards,
+  Stack, and Stack Ratio; 3D Ground, Dynamic Friction, Static Friction,
+  Pyramid, Stack, and Stack Ratio) timed no AVBD rows at all; the
+  joint-plus-contact rows (2D Fracture, Soft Body, Joint Grid, and Net; 3D
+  Soft Body, Bridge, and Breakable) timed AVBD point-joint/motor/spring rows
+  while their ordinary contacts ran sequential impulse; and incidental
+  link-link contacts in the chain rows (2D Rod, Rope, Heavy Rope, and Hanging
+  Rope; 3D Rope and Heavy Rope) also ran sequential impulse. This relabel
+  changes no committed packet bytes and neither closes nor reopens any
+  PLAN-104 completion gate; new AVBD evidence packets must machine-record
+  `resolved_solver_identity` at AVBD packet schema version 2, enforced by
+  `pixi run check-avbd-packets`. Public
   empty-scene corpus baseline coverage is now visible through
   `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
   default source parameters, and the `sceneEmpty` zero-count invariant, and

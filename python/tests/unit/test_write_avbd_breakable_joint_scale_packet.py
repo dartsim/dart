@@ -128,7 +128,14 @@ def test_avbd_breakable_joint_scale_packet_records_scale_data(
     )
 
     packet = json.loads(output.read_text())
+    assert packet["schema_version"] == 2
     assert packet["packet"] == "avbd_breakable_joint_scale"
+    assert packet["resolved_solver_identity"] == {
+        "avbd_rigid_contact_config_emplaced": False,
+        "recorded_from": "breakable joint scale benchmark row family",
+        "rigid_contact_solver": "none",
+        "rigid_point_joint_solver": "avbd",
+    }
     assert packet["scene"] == "avbd_breakable_joint_scale"
     assert packet["target"]["broad_breakable_constraint_complete"] is False
     assert packet["target"]["scope"] == (

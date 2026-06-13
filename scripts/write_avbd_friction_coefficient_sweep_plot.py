@@ -25,6 +25,7 @@ PLOT_LEFT = 76
 PLOT_RIGHT = 682
 PLOT_TOP = 84
 PLOT_BOTTOM = 292
+SUPPORTED_SCHEMA_VERSIONS = (1, 2)
 
 
 class AvbdFrictionCoefficientSweepPlotError(RuntimeError):
@@ -66,8 +67,10 @@ def _finite(row: dict[str, Any], key: str) -> float:
 
 def _validate_packet(packet_path: Path) -> list[dict[str, float]]:
     packet = _load_json(packet_path)
-    if packet.get("schema_version") != 1:
-        raise AvbdFrictionCoefficientSweepPlotError("packet schema_version must be 1")
+    if packet.get("schema_version") not in SUPPORTED_SCHEMA_VERSIONS:
+        raise AvbdFrictionCoefficientSweepPlotError(
+            "packet schema_version must be 1 or 2"
+        )
     if packet.get("packet") != "avbd_friction_coefficient_sweep":
         raise AvbdFrictionCoefficientSweepPlotError(
             "packet must be avbd_friction_coefficient_sweep"

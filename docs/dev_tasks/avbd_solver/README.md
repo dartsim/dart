@@ -9,6 +9,26 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest local follow-up: PLAN-091 WP-091.1 relabels the AVBD contact-scene
+  evidence rows: no `avbd-demo2d`/`avbd-demo3d` benchmark or py-demo scene
+  emplaces the internal AVBD rigid-contact opt-in config
+  (`comps::RigidAvbdContactConfig`), because AVBD contact is not
+  facade-selectable, so every rigid contact in those scenes ran DART's default
+  sequential-impulse contact path. The pure-contact rows (2D Dynamic Friction,
+  Static Friction, Pyramid, Cards, Stack, and Stack Ratio; 3D Ground, Dynamic
+  Friction, Static Friction, Pyramid, Stack, and Stack Ratio) timed no AVBD
+  rows at all; the joint-plus-contact rows (2D Fracture, Soft Body, Joint
+  Grid, and Net; 3D Soft Body, Bridge, and Breakable) timed AVBD
+  point-joint/motor/spring rows while their ordinary contacts ran sequential
+  impulse; incidental link-link contacts in the chain rows (2D Rod, Rope,
+  Heavy Rope, and Hanging Rope; 3D Rope and Heavy Rope) also ran sequential
+  impulse. Their faster/slower-than-native ratios are whole-pipeline
+  `World::step` comparisons, not AVBD-contact-solver comparisons. New AVBD
+  evidence packets must machine-record `resolved_solver_identity` at AVBD
+  packet schema version 2 (`scripts/avbd_packet_schema.py`, enforced by
+  `pixi run check-avbd-packets`); committed packet bytes are unchanged. This
+  is an evidence-integrity relabel only; it does not close or reopen any AVBD
+  solver, source-corpus CPU-win, GPU, or paper-number gate.
 - Latest resumed checkpoint (2026-06-13): the default sequential-impulse rigid
   contact position correction now skips no-op position writes to
   prescribed/static bodies while preserving the same inverse-mass-weighted

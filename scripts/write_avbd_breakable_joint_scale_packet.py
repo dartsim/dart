@@ -15,6 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
 from write_avbd_demo3d_static_friction_packet import (  # noqa: E402
     _canonical_name,
     _load_json,
@@ -30,6 +31,12 @@ BENCHMARK_ARGS = (1, 8, 32)
 BENCHMARK_TIME_STEP = 0.005
 BENCHMARK_GRAVITY_M_PER_S2 = (0.0, -9.81, 0.0)
 BENCHMARK_BREAK_FORCE_N = 1.0e12
+RESOLVED_SOLVER_IDENTITY = {
+    "avbd_rigid_contact_config_emplaced": False,
+    "recorded_from": "breakable joint scale benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd",
+}
 
 
 @dataclass(frozen=True)
@@ -259,7 +266,8 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 
 def make_packet(benchmark_json: Path) -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+        "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
         "packet": "avbd_breakable_joint_scale",
         "scene": "avbd_breakable_joint_scale",
         "target": {

@@ -711,6 +711,12 @@
   "reproduction": {
     "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdPaperScaleHighRatioChainIterationSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json"
   },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd"
+  },
   "scene": "avbd_paper_scale_high_ratio_chain",
   "scene_invariants": {
     "light_link_mass": 1.0,
@@ -728,7 +734,7 @@
     "tip_link_mass": 50000.0,
     "tolerance": 1e-09
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "iteration-count sweep for the 50-link 50,000:1 chain",

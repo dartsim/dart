@@ -1169,6 +1169,12 @@
     "reference_timing_command": "python scripts/run_avbd_demo2d_reference_timing.py --source-dir <avbd-demo2d-source-dir> --scene dynamic_friction --dynamic-friction-max-friction <max-friction> --output <reference-timing-json>",
     "visual_capture_command": "DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> python scripts/capture_py_demo.py --scene avbd_demo2d_dynamic_friction --metadata max_friction=<max-friction> --env DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION=<max-friction> --frames 24 --width 640 --height 360 --output-dir <capture-dir>"
   },
+  "resolved_solver_identity": {
+    "avbd_rigid_contact_config_emplaced": false,
+    "recorded_from": "friction coefficient sweep benchmark scene counters",
+    "rigid_contact_solver": "sequential_impulse",
+    "rigid_point_joint_solver": "none"
+  },
   "scene": "avbd_demo2d_dynamic_friction",
   "scene_invariants": {
     "box_count": 11,
@@ -1190,7 +1196,7 @@
     "source_demo": "avbd-demo2d",
     "time_step": 0.016666666666666666
   },
-  "schema_version": 1,
+  "schema_version": 2,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "friction coefficient comparison",

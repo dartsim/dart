@@ -1341,6 +1341,116 @@ TEST(
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.25, -0.1, 0.05);
+  states[1].position = Vec3(-0.5, 0.3, -0.2);
+
+  constexpr std::size_t kActiveContacts
+      = vbd::detail::kAvbdRigidSmallRowStackCapacity + 1u;
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(kActiveContacts);
+  for (std::size_t i = 0; i < contacts.size(); ++i) {
+    auto& contact = contacts[i];
+    contact.bodyA = 0;
+    contact.bodyB = 1;
+    contact.endpointA
+        = {42u + static_cast<std::uint32_t>(i),
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex,
+               static_cast<std::uint32_t>(i))};
+    contact.endpointB = {
+        7u,
+        vbd::packAvbdContactFeatureId(
+            vbd::AvbdContactFeatureKind::Face, static_cast<std::uint32_t>(i))};
+    contact.point = Vec3(0.01 * static_cast<double>(i), 0.2, -0.15);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.2 + 0.001 * static_cast<double>(i);
+    contact.frictionCoefficient = 0.5;
+    contact.startStiffness = 80.0;
+    contact.maxStiffness = 400.0;
+    contact.row = static_cast<std::uint32_t>(i);
+  }
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), kActiveContacts);
+  ASSERT_EQ(normalRows.size(), kActiveContacts);
+  EXPECT_EQ(scratch.activeContacts.size(), kActiveContacts);
+  EXPECT_EQ(scratch.contactLocalPoints.size(), kActiveContacts);
+  EXPECT_NEAR((normalRows[0].row.axis + Vec3::UnitZ()).norm(), 0.0, 1e-12);
+  EXPECT_DOUBLE_EQ(
+      normalRows.back().row.previousConstraintValue, contacts.back().depth);
+
+  for (std::size_t i = 0; i < normalInventory.size(); ++i) {
+    normalInventory[i].state.lambda = 8.0;
+  }
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
+  ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  frictionInventory[0].state.lambda = 3.0;
+  frictionInventory[1].state.lambda = 4.0;
+  const Vec3 previousFirstAxis = frictionInventory[0].direction;
+  const Vec3 previousSecondAxis = frictionInventory[1].direction;
+
+  contacts[0].normalFromAtoB = Vec3(1.0, 0.0, 1.0).normalized();
+  const Eigen::Matrix<double, 3, 2> currentBasis
+      = vbd::avbdRigidContactTangentBasis(contacts[0].normalFromAtoB);
+  const Eigen::Vector2d expected = vbd::projectAvbdFrictionDualToTangentPair(
+      3.0,
+      4.0,
+      previousFirstAxis,
+      previousSecondAxis,
+      currentBasis.col(0),
+      currentBasis.col(1));
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
+  ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  EXPECT_NEAR(frictionInventory[0].state.lambda, expected.x(), 1e-12);
+  EXPECT_NEAR(frictionInventory[1].state.lambda, expected.y(), 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.axis - currentBasis.col(0)).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].second.axis - currentBasis.col(1)).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidPointJointBuilderCreatesWarmStartedLinearRows)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);

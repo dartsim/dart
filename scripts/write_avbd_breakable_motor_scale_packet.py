@@ -15,6 +15,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
 from write_avbd_demo3d_static_friction_packet import (  # noqa: E402
     _canonical_name,
     _load_json,
@@ -33,6 +34,12 @@ REVOLUTE_TARGET_SPEED_RAD_PER_S = 0.5
 REVOLUTE_MAX_TORQUE_NM = 800.0
 PRISMATIC_TARGET_SPEED_M_PER_S = 0.35
 PRISMATIC_MAX_FORCE_N = 800.0
+RESOLVED_SOLVER_IDENTITY = {
+    "avbd_rigid_contact_config_emplaced": False,
+    "recorded_from": "breakable motor scale benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd",
+}
 
 
 @dataclass(frozen=True)
@@ -267,7 +274,8 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 
 def make_packet(benchmark_json: Path) -> dict[str, Any]:
     return {
-        "schema_version": 1,
+        "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+        "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
         "packet": "avbd_breakable_motor_scale",
         "scene": "avbd_breakable_motor_scale",
         "target": {

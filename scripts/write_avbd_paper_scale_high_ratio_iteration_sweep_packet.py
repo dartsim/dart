@@ -12,6 +12,12 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
+
 DEFAULT_OUTPUT = Path(
     "docs/plans/104-vertex-block-descent-solver/"
     "avbd-paper-scale-high-ratio-iteration-sweep-packet.json"
@@ -27,6 +33,12 @@ REPLAY_STEPS = 32
 REPLAY_SECONDS = 0.16
 TOLERANCE = 1e-9
 EXPECTED_MAX_ITERATIONS = (25, 50, 100, 200)
+RESOLVED_SOLVER_IDENTITY = {
+    "avbd_rigid_contact_config_emplaced": False,
+    "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+    "rigid_contact_solver": "none",
+    "rigid_point_joint_solver": "avbd",
+}
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _SVG_SIZE_RE = re.compile(
@@ -266,7 +278,8 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 
 def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str, Any]:
     packet = {
-        "schema_version": 1,
+        "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+        "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
         "packet": "avbd_paper_scale_high_ratio_iteration_sweep",
         "scene": SCENE_ID,
         "target": {

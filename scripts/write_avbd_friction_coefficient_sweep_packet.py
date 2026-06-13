@@ -13,6 +13,12 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from avbd_packet_schema import AVBD_PACKET_SCHEMA_VERSION  # noqa: E402
+
 DEFAULT_OUTPUT = Path(
     "docs/plans/104-vertex-block-descent-solver/"
     "avbd-friction-coefficient-sweep-packet.json"
@@ -25,6 +31,12 @@ RIGID_BODIES = 12
 COLLISION_SHAPES = 12
 SOURCE_SCENE_INDEX = 2
 TIME_STEP = 1.0 / 60.0
+RESOLVED_SOLVER_IDENTITY = {
+    "avbd_rigid_contact_config_emplaced": False,
+    "recorded_from": "friction coefficient sweep benchmark scene counters",
+    "rigid_contact_solver": "sequential_impulse",
+    "rigid_point_joint_solver": "none",
+}
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
 _SVG_SIZE_RE = re.compile(
@@ -603,7 +615,18 @@ def _validate_capture_manifest(
             "capture manifest missing scene_environment"
         )
     env_value = scene_env.get("DART_AVBD_DEMO2D_DYNAMIC_FRICTION_MAX_FRICTION")
-    if env_value != f"{expected_max_friction:g}":
+    try:
+        env_max_friction = float(env_value)
+    except (TypeError, ValueError) as exc:
+        raise AvbdFrictionCoefficientSweepPacketError(
+            "capture manifest missing matching Dynamic Friction scene env"
+        ) from exc
+    if not math.isfinite(env_max_friction) or not math.isclose(
+        env_max_friction,
+        expected_max_friction,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
         raise AvbdFrictionCoefficientSweepPacketError(
             "capture manifest missing matching Dynamic Friction scene env"
         )
@@ -721,7 +744,8 @@ def make_packet(
     )
     visual_sweep = _validate_visual_sweep(capture_manifests or [])
     packet = {
-        "schema_version": 1,
+        "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+        "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
         "packet": "avbd_friction_coefficient_sweep",
         "scene": SCENE_ID,
         "target": {
