@@ -279,6 +279,59 @@ def test_lcp_solver_roster_rejects_stale_requirement_benchmark_packet(
         module.check_demo_representative_requirements()
 
 
+def test_lcp_solver_roster_reads_demo_solver_guidance_links() -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+
+    guidance_by_family = {
+        row["family"]: row for row in module.parse_demo_solver_guidance_rows()
+    }
+    guided_solvers = [
+        solver
+        for row in guidance_by_family.values()
+        for solver in module._split_demo_solver_list(row["solvers"])
+    ]
+
+    assert guidance_by_family["Pivoting and direct"]["solvers"] == (
+        "Direct, Dantzig, Lemke, Baraff"
+    )
+    assert "BoxedSemiSmoothNewton" in guided_solvers
+    assert "Sap" in guided_solvers
+    assert sorted(guided_solvers) == sorted(entry.name for entry in manifest)
+    assert len(guided_solvers) == len(manifest)
+    module.check_demo_solver_guidance(manifest)
+
+
+def test_lcp_solver_roster_rejects_stale_solver_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    stale_rows = [
+        {
+            "family": "Pivoting and direct",
+            "solvers": "Dantzig, MissingSolver, Dantzig",
+            "best_fit": "small rows",
+            "strength": "reference solves",
+            "tradeoff": "scales cubically",
+            "evidence": "profile rows",
+        }
+    ]
+    monkeypatch.setattr(module, "parse_demo_solver_guidance_rows", lambda: stale_rows)
+
+    with pytest.raises(
+        AssertionError,
+        match="solver guidance rows are out of sync",
+    ) as exc_info:
+        module.check_demo_solver_guidance(manifest)
+
+    message = str(exc_info.value)
+    assert "unknown solvers ['MissingSolver']" in message
+    assert "duplicate solver guidance entries ['Dantzig']" in message
+    assert "missing solver guidance entries" in message
+    assert "Lemke" in message
+
+
 def test_lcp_solver_roster_rejects_extra_bound_solver_class(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

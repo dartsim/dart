@@ -379,7 +379,16 @@ def parse_demo_representative_requirement_rows() -> list[dict[str, str]]:
     return list(rows)
 
 
+def parse_demo_solver_guidance_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    return list(_literal_assignment(module, "_SOLVER_GUIDANCE_ROWS"))
+
+
 def _split_demo_reference_list(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _split_demo_solver_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
@@ -484,6 +493,68 @@ def check_demo_representative_requirements() -> None:
     if errors:
         raise AssertionError(
             "lcp_physics representative requirement rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
+def check_demo_solver_guidance(manifest: list[SolverEntry]) -> None:
+    guidance_rows = parse_demo_solver_guidance_rows()
+    manifest_names = [entry.name for entry in manifest]
+    manifest_name_set = set(manifest_names)
+    required_fields = (
+        "family",
+        "solvers",
+        "best_fit",
+        "strength",
+        "tradeoff",
+        "evidence",
+    )
+
+    errors: list[str] = []
+    family_labels = [row.get("family", "") for row in guidance_rows]
+    duplicate_families = [
+        family
+        for index, family in enumerate(family_labels)
+        if family and family in family_labels[:index]
+    ]
+    if duplicate_families:
+        errors.append(f"duplicate family rows {duplicate_families}")
+
+    guidance_solvers: list[str] = []
+    for index, row in enumerate(guidance_rows, start=1):
+        family = row.get("family", f"row {index}")
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{family}: missing fields {missing_fields}")
+            continue
+
+        solvers = _split_demo_solver_list(row["solvers"])
+        unknown_solvers = [
+            solver for solver in solvers if solver not in manifest_name_set
+        ]
+        if unknown_solvers:
+            errors.append(f"{family}: unknown solvers {unknown_solvers}")
+        guidance_solvers.extend(solvers)
+
+    duplicate_solvers = [
+        solver
+        for index, solver in enumerate(guidance_solvers)
+        if solver in guidance_solvers[:index]
+    ]
+    if duplicate_solvers:
+        errors.append(f"duplicate solver guidance entries {duplicate_solvers}")
+
+    missing_solvers = [
+        solver for solver in manifest_names if solver not in guidance_solvers
+    ]
+    if missing_solvers:
+        errors.append(f"missing solver guidance entries {missing_solvers}")
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics solver guidance rows are out of sync:\n  - "
             + "\n  - ".join(errors)
         )
 
@@ -1086,6 +1157,7 @@ def check_roster() -> None:
     check_performance_profile_evidence(manifest)
     check_demo_benchmark_filters()
     check_demo_representative_requirements()
+    check_demo_solver_guidance(manifest)
     check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]
