@@ -218,23 +218,18 @@ rigid-body visual verification surface for the current cycle.
   optional workflow packets below regenerated with complete solver identity.
   The failed `1781311276` refresh path is not included in the evidence below.
 - Full numbered workflow packet:
-  `build/captures/rigid_workflow_rows_01_36_1781323428`
+  `build/captures/rigid_workflow_rows_01_36_1781333885`
   (`status=complete`, `capture_count=36`, `failed_count=0`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=36`, 2388 PNG frames).
 - Current optional rows 37-53 packet after `diff_pre_contact_surrogate` was
   added:
-  `build/captures/rigid_workflow_optional_rows_37_53_1781321474`
+  `build/captures/rigid_workflow_optional_rows_37_53_1781334179`
   (`status=complete`, `capture_count=17`, `failed_count=0`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=17`, 1027 PNG frames).
-- Static packet freshness note: both broad packet directories above predate the
-  latest control-metadata and backend/executor search-routing slices. They
-  remain useful broad visual evidence, but regenerate them before final
-  maintainer review if the review cards must display every newest `controls`
-  field and search-label wording.
 - Read-only per-scene metrics audit: both current packet directories have
   latest scene metrics for every captured row (36/36 and 17/17).
 - Static review-index asset audit: 0 missing local assets for both current

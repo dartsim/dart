@@ -499,12 +499,12 @@ Evidence recorded for this slice:
   approaching-but-not-touching `ContactGradientMode.PRE_CONTACT_SURROGATE`
   diagnostic in the Differentiable shelf and is included in the optional
   related-evidence packet. The current optional packet
-  `build/captures/rigid_workflow_optional_rows_37_53_1781321474` selected rows
+  `build/captures/rigid_workflow_optional_rows_37_53_1781334179` selected rows
   37-53 with related evidence, direct Rigid IPC shelf, and capture-first packet
   groups requested and selected. It reported `status=complete`,
   `capture_count=17`, `completed_count=17`, `failed_count=0`,
   `workflow_total_count=53`, `workflow_row_start=37`,
-  `workflow_row_end=53`, `continue_on_failure=true`,
+  `workflow_row_end=53`, `continue_on_failure=false`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `scene_metrics_count=17`, `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=17`, `failed_rows=[]`, and 17 captured
@@ -564,8 +564,9 @@ Evidence recorded for this slice:
   render exactly one screenshot thumbnail for each captured row.
 
 - Latest full numbered workflow packet evidence: after the DART 7 harness
-  scene-metrics contract update, the current workflow packet
-  `build/captures/rigid_workflow_rows_01_36_1781323428` captured rows 01-36
+  scene-metrics contract update and the backend/executor search-routing
+  follow-up, the current workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781333885` captured rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, `scene_metrics_complete=true`,
@@ -1851,10 +1852,6 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   workflow rows.
 - Keep new rigid visual rows in this packet, `python/examples/demos/README.md`,
   and the ordered demo registry in sync.
-- Regenerate the rows 01-36 and optional rows 37-53 static packets before final
-  maintainer review if the review cards must show the latest control-metadata
-  and backend/executor search-routing wording exactly. The existing packets
-  remain broad visual evidence, but they predate those latest metadata slices.
 - Keep motor/limit wording on the World multibody joint actuator path until
   rigid-body joint motors have equally stable public behavior.
 - Add future point-force or impulse rows only if the public API supports a

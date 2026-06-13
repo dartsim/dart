@@ -4,13 +4,13 @@
 
 Current branch snapshot after this slice:
 `feature/rigid-body-gui-visual-verification` matched
-`origin/feature/rigid-body-gui-visual-verification` at
-`691d38f7b99` before this local slice. That commit is the latest merge of
-`origin/main` into this feature branch. After this slice is committed, expect
-one local commit ahead of origin until a maintainer approves another push.
-There is still no PR for this branch. Do not push, create a PR, set a
-milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
-GitHub state without explicit maintainer/user approval.
+`origin/feature/rigid-body-gui-visual-verification` at `691d38f7b99` before
+the backend/executor search-routing commit `75d8689abe9`. After this
+artifact-refresh slice is committed, expect two local commits ahead of origin
+until a maintainer approves another push. There is still no PR for this branch.
+Do not push, create a PR, set a milestone, rerun CI, comment on reviews,
+resolve threads, or mutate any other GitHub state without explicit
+maintainer/user approval.
 
 Latest local continuation: rigid workflow search now separates backend-status
 queries from executor-equivalence queries. Backend terms such as
@@ -33,12 +33,14 @@ wrapper gates: linting, build, unit tests, simulation tests, Python tests,
 documentation, and CUDA tests. This CUDA run predates the backend/executor
 search-routing slice above, which is limited to workflow search/docs/tests.
 
-Known handoff gap: the existing full rows 01-36 packet and optional rows 37-53
-packet predate the latest control-metadata and backend/executor search-routing
-slices. They remain useful broad visual evidence, but do not claim their
-manifests or review cards show every newest `controls` field or search-label
-wording. Regenerate both packets before final maintainer review if the static
-HTML artifacts need to reflect the newest metadata exactly.
+Latest artifact refresh: after the backend/executor search-routing slice, the
+full rows 01-36 packet was regenerated at
+`build/captures/rigid_workflow_rows_01_36_1781333885` and the optional rows
+37-53 packet was regenerated at
+`build/captures/rigid_workflow_optional_rows_37_53_1781334179`. Their manifests
+report complete scene metrics, complete resolved solver identity, zero failed
+rows, and the static review-index asset audit found 181/181 and 86/86 local
+links present respectively.
 
 Previous pushed continuation: non-numbered World related shelf rows now publish
 their user-editable controls in capture metrics. `floating_base` records
@@ -211,7 +213,7 @@ thread resolution, or other GitHub review-state changes.
 
 Latest local evidence refresh: the optional extended workflow packet was
 regenerated after `diff_pre_contact_surrogate` landed in the related-evidence
-set. `build/captures/rigid_workflow_optional_rows_37_53_1781321474` selected
+set. `build/captures/rigid_workflow_optional_rows_37_53_1781334179` selected
 rows 37-53 from the fully extended 53-row packet with related evidence, direct
 Rigid IPC shelf rows, and capture-first packet groups requested and selected.
 Its manifest reports `status=complete`, `capture_count=17`,
@@ -333,7 +335,7 @@ original file-size limit before screenshots and frames are written. The failed
 Latest local follow-up: after the headless engine-creation fix and the DART 7
 harness scene-metrics contract update, the full numbered packet was
 regenerated at
-`build/captures/rigid_workflow_rows_01_36_1781323428` and completed with
+`build/captures/rigid_workflow_rows_01_36_1781333885` and completed with
 `status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `workflow_row_start=1`,
 `workflow_row_end=36`, `guidance_complete=true`,
@@ -341,7 +343,7 @@ regenerated at
 `scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
 `resolved_solver_identity_count=36`, `resolved_solver_identity_missing_count=0`,
 `failed_rows=[]`, and 2388 frame PNGs. The current optional rows 37-53 packet
-`build/captures/rigid_workflow_optional_rows_37_53_1781321474` completed with
+`build/captures/rigid_workflow_optional_rows_37_53_1781334179` completed with
 `status=complete`, `capture_count=17`, `completed_count=17`,
 `failed_count=0`, `workflow_total_count=53`, `workflow_row_start=37`,
 `workflow_row_end=53`, `include_related=true`, `include_ipc_shelf=true`,
@@ -2826,8 +2828,8 @@ passed and `git diff --check` was clean.
    `feature/rigid-body-gui-visual-verification`, with no PR unless one was
    created after this handoff.
 3. Use
-   `build/captures/rigid_workflow_rows_01_36_1781323428/review_index.html` and
-   `build/captures/rigid_workflow_optional_rows_37_53_1781321474/review_index.html`
+   `build/captures/rigid_workflow_rows_01_36_1781333885/review_index.html` and
+   `build/captures/rigid_workflow_optional_rows_37_53_1781334179/review_index.html`
    as the current static review artifacts; both passed local asset-link audits,
    and their manifests report complete scene metrics plus complete resolved
    solver identity.
