@@ -36,6 +36,10 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
                     "iterations": 4.0,
                     "solver_identity_schema_version": 1.0,
                     "solver_manifest_index": 1.0,
+                    "solver_family_pivoting": 1.0,
+                    "solver_family_projection": 0.0,
+                    "solver_family_newton": 0.0,
+                    "solver_family_other": 0.0,
                     "bound_violation": 0.25,
                     "solver_supports_problem": 1.0,
                     "solver_supports_standard": 1.0,
@@ -55,6 +59,10 @@ def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
     assert row["contact_count"] is None
     assert row["solver_identity_schema_version"] == 1.0
     assert row["solver_manifest_index"] == 1.0
+    assert row["solver_family_pivoting"] == 1.0
+    assert row["solver_family_projection"] == 0.0
+    assert row["solver_family_newton"] == 0.0
+    assert row["solver_family_other"] == 0.0
     assert row["iterations"] == 4.0
     assert row["bound_violation"] == 0.25
     assert row["solver_supports_problem"] == 1.0
@@ -244,6 +252,43 @@ def test_lcp_profile_coverage_rejects_solver_identity_mismatches() -> None:
         )
 
 
+def test_lcp_profile_coverage_rejects_solver_family_mismatches() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "solver_identity_schema_version": 1.0,
+                    "solver_manifest_index": 1.0,
+                    "solver_family_pivoting": 0.0,
+                    "solver_family_projection": 1.0,
+                    "solver_family_newton": 0.0,
+                    "solver_family_other": 0.0,
+                    "solver_supports_problem": 1.0,
+                    "problem_type_standard": 1.0,
+                    "problem_type_boxed": 0.0,
+                    "problem_type_friction_index": 0.0,
+                    "problem_type_invalid": 0.0,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="solver family counters"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
 def test_lcp_profile_evidence_csv_records_support_and_problem_type(
     tmp_path: Path,
 ) -> None:
@@ -264,6 +309,10 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
                     "bound_violation": 0.25,
                     "solver_identity_schema_version": 1.0,
                     "solver_manifest_index": 1.0,
+                    "solver_family_pivoting": 1.0,
+                    "solver_family_projection": 0.0,
+                    "solver_family_newton": 0.0,
+                    "solver_family_other": 0.0,
                     "solver_supports_standard": 1.0,
                     "solver_supports_boxed": 1.0,
                     "solver_supports_friction_index": 1.0,
@@ -292,6 +341,10 @@ def test_lcp_profile_evidence_csv_records_support_and_problem_type(
             "contact_count": "",
             "solver_identity_schema_version": "1",
             "solver_manifest_index": "1",
+            "solver_family_pivoting": "1",
+            "solver_family_projection": "0",
+            "solver_family_newton": "0",
+            "solver_family_other": "0",
             "time_ns": "10",
             "contract_ok": "1",
             "iterations": "4",

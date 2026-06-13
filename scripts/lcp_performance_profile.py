@@ -43,9 +43,17 @@ except ImportError:
 
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 _MANIFEST_NAME_BY_ID: dict[int, str] | None = None
+_MANIFEST_FAMILY_BY_NAME: dict[str, str] | None = None
 
 PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
 SOLVER_IDENTITY_SCHEMA_VERSION = 1
+SOLVER_FAMILY_COUNTER_BY_FAMILY = {
+    "Pivoting": "solver_family_pivoting",
+    "Projection": "solver_family_projection",
+    "Newton": "solver_family_newton",
+    "Other": "solver_family_other",
+}
+SOLVER_FAMILY_COUNTERS = tuple(SOLVER_FAMILY_COUNTER_BY_FAMILY.values())
 SOLVER_IDENTITY_COUNTERS = (
     "solver_identity_schema_version",
     "solver_manifest_index",
@@ -86,6 +94,27 @@ def manifest_name_by_id() -> dict[int, str]:
             for index, entry in enumerate(parse_cpp_manifest(), start=1)
         }
     return _MANIFEST_NAME_BY_ID
+
+
+def manifest_family_by_name() -> dict[str, str]:
+    global _MANIFEST_FAMILY_BY_NAME
+    if _MANIFEST_FAMILY_BY_NAME is None:
+        _MANIFEST_FAMILY_BY_NAME = {
+            entry.name: entry.family for entry in parse_cpp_manifest()
+        }
+    return _MANIFEST_FAMILY_BY_NAME
+
+
+def expected_solver_family_counters(solver_name: str) -> dict[str, float | None]:
+    family = manifest_family_by_name().get(solver_name)
+    return {
+        counter: (
+            (1.0 if counter == SOLVER_FAMILY_COUNTER_BY_FAMILY.get(family) else 0.0)
+            if family is not None
+            else None
+        )
+        for counter in SOLVER_FAMILY_COUNTERS
+    }
 
 
 def run_benchmarks(
@@ -175,6 +204,7 @@ def parse_benchmark_results(data: dict) -> dict:
 
         time_ns = bm.get("cpu_time", bm.get("real_time", 0))
         contract_ok = bm.get("contract_ok", 0)
+        family_counters = expected_solver_family_counters(solver_name)
 
         results[category][(solver_name, problem_size)] = {
             "lcp_dimension": bm.get("problem_size"),
@@ -187,6 +217,10 @@ def parse_benchmark_results(data: dict) -> dict:
             "bound_violation": bm.get("bound_violation"),
             "solver_identity_schema_version": bm.get("solver_identity_schema_version"),
             "solver_manifest_index": bm.get("solver_manifest_index"),
+            **{
+                counter: bm.get(counter, family_counters[counter])
+                for counter in SOLVER_FAMILY_COUNTERS
+            },
             "solver_supports_standard": bm.get("solver_supports_standard"),
             "solver_supports_boxed": bm.get("solver_supports_boxed"),
             "solver_supports_friction_index": bm.get("solver_supports_friction_index"),
@@ -283,6 +317,22 @@ def check_native_profile_coverage(
                 != solver
             )
         )
+        solver_family_mismatches = []
+        for (solver, problem_size), data in results.get(category, {}).items():
+            if not any(data.get(key) is not None for key in SOLVER_FAMILY_COUNTERS):
+                continue
+            expected_counters = expected_solver_family_counters(solver)
+            actual_sum = 0
+            mismatch = False
+            for key in SOLVER_FAMILY_COUNTERS:
+                actual = _counter_to_int(data.get(key))
+                expected = _counter_to_int(expected_counters[key])
+                actual_sum += 1 if actual == 1 else 0
+                if actual != expected:
+                    mismatch = True
+            if mismatch or actual_sum != 1:
+                solver_family_mismatches.append(f"{solver}/{problem_size}")
+        solver_family_mismatches = sorted(solver_family_mismatches)
 
         if unknown:
             errors.append(
@@ -314,6 +364,11 @@ def check_native_profile_coverage(
             errors.append(
                 f"{category}: current-schema rows disagree with solver identity "
                 f"counters for {solver_identity_mismatches}"
+            )
+        if solver_family_mismatches:
+            errors.append(
+                f"{category}: current-schema rows disagree with solver family "
+                f"counters for {solver_family_mismatches}"
             )
 
     if not errors:
@@ -426,6 +481,10 @@ def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
         "contact_count",
         "solver_identity_schema_version",
         "solver_manifest_index",
+        "solver_family_pivoting",
+        "solver_family_projection",
+        "solver_family_newton",
+        "solver_family_other",
         "time_ns",
         "contract_ok",
         "iterations",

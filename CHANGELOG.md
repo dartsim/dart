@@ -3761,6 +3761,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     machine-record the solver identity schema version and manifest index, and
     the checked performance-profile evidence CSV and roster lint reject
     name/identity mismatches.
+  - Added one-hot LCP solver-family identity counters to `BM_LcpCompare`
+    evidence, the checked performance-profile CSV, roster lint, and Python
+    `lcp_physics` evidence-schema panel so pivoting, projection, Newton, and
+    other solver families can be grouped without parsing display names.
   - Extended the checked LCP performance-profile evidence CSV with solver
     iteration and bound-violation metrics, and tightened the roster lint gate
     to reject stale or invalid row-level metric evidence.

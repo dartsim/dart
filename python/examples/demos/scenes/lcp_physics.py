@@ -273,6 +273,13 @@ _PERFORMANCE_PROFILE_EVIDENCE_SCHEMA_ROWS: tuple[dict[str, str], ...] = (
     },
     {
         "fields": (
+            "solver_family_pivoting, solver_family_projection, "
+            "solver_family_newton, solver_family_other"
+        ),
+        "meaning": "One-hot solver family identity for apples-to-apples grouping.",
+    },
+    {
+        "fields": (
             "solver_supports_standard, solver_supports_boxed, "
             "solver_supports_friction_index, solver_supports_problem"
         ),

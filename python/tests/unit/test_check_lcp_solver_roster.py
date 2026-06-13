@@ -31,6 +31,10 @@ def _valid_evidence_row() -> dict[str, str]:
         "contact_count": "",
         "solver_identity_schema_version": "1",
         "solver_manifest_index": "1",
+        "solver_family_pivoting": "1",
+        "solver_family_projection": "0",
+        "solver_family_newton": "0",
+        "solver_family_other": "0",
         "time_ns": "10",
         "contract_ok": "1",
         "iterations": "0",
@@ -83,6 +87,25 @@ def test_lcp_profile_evidence_rejects_invalid_metric(
         writer.writerow(_valid_evidence_row() | {"bound_violation": ""})
 
     with pytest.raises(AssertionError, match="bound_violation"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
+def test_lcp_profile_evidence_rejects_solver_family_mismatch(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(
+            _valid_evidence_row()
+            | {"solver_family_pivoting": "0", "solver_family_projection": "1"}
+        )
+
+    with pytest.raises(AssertionError, match="solver_family_projection"):
         module.check_performance_profile_evidence(manifest, path)
 
 

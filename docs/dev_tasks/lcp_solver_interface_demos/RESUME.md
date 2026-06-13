@@ -1,9 +1,78 @@
 # Resume: LCP Solver Interface And Demos
 
-## Current Reality - 2026-06-12 Stop Handoff And Push Prep
+## Current Reality - 2026-06-13 Solver Family Evidence Counters
 
 This is the latest hand-off. Older sections below are historical checkpoints
 and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current base before this checkpoint:
+  `dcfe8aa0ea0 Update LCP handoff after stop request`
+- Current branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+- Checkpoint target: `Expose LCP solver family evidence counters`
+- Checkpoint status: verify with `git log --oneline --decorate -3`; if the
+  `Expose LCP solver family evidence counters` commit is absent, the slice was
+  interrupted before checkpointing.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this slice changes:
+
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` emits one-hot
+  `solver_family_pivoting`, `solver_family_projection`,
+  `solver_family_newton`, and `solver_family_other` counters from the shared
+  LCP solver manifest.
+- `scripts/lcp_performance_profile.py` preserves directly emitted family
+  counters and derives them from the manifest for cached rows.
+- `scripts/check_lcp_solver_roster.py` validates the checked evidence CSV has
+  one-hot family counters that match each solver's manifest family.
+- `docs/background/lcp/figures/performance_profile_evidence.csv` was refreshed
+  from `build/lcp_profile_full.json` with the new columns; the full benchmark
+  suite was not rerun.
+- `python/examples/demos/scenes/lcp_physics.py` and
+  `python/tests/unit/test_py_demo_panels.py` expose/check the family-counter
+  schema in the LCP panel.
+
+Verification completed so far:
+
+```bash
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_py_demo_panels.py -q
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCP_COMPARE
+build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/Standard/Dantzig/12$' --benchmark_format=json --benchmark_min_time=0.001s
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- Focused parser, roster, and py-demo panel tests: `57 passed`.
+- LCP comparison benchmark target compile: passed.
+- One-row benchmark JSON smoke: passed and emitted
+  `solver_family_pivoting=1` with the other family counters at `0` for
+  `BM_LcpCompare/Standard/Dantzig/12`.
+- Repository lint: passed, including `lint-lcp-solver-roster`.
+- Whitespace check: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If the `Expose LCP solver family evidence counters` commit is missing, rerun
+the focused tests, `pixi run lint`, and `git diff --check`, then commit it.
+Continue only from another bounded DART 7 LCP interface/demo/performance gap;
+the broad objective remains incomplete.
+
+## Current Reality - 2026-06-12 Stop Handoff And Push Prep
+
+Historical checkpoint section. It was the latest hand-off before the
+solver-family evidence-counter continuation.
 
 Current branch:
 

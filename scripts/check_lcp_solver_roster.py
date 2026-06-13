@@ -37,6 +37,13 @@ PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
     "FrictionIndex": "problem_type_friction_index",
 }
 SOLVER_IDENTITY_SCHEMA_VERSION = 1
+SOLVER_FAMILY_COUNTER_BY_FAMILY = {
+    "Pivoting": "solver_family_pivoting",
+    "Projection": "solver_family_projection",
+    "Newton": "solver_family_newton",
+    "Other": "solver_family_other",
+}
+SOLVER_FAMILY_COUNTERS = tuple(SOLVER_FAMILY_COUNTER_BY_FAMILY.values())
 REQUIRED_EVIDENCE_COLUMNS = (
     "category",
     "solver",
@@ -45,6 +52,7 @@ REQUIRED_EVIDENCE_COLUMNS = (
     "contact_count",
     "solver_identity_schema_version",
     "solver_manifest_index",
+    *SOLVER_FAMILY_COUNTERS,
     "time_ns",
     "contract_ok",
     "iterations",
@@ -425,6 +433,24 @@ def check_performance_profile_evidence(
                     f"row {row_number}: solver_manifest_index "
                     f"{row['solver_manifest_index']!r} does not match "
                     f"{solver_name} index {expected_manifest_index}"
+                )
+
+            expected_family_counter = SOLVER_FAMILY_COUNTER_BY_FAMILY[entry.family]
+            family_counter_sum = 0
+            for key in SOLVER_FAMILY_COUNTERS:
+                expected_value = 1 if key == expected_family_counter else 0
+                actual = _csv_counter_as_int(row, key)
+                if actual == 1:
+                    family_counter_sum += 1
+                if actual != expected_value:
+                    errors.append(
+                        f"row {row_number}: {key} {row[key]!r} != "
+                        f"{expected_value} for {solver_name}/{entry.family}"
+                    )
+            if family_counter_sum != 1:
+                errors.append(
+                    f"row {row_number}: solver family counters are not one-hot "
+                    f"for {solver_name}"
                 )
 
             expected_support = {

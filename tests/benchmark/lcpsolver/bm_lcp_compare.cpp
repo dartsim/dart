@@ -3097,6 +3097,13 @@ void AddSolverIdentityCounters(
       = static_cast<double>(dart::test::kLcpSolverIdentitySchemaVersion);
   state.counters["solver_manifest_index"]
       = static_cast<double>(dart::test::getLcpSolverManifestIndex(solver.name));
+  state.counters["solver_family_pivoting"]
+      = solver.family == "Pivoting" ? 1.0 : 0.0;
+  state.counters["solver_family_projection"]
+      = solver.family == "Projection" ? 1.0 : 0.0;
+  state.counters["solver_family_newton"]
+      = solver.family == "Newton" ? 1.0 : 0.0;
+  state.counters["solver_family_other"] = solver.family == "Other" ? 1.0 : 0.0;
 }
 
 void AddSolverProblemSupportCounters(

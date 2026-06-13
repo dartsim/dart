@@ -1118,6 +1118,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         in evidence_schema_by_fields
     )
     assert (
+        "solver_family_pivoting, solver_family_projection, "
+        "solver_family_newton, solver_family_other"
+        in evidence_schema_by_fields
+    )
+    assert (
         "solver_supports_standard, solver_supports_boxed, "
         "solver_supports_friction_index, solver_supports_problem"
         in evidence_schema_by_fields
@@ -1442,6 +1447,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     for evidence_field in (
         "solver_identity_schema_version, solver_manifest_index",
+        "solver_family_pivoting, solver_family_projection, "
+        "solver_family_newton, solver_family_other",
         "solver_supports_standard, solver_supports_boxed, "
         "solver_supports_friction_index, solver_supports_problem",
         "lcp_dimension, contact_count",
