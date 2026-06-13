@@ -7,6 +7,15 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local review-prep cleanup: the live-state handoff references now point
+to pushed checkpoint `a2877f88181d Refresh rigid workflow handoff evidence`,
+the stale direct-impulse deferral note in `RESUME.md` now matches row-5 public
+coverage, and `PR_DRAFT.md` now records the two previously missing focused test
+outcomes. Fresh focused validation for this cleanup: the docs/API drift guard
+reported `4 passed`, the capture/review-index guard reported `7 passed`, and
+`pixi run lint` passed. This slice is local unless a future `git status -sb`
+shows it has been pushed.
+
 Latest implementation slice: deferred public-API searches now carry explicit
 nearest-row caveats in the live `Rigid Workflow` selector and static review
 artifacts. `sleep wake` and `island activation` still route to
@@ -384,13 +393,14 @@ below as historical context, not as current verification state.
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The latest user-approved push advanced
 `origin/feature/rigid-body-gui-visual-verification` to
-`765376c93960 Summarize deferred API caveats in review index`; a fresh resume
+`a2877f88181d Refresh rigid workflow handoff evidence`; a fresh resume
 check showed local `HEAD` matched the remote branch, and `origin/main` is an
 ancestor of `HEAD` after the latest pre-push merge check reported `Already up
-to date`. The branch contains the PR #2986 DART 7 architecture/work-packet
-harness plus the later search-discovery, phase/focus, static review, and
-deferred-API-caveat follow-ups. No PR exists for this branch in the latest
-local checks. The approved push did not approve PR creation, milestone
+to date`. The latest remote checkpoint is a documentation/evidence refresh; the
+branch contains the PR #2986 DART 7 architecture/work-packet harness plus the
+later search-discovery, phase/focus, static review, deferred-API-caveat, and
+current full-packet evidence follow-ups. No PR exists for this branch in the
+latest local checks. The approved push did not approve PR creation, milestone
 mutation, CI reruns, review comments, thread resolution, or other GitHub
 review-state changes.
 
@@ -476,7 +486,7 @@ historical context only and is superseded by the current evidence above.
 - Current remote publication state: `git status -sb` showed local
   `feature/rigid-body-gui-visual-verification` matched
   `origin/feature/rigid-body-gui-visual-verification` at
-  `765376c93960 Summarize deferred API caveats in review index`. No PR for this
+  `a2877f88181d Refresh rigid workflow handoff evidence`. No PR for this
   branch from the latest recorded
   `gh pr list --head "$(git branch --show-current)"` or `gh pr status` checks.
 - Latest broad default validation for pushed commit `fbbd5de0005`:

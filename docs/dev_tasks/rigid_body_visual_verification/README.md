@@ -5,7 +5,7 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`765376c93960 Summarize deferred API caveats in review index`, and
+`a2877f88181d Refresh rigid workflow handoff evidence`, and
 `origin/feature/rigid-body-gui-visual-verification` matched local `HEAD` after
 the latest user-approved push. Fresh sessions should verify the exact local
 and remote state with `git status -sb` and `git log -5 --oneline`; the latest
@@ -14,8 +14,23 @@ still no PR for this branch. Do not push new commits, create a PR, set a
 milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
 GitHub state without explicit maintainer/user approval.
 
-Latest pushed continuation: deferred public-API searches now explain themselves
-in both the live selector and static review packets. `sleep wake` and
+Latest pushed handoff refresh: `a2877f88181d` updates the dev-task handoff,
+completion audit, PR body seed, and PLAN-103 evidence pointers after the
+current full 36-row packet refresh. It is a documentation/evidence-refresh
+commit only; the latest implementation slice remains the deferred-API caveat
+review-index update below.
+
+Latest local review-prep cleanup: refreshed live-state handoff references to
+the pushed `a2877f88181d` checkpoint, corrected a stale RESUME note so public
+direct rigid-body impulse is row-5 coverage instead of a deferred gap, and
+filled the two missing `PR_DRAFT.md` test outcomes. Focused docs/API drift
+guards reported `4 passed`, focused capture/review-index guards reported
+`7 passed`, and `pixi run lint` passed. This slice is local unless a future
+`git status -sb` shows it has been pushed.
+
+Latest pushed implementation continuation: deferred public-API searches now
+explain themselves in both the live selector and static review packets.
+`sleep wake` and
 `island activation` still route to the body-mode semantics row, while
 `loop closure compliance` still routes to the loop-closure family row, but
 their result tooltips, guide data, workflow manifests, and `review_index.html`
@@ -1589,9 +1604,12 @@ removes this working folder in the same change.
 Evidence supporting readiness:
 
 - The latest pushed checkpoint is
+  `a2877f88181d Refresh rigid workflow handoff evidence`, a docs/evidence
+  refresh after the latest full packet regeneration. The latest pushed
+  implementation checkpoint with broad validation evidence remains
   `fbbd5de0005 Expose rigid body impulses in visual workflow`, which records
-  the row-5 public direct-impulse slice and broad validation evidence. At the
-  latest recon, the branch was clean, synced with
+  the row-5 public direct-impulse slice. At the latest recon, the branch was
+  clean, synced with
   `origin/feature/rigid-body-gui-visual-verification`, and had no associated
   pull request.
 - The durable sidecar
@@ -1613,18 +1631,21 @@ Evidence supporting readiness:
 - `CHANGELOG.md` already records the DART 7 rigid workflow command, review
   packet, related-evidence groups, replay metadata, and rigid scene additions,
   so the PR draft checklist marks the changelog item complete.
-- The fresh full workflow capture
-  `build/captures/rigid_workflow_rows_01_36_1781309127` completed all 36
-  numbered rows with `failed_count=0`, guidance complete, docked screenshots,
-  frame sequences, and a generated `review_index.html`.
-- The fresh optional extended packet
-  `build/captures/rigid_workflow_optional_rows_37_52_1781309448` completed rows
-  37-52 with `failed_count=0`, guidance complete, and all selected related,
-  direct IPC shelf, and capture-first packet groups present, including the
-  heavy stack packet at row 52.
+- The current full workflow capture
+  `build/captures/rigid_workflow_rows_01_36_1781356342` completed all 36
+  numbered rows with `failed_count=0`, guidance complete, scene metrics
+  complete, resolved solver identity complete, 2544 PNG frames, row-5 direct
+  impulse signals, the `Workflow Phase Map`, and top-level
+  `Deferred API Caveats`.
+- The current optional extended packet
+  `build/captures/rigid_workflow_optional_signal_highlights_1781338541`
+  completed rows 37-53 with `failed_count=0`, guidance complete, scene metrics
+  complete, resolved solver identity complete, and all selected related,
+  direct IPC shelf, and capture-first packet groups present.
 - The generated review indexes above were produced after the current
   review-index link-normalization and top-level command-provenance fix. The
-  link audit found 0 missing local assets in both review indexes.
+  link audit found 0 missing local assets in both review indexes: 181/181
+  links for rows 01-36 and 86/86 links for rows 37-53.
 - Long optional packets now have an explicit failure-recovery path:
   `--continue-on-failure` records `failed_rows`, review-index Failed Rows
   summaries, and workflow row-range rerun commands that preserve
@@ -1679,7 +1700,7 @@ Acceptance decision packet:
 
 - Branch: `feature/rigid-body-gui-visual-verification`
 - Latest pushed checkpoint is
-  `765376c93960 Summarize deferred API caveats in review index`; the latest
+  `a2877f88181d Refresh rigid workflow handoff evidence`; the latest
   resume check showed local `HEAD` matched
   `origin/feature/rigid-body-gui-visual-verification`. Use `git status -sb` as
   the source of truth before resuming, and do not push without explicit

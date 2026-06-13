@@ -5,7 +5,7 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`765376c93960 Summarize deferred API caveats in review index`, and
+`a2877f88181d Refresh rigid workflow handoff evidence`, and
 `origin/feature/rigid-body-gui-visual-verification` matched local `HEAD` after
 the latest user-approved push. Fresh sessions should verify the exact local
 and remote state with `git status -sb` and `git log -5 --oneline`; the latest
@@ -14,8 +14,23 @@ still no PR for this branch. Do not push new commits, create a PR, set a
 milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
 GitHub state without explicit maintainer/user approval.
 
-Latest pushed continuation: deferred public-API searches now explain themselves
-in both the live selector and static review packets. `sleep wake` and
+Latest pushed handoff refresh: `a2877f88181d` updates the dev-task handoff,
+completion audit, PR body seed, and PLAN-103 evidence pointers after the
+current full 36-row packet refresh. It is a documentation/evidence-refresh
+commit only; the latest implementation slice remains the deferred-API caveat
+review-index update below.
+
+Latest local review-prep cleanup: refreshed live-state handoff references to
+the pushed `a2877f88181d` checkpoint, corrected a stale RESUME note so public
+direct rigid-body impulse is row-5 coverage instead of a deferred gap, and
+filled the two missing `PR_DRAFT.md` test outcomes. Focused docs/API drift
+guards reported `4 passed`, focused capture/review-index guards reported
+`7 passed`, and `pixi run lint` passed. This slice is local unless a future
+`git status -sb` shows it has been pushed.
+
+Latest pushed implementation continuation: deferred public-API searches now
+explain themselves in both the live selector and static review packets.
+`sleep wake` and
 `island activation` still route to the body-mode semantics row, while
 `loop closure compliance` still routes to the loop-closure family row, but
 their result tooltips, guide data, workflow manifests, and `review_index.html`
@@ -706,9 +721,10 @@ Resume from this state:
   AI-assisted workflow change.
 - If more local progress is requested before pushing/review, keep it limited to
   evidence repair, review-prep, or a newly unblocked public API gap. The latest
-  local API-deferred audit still found no current public direct rigid-body
-  impulse, sleep/wake or island activation, or loop-closure compliance surface,
-  so do not add speculative numbered rows for those topics. The
+  local API-deferred audit found that public direct rigid-body impulse is now
+  covered by row 5, while sleep/wake, island activation, and loop-closure
+  compliance still have no public surface, so do not add speculative numbered
+  rows for those deferred topics. The
   non-speculative pre-contact surrogate gap is now covered by
   `diff_pre_contact_surrogate` in the Differentiable shelf and routed from
   `rigid_contact_solver_compare` as related evidence.
@@ -1778,8 +1794,11 @@ recorded below.
 Current snapshot:
 
 - The latest pushed checkpoint is
+  `a2877f88181d Refresh rigid workflow handoff evidence`, a docs/evidence
+  refresh after the latest full packet regeneration. The latest pushed
+  implementation checkpoint with broad validation evidence remains
   `fbbd5de0005 Expose rigid body impulses in visual workflow`, which records
-  the row-5 public direct-impulse slice and broad validation evidence.
+  the row-5 public direct-impulse slice.
 - The latest implementation commit for the row-15-through-row-36 pass remains
   `608a8792afa Surface loop closure workflow signals`.
 - At the latest recon, the branch was clean, synced with
@@ -1792,9 +1811,10 @@ Current snapshot:
 ## Immediate Next Step
 
 A future session should inspect `git status -sb` and `git log -5 --oneline`
-first. Expect the latest pushed implementation commit to be
-`fbbd5de0005 Expose rigid body impulses in visual workflow`, unless a newer
-handoff or cleanup commit has been added.
+first. Expect the latest pushed commit to be
+`a2877f88181d Refresh rigid workflow handoff evidence`; the latest pushed
+implementation commit with broad validation evidence remains
+`fbbd5de0005 Expose rigid body impulses in visual workflow`.
 
 If the tree is clean with that slice present, the next concrete unblocked step
 is maintainer review/acceptance of the current scope or final cleanup in the
