@@ -10,6 +10,29 @@ Corpus matrix:
 ## Current Status
 
 - Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact path now requests only basic private contact-query details when no
+  rigid AVBD contact config component is present, while
+  public `World::collide()` and private AVBD contact snapshots still request
+  the full shape-index/local-point payload. The same slice caches
+  per-contact velocity/transform component pointers, inverse effective mass,
+  and unit normal impulse velocity deltas across the sequential normal solve,
+  avoiding repeated registry lookups and normal impulse cross/matrix work
+  inside the inner iterations. Local validation passed the focused `test_world`
+  and `bm_avbd_rigid_fixed_joint` target build; the focused
+  zero-friction/sliding contact filter; focused public collision-query
+  local-detail coverage for shape-local transforms, cache updates, and compound
+  rigid-body shapes; focused `/0` benchmark path checks; `pixi run lint`;
+  `pixi run build`; the focused contact and public collision-query filters
+  again after lint/build; the full `test_world` binary (314 tests); and
+  `git diff --check`. Full CUDA validation also passed
+  `pixi run -e cuda test-all` on the visible NVIDIA RTX 5000 Ada host. The
+  path checks recorded medians around 6.74 us for the cached normal-impulse
+  slice and 7.25 us for the basic-contact-query slice under CPU scaling and
+  host load, so they validate behavior on the edited path only; they are not a
+  tracked packet refresh or CPU-win comparison. The frictionless source-row gap,
+  all-coefficient CPU-win gate, GPU parity, source-demo parity, and
+  paper-number gates remain open.
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
   contact stage now records whether any assembled contact can carry Coulomb
   friction and uses a normal-only Gauss-Seidel loop when every contact is
   frictionless. This keeps the normal impulse and penetration-correction path

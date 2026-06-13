@@ -9374,6 +9374,10 @@ struct RigidBodyContactStage::ContactScratch
   {
     entt::entity bodyA;
     entt::entity bodyB;
+    comps::Transform* transformA;
+    comps::Transform* transformB;
+    comps::Velocity* velocityA;
+    comps::Velocity* velocityB;
     Eigen::Vector3d normal;
     Eigen::Vector3d armA;
     Eigen::Vector3d armB;
@@ -9384,9 +9388,14 @@ struct RigidBodyContactStage::ContactScratch
     Eigen::Matrix3d invInertiaA;
     Eigen::Matrix3d invInertiaB;
     double effectiveMass;
+    double inverseEffectiveMass;
     double depth;
     double restitutionVelocity;
     double normalImpulse;
+    Eigen::Vector3d normalLinearDeltaA;
+    Eigen::Vector3d normalLinearDeltaB;
+    Eigen::Vector3d normalAngularDeltaA;
+    Eigen::Vector3d normalAngularDeltaB;
     Eigen::Vector3d tangent1;
     Eigen::Vector3d tangent2;
     double tangentMass1;
@@ -9450,7 +9459,8 @@ void RigidBodyContactStage::prepare(World& world)
                                      / kContactConstraintCapacityPerShape
               ? collisionShapeCount * kContactConstraintCapacityPerShape
               : std::numeric_limits<std::size_t>::max();
-    const auto& initialContacts = world.queryContacts(CollisionQueryOptions{});
+    const auto& initialContacts = world.queryContacts(
+        CollisionQueryOptions{}, /*includeShapeContactDetails=*/false);
     contactCapacity
         = std::max(contactConstraintCapacity, initialContacts.capacity());
     constraints.reserve(contactCapacity);
@@ -9595,7 +9605,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     return;
   }
 
-  const auto& contacts = world.queryContacts(CollisionQueryOptions{});
+  const bool mayUseAvbdContactDetails
+      = mayHaveRigidAvbdContactConfigs(registry);
+  const auto& contacts = world.queryContacts(
+      CollisionQueryOptions{},
+      /*includeShapeContactDetails=*/mayUseAvbdContactDetails);
   if (contacts.empty()) {
     if (projectAvbdRigidPointJoints()) {
       return;
@@ -9756,8 +9770,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       continue;
     }
 
-    const auto& transformA = registry.get<comps::Transform>(entityA);
-    const auto& transformB = registry.get<comps::Transform>(entityB);
+    auto& transformA = registry.get<comps::Transform>(entityA);
+    auto& transformB = registry.get<comps::Transform>(entityB);
     const auto& massA = registry.get<comps::MassProperties>(entityA);
     const auto& massB = registry.get<comps::MassProperties>(entityB);
 
@@ -9769,6 +9783,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     ContactScratch::NormalConstraint constraint;
     constraint.bodyA = entityA;
     constraint.bodyB = entityB;
+    constraint.transformA = &transformA;
+    constraint.transformB = &transformB;
     constraint.normal = contact.normal;
     constraint.depth = contact.depth;
     constraint.armA = contact.point - transformA.position;
@@ -9784,6 +9800,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
     const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
+    constraint.normalLinearDeltaA = -constraint.invMassA * constraint.normal;
+    constraint.normalLinearDeltaB = constraint.invMassB * constraint.normal;
+    constraint.normalAngularDeltaA = -constraint.invInertiaA * crossA;
+    constraint.normalAngularDeltaB = constraint.invInertiaB * crossB;
     const double angular
         = constraint.normal.dot(
               (constraint.invInertiaA * crossA).cross(constraint.armA))
@@ -9794,13 +9814,16 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     if (constraint.effectiveMass <= 0.0) {
       continue; // Both bodies are static.
     }
+    constraint.inverseEffectiveMass = 1.0 / constraint.effectiveMass;
 
     // Restitution target from the pre-solve approach velocity (the impact
     // speed). Combine the two materials by taking the larger bounce.
     const double restitution = std::max(
         restitutionOf(registry, entityA), restitutionOf(registry, entityB));
-    const auto& velocityA = registry.get<comps::Velocity>(entityA);
-    const auto& velocityB = registry.get<comps::Velocity>(entityB);
+    auto& velocityA = registry.get<comps::Velocity>(entityA);
+    auto& velocityB = registry.get<comps::Velocity>(entityB);
+    constraint.velocityA = &velocityA;
+    constraint.velocityB = &velocityB;
     const double initialApproach
         = (contactPointVelocity(velocityB, constraint.armB, constraint.staticB)
            - contactPointVelocity(
@@ -9849,8 +9872,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   // clamped non-negative so contacts only push, never pull.
   const auto solveNormalImpulse =
       [&](ContactScratch::NormalConstraint& constraint) {
-        auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-        auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+        auto& velocityA = *constraint.velocityA;
+        auto& velocityB = *constraint.velocityB;
 
         const Eigen::Vector3d pointVelocityA = contactPointVelocity(
             velocityA, constraint.armA, constraint.staticA);
@@ -9860,18 +9883,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
             = (pointVelocityB - pointVelocityA).dot(constraint.normal);
 
         double lambda = -(approach - constraint.restitutionVelocity)
-                        / constraint.effectiveMass;
+                        * constraint.inverseEffectiveMass;
         const double clamped = std::max(constraint.normalImpulse + lambda, 0.0);
         lambda = clamped - constraint.normalImpulse;
         constraint.normalImpulse = clamped;
 
-        const Eigen::Vector3d impulse = lambda * constraint.normal;
-        velocityB.linear += constraint.invMassB * impulse;
-        velocityB.angular
-            += constraint.invInertiaB * constraint.armB.cross(impulse);
-        velocityA.linear -= constraint.invMassA * impulse;
-        velocityA.angular
-            -= constraint.invInertiaA * constraint.armA.cross(impulse);
+        velocityA.linear += lambda * constraint.normalLinearDeltaA;
+        velocityA.angular += lambda * constraint.normalAngularDeltaA;
+        velocityB.linear += lambda * constraint.normalLinearDeltaB;
+        velocityB.angular += lambda * constraint.normalAngularDeltaB;
       };
 
   if (!hasFrictionConstraints) {
@@ -9888,8 +9908,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
         // Coulomb friction along each tangent, clamped to the friction pyramid
         // bounded by the accumulated normal impulse.
         if (constraint.friction > 0.0) {
-          auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
-          auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+          auto& velocityA = *constraint.velocityA;
+          auto& velocityB = *constraint.velocityB;
           const double frictionLimit
               = constraint.friction * constraint.normalImpulse;
           const auto solveFriction = [&](const Eigen::Vector3d& tangent,
@@ -9949,10 +9969,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const Eigen::Vector3d correction
         = (correctionFactor * penetration / totalInverseMass)
           * constraint.normal;
-    registry.get<comps::Transform>(constraint.bodyA).position
-        -= constraint.invMassA * correction;
-    registry.get<comps::Transform>(constraint.bodyB).position
-        += constraint.invMassB * correction;
+    constraint.transformA->position -= constraint.invMassA * correction;
+    constraint.transformB->position += constraint.invMassB * correction;
   }
 }
 

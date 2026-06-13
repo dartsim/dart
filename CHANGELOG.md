@@ -351,7 +351,13 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     also skips tangent-basis setup, tangent effective-mass calculation, and
     friction solve calls for contacts with zero combined Coulomb friction while
     preserving normal contact projection, and uses a normal-only inner solve
-    loop when every assembled contact is frictionless.
+    loop when every assembled contact is frictionless. The ordinary rigid
+    contact path now also requests only basic contact query details when no
+    private AVBD contact config component is present, while
+    public `World::collide()` and AVBD contact snapshots still request full
+    shape-index/local-point data; the sequential normal solve caches
+    velocity/transform component pointers and unit normal impulse deltas across
+    its inner iterations.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about

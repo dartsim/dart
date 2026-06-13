@@ -12,15 +12,18 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: the default sequential-impulse rigid contact stage now
-records whether any assembled contact can carry Coulomb friction and runs a
-normal-only Gauss-Seidel loop when every assembled contact is frictionless. This
-keeps normal impulse solving and positional correction active for the
-source-shaped Dynamic Friction max-friction-0 row, but removes the friction
-branch from the inner iteration path. The audit found the sweep still exercises
-the public World sequential-impulse contact path; the benchmark helper does not
-attach private `RigidAvbdContactConfig`, and zero friction still requires
-collision query, normal impulses, and penetration correction.
+Latest local slice: the default sequential-impulse rigid contact path now
+requests only basic private contact-query details when no rigid AVBD contact
+config component is present. Public `World::collide()` and
+private AVBD contact snapshots still request the full shape-index/local-point
+payload. The same slice caches per-contact velocity/transform component
+pointers, inverse effective mass, and unit normal impulse velocity deltas across
+the sequential normal solve, avoiding repeated registry lookups and normal
+impulse cross/matrix work inside the inner iterations. The audit found the
+source-shaped Dynamic Friction max-friction-0 row still exercises the public
+World sequential-impulse contact path; the benchmark helper does not attach
+private `RigidAvbdContactConfig`, and zero friction still requires collision
+query, normal impulses, and penetration correction.
 
 Validation for the latest local slice:
 
@@ -28,29 +31,41 @@ Validation for the latest local slice:
   passed.
 - `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
   passed, 3 tests.
-- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-normal-only-contact-loop.json --benchmark_out_format=json'`
-  passed. It recorded a 7.53 us median CPU step under load average
-  `5.00, 9.64, 17.07` with CPU scaling enabled.
-- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep-after-normal-only-contact-loop.json --benchmark_out_format=json'`
-  passed. It recorded median CPU step times of 7.01 us, 7.51 us, 18.13 us,
-  11.07 us, and 8.09 us for max friction 0, 0.5, 1.0, 2.5, and 5.0
-  respectively, under load average `4.76, 9.43, 16.93` with CPU scaling
-  enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-cached-contact-impulse.json --benchmark_out_format=json'`
+  passed. It recorded a 6.74 us median CPU step under load average
+  `2.85, 3.12, 7.77` with CPU scaling enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-basic-contact-query.json --benchmark_out_format=json'`
+  passed. It recorded a 7.47 us median CPU step under load average
+  `8.48, 5.33, 7.43` with CPU scaling enabled.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryUsesShapeLocalTransform:World.CollisionQueryCacheUpdatesTransformsAndShapes:World.CollisionQuerySupportsCompoundRigidBodyShapes' --gtest_brief=1`
+  passed, 3 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=2.0s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-basic-contact-query-long.json --benchmark_out_format=json'`
+  passed. It recorded a 7.25 us median CPU step under load average
+  `6.54, 5.13, 7.31` with CPU scaling enabled.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere' --gtest_brief=1`
   passed again after lint/build, 3 tests.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.CollisionQueryUsesShapeLocalTransform:World.CollisionQueryCacheUpdatesTransformsAndShapes:World.CollisionQuerySupportsCompoundRigidBodyShapes' --gtest_brief=1`
+  passed again after lint/build, 3 tests.
 - `pixi run -- build/default/cpp/Release/bin/test_world --gtest_brief=1`
   passed, 314 tests.
 - `git diff --check` passed.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The gate reported linting, build, unit tests, simulation tests, Python tests,
+  documentation, and CUDA tests all passed; its CUDA smoke phase also passed
+  the four `simulation-cuda` tests and the benchmark smoke filters, with
+  CPU-scaling warnings on the benchmark timings.
 
 Evidence caveat for the latest local slice: these benchmark-only reruns
 validate the edited path, but they do not regenerate the tracked
 friction-coefficient packet because same-source native timing and visual
-capture artifacts were not rerun. The max-friction-0 row still lacks a tracked
-CPU-win comparison against the native source runner. The frictionless
-max-friction-0 CPU gap, all-coefficient CPU-win gate, GPU parity, source-demo
-parity, and paper-number gates remain open.
+capture artifacts were not rerun. The cached-contact and basic-contact-query
+changes reduce per-step work, but the local timings are not CPU-win evidence
+and the max-friction-0 row still lacks a tracked CPU-win comparison against the
+native source runner. The frictionless max-friction-0 CPU gap, all-coefficient
+CPU-win gate, GPU parity, source-demo parity, and paper-number gates remain
+open.
 
 Previous local checkpoint: commit `7a226db4050` records the
 `buildAvbdRigidContactManifoldRows()` empty-friction-descriptor early return.
@@ -136,13 +151,15 @@ all-coefficient friction win unless tracked artifacts directly prove it.
 
 Current evidence: the zero-limit Coulomb contact-friction row skip,
 empty-friction-descriptor early return, default contact-stage zero-friction
-tangent skip, and default contact-stage normal-only frictionless inner loop are
-landed or pending on this branch. The refreshed friction-coefficient packet
-still records DART faster than the native source runner for max friction 0.5,
-1.0, 2.5, and 5.0, but slower for the frictionless max friction 0 case. The
-latest local benchmark reruns after the normal-only loop are path validation
-only because same-source native timing and visual captures were not rerun, so
-the frictionless CPU gap and GPU parity remain open.
+tangent skip, default contact-stage normal-only frictionless inner loop, basic
+private contact queries for ordinary rigid solves, and cached normal-impulse
+inner-loop data are landed or pending on this branch. The refreshed
+friction-coefficient packet still records DART faster than the native source
+runner for max friction 0.5, 1.0, 2.5, and 5.0, but slower for the frictionless
+max friction 0 case. The latest local benchmark reruns after the
+basic-contact-query and cached-normal-impulse slice are path validation only
+because same-source native timing and visual captures were not rerun, so the
+frictionless CPU gap and GPU parity remain open.
 
 Preferred next bounded work: choose one evidence-backed PLAN-104 gap, ideally
 a higher-level frictionless max-friction-0 CPU optimization/audit or GPU parity

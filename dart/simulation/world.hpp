@@ -976,7 +976,8 @@ private:
 
   void ensureDesignMode() const;
   [[nodiscard]] const std::vector<Contact>& queryContacts(
-      const CollisionQueryOptions& options);
+      const CollisionQueryOptions& options,
+      bool includeShapeContactDetails = true);
   void markFrameTopologyChanged() noexcept;
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
