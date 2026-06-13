@@ -38,6 +38,17 @@ def _review_assets(html_text: str) -> list[str]:
     return parser.assets
 
 
+def _fake_solver_identity_scene_metrics(scene: str) -> dict[str, object]:
+    return {
+        "latest": {
+            "metrics": {
+                "row": scene,
+                "solver": "test_solver",
+            },
+        },
+    }
+
+
 def _write_ppm(
     path: pathlib.Path, pixels: bytes, width: int = 2, height: int = 1
 ) -> None:
@@ -1138,6 +1149,71 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert "divergence: current x=0.125, max x=0.25, samples=2" in review_html
 
 
+def test_rigid_workflow_review_warns_when_solver_identity_is_missing(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    specs = (("rigid_body", 24, 960, 540, True),)
+    monkeypatch.setattr(capture_py_demo, "RIGID_WORKFLOW_CAPTURE_SPECS", specs)
+
+    def fake_run(argv: list[str]) -> int:
+        scene = argv[argv.index("--scene") + 1]
+        output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
+        output_dir.mkdir(parents=True)
+        screenshot = output_dir / f"{scene}.png"
+        screenshot.write_bytes(b"fake-png")
+        (output_dir / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "scene": scene,
+                    "capture": {"requested_frames": 24},
+                    "artifacts": {
+                        "frames": str(output_dir / "png_frames"),
+                        "screenshot": str(screenshot),
+                    },
+                    "scene_metrics": {
+                        "latest": {
+                            "metrics": {
+                                "row": scene,
+                                "contacts": 0,
+                            },
+                        },
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        return 0
+
+    monkeypatch.setattr(capture_py_demo, "_run_scene_capture_from_argv", fake_run)
+
+    rc = capture_py_demo.main(["--rigid-workflow", "--output-dir", str(output)])
+
+    assert rc == 1
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["status"] == "failed"
+    assert manifest["resolved_solver_identity_complete"] is False
+    assert manifest["resolved_solver_identity_count"] == 0
+    assert manifest["resolved_solver_identity_missing_count"] == 1
+    assert manifest["resolved_solver_identity_missing_rows"] == [
+        {
+            "order": 1,
+            "count": 1,
+            "scene": "rigid_body",
+            "workflow_group": "numbered",
+            "workflow_label": "Baseline",
+            "manifest": str(output / "scenes" / "01_rigid_body" / "manifest.json"),
+        }
+    ]
+    review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
+    assert "<strong>solver identity</strong> missing 1" in review_html
+    assert "Rows Missing Solver Identity" in review_html
+    assert "configuration that actually ran" in review_html
+    assert "1 rigid_body" in review_html
+    assert "scenes/01_rigid_body/manifest.json" in review_html
+
+
 def test_rigid_workflow_latest_signals_prioritize_normal_push_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {
@@ -1569,6 +1645,7 @@ def test_rigid_workflow_run_links_scene_videos(
                         "screenshot": str(screenshot),
                         "video": str(video),
                     },
+                    "scene_metrics": _fake_solver_identity_scene_metrics(scene),
                 },
                 sort_keys=True,
             )
@@ -1626,6 +1703,7 @@ def test_rigid_workflow_review_links_resolve_workspace_relative_artifacts(
                         "screenshot": str(screenshot),
                         "video": str(video),
                     },
+                    "scene_metrics": _fake_solver_identity_scene_metrics(scene),
                 },
                 sort_keys=True,
             )
@@ -1859,7 +1937,15 @@ def test_rigid_workflow_run_can_resume_from_selected_row(
         output_dir = pathlib.Path(argv[argv.index("--output-dir") + 1])
         output_dir.mkdir(parents=True)
         (output_dir / "manifest.json").write_text(
-            json.dumps({"scene": scene, "artifacts": {}}, sort_keys=True) + "\n"
+            json.dumps(
+                {
+                    "scene": scene,
+                    "artifacts": {},
+                    "scene_metrics": _fake_solver_identity_scene_metrics(scene),
+                },
+                sort_keys=True,
+            )
+            + "\n"
         )
         rendered.append(scene)
         return 0

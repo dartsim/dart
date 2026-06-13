@@ -305,8 +305,10 @@
     per-frame `scene_metrics.jsonl` sidecar and latest metrics summary in the
     manifest. Successful captures now also promote a
     `resolved_solver_identity` block from those metrics into the per-scene
-    manifest, workflow manifests summarize identity completeness, and workflow
-    review cards show the resolved solver summary. The baseline,
+    manifest; workflow manifests summarize identity completeness; non-dry-run
+    workflow packets fail when any captured row misses identity evidence; and
+    workflow review cards show the resolved solver summary or missing-identity
+    warning. The baseline,
     contact-inspection, solver-comparison, contact-policy, multibody
     link-contact, link center-of-mass, link Jacobian, multibody solver-family,
     loop-closure family, broader floating-base and two-link arm related routes,

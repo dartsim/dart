@@ -26,6 +26,14 @@ present. The optional rows 37-52 packet still reports `status=complete`,
 `resolved_solver_identity_count=16`, and 81/81 local review-index assets
 present.
 
+Latest local harness hardening: workflow review indexes now show a solver
+identity badge and a `Rows Missing Solver Identity` warning when any captured
+row lacks a resolved solver/contact/executor identity, and non-dry-run
+`py-demo-capture -- --rigid-workflow` packets now return failure status instead
+of completing green in that state. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
+reported `7 passed`.
+
 Latest publication-readiness audit: `git fetch origin main && git merge
 --no-edit origin/main` still reports `Already up to date`; `gh pr status` still
 reports no PR for `feature/rigid-body-gui-visual-verification`; the open

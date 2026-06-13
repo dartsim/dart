@@ -26,6 +26,14 @@ present. The optional rows 37-52 packet still reports `status=complete`,
 `resolved_solver_identity_count=16`, and 81/81 local review-index assets
 present.
 
+Latest local harness hardening: workflow review indexes now show a solver
+identity badge and a `Rows Missing Solver Identity` warning when any captured
+row lacks a resolved solver/contact/executor identity, and non-dry-run
+`py-demo-capture -- --rigid-workflow` packets now return failure status instead
+of completing green in that state. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
+reported `7 passed`.
+
 Latest publication-readiness audit: `git fetch origin main && git merge
 --no-edit origin/main` still reports `Already up to date`; `gh pr status` still
 reports no PR for `feature/rigid-body-gui-visual-verification`; the open
@@ -229,8 +237,11 @@ Resume from this state:
   push/PR approval, DART 7.0 milestone, maintainer acceptance, and same-PR
   dev-task cleanup. It also records the AI principle audit for this substantial
   AI-assisted workflow change.
-  If more local progress is requested before pushing/review, audit the
-  API-deferred gaps rather than adding speculative numbered rows.
+- If more local progress is requested before pushing/review, keep it limited to
+  evidence repair, review-prep, or a newly unblocked public API gap. The latest
+  local API-deferred audit still found no current public direct rigid-body
+  impulse, sleep/wake or island activation, or loop-closure compliance surface,
+  so do not add speculative numbered rows for those topics.
 
 Post-approval publication path:
 

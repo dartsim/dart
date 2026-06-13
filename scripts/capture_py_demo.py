@@ -1795,6 +1795,48 @@ def _workflow_missing_solver_identity_rows(
     return missing_rows
 
 
+def _workflow_solver_identity_status(
+    missing: list[dict[str, object]], *, dry_run: bool
+) -> str:
+    if dry_run:
+        return "not required"
+    if not missing:
+        return "complete"
+    return f"missing {len(missing)}"
+
+
+def _workflow_solver_identity_warning(missing: list[dict[str, object]]) -> str:
+    if not missing:
+        return ""
+    items: list[str] = []
+    for entry in missing:
+        order = entry.get("order", "?")
+        scene = entry.get("scene", "unknown")
+        manifest = entry.get("manifest", "")
+        manifest_html = ""
+        if isinstance(manifest, str) and manifest:
+            manifest_html = (
+                '<p class="command-label">scene manifest</p>'
+                f"<pre>{html.escape(manifest)}</pre>"
+            )
+        items.append(
+            "<li>"
+            f"{html.escape(str(order))} {html.escape(str(scene))}"
+            f"{manifest_html}"
+            "</li>"
+        )
+    return (
+        '<section class="solver-identity-warning">'
+        "<h2>Rows Missing Solver Identity</h2>"
+        "<p>These captured rows did not publish a resolved solver identity in "
+        "their scene manifest. Treat the packet as incomplete DART 7 harness "
+        "evidence until each row records the solver/contact/executor "
+        "configuration that actually ran.</p>"
+        f"<ul>{''.join(items)}</ul>"
+        "</section>"
+    )
+
+
 def _workflow_failure_summary(failed_rows: list[dict[str, object]]) -> str:
     if not failed_rows:
         return ""
@@ -2024,6 +2066,10 @@ def _write_workflow_review_index(
     )
     guidance_missing = _workflow_guidance_missing(captures)
     guidance_warning = _workflow_guidance_warning(guidance_missing)
+    solver_identity_missing = _workflow_missing_solver_identity_rows(
+        captures, dry_run=dry_run
+    )
+    solver_identity_warning = _workflow_solver_identity_warning(solver_identity_missing)
     failed_rows = _workflow_failed_rows(captures)
     failure_summary = _workflow_failure_summary(failed_rows)
     workflow_command_html = (
@@ -2059,6 +2105,12 @@ def _write_workflow_review_index(
             _workflow_badge("requested groups", requested_groups),
             _workflow_badge("selected groups", selected_groups),
             _workflow_badge("guidance", _workflow_guidance_status(guidance_missing)),
+            _workflow_badge(
+                "solver identity",
+                _workflow_solver_identity_status(
+                    solver_identity_missing, dry_run=dry_run
+                ),
+            ),
             _workflow_badge("complete", completed),
             _workflow_badge("failed", failed),
             _workflow_badge("elapsed s", elapsed_s),
@@ -2124,6 +2176,13 @@ def _write_workflow_review_index(
       border-radius: 6px;
       background: #fff8c5;
     }}
+    .solver-identity-warning {{
+      margin: 0 0 16px;
+      padding: 12px;
+      border: 1px solid #f0b429;
+      border-radius: 6px;
+      background: #fff8c5;
+    }}
     .failure-summary {{
       margin: 0 0 16px;
       padding: 12px;
@@ -2132,15 +2191,18 @@ def _write_workflow_review_index(
       background: #ffebe9;
     }}
     .failure-summary h2,
-    .guidance-warning h2 {{
+    .guidance-warning h2,
+    .solver-identity-warning h2 {{
       margin-bottom: 8px;
     }}
     .failure-summary p,
-    .guidance-warning p {{
+    .guidance-warning p,
+    .solver-identity-warning p {{
       margin: 0 0 8px;
     }}
     .failure-summary ul,
-    .guidance-warning ul {{
+    .guidance-warning ul,
+    .solver-identity-warning ul {{
       margin: 0;
       padding-left: 20px;
     }}
@@ -2261,6 +2323,7 @@ def _write_workflow_review_index(
   <main>
     {failure_summary}
     {guidance_warning}
+    {solver_identity_warning}
     <section class="grid">
 {cards}
     </section>
@@ -2471,7 +2534,13 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
             if not args.continue_on_failure:
                 return rc if rc != 0 else 1
 
-    final_status = "failed" if first_failure_rc else "complete"
+    _attach_workflow_resolved_solver_identities(captures)
+    solver_identity_missing = _workflow_missing_solver_identity_rows(
+        captures, dry_run=False
+    )
+    final_status = (
+        "failed" if first_failure_rc or solver_identity_missing else "complete"
+    )
     manifest = _write_workflow_manifest(
         output_dir,
         dry_run=False,
@@ -2483,7 +2552,9 @@ def _run_rigid_workflow(args: argparse.Namespace) -> int:
         workflow_command=workflow_command,
     )
     print(f"workflow manifest: {manifest}", flush=True)
-    return first_failure_rc
+    if first_failure_rc:
+        return first_failure_rc
+    return 1 if solver_identity_missing else 0
 
 
 def main(argv: list[str] | None = None) -> int:

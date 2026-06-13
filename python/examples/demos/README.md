@@ -175,10 +175,12 @@ selected packet. Successful scene captures also promote a machine-readable
 `resolved_solver_identity` block from the latest scene metrics into the
 per-scene manifest; workflow manifests count those identities and list any
 captured row missing one, while the review cards show the resolved solver
-summary beside the row's axis and controls. The panel also includes a
-current-row motion packet command; workflow packets pass `--video --fps`
-through to the selected row captures and the review index links MP4 artifacts
-when `ffmpeg` is available.
+summary beside the row's axis and controls. Non-dry-run workflow packets return
+failure status when a captured row misses solver identity evidence, and the
+review index highlights those rows before a reviewer treats the packet as
+complete. The panel also includes a current-row motion packet command; workflow
+packets pass `--video --fps` through to the selected row captures and the
+review index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
 shelf, and capture-first packet rows self-describing in `manifest.json` and
 `review_index.html`: each optional row records its role, user question,

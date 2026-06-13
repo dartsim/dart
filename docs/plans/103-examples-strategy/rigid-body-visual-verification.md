@@ -98,6 +98,9 @@ machine-readable `resolved_solver_identity` block from
 manifests record `resolved_solver_identity_complete`,
 `resolved_solver_identity_count`, and missing-row details so DART 7 review
 packets can prove which solver/contact/executor configuration actually ran.
+Non-dry-run workflow packets return failure status if any captured row misses
+that identity evidence, and `review_index.html` highlights those rows alongside
+missing guidance or failed-row summaries.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
