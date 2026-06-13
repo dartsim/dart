@@ -5,15 +5,16 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`6de636c2881 Merge remote-tracking branch 'origin/main' into feature/rigid-body-gui-visual-verification`
-and includes static-review phase-map follow-ups. Fresh sessions should
-verify the exact local and remote state with `git status -sb` and
-`git log -5 --oneline`. There is still no PR for this branch. Do not push new
-commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
-threads, or mutate any other GitHub state without explicit maintainer/user
-approval.
+`765376c93960 Summarize deferred API caveats in review index`, and
+`origin/feature/rigid-body-gui-visual-verification` matched local `HEAD` after
+the latest user-approved push. Fresh sessions should verify the exact local
+and remote state with `git status -sb` and `git log -5 --oneline`; the latest
+resume check also confirmed `origin/main` is an ancestor of `HEAD`. There is
+still no PR for this branch. Do not push new commits, create a PR, set a
+milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
+GitHub state without explicit maintainer/user approval.
 
-Latest local continuation: deferred public-API searches now explain themselves
+Latest pushed continuation: deferred public-API searches now explain themselves
 in both the live selector and static review packets. `sleep wake` and
 `island activation` still route to the body-mode semantics row, while
 `loop closure compliance` still routes to the loop-closure family row, but
@@ -24,7 +25,8 @@ closest current verifier row. Workflow manifests also publish
 `Deferred API Caveats` table and badge so maintainers can see unsupported API
 routes without opening each card. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_deferred_api_caveats python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_deferred_api_search_matches python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `7 passed`. This slice is local and unpushed.
+reported `7 passed`. This slice is pushed at
+`765376c93960 Summarize deferred API caveats in review index`.
 
 Previous local continuation: workflow manifests now record
 `workflow_phase_summary` for selected numbered rows, and `review_index.html`
@@ -205,7 +207,7 @@ Latest local continuation: the full numbered rows 01-36 workflow packet was
 regenerated after the backend-diagnostics and contact-query review-card
 improvements, so the broad maintainer review artifact now matches current
 capture-helper behavior. Fresh evidence:
-`build/captures/rigid_workflow_rows_01_36_1781335894` completed with
+`build/captures/rigid_workflow_rows_01_36_1781356342` completed with
 `status=complete`, `capture_count=36`, `failed_count=0`,
 `guidance_complete=true`, `scene_metrics_complete=true`,
 `resolved_solver_identity_complete=true`, and `review_index.html` now showing
@@ -271,9 +273,10 @@ with the known generated-stub warnings for `dartpy._world_render_bridge`, and
 both wrappers ended green.
 
 Latest artifact refresh: after the backend/executor search-routing,
-backend-diagnostics, contact-query review-card, and optional-signal slices, the
-full rows 01-36 packet remains current at
-`build/captures/rigid_workflow_rows_01_36_1781335894` and the optional rows
+backend-diagnostics, contact-query review-card, optional-signal,
+phase/focus-map, deferred-API caveat, and direct-impulse slices, the full rows
+01-36 packet remains current at
+`build/captures/rigid_workflow_rows_01_36_1781356342` and the optional rows
 37-53 packet is current at
 `build/captures/rigid_workflow_optional_signal_highlights_1781338541`. Their
 manifests report complete scene metrics, complete resolved solver identity,
@@ -473,11 +476,13 @@ acceptance evidence, gates, dependencies, and evidence pointers. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_resolved_solver_identity_requires_solver_family_and_context python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_scene_metrics_are_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_warns_when_solver_identity_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_links_scene_videos python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_links_resolve_workspace_relative_artifacts python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_fails_when_scene_manifest_is_missing python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_can_continue_after_scene_failure python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_can_resume_from_selected_row -q`
 reported `11 passed`.
 
-Latest local continuation: a read-only artifact audit rechecked the current
-review packet manifests and static review indexes. The full rows 01-36 packet
-still reports `status=complete`, `capture_count=36`, `failed_count=0`,
-`guidance_complete=true`, `resolved_solver_identity_complete=true`,
-`resolved_solver_identity_count=36`, and 181/181 local review-index assets
+Latest local continuation: a real current-head artifact refresh plus read-only
+artifact audit rechecked the current review packet manifests and static review
+indexes. The full rows 01-36 packet reports `status=complete`,
+`capture_count=36`, `failed_count=0`, `guidance_complete=true`,
+`scene_metrics_complete=true`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=36`, `deferred_api_caveat_count=2`, 2544 PNG
+frames, row-5 direct impulse signals, and 181/181 local review-index assets
 present. The current optional rows 37-53 packet reports `status=complete`,
 `capture_count=17`, `failed_count=0`, `guidance_complete=true`,
 `scene_metrics_complete=true`, `resolved_solver_identity_complete=true`,
@@ -577,13 +582,13 @@ reproducers as failure evidence only.
 
 Latest local follow-up: after the headless engine-creation fix and the DART 7
 harness scene-metrics contract update, the full numbered packet regenerated at
-`build/captures/rigid_workflow_rows_01_36_1781335894` and completed with
+`build/captures/rigid_workflow_rows_01_36_1781356342` and completed with
 `status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `workflow_row_start=1`,
 `workflow_row_end=36`, `guidance_complete=true`, `guidance_missing_count=0`,
 `scene_metrics_complete=true`, `scene_metrics_count=36`,
 `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`,
-`resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 2388 frame
+`resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 2544 frame
 PNGs. The current optional rows 37-53 packet
 `build/captures/rigid_workflow_optional_signal_highlights_1781338541` completed with
 `status=complete`, `capture_count=17`, `completed_count=17`,
@@ -608,7 +613,7 @@ numbered packet
 `status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
 `guidance_missing_count=0`, and `failed_rows=[]`. It wrote
-`manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
+`manifest.json`, `review_index.html`, 36 docked row screenshots, and 2544
 frame PNGs; the first row was `rigid_body` and the last was
 `rigid_loop_closure`. The optional extended packet
 `build/captures/rigid_workflow_optional_rows_37_52_1781309448` completed with
@@ -684,7 +689,7 @@ Resume from this state:
   `6bafd605907 Add pre-contact surrogate visual demo`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
-- Use `build/captures/rigid_workflow_rows_01_36_1781335894/review_index.html`
+- Use `build/captures/rigid_workflow_rows_01_36_1781356342/review_index.html`
   and
   `build/captures/rigid_workflow_optional_signal_highlights_1781338541/review_index.html`
   as the current identity-complete review-index scan artifacts. Treat older
@@ -762,7 +767,7 @@ Evidence for this slice:
   `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, and `failed_rows=[]`. It wrote
-  `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
+  `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2544
   frame PNGs across rows 01-36; the first row was `rigid_body` and the last row
   was `rigid_loop_closure`.
 - Fresh optional extended workflow packet:

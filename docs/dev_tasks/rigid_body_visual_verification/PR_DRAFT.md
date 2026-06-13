@@ -362,13 +362,14 @@ rigid-body visual verification surface for the current cycle.
   optional workflow packets below regenerated with complete solver identity.
   The failed `1781311276` refresh path is not included in the evidence below.
 - Full numbered workflow packet:
-  `build/captures/rigid_workflow_rows_01_36_1781335894`
+  `build/captures/rigid_workflow_rows_01_36_1781356342`
   (`status=complete`, `capture_count=36`, `failed_count=0`,
   `guidance_complete=true`, `scene_metrics_complete=true`,
   `scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
-  `resolved_solver_identity_count=36`, 2388 PNG frames; `review_index.html`
-  includes the latest backend-diagnostics and contact-query/collision-cast
-  review-card summaries).
+  `resolved_solver_identity_count=36`, `deferred_api_caveat_count=2`, 2544 PNG
+  frames; `review_index.html` includes row-5 direct impulse signals, the latest
+  backend-diagnostics and contact-query/collision-cast review-card summaries,
+  the `Workflow Phase Map`, and the top-level `Deferred API Caveats` table).
 - Current optional rows 37-53 packet after the optional latest-signal refresh:
   `build/captures/rigid_workflow_optional_signal_highlights_1781338541`
   (`status=complete`, `capture_count=17`, `failed_count=0`,
