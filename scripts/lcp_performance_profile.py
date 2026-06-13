@@ -448,8 +448,10 @@ def compute_performance_ratios(
             key = (solver, problem_size)
             if key in category_results:
                 data = category_results[key]
-                if data["contract_ok"] > 0.5:
-                    times[solver] = data["time_ns"]
+                if _counter_to_int(data.get("contract_ok")) == 1:
+                    time_ns = _finite_float(data.get("time_ns"))
+                    if time_ns is not None and time_ns > 0.0:
+                        times[solver] = time_ns
 
         if not times:
             continue

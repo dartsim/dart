@@ -191,6 +191,39 @@ def test_lcp_profile_coverage_accepts_historical_rows_without_support_counter() 
     )
 
 
+def test_lcp_profile_ratios_use_checked_numeric_values() -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": "BM_LcpCompare/Standard/Dantzig/12",
+                    "run_type": "iteration",
+                    "cpu_time": "10.0",
+                    "contract_ok": "1",
+                }
+            ]
+        }
+    )
+
+    module.check_native_profile_coverage(
+        results,
+        {
+            "Standard": {"Dantzig"},
+            "Boxed": set(),
+            "FrictionIndex": set(),
+        },
+    )
+
+    ratios, solvers, problems = module.compute_performance_ratios(
+        results, "Standard", {"Dantzig"}
+    )
+
+    assert solvers == ["Dantzig"]
+    assert problems == [12]
+    assert ratios["Dantzig"] == [1.0]
+
+
 def test_lcp_profile_coverage_allows_partial_missing_native_solvers(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
