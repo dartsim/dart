@@ -240,6 +240,75 @@ DART_SIMULATION_API void computeMultibodyInverseDynamicsDerivativesInto(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
+/// Reusable storage for link-Jacobian evaluation.
+///
+/// The return-by-value wrappers remain convenient for one-shot diagnostics.
+/// Repeated callers should retain this scratch and pass output storage to the
+/// `Into` overloads so dynamics-tree and per-link body-Jacobian capacity can be
+/// reused across same-shape calls.
+class DART_SIMULATION_API MultibodyLinkJacobianScratch final
+{
+public:
+  MultibodyLinkJacobianScratch();
+  explicit MultibodyLinkJacobianScratch(common::MemoryAllocator& allocator);
+  ~MultibodyLinkJacobianScratch();
+
+  MultibodyLinkJacobianScratch(const MultibodyLinkJacobianScratch&) = delete;
+  MultibodyLinkJacobianScratch& operator=(const MultibodyLinkJacobianScratch&)
+      = delete;
+  MultibodyLinkJacobianScratch(MultibodyLinkJacobianScratch&&) noexcept;
+  MultibodyLinkJacobianScratch& operator=(
+      MultibodyLinkJacobianScratch&&) noexcept;
+
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      entt::entity linkEntity,
+      Eigen::MatrixXd& result);
+
+  friend DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
+      MultibodyLinkJacobianScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      entt::entity linkEntity,
+      Eigen::MatrixXd& result);
+};
+
+/// Reserve link-Jacobian scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute a body-frame link Jacobian into reusable caller-owned storage.
+DART_SIMULATION_API void computeMultibodyLinkJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result);
+
 /// Compute the world-frame geometric Jacobian of one link of a multibody.
 ///
 /// The returned 6 x DOF matrix maps the multibody's generalized velocity to the
@@ -254,6 +323,14 @@ computeMultibodyLinkWorldJacobian(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
+
+/// Compute a world-frame link Jacobian into reusable caller-owned storage.
+DART_SIMULATION_API void computeMultibodyLinkWorldJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result);
 
 /// One contact acting on a single link of a multibody, oriented so the normal
 /// points from the obstacle into the link. The obstacle is either immovable

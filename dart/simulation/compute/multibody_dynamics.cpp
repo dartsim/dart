@@ -588,13 +588,6 @@ void linkBodyJacobiansInto(const DynamicsTree& tree, JacobianVector& jacobian)
   }
 }
 
-std::vector<Eigen::MatrixXd> linkBodyJacobians(const DynamicsTree& tree)
-{
-  std::vector<Eigen::MatrixXd> jacobian;
-  linkBodyJacobiansInto(tree, jacobian);
-  return jacobian;
-}
-
 //==============================================================================
 // Index of a link entity within a multibody structure.
 std::size_t linkIndexOf(
@@ -2340,12 +2333,77 @@ struct MultibodyLinkContactAssemblyScratch::Impl
 };
 
 //==============================================================================
+struct MultibodyLinkJacobianScratch::Impl
+{
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
 struct MultibodyInverseDynamicsScratch::Impl
 {
   explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
 
   MultibodyDynamicsScratch scratch;
 };
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch()
+  : MultibodyLinkJacobianScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
+
+//==============================================================================
+MultibodyLinkJacobianScratch::~MultibodyLinkJacobianScratch() = default;
+
+//==============================================================================
+MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyLinkJacobianScratch& MultibodyLinkJacobianScratch::operator=(
+    MultibodyLinkJacobianScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyLinkJacobianScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyLinkJacobianScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyLinkJacobianScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
 
 //==============================================================================
 MultibodyInverseDynamicsScratch::MultibodyInverseDynamicsScratch()
@@ -2707,9 +2765,11 @@ Eigen::MatrixXd computeMultibodyLinkJacobian(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
-  const auto targetIndex = linkIndexOf(structure, linkEntity);
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  return linkBodyJacobians(tree)[targetIndex];
+  MultibodyLinkJacobianScratch scratch;
+  Eigen::MatrixXd result;
+  computeMultibodyLinkJacobianInto(
+      scratch, registry, structure, linkEntity, result);
+  return result;
 }
 
 //==============================================================================
@@ -2718,19 +2778,79 @@ Eigen::MatrixXd computeMultibodyLinkWorldJacobian(
     const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
+  MultibodyLinkJacobianScratch scratch;
+  Eigen::MatrixXd result;
+  computeMultibodyLinkWorldJacobianInto(
+      scratch, registry, structure, linkEntity, result);
+  return result;
+}
+
+//==============================================================================
+void reserveMultibodyLinkJacobianScratch(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyLinkJacobianScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+  linkBodyJacobiansInto(storage.tree, storage.bodyJacobian);
+}
+
+//==============================================================================
+void computeMultibodyLinkJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result)
+{
   const auto targetIndex = linkIndexOf(structure, linkEntity);
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  const Eigen::MatrixXd bodyJacobian = linkBodyJacobians(tree)[targetIndex];
+  reserveMultibodyLinkJacobianScratch(scratch, registry, structure);
+
+  const auto& bodyJacobian = scratch.m_impl->scratch.bodyJacobian[targetIndex];
+  result.resize(bodyJacobian.rows(), bodyJacobian.cols());
+  result = bodyJacobian;
+}
+
+//==============================================================================
+void computeMultibodyLinkWorldJacobianInto(
+    MultibodyLinkJacobianScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    entt::entity linkEntity,
+    Eigen::MatrixXd& result)
+{
+  const auto targetIndex = linkIndexOf(structure, linkEntity);
+  reserveMultibodyLinkJacobianScratch(scratch, registry, structure);
+
+  const auto& storage = scratch.m_impl->scratch;
+  const auto& bodyJacobian = storage.bodyJacobian[targetIndex];
 
   // Rotate both the angular and linear blocks into world axes, keeping the link
   // origin as the reference point: this is the geometric (world-frame) Jacobian
   // [angular; linear of the link origin].
   const Eigen::Matrix3d rotation
-      = tree.links[targetIndex].worldTransform.linear();
-  Eigen::MatrixXd worldJacobian(6, bodyJacobian.cols());
-  worldJacobian.topRows<3>() = rotation * bodyJacobian.topRows<3>();
-  worldJacobian.bottomRows<3>() = rotation * bodyJacobian.bottomRows<3>();
-  return worldJacobian;
+      = storage.tree.links[targetIndex].worldTransform.linear();
+  result.resize(6, bodyJacobian.cols());
+  result.topRows<3>().noalias() = rotation * bodyJacobian.topRows<3>();
+  result.bottomRows<3>().noalias() = rotation * bodyJacobian.bottomRows<3>();
 }
 
 //==============================================================================

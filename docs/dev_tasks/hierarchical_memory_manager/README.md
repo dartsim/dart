@@ -1,6 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Hard Stop Handoff (2026-06-13, Variational Contact Dual-State Step Coverage)
+## Hard Stop Handoff (2026-06-13, Multibody Link-Jacobian Scratch Helper)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -8,36 +8,41 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
-Latest local slice: the baked global-heap simulation-step guard now covers the
-augmented-Lagrangian variational ground-contact path that owns
-`VariationalContactDualState` and a retained
-`VariationalGroundContactSolver`. The added scene uses the same contact-heavy
-slider setup as the bake-specific dual-state tests, but runs through
-`World::step()` under `ScopedHeapAllocationCounter` after simulation-mode bake.
+Latest local slice: direct multibody link-Jacobian callers can now reuse
+caller-owned dynamics-tree and per-link body-Jacobian scratch plus
+caller-retained output matrix capacity. `MultibodyLinkJacobianScratch` owns the
+allocator-backed storage, `reserveMultibodyLinkJacobianScratch(...)` prewarms it
+for the current multibody shape, and the new
+`computeMultibodyLinkJacobianInto(...)` /
+`computeMultibodyLinkWorldJacobianInto(...)` helpers overwrite retained output
+matrices.
 
 The fix has these parts:
 
-- `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` now includes
-  the `dualUpdateCadence=1` variational contact scene;
-- the regression proves the AL contact solver, persisted contact duals, and
-  post-contact transform scratch stay within baked World-owned storage during
-  repeated same-shape steps;
-- no production code change was needed for this slice because the current
-  bake path already pre-reserves the dual-state solver storage.
+- `MultibodyLinkJacobianScratch` exposes allocator-backed reuse for the
+  existing internal `MultibodyDynamicsScratch` body-Jacobian storage;
+- the return-by-value `computeMultibodyLinkJacobian(...)` and
+  `computeMultibodyLinkWorldJacobian(...)` helpers remain source-compatible and
+  delegate through the same implementation;
+- `World.MultibodyLinkJacobianScratchUsesProvidedAllocator` verifies first-use
+  scratch allocation through the provided allocator, equivalence with the
+  existing `Multibody` accessors, and zero global heap allocation on warmed
+  same-shape body/world Jacobian calls.
 
 This still does not claim that arbitrary user-provided
 `VariationalContactHook` callbacks avoid return-by-value forces, that every
-Eigen dynamic result payload borrows a DART allocator, or that public
-return-by-value convenience helpers are allocation-free. The closed gap is the
-missing no-global-heap regression coverage for the World-owned
-augmented-Lagrangian variational contact step path.
+Eigen dynamic result payload borrows a DART allocator, or that the
+return-by-value `Multibody::getJacobian()` / `getWorldJacobian()` convenience
+accessors are allocation-free. The closed gap is the direct compute-layer
+link-Jacobian diagnostic path's reusable DART-owned tree/body-Jacobian scratch
+and caller-retained matrix capacity.
 
 Validation for this slice:
 
 ```bash
 pixi run cmake --build build/default/cpp/Release --target test_world -j 8
 build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.EnterSimulationModeReservesContactHeavyVariationalDualState'
+  --gtest_filter='World.MultibodyLinkJacobian*:World.MultibodyLinkWorldJacobian'
 pixi run lint
 pixi run build
 pixi run test-unit
