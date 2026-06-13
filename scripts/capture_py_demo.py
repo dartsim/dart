@@ -534,6 +534,8 @@ def _rigid_workflow_guidance_by_scene() -> dict[str, dict[str, object]]:
             "workflow_count": guide.count,
             "workflow_label": guide.label,
             "user_question": guide.question,
+            "workflow_phase": guide.workflow_phase,
+            "focus_axis": guide.focus_axis,
             "try_first": guide.try_first,
             "inspect": list(guide.inspect),
             "healthy_signal": guide.healthy_signal,
@@ -1971,6 +1973,10 @@ _WORKFLOW_GUIDANCE_REQUIRED_FIELDS = (
     "healthy_signal",
     "scope",
 )
+_WORKFLOW_NUMBERED_GUIDANCE_REQUIRED_FIELDS = (
+    "workflow_phase",
+    "focus_axis",
+)
 
 
 def _workflow_group_labels(captures: list[dict[str, object]]) -> str:
@@ -2008,7 +2014,10 @@ def _workflow_guidance_missing(
     missing: list[dict[str, object]] = []
     for capture in captures:
         missing_fields: list[str] = []
-        for field in _WORKFLOW_GUIDANCE_REQUIRED_FIELDS:
+        required_fields = list(_WORKFLOW_GUIDANCE_REQUIRED_FIELDS)
+        if capture.get("workflow_group") == "numbered":
+            required_fields.extend(_WORKFLOW_NUMBERED_GUIDANCE_REQUIRED_FIELDS)
+        for field in required_fields:
             value = capture.get(field)
             if field == "inspect":
                 if not isinstance(value, list) or not value:
@@ -2348,6 +2357,12 @@ def _workflow_review_card(capture: dict[str, object], output_dir: pathlib.Path) 
     workflow_label = capture.get("workflow_label")
     if isinstance(workflow_label, str) and workflow_label:
         details.insert(0, _workflow_detail("role", workflow_label))
+    workflow_phase = capture.get("workflow_phase")
+    if isinstance(workflow_phase, str) and workflow_phase:
+        details.append(_workflow_detail("phase", workflow_phase))
+    focus_axis = capture.get("focus_axis")
+    if isinstance(focus_axis, str) and focus_axis:
+        details.append(_workflow_detail("focus axis", focus_axis))
     user_question = capture.get("user_question")
     if isinstance(user_question, str) and user_question:
         details.append(_workflow_detail("question", user_question))

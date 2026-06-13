@@ -120,9 +120,10 @@ Rows with scene-owned Replay timeline metadata also export a JSON-safe
 card name the exact Replay value track and whether it has signal and marker
 tracks without serializing Python callables.
 Direct single-scene captures for maintained rigid workflow rows also write a
-`workflow_guidance` manifest block with the row number, role, user question,
-try-first action, inspect signals, healthy signal, and scope note, so a single
-row capture remains self-describing outside a workflow packet.
+`workflow_guidance` manifest block with the row number, role, workflow phase,
+focus axis, user question, try-first action, inspect signals, healthy signal,
+and scope note, so a single row capture remains self-describing outside a
+workflow packet.
 Optional related-evidence, direct Rigid IPC shelf, and capture-first packet
 rows use the same manifest/review-index metadata fields, so extended packets
 also explain the row's role, user question, first action, inspect signals,
@@ -970,6 +971,14 @@ workflow rows` line before the selectable results. This keeps the navigator
   `Search match: workflow phase` without changing broad single-token ordering.
   The focused phase guard reported `4 passed`, and the broader
   panel/search/docs-order guard reported `17 passed`.
+- Latest review-prep follow-up: numbered workflow captures now export
+  `workflow_phase` and `focus_axis` into single-scene `workflow_guidance`,
+  workflow manifests, and static review cards. Missing numbered-row phase or
+  focus metadata now fails the workflow guidance completeness audit. The
+  focused capture-helper guard reported `4 passed`; a row-15 dry-run manifest
+  reported `workflow_phase=4. Solver decision path` and
+  `focus_axis=rigid-body solver family`, and its review card contained
+  `<dt>phase</dt>` plus `<dt>focus axis</dt>`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure

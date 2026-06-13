@@ -187,6 +187,8 @@ def test_visual_capture_manifest_records_image_evidence(
         "workflow_count": 36,
         "workflow_label": "Baseline",
         "user_question": "What is the baseline DART 7 World rigid-body path?",
+        "workflow_phase": "1. Foundations: state, frames, and loads",
+        "focus_axis": "DART 7 World rigid-body baseline",
         "try_first": "Start here before moving to specialized rows.",
         "inspect": ["Solver/material controls", "Contacts, energy, step timing"],
         "healthy_signal": "Contacts settle and energy remains bounded.",
@@ -531,11 +533,21 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     )
     assert manifest["captures"][0]["workflow_label"] == "Baseline"
     assert (
+        manifest["captures"][0]["workflow_phase"]
+        == "1. Foundations: state, frames, and loads"
+    )
+    assert (
+        manifest["captures"][0]["focus_axis"]
+        == "DART 7 World rigid-body baseline"
+    )
+    assert (
         manifest["captures"][0]["user_question"]
         == "What is the baseline DART 7 World rigid-body path?"
     )
     assert "Solver/material controls" in manifest["captures"][0]["inspect"]
     assert manifest["captures"][1]["workflow_label"] == "Solver family"
+    assert manifest["captures"][1]["workflow_phase"] == "4. Solver decision path"
+    assert manifest["captures"][1]["focus_axis"] == "rigid-body solver family"
     assert manifest["captures"][0]["manifest"].endswith(
         "scenes/01_rigid_body/manifest.json"
     )
@@ -551,6 +563,12 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
     assert "Rows Missing Scene Metrics" not in review_html
     assert "1-2 / 2" in review_html
     assert "numbered" in review_html
+    assert "<dt>phase</dt>" in review_html
+    assert "1. Foundations: state, frames, and loads" in review_html
+    assert "4. Solver decision path" in review_html
+    assert "<dt>focus axis</dt>" in review_html
+    assert "DART 7 World rigid-body baseline" in review_html
+    assert "rigid-body solver family" in review_html
     assert "rerun workflow row" in review_html
     assert "--workflow-start-row 1 --workflow-end-row 1" in review_html
     assert f"{output}/reruns/01_rigid_body" in review_html
@@ -982,6 +1000,9 @@ def test_rigid_workflow_full_extended_plan_has_complete_guidance(
         assert capture["healthy_signal"]
         assert capture["scope"]
         assert capture["viewer_command"].startswith("pixi run py-demos -- --scene ")
+        if capture["workflow_group"] == "numbered":
+            assert capture["workflow_phase"]
+            assert capture["focus_axis"]
 
     review_html = pathlib.Path(manifest["artifacts"]["review_index"]).read_text()
     assert "<strong>guidance</strong> complete" in review_html
@@ -1042,6 +1063,8 @@ def test_rigid_workflow_manifest_reports_missing_guidance(
                 "inspect",
                 "healthy_signal",
                 "scope",
+                "workflow_phase",
+                "focus_axis",
             ],
         }
     ]

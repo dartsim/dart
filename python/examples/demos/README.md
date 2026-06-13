@@ -61,8 +61,9 @@ is unavailable. With `--show-ui`, it also rejects screenshots that do not show
 the docked workspace and drops early warm-up frames before ImGui is visible from
 the converted frame sequence. For scenes in the maintained rigid workflow, the
 single-scene `manifest.json` also records `workflow_guidance` with the row
-number, role, user question, try-first action, inspect signals, healthy signal,
-and scope note. Capture the docked ImGui workspace:
+number, role, workflow phase, focus axis, user question, try-first action,
+inspect signals, healthy signal, and scope note. Capture the docked ImGui
+workspace:
 
 ```bash
 pixi run py-demo-capture -- --scene rigid_solver_compare --show-ui --frames 2 \
@@ -211,8 +212,10 @@ selected packet. Successful scene captures also promote a machine-readable
 `resolved_solver_identity` block from the latest scene metrics into the
 per-scene manifest; workflow manifests count those identities and list any
 captured row missing one, while the review cards show the resolved solver
-summary beside the row's axis and controls. Workflow packets require that
-identity to include both a solver-family field and a context field such as
+summary beside the row's workflow phase, focus axis, comparison axis, and
+controls.
+Workflow packets require that identity to include both a solver-family field
+and a context field such as
 executor, contact method, same-solver marker, or held-fixed configuration.
 Workflow manifests also count rows with latest scene metrics and list any
 captured row missing metrics. Non-dry-run workflow packets return failure status
@@ -897,11 +900,12 @@ questions, try-first guidance, scope notes, live open commands, capture
 commands, workflow-row rerun commands, and metric summaries from one page: the
 in-viewer `Rigid Workflow` panel also shows the full numbered packet,
 current-row rerun, and extended related/IPC-shelf/packet commands.
-Optional related, direct IPC shelf, and capture-first packet rows carry the
-same row-guidance fields in the manifest and review index, so extended packets
-remain readable without opening the live GUI. The same outputs also include a
-guidance-completeness audit and the exact top-level workflow command for the
-selected packet.
+Numbered rows carry their workflow phase and focus axis in the manifest and
+review card, while optional related, direct IPC shelf, and capture-first packet
+rows carry the same row-guidance fields in the manifest and review index, so
+extended packets remain readable without opening the live GUI. The same outputs
+also include a guidance-completeness audit and the exact top-level workflow
+command for the selected packet.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --dry-run

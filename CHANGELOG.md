@@ -57,8 +57,9 @@
     numbered rigid visual-verification captures through one command, with a
     workflow-level manifest pointing at each per-scene manifest plus a static
     `review_index.html` contact sheet for scanning every screenshot, command,
-    user question, scope note, and metric summary from one page. The in-viewer
-    rigid workflow panel now shows each row's capture command, and the rigid
+    workflow phase, focus axis, user question, scope note, and metric summary
+    from one page. The in-viewer rigid workflow panel now shows each row's
+    capture command, and the rigid
     workflow search recognizes DART 7 user terminology such as
     `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and
     backend/executor aliases, while broad searches now show the full ranked

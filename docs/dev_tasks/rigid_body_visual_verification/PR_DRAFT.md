@@ -126,6 +126,10 @@ rigid-body visual verification surface for the current cycle.
   contact/material/query basics, solver decisions, contact behavior, rigid
   constraints, and multibody kinematics while naming each row's main comparison
   or debugging dimension; both fields are searchable.
+- Exports numbered-row workflow phase and focus-axis metadata into
+  single-scene `workflow_guidance`, workflow manifests, and static review
+  cards, and treats missing phase/focus metadata as a guidance-completeness
+  failure for numbered rows.
 - Adds search-result tooltip explanations for maintained aliases, row numbers,
   user questions, related evidence, and scope caveats, plus no-result guidance
   that suggests row numbers, scene ids, solver, contact, backend, or API names.
@@ -314,6 +318,15 @@ rigid-body visual verification surface for the current cycle.
 - Broader workflow phase/focus/search/docs-order guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_workflow_phase_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_workflow_phase_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_focus_axis_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_focus_axis_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_summarizes_limited_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_empty_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `17 passed`.
+- Focused workflow phase/focus manifest and review-card guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_manifest_reports_missing_guidance -q`
+  reported `4 passed`.
+- Row-15 workflow phase/focus dry-run:
+  `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_phase_review_dry_run_current`
+  reported `capture_count=1`, `workflow_total_count=36`, selected row 15,
+  `workflow_label=Solver family`, `workflow_phase=4. Solver decision path`,
+  `focus_axis=rigid-body solver family`, and review-card `<dt>phase</dt>` /
+  `<dt>focus axis</dt>` entries.
 - Focused scene-metrics/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count -q`
   reported `5 passed`.

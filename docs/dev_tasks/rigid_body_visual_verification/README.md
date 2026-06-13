@@ -5,14 +5,28 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`8f589fc1c99 Show rigid workflow focus axes` and adds a local workflow-phase
-follow-up. Fresh sessions should verify the exact local and remote state with
-`git status -sb` and `git log -5 --oneline`. There is still no PR for this
-branch. Do not push new commits, create a PR, set a milestone, rerun CI,
-comment on reviews, resolve threads, or mutate any other GitHub state without
-explicit maintainer/user approval.
+`8f589fc1c99 Show rigid workflow focus axes` and adds local workflow-phase
+panel/search plus review-packet metadata follow-ups. Fresh sessions should
+verify the exact local and remote state with `git status -sb` and
+`git log -5 --oneline`. There is still no PR for this branch. Do not push new
+commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
+threads, or mutate any other GitHub state without explicit maintainer/user
+approval.
 
-Latest local continuation: every numbered `Rigid Workflow` row now exposes a
+Latest local continuation: numbered workflow captures now export
+`workflow_phase` and `focus_axis` into single-scene `workflow_guidance`,
+workflow manifests, and static review cards, matching the live `Rigid Workflow`
+panel. Missing numbered-row phase or focus metadata now fails the workflow
+guidance completeness audit. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_manifest_reports_missing_guidance -q`
+reported `4 passed`. Dry-run evidence:
+`DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_phase_review_dry_run_current`
+reported `capture_count=1`, `workflow_total_count=36`, selected row 15,
+`workflow_label=Solver family`, `workflow_phase=4. Solver decision path`,
+`focus_axis=rigid-body solver family`, and review-card `<dt>phase</dt>` /
+`<dt>focus axis</dt>` entries. This local slice is not pushed yet.
+
+Previous local continuation: every numbered `Rigid Workflow` row now exposes a
 front-door `Workflow phase` before the focus axis and try/inspect checklist.
 The phase text groups rows into foundations, diagnostics,
 contact/material/query basics, solver decision path, contact behavior cases,

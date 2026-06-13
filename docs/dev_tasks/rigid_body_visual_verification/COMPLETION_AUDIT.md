@@ -8,6 +8,19 @@ locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
 Latest implementation slice: every numbered `Rigid Workflow` row now exposes a
+matching review-packet metadata path: `workflow_phase` and `focus_axis` are
+exported into single-scene `workflow_guidance`, workflow manifests, and static
+review cards, and missing numbered-row phase or focus metadata now fails the
+workflow guidance completeness audit. Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_manifest_reports_missing_guidance -q`
+reported `4 passed`. Dry-run evidence:
+`DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 15 --dry-run --output-dir /tmp/dart_capture_rigid_workflow_phase_review_dry_run_current`
+reported `capture_count=1`, `workflow_total_count=36`, selected row 15,
+`workflow_label=Solver family`, `workflow_phase=4. Solver decision path`,
+`focus_axis=rigid-body solver family`, and review-card `<dt>phase</dt>` /
+`<dt>focus axis</dt>` entries.
+
+Previous implementation slice: every numbered `Rigid Workflow` row now exposes a
 front-door `Workflow phase` before the focus axis and try/inspect checklist.
 The phase text groups rows into foundations, diagnostics,
 contact/material/query basics, solver decision path, contact behavior cases,
