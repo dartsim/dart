@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Generator Evidence Writer Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `2928d09bd76 Guard LCP generator dimensions`; if this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   generator evidence-writer guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `2928d09bd76 Guard LCP generator dimensions`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by thirty-eight commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/lcp_performance_profile.py` now validates current-schema evidence
+  rows immediately before writing `performance_profile_evidence.csv`, so direct
+  writer calls cannot emit invalid numeric rows that the roster checker or demo
+  evidence summary would reject later.
+- The writer guard checks positive problem and LCP dimensions, FrictionIndex
+  contact counts, optional non-friction contact counts, positive timing,
+  `contract_ok`, non-negative integer iterations, and non-negative finite
+  quality metrics.
+- `python/tests/unit/test_lcp_performance_profile.py` covers invalid direct
+  writer inputs for LCP dimension, optional contact count, time, contract
+  status, iterations, and quality metrics.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and Python demo code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_lcp_performance_profile.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+pixi run build
+pixi run -e cuda test-all
+```
+
+Result:
+
+- LCP performance profile generator tests: passed with 49 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+- Build: passed.
+- CUDA full validation: passed, including the CUDA smoke path.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun
+`python/tests/unit/test_lcp_performance_profile.py`,
+`scripts/check_lcp_solver_roster.py`, `pixi run lint`, `git diff --check`,
+`pixi run build`, and `pixi run -e cuda test-all`, then commit the focused
+generator/test/docs change. Then continue the broader LCP interface/demo audit
+from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Generator LCP Dimension Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

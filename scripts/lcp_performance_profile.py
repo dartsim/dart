@@ -607,6 +607,88 @@ def _missing_required_evidence_fields(category: str, data: dict) -> list[str]:
     return missing
 
 
+def _validate_profile_evidence_csv_row(
+    category: str, solver: str, problem_size, data: dict
+) -> None:
+    problem_size_counter = _counter_to_int(problem_size)
+    if problem_size_counter is None or problem_size_counter <= 0:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"problem_size for {category}/{solver}/{problem_size}"
+        )
+
+    lcp_dimension = _counter_to_int(data.get("lcp_dimension"))
+    if lcp_dimension is None or lcp_dimension <= 0:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"lcp_dimension for {category}/{solver}/{problem_size}"
+        )
+    if category == "FrictionIndex":
+        expected_dimension = 3 * problem_size_counter
+        if lcp_dimension != expected_dimension:
+            raise RuntimeError(
+                "Cannot write LCP performance profile evidence with mismatched "
+                f"lcp_dimension for {category}/{solver}/{problem_size}"
+            )
+    elif lcp_dimension != problem_size_counter:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with mismatched "
+            f"lcp_dimension for {category}/{solver}/{problem_size}"
+        )
+
+    contact_count = _counter_to_int(data.get("contact_count"))
+    if category == "FrictionIndex":
+        if contact_count is None or contact_count <= 0:
+            raise RuntimeError(
+                "Cannot write LCP performance profile evidence with invalid "
+                f"contact_count for {category}/{solver}/{problem_size}"
+            )
+        if contact_count != problem_size_counter:
+            raise RuntimeError(
+                "Cannot write LCP performance profile evidence with mismatched "
+                f"contact_count for {category}/{solver}/{problem_size}"
+            )
+    elif _csv_value(data.get("contact_count")) != "" and (
+        contact_count is None or contact_count < 0
+    ):
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"contact_count for {category}/{solver}/{problem_size}"
+        )
+
+    time_ns = _finite_float(data.get("time_ns"))
+    if time_ns is None or time_ns <= 0.0:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"time_ns for {category}/{solver}/{problem_size}"
+        )
+
+    if _counter_to_int(data.get("contract_ok")) != 1:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"contract_ok for {category}/{solver}/{problem_size}"
+        )
+
+    iterations = _counter_to_int(data.get("iterations"))
+    if iterations is None or iterations < 0:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"iterations for {category}/{solver}/{problem_size}"
+        )
+
+    invalid_quality_metrics = [
+        metric
+        for metric in QUALITY_METRIC_FIELDS
+        if (value := _finite_float(data.get(metric))) is None or value < 0.0
+    ]
+    if invalid_quality_metrics:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"quality metrics for {category}/{solver}/{problem_size}: "
+            f"{invalid_quality_metrics}"
+        )
+
+
 def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
     header = list(REQUIRED_EVIDENCE_COLUMNS)
 
@@ -624,6 +706,7 @@ def save_profile_evidence_csv(results: dict, output_path: Path) -> None:
                         "missing current-schema fields for "
                         f"{category}/{solver}/{problem_size}: {missing}"
                     )
+                _validate_profile_evidence_csv_row(category, solver, problem_size, data)
                 writer.writerow(
                     [
                         category,

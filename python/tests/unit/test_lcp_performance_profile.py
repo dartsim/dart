@@ -21,6 +21,36 @@ def _load_module():
     return module
 
 
+def _valid_current_schema_benchmark(**overrides):
+    benchmark = {
+        "name": "BM_LcpCompare/Standard/Dantzig/12",
+        "run_type": "iteration",
+        "cpu_time": 10.0,
+        "contract_ok": 1.0,
+        "problem_size": 12.0,
+        "iterations": 4.0,
+        "residual": 0.0,
+        "complementarity": 0.0,
+        "bound_violation": 0.0,
+        "solver_identity_schema_version": 1.0,
+        "solver_manifest_index": 1.0,
+        "solver_family_pivoting": 1.0,
+        "solver_family_projection": 0.0,
+        "solver_family_newton": 0.0,
+        "solver_family_other": 0.0,
+        "solver_supports_standard": 1.0,
+        "solver_supports_boxed": 0.0,
+        "solver_supports_friction_index": 0.0,
+        "solver_supports_problem": 1.0,
+        "problem_type_standard": 1.0,
+        "problem_type_boxed": 0.0,
+        "problem_type_friction_index": 0.0,
+        "problem_type_invalid": 0.0,
+    }
+    benchmark.update(overrides)
+    return benchmark
+
+
 def test_lcp_profile_parser_preserves_concrete_support_counter() -> None:
     module = _load_module()
 
@@ -742,6 +772,33 @@ def test_lcp_profile_evidence_csv_rejects_missing_current_schema_fields(
             "\\['lcp_dimension'"
         ),
     ):
+        module.save_profile_evidence_csv(results, tmp_path / "profile_evidence.csv")
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("problem_size", 1.25, "invalid lcp_dimension"),
+        ("problem_size", float("nan"), "invalid lcp_dimension"),
+        ("contact_count", 1.25, "invalid contact_count"),
+        ("cpu_time", float("nan"), "invalid time_ns"),
+        ("contract_ok", 0.0, "invalid contract_ok"),
+        ("iterations", 1.25, "invalid iterations"),
+        ("residual", -1.0, "invalid quality metrics"),
+    ],
+)
+def test_lcp_profile_evidence_csv_rejects_invalid_current_schema_values(
+    tmp_path: Path,
+    field: str,
+    value: float,
+    message: str,
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {"benchmarks": [_valid_current_schema_benchmark(**{field: value})]}
+    )
+
+    with pytest.raises(RuntimeError, match=message):
         module.save_profile_evidence_csv(results, tmp_path / "profile_evidence.csv")
 
 
