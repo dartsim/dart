@@ -1151,6 +1151,14 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
 
     cases = [
         (
+            rigid_body_modes,
+            (
+                "text:comparison axis: rigid-body mode semantics",
+                "text:held fixed: solver Sequential impulse | executor Sequential | gravity scale 0.55 | force 3.00 N | time step 4.0 ms",
+                "text:mode flags: dynamic, static, and kinematic",
+            ),
+        ),
+        (
             rigid_timestep_sensitivity,
             (
                 "text:comparison axis: time-step multiplier",

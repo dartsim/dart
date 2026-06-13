@@ -196,8 +196,9 @@
     behavior.
   - Added `rigid_body_modes` to Python `py-demos`, showing dynamic, static,
     and kinematic rigid-body mode semantics in a contact-free World with shared
-    solver, executor, gravity, force, prescribed-path, drift, and path-error
-    diagnostics plus scene-owned capture metrics.
+    solver, executor, gravity, force, prescribed-path, drift, path-error,
+    held-fixed context, and comparison-axis diagnostics plus scene-owned
+    capture metrics.
   - Added `rigid_free_flight` to Python `py-demos`, showing contact-free
     zero-gravity drift, gravity-arc trajectory and momentum diagnostics,
     low/high-inertia spin response, energy drift, contact count, and

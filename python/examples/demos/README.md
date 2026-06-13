@@ -288,8 +288,10 @@ The **`rigid_body_modes`** scene compares the three public rigid-body modes in
 one contact-free World. The dynamic lane integrates gravity and force, the
 static lane keeps its transform fixed while still reporting the applied load,
 and the kinematic lane follows a prescribed path while exposing the mode flag
-and path error. Use `rigid_kinematic_driver` later in the workflow when the
-question is contact-driven prescribed motion.
+and path error. The panel and capture metrics now label the rigid-body mode
+semantics comparison axis and held-fixed solver/executor/gravity/force/body-mass
+context before the lane diagnostics. Use `rigid_kinematic_driver` later in the
+workflow when the question is contact-driven prescribed motion.
 
 ## Rigid free flight
 

@@ -2450,9 +2450,18 @@ def test_rigid_body_modes_compare_dynamic_static_kinematic_semantics() -> None:
     assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
     capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
     assert capture_metrics["row"] == "rigid_body_modes"
+    assert capture_metrics["comparison_axis"] == "rigid_body_mode_semantics"
     assert capture_metrics["solver"] == "Sequential impulse"
     assert capture_metrics["solver_enum"] == controller._solver().name
     assert capture_metrics["executor"] == controller._executors[0][0]
+    assert capture_metrics["held_fixed"] == {
+        "solver": "Sequential impulse",
+        "executor": controller._executors[0][0],
+        "gravity_scale": pytest.approx(controller.gravity_scale),
+        "force_magnitude": pytest.approx(controller.force_magnitude),
+        "body_mass": pytest.approx(1.0),
+        "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
+    }
     assert set(capture_metrics["lanes"]) == set(metrics)
     assert capture_metrics["dynamic_height"] == pytest.approx(dynamic["height"])
     assert capture_metrics["dynamic_displacement_x"] == pytest.approx(

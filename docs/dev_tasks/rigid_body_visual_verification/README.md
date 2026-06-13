@@ -2,6 +2,19 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local continuation: row 2, `rigid_body_modes`, now follows the
+comparison-axis contract used by the later rigid workflow rows. Its panel and
+capture metrics expose `comparison_axis=rigid_body_mode_semantics` plus
+held-fixed solver/executor/gravity/force/body-mass/time-step context before the
+dynamic/static/kinematic lane diagnostics. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
+reported `4 passed`. Fresh single-scene visual evidence:
+`build/captures/rigid_body_modes_comparison_axis_1781325323` captured
+`rigid_body_modes` at 72 requested UI frames, wrote 71 PNG frames plus
+`rigid_body_modes.png`, recorded `scene_metrics.event_count=72`, and its
+latest metrics include `comparison_axis=rigid_body_mode_semantics` plus the
+held-fixed context.
+
 Latest local continuation: row 26, `rigid_joint_breakage`, now exposes the
 public `Joint.break_force` parameter directly through a log-scale
 `Break force log10(N)` GUI slider. The row records the active break threshold

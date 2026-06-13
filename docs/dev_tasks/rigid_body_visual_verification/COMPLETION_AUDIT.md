@@ -7,6 +7,18 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: row 2, `rigid_body_modes`, now exposes the
+same explicit comparison-axis and held-fixed context pattern used by the later
+rigid workflow rows. The panel and capture metrics label
+`comparison_axis=rigid_body_mode_semantics` and record the solver, executor,
+gravity scale, force magnitude, body mass, and time step held fixed across the
+dynamic/static/kinematic lanes. Focused row/docs guards reported `4 passed`.
+Fresh single-scene visual evidence lives at
+`build/captures/rigid_body_modes_comparison_axis_1781325323`: 72 requested UI
+frames, 71 PNG frames written, screenshot written, `scene_metrics.event_count=72`,
+and latest scene metrics containing the comparison axis plus held-fixed
+context.
+
 Latest local implementation slice: row 26, `rigid_joint_breakage`, now exposes
 the public `Joint.break_force` parameter directly through a log-scale
 `Break force log10(N)` GUI slider. Capture metrics and replay state record the

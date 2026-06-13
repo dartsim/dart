@@ -385,6 +385,7 @@ class _RigidBodyModes:
         step_values = list(self._step_ms_history)
         return {
             "row": "rigid_body_modes",
+            "comparison_axis": "rigid_body_mode_semantics",
             "solver": _SOLVERS[int(self.solver_index)][0],
             "solver_enum": self._solver().name,
             "executor": self._executors[int(self.executor_index)][0],
@@ -394,6 +395,14 @@ class _RigidBodyModes:
             "gravity_z": float(self.world.gravity[2]),
             "force_magnitude": float(self.force_magnitude),
             "drive_speed": float(self.drive_speed),
+            "held_fixed": {
+                "solver": _SOLVERS[int(self.solver_index)][0],
+                "executor": self._executors[int(self.executor_index)][0],
+                "gravity_scale": float(self.gravity_scale),
+                "force_magnitude": float(self.force_magnitude),
+                "body_mass": 1.0,
+                "time_step_ms": float(_TIME_STEP * 1000.0),
+            },
             "lane_order": [lane.key for lane in self.lanes],
             "lanes": metrics,
             "controls": {
@@ -541,6 +550,14 @@ class _RigidBodyModes:
             self._reset()
 
         builder.separator()
+        builder.text("comparison axis: rigid-body mode semantics")
+        builder.text(
+            f"held fixed: solver {_SOLVERS[int(self.solver_index)][0]} | "
+            f"executor {self._executors[int(self.executor_index)][0]} | "
+            f"gravity scale {self.gravity_scale:.2f} | "
+            f"force {self.force_magnitude:.2f} N | "
+            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+        )
         builder.text("mode flags: dynamic, static, and kinematic")
         builder.text(
             f"world time: {self.world.time:.3f} s | "

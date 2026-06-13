@@ -49,6 +49,9 @@ rigid-body visual verification surface for the current cycle.
 - Exposes the row-26 fixed-joint breakage threshold as a log-scale GUI
   parameter backed by public `Joint.break_force`, with capture metrics and
   replay state recording the active threshold.
+- Tightens the row-2 body-mode verifier so the first early workflow comparison
+  row now publishes the same `comparison_axis` and held-fixed context pattern
+  used by later rigid workflow rows.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -72,9 +75,17 @@ rigid-body visual verification surface for the current cycle.
 - Focused editable break-force threshold guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_high_value_world_scenes_expose_custom_panels python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_resets_lifecycle python/tests/unit/test_py_demo_panels.py::test_rigid_joint_breakage_panel_edits_break_force_threshold python/tests/integration/test_demos_cycle.py::test_rigid_joint_breakage_marks_and_resets_breakage -q`
   reported `4 passed`.
+- Focused body-mode comparison-axis guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/integration/test_demos_cycle.py::test_rigid_body_modes_compare_dynamic_static_kinematic_semantics python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
+  reported `4 passed`.
 - Adjacent rigid workflow docs consistency guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `3 passed`.
+- Fresh row-2 single-scene visual evidence:
+  `build/captures/rigid_body_modes_comparison_axis_1781325323` captured
+  `rigid_body_modes` at 72 requested UI frames, wrote 71 PNG frames plus
+  `rigid_body_modes.png`, and recorded `scene_metrics.event_count=72` with
+  `comparison_axis=rigid_body_mode_semantics` plus held-fixed context.
 - Fresh row-26 single-scene visual evidence:
   `build/captures/rigid_joint_breakage_editable_threshold_1781324921`
   captured `rigid_joint_breakage` at 48 requested UI frames, wrote 47 PNG
