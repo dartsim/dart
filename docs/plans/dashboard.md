@@ -385,8 +385,10 @@ its own line so status updates remain git-history friendly.
   row,
   one reduced umbrella inter-body/static-rigid/moving-rigid external CCD sidecar
   row, one reduced terrain vehicle inter-body/static-rigid/moving-rigid
-  external CCD sidecar row, one reduced Candy static-rigid/moving-rigid surface
-  CCD witness row, and one reduced ABD/FEM external sidecar witness row. Other
+  external CCD sidecar row, one reduced ragdoll inter-body/static-rigid/
+  moving-rigid external CCD sidecar row, one reduced Candy static-rigid/
+  moving-rigid surface CCD witness row, and one reduced ABD/FEM external
+  sidecar witness row. Other
   broader figure/demo scene rows still have zero external candidate/check/hit
   counts.
   It still keeps

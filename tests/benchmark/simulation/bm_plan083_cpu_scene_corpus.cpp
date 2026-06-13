@@ -2840,13 +2840,16 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
     benchmark::State& state)
 {
   RagdollFixture fixture;
+  LyingFlatFixture externalSurfaceCcdSidecar;
   sx::compute::SequentialExecutor executor;
 
   std::size_t failedSteps = 0;
   sx::compute::RigidIpcSolverStats lastStats;
+  sx::DeformableSolverDiagnostics lastExternalSurfaceCcdDiagnostics;
   for (auto _ : state) {
     state.PauseTiming();
     fixture.reset();
+    externalSurfaceCcdSidecar.reset();
     sx::compute::RigidIpcContactStage ipcStage(64);
     sx::compute::WorldStepPipeline pipeline;
     pipeline.addStage(ipcStage);
@@ -2854,17 +2857,28 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
 
     fixture.world.step(executor, pipeline);
     lastStats = ipcStage.getLastStats();
+    externalSurfaceCcdSidecar.world.step(executor);
+    lastExternalSurfaceCcdDiagnostics
+        = externalSurfaceCcdSidecar.world.getLastDeformableSolverDiagnostics();
     const bool residualOk
         = std::isfinite(lastStats.finalEqualityResidualNorm)
           && lastStats.finalEqualityResidualNorm <= kMaxReducedEqualityResidual;
     const bool satisfiedNoOp = residualOk && lastStats.solverIterations == 0u
                                && lastStats.activeArticulationConstraints >= 10u
                                && lastStats.activeConstraints >= 1u;
-    if (!residualOk || (lastStats.failed && !satisfiedNoOp)) {
+    const bool sidecarOk
+        = lastExternalSurfaceCcdDiagnostics.bodyCount == 3u
+          && lastExternalSurfaceCcdDiagnostics.interBodySurfaceContactCcdHits
+                 > 0u
+          && lastExternalSurfaceCcdDiagnostics.staticRigidSurfaceCcdHits > 0u
+          && lastExternalSurfaceCcdDiagnostics.movingRigidSurfaceCcdHits > 0u;
+    if (!residualOk || (lastStats.failed && !satisfiedNoOp) || !sidecarOk) {
       ++failedSteps;
     }
     benchmark::DoNotOptimize(fixture.torso->getTransform().data());
     benchmark::DoNotOptimize(fixture.parts.front().getTransform().data());
+    benchmark::DoNotOptimize(
+        externalSurfaceCcdSidecar.cloth->getPosition(0).data());
     benchmark::ClobberMemory();
   }
 
@@ -2891,6 +2905,18 @@ static void BM_Plan083CpuScene_ragdoll_reduced_world_step(
   state.counters["torso_height_m"] = fixture.torso->getTranslation().z();
   state.counters["min_leg_ground_clearance_m"]
       = fixture.minLegGroundClearance();
+  state.counters["external_surface_ccd_sidecar_scene_count"] = 1.0;
+  state.counters["deformable_sidecar_body_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.bodyCount);
+  state.counters["deformable_sidecar_node_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.nodeCount);
+  state.counters["deformable_sidecar_edge_count"]
+      = static_cast<double>(lastExternalSurfaceCcdDiagnostics.edgeCount);
+  state.counters["deformable_sidecar_surface_triangle_count"]
+      = static_cast<double>(
+          externalSurfaceCcdSidecar.totalSurfaceTriangleCount());
+  recordDeformableRuntimeContactCounters(
+      state, lastExternalSurfaceCcdDiagnostics);
 }
 BENCHMARK(BM_Plan083CpuScene_ragdoll_reduced_world_step)
     ->Unit(benchmark::kMillisecond);

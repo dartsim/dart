@@ -145,9 +145,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/ragdolls/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-ragdoll-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/ragdolls.json",
-      "expected_invariant": "Reduced six-body ragdoll chain, revolute articulation rows, and flat-ground contact stay finite and non-penetrating through the rigid IPC World path.",
-      "limitation_status": "Reduced six-body revolute-chain smoke and CPU packet only; cone-twist joints, 60-ragdoll scale, and Table 2 timing remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced ragdoll scene through World::step, and bm-plan083-cpu-ragdoll-packet validates the reduced benchmark packet. Paper 60-ragdoll cone-twist scale remains planned."
+      "expected_invariant": "Reduced six-body ragdoll chain, revolute articulation rows, and flat-ground contact stay finite while stepping through the rigid IPC World path, and the row's deformable IPC sidecar records nonzero inter-body, static-rigid, and moving-rigid external surface CCD counters.",
+      "limitation_status": "Reduced rigid runtime smoke and external surface CCD sidecar CPU packet only; cone-twist joints, 60-ragdoll scale, paper-scale 1861-body/18k-node reproduction, and Table 2 timing remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced ragdoll scene through World::step, and bm-plan083-cpu-ragdoll-packet validates the reduced benchmark packet. The packet now records 68 self-surface candidate builds, 660 point-triangle CCD checks, 1224 edge-edge CCD checks, one reduced inter-body surface CCD sidecar witness with 67 candidate builds, 33 point-triangle checks, 33 hits, and one limited step, one reduced static-rigid surface CCD sidecar witness with 35 candidate builds, 68 point-triangle checks, 102 edge-edge checks, 34 hits, and one limited step, plus one reduced moving-rigid surface CCD sidecar witness with 3 candidate builds, 2 point-triangle checks, 41 edge-edge checks, 1 hit, and one limited step on the median row. Cone-twist joints, 60-ragdoll scale, paper-scale 1861-body/18k-node reproduction, and Table 2 timing remain planned."
     },
     {
       "row_id": "unb-fig-13",

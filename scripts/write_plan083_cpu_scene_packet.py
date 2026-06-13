@@ -2783,6 +2783,7 @@ def _make_ragdoll_packet(
         raise Plan083CpuScenePacketError(
             "ragdoll legs penetrated the reduced ground smoke scene"
         )
+    sidecar_payload = _external_surface_ccd_sidecar_payload(row, scene_label="ragdoll")
 
     return {
         "plan083_cpu_scene_packet": {
@@ -2790,7 +2791,10 @@ def _make_ragdoll_packet(
             "scene_id": "plan083_ragdolls",
             "benchmark_row": _packet_row_name(row),
             "paper_scale": False,
-            "runtime_path": "rigid IPC World::step",
+            "runtime_path": (
+                "rigid IPC World::step plus deformable IPC World::step "
+                "external surface CCD sidecar"
+            ),
             "step_count": 1,
             "wall_time_ns": timing_ns,
             "body_count": body_count,
@@ -2805,9 +2809,11 @@ def _make_ragdoll_packet(
             "max_equality_residual": max_equality_residual,
             "torso_height_m": _finite_number(row, "torso_height_m"),
             "min_leg_ground_clearance_m": ground_clearance,
+            **sidecar_payload,
             "limitation_status": (
-                "Reduced six-body revolute-chain runtime smoke packet only; "
-                "cone-twist joints, 60-ragdoll scale, and Table 2 timing remain planned."
+                "Reduced six-body revolute-chain runtime smoke packet plus "
+                "external surface CCD sidecar only; cone-twist joints, "
+                "60-ragdoll scale, and Table 2 timing remain planned."
             ),
         },
         "benchmarks": rows,
