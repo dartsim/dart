@@ -386,6 +386,16 @@ _PERFORMANCE_PROFILE_ROWS: tuple[dict[str, str], ...] = (
         ),
     },
 )
+_PROFILE_CATEGORY_SUPPORT_FIELDS = {
+    "Standard": "solver_supports_standard",
+    "Boxed": "solver_supports_boxed",
+    "FrictionIndex": "solver_supports_friction_index",
+}
+_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS = {
+    "Standard": "problem_type_standard",
+    "Boxed": "problem_type_boxed",
+    "FrictionIndex": "problem_type_friction_index",
+}
 
 
 def _format_evidence_int_values(values: set[int]) -> str:
@@ -408,6 +418,33 @@ def _as_float_counter(row: dict[str, str], name: str) -> float:
     return float(value)
 
 
+def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
+    surface = row.get("category", "")
+    solver = row.get("solver") or "<unknown>"
+    support_field = _PROFILE_CATEGORY_SUPPORT_FIELDS.get(surface)
+    problem_type_field = _PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS.get(surface)
+    if support_field is None or problem_type_field is None:
+        raise RuntimeError(
+            "unknown LCP performance profile evidence category: "
+            f"{surface!r}"
+        )
+    if _as_int_counter(row, support_field) != 1:
+        raise RuntimeError(
+            "non-native LCP performance profile evidence row: "
+            f"{surface}/{solver} has {support_field}=0"
+        )
+    if _as_int_counter(row, "solver_supports_problem") != 1:
+        raise RuntimeError(
+            "unsupported LCP performance profile evidence row: "
+            f"{surface}/{solver} has solver_supports_problem=0"
+        )
+    if _as_int_counter(row, problem_type_field) != 1:
+        raise RuntimeError(
+            "mismatched LCP performance profile evidence row: "
+            f"{surface}/{solver} has {problem_type_field}=0"
+        )
+
+
 def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
     if not _PERFORMANCE_PROFILE_EVIDENCE_PATH.is_file():
         return (
@@ -428,6 +465,7 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
     summaries: dict[str, dict[str, Any]] = {}
     with _PERFORMANCE_PROFILE_EVIDENCE_PATH.open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
+            _validate_performance_profile_evidence_row(row)
             surface = row["category"]
             summary = summaries.setdefault(
                 surface,

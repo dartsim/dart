@@ -720,6 +720,54 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "checkbox:Enable external force" in builder.events
 
 
+@pytest.mark.parametrize(
+    ("solver_supports_boxed", "solver_supports_problem", "expected_error"),
+    [
+        (
+            "0",
+            "0",
+            "non-native LCP performance profile evidence row: Boxed/Lemke",
+        ),
+        (
+            "1",
+            "0",
+            "unsupported LCP performance profile evidence row: Boxed/Lemke",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    solver_supports_boxed: str,
+    solver_supports_problem: str,
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    evidence_path.write_text(
+        "\n".join(
+            [
+                (
+                    "category,solver,lcp_dimension,contact_count,contract_ok,"
+                    "iterations,residual,complementarity,bound_violation,"
+                    "solver_supports_boxed,solver_supports_problem,"
+                    "problem_type_boxed"
+                ),
+                (
+                    "Boxed,Lemke,12,,1,0,0,0,0,"
+                    f"{solver_supports_boxed},{solver_supports_problem},1"
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
 def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     _require_simulation_symbols("World", "ContactSolverMethod")
 
