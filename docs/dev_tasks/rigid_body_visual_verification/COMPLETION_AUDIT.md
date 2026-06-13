@@ -7,6 +7,19 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: the full numbered rows 01-36 workflow
+packet was regenerated after the backend-diagnostics and contact-query
+review-card improvements. `build/captures/rigid_workflow_rows_01_36_1781335894`
+reports `status=complete`, `capture_count=36`, `completed_count=36`,
+`failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`,
+`scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
+`resolved_solver_identity_count=36`, and 2388 PNG frames. A read-only static
+review audit checked 181 local `href`/`src` targets in `review_index.html` with
+0 missing links, and the refreshed review cards show row-8
+`backend diagnostics` plus row 12-14 contact-query/collision-cast
+`latest signals`. The in-viewer resilient packet command also now matches the
+durable docs at `/tmp/dart_capture_rigid_workflow_resilient`.
+
 Latest local implementation slice: workflow review-card `latest signals` now
 surface the contact-query and collision-cast values needed for static review of
 rows 12-14. The cards promote selected/total contact counts, selected depth,
@@ -186,9 +199,10 @@ CUDA wrapper gates: linting, build, unit tests, simulation tests, Python tests,
 documentation, and CUDA tests. Both broad wrapper runs predate the latest
 backend/executor search-routing slice, which is limited to workflow search,
 docs, and tests; that slice has its own focused search guard above. After the
-search-routing slice, the full rows 01-36 packet was regenerated at
-`build/captures/rigid_workflow_rows_01_36_1781333885`, and the optional rows
-37-53 packet was regenerated at
+search-routing, backend-diagnostics, and contact-query review-card slices, the
+full rows 01-36 packet was regenerated at
+`build/captures/rigid_workflow_rows_01_36_1781335894`, and the optional rows
+37-53 packet remains current at
 `build/captures/rigid_workflow_optional_rows_37_53_1781334179`. Both now
 report complete scene metrics plus complete resolved solver identity under the
 DART 7 work-packet harness. The prior stopped wrapper attempt remains recorded
@@ -196,17 +210,16 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The branch matched
-`origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before the
-local backend-diagnostics review-card slice, and was one local commit ahead at
-`6be90afe6d1` before the contact-query review-card slice; after this slice is
-committed, expect two local commits ahead of origin until a maintainer approves
-another push. Fresh
-`gh pr list --head "$(git branch --show-current)"` still reported no PR for
-the branch. The latest pre-push `git fetch origin main && git merge --no-ff
-origin/main` reported `Already up to date`, so the branch remained aligned with
-the PR #2986 DART 7 architecture/work-packet harness at publication time. The
-approved push did not approve PR creation, milestone mutation, CI reruns,
-review comments, thread resolution, or other GitHub review-state changes.
+`origin/feature/rigid-body-gui-visual-verification` at `9536e56fd55` before the
+current artifact-refresh/command-alignment slice. After this slice is
+committed, expect one local commit ahead of origin until a maintainer approves
+another push. Fresh `gh pr list --head "$(git branch --show-current)"` still
+reported no PR for the branch. The latest pre-push
+`git fetch origin main && git merge --no-edit origin/main` reported
+`Already up to date`, so the branch remained aligned with the PR #2986 DART 7
+architecture/work-packet harness at publication time. The approved push did
+not approve PR creation, milestone mutation, CI reruns, review comments,
+thread resolution, or other GitHub review-state changes.
 
 Latest local artifact audit: a read-only audit rechecked both current review
 packet manifests and static review indexes. The rows 01-36 packet still reports
@@ -263,7 +276,7 @@ intentionally records no new green validation after the user stop instruction.
 | Let users switch or compare solvers/backends/parameters where it answers a practical question.   | Rows label comparison axes and held-fixed controls in the panel and capture metrics; examples include solver family, executor, contact policy, timestep, contact workload, passive parameter family, multibody solver family, and loop-closure family/policy rows. Backend-status search terms now route to `rigid_step_diagnostics`, while executor-equivalence terms route to `rigid_executor_equivalence`, so the GUI does not conflate compute backend status with same-solver executor timing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Proven locally                                  |
 | Follow the DART 7 harness solver-identity and scene-metrics evidence rule for generated packets. | `py-demo-capture` now promotes validated `resolved_solver_identity` from latest scene metrics into successful per-scene manifests, requires solver-family plus context fields for workflow identity completeness, attaches identity and scene-metrics evidence to captured workflow rows, summarizes both completeness checks in workflow manifests, shows warning blocks in `review_index.html`, and returns failure status for non-dry-run workflow packets that capture rows without latest metrics or valid solver identity. Focused capture guards reported `11 passed`. The native `SIGBUS` was traced to Filament's Linux `/tmp`-backed CircularBuffer path under tmpfs user-quota pressure, and Linux headless engine creation now forces Filament's anonymous soft CircularBuffer fallback. The regenerated rows 01-36 packet and refreshed optional rows 37-53 packet both report `resolved_solver_identity_complete=true`, zero missing solver identities, zero scene-metrics gaps, and zero failed rows; a read-only per-scene audit found latest scene metrics for every captured row in both packet directories. | Proven locally                                  |
 | Keep unsupported or misleading GUI claims out of the workflow.                                   | PLAN-103 public API audit records no public direct `RigidBody` impulse, no sleep/wake or island activation, and no loop-closure compliance/stiffness/damping surfaces; the workflow search routes those terms to nearest rows with explicit caveats instead of adding speculative rows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Proven locally                                  |
-| Provide reviewer-facing visual evidence.                                                         | `build/captures/rigid_workflow_rows_01_36_1781333885/manifest.json` reports `status=complete`, `capture_count=36`, `completed_count=36`, `failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`, `scene_metrics_count=36`, `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`, and 2388 PNG frames. `build/captures/rigid_workflow_optional_rows_37_53_1781334179/manifest.json` reports `status=complete`, `capture_count=17`, `completed_count=17`, `failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`, `scene_metrics_count=17`, `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=17`, related/IPC-shelf/packet groups enabled, and 1027 PNG frames across the current 53-row optional span including `diff_pre_contact_surrogate`. Static review-index asset audits found 181/181 and 86/86 local links present.                                                                                                                                                                                                             | Proven locally                                  |
+| Provide reviewer-facing visual evidence.                                                         | `build/captures/rigid_workflow_rows_01_36_1781335894/manifest.json` reports `status=complete`, `capture_count=36`, `completed_count=36`, `failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`, `scene_metrics_count=36`, `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`, and 2388 PNG frames. Its `review_index.html` includes the latest backend-diagnostics and contact-query/collision-cast review-card summaries. `build/captures/rigid_workflow_optional_rows_37_53_1781334179/manifest.json` reports `status=complete`, `capture_count=17`, `completed_count=17`, `failed_count=0`, `guidance_complete=true`, `scene_metrics_complete=true`, `scene_metrics_count=17`, `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=17`, related/IPC-shelf/packet groups enabled, and 1027 PNG frames across the current 53-row optional span including `diff_pre_contact_surrogate`. Static review-index asset audits found 181/181 and 86/86 local links present.                                                                                     | Proven locally                                  |
 | Make static review artifacts self-contained enough for maintainer scan.                          | Current review-index asset audit found 181/181 local assets present for rows 01-36 and 86/86 present for optional rows 37-53; manifests and review headers record the exact top-level workflow commands.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Proven locally                                  |
 | Keep durable docs current.                                                                       | PLAN-103 sidecar, `python/examples/demos/README.md`, `CHANGELOG.md`, `docs/dev_tasks/rigid_body_visual_verification/README.md`, `RESUME.md`, and `PR_DRAFT.md` record the current workflow, evidence, caveats, and PR-ready state. PLAN-103 now includes a formal `WP-103.1` work-packet section with objective, scope, non-goals, acceptance evidence, gates, dependencies, and evidence pointers.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Proven locally                                  |
 | Provide automated drift guards.                                                                  | Focused docs/API drift guards, scene-metrics route guards, capture/review-index guards, current-head `pixi run lint`, and focused workflow-search guards are recorded in the PR draft and recent local commits. Broad default `pixi run test-all` passed under `DART_SAFE_JOBS=5`, and CUDA `pixi run -e cuda test-all` passed on the visible RTX 4080 Laptop GPU before the latest backend/executor search-routing slice.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Proven locally; latest CUDA predates this slice |
@@ -299,7 +312,7 @@ intentionally records no new green validation after the user stop instruction.
 - Historical stopped validation state: the interrupted `test-all` wrapper is
   not a pass and has been superseded by current green runs.
 - Full review packet:
-  `build/captures/rigid_workflow_rows_01_36_1781333885/review_index.html`
+  `build/captures/rigid_workflow_rows_01_36_1781335894/review_index.html`
 - Optional review packet:
   `build/captures/rigid_workflow_optional_rows_37_53_1781334179/review_index.html`
 - Current refresh state: `build/captures/rigid_workflow_rows_01_36_1781311276`

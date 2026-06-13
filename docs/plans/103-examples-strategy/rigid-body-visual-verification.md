@@ -589,9 +589,10 @@ Evidence recorded for this slice:
   render exactly one screenshot thumbnail for each captured row.
 
 - Latest full numbered workflow packet evidence: after the DART 7 harness
-  scene-metrics contract update and the backend/executor search-routing
-  follow-up, the current workflow packet
-  `build/captures/rigid_workflow_rows_01_36_1781333885` captured rows 01-36
+  scene-metrics contract update, backend/executor search-routing follow-up,
+  backend-diagnostics review-card summary, and contact-query/collision-cast
+  review-card summary, the current workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781335894` captured rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
   `guidance_missing_count=0`, `scene_metrics_complete=true`,
@@ -599,7 +600,9 @@ Evidence recorded for this slice:
   `resolved_solver_identity_count=36`, and `failed_rows=[]`. The packet wrote
   `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
   frame PNGs; a read-only review-index asset audit checked 181 local
-  `href`/`src` targets with 0 missing links.
+  `href`/`src` targets with 0 missing links. The refreshed review index shows
+  row-8 `backend diagnostics` plus row 12-14 contact-query/collision-cast
+  `latest signals`.
 
 - Historical optional extended workflow packet evidence: the pre-surrogate workflow
   packet `build/captures/rigid_workflow_optional_rows_37_52_1781309448`

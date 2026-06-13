@@ -2078,7 +2078,7 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
                 include_ipc_shelf=True,
                 include_packets=True,
                 continue_on_failure=True,
-                output_dir="/tmp/dart_capture_rigid_workflow_extended_resilient",
+                output_dir="/tmp/dart_capture_rigid_workflow_resilient",
             )
         )
         builder.item_tooltip(

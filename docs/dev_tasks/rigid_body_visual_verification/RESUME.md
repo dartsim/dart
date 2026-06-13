@@ -4,13 +4,26 @@
 
 Current branch snapshot after this slice:
 `feature/rigid-body-gui-visual-verification` matched
-`origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before
-the backend-diagnostics review-card slice; it was one local commit ahead at
-`6be90afe6d1` before the contact-query review-card slice. After this slice is
-committed, expect two local commits ahead of origin until a maintainer approves
+`origin/feature/rigid-body-gui-visual-verification` at `9536e56fd55` before the
+current artifact-refresh/command-alignment slice. After this slice is
+committed, expect one local commit ahead of origin until a maintainer approves
 another push. There is still no PR for this branch. Do not push, create a PR,
 set a milestone, rerun CI, comment on reviews, resolve threads, or mutate any
 other GitHub state without explicit maintainer/user approval.
+
+Latest local continuation: the full numbered rows 01-36 workflow packet was
+regenerated after the backend-diagnostics and contact-query review-card
+improvements, so the broad maintainer review artifact now matches current
+capture-helper behavior. Fresh evidence:
+`build/captures/rigid_workflow_rows_01_36_1781335894` completed with
+`status=complete`, `capture_count=36`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` now showing
+row-8 `backend diagnostics` plus row 12-14 contact-query/collision-cast
+`latest signals`. A read-only static review audit checked 181 local
+`href`/`src` targets in `review_index.html` with 0 missing links. The
+in-viewer resilient packet command now also matches the durable docs:
+`/tmp/dart_capture_rigid_workflow_resilient`.
 
 Latest local continuation: workflow review-card `latest signals` now promote
 the contact-query and collision-cast values that users need while scanning the
@@ -63,10 +76,11 @@ wrapper gates: linting, build, unit tests, simulation tests, Python tests,
 documentation, and CUDA tests. This CUDA run predates the backend/executor
 search-routing slice above, which is limited to workflow search/docs/tests.
 
-Latest artifact refresh: after the backend/executor search-routing slice, the
-full rows 01-36 packet was regenerated at
-`build/captures/rigid_workflow_rows_01_36_1781333885` and the optional rows
-37-53 packet was regenerated at
+Latest artifact refresh: after the backend/executor search-routing,
+backend-diagnostics, and contact-query review-card slices, the full rows 01-36
+packet was regenerated at
+`build/captures/rigid_workflow_rows_01_36_1781335894` and the optional rows
+37-53 packet remains current at
 `build/captures/rigid_workflow_optional_rows_37_53_1781334179`. Their manifests
 report complete scene metrics, complete resolved solver identity, zero failed
 rows, and the static review-index asset audit found 181/181 and 86/86 local
@@ -368,7 +382,7 @@ reproducers as failure evidence only.
 
 Latest local follow-up: after the headless engine-creation fix and the DART 7
 harness scene-metrics contract update, the full numbered packet regenerated at
-`build/captures/rigid_workflow_rows_01_36_1781333885` and completed with
+`build/captures/rigid_workflow_rows_01_36_1781335894` and completed with
 `status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `workflow_row_start=1`,
 `workflow_row_end=36`, `guidance_complete=true`, `guidance_missing_count=0`,
@@ -475,7 +489,7 @@ Resume from this state:
   `6bafd605907 Add pre-contact surrogate visual demo`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
-- Use `build/captures/rigid_workflow_rows_01_36_1781333885/review_index.html`
+- Use `build/captures/rigid_workflow_rows_01_36_1781335894/review_index.html`
   and
   `build/captures/rigid_workflow_optional_rows_37_53_1781334179/review_index.html`
   as the current identity-complete review-index scan artifacts. Treat older
