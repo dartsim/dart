@@ -1488,6 +1488,43 @@ def test_rigid_solver_panel_edits_reset_visual_runs(
     )
 
 
+def test_rigid_collision_query_options_panel_edits_capture_controls() -> None:
+    _require_simulation_symbols("World", "CollisionQueryOptions")
+
+    setup = rigid_collision_query_options.build()
+    controller = setup.info["rigid_collision_query_options_controller"]
+    builder = _ScriptedPanelBuilder(
+        checkbox_values={
+            "Rigid body pairs": False,
+            "Same-multibody link pairs": False,
+        },
+        select_values={"Ignored pair": 2},
+    )
+
+    setup.panels[0].build(builder, object())
+
+    assert "checkbox:Rigid body pairs" in builder.events
+    assert "checkbox:Same-multibody link pairs" in builder.events
+    assert any(event.startswith("select:Ignored pair:") for event in builder.events)
+    assert controller.include_rigid_body_pairs is False
+    assert controller.include_rigid_body_link_pairs is True
+    assert controller.include_link_pairs is True
+    assert controller.include_same_multibody_link_pairs is False
+    assert controller.ignored_pair_key == "rigid_link"
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    controls = capture_metrics["controls"]
+    assert controls["include_rigid_body_pairs"] is False
+    assert controls["include_rigid_body_link_pairs"] is True
+    assert controls["include_link_pairs"] is True
+    assert controls["include_same_multibody_link_pairs"] is False
+    assert controls["ignored_pair_key"] == "rigid_link"
+    assert controls["ignored_pair_index"] == 2
+    assert capture_metrics["active_contact_count"] == 1
+    assert capture_metrics["option_filtered_contact_count"] == 2
+    assert capture_metrics["ignored_contact_count"] == 1
+
+
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 

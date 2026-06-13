@@ -3,14 +3,23 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and one
-local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Guard rigid solver panel controls`. The pushed origin branch is at
+`feature/rigid-body-gui-visual-verification` is expected to be clean and two
+local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Capture rigid query option controls` after
+`Guard rigid solver panel controls`. The pushed origin branch is at
 `Complete rigid executor panel guard`. There is still no PR for this branch. Do
 not push, create a PR, set a milestone, rerun CI, or mutate review state
 without explicit maintainer/user approval.
 
-Latest local continuation: solver-select rigid rows now have the same
+Latest local continuation: row 13, `rigid_collision_query_options`, now
+publishes a proper capture-metrics `controls` block for its query toggles and
+ignored-pair selector. This matches the row's replay state and makes review
+packets identify the active `World.collide(options)` body-kind filter instead
+of only reporting derived contact counts. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_collision_query_options_panel_edits_capture_controls -q`
+reported `1 passed`. No new visual packet was generated in this slice.
+
+Previous local continuation: solver-select rigid rows now have the same
 run-defining control guard as executor-select rows. The focused panel test
 covers all seven current solver-selector panels (`rigid_body`,
 `rigid_body_modes`, `rigid_timestep_sensitivity`, `rigid_step_diagnostics`,

@@ -73,6 +73,9 @@ rigid-body visual verification surface for the current cycle.
 - Adds the matching solver-selector guard for all seven current solver-select
   rigid panels; solver-only edits reset the visual run, and the baseline
   `rigid_body` row now publishes `controls.solver_index` in capture metrics.
+- Adds a row-13 query-options control guard: `rigid_collision_query_options`
+  now records its body-kind toggles and ignored-pair selector under
+  `controls` in capture metrics, matching replay state.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -96,6 +99,9 @@ rigid-body visual verification surface for the current cycle.
 - Focused solver-switch panel guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_solver_panel_edits_reset_visual_runs -q`
   reported `7 passed`.
+- Focused row-13 query-option control guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_collision_query_options_panel_edits_capture_controls -q`
+  reported `1 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `23 passed`.

@@ -451,6 +451,18 @@ class _RigidCollisionQueryOptions:
         return {
             "active_contact_count": int(metrics["active_contact_count"]),
             "baseline_contact_count": int(metrics["baseline_contact_count"]),
+            "controls": {
+                "ignored_pair_index": int(self._ignored_pair_index()),
+                "ignored_pair_key": str(self.ignored_pair_key),
+                "include_link_pairs": bool(self.include_link_pairs),
+                "include_rigid_body_link_pairs": bool(
+                    self.include_rigid_body_link_pairs
+                ),
+                "include_rigid_body_pairs": bool(self.include_rigid_body_pairs),
+                "include_same_multibody_link_pairs": bool(
+                    self.include_same_multibody_link_pairs
+                ),
+            },
             "filtered_contact_count": int(metrics["filtered_contact_count"]),
             "ignored_contact_count": int(metrics["ignored_contact_count"]),
             "ignored_pair_count": int(metrics["ignored_pair_count"]),

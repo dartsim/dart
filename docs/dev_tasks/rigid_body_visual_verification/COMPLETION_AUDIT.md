@@ -7,6 +7,16 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: row 13,
+`rigid_collision_query_options`, now records its body-kind query toggles and
+ignored-pair selector under capture-metrics `controls`, matching the replay
+state for the same GUI controls. The focused panel guard edits two query
+checkboxes plus the ignored-pair selector and proves capture metrics identify
+the selected options alongside the derived active, option-filtered, and ignored
+contact counts. Focused query-options panel guards reported `1 passed`. This
+slice does not add a new visual packet; the existing rows 01-36 and optional
+rows 37-53 packets remain the latest broad static review artifacts.
+
 Latest local implementation slice: solver-select rigid rows now have the same
 run-defining panel contract as executor-select rows. The new focused guard
 covers all seven current solver-selector panels and proves solver-only edits
