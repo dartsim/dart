@@ -335,6 +335,11 @@ def check_documented_lcp_paths() -> None:
 
 def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
     manifest_by_name = {entry.name: entry for entry in manifest}
+    supported_by_profile = {
+        "standard": {entry.name for entry in manifest if entry.standard},
+        "boxed": {entry.name for entry in manifest if entry.boxed},
+        "findex": {entry.name for entry in manifest if entry.findex},
+    }
     unsupported_by_profile = {
         "standard": {entry.name for entry in manifest if not entry.standard},
         "boxed": {entry.name for entry in manifest if not entry.boxed},
@@ -346,19 +351,23 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
         with path.open(newline="", encoding="utf-8") as f:
             header = next(csv.reader(f))
         if not header or header[0] != "tau":
-            errors.append(f"{path.relative_to(ROOT)} has invalid header {header!r}")
+            errors.append(f"{_display_path(path)} has invalid header {header!r}")
             continue
 
         solvers = header[1:]
         unknown = sorted(set(solvers) - set(manifest_by_name))
+        missing = sorted(supported_by_profile[profile] - set(solvers))
         unsupported = sorted(set(solvers) & unsupported_by_profile[profile])
         if unknown:
+            errors.append(f"{_display_path(path)} contains unknown solvers: {unknown}")
+        if missing:
             errors.append(
-                f"{path.relative_to(ROOT)} contains unknown solvers: {unknown}"
+                f"{_display_path(path)} is missing native {profile} solvers: "
+                f"{missing}"
             )
         if unsupported:
             errors.append(
-                f"{path.relative_to(ROOT)} contains non-native {profile} solvers: "
+                f"{_display_path(path)} contains non-native {profile} solvers: "
                 f"{unsupported}"
             )
 
@@ -416,6 +425,9 @@ def check_performance_profile_evidence(
     }
 
     errors: list[str] = []
+    observed_native_solvers_by_category: dict[str, set[str]] = {
+        category: set() for category in PROFILE_KEY_BY_CATEGORY
+    }
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
@@ -549,6 +561,8 @@ def check_performance_profile_evidence(
                     f"row {row_number}: {solver_name}/{category} is not "
                     "native-supported and should not appear in profile evidence"
                 )
+            else:
+                observed_native_solvers_by_category[category].add(solver_name)
 
             expected_support = {
                 "solver_supports_standard": entry.standard,
@@ -582,6 +596,19 @@ def check_performance_profile_evidence(
 
     if row_count == 0:
         errors.append(f"{_display_path(path)} has no evidence rows")
+
+    for category in PROFILE_KEY_BY_CATEGORY:
+        expected_solvers = {
+            entry.name for entry in manifest if _solver_support(entry, category)
+        }
+        missing_solvers = sorted(
+            expected_solvers - observed_native_solvers_by_category[category]
+        )
+        if missing_solvers:
+            errors.append(
+                f"{_display_path(path)} {category} is missing native profile "
+                f"evidence solvers: {missing_solvers}"
+            )
 
     if errors:
         raise AssertionError(

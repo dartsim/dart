@@ -96,6 +96,48 @@ def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
         module.check_performance_profile_evidence(manifest, path)
 
 
+def test_lcp_profile_headers_reject_missing_native_solver(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+        module.SolverEntry("Lemke", "Pivoting", True, False, False, "LemkeSolver"),
+    ]
+    path = tmp_path / "performance_profile_standard.csv"
+    path.write_text("tau,Dantzig\n1,1.0\n", encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"standard": path})
+
+    with pytest.raises(AssertionError, match="missing native standard solvers"):
+        module.check_performance_profile_headers(manifest)
+
+
+def test_lcp_profile_evidence_rejects_missing_native_solver(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+        module.SolverEntry("Lemke", "Pivoting", True, False, False, "LemkeSolver"),
+    ]
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(
+            _valid_evidence_row()
+            | {
+                "solver_supports_boxed": "0",
+                "solver_supports_friction_index": "0",
+            }
+        )
+
+    with pytest.raises(AssertionError, match="missing native profile evidence"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
 def test_lcp_profile_evidence_rejects_invalid_metric(
     tmp_path: Path,
 ) -> None:
