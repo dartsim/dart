@@ -67,6 +67,9 @@ struct WorldStorage
 
   explicit WorldStorage(dart::common::MemoryAllocator& allocator);
 
+  /// Free allocator backing World-owned storage and internal scratch helpers.
+  dart::common::MemoryAllocator& memoryAllocator;
+
   /// The ECS registry holding every entity and component owned by the World.
   WorldRegistry registry;
 

@@ -586,6 +586,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     storage through the same World allocator already used by persistent
     ignored-pair storage, and added peak/live allocator coverage for the
     temporary save vector.
+  - Routed experimental `World` dynamic rigid-body collection scratch for
+    state/control vector helpers through the World free allocator, and added
+    no-global-heap plus peak/live coverage through `getNumDofs()`.
   - Made experimental `World::clear()` recreate its internal allocator-backed
     registry storage so ECS capacities and debug-tracked registry allocations
     are released at the rebuild boundary while preserving the World memory

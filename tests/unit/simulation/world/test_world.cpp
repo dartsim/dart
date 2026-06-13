@@ -3569,6 +3569,44 @@ TEST(World, SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator)
       world.getIgnoredCollisionPairCount());
 }
 
+TEST(World, NumDofsDynamicBodyCollectionUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  constexpr std::size_t kDynamicBodyCount = 1024u;
+  for (std::size_t i = 0; i < kDynamicBodyCount; ++i) {
+    world.addRigidBody(std::format("dof_dynamic_{:04}", i));
+  }
+
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  constexpr std::size_t kStaticBodyCount = 16u;
+  for (std::size_t i = 0; i < kStaticBodyCount; ++i) {
+    world.addRigidBody(std::format("dof_static_{:02}", i), staticOptions);
+  }
+
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const auto liveBytesBeforeQuery = freeList.getAllocatedSize();
+  const auto peakBytesBeforeQuery = freeList.getPeakAllocatedSize();
+
+  ScopedHeapAllocationCounter heapCounter;
+  const auto dofs = world.getNumDofs();
+  heapCounter.stop();
+
+  EXPECT_EQ(dofs, 3u * kDynamicBodyCount);
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "dynamic-body collection scratch should allocate through the World "
+         "free allocator, not the global heap";
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  EXPECT_EQ(freeList.getAllocatedSize(), liveBytesBeforeQuery)
+      << "getNumDofs should release dynamic-body collection scratch before "
+         "returning";
+  EXPECT_GT(freeList.getPeakAllocatedSize(), peakBytesBeforeQuery)
+      << "getNumDofs should allocate dynamic-body collection scratch through "
+         "the World free allocator";
+}
+
 TEST(World, RigidBodyVelocityScratchPayloadUsesWorldAllocator)
 {
   namespace sx = dart::simulation;

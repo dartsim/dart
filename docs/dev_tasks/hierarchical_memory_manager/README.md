@@ -1,5 +1,62 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Dynamic-Body Query Allocator)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: experimental `World` state/control coordinate helpers now
+collect dynamic rigid-body entities in allocator-backed scratch owned by the
+World free allocator. The pre-fix gap was that `collectDynamicRigidBodies()`
+returned a default-allocator `std::vector<entt::entity>` used by
+`getNumDofs()`, `getStateVector()`, `setStateVector()`, `getControlVector()`,
+and `setControlVector()`. Large dynamic-rigid-body worlds could therefore
+grow global heap storage while only building DART-owned internal entity lists
+for state/control API traversal.
+
+The fix has these parts:
+
+- `WorldStorage` retains an internal reference to the World free allocator so
+  const query helpers can construct allocator-backed scratch without changing
+  the public `World` API;
+- `collectDynamicRigidBodies()` returns a
+  `std::vector<entt::entity, common::StlAllocator<entt::entity>>` and all
+  state/control vector helpers pass the `WorldStorage` allocator through that
+  path;
+- `World.NumDofsDynamicBodyCollectionUsesWorldAllocator` builds 1,024 dynamic
+  bodies plus static bodies, verifies `getNumDofs()` ignores static bodies,
+  verifies no global heap allocation occurs during dynamic-body collection,
+  verifies the World free-list peak grows for the temporary vector, and
+  verifies live bytes return to the pre-query value.
+
+This still does not claim that public `Eigen::VectorXd` return payloads,
+caller-provided Eigen vectors, EnTT registry internals, native collision
+internals, or public return-by-value `std::vector` APIs are under the World
+allocator. The closed gap is only the DART-owned dynamic-body entity list used
+internally by experimental `World` state/control coordinate helpers.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.NumDofsDynamicBodyCollectionUsesWorldAllocator:World.SaveBinaryIgnoredCollisionPairFilterUsesWorldAllocator' \
+  --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Ignored-Pair Save Allocator)
 
 Resume from exactly one branch:

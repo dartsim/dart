@@ -3267,7 +3267,8 @@ World::~World() = default;
 
 //==============================================================================
 detail::WorldStorage::WorldStorage(common::MemoryAllocator& allocator)
-  : registry(detail::WorldRegistryAllocator{allocator}),
+  : memoryAllocator(allocator),
+    registry(detail::WorldRegistryAllocator{allocator}),
     differentiableParameters(DifferentiableParameterAllocator{allocator}),
     ignoredCollisionPairs(
         std::less<CollisionPairKey>{}, CollisionPairAllocator{allocator})
@@ -5105,12 +5106,23 @@ std::size_t World::getNumDifferentiableParameters() const noexcept
 
 namespace {
 
+using DynamicRigidBodyEntityAllocator = common::StlAllocator<entt::entity>;
+using DynamicRigidBodyEntityVector
+    = std::vector<entt::entity, DynamicRigidBodyEntityAllocator>;
+
+DynamicRigidBodyEntityAllocator makeDynamicRigidBodyEntityAllocator(
+    const detail::WorldStorage& storage)
+{
+  return DynamicRigidBodyEntityAllocator{storage.memoryAllocator};
+}
+
 // Collect dynamic (non-static) rigid bodies in registry iteration order. This
 // is the same view and order the translational contact Jacobian uses, so the
 // state/control vectors line up with getStepDerivatives()'s [q; q̇] layout.
-std::vector<entt::entity> collectDynamicRigidBodies(const auto& registry)
+DynamicRigidBodyEntityVector collectDynamicRigidBodies(
+    const auto& registry, DynamicRigidBodyEntityAllocator allocator)
 {
-  std::vector<entt::entity> bodies;
+  DynamicRigidBodyEntityVector bodies{allocator};
   auto view = registry.template view<
       comps::RigidBodyTag,
       comps::Transform,
@@ -5131,7 +5143,11 @@ std::vector<entt::entity> collectDynamicRigidBodies(const auto& registry)
 //==============================================================================
 std::size_t World::getNumDofs() const
 {
-  return 3 * collectDynamicRigidBodies(m_storage->registry).size();
+  return 3
+         * collectDynamicRigidBodies(
+               m_storage->registry,
+               makeDynamicRigidBodyEntityAllocator(*m_storage))
+               .size();
 }
 
 //==============================================================================
@@ -5143,8 +5159,8 @@ std::size_t World::getNumEfforts() const
 //==============================================================================
 Eigen::VectorXd World::getStateVector() const
 {
-  const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_storage->registry);
+  const auto bodies = collectDynamicRigidBodies(
+      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd state(2 * dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
@@ -5161,8 +5177,8 @@ Eigen::VectorXd World::getStateVector() const
 //==============================================================================
 void World::setStateVector(const Eigen::VectorXd& state)
 {
-  const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_storage->registry);
+  const auto bodies = collectDynamicRigidBodies(
+      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_SIMULATION_THROW_T_IF(
       state.size() != 2 * dofs,
@@ -5182,8 +5198,8 @@ void World::setStateVector(const Eigen::VectorXd& state)
 //==============================================================================
 Eigen::VectorXd World::getControlVector() const
 {
-  const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_storage->registry);
+  const auto bodies = collectDynamicRigidBodies(
+      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   Eigen::VectorXd control(dofs);
   for (std::size_t k = 0; k < bodies.size(); ++k) {
@@ -5197,8 +5213,8 @@ Eigen::VectorXd World::getControlVector() const
 //==============================================================================
 void World::setControlVector(const Eigen::VectorXd& control)
 {
-  const std::vector<entt::entity> bodies
-      = collectDynamicRigidBodies(m_storage->registry);
+  const auto bodies = collectDynamicRigidBodies(
+      m_storage->registry, makeDynamicRigidBodyEntityAllocator(*m_storage));
   const Eigen::Index dofs = 3 * static_cast<Eigen::Index>(bodies.size());
   DART_SIMULATION_THROW_T_IF(
       control.size() != dofs,
