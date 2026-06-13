@@ -1443,6 +1443,51 @@ def test_rigid_executor_panel_edits_reset_visual_runs(
     )
 
 
+@pytest.mark.parametrize(
+    ("scene_module", "controller_key", "select_label"),
+    [
+        (rigid_body, "rigid_body_controller", "Solver"),
+        (rigid_body_modes, "rigid_body_modes_controller", "Solver"),
+        (rigid_timestep_sensitivity, "rigid_timestep_sensitivity_controller", "Solver"),
+        (rigid_step_diagnostics, "rigid_step_diagnostics_controller", "Solver"),
+        (rigid_contact_scale_budget, "rigid_contact_scale_budget_controller", "Solver"),
+        (
+            rigid_executor_equivalence,
+            "rigid_executor_equivalence_controller",
+            "Physics solver",
+        ),
+        (rigid_restitution_ladder, "rigid_restitution_ladder_controller", "Solver"),
+    ],
+)
+def test_rigid_solver_panel_edits_reset_visual_runs(
+    scene_module: object, controller_key: str, select_label: str
+) -> None:
+    _require_simulation_symbols("RigidBodySolver", "World")
+
+    setup = scene_module.build()
+    controller = setup.info[controller_key]
+    if len(getattr(scene_module, "_SOLVERS", ())) < 2:
+        pytest.skip("solver alternatives unavailable in this build")
+    assert setup.pre_step is not None
+
+    world = setup.info["sx_world"]
+    setup.pre_step()
+    assert world.time > 0.0
+
+    target_solver = 1
+    builder = _ScriptedPanelBuilder(select_values={select_label: target_solver})
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith(f"select:{select_label}:") for event in builder.events)
+    assert controller.solver_index == target_solver
+    assert world.time == pytest.approx(0.0)
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["controls"]["solver_index"] == pytest.approx(
+        float(target_solver)
+    )
+
+
 def test_rigid_ipc_stack_packet_panel_exposes_capture_first_signals() -> None:
     _require_simulation_symbols("RigidBodySolver")
 

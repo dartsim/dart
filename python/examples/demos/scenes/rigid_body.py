@@ -259,6 +259,7 @@ class _RigidBodyBaseline:
             "controls": {
                 "friction": float(self.friction),
                 "restitution": float(self.restitution),
+                "solver_index": float(self.solver_index),
             },
             "metrics": dict(self._last_metrics),
             "history": {

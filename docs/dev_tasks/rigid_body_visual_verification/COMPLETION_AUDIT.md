@@ -7,6 +7,16 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: solver-select rigid rows now have the same
+run-defining panel contract as executor-select rows. The new focused guard
+covers all seven current solver-selector panels and proves solver-only edits
+reset the visual run and publish `controls.solver_index` in capture metrics.
+The baseline `rigid_body` row now records `controls.solver_index` in capture
+metrics, matching its replay state. Focused solver-switch panel guards reported
+`7 passed`. This slice does not add a new visual packet; the existing rows
+01-36 and optional rows 37-53 packets remain the latest broad static review
+artifacts.
+
 Previous local harness-hardening slice: rows 28-34 now have a stronger
 panel-contract guard for the editable controls that make the later joint and
 multibody rows useful during visual debugging. The comparison-panel test now

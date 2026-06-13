@@ -3,15 +3,26 @@
 ## Current Handoff (2026-06-12)
 
 Current branch snapshot after this slice:
-`feature/rigid-body-gui-visual-verification` is expected to be clean and two
-local commits ahead of `origin/feature/rigid-body-gui-visual-verification`,
-latest `Complete rigid executor panel guard` after
-`Reset rigid executor panel edits`. The pushed origin branch is still at
-`Reset loop closure executor edits`. There is still no PR for this branch. Do
+`feature/rigid-body-gui-visual-verification` is expected to be clean and one
+local commit ahead of `origin/feature/rigid-body-gui-visual-verification`,
+latest `Guard rigid solver panel controls`. The pushed origin branch is at
+`Complete rigid executor panel guard`. There is still no PR for this branch. Do
 not push, create a PR, set a milestone, rerun CI, or mutate review state
 without explicit maintainer/user approval.
 
-Latest local continuation: the executor-switch guard now covers all audited
+Latest local continuation: solver-select rigid rows now have the same
+run-defining control guard as executor-select rows. The focused panel test
+covers all seven current solver-selector panels (`rigid_body`,
+`rigid_body_modes`, `rigid_timestep_sensitivity`, `rigid_step_diagnostics`,
+`rigid_contact_scale_budget`, `rigid_executor_equivalence`, and
+`rigid_restitution_ladder`) and proves solver-only edits reset the visual run
+and publish `controls.solver_index` in capture metrics. The baseline
+`rigid_body` row now records that solver control in capture metrics, matching
+its replay state. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_solver_panel_edits_reset_visual_runs -q`
+reported `7 passed`. No new visual packet was generated in this slice.
+
+Latest pushed continuation: the executor-switch guard now covers all audited
 executor-select rigid rows that are safe to construct without loop-closure
 feature gating. Twenty-four panels, including the originally missed friction
 threshold, spin/roll coupling, and stack-stability rows, reset the visual run on
