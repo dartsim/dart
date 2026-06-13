@@ -94,7 +94,8 @@ Resume from this state:
 - Use `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` to
   distinguish proven local review readiness from missing external gates:
   push/PR approval, DART 7.0 milestone, maintainer acceptance, and same-PR
-  dev-task cleanup.
+  dev-task cleanup. It also records the AI principle audit for this substantial
+  AI-assisted workflow change.
   If more local progress is requested before pushing/review, audit the
   API-deferred gaps rather than adding speculative numbered rows.
 

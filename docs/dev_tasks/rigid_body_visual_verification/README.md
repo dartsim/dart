@@ -1002,7 +1002,8 @@ Evidence supporting readiness:
 - `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md` maps the
   original objective to current evidence and records the remaining external
   gates: push/PR approval, DART 7.0 milestone, maintainer acceptance, and
-  same-PR dev-task cleanup.
+  same-PR dev-task cleanup. It also records the AI principle audit for this
+  substantial AI-assisted workflow change.
 - The user-facing `python/examples/demos/README.md` describes the same ordered
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.

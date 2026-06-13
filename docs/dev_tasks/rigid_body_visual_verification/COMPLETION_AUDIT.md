@@ -19,6 +19,7 @@ completion PR cleanup happen.
 | Make static review artifacts self-contained enough for maintainer scan.                        | Current review-index asset audit found 181/181 local assets present for rows 01-36 and 81/81 present for optional rows 37-52; manifests and review headers record the exact top-level workflow commands.                                                                                                                                                                                                                                                                                                                                                           | Proven locally                                |
 | Keep durable docs current.                                                                     | PLAN-103 sidecar, `python/examples/demos/README.md`, `CHANGELOG.md`, `docs/dev_tasks/rigid_body_visual_verification/README.md`, `RESUME.md`, and `PR_DRAFT.md` record the current workflow, evidence, caveats, and PR-ready state.                                                                                                                                                                                                                                                                                                                                 | Proven locally                                |
 | Provide automated drift guards.                                                                | Focused docs/API drift guard, capture/review-index guard, and mandatory `pixi run lint` are recorded in the PR draft and recent local commits.                                                                                                                                                                                                                                                                                                                                                                                                                     | Proven locally for focused scope              |
+| Record the AI principle audit for substantial AI-assisted work.                                | This file and `PR_DRAFT.md` record the objective, assumptions, source-of-truth docs, public `pixi run ...` paths, evidence packets, and shared-state safety status.                                                                                                                                                                                                                                                                                                                                                                                                | Proven locally                                |
 | Open/publish maintainer review with DART 7.0 milestone.                                        | `gh pr list --head "$(git branch --show-current)"` currently returns no PR; branch is local-only and ahead of origin. Push and PR creation require explicit approval.                                                                                                                                                                                                                                                                                                                                                                                              | Missing external action                       |
 | Maintainer accepts the 36-row workflow plus optional 52-row packet as the completed scope.     | `PR_DRAFT.md` includes the explicit maintainer acceptance checkbox. No maintainer acceptance has been recorded in the current repository state.                                                                                                                                                                                                                                                                                                                                                                                                                    | Missing external decision                     |
 | Retire the dev-task folder in the completing PR.                                               | `docs/dev_tasks/README.md` requires deletion in the completing PR after durable artifacts are promoted. This folder remains active because acceptance is not recorded yet.                                                                                                                                                                                                                                                                                                                                                                                         | Not yet done by design                        |
@@ -26,7 +27,8 @@ completion PR cleanup happen.
 ## Current Local Evidence
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Current local checkpoint before this audit: `df721612138 Mark rigid workflow changelog readiness`
+- Git state must be rechecked before acting; this audit was introduced after
+  the regenerated evidence and PR-draft commits were already local.
 - Current PR state: no PR for this branch from `gh pr list --head "$(git branch --show-current)"`
 - Full review packet:
   `build/captures/rigid_workflow_rows_01_36_1781309127/review_index.html`
@@ -34,6 +36,28 @@ completion PR cleanup happen.
   `build/captures/rigid_workflow_optional_rows_37_52_1781309448/review_index.html`
 - PR body seed:
   `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md`
+
+## AI Principle Audit
+
+- Objective: the current scoped deliverable is the rigid-body `py-demos`
+  visual-verification workflow, its capture/review packet path, and PR-ready
+  handoff for maintainer acceptance.
+- Assumptions: unsupported direct rigid-body impulse, sleep/wake or island
+  activation, and loop-closure compliance rows stay deferred until public
+  `dartpy` APIs exist.
+- Simplicity and scope: the workflow uses PLAN-103, py-demos, capture helper,
+  and dev-task handoff surfaces already established on this branch; no new
+  speculative row family is added by this audit.
+- Source of truth: PLAN-103 owns the durable workflow definition, the py-demos
+  README owns user-facing usage, generated manifests own capture evidence, and
+  dev-task docs only own active handoff/review-prep state.
+- Public path: all reviewer and user actions map to tracked docs and
+  `pixi run ...` commands, including `py-demos` and `py-demo-capture`.
+- Evidence: current full and optional workflow manifests, review-index asset
+  audits, focused pytest guards, and `pixi run lint` are recorded in the PR
+  draft and this audit.
+- Shared-state safety: no push, PR creation, milestone mutation, review comment,
+  CI re-trigger, or merge is performed without explicit approval.
 
 ## Completion Decision
 

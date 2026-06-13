@@ -69,6 +69,8 @@ rigid-body visual verification surface for the current cycle.
   review indexes.
 - Completion audit:
   `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
+- AI principle audit: recorded in
+  `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`
 
 ## Breaking Changes
 
