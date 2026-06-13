@@ -1,5 +1,47 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Multibody Dynamics Scratch Vector Aliases)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR. It includes `origin/main` at
+`a122e8e0f3e` via local merge commit `57c8b1cd608`; a fresh
+`git fetch origin main && git merge --no-edit origin/main` reported "Already up
+to date."
+
+Latest local slice: `MultibodyDynamicsScratch` now gives its allocator-backed
+scratch containers local vector aliases (`LinkIndexVector`,
+`SpatialVectorVector`, `LinkContactVector`, `ConstrainedDofVector`,
+`ConstrainedTargetVector`, and `BodyJacobianVector`) instead of repeating the
+full `std::vector<T, Allocator>` spelling across the RNEA and contact scratch
+fields. The nearby analytic RNEA helper alias now reuses the scratch-owned
+spatial-vector alias as well.
+
+This is a mechanical maintainability slice. It does not change dynamics
+behavior, public APIs, allocator provenance, or the existing multibody scratch
+allocation claims.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_multibody -j 8
+pixi run build/default/cpp/Release/bin/test_multibody
+pixi run lint
+git diff --check
+pixi run build
+```
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Unified Constraint Scratch Vector Aliases)
 
 Resume from exactly one branch:

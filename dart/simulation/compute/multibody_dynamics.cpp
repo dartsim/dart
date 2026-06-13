@@ -792,6 +792,15 @@ struct MultibodyDynamicsScratch
   using ConstrainedDofAllocator = common::StlAllocator<Eigen::Index>;
   using ConstrainedTargetAllocator = common::StlAllocator<double>;
   using BodyJacobianAllocator = common::StlAllocator<Eigen::MatrixXd>;
+  using LinkIndexVector = std::vector<LinkIndex, LinkIndexAllocator>;
+  using SpatialVectorVector = std::vector<Vector6, SpatialVectorAllocator>;
+  using LinkContactVector = std::vector<LinkContact, LinkContactAllocator>;
+  using ConstrainedDofVector
+      = std::vector<Eigen::Index, ConstrainedDofAllocator>;
+  using ConstrainedTargetVector
+      = std::vector<double, ConstrainedTargetAllocator>;
+  using BodyJacobianVector
+      = std::vector<Eigen::MatrixXd, BodyJacobianAllocator>;
 
   MultibodyDynamicsScratch() = default;
 
@@ -819,7 +828,7 @@ struct MultibodyDynamicsScratch
   }
 
   DynamicsTree tree;
-  std::vector<LinkIndex, LinkIndexAllocator> linkIndexOf;
+  LinkIndexVector linkIndexOf;
   Subspace jointFrameSubspace;
   Eigen::VectorXd qdot;
   Eigen::VectorXd appliedForce;
@@ -830,24 +839,24 @@ struct MultibodyDynamicsScratch
   Eigen::VectorXd rhs;
   Eigen::VectorXd qddot;
   Eigen::VectorXd nextVelocity;
-  std::vector<Vector6, SpatialVectorAllocator> rneaVelocity;
-  std::vector<Vector6, SpatialVectorAllocator> rneaAcceleration;
-  std::vector<Vector6, SpatialVectorAllocator> rneaForce;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeVelocity;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeAcceleration;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeForce;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeJointVelocity;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeTotalForce;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaVelocity;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaAcceleration;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeDeltaForce;
-  std::vector<Vector6, SpatialVectorAllocator> rneaDerivativeAccumulatedForce;
-  std::vector<LinkContact, LinkContactAllocator> linkContacts;
-  std::vector<Eigen::Index, ConstrainedDofAllocator> constrainedDof;
-  std::vector<double, ConstrainedTargetAllocator> constrainedTarget;
+  SpatialVectorVector rneaVelocity;
+  SpatialVectorVector rneaAcceleration;
+  SpatialVectorVector rneaForce;
+  SpatialVectorVector rneaDerivativeVelocity;
+  SpatialVectorVector rneaDerivativeAcceleration;
+  SpatialVectorVector rneaDerivativeForce;
+  SpatialVectorVector rneaDerivativeJointVelocity;
+  SpatialVectorVector rneaDerivativeTotalForce;
+  SpatialVectorVector rneaDerivativeDeltaVelocity;
+  SpatialVectorVector rneaDerivativeDeltaAcceleration;
+  SpatialVectorVector rneaDerivativeDeltaForce;
+  SpatialVectorVector rneaDerivativeAccumulatedForce;
+  LinkContactVector linkContacts;
+  ConstrainedDofVector constrainedDof;
+  ConstrainedTargetVector constrainedTarget;
   MultibodyLinkContactProblem contactProblem;
   std::size_t activeContactRowCount = 0;
-  std::vector<Eigen::MatrixXd, BodyJacobianAllocator> bodyJacobian;
+  BodyJacobianVector bodyJacobian;
   Eigen::MatrixXd pointJacobian;
   Eigen::MatrixXd otherPointJacobian;
   Eigen::VectorXd contactWork;
@@ -2111,8 +2120,7 @@ bool treeSupportsAnalyticDerivatives(
 }
 
 //==============================================================================
-using SpatialVectorScratch
-    = std::vector<Vector6, MultibodyDynamicsScratch::SpatialVectorAllocator>;
+using SpatialVectorScratch = MultibodyDynamicsScratch::SpatialVectorVector;
 
 void resetSpatialVectorScratch(SpatialVectorScratch& scratch, std::size_t count)
 {
