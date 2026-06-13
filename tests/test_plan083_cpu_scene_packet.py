@@ -330,7 +330,7 @@ def _lying_flat_packet(**overrides):
         "real_time": 11.0,
         "cpu_time": 11.0,
         "time_unit": "ms",
-        "rigid_obstacle_count": 5,
+        "rigid_obstacle_count": 6,
         "deformable_body_count": 1,
         "deformable_node_count": 24,
         "deformable_edge_count": 68,
@@ -346,10 +346,10 @@ def _lying_flat_packet(**overrides):
         **_surface_contact_counters(),
         "line_search_trials": 35,
         "surface_contact_candidate_builds": 35,
-        "surface_contact_point_triangle_candidates": 882,
-        "surface_contact_edge_edge_candidates": 1660,
-        "surface_contact_ccd_point_triangle_checks": 882,
-        "surface_contact_ccd_edge_edge_checks": 1660,
+        "surface_contact_point_triangle_candidates": 660,
+        "surface_contact_edge_edge_candidates": 1224,
+        "surface_contact_ccd_point_triangle_checks": 660,
+        "surface_contact_ccd_edge_edge_checks": 1224,
         "surface_contact_ccd_hits": 1,
         "surface_contact_ccd_limited_steps": 0,
         "static_rigid_surface_ccd_snapshot_builds": 1,
@@ -365,6 +365,20 @@ def _lying_flat_packet(**overrides):
         "static_rigid_surface_ccd_hits": 34,
         "static_rigid_surface_ccd_limited_steps": 1,
         "static_rigid_surface_ccd_zero_step_count": 62,
+        "moving_rigid_surface_ccd_snapshot_builds": 1,
+        "moving_rigid_surface_ccd_box_count": 1,
+        "moving_rigid_surface_ccd_sample_count": 10,
+        "moving_rigid_surface_ccd_inflated_box_count": 0,
+        "moving_rigid_surface_ccd_triangle_count": 120,
+        "moving_rigid_surface_ccd_edge_count": 120,
+        "moving_rigid_surface_ccd_candidate_builds": 2,
+        "moving_rigid_surface_ccd_point_triangle_candidates": 2,
+        "moving_rigid_surface_ccd_edge_edge_candidates": 41,
+        "moving_rigid_surface_ccd_point_triangle_checks": 2,
+        "moving_rigid_surface_ccd_edge_edge_checks": 41,
+        "moving_rigid_surface_ccd_hits": 1,
+        "moving_rigid_surface_ccd_limited_steps": 1,
+        "moving_rigid_surface_ccd_zero_step_count": 0,
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -773,7 +787,7 @@ def test_plan083_cpu_scene_packet_rejects_moving_rigid_surface_ccd_hits() -> Non
         match="more moving-rigid surface CCD hits than CCD checks",
     ):
         module.make_packet(
-            _lying_flat_packet(moving_rigid_surface_ccd_hits=1),
+            _lying_flat_packet(moving_rigid_surface_ccd_hits=999),
             max_equality_residual=1e-8,
             scene="lying_flat",
         )
@@ -988,14 +1002,14 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["row_id"] == "unb-fig-01"
     assert row["scene_id"] == "plan083_lying_flat"
     assert row["paper_scale"] is False
-    assert row["rigid_obstacle_count"] == 5
+    assert row["rigid_obstacle_count"] == 6
     assert row["deformable_body_count"] == 1
     assert row["deformable_node_count"] == 24
     assert row["surface_triangle_count"] == 30
     assert row["line_search_trials"] == 35
     assert row["surface_contact_candidate_builds"] == 35
-    assert row["surface_contact_point_triangle_candidates"] == 882
-    assert row["surface_contact_edge_edge_candidates"] == 1660
+    assert row["surface_contact_point_triangle_candidates"] == 660
+    assert row["surface_contact_edge_edge_candidates"] == 1224
     assert row["surface_contact_ccd_hits"] == 1
     assert row["surface_contact_ccd_limited_steps"] == 0
     assert row["inter_body_surface_contact_candidate_builds"] == 0
@@ -1005,7 +1019,13 @@ def test_plan083_cpu_scene_packet_accepts_reduced_lying_flat() -> None:
     assert row["static_rigid_surface_ccd_edge_edge_checks"] == 102
     assert row["static_rigid_surface_ccd_hits"] == 34
     assert row["static_rigid_surface_ccd_limited_steps"] == 1
-    assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["moving_rigid_surface_ccd_box_count"] == 1
+    assert row["moving_rigid_surface_ccd_sample_count"] == 10
+    assert row["moving_rigid_surface_ccd_candidate_builds"] == 2
+    assert row["moving_rigid_surface_ccd_point_triangle_checks"] == 2
+    assert row["moving_rigid_surface_ccd_edge_edge_checks"] == 41
+    assert row["moving_rigid_surface_ccd_hits"] == 1
+    assert row["moving_rigid_surface_ccd_limited_steps"] == 1
     assert row["wall_time_ns"] == 11.0e6
 
 
@@ -1175,7 +1195,7 @@ def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
     assert row["scene_id"] == "plan083_reduced_timing_breakdown"
     assert row["paper_scale"] is False
     assert row["scene_count"] == 10
-    assert row["total_body_count"] == 43
+    assert row["total_body_count"] == 44
     assert row["total_dynamic_body_count"] == 28
     assert row["total_wall_time_ns"] == 65.0e6
     assert row["available_timing_fields"] == ["wall_time_ns"]
@@ -1208,7 +1228,7 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
         "unb-fig-23",
     ]
     assert row["missing_paper_rows"] == []
-    assert row["total_body_count"] == 41
+    assert row["total_body_count"] == 42
     assert row["total_dynamic_body_count"] == 27
     assert row["total_wall_time_ns"] == 62.0e6
 
@@ -1418,6 +1438,22 @@ def test_plan083_cpu_scene_packet_rejects_lying_flat_without_static_ccd_witness(
     ):
         module.make_packet(
             _lying_flat_packet(static_rigid_surface_ccd_hits=0),
+            max_equality_residual=1e-8,
+            scene="lying_flat",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_lying_flat_without_moving_ccd_witness() -> (
+    None
+):
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="positive moving-rigid surface CCD witness counter",
+    ):
+        module.make_packet(
+            _lying_flat_packet(moving_rigid_surface_ccd_hits=0),
             max_equality_residual=1e-8,
             scene="lying_flat",
         )

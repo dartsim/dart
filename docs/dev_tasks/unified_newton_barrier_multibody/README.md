@@ -2,29 +2,32 @@
 
 ## Current Status
 
-Latest lying-flat static-rigid surface CCD CPU packet checkpoint (2026-06-13):
-work continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR
-#2978. Keep all remaining PLAN-083 follow-up work consolidated there; do not
-push, PR-comment, resolve review threads, trigger CI, open or close PRs, delete
-branches, or claim unrelated PLAN-091 packets without explicit maintainer
-approval.
+Latest lying-flat static/moving-rigid surface CCD CPU packet checkpoint
+(2026-06-13): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
 
 This checkpoint upgrades the reduced `unb-fig-01` lying-flat CPU benchmark row
-from external-counter serialization only to one nonzero static-rigid surface CCD
-witness inside `BM_Plan083CpuScene_lying_flat_reduced_world_step`. The packet
-now steps the reduced deformable cloth through a static CCD witness obstacle in
-the deformable IPC `World::step` path, and
-`scripts/write_plan083_cpu_scene_packet.py` requires positive static-rigid
-candidate, CCD check, hit, and limited-step counters for `scene=lying_flat`.
-The latest median packet records 35 self-surface candidate builds, 882
-point-triangle CCD checks, 1,660 edge-edge CCD checks, plus 34 static-rigid
-surface CCD hits and one static-rigid limited step with `failed_steps=0`.
+from static-rigid-only external evidence to static-rigid plus moving-rigid
+surface CCD witnesses inside
+`BM_Plan083CpuScene_lying_flat_reduced_world_step`. The packet now steps the
+reduced deformable cloth through one static CCD witness obstacle and one moving
+CCD witness obstacle in the deformable IPC `World::step` path, and
+`scripts/write_plan083_cpu_scene_packet.py` requires positive static-rigid and
+moving-rigid candidate, CCD check, hit, and limited-step counters for
+`scene=lying_flat`. The latest median packet records 35 self-surface candidate
+builds, 660 point-triangle CCD checks, 1,224 edge-edge CCD checks, 34
+static-rigid surface CCD hits with one static-rigid limited step, and 1
+moving-rigid surface CCD hit with one moving-rigid limited step and
+`failed_steps=0`.
 
 This is still a reduced CPU benchmark packet only. It does not prove
-paper-scale lying-flat coupling, inter-body or moving-rigid external contact for
-the figure row, production runtime scene filtering, analytic curved CCD, GPU
-`World::step`, full runtime affine/FEM coupling, accepted reference timings, or
-any speedup gate.
+paper-scale lying-flat coupling, inter-body external contact for the figure row,
+production runtime scene filtering, analytic curved CCD, GPU `World::step`,
+full runtime affine/FEM coupling, accepted reference timings, or any speedup
+gate.
 
 Current validation passed:
 
@@ -60,9 +63,10 @@ records 33/68/76 hits with `failed_steps=0`.
 This is a reduced CPU diagnostic packet only. It does not prove paper-scale
 external contact, production runtime scene filtering, analytic curved CCD, GPU
 `World::step`, full runtime affine/FEM coupling, or any speedup gate. The
-later lying-flat static-rigid witness is the only broader figure row with
-nonzero external candidate/check/hit counters so far; other figure/demo rows
-still have zero external candidate/check/hit counts in their mixed fixtures.
+later lying-flat static/moving-rigid witnesses are the only broader figure row
+with nonzero external candidate/check/hit counters so far; other figure/demo
+rows still have zero external candidate/check/hit counts in their mixed
+fixtures.
 
 Current validation passed:
 
@@ -86,8 +90,8 @@ counts. The regenerated `lying_flat`, `candy`, and `abd_fem_coupling` packet
 rows now carry those fields alongside the self-surface counters. At that
 checkpoint the inter-body/static-rigid/moving-rigid candidate, check, and hit
 counters remained zero, while static-rigid and moving-rigid snapshot builds
-recorded 1 on the median rows; the later lying-flat packet adds one
-static-rigid witness, but this earlier checkpoint was packet schema and
+recorded 1 on the median rows; the later lying-flat packet adds static-rigid and
+moving-rigid witnesses, but this earlier checkpoint was packet schema and
 observability evidence, not paper-scale behavior.
 
 This is CPU observability and reduced packet evidence only. It does not prove

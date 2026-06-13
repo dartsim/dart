@@ -850,6 +850,23 @@ def _make_lying_flat_packet(
                 "reduced lying-flat packet needs positive static-rigid "
                 f"surface CCD witness counter {key}"
             )
+    if counters["moving_rigid_surface_ccd_box_count"] <= 0:
+        raise Plan083CpuScenePacketError(
+            "reduced lying-flat packet needs a moving-rigid surface CCD witness box"
+        )
+    for key in (
+        "moving_rigid_surface_ccd_sample_count",
+        "moving_rigid_surface_ccd_candidate_builds",
+        "moving_rigid_surface_ccd_point_triangle_candidates",
+        "moving_rigid_surface_ccd_point_triangle_checks",
+        "moving_rigid_surface_ccd_hits",
+        "moving_rigid_surface_ccd_limited_steps",
+    ):
+        if counters[key] <= 0:
+            raise Plan083CpuScenePacketError(
+                "reduced lying-flat packet needs positive moving-rigid "
+                f"surface CCD witness counter {key}"
+            )
 
     return {
         "plan083_cpu_scene_packet": {
@@ -876,9 +893,10 @@ def _make_lying_flat_packet(
             "cloth_span_x_m": cloth_span_x,
             "cloth_span_y_m": cloth_span_y,
             "limitation_status": (
-                "Reduced deformable-cloth/static-obstacle smoke packet only; "
-                "rigid rings, deformable tori, rods, articulated ragdoll, "
-                "cloth self-contact, and paper-scale mixed coupling remain planned."
+                "Reduced deformable-cloth/static and moving obstacle smoke "
+                "packet only; rigid rings, deformable tori, rods, articulated "
+                "ragdoll, inter-body external contact, cloth self-contact, "
+                "and paper-scale mixed coupling remain planned."
             ),
         },
         "benchmarks": rows,
