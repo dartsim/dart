@@ -93,6 +93,7 @@ from .scenes.atlas_simbicon import SCENE as ATLAS_SIMBICON
 from .scenes.contact import SCENE as CONTACT
 from .scenes.diff_cartpole_trajopt import SCENE as DIFF_CARTPOLE_TRAJOPT
 from .scenes.diff_drone_liftoff import SCENE as DIFF_DRONE_LIFTOFF
+from .scenes.diff_pre_contact_surrogate import SCENE as DIFF_PRE_CONTACT_SURROGATE
 from .scenes.diff_throw_to_target import SCENE as DIFF_THROW_TO_TARGET
 from .scenes.floating_base import SCENE as FLOATING_BASE
 from .scenes.ipc_deformable_capsule_rod import SCENE as IPC_DEFORMABLE_CAPSULE_ROD
@@ -349,6 +350,7 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         DIFF_THROW_TO_TARGET,
         DIFF_CARTPOLE_TRAJOPT,
         DIFF_DRONE_LIFTOFF,
+        DIFF_PRE_CONTACT_SURROGATE,
         # Vertex Block Descent (VBD) deformable scenes: mass-spring cloth/net, a
         # tetrahedral cantilever beam, the TinyVBD reference tilted strand (the
         # stiff, high-mass-ratio CPU parity scene), a cloth draping over a sphere

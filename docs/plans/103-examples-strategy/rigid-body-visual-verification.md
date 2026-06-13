@@ -20,7 +20,7 @@ from drifting.
   rigid-body impulse/sleep/island/loop-closure compliance behavior, benchmark
   replacement, or maintainer acceptance/PR publication without explicit
   approval.
-- Acceptance evidence: default 36-row and optional 52-row workflow manifests
+- Acceptance evidence: default 36-row and optional extended workflow manifests
   report complete guidance, scene metrics, and resolved solver identity; static
   review indexes resolve their local assets; focused capture and docs drift
   tests pass; broad default and CUDA validation evidence is recorded before PR
@@ -224,21 +224,34 @@ pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --h
 
 ## Differentiable Contact-Gradient Route
 
-Do not add a duplicate numbered rigid row for contact-gradient modes in this
-slice. The existing `diff_drone_liftoff` scene already answers the next user
-question after forward contact debugging: "why does my contact optimization
-stall even though the collision response looks right?" It uses a rigid `World`
-with boxed-LCP contact and shows `ContactGradientMode.ANALYTIC` stalling at the
-clamping saddle while `ContactGradientMode.COMPLEMENTARITY_AWARE` escapes. Keep
-it in the Differentiable shelf so the mode distinction is explicit, but route
-rigid users there from the workflow docs. Its scene-owned capture metrics report
-target/rest height, analytic versus complementarity-aware thrust/final-height/
-loss values, height and target-error gaps, fallback status, and compact history
-summaries. Default builds with `DART_BUILD_DIFF=OFF` record a finite fallback
-payload; diff-enabled builds should show the aware-mode escape.
+Do not add duplicate numbered rigid rows for contact-gradient modes in this
+slice. Keep the backward-pass diagnostics in the Differentiable shelf so the
+mode distinction is explicit, but route rigid users there from the workflow
+docs:
+
+- `diff_drone_liftoff` answers "why does my contact optimization stall even
+  though the collision response looks right?" It uses a rigid `World` with
+  boxed-LCP contact and shows `ContactGradientMode.ANALYTIC` stalling at the
+  clamping saddle while `ContactGradientMode.COMPLEMENTARITY_AWARE` escapes.
+  Its scene-owned capture metrics report target/rest height, analytic versus
+  complementarity-aware thrust/final-height/loss values, height and
+  target-error gaps, fallback status, and compact history summaries.
+- `diff_pre_contact_surrogate` answers "why is there no contact gradient before
+  the objects touch?" It uses an approaching-but-not-touching rigid sphere and
+  shows that `ContactGradientMode.ANALYTIC` remains contact-free while
+  `ContactGradientMode.PRE_CONTACT_SURROGATE` adds a backward-only pre-contact
+  Jacobian block without changing the forward step. Its scene-owned capture
+  metrics report pre/post contact counts, forward-state parity,
+  analytic-freefall error, surrogate block magnitude, vertical sensitivity, and
+  fallback status.
+
+Default builds with `DART_BUILD_DIFF=OFF` record finite fallback payloads;
+diff-enabled builds should show the aware-mode saddle escape and the
+pre-contact surrogate Jacobian block.
 
 ```bash
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 --width 960 --height 540 --show-ui
 ```
 
 ## Related Evidence Routes
@@ -254,6 +267,7 @@ non-numbered shelf only through this table. These scenes remain outside the
 | `rigid_solver_compare`           | `rigid_ipc_tunnel`                     | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_tunnel - focused no-tunneling view                                          | Focused IPC capability scene; not a broad solver comparison or general proof.                                            |
 | `rigid_solver_compare`           | `rigid_ipc_edge_drop`                  | Rigid IPC                   | Related shelf: Rigid IPC / rigid_ipc_edge_drop - degenerate edge-contact view                                    | Focused IPC degenerate edge-contact capability scene; not a broad solver comparison or contact-manifold inspector.       |
 | `rigid_contact_solver_compare`   | `diff_drone_liftoff`                   | Differentiable              | Related shelf: Differentiable / diff_drone_liftoff - contact-gradient route                                      | Analytic vs complementarity-aware clamping-contact optimization; not a solver row.                                       |
+| `rigid_contact_solver_compare`   | `diff_pre_contact_surrogate`           | Differentiable              | Related shelf: Differentiable / diff_pre_contact_surrogate - pre-contact gradient route                          | Analytic vs pre-contact surrogate backward-only gradient for an approaching but not touching body; not a solver row.     |
 | `contact`                        | `avbd_rigid_fixed_joint_contact`       | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_fixed_joint_contact - fixed-joint contact route          | Variational fixed-joint/contact capability scene; not a World contact-policy comparison.                                 |
 | `rigid_joint_breakage`           | `avbd_rigid_breakable_joint`           | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_breakable_joint - free-rigid fixed break/reset           | Dedicated free-rigid fixed break/reset row; not sequential-impulse or IPC parity evidence.                               |
 | `rigid_joint_breakage`           | `avbd_rigid_spherical_breakable_joint` | AVBD Rigid Constraints (sx) | Related shelf: AVBD Rigid Constraints (sx) / avbd_rigid_spherical_breakable_joint - spherical anchor break/reset | Dedicated free-rigid spherical anchor break/reset row; orientation remains intentionally free.                           |
@@ -271,6 +285,7 @@ pixi run py-demo-capture -- --scene articulated --frames 72 --width 960 --height
 pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_breakable_joint --frames 72 --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_spherical_breakable_joint --frames 72 --width 960 --height 540 --show-ui
@@ -315,10 +330,13 @@ barrier gap, tilt, angular speed, contact count, step timing, and edge-barrier
 status, and `rigid_ipc_stack_packet` plus `rigid_ipc_heavy_stack_packet` mirror
 clearance, contact, drift, height, wall-time, frame-budget, mass, and benchmark
 values through the same schema. The
-related `diff_drone_liftoff` route uses the schema for
-contact-gradient mode outcome, target/rest height, analytic versus aware
+related `diff_drone_liftoff` route uses the schema for clamping-contact
+gradient mode outcome, target/rest height, analytic versus aware
 thrust/final-height/loss values, height/target-error gaps, fallback status, and
-history summaries. The related AVBD routes use the schema for fixed-joint
+history summaries. The related `diff_pre_contact_surrogate` route uses the
+schema for pre-contact counts, identical forward-state evidence,
+analytic-freefall error, surrogate block magnitude, vertical sensitivity, and
+fallback status. The related AVBD routes use the schema for fixed-joint
 contact offset/clearance/contact counts, spherical breakage anchor/orientation
 drift, free-rigid revolute motor speed tracking, and free-rigid prismatic motor
 axis/drift tracking.
@@ -473,7 +491,17 @@ pixi run py-demo-capture -- --scene rigid_loop_closure --frames 72 --width 960 -
 
 Evidence recorded for this slice:
 
-- Latest current-HEAD packet refresh: after the workflow-command provenance and
+- Latest pre-contact surrogate related-route guard: `diff_pre_contact_surrogate`
+  now covers the public approaching-but-not-touching
+  `ContactGradientMode.PRE_CONTACT_SURROGATE` diagnostic in the Differentiable
+  shelf and is included in the optional related-evidence packet. Focused guards
+  reported `8 passed, 1 skipped` for the new scene, related route, metrics,
+  panel, and public diff-path tests in the default diff-OFF build, plus
+  `6 passed` for capture-plan/docs drift guards. The next full optional visual
+  packet should be regenerated as a 53-row packet before final maintainer
+  review because the older optional artifact predates this route.
+
+- Historical pre-surrogate packet refresh: after the workflow-command provenance and
   review-index link-normalization fix, the full numbered workflow packet
   `build/captures/rigid_workflow_rows_01_36_1781309127` completed rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
@@ -530,7 +558,7 @@ Evidence recorded for this slice:
   frame PNGs; the first row was `rigid_body` and the last row was
   `rigid_loop_closure`.
 
-- Latest optional extended workflow packet evidence: the current-HEAD workflow
+- Historical optional extended workflow packet evidence: the pre-surrogate workflow
   packet `build/captures/rigid_workflow_optional_rows_37_52_1781309448`
   selected rows 37-52 from the fully extended 52-row packet with related
   evidence, direct
@@ -1828,9 +1856,8 @@ shelf, packets`, selected groups `related, ipc shelf, packets`, guidance
   effective restitution is `max(e_a, e_b)`, effective friction is
   `sqrt(mu_a * mu_b)`, swapped mixed pairs are the signal, and the row should
   not grow into an IPC restitution claim or a duplicate stick/slip threshold.
-- Keep differentiable contact-gradient mode UX routed to the existing
-  `diff_drone_liftoff` scene unless users need a distinct rigid workflow row
-  with additional public controls such as pre-contact surrogate mode. Current
-  API evidence shows `ContactGradientMode.PRE_CONTACT_SURROGATE` is public and
-  tested, so a small `diff_pre_contact_surrogate` row is a valid future
-  non-speculative addition.
+- Keep differentiable contact-gradient mode UX routed to the Differentiable
+  shelf. `diff_drone_liftoff` covers clamping-contact saddle escape, and
+  `diff_pre_contact_surrogate` covers the public
+  `ContactGradientMode.PRE_CONTACT_SURROGATE` approaching-but-not-touching
+  backward-only signal without expanding the numbered rigid workflow.

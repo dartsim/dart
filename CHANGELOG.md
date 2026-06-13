@@ -120,6 +120,11 @@
     CircularBuffer fallback during engine creation, avoiding `SIGBUS` crashes
     when `/tmp` tmpfs quota pressure breaks the file-backed command-buffer
     mapping before scene metrics or screenshots are written.
+    Added `diff_pre_contact_surrogate` to the Differentiable `py-demos` shelf
+    and rigid workflow related-evidence packet, showing that
+    `ContactGradientMode.PRE_CONTACT_SURROGATE` adds a backward-only
+    pre-contact Jacobian block for an approaching but not touching rigid body
+    while preserving the same forward step as `ANALYTIC`.
   - Added `rigid_solver_compare` to Python `py-demos`, showing sequential
     impulse and rigid IPC side by side on the same sliding box / thin-wall
     rigid-body scene with executor selection, clearance, speed, divergence,

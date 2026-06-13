@@ -301,6 +301,7 @@ RIGID_WORKFLOW_RELATED_CAPTURE_SPECS: tuple[tuple[str, int, int, int, bool], ...
     ("rigid_ipc_tunnel", 24, 960, 540, True),
     ("rigid_ipc_edge_drop", 72, 960, 540, True),
     ("diff_drone_liftoff", 96, 960, 540, True),
+    ("diff_pre_contact_surrogate", 24, 960, 540, True),
     ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
     ("avbd_rigid_breakable_joint", 72, 960, 540, True),
     ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),

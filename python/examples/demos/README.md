@@ -1055,13 +1055,15 @@ completed rows. The step diagnostics and contact-scale budget rows use that path
 for profiling, memory, contact, and frame-budget evidence; the IPC no-tunneling
 route uses it for clearance and through-wall margin evidence; and the stack
 packet uses it for clearance, drift, wall time, and benchmark metadata. The
-differentiable contact-gradient route uses it for target/rest height, analytic
+differentiable contact-gradient routes use it for target/rest height, analytic
 versus complementarity-aware thrust/final-height/loss values, height and
-target-error gaps, fallback status, and compact history summaries. The AVBD
-related routes use it for fixed-joint contact offset/clearance/contact counts,
-spherical breakage anchor/orientation drift, and free-rigid revolute/prismatic
-motor tracking. The early numbered rigid workflow rows use it for body-mode flags,
-free-flight momentum/energy residuals, frame-transform residuals,
+target-error gaps, pre-contact counts, identical forward-state evidence,
+analytic-freefall error, surrogate block magnitude, vertical sensitivity,
+fallback status, and compact history summaries. The AVBD related routes use it
+for fixed-joint contact offset/clearance/contact counts, spherical breakage
+anchor/orientation drift, and free-rigid revolute/prismatic motor tracking. The
+early numbered rigid workflow rows use it for body-mode flags, free-flight
+momentum/energy residuals, frame-transform residuals,
 force/torque accumulator response, point-load lever-arm response,
 time-step error ratios, restitution rebound, and pair-material mixing fields,
 so the first-run fundamentals now preserve physics diagnostics in capture
@@ -1072,12 +1074,18 @@ stuck, jump to **`diff_drone_liftoff`** in the **Differentiable** shelf. It uses
 the same rigid `World` contact-gradient modes to show `ANALYTIC` stalling at a
 clamping contact while `COMPLEMENTARITY_AWARE` escapes, with thrust, loss,
 gradient, and height histories. Its capture metrics report the optimized
-mode outcome when diff bindings are enabled and a finite fallback payload when
-the default build has `DART_BUILD_DIFF=OFF`. In the viewer, the `Rigid Contact
-Solver Compare` row exposes it as a `Related shelf` route:
+mode outcome when diff bindings are enabled. When the body is approaching but
+not touching, jump to **`diff_pre_contact_surrogate`**. It shows identical
+forward motion for `ANALYTIC` and `PRE_CONTACT_SURROGATE` while the surrogate
+lane adds a backward-only pre-contact Jacobian block. Both scenes record finite
+fallback payloads when the default build has `DART_BUILD_DIFF=OFF`. In the
+viewer, the `Rigid Contact Solver Compare` row exposes them as `Related shelf`
+routes:
 
 ```bash
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 \
     --width 960 --height 540 --show-ui
 ```
 
@@ -1096,6 +1104,8 @@ pixi run py-demo-capture -- --scene rigid_ipc_tunnel --frames 24 \
 pixi run py-demo-capture -- --scene rigid_ipc_edge_drop --frames 72 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene diff_drone_liftoff --frames 96 \
+    --width 960 --height 540 --show-ui
+pixi run py-demo-capture -- --scene diff_pre_contact_surrogate --frames 24 \
     --width 960 --height 540 --show-ui
 pixi run py-demo-capture -- --scene avbd_rigid_fixed_joint_contact --frames 72 \
     --width 960 --height 540 --show-ui

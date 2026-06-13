@@ -33,7 +33,8 @@ rigid-body visual verification surface for the current cycle.
   guidance.
 - Adds optional extended rows for related evidence, direct Rigid IPC shelf
   routes, and capture-first IPC stress packets; selecting all optional groups
-  produces a 52-row review packet.
+  now produces a 53-row review packet after the pre-contact surrogate related
+  route is included.
 - Adds or revises rigid scenes for baseline behavior, modes, free flight,
   frame hierarchy, external loads, point loads, timestep sensitivity,
   diagnostics, contact budget, material response, query/cast inspection, solver
@@ -41,6 +42,10 @@ rigid-body visual verification surface for the current cycle.
   kinematic drivers, rigid constraints, passive joint parameters, screw joints,
   generalized dynamics terms, COM offsets, link Jacobians, multibody solver
   family routing, and loop-closure family selection.
+- Adds `diff_pre_contact_surrogate` as a Differentiable related-evidence route
+  for `ContactGradientMode.PRE_CONTACT_SURROGATE`, proving the
+  approaching-but-not-touching backward-only signal without expanding the
+  numbered rigid workflow.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -91,7 +96,9 @@ rigid-body visual verification surface for the current cycle.
   (`status=complete`, `capture_count=36`, `failed_count=0`,
   `guidance_complete=true`, `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=36`, 2388 PNG frames).
-- Optional rows 37-52 packet:
+- Historical optional rows 37-52 packet before `diff_pre_contact_surrogate` was
+  added; regenerate the full optional 53-row packet before final maintainer
+  review:
   `build/captures/rigid_workflow_optional_rows_37_52_1781313357`
   (`status=complete`, `capture_count=16`, `failed_count=0`,
   `guidance_complete=true`, `resolved_solver_identity_complete=true`,
@@ -132,5 +139,5 @@ rigid-body visual verification surface for the current cycle.
 - [x] Unit/integration tests added or updated for workflow behavior
 - [x] User-facing py-demos documentation updated
 - [x] Python GUI/capture workflow updated
-- [ ] Maintainer accepts the current 36-row workflow plus optional 52-row
+- [ ] Maintainer accepts the current 36-row workflow plus optional 53-row
       packet as the completed scope for this dev task

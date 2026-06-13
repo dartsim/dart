@@ -1188,6 +1188,19 @@ def test_rigid_visual_workflow_related_evidence_routes_are_valid() -> None:
             "Analytic vs complementarity-aware clamping-contact optimization; not a solver row.",
         ),
         (
+            "rigid_contact_solver_compare",
+            "diff_pre_contact_surrogate",
+            "Differentiable",
+            (
+                "Related shelf: Differentiable / diff_pre_contact_surrogate - "
+                "pre-contact gradient route"
+            ),
+            (
+                "Analytic vs pre-contact surrogate backward-only gradient for "
+                "an approaching but not touching body; not a solver row."
+            ),
+        ),
+        (
             "contact",
             "avbd_rigid_fixed_joint_contact",
             "AVBD Rigid Constraints (sx)",
@@ -1749,6 +1762,80 @@ def test_diff_drone_liftoff_reports_contact_gradient_metrics() -> None:
         assert capture_metrics["thrust_gap"] == pytest.approx(0.0)
 
 
+def test_diff_pre_contact_surrogate_reports_pre_contact_metrics() -> None:
+    import numpy as np
+
+    _require_simulation_symbols("World")
+
+    from examples.demos.scenes.diff_pre_contact_surrogate import SCENE, build
+
+    assert SCENE.category == "Differentiable"
+    assert SCENE.id == "diff_pre_contact_surrogate"
+
+    setup = build()
+    assert callable(setup.info[CAPTURE_METRICS_INFO_KEY])
+    assert callable(setup.pre_step)
+    setup.pre_step()
+
+    capture_metrics = setup.info[CAPTURE_METRICS_INFO_KEY]()
+    assert capture_metrics["row"] == "diff_pre_contact_surrogate"
+    assert capture_metrics["category"] == "Differentiable"
+    assert capture_metrics["related_source_row"] == "rigid_contact_solver_compare"
+    assert capture_metrics["solver"] == "boxed_lcp_pre_contact_surrogate"
+    assert capture_metrics["scope"] == "pre_contact_backward_only_surrogate"
+    assert capture_metrics["contact_solver_method"] == "BOXED_LCP"
+    assert capture_metrics["executor"] == "World.step default"
+    assert capture_metrics["gradient_modes"] == [
+        "ANALYTIC",
+        "PRE_CONTACT_SURROGATE",
+    ]
+    assert capture_metrics["time_step_ms"] == pytest.approx(1.0)
+    assert capture_metrics["sphere_radius"] == pytest.approx(0.5)
+    assert capture_metrics["sphere_mass"] == pytest.approx(2.0)
+    assert capture_metrics["initial_center_z"] == pytest.approx(1.0)
+    assert capture_metrics["initial_clearance"] == pytest.approx(0.5)
+    assert capture_metrics["initial_vz"] == pytest.approx(-0.5)
+    assert capture_metrics["approach_speed"] == pytest.approx(0.5)
+    assert capture_metrics["pre_step_contact_count"] == pytest.approx(0.0)
+    assert capture_metrics["surrogate_pre_step_contact_count"] == pytest.approx(0.0)
+    assert capture_metrics["analytic_next_z"] == pytest.approx(
+        capture_metrics["surrogate_next_z"]
+    )
+    assert capture_metrics["modes"]["ANALYTIC"]["next_z"] == pytest.approx(
+        capture_metrics["analytic_next_z"]
+    )
+    assert capture_metrics["modes"]["PRE_CONTACT_SURROGATE"][
+        "next_z"
+    ] == pytest.approx(capture_metrics["surrogate_next_z"])
+    assert np.isfinite(
+        [
+            float(capture_metrics["post_step_clearance"]),
+            float(capture_metrics["surrogate_post_step_clearance"]),
+            float(capture_metrics["forward_state_max_abs_diff"]),
+            float(capture_metrics["analytic_freefall_error"]),
+            float(capture_metrics["surrogate_block_magnitude"]),
+            float(capture_metrics["analytic_dvzprime_dvz"]),
+            float(capture_metrics["surrogate_dvzprime_dvz"]),
+            float(capture_metrics["surrogate_delta_dvzprime_dvz"]),
+            float(capture_metrics["surrogate_delta_dzprime_dvz"]),
+            float(capture_metrics["in_plane_sensitivity_error"]),
+        ]
+    ).all()
+
+    if capture_metrics["differentiable_available"]:
+        assert capture_metrics["status"] == "pre_contact_surrogate"
+        assert capture_metrics["thresholds_pass"] is True
+        assert capture_metrics["forward_state_max_abs_diff"] < 1e-12
+        assert capture_metrics["analytic_freefall_error"] < 1e-9
+        assert capture_metrics["surrogate_block_magnitude"] > 1e-3
+        assert capture_metrics["surrogate_dvzprime_dvz"] < 0.5
+        assert capture_metrics["in_plane_sensitivity_error"] < 1e-9
+    else:
+        assert capture_metrics["status"] == "fallback"
+        assert capture_metrics["thresholds_pass"] is False
+        assert capture_metrics["surrogate_block_magnitude"] == pytest.approx(0.0)
+
+
 def test_rigid_ipc_stack_packet_reports_capture_first_metrics() -> None:
     import numpy as np
 
@@ -2084,6 +2171,7 @@ def test_rigid_visual_related_evidence_capture_commands_are_documented() -> None
         ("rigid_ipc_tunnel", 24, 960, 540, True),
         ("rigid_ipc_edge_drop", 72, 960, 540, True),
         ("diff_drone_liftoff", 96, 960, 540, True),
+        ("diff_pre_contact_surrogate", 24, 960, 540, True),
         ("avbd_rigid_fixed_joint_contact", 72, 960, 540, True),
         ("avbd_rigid_breakable_joint", 72, 960, 540, True),
         ("avbd_rigid_spherical_breakable_joint", 72, 960, 540, True),

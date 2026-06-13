@@ -4,7 +4,7 @@
 
 Remote publication checkpoint: after the explicit `push to origin` instruction,
 `origin/feature/rigid-body-gui-visual-verification` points to
-`16d4032c1e2 Enforce rigid workflow solver identity evidence`. Fresh
+`0618f6f167d Tighten rigid workflow evidence contract`. Fresh
 `gh pr list --head "$(git branch --show-current)"` and `gh pr status` checks
 still report no PR for the branch. The latest pre-push `git fetch origin main
 && git merge --no-edit origin/main` reported `Already up to date`, so the
@@ -14,7 +14,20 @@ local continuation commits may be unpushed. The approved push did not approve PR
 creation, milestone mutation, CI reruns, review comments, thread resolution, or
 other GitHub review-state changes.
 
-Latest unpublished local continuation: the rigid workflow evidence contract is
+Latest unpublished local continuation: added `diff_pre_contact_surrogate` as a
+Differentiable shelf scene and related-evidence route from
+`rigid_contact_solver_compare`. The scene shows identical forward motion for an
+approaching-but-not-touching sphere while
+`ContactGradientMode.PRE_CONTACT_SURROGATE` adds a backward-only pre-contact
+Jacobian block. The optional extended workflow now has 53 rows when
+related-evidence, direct Rigid IPC shelf, and capture-first packet groups are
+all selected; the older rows 37-52 packet remains useful historical evidence
+but predates this route and should be regenerated before final maintainer
+review. Focused guards reported `8 passed, 1 skipped` for the new scene,
+related-route, metrics, panel, and public diff-path tests in the default
+diff-OFF build, plus `6 passed` for capture-plan/docs drift guards.
+
+Latest pushed continuation: the rigid workflow evidence contract is
 being tightened to match the DART 7 work-packet harness. Workflow manifests and
 review indexes now treat latest scene metrics as required evidence for captured
 rows, resolved solver identity must include both solver-family and context
@@ -82,7 +95,7 @@ Historical publication state before the latest approved push: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
 ahead of `origin/feature/rigid-body-gui-visual-verification`, and
 `gh pr list --head "$(git branch --show-current)"` returned no PR. That is now
-superseded by the pushed `16d4032c1e2` state above. Future sessions must rerun
+superseded by the pushed `0618f6f167d` state above. Future sessions must rerun
 `git status -sb` and must get explicit approval before pushing newer local
 commits, creating a PR, setting the `DART 7.0` milestone, rerunning CI, or
 mutating GitHub review state.
@@ -229,7 +242,7 @@ Resume from this state:
 - Expect branch `feature/rigid-body-gui-visual-verification` to have no PR and
   possibly unpublished local continuation commits ahead of origin.
 - Latest pushed checkpoint is
-  `16d4032c1e2 Enforce rigid workflow solver identity evidence`.
+  `0618f6f167d Tighten rigid workflow evidence contract`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
 - Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
@@ -251,10 +264,10 @@ Resume from this state:
   evidence repair, review-prep, or a newly unblocked public API gap. The latest
   local API-deferred audit still found no current public direct rigid-body
   impulse, sleep/wake or island activation, or loop-closure compliance surface,
-  so do not add speculative numbered rows for those topics. One current
-  non-speculative candidate is a separate differentiable pre-contact surrogate
-  visual row: `ContactGradientMode.PRE_CONTACT_SURROGATE` is public and tested,
-  but the GUI currently routes contact-gradient UX through `diff_drone_liftoff`.
+  so do not add speculative numbered rows for those topics. The
+  non-speculative pre-contact surrogate gap is now covered by
+  `diff_pre_contact_surrogate` in the Differentiable shelf and routed from
+  `rigid_contact_solver_compare` as related evidence.
 
 Post-approval publication path:
 

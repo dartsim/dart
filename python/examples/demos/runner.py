@@ -797,6 +797,18 @@ _RIGID_WORKFLOW_RELATED_EVIDENCE: Mapping[
                 "optimization; not a solver row."
             ),
         ),
+        RigidWorkflowRelatedEvidence(
+            label=(
+                "Differentiable / diff_pre_contact_surrogate - "
+                "pre-contact gradient route"
+            ),
+            scene_id="diff_pre_contact_surrogate",
+            shelf="Differentiable",
+            reason=(
+                "Analytic vs pre-contact surrogate backward-only gradient "
+                "for an approaching but not touching body; not a solver row."
+            ),
+        ),
     ),
     "contact": (
         RigidWorkflowRelatedEvidence(

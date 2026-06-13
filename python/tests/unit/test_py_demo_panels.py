@@ -34,6 +34,7 @@ from examples.demos.scenes import (
     contact,
     diff_cartpole_trajopt,
     diff_drone_liftoff,
+    diff_pre_contact_surrogate,
     diff_throw_to_target,
     floating_base,
     ipc_deformable_capsule_rod,
@@ -603,6 +604,7 @@ def test_registered_world_scenes_receive_shared_replay_controls() -> None:
         "diff_throw_to_target",
         "diff_cartpole_trajopt",
         "diff_drone_liftoff",
+        "diff_pre_contact_surrogate",
     }
     replay_attached: set[str] = set()
     replay_opt_out: set[str] = set()
@@ -1656,6 +1658,31 @@ def test_rigid_workflow_panel_related_evidence_routes_to_other_shelves() -> None
     )
     assert context.scene_switch_requests == ["diff_drone_liftoff"]
 
+    context = _FakePanelContext()
+    pre_contact_label = (
+        "Related shelf: Differentiable / diff_pre_contact_surrogate - "
+        "pre-contact gradient route"
+        "##rigid_workflow_related_diff_pre_contact_surrogate"
+    )
+    pre_contact_builder = _ScriptedPanelBuilder(
+        selected_items={pre_contact_label}
+    )
+
+    workflow_panel.build(pre_contact_builder, context)
+
+    assert (
+        "selectable:Related shelf: Differentiable / diff_pre_contact_surrogate - "
+        "pre-contact gradient route"
+        "##rigid_workflow_related_diff_pre_contact_surrogate:False"
+    ) in pre_contact_builder.events
+    assert any(
+        event.startswith(
+            "tooltip:Open diff_pre_contact_surrogate from the Differentiable shelf."
+        )
+        for event in pre_contact_builder.events
+    )
+    assert context.scene_switch_requests == ["diff_pre_contact_surrogate"]
+
     motor_scene = PythonDemoScene(
         id="rigid_joint_motor_limits",
         title="Test rigid_joint_motor_limits",
@@ -1912,6 +1939,9 @@ def test_rigid_workflow_search_finds_related_evidence_targets() -> None:
     ][:1] == ["rigid_multibody_dynamics_terms"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("contact gradient")
+    ][:1] == ["rigid_contact_solver_compare"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("pre-contact surrogate")
     ][:1] == ["rigid_contact_solver_compare"]
     assert [
         guide.scene_id for guide in _workflow_matching_guides("avbd fixed contact")
@@ -2461,6 +2491,31 @@ def test_diff_drone_scene_exposes_replay_panel() -> None:
     assert setup.info["gradient_modes"] == ["ANALYTIC", "COMPLEMENTARITY_AWARE"]
     assert setup.info["aware_history_count"] >= 1
     assert setup.info["naive_history_count"] >= 1
+
+
+def test_diff_pre_contact_surrogate_scene_exposes_diagnostic_panel() -> None:
+    _require_simulation_symbols("World")
+
+    setup = diff_pre_contact_surrogate.build()
+    builder = _FakePanelBuilder()
+
+    assert [panel.title for panel in setup.panels] == [
+        "Diff Pre-Contact Surrogate"
+    ]
+
+    setup.panels[0].build(builder, object())
+
+    assert any(event.startswith("text:forward: identical") for event in builder.events)
+    assert any(event.startswith("text:forward max diff:") for event in builder.events)
+    assert any(
+        event.startswith("text:ANALYTIC freefall error:")
+        for event in builder.events
+    )
+    assert any(event.startswith("text:SURROGATE block:") for event in builder.events)
+    assert any(event.startswith("plot:vertical sensitivity:") for event in builder.events)
+    assert "button:Toggle derivative details" in builder.events
+    assert setup.info["gradient_modes"] == ["ANALYTIC", "PRE_CONTACT_SURROGATE"]
+    assert setup.info["initial_clearance"] == pytest.approx(0.5)
 
 
 def test_diff_trajectory_scenes_expose_replay_panels() -> None:
