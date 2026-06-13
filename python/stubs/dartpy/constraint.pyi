@@ -123,7 +123,39 @@ class CylindricalJointConstraint(DynamicJointConstraint):
 
     def getStaticType(*args, **kwargs): ...
 
+    get_constraint_force_mixing = getConstraintForceMixing
+
+    def getConstraintForceMixing(*args, **kwargs): ...
+
+    get_error_allowance = getErrorAllowance
+
+    def getErrorAllowance(*args, **kwargs): ...
+
+    get_error_reduction_parameter = getErrorReductionParameter
+
+    def getErrorReductionParameter(*args, **kwargs): ...
+
+    get_max_error_reduction_velocity = getMaxErrorReductionVelocity
+
+    def getMaxErrorReductionVelocity(*args, **kwargs): ...
+
     get_static_type = getStaticType
+
+    set_constraint_force_mixing = setConstraintForceMixing
+
+    def setConstraintForceMixing(*args, **kwargs): ...
+
+    set_error_allowance = setErrorAllowance
+
+    def setErrorAllowance(*args, **kwargs): ...
+
+    set_error_reduction_parameter = setErrorReductionParameter
+
+    def setErrorReductionParameter(*args, **kwargs): ...
+
+    set_max_error_reduction_velocity = setMaxErrorReductionVelocity
+
+    def setMaxErrorReductionVelocity(*args, **kwargs): ...
 
 class RevoluteJointConstraint(DynamicJointConstraint):
     @overload

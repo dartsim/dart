@@ -970,6 +970,49 @@ def test_lcp_solver_roster_rejects_missing_init_all_class(
         module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
 
 
+def test_lcp_solver_roster_rejects_missing_math_stub_lcp_api_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+
+    def fake_class_members(class_name: str) -> set[str]:
+        members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
+        if class_name == "LcpProblem":
+            members.remove("get_friction_index_row_count")
+        return members
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match="LcpProblem is missing members \\['get_friction_index_row_count'\\]",
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
+def test_lcp_solver_roster_rejects_missing_math_stub_parameter_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+
+    def fake_class_members(class_name: str) -> set[str]:
+        members = set(module.REQUIRED_DARTPY_MATH_STUB_MEMBERS[class_name])
+        if class_name == "BoxedSemiSmoothNewtonSolverParameters":
+            members.remove("max_friction_index_exact_solve_dimension")
+        return members
+
+    monkeypatch.setattr(module, "parse_math_stub_class_members", fake_class_members)
+
+    with pytest.raises(
+        AssertionError,
+        match=(
+            "BoxedSemiSmoothNewtonSolverParameters is missing members "
+            "\\['max_friction_index_exact_solve_dimension'\\]"
+        ),
+    ):
+        module.check_python_stub_lcp_api_surface()
+
+
 def test_lcp_profile_evidence_rejects_solver_identity_mismatch(
     tmp_path: Path,
 ) -> None:

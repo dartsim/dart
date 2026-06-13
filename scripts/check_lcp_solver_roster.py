@@ -81,6 +81,30 @@ REQUIRED_EVIDENCE_COLUMNS = (
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
 DARTPY_INIT_STUB_PATH = ROOT / "python/stubs/dartpy/__init__.pyi"
+REQUIRED_DARTPY_MATH_STUB_MEMBERS = {
+    "LcpProblem": {
+        "size",
+        "empty",
+        "is_valid",
+        "get_validation_message",
+        "get_type",
+        "is_standard_lcp",
+        "is_boxed_lcp",
+        "has_friction_index",
+        "get_friction_index_row_count",
+        "get_friction_index_contact_count",
+    },
+    "BoxedSemiSmoothNewtonSolverParameters": {
+        "max_line_search_steps",
+        "step_reduction",
+        "sufficient_decrease",
+        "min_step",
+        "jacobian_regularization",
+        "max_pgs_warm_start_iterations",
+        "pgs_warm_start_relaxation",
+        "max_friction_index_exact_solve_dimension",
+    },
+}
 DOCUMENTED_LCP_PATH_PATTERN = re.compile(
     r"(?P<path>dart/math/lcp/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+\.(?:hpp|cpp)"
     r"|(?:pivoting|projection|newton|other)/(?:[A-Za-z0-9_]+/)*"
@@ -1405,6 +1429,28 @@ def parse_math_stub_all_names() -> set[str]:
     return _parse_stub_all_names(DARTPY_MATH_STUB_PATH)
 
 
+def parse_math_stub_class_members(class_name: str) -> set[str]:
+    module = _parse_stub(DARTPY_MATH_STUB_PATH)
+    for node in module.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        members: set[str] = set()
+        for item in node.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                members.add(item.name)
+            elif isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
+                members.add(item.target.id)
+            elif isinstance(item, ast.Assign):
+                members.update(
+                    target.id for target in item.targets if isinstance(target, ast.Name)
+                )
+        return members
+
+    raise AssertionError(
+        f"{_display_path(DARTPY_MATH_STUB_PATH)} is missing {class_name}"
+    )
+
+
 def _parse_init_stub() -> ast.Module:
     return _parse_stub(DARTPY_INIT_STUB_PATH)
 
@@ -1475,6 +1521,21 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
         raise AssertionError(
             "python/stubs/dartpy/__init__.pyi __all__ is missing solver classes: "
             f"{missing_init_all}"
+        )
+
+
+def check_python_stub_lcp_api_surface() -> None:
+    errors: list[str] = []
+    for class_name, expected_members in REQUIRED_DARTPY_MATH_STUB_MEMBERS.items():
+        actual_members = parse_math_stub_class_members(class_name)
+        missing_members = sorted(expected_members - actual_members)
+        if missing_members:
+            errors.append(f"{class_name} is missing members {missing_members}")
+
+    if errors:
+        raise AssertionError(
+            "python/stubs/dartpy/math.pyi LCP API surface is out of sync:\n  - "
+            + "\n  - ".join(errors)
         )
 
 
@@ -1955,6 +2016,7 @@ def check_roster() -> None:
 
     check_bound_solver_classes(manifest_classes)
     check_python_stub_solver_classes(manifest_classes)
+    check_python_stub_lcp_api_surface()
 
 
 def main() -> int:
