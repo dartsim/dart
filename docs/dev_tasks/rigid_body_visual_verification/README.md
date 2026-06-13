@@ -1002,6 +1002,9 @@ Evidence supporting readiness:
 - The user-facing `python/examples/demos/README.md` describes the same ordered
   rigid workflow, in-viewer `Rigid Workflow` panel, replay metadata, workflow
   capture packet, related-evidence routes, and optional packet guidance.
+- `CHANGELOG.md` already records the DART 7 rigid workflow command, review
+  packet, related-evidence groups, replay metadata, and rigid scene additions,
+  so the PR draft checklist marks the changelog item complete.
 - The fresh full workflow capture
   `build/captures/rigid_workflow_rows_01_36_1781309127` completed all 36
   numbered rows with `failed_count=0`, guidance complete, docked screenshots,

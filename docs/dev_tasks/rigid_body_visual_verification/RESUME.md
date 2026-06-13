@@ -87,7 +87,10 @@ Resume from this state:
   37-52 packet above as the current review-index scan artifacts. Treat older
   packet directories as historical completion evidence only.
 - Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
-  body seed after push/PR creation is explicitly approved.
+  body seed after push/PR creation is explicitly approved. Its changelog
+  checkbox is checked because `CHANGELOG.md` already records the DART 7 rigid
+  workflow command, review packet, related-evidence groups, replay metadata,
+  and scene additions.
   If more local progress is requested before pushing/review, audit the
   API-deferred gaps rather than adding speculative numbered rows.
 

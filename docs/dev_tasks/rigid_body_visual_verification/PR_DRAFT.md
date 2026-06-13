@@ -45,6 +45,8 @@ rigid-body visual verification surface for the current cycle.
   command provenance, and static review-index links.
 - Documents the workflow in the durable PLAN-103 sidecar and the py-demos
   README, with dev-task notes kept only for active handoff and cleanup.
+- Updates the DART 7 changelog with the rigid workflow, capture packet,
+  review-index, replay metadata, related-evidence, and scene additions.
 
 ## Testing
 
@@ -78,7 +80,7 @@ rigid-body visual verification surface for the current cycle.
 #### Checklist
 
 - [ ] Milestone set to DART 7.0
-- [ ] CHANGELOG.md updated if required
+- [x] CHANGELOG.md updated if required
 - [x] Unit/integration tests added or updated for workflow behavior
 - [x] User-facing py-demos documentation updated
 - [x] Python GUI/capture workflow updated
