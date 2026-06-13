@@ -437,6 +437,7 @@ struct VariationalStepScratch
   Eigen::VectorXd nextPosition;
   Eigen::VectorXd residual;
   Eigen::VectorXd zeroAcceleration;
+  Eigen::VectorXd previousJointVelocity;
 };
 
 /// Reusable storage for variational multibody tree construction.

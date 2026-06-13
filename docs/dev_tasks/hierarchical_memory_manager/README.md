@@ -1,5 +1,56 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Variational Writeback Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: accepted variational multibody steps no longer create
+per-joint dynamic `Eigen::VectorXd` copies while writing the accepted position,
+velocity, and acceleration back to registry joints. `World::step()` now reserves
+`VariationalStepScratch::previousJointVelocity` once per same-shape bake and
+uses segment views plus `jointLogDifferenceInto(...)` for in-place writeback.
+
+The fix has these parts:
+
+- `VariationalStepScratch` owns a reusable `previousJointVelocity` buffer;
+- `reserveVariationalStepScratch(...)` sizes that buffer to the maximum joint
+  DOF in the variational tree;
+- `integrateMultibodyVariationalImpl(...)` writes accepted joint velocities and
+  accelerations in place, avoiding the old `previousVelocity` and `newPosition`
+  per-joint `VectorXd` temporaries;
+- `World.EnterSimulationModeReservesCompliantVariationalContactScratch` now
+  asserts that the baked variational step scratch includes the writeback
+  velocity buffer.
+
+This still does not claim that public generic `VariationalContactHook`
+callbacks avoid return-by-value forces, that public no-scratch/direct
+variational helpers use World-owned scratch, or that every Eigen dynamic matrix
+or vector in the variational pipeline is allocator-backed. The closed gap is
+the built-in `World::step()` variational accepted-state writeback path for
+same-shape baked worlds.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.EnterSimulationModeReservesCompliantVariationalContactScratch:World.ContactHeavyRegistryStorageRebuildsAfterClear:World.VariationalArticulatedPointJointLinkIndexScratchUsesWorldAllocator:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Variational Compliant-Loop Force Scratch)
 
 Resume from exactly one branch:
@@ -47,12 +98,6 @@ pixi run ./build/default/cpp/Release/bin/test_world \
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-13, Rigid AVBD Distance-Spring Gates)
 

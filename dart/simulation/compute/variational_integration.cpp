@@ -272,16 +272,6 @@ void jointLogDifferenceInto(
   }
 }
 
-Eigen::VectorXd jointLogDifference(
-    const comps::Joint& joint,
-    const Eigen::VectorXd& qNext,
-    const Eigen::VectorXd& q)
-{
-  Eigen::VectorXd result(q.size());
-  jointLogDifferenceInto(joint, qNext, q, result);
-  return result;
-}
-
 // Per-link data for the discrete recursion, in construction order
 // (parent-before-child).
 struct VarLink
@@ -605,6 +595,10 @@ void reserveVariationalStepScratch(
     const VarTree& tree, VariationalStepScratch& scratch)
 {
   const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  Eigen::Index maxJointDof = 0;
+  for (const auto& link : tree.links) {
+    maxJointDof = std::max(maxJointDof, static_cast<Eigen::Index>(link.dof));
+  }
   scratch.currentSpatialVelocities.resize(tree.links.size());
   scratch.position.resize(dofCount);
   scratch.velocity.resize(dofCount);
@@ -612,6 +606,7 @@ void reserveVariationalStepScratch(
   scratch.nextPosition.resize(dofCount);
   scratch.residual.resize(dofCount);
   scratch.zeroAcceleration.resize(dofCount);
+  scratch.previousJointVelocity.resize(maxJointDof);
 }
 
 bool isTopologyMultibodyJoint(
@@ -3946,16 +3941,25 @@ VariationalSolveReport integrateMultibodyVariationalImpl(
     auto& joint = registry.get<comps::Joint>(link.joint);
     const auto seg = static_cast<Eigen::Index>(link.dofOffset);
     const auto n = static_cast<Eigen::Index>(link.dof);
-    const Eigen::VectorXd previousVelocity = joint.velocity;
-    const Eigen::VectorXd newPosition = nextPosition.segment(seg, n);
+    const bool hasPreviousVelocity = joint.velocity.size() == n;
+    if (hasPreviousVelocity) {
+      stepScratchStorage.previousJointVelocity.head(n) = joint.velocity;
+    }
     // q^k is the captured `position`; loop-closure projection works on the
     // scratch tree and leaves registry joint state unchanged until writeback.
-    joint.velocity
-        = jointLogDifference(joint, newPosition, position.segment(seg, n))
-          / timeStep;
-    joint.position = newPosition;
-    if (previousVelocity.size() == n) {
-      joint.acceleration = (joint.velocity - previousVelocity) / timeStep;
+    joint.velocity.resize(n);
+    jointLogDifferenceInto(
+        joint,
+        nextPosition.segment(seg, n),
+        position.segment(seg, n),
+        joint.velocity);
+    joint.velocity /= timeStep;
+    joint.position = nextPosition.segment(seg, n);
+    if (hasPreviousVelocity) {
+      joint.acceleration.resize(n);
+      joint.acceleration = joint.velocity;
+      joint.acceleration -= stepScratchStorage.previousJointVelocity.head(n);
+      joint.acceleration /= timeStep;
     }
   }
   if (wroteJointPosition) {

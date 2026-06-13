@@ -5308,6 +5308,7 @@ void expectCompliantVariationalContactScratchBaked(
         kCompliantVariationalContactPointsPerRobot);
     EXPECT_EQ(scratch.contactEvaluation.contactForce.size(), 1);
     EXPECT_EQ(scratch.contactEvaluation.forcing.size(), 1);
+    EXPECT_GE(scratch.step.previousJointVelocity.size(), 1);
     EXPECT_FALSE(scratch.groundContactSolver.has_value())
         << "pure compliant contact evaluates directly from baked "
            "ground-contact "
