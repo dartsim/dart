@@ -630,6 +630,8 @@ def _csv_counter_as_int(row: dict[str, str], key: str) -> int | None:
         numeric = float(value)
     except ValueError:
         return None
+    if not math.isfinite(numeric):
+        return None
     rounded = int(round(numeric))
     if abs(numeric - rounded) > 1e-9:
         return None

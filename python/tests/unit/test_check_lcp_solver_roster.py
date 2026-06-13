@@ -529,3 +529,19 @@ def test_lcp_profile_evidence_rejects_problem_dimension_mismatch(
 
     with pytest.raises(AssertionError, match="lcp_dimension"):
         module.check_performance_profile_evidence(manifest, path)
+
+
+def test_lcp_profile_evidence_rejects_nonfinite_integer_counter(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row() | {"problem_size": "inf"})
+
+    with pytest.raises(AssertionError, match="invalid problem_size 'inf'"):
+        module.check_performance_profile_evidence(manifest, path)

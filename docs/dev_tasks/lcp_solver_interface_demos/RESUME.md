@@ -1,5 +1,77 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Roster Non-Finite Counter Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `3289fb847b6 Guard LCP demo fractional counters`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   roster non-finite counter guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `3289fb847b6 Guard LCP demo fractional counters`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by thirty-four commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now rejects non-finite integer counters
+  before rounding, so invalid evidence rows produce aggregated roster evidence
+  errors instead of parser exceptions.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers a non-finite
+  `problem_size` evidence counter.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, benchmark generator code, and Python demo code were not intentionally
+  changed.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+pixi run lint
+git diff --check
+```
+
+Result:
+
+- LCP solver roster unit tests: passed with 27 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Repository lint: passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- Whitespace check: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun
+`python/tests/unit/test_check_lcp_solver_roster.py`,
+`scripts/check_lcp_solver_roster.py`, `pixi run lint`, and `git diff --check`,
+then commit the focused checker/test/docs change. Then continue the broader
+LCP interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Demo Fractional Counter Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints
