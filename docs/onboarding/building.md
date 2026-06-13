@@ -12,11 +12,11 @@ This guide describes how to build DART from source, including both the C++ libra
 
 DART is supported on the following operating systems and compilers:
 
-| Operating System      | Compiler           |
-| --------------------- | ------------------ |
-| Ubuntu 22.04 or later | GCC 11.2 or later  |
-| Windows 2022 or later | Visual Studio 2022 |
-| macOS 13 or later     | Clang 13 or later  |
+| Operating System             | Compiler           |
+| ---------------------------- | ------------------ |
+| Ubuntu 22.04 or later        | GCC 11.2 or later  |
+| Windows Server 2025 or later | Visual Studio 2026 |
+| macOS 13 or later            | Clang 13 or later  |
 
 > **Note:** DART requires C++20. See [Compatibility Policy](compatibility-policy.md) for details on how platform requirements are determined.
 
@@ -156,14 +156,10 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```
 
    On Windows, Pixi configure tasks use the Visual Studio multi-config
-   generator and default to `Visual Studio 17 2022`, matching DART's current
-   Visual Studio 2022 17.10+ compiler floor enforced by CMake. CI or local
-   machines that only install a newer Visual Studio generator can override the
-   generator without changing DART's minimum compiler requirement:
-
-   ```bash
-   DART_WINDOWS_CMAKE_GENERATOR="Visual Studio 18 2026" pixi run config
-   ```
+   generator and default to `Visual Studio 18 2026`, matching DART's
+   Visual Studio 2026 compiler floor enforced by CMake. Advanced users can set
+   `DART_WINDOWS_CMAKE_GENERATOR` explicitly for a newer compatible generator,
+   but older Visual Studio generators are rejected by CMake.
 
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
    `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
@@ -341,8 +337,8 @@ and Raylib smoke path are no longer buildable renderer options.
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio 2022 (multi-config; pick configuration at build-time)
-cmake .. -G "Visual Studio 17 2022" -A x64
+# Visual Studio 2026 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 18 2026" -A x64
 
 # Xcode (multi-config; pick configuration at build-time)
 cmake .. -G "Xcode"
