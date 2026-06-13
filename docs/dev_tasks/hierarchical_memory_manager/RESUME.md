@@ -1,5 +1,56 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Variational Inverse-Mass Scratch Helper)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: direct variational inverse-mass product callers can now
+reuse caller-owned tree and linear-solve scratch plus caller-owned output
+storage. `computeMultibodyInverseMassProductInto(...)` builds the variational
+tree into `MultibodyVariationalTreeScratch`, applies the articulated inverse
+mass through `VariationalLinearSolveScratch`, and writes into a retained
+`Eigen::VectorXd` result.
+
+The fix has these parts:
+
+- `computeMultibodyInverseMassProductInto(...)` exposes the existing internal
+  scratch-backed inverse-mass kernel without changing the old return-by-value
+  helper;
+- repeated same-shape direct-helper calls can retain DART-owned tree/linear
+  solve storage through a provided allocator and retain Eigen output capacity
+  in the caller;
+- `World.VariationalInverseMassProductScratchUsesProvidedAllocator` verifies
+  first-use scratch allocation through the provided allocator and zero global
+  heap allocation on the warmed same-shape second call.
+
+This still does not claim that every public variational helper avoids
+return-by-value payloads, that generic `VariationalContactHook` callbacks avoid
+return-by-value forces, or that Eigen dynamic result storage itself borrows the
+DART allocator. The closed gap is the direct inverse-mass helper's reusable
+DART-owned tree/solve scratch path and caller-retained result capacity.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.VariationalInverseMassProductScratchUsesProvidedAllocator:World.VariationalMechanicalEnergyScratchUsesProvidedAllocator:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap'
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Variational Writeback Scratch)
 
 Resume from exactly one branch:
@@ -45,7 +96,7 @@ Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
 
-## Historical Slices Below
+## Historical Slices Below (Older)
 
 The sections below are retained as chronological evidence for previous HMM
 slices. They are not current instructions. A fresh agent should use the top

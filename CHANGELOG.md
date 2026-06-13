@@ -291,6 +291,9 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     variational tree and step scratch, including allocator-backed spatial
     velocity storage, instead of rebuilding that DART-owned diagnostic scratch
     on each same-shape energy sample.
+    Variational inverse-mass product helpers can now write into caller-owned
+    output while reusing caller-owned variational tree and linear-solve scratch,
+    avoiding repeated same-shape direct-helper heap traffic after warmup.
     The rigid contact stage also no longer
     performs a duplicate prepare-time collision query just to reserve
     sequential-contact scratch; execute-time contact discovery remains the

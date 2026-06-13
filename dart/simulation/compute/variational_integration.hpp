@@ -737,6 +737,17 @@ computeMultibodyInverseMassProduct(
     const comps::MultibodyStructure& structure,
     const Eigen::VectorXd& impulse);
 
+/// Scratch-aware inverse-mass product for repeated calls on the same
+/// multibody shape. The caller retains tree, linear-solve, and output vector
+/// capacity across calls; the no-scratch overload remains source-compatible.
+DART_SIMULATION_API void computeMultibodyInverseMassProductInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& impulse,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalLinearSolveScratch& linearSolveScratch,
+    Eigen::VectorXd& result);
+
 /// Holonomic loop-closure residual `g(q)` and its Jacobian `J = dg/dq`
 /// evaluated at the multibody's current configuration, for the given closures.
 /// The Jacobian columns are in the integrator's generalized-coordinate order

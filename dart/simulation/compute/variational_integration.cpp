@@ -4084,6 +4084,32 @@ Eigen::VectorXd computeMultibodyInverseMassProduct(
 }
 
 //==============================================================================
+void computeMultibodyInverseMassProductInto(
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::VectorXd& impulse,
+    MultibodyVariationalTreeScratch& treeScratch,
+    VariationalLinearSolveScratch& linearSolveScratch,
+    Eigen::VectorXd& result)
+{
+  if (structure.links.empty()) {
+    result.resize(0);
+    return;
+  }
+  const VarTree& tree
+      = buildVarTreeIntoScratch(treeScratch, registry, structure);
+  if (tree.dofCount == 0) {
+    result.resize(0);
+    return;
+  }
+  DART_SIMULATION_THROW_T_IF(
+      impulse.size() != static_cast<Eigen::Index>(tree.dofCount),
+      InvalidArgumentException,
+      "Impulse dimension must match the multibody movable DOF count");
+  applyArticulatedInverseMassInto(tree, impulse, linearSolveScratch, result);
+}
+
+//==============================================================================
 VariationalConstraintLinearization computeVariationalConstraintLinearization(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
