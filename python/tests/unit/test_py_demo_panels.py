@@ -1342,18 +1342,19 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert set(problem_summary_by_case) == set(expected_problem_counts)
     assert len(solver_profile_rows) == summary["solver_count"]
     assert set(solver_profile_by_name) == expected_solver_names
+    assert set(parameter_by_solver) <= expected_solver_names
     assert set(parameter_by_solver) == {
         "Admm",
         "Apgd",
-        "Bgs",
+        "BGS",
         "BlockedJacobi",
         "BoxedSemiSmoothNewton",
         "FischerBurmeisterNewton",
         "InteriorPoint",
         "Jacobi",
         "MinimumMapNewton",
-        "Mprgp",
-        "Nncg",
+        "MPRGP",
+        "NNCG",
         "PenalizedFischerBurmeisterNewton",
         "Pgs",
         "RedBlackGaussSeidel",
@@ -1369,7 +1370,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "parameters"
     ]
     assert "sigma" in parameter_by_solver["InteriorPoint"]["parameters"]
-    assert "check_positive_definite" in parameter_by_solver["Mprgp"]["parameters"]
+    assert "check_positive_definite" in parameter_by_solver["MPRGP"]["parameters"]
     assert "rho_init" in parameter_by_solver["Admm"]["parameters"]
     assert "regularization" in parameter_by_solver["Sap"]["parameters"]
     assert "max_line_search_steps" in parameter_by_solver["BoxedSemiSmoothNewton"][
@@ -1388,7 +1389,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert parameter_by_solver["InteriorPoint"]["benchmark_filter"] == (
         "BM_LcpInteriorPointPathSweep"
     )
-    assert parameter_by_solver["Mprgp"]["benchmark_filter"] == (
+    assert parameter_by_solver["MPRGP"]["benchmark_filter"] == (
         "BM_LcpMprgpSpdCheckSweep"
     )
     assert parameter_by_solver["Admm"]["benchmark_filter"] == "BM_LcpAdmmRhoSweep"

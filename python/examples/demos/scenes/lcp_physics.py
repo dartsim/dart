@@ -2113,14 +2113,14 @@ def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
             "BM_LcpBlockPartitionSweep",
         ),
         make_row(
-            "Bgs",
+            "BGS",
             "boxed/findex",
             dart.BgsSolverParameters(),
             ["block_sizes"],
             "BM_LcpBlockPartitionSweep",
         ),
         make_row(
-            "Nncg",
+            "NNCG",
             "boxed/findex",
             dart.NncgSolverParameters(),
             ["pgs_iterations", "restart_interval", "restart_threshold"],
@@ -2196,7 +2196,7 @@ def _advanced_solver_parameter_rows() -> list[dict[str, str]]:
             "BM_LcpInteriorPointPathSweep",
         ),
         make_row(
-            "Mprgp",
+            "MPRGP",
             "standard",
             dart.MprgpSolverParameters(),
             [
