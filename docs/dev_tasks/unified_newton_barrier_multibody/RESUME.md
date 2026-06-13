@@ -2,7 +2,7 @@
 
 ## Current Reality (2026-06-12)
 
-Latest scene-owned nonlinear equality assembly checkpoint (2026-06-12): work continued
+Latest scene-owned nonlinear equality solve checkpoint (2026-06-12): work continued
 locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
@@ -10,15 +10,18 @@ branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned nonlinear distance-equality assembly row. The benchmark builds one
-DART `World` with a deformable surface, extracts scene-owned nodes and surface
+scene-owned nonlinear distance-equality solve row on top of the existing
+scene-owned nonlinear equality assembly row. The benchmark builds one DART
+`World` with a deformable surface, extracts scene-owned nodes and surface
 triangles, creates one distance-equality constraint per oriented surface-edge
-slot, linearizes each constraint on the GPU, and emits two local Newton rows
-plus one 6x6 sparse block per constraint. This is reduced packet evidence only;
-it does not prove nonlinear equality constraint solving, production constraint
-graph ownership, direct/global sparse factorization, full runtime sparse
-Hessian construction/assembly, GPU `World::step` assembly/solve integration,
-or a speedup claim.
+slot, linearizes each constraint on the GPU, emits two local Newton rows plus
+one 6x6 sparse block per constraint, accumulates one deterministic Jacobi-style
+correction step into scene-node generalized coordinates, and recomputes
+post-step linearized residuals. This is reduced packet evidence only; it does
+not prove production nonlinear equality convergence policy/solving, production
+constraint graph ownership, direct/global sparse factorization, full runtime
+sparse Hessian construction/assembly, GPU `World::step` assembly/solve
+integration, or a top-level speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
 surface-edge equality constraints, 4,608 local constraint rows, 2,304 sparse
@@ -29,10 +32,15 @@ equality assembly row records
 `max_diagonal=1001.9679687500002`,
 `max_gradient_abs=1.2260273625132818`,
 `max_block_abs=1001.9674687500002`, and
-`speedup=0.22726251818725615x`. The top-level assembly/solve packet records
+`speedup=0.27832216643971974x`. The scene-owned nonlinear equality solve row
+records `regularization=0.05`, `active_dof_count=9215`,
+`max_post_solve_linearized_residual_abs=0.07899550902133222`,
+`step_norm=0.3288379160439768`,
+`max_result_abs_error=2.8421709430404007e-13`, and
+`speedup=1.5938172957931693x`. The top-level assembly/solve packet records
 `max_result_abs_error=2.8421709430404007e-13`,
-`residual_norm=3.7066695891578494e-13`, and
-`speedup=0.0223711040576239x` (`meets_speedup_gate=false`), so the durable GPU
+`residual_norm=3.709208856718387e-13`, and
+`speedup=0.236734157798895x` (`meets_speedup_gate=false`), so the durable GPU
 packet row remains `in-progress`.
 
 Latest validation passed:
@@ -1351,8 +1359,9 @@ additional runtime contact rows, GPU sweep-and-prune broad-phase construction,
 analytic curved CCD, full scene-level line search, full runtime scene
 filtering, GPU
 `World::step` contact candidate construction, full runtime sparse Hessian graph
-construction and assembly, direct/global sparse factorization, nonlinear equality constraints,
-paper-scale assets, and accepted reference timings remain future evidence.
+construction and assembly, direct/global sparse factorization, production
+nonlinear equality convergence policy/solving, paper-scale assets, and accepted
+reference timings remain future evidence.
 
 ## Immediate Next Step
 
@@ -1363,8 +1372,9 @@ runtime scene filtering and speedup-gate work; the next barrier/friction packet
 gaps are additional runtime contact rows, full runtime sparse Hessian graph
 construction and assembly, and speedup-gate work; the next assembly/solve gaps
 are full runtime sparse Hessian graph construction and assembly, direct/global
-sparse factorization, nonlinear equality constraints, GPU `World::step`
-assembly/solve integration, and speedup-gate work. The CCD row still needs
+sparse factorization, production nonlinear equality convergence policy/solving,
+GPU `World::step` assembly/solve integration, and speedup-gate work. The CCD row
+still needs
 analytic curved CCD, full scene-level line-search feasibility,
 and runtime speedup. Do not mark these rows measured until the top-level speed
 gate and runtime evidence are

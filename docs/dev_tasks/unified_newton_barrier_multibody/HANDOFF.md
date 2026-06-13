@@ -1,6 +1,6 @@
 # Unified Newton-Barrier Handoff
 
-## Scene-Owned Nonlinear Equality Assembly Packet Checkpoint (2026-06-12)
+## Scene-Owned Nonlinear Equality Solve Packet Checkpoint (2026-06-12)
 
 Work continued locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
@@ -9,15 +9,18 @@ review threads, trigger CI, open or close PRs, delete branches, or claim
 unrelated PLAN-091 packets without explicit maintainer approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned nonlinear distance-equality assembly row. The benchmark builds one
-DART `World` with a deformable surface, extracts scene-owned nodes and surface
+scene-owned nonlinear distance-equality solve row on top of the existing
+scene-owned nonlinear equality assembly row. The benchmark builds one DART
+`World` with a deformable surface, extracts scene-owned nodes and surface
 triangles, creates one distance-equality constraint per oriented surface-edge
-slot, linearizes each constraint on the GPU, and emits two local Newton rows
-plus one 6x6 sparse block per constraint. This is reduced packet evidence only;
-it does not prove nonlinear equality constraint solving, production constraint
-graph ownership, direct/global sparse factorization, full runtime sparse
-Hessian construction/assembly, GPU `World::step` assembly/solve integration,
-or a speedup claim.
+slot, linearizes each constraint on the GPU, emits two local Newton rows plus
+one 6x6 sparse block per constraint, accumulates one deterministic Jacobi-style
+correction step into scene-node generalized coordinates, and recomputes
+post-step linearized residuals. This is reduced packet evidence only; it does
+not prove production nonlinear equality convergence policy/solving, production
+constraint graph ownership, direct/global sparse factorization, full runtime
+sparse Hessian construction/assembly, GPU `World::step` assembly/solve
+integration, or a top-level speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
 surface-edge equality constraints, 4,608 local constraint rows, 2,304 sparse
@@ -28,10 +31,15 @@ equality assembly row records
 `max_diagonal=1001.9679687500002`,
 `max_gradient_abs=1.2260273625132818`,
 `max_block_abs=1001.9674687500002`, and
-`speedup=0.22726251818725615x`. The top-level assembly/solve packet records
+`speedup=0.27832216643971974x`. The scene-owned nonlinear equality solve row
+records `regularization=0.05`, `active_dof_count=9215`,
+`max_post_solve_linearized_residual_abs=0.07899550902133222`,
+`step_norm=0.3288379160439768`,
+`max_result_abs_error=2.8421709430404007e-13`, and
+`speedup=1.5938172957931693x`. The top-level assembly/solve packet records
 `max_result_abs_error=2.8421709430404007e-13`,
-`residual_norm=3.7066695891578494e-13`, and
-`speedup=0.0223711040576239x` (`meets_speedup_gate=false`), so the durable GPU
+`residual_norm=3.709208856718387e-13`, and
+`speedup=0.236734157798895x` (`meets_speedup_gate=false`), so the durable GPU
 packet row remains `in-progress`.
 
 Latest local gates:
@@ -339,7 +347,7 @@ Use this prompt for the next fresh Codex session:
 ```text
 Continue PLAN-083 on branch simx/plan083-gpu-contact-candidate-packet / PR #2978. First read AGENTS.md, docs/ai/principles.md, docs/ai/orchestration.md, docs/dev_tasks/unified_newton_barrier_multibody/RESUME.md, and docs/dev_tasks/unified_newton_barrier_multibody/HANDOFF.md. Keep all PLAN-083 work consolidated on this branch/PR; do not open another PLAN-083 PR. Do not push, comment on PRs, resolve review threads, trigger CI, or delete branches without explicit maintainer approval.
 
-Current local packet evidence covers contact candidates, endpoint-linear plus sampled rigid-curved CCD/line-search, reduced scene-owned runtime CCD rows, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, reduced diagonal/off-diagonal/sparse-residual/sparse-Jacobi/sparse-CG/equality-reduced assembly/solve plus scene-owned diagonal, sparse off-diagonal surface-edge, and sparse graph construction/assembly rows, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, analytic curved CCD, full scene-level line search, full runtime sparse Hessian graph construction and assembly, direct/global sparse factorization, nonlinear equality constraints, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
+Current local packet evidence covers contact candidates, endpoint-linear plus sampled rigid-curved CCD/line-search, reduced scene-owned runtime CCD rows, barrier/friction local kernels, primitive and reduced scene barrier-Hessian rows including edge-edge PSD projection, reduced diagonal/off-diagonal/sparse-residual/sparse-Jacobi/sparse-CG/equality-reduced assembly/solve plus scene-owned diagonal, sparse off-diagonal surface-edge, sparse graph construction/assembly, and nonlinear distance-equality assembly/solve rows, and reduced scene parity. The remaining high-value gaps are full runtime scene filtering, GPU World::step contact candidate construction, analytic curved CCD, full scene-level line search, full runtime sparse Hessian graph construction and assembly, direct/global sparse factorization, production nonlinear equality convergence policy/solving, and top-level speedup gates. Pick one bounded packet-style slice on this same branch, keep rows in-progress until their full row policy is satisfied, run the required local gates, update the dev-task/plan sidecars honestly, commit with a plain descriptive message, and stop with a clean handoff if a maintainer decision or architecture blocker is needed.
 ```
 
 ## Resumed Barrier-Hessian Packet Checkpoint (2026-06-12)

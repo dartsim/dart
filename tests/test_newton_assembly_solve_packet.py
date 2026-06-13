@@ -276,6 +276,69 @@ def _benchmark_data(**overrides):
         constraint_kernel_ns=3.0,
         device_to_host_ns=4.0,
     )
+    scene_nonlinear_equality_solve_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualitySolveCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        max_constraint_residual_abs=0.05,
+        max_post_solve_linearized_residual_abs=0.01,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        step_norm=2.5,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_solve_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualitySolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        active_dofs=960,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        regularization=0.05,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_active_dofs=960,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_regularization=0.05,
+        gpu_max_constraint_residual_abs=0.05,
+        gpu_max_post_solve_linearized_residual_abs=0.01,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        gpu_step_norm=2.5,
+        max_result_abs_error=7e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        solve_kernel_ns=3.0,
+        post_residual_kernel_ns=4.0,
+        device_to_host_ns=5.0,
+    )
     sparse_residual_cpu = _row(
         "BM_NewtonSparseResidualCpu/1024",
         rows=1024,
@@ -646,6 +709,8 @@ def _benchmark_data(**overrides):
             scene_sparse_graph_gpu,
             scene_nonlinear_equality_cpu,
             scene_nonlinear_equality_gpu,
+            scene_nonlinear_equality_solve_cpu,
+            scene_nonlinear_equality_solve_gpu,
             sparse_residual_cpu,
             sparse_residual_gpu,
             scene_sparse_residual_cpu,
@@ -747,6 +812,31 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert scene_nonlinear_equality["max_gradient_abs"] == 1.5
     assert scene_nonlinear_equality["max_block_abs"] == 0.5
     assert scene_nonlinear_equality["timing_ns"]["constraints"] == 3.0
+    scene_nonlinear_equality_solve = row["scene_runtime_nonlinear_equality_solve"]
+    assert scene_nonlinear_equality_solve["row_count"] == 576
+    assert scene_nonlinear_equality_solve["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality_solve["scene_body_count"] == 1
+    assert scene_nonlinear_equality_solve["scene_node_count"] == 320
+    assert scene_nonlinear_equality_solve["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality_solve["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality_solve["body_count"] == 320
+    assert scene_nonlinear_equality_solve["dof_count"] == 1920
+    assert scene_nonlinear_equality_solve["constraint_count"] == 288
+    assert scene_nonlinear_equality_solve["block_count"] == 288
+    assert scene_nonlinear_equality_solve["block_entry_count"] == 10368
+    assert scene_nonlinear_equality_solve["active_dof_count"] == 960
+    assert scene_nonlinear_equality_solve["regularization"] == 0.05
+    assert scene_nonlinear_equality_solve["max_constraint_residual_abs"] == 0.05
+    assert (
+        scene_nonlinear_equality_solve["max_post_solve_linearized_residual_abs"] == 0.01
+    )
+    assert scene_nonlinear_equality_solve["max_result_abs_error"] == 7e-12
+    assert scene_nonlinear_equality_solve["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality_solve["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality_solve["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality_solve["step_norm"] == 2.5
+    assert scene_nonlinear_equality_solve["timing_ns"]["solve"] == 3.0
+    assert scene_nonlinear_equality_solve["timing_ns"]["post_residual"] == 4.0
     sparse = row["sparse_block_residual"]
     assert sparse["body_count"] == 128
     assert sparse["dof_count"] == 768

@@ -122,6 +122,15 @@ struct NewtonSceneNonlinearEqualityAssemblyTiming
   double deviceToHostNs = 0.0;
 };
 
+struct NewtonSceneNonlinearEqualitySolveTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double solveKernelNs = 0.0;
+  double postResidualKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
 struct NewtonSparseResidualTiming
 {
   double setupNs = 0.0;
@@ -213,6 +222,31 @@ struct NewtonSceneNonlinearEqualityAssemblyResult
   double maxGradientAbs = 0.0;
   double maxBlockAbs = 0.0;
   NewtonSceneNonlinearEqualityAssemblyTiming timing;
+};
+
+struct NewtonSceneNonlinearEqualitySolveResult
+{
+  std::vector<NewtonAssemblySolveRowInput> rows;
+  std::vector<NewtonSparseBlockEntry> blocks;
+  std::vector<double> residuals;
+  std::vector<double> step;
+  std::vector<double> postSolveLinearizedResiduals;
+  std::size_t nodeCount = 0;
+  std::size_t constraintCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  std::size_t activeDofCount = 0;
+  double regularization = 0.0;
+  double maxConstraintResidualAbs = 0.0;
+  double maxPostSolveLinearizedResidualAbs = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  double stepNorm = 0.0;
+  NewtonSceneNonlinearEqualitySolveTiming timing;
 };
 
 struct NewtonSparseResidualResult
@@ -347,6 +381,20 @@ void evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
     const std::vector<NewtonSceneNodeInput>& nodes,
     const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
     NewtonSceneNonlinearEqualityAssemblyResult& result);
+
+/// Evaluate a private reduced scene nonlinear equality solve packet.
+///
+/// The packet linearizes scene-owned distance-equality constraints, accumulates
+/// one deterministic Jacobi-style correction step in scene-node generalized
+/// coordinates, and reports post-step linearized residuals. It intentionally
+/// does not cover production constraint graph ownership, direct or global
+/// sparse factorization, nonlinear solve convergence policy, runtime
+/// World::step integration, or a public GPU solver backend.
+void evaluateNewtonSceneNonlinearEqualitySolveCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    double regularization,
+    NewtonSceneNonlinearEqualitySolveResult& result);
 
 /// Evaluate a private sparse block residual packet.
 ///

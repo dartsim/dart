@@ -83,6 +83,24 @@ cudaError_t launchNewtonSceneNonlinearEqualityAssemblyKernel(
     double* residuals,
     std::size_t constraintCount);
 
+cudaError_t launchNewtonSceneNonlinearEqualitySolveKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    NewtonAssemblySolveRowInput* rows,
+    NewtonSparseBlockEntry* blocks,
+    double* residuals,
+    double* step,
+    std::size_t constraintCount,
+    double regularization);
+
+cudaError_t launchNewtonSceneNonlinearEqualityPostResidualKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    const double* residuals,
+    const double* step,
+    double* postSolveLinearizedResiduals,
+    std::size_t constraintCount);
+
 cudaError_t launchNewtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -422,6 +440,15 @@ void validateIterationCount(
       iterationCount == 0,
       sx::InvalidArgumentException,
       "{} requires at least one iteration",
+      caller);
+}
+
+void validateRegularization(const double regularization, const char* caller)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(regularization) || regularization < 0.0,
+      sx::InvalidArgumentException,
+      "{} regularization must be non-negative",
       caller);
 }
 
@@ -866,6 +893,147 @@ void evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
           = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
     }
   }
+}
+
+//==============================================================================
+void evaluateNewtonSceneNonlinearEqualitySolveCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    const double regularization,
+    NewtonSceneNonlinearEqualitySolveResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateSceneNonlinearEqualityInputs(nodes, constraints);
+  validateRegularization(
+      regularization, "evaluateNewtonSceneNonlinearEqualitySolveCuda");
+
+  result = NewtonSceneNonlinearEqualitySolveResult{};
+  result.nodeCount = nodes.size();
+  result.constraintCount = constraints.size();
+  result.rowCount = 2u * constraints.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = constraints.size();
+  result.blockEntryCount = result.blockCount * kNewtonAssemblySolveBlockEntries;
+  result.regularization = regularization;
+  result.rows.assign(result.rowCount, {});
+  result.blocks.assign(result.blockCount, {});
+  result.residuals.assign(result.constraintCount, 0.0);
+  result.step.assign(result.dofCount, 0.0);
+  result.postSolveLinearizedResiduals.assign(result.constraintCount, 0.0);
+
+  if (nodes.empty() || constraints.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonSceneNodeInput> deviceNodes(nodes.size());
+  DeviceBuffer<NewtonSceneDistanceEqualityConstraintInput> deviceConstraints(
+      constraints.size());
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(result.rowCount);
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(result.blockCount);
+  DeviceBuffer<double> deviceResiduals(result.constraintCount);
+  DeviceBuffer<double> deviceStep(result.dofCount);
+  DeviceBuffer<double> devicePostSolveLinearizedResiduals(
+      result.constraintCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceNodes.copyToDevice(
+      nodes, "newton scene nonlinear equality solve nodes copy");
+  deviceConstraints.copyToDevice(
+      constraints, "newton scene nonlinear equality solve constraints copy");
+  throwIfCudaError(
+      cudaMemset(deviceStep.data(), 0, deviceStep.byteSize()),
+      "newton scene nonlinear equality solve step zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto solveStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneNonlinearEqualitySolveKernel(
+          deviceNodes.data(),
+          deviceConstraints.data(),
+          deviceRows.data(),
+          deviceBlocks.data(),
+          deviceResiduals.data(),
+          deviceStep.data(),
+          constraints.size(),
+          regularization),
+      "newton scene nonlinear equality solve kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene nonlinear equality solve synchronize");
+  const auto solveEnd = Clock::now();
+
+  const auto postResidualStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneNonlinearEqualityPostResidualKernel(
+          deviceNodes.data(),
+          deviceConstraints.data(),
+          deviceResiduals.data(),
+          deviceStep.data(),
+          devicePostSolveLinearizedResiduals.data(),
+          constraints.size()),
+      "newton scene nonlinear equality post residual kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene nonlinear equality post residual synchronize");
+  const auto postResidualEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceRows.copyFromDevice(
+      result.rows, "newton scene nonlinear equality solve rows copy");
+  deviceBlocks.copyFromDevice(
+      result.blocks, "newton scene nonlinear equality solve blocks copy");
+  deviceResiduals.copyFromDevice(
+      result.residuals, "newton scene nonlinear equality solve residuals copy");
+  deviceStep.copyFromDevice(
+      result.step, "newton scene nonlinear equality solve step copy");
+  devicePostSolveLinearizedResiduals.copyFromDevice(
+      result.postSolveLinearizedResiduals,
+      "newton scene nonlinear equality solve post residuals copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.solveKernelNs = elapsedNs(solveStart, solveEnd);
+  result.timing.postResidualKernelNs
+      = elapsedNs(postResidualStart, postResidualEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const auto residual : result.residuals) {
+    result.maxConstraintResidualAbs
+        = std::max(result.maxConstraintResidualAbs, std::abs(residual));
+  }
+  for (const auto residual : result.postSolveLinearizedResiduals) {
+    result.maxPostSolveLinearizedResidualAbs = std::max(
+        result.maxPostSolveLinearizedResidualAbs, std::abs(residual));
+  }
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+
+  double stepNormSquared = 0.0;
+  for (const auto value : result.step) {
+    if (std::abs(value) > 0.0) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += value * value;
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
 }
 
 //==============================================================================
