@@ -1,5 +1,59 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Variational Contact Dual-State Step Coverage)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the baked global-heap simulation-step guard now covers the
+augmented-Lagrangian variational ground-contact path that owns
+`VariationalContactDualState` and a retained
+`VariationalGroundContactSolver`. The added scene uses the same contact-heavy
+slider setup as the bake-specific dual-state tests, but runs through
+`World::step()` under `ScopedHeapAllocationCounter` after simulation-mode bake.
+
+The fix has these parts:
+
+- `World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap` now includes
+  the `dualUpdateCadence=1` variational contact scene;
+- the regression proves the AL contact solver, persisted contact duals, and
+  post-contact transform scratch stay within baked World-owned storage during
+  repeated same-shape steps;
+- no production code change was needed for this slice because the current
+  bake path already pre-reserves the dual-state solver storage.
+
+This still does not claim that arbitrary user-provided
+`VariationalContactHook` callbacks avoid return-by-value forces, that every
+Eigen dynamic result payload borrows a DART allocator, or that public
+return-by-value convenience helpers are allocation-free. The closed gap is the
+missing no-global-heap regression coverage for the World-owned
+augmented-Lagrangian variational contact step path.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap:World.EnterSimulationModeReservesContactHeavyVariationalDualState'
+pixi run lint
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Variational Contact Point Force Output)
 
 Resume from exactly one branch:

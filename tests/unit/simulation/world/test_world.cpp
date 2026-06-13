@@ -7958,6 +7958,9 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "multibody variational compliant contact scratch",
       configureCompliantVariationalContactSliderScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "multibody variational augmented-Lagrangian contact scratch",
+      configureVariationalContactDualStateSliderScene);
 
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "multibody variational loop-closure scratch",
