@@ -966,6 +966,81 @@ TEST(IpcContactCandidateSet, NoScratchSweepBuildersBorrowCandidateAllocator)
 }
 
 //==============================================================================
+TEST(IpcContactCandidateSet, ReturnBuildersCanUseProvidedAllocator)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.25, 0.25, 0.0},
+      {1.25, 0.25, 0.0},
+      {0.25, 1.25, 0.0},
+      {0.5, 0.5, 0.5},
+  };
+  auto end = start;
+  end[6] = Eigen::Vector3d(0.5, 0.5, -0.5);
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 1.0;
+  options.excludeIncidentPointTriangles = false;
+  options.excludeAdjacentEdges = false;
+
+  CountingMemoryAllocator allocator;
+  const dc::ContactCandidateSet::SurfaceEdgeAllocator edgeAllocator{allocator};
+  const dc::ContactCandidateSet::PointTriangleAllocator pointAllocator{
+      allocator};
+  const dc::ContactCandidateSet::EdgeEdgeAllocator edgeEdgeAllocator{allocator};
+
+  const auto expectAllocatorBacked =
+      [&](const dc::ContactCandidateSet& candidates) {
+        EXPECT_EQ(candidates.surfaceEdges.get_allocator(), edgeAllocator);
+        EXPECT_EQ(
+            candidates.pointTriangleCandidates.get_allocator(), pointAllocator);
+        EXPECT_EQ(
+            candidates.edgeEdgeCandidates.get_allocator(), edgeEdgeAllocator);
+      };
+
+  const std::size_t allocationsBefore = allocator.allocations;
+
+  const auto staticBrute = dc::buildContactCandidatesBruteForce(
+      start, triangles, options, allocator);
+  expectAllocatorBacked(staticBrute);
+  expectCandidateSetsEqualIncludingStats(
+      staticBrute,
+      dc::buildContactCandidatesBruteForce(start, triangles, options));
+
+  const auto staticSweep
+      = dc::buildContactCandidatesSweep(start, triangles, options, allocator);
+  expectAllocatorBacked(staticSweep);
+  expectCandidateSetsEqualIncludingStats(
+      staticSweep, dc::buildContactCandidatesSweep(start, triangles, options));
+
+  const auto motionBrute = dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options, allocator);
+  expectAllocatorBacked(motionBrute);
+  expectCandidateSetsEqualIncludingStats(
+      motionBrute,
+      dc::buildMotionAwareContactCandidatesBruteForce(
+          start, end, triangles, options));
+
+  const auto motionSweep = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options, allocator);
+  expectAllocatorBacked(motionSweep);
+  expectCandidateSetsEqualIncludingStats(
+      motionSweep,
+      dc::buildMotionAwareContactCandidatesSweep(
+          start, end, triangles, options));
+
+  EXPECT_GT(allocator.allocations, allocationsBefore)
+      << "allocator-aware return builders should reserve candidate and sweep "
+         "scratch storage through the provided allocator";
+}
+
+//==============================================================================
 TEST(IpcContactCandidateSet, ReusableBuildersClearStaleStateAndPreserveCapacity)
 {
   const std::vector<Eigen::Vector3d> dense = {

@@ -740,6 +740,18 @@ inline ContactCandidateSet buildContactCandidatesBruteForce(
 }
 
 //==============================================================================
+inline ContactCandidateSet buildContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
+  buildContactCandidatesBruteForce(positions, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
 inline void buildContactCandidatesSweep(
     std::span<const Eigen::Vector3d> positions,
     std::span<const DeformableSurfaceTriangle> triangles,
@@ -828,6 +840,18 @@ inline ContactCandidateSet buildContactCandidatesSweep(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildContactCandidatesSweep(positions, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildContactCandidatesSweep(positions, triangles, options, candidates);
   return candidates;
 }
@@ -926,6 +950,20 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesBruteForce(
+      positionsStart, positionsEnd, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildMotionAwareContactCandidatesBruteForce(
       positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;
@@ -1046,6 +1084,20 @@ inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
     const ContactCandidateOptions& options)
 {
   ContactCandidateSet candidates;
+  buildMotionAwareContactCandidatesSweep(
+      positionsStart, positionsEnd, triangles, options, candidates);
+  return candidates;
+}
+
+//==============================================================================
+inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ::dart::common::MemoryAllocator& allocator)
+{
+  ContactCandidateSet candidates(allocator);
   buildMotionAwareContactCandidatesSweep(
       positionsStart, positionsEnd, triangles, options, candidates);
   return candidates;
