@@ -2,31 +2,33 @@
 
 ## Current Reality (2026-06-12)
 
-Latest scene-owned sparse off-diagonal assembly checkpoint (2026-06-12): work
-continued locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
+Latest scene-owned sparse residual checkpoint (2026-06-12): work continued
+locally on `simx/plan083-gpu-contact-candidate-packet`, PR #2978.
 Keep all remaining PLAN-083 follow-up work consolidated there; do not push,
 PR-comment, resolve review threads, trigger CI, open or close PRs, delete
 branches, or claim unrelated PLAN-091 packets without explicit maintainer
 approval.
 
 This checkpoint extends the private Newton assembly/solve packet with a reduced
-scene-owned sparse off-diagonal assembly row. The benchmark builds one DART
-`World` with a deformable surface, derives deterministic surface-edge pair
-slots from the scene triangles, emits local 6x6 sparse off-diagonal blocks, and
-runs the existing CPU/CUDA sparse block scatter parity path. This is reduced
-packet evidence only; it does not prove production sparse Hessian graph
-construction, full runtime sparse Hessian assembly, direct/global sparse
+scene-owned sparse residual row. The benchmark builds one DART `World` with a
+deformable surface, derives deterministic scene-owned diagonal rows and
+surface-edge 6x6 sparse blocks from the scene triangles, seeds a scene-derived
+step vector, and runs the existing CPU/CUDA sparse residual parity path. This
+is reduced packet evidence only; it does not prove production sparse Hessian
+graph construction, full runtime sparse Hessian assembly, direct/global sparse
 factorization, nonlinear equality constraints, GPU `World::step`
 assembly/solve integration, or a speedup claim.
 
 Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
-surface-edge pair slots, 2,304 active sparse blocks, and 82,944 6x6 block
-entries with `max_result_abs_error=0.0`, `max_block_abs=0.0014150000000000002`,
-and `speedup=0.17240364237637143x` for the scene-owned sparse off-diagonal
-row. The top-level assembly/solve packet records
+surface-edge pair slots, 2,304 active sparse blocks, 82,944 6x6 block entries,
+and 15,360 dofs with
+`max_result_abs_error=1.7763568394002505e-15`,
+`output_norm=362.5686732647404`, `max_output_abs=11.860337533880076`, and
+`speedup=0.3059471712145572x` for the scene-owned sparse residual row. The
+top-level assembly/solve packet records
 `max_result_abs_error=3.552713678800501e-15`,
-`residual_norm=9.931103301092847e-14`, and
-`speedup=0.13272229168219885x` (`meets_speedup_gate=false`), so the durable GPU
+`residual_norm=9.931593818515565e-14`, and
+`speedup=0.094416960926111x` (`meets_speedup_gate=false`), so the durable GPU
 packet row remains `in-progress`.
 
 Latest validation passed:
@@ -1294,8 +1296,9 @@ edge-edge barrier-Hessian runtime rows,
 reduced assembly/solve parity including sparse block residual and sparse
 Jacobi, sparse CG, sparse equality-reduced diagonal solve rows, a reduced
 scene-owned diagonal assembly/solve row, and a reduced scene-owned sparse
-off-diagonal surface-edge assembly row, reduced scene state-batch parity, and
-reduced ABD complex-geometry/FEM coupling
+off-diagonal surface-edge assembly row, a reduced scene-owned sparse residual
+row, reduced scene state-batch parity, and reduced ABD complex-geometry/FEM
+coupling
 evidence. Keep rows `in-progress` unless their full row policy is satisfied:
 additional runtime contact rows, GPU sweep-and-prune broad-phase construction,
 analytic curved CCD, full scene-level line search, full runtime scene

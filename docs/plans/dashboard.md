@@ -352,8 +352,9 @@ its own line so status updates remain git-history friendly.
   rows, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
   sparse off-diagonal surface-edge assembly row plus sparse block residual
-  matvec plus fixed-iteration sparse Jacobi solve plus capped sparse CG solve
-  plus sparse equality-reduced diagonal solve parity plus a reduced scene-owned
+  matvec plus a reduced scene-owned sparse residual row plus fixed-iteration
+  sparse Jacobi solve plus capped sparse CG solve plus sparse
+  equality-reduced diagonal solve parity plus a reduced scene-owned
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
   parity and speedup, reduced ABD complex-geometry packets,
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
