@@ -1,5 +1,90 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Live Packet Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `e0783d892bb Guard LCP standalone problem metadata`; if this section is
+   committed, inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   live-packet guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `e0783d892bb Guard LCP standalone problem metadata`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-six commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now validates the LCP demo live-packet
+  table directly and runs that guard in the main roster check before the
+  representative requirement cross-link guard.
+- The guard rejects empty live-packet tables, duplicate packet labels, missing
+  packet/metric/benchmark fields, and live packets that are not covered by a
+  representative requirement row.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers the valid parser
+  path and stale duplicate, missing-field, and missing-requirement coverage
+  failures.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'live_packet or representative_requirement'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+pixi run build
+nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused live-packet and representative-requirement roster tests: passed with
+  4 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full LCP roster unit file: passed with 42 tests.
+- `pixi run lint`: passed, including the LCP solver roster check and AI command
+  sync.
+- `pixi run build`: passed.
+- NVIDIA query: reported
+  `NVIDIA RTX 5000 Ada Generation Laptop GPU, 8.9`.
+- `pixi run -e cuda test-all`: passed end-to-end on that GPU. Its docs phase
+  emitted the known four `dartpy._world_render_bridge` autodoc warnings and
+  still passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, roster check, `pixi run lint`, `git diff --check`, and
+any broader gate warranted by the final diff. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Standalone Problem Case Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

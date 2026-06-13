@@ -174,6 +174,82 @@ def test_lcp_solver_roster_rejects_uncovered_demo_benchmark_base(
         module.check_demo_benchmark_filters()
 
 
+def test_lcp_solver_roster_reads_demo_live_packet_links() -> None:
+    module = _load_module()
+
+    live_by_packet = {
+        row["packet"]: row for row in module.parse_demo_live_packet_rows()
+    }
+
+    assert live_by_packet["Sliding friction"]["metric"] == "sliding speed, contacts"
+    assert live_by_packet["Static-friction ramp"]["benchmark"] == (
+        "active-set transition packets"
+    )
+    assert live_by_packet["Billiard collision"]["metric"] == (
+        "symmetry, momentum, kinetic-energy error"
+    )
+    module.check_demo_live_packets()
+
+
+def test_lcp_solver_roster_rejects_stale_live_packet_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_demo_live_packet_rows",
+        lambda: [
+            {
+                "packet": "Known live packet",
+                "metric": "metric",
+                "benchmark": "benchmark analog",
+            },
+            {
+                "packet": "Duplicate live packet",
+                "metric": "",
+                "benchmark": "benchmark analog",
+            },
+            {
+                "packet": "Duplicate live packet",
+                "metric": "metric",
+                "benchmark": "",
+            },
+            {
+                "packet": "Uncovered live packet",
+                "metric": "metric",
+                "benchmark": "benchmark analog",
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_demo_representative_requirement_rows",
+        lambda: [
+            {
+                "requirement": "Known requirement",
+                "live_packet": "Known live packet",
+                "benchmark_packet": "known_benchmark_packet",
+                "metrics": "metric",
+                "evidence": "evidence",
+            }
+        ],
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="live packet rows are out of sync",
+    ) as exc_info:
+        module.check_demo_live_packets()
+
+    message = str(exc_info.value)
+    assert "duplicate live packet rows ['Duplicate live packet']" in message
+    assert "Duplicate live packet: missing fields ['metric']" in message
+    assert "Duplicate live packet: missing fields ['benchmark']" in message
+    assert "live packets missing representative requirement coverage" in message
+    assert "Duplicate live packet" in message
+    assert "Uncovered live packet" in message
+
+
 def test_lcp_solver_roster_reads_demo_representative_requirement_links() -> None:
     module = _load_module()
 

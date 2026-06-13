@@ -550,6 +550,55 @@ def check_demo_benchmark_filters() -> None:
         )
 
 
+def check_demo_live_packets() -> None:
+    live_rows = parse_demo_live_packet_rows()
+    requirement_rows = parse_demo_representative_requirement_rows()
+    required_fields = ("packet", "metric", "benchmark")
+
+    errors: list[str] = []
+    if not live_rows:
+        errors.append("no live packet rows")
+
+    live_packets = [str(row.get("packet", "")) for row in live_rows]
+    duplicate_packets = [
+        packet
+        for index, packet in enumerate(live_packets)
+        if packet and packet in live_packets[:index]
+    ]
+    if duplicate_packets:
+        errors.append(f"duplicate live packet rows {duplicate_packets}")
+
+    for index, row in enumerate(live_rows, start=1):
+        packet = str(row.get("packet", f"row {index}"))
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{packet}: missing fields {missing_fields}")
+
+    referenced_live_packets = {
+        packet
+        for row in requirement_rows
+        for packet in _split_demo_reference_list(str(row.get("live_packet", "")))
+    }
+    unreferenced_live_packets = sorted(
+        packet
+        for packet in set(live_packets)
+        if packet and packet not in referenced_live_packets
+    )
+    if unreferenced_live_packets:
+        errors.append(
+            "live packets missing representative requirement coverage "
+            f"{unreferenced_live_packets}"
+        )
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics live packet rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
 def check_demo_representative_requirements() -> None:
     live_rows = parse_demo_live_packet_rows()
     benchmark_rows = parse_demo_benchmark_packet_rows()
@@ -1434,6 +1483,7 @@ def check_roster() -> None:
     check_performance_profile_headers(manifest)
     check_performance_profile_evidence(manifest)
     check_demo_benchmark_filters()
+    check_demo_live_packets()
     check_demo_representative_requirements()
     check_demo_standalone_problem_cases()
     check_demo_solver_guidance(manifest)
