@@ -338,6 +338,57 @@ def parse_math_stub_solver_classes() -> set[str]:
     return set(pattern.findall(_read(DARTPY_MATH_STUB_PATH)))
 
 
+def _parse_init_stub() -> ast.Module:
+    return ast.parse(_read(DARTPY_INIT_STUB_PATH), filename=str(DARTPY_INIT_STUB_PATH))
+
+
+def parse_init_stub_math_imports() -> set[str]:
+    module = _parse_init_stub()
+    return {
+        alias.asname or alias.name
+        for node in module.body
+        if isinstance(node, ast.ImportFrom)
+        and node.level == 1
+        and node.module == "math"
+        for alias in node.names
+    }
+
+
+def parse_init_stub_all_names() -> set[str]:
+    module = _parse_init_stub()
+    for node in module.body:
+        value: ast.expr | None = None
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__all__"
+            for target in node.targets
+        ):
+            value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "__all__"
+        ):
+            value = node.value
+
+        if value is None:
+            continue
+        if not isinstance(value, (ast.List, ast.Tuple)):
+            raise AssertionError(
+                "python/stubs/dartpy/__init__.pyi __all__ is not a literal list"
+            )
+        names: set[str] = set()
+        for item in value.elts:
+            if not isinstance(item, ast.Constant) or not isinstance(item.value, str):
+                raise AssertionError(
+                    "python/stubs/dartpy/__init__.pyi __all__ contains "
+                    "non-string entries"
+                )
+            names.add(item.value)
+        return names
+
+    raise AssertionError("python/stubs/dartpy/__init__.pyi is missing __all__")
+
+
 def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
     math_stub_classes = parse_math_stub_solver_classes()
     missing_math_stub = sorted(set(manifest_classes) - math_stub_classes)
@@ -347,16 +398,28 @@ def check_python_stub_solver_classes(manifest_classes: list[str]) -> None:
             f"{missing_math_stub}"
         )
 
-    init_stub_text = _read(DARTPY_INIT_STUB_PATH)
-    missing_init_stub = [
+    init_stub_math_imports = parse_init_stub_math_imports()
+    missing_init_imports = [
         class_name
         for class_name in manifest_classes
-        if class_name not in init_stub_text
+        if class_name not in init_stub_math_imports
     ]
-    if missing_init_stub:
+    if missing_init_imports:
         raise AssertionError(
-            "python/stubs/dartpy/__init__.pyi is missing solver classes: "
-            f"{missing_init_stub}"
+            "python/stubs/dartpy/__init__.pyi is missing .math imports: "
+            f"{missing_init_imports}"
+        )
+
+    init_stub_all_names = parse_init_stub_all_names()
+    missing_init_all = [
+        class_name
+        for class_name in manifest_classes
+        if class_name not in init_stub_all_names
+    ]
+    if missing_init_all:
+        raise AssertionError(
+            "python/stubs/dartpy/__init__.pyi __all__ is missing solver classes: "
+            f"{missing_init_all}"
         )
 
 

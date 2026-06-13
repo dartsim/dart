@@ -127,11 +127,47 @@ def test_lcp_solver_roster_rejects_missing_init_stub_class(
         "parse_math_stub_solver_classes",
         lambda: {"DantzigSolver", "LemkeSolver"},
     )
-    monkeypatch.setattr(module, "_read", lambda path: "DantzigSolver\n")
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_math_imports",
+        lambda: {"DantzigSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_all_names",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
 
     with pytest.raises(
         AssertionError,
-        match="python/stubs/dartpy/__init__\\.pyi is missing solver classes",
+        match="python/stubs/dartpy/__init__\\.pyi is missing \\.math imports",
+    ):
+        module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
+
+
+def test_lcp_solver_roster_rejects_missing_init_all_class(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module,
+        "parse_math_stub_solver_classes",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_math_imports",
+        lambda: {"DantzigSolver", "LemkeSolver"},
+    )
+    monkeypatch.setattr(
+        module,
+        "parse_init_stub_all_names",
+        lambda: {"DantzigSolver"},
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="python/stubs/dartpy/__init__\\.pyi __all__ is missing solver classes",
     ):
         module.check_python_stub_solver_classes(["DantzigSolver", "LemkeSolver"])
 
