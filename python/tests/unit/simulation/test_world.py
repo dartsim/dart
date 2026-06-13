@@ -193,6 +193,9 @@ def test_simulation_api_exposes_python_names_only():
             "addRigidBodyPrismaticJoint",
             "addRigidBodySphericalJoint",
             "addRigidBodyDistanceSpring",
+            "hasRigidBodyDistanceSpring",
+            "getRigidBodyDistanceSpringParameters",
+            "setRigidBodyDistanceSpringParameters",
             "getRigidBodyJoint",
             "hasRigidBodyJoint",
             "getRigidBodyJoints",
@@ -358,6 +361,9 @@ def test_simulation_stub_tracks_public_runtime_symbols():
         "add_rigid_body_prismatic_joint",
         "add_rigid_body_spherical_joint",
         "add_rigid_body_distance_spring",
+        "has_rigid_body_distance_spring",
+        "get_rigid_body_distance_spring_parameters",
+        "set_rigid_body_distance_spring_parameters",
         "get_rigid_body_joint",
         "get_rigid_body_joints",
         "has_rigid_body_fixed_joint",
@@ -886,6 +892,23 @@ def test_simulation_world_rigid_body_distance_spring_reduces_stretch():
         world.add_rigid_body_distance_spring("radial_spring", base, link, 1.0, 200.0)
         is None
     )
+    assert world.has_rigid_body_distance_spring("radial_spring")
+    assert not world.has_rigid_body_distance_spring("missing_spring")
+    assert world.get_rigid_body_distance_spring_parameters(
+        "radial_spring"
+    ) == pytest.approx((1.0, 200.0))
+    with pytest.raises(Exception, match="does not exist"):
+        world.get_rigid_body_distance_spring_parameters("missing_spring")
+    with pytest.raises(Exception, match="does not exist"):
+        world.set_rigid_body_distance_spring_parameters("missing_spring", 1.0, 200.0)
+    with pytest.raises(Exception, match="rest length"):
+        world.set_rigid_body_distance_spring_parameters("radial_spring", -1.0, 200.0)
+    with pytest.raises(Exception, match="stiffness"):
+        world.set_rigid_body_distance_spring_parameters("radial_spring", 1.0, 0.0)
+    world.set_rigid_body_distance_spring_parameters("radial_spring", 0.75, 80.0)
+    assert world.get_rigid_body_distance_spring_parameters(
+        "radial_spring"
+    ) == pytest.approx((0.75, 80.0))
     with pytest.raises(Exception, match="already exists"):
         world.add_rigid_body_distance_spring("radial_spring", base, link, 1.0, 200.0)
 
@@ -902,6 +925,10 @@ def test_simulation_world_rigid_body_distance_spring_reduces_stretch():
 
     assert projected_distance < initial_distance
     assert float(link.linear_velocity[0]) < 0.0
+    world.set_rigid_body_distance_spring_parameters("radial_spring", 1.25, 120.0)
+    assert world.get_rigid_body_distance_spring_parameters(
+        "radial_spring"
+    ) == pytest.approx((1.25, 120.0))
     with pytest.raises(Exception, match="simulation mode"):
         world.add_rigid_body_distance_spring("late", base, link, 1.0, 200.0)
 

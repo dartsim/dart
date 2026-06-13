@@ -20,6 +20,21 @@ requested UI frames, 119 PNG frames written, screenshot written,
 `hold_force=3.0` plus `armature_force=6.0` under the contact-free
 passive-parameter row scope.
 
+Latest local implementation slice: row 27, `rigid_distance_spring`, now exposes
+the public distance-spring controls promised by the workflow. `World` has
+narrow named-spring accessors for `has`, `get`, and live `set` of rest length
+plus stiffness; dartpy exposes those as snake_case methods; and the row 27 GUI,
+replay state, capture metrics, and docs now cover rest length plus soft, stiff,
+and off-center stiffness controls. Focused API/panel/replay/row guards
+reported `8 passed`, adjacent workflow-doc guards reported `3 passed`,
+`pixi run check-api-boundary-inventory` reported the inventory is current, and
+fresh single-scene visual evidence lives at
+`build/captures/rigid_distance_spring_controls_1781326877`: 72 requested UI
+frames, 71 PNG frames written, screenshot written,
+`scene_metrics.event_count=72`, and latest scene metrics containing
+`rest_length=0.45`, `soft_stiffness=45.0`, `stiff_stiffness=220.0`, and
+`offset_stiffness=120.0`.
+
 Latest local implementation slice: row 2, `rigid_body_modes`, now exposes the
 same explicit comparison-axis and held-fixed context pattern used by the later
 rigid workflow rows. The panel and capture metrics label

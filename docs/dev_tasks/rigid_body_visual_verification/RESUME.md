@@ -2,6 +2,24 @@
 
 ## Current Handoff (2026-06-12)
 
+Latest local continuation: row 27, `rigid_distance_spring`, now exposes the
+public distance-spring parameters promised by the workflow. `World` has narrow
+`has/get/set` accessors for named rigid-body distance springs, dartpy exposes
+the snake_case API, and the GUI retunes existing springs during simulation
+mode so users can edit global rest length plus the soft, stiff, and off-center
+lane stiffnesses. Focused guards:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/simulation/test_world.py::test_simulation_api_exposes_python_names_only python/tests/unit/simulation/test_world.py::test_simulation_stub_tracks_public_runtime_symbols python/tests/unit/simulation/test_world.py::test_simulation_world_rigid_body_distance_spring_reduces_stretch python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_distance_spring_panel_edits_public_spring_parameters python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `8 passed`; the adjacent docs guard
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `3 passed`; `pixi run check-api-boundary-inventory` reported the
+API boundary inventory is up to date. Fresh single-scene visual evidence:
+`build/captures/rigid_distance_spring_controls_1781326877` captured
+`rigid_distance_spring` at 72 requested UI frames, wrote 71 PNG frames plus
+`rigid_distance_spring.png`, recorded `scene_metrics.event_count=72`, and its
+latest scene metrics include default controls `rest_length=0.45`,
+`soft_stiffness=45.0`, `stiff_stiffness=220.0`, and
+`offset_stiffness=120.0`.
+
 Latest local continuation: row 30, `rigid_joint_passive_parameters`, now
 exposes the passive-joint force controls that were already modeled in capture
 and replay state. The GUI adds `Hold force` for the stiction lane and

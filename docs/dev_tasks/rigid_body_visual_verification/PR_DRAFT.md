@@ -49,6 +49,9 @@ rigid-body visual verification surface for the current cycle.
 - Exposes the row-26 fixed-joint breakage threshold as a log-scale GUI
   parameter backed by public `Joint.break_force`, with capture metrics and
   replay state recording the active threshold.
+- Exposes row-27 rigid-body distance-spring retuning through narrow public
+  `World`/dartpy accessors and GUI sliders for rest length plus soft, stiff,
+  and off-center stiffness controls.
 - Tightens the row-2 body-mode verifier so the first early workflow comparison
   row now publishes the same `comparison_axis` and held-fixed context pattern
   used by later rigid workflow rows.
@@ -84,6 +87,15 @@ rigid-body visual verification surface for the current cycle.
 - Focused passive-joint force-control guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_joint_passive_parameters_panel_edits_drive_forces python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_joint_passive_parameters_order_passive_response python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
   reported `5 passed`.
+- Focused distance-spring public-parameter guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/simulation/test_world.py::test_simulation_api_exposes_python_names_only python/tests/unit/simulation/test_world.py::test_simulation_stub_tracks_public_runtime_symbols python/tests/unit/simulation/test_world.py::test_simulation_world_rigid_body_distance_spring_reduces_stretch python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_distance_spring_panel_edits_public_spring_parameters python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `8 passed`.
+- Adjacent row-27 workflow-doc guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `3 passed`.
+- API boundary inventory guard:
+  `pixi run check-api-boundary-inventory` reported the inventory is up to
+  date.
 - Adjacent rigid workflow docs consistency guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `3 passed`.
@@ -103,6 +115,13 @@ rigid-body visual verification surface for the current cycle.
   frames plus `rigid_joint_passive_parameters.png`, and recorded
   `scene_metrics.event_count=120` with default `hold_force=3.0` and
   `armature_force=6.0` controls in latest scene metrics.
+- Fresh row-27 single-scene visual evidence:
+  `build/captures/rigid_distance_spring_controls_1781326877` captured
+  `rigid_distance_spring` at 72 requested UI frames, wrote 71 PNG frames plus
+  `rigid_distance_spring.png`, and recorded `scene_metrics.event_count=72`
+  with default `rest_length=0.45`, `soft_stiffness=45.0`,
+  `stiff_stiffness=220.0`, and `offset_stiffness=120.0` controls in latest
+  scene metrics.
 - Current-head broad default validation:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,

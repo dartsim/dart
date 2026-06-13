@@ -270,6 +270,9 @@
     rigid-body distance springs with unsprung, soft, stiff, and off-center
     anchor lanes plus replay controls and capture metrics while documenting
     that IPC and multibody worlds reject this public API.
+  - Exposed public World rigid-body distance-spring retuning in dartpy and
+    wired the `rigid_distance_spring` panel, replay state, and capture metrics
+    to editable rest length plus soft/stiff/off-center stiffness controls.
   - Added Replay timeline metadata to `rigid_distance_spring`, using maximum
     spring stretch as the value track and marking high-stretch or off-center
     spin frames.

@@ -21,6 +21,9 @@ from ..runner import (
 _TIME_STEP = 0.004
 _HISTORY = 180
 _REST_LENGTH = 0.45
+_SOFT_STIFFNESS = 45.0
+_STIFF_STIFFNESS = 220.0
+_OFFSET_STIFFNESS = 120.0
 _INITIAL_STRETCH = 0.33
 _ANCHOR_Z = 1.20
 _ANCHOR_HALF = np.array([0.055, 0.055, 0.055])
@@ -107,6 +110,7 @@ class _SpringLane:
     rest_length: float
     stiffness: float
     has_spring: bool
+    spring_name: str | None
     parent_anchor: np.ndarray
     child_anchor: np.ndarray
     initial_body_position: np.ndarray
@@ -117,6 +121,10 @@ class _SpringLane:
 class _RigidDistanceSpring:
     def __init__(self) -> None:
         self.executor_index = 0
+        self.rest_length = _REST_LENGTH
+        self.soft_stiffness = _SOFT_STIFFNESS
+        self.stiff_stiffness = _STIFF_STIFFNESS
+        self.offset_stiffness = _OFFSET_STIFFNESS
         self.initial_stretch = _INITIAL_STRETCH
         self.gravity_scale = 0.0
         self._executors = self._make_executors()
@@ -139,7 +147,7 @@ class _RigidDistanceSpring:
             self._make_lane(
                 "soft",
                 "Soft center spring",
-                stiffness=45.0,
+                stiffness=self.soft_stiffness,
                 has_spring=True,
                 x=_LANE_X["soft"],
                 color=(0.26, 0.58, 0.86),
@@ -147,7 +155,7 @@ class _RigidDistanceSpring:
             self._make_lane(
                 "stiff",
                 "Stiff center spring",
-                stiffness=220.0,
+                stiffness=self.stiff_stiffness,
                 has_spring=True,
                 x=_LANE_X["stiff"],
                 color=(0.88, 0.54, 0.22),
@@ -155,7 +163,7 @@ class _RigidDistanceSpring:
             self._make_lane(
                 "offset",
                 "Off-center anchors",
-                stiffness=120.0,
+                stiffness=self.offset_stiffness,
                 has_spring=True,
                 x=_LANE_X["offset"],
                 child_anchor=np.array([0.16, 0.0, 0.0]),
@@ -259,12 +267,13 @@ class _RigidDistanceSpring:
         body.mass = 1.0
         body.inertia = _box_inertia(half_extents, 1.0)
         body.set_collision_shape(sx.CollisionShape.box(half_extents))
+        spring_name = f"{key}_distance_spring" if has_spring else None
         if has_spring:
             self.world.add_rigid_body_distance_spring(
-                f"{key}_distance_spring",
+                spring_name,
                 anchor,
                 body,
-                _REST_LENGTH,
+                self.rest_length,
                 stiffness,
                 parent_anchor=tuple(parent_anchor),
                 child_anchor=tuple(child_anchor),
@@ -274,9 +283,10 @@ class _RigidDistanceSpring:
             label=label,
             anchor=anchor,
             body=body,
-            rest_length=_REST_LENGTH,
+            rest_length=self.rest_length,
             stiffness=stiffness,
             has_spring=has_spring,
+            spring_name=spring_name,
             parent_anchor=parent_anchor,
             child_anchor=child_anchor,
             initial_body_position=initial_body_position,
@@ -285,11 +295,35 @@ class _RigidDistanceSpring:
         )
 
     def _body_position_for_lane(self, x: float) -> np.ndarray:
-        length = _REST_LENGTH + max(0.05, float(self.initial_stretch))
+        length = float(self.rest_length) + max(0.05, float(self.initial_stretch))
         return np.array([float(x), 0.0, _ANCHOR_Z - length])
 
     def _apply_parameters(self) -> None:
         self.world.gravity = (0.0, 0.0, -4.0 * float(self.gravity_scale))
+
+    def _stiffness_for_lane(self, key: str) -> float:
+        if key == "soft":
+            return float(self.soft_stiffness)
+        if key == "stiff":
+            return float(self.stiff_stiffness)
+        if key == "offset":
+            return float(self.offset_stiffness)
+        return 0.0
+
+    def _apply_spring_parameters(self) -> None:
+        self.rest_length = max(0.05, float(self.rest_length))
+        self.soft_stiffness = max(1.0, float(self.soft_stiffness))
+        self.stiff_stiffness = max(1.0, float(self.stiff_stiffness))
+        self.offset_stiffness = max(1.0, float(self.offset_stiffness))
+        for lane in self.lanes:
+            lane.rest_length = float(self.rest_length)
+            lane.stiffness = self._stiffness_for_lane(lane.key)
+            if lane.spring_name is not None:
+                self.world.set_rigid_body_distance_spring_parameters(
+                    lane.spring_name,
+                    lane.rest_length,
+                    lane.stiffness,
+                )
 
     def _reset_lane(self, lane: _SpringLane) -> None:
         lane.initial_body_position = self._body_position_for_lane(_LANE_X[lane.key])
@@ -302,6 +336,7 @@ class _RigidDistanceSpring:
 
     def _reset(self) -> None:
         self._apply_parameters()
+        self._apply_spring_parameters()
         for lane in self.lanes:
             self._reset_lane(lane)
         self.world.time = 0.0
@@ -430,13 +465,17 @@ class _RigidDistanceSpring:
             "held_fixed": {
                 "executor": self._executor_label(),
                 "payload_mass": 1.0,
-                "rest_length_m": _REST_LENGTH,
+                "rest_length_m": float(self.rest_length),
                 "solver": "Sequential impulse + AVBD distance springs",
                 "time_step_ms": _TIME_STEP * 1000.0,
             },
             "controls": {
                 "gravity_scale": float(self.gravity_scale),
                 "initial_stretch": float(self.initial_stretch),
+                "offset_stiffness": float(self.offset_stiffness),
+                "rest_length": float(self.rest_length),
+                "soft_stiffness": float(self.soft_stiffness),
+                "stiff_stiffness": float(self.stiff_stiffness),
             },
             "lane_order": [lane.key for lane in self.lanes],
             "spring_lanes": [lane.label for lane in self.lanes],
@@ -462,6 +501,10 @@ class _RigidDistanceSpring:
                 "executor_index": int(self.executor_index),
                 "initial_stretch": float(self.initial_stretch),
                 "gravity_scale": float(self.gravity_scale),
+                "offset_stiffness": float(self.offset_stiffness),
+                "rest_length": float(self.rest_length),
+                "soft_stiffness": float(self.soft_stiffness),
+                "stiff_stiffness": float(self.stiff_stiffness),
             },
             "world_state": np.asarray(self.world.state_vector, dtype=float).copy(),
             "world_time": float(self.world.time),
@@ -549,7 +592,18 @@ class _RigidDistanceSpring:
             controls.get("initial_stretch", self.initial_stretch)
         )
         self.gravity_scale = float(controls.get("gravity_scale", self.gravity_scale))
+        self.rest_length = float(controls.get("rest_length", self.rest_length))
+        self.soft_stiffness = float(
+            controls.get("soft_stiffness", self.soft_stiffness)
+        )
+        self.stiff_stiffness = float(
+            controls.get("stiff_stiffness", self.stiff_stiffness)
+        )
+        self.offset_stiffness = float(
+            controls.get("offset_stiffness", self.offset_stiffness)
+        )
         self._apply_parameters()
+        self._apply_spring_parameters()
         if "world_state" in state:
             self.world.state_vector = state["world_state"]
         self.world.time = float(state.get("world_time", self.world.time))
@@ -597,6 +651,18 @@ class _RigidDistanceSpring:
         changed_stretch, initial_stretch = builder.slider(
             "Initial stretch", float(self.initial_stretch), 0.08, 0.52
         )
+        changed_rest_length, rest_length = builder.slider(
+            "Rest length", float(self.rest_length), 0.25, 0.75
+        )
+        changed_soft, soft_stiffness = builder.slider(
+            "Soft stiffness", float(self.soft_stiffness), 10.0, 100.0
+        )
+        changed_stiff, stiff_stiffness = builder.slider(
+            "Stiff stiffness", float(self.stiff_stiffness), 80.0, 320.0
+        )
+        changed_offset, offset_stiffness = builder.slider(
+            "Offset stiffness", float(self.offset_stiffness), 40.0, 220.0
+        )
         changed_gravity, gravity_scale = builder.slider(
             "Gravity scale", float(self.gravity_scale), 0.0, 1.0
         )
@@ -604,9 +670,24 @@ class _RigidDistanceSpring:
             self.executor_index = int(executor_index)
         if changed_stretch:
             self.initial_stretch = float(initial_stretch)
+        if changed_rest_length:
+            self.rest_length = float(rest_length)
+        if changed_soft:
+            self.soft_stiffness = float(soft_stiffness)
+        if changed_stiff:
+            self.stiff_stiffness = float(stiff_stiffness)
+        if changed_offset:
+            self.offset_stiffness = float(offset_stiffness)
         if changed_gravity:
             self.gravity_scale = float(gravity_scale)
-        if changed_stretch or changed_gravity:
+        if (
+            changed_stretch
+            or changed_gravity
+            or changed_rest_length
+            or changed_soft
+            or changed_stiff
+            or changed_offset
+        ):
             self._reset()
         if builder.button("Reset springs"):
             self._reset()
@@ -615,13 +696,17 @@ class _RigidDistanceSpring:
         builder.text("comparison axis: distance-spring response family")
         builder.text(
             f"held fixed: executor {self._executor_label()} | sequential impulse + "
-            f"AVBD springs | rest length {_REST_LENGTH:.2f} m | payload mass 1.0 | "
-            f"time step {_TIME_STEP * 1000.0:.1f} ms"
+            f"AVBD springs | rest length {self.rest_length:.2f} m | payload "
+            f"mass 1.0 | time step {_TIME_STEP * 1000.0:.1f} ms"
         )
         builder.text("solver: sequential impulse with AVBD distance-spring rows")
         builder.text("IPC and multibody worlds reject rigid-body distance springs")
         builder.text(
-            f"rest length {float(_REST_LENGTH):.3f} m | "
+            f"spring k soft/stiff/offset {self.soft_stiffness:.1f}/"
+            f"{self.stiff_stiffness:.1f}/{self.offset_stiffness:.1f} N/m"
+        )
+        builder.text(
+            f"rest length {float(self.rest_length):.3f} m | "
             f"gravity z {float(self.world.gravity[2]):.3f} m/s^2 | "
             f"step {self._step_profile_ms():.3f} ms"
         )

@@ -4624,15 +4624,37 @@ def test_rigid_verifier_replay_snapshots_restore_controls() -> None:
     distance_spring.executor_index = len(distance_spring._executors) - 1
     distance_spring.initial_stretch = 0.41
     distance_spring.gravity_scale = 0.35
+    distance_spring.rest_length = 0.58
+    distance_spring.soft_stiffness = 63.0
+    distance_spring.stiff_stiffness = 245.0
+    distance_spring.offset_stiffness = 145.0
+    distance_spring._apply_spring_parameters()
     distance_spring_state = distance_spring.capture_replay_state()
     distance_spring.executor_index = 0
     distance_spring.initial_stretch = 0.10
     distance_spring.gravity_scale = 0.0
+    distance_spring.rest_length = 0.30
+    distance_spring.soft_stiffness = 20.0
+    distance_spring.stiff_stiffness = 90.0
+    distance_spring.offset_stiffness = 50.0
     distance_spring.restore_replay_state(distance_spring_state)
     assert distance_spring.executor_index == len(distance_spring._executors) - 1
     assert distance_spring.initial_stretch == pytest.approx(0.41)
     assert distance_spring.gravity_scale == pytest.approx(0.35)
+    assert distance_spring.rest_length == pytest.approx(0.58)
+    assert distance_spring.soft_stiffness == pytest.approx(63.0)
+    assert distance_spring.stiff_stiffness == pytest.approx(245.0)
+    assert distance_spring.offset_stiffness == pytest.approx(145.0)
     assert distance_spring.world.gravity[2] == pytest.approx(-4.0 * 0.35)
+    assert distance_spring.world.get_rigid_body_distance_spring_parameters(
+        "soft_distance_spring"
+    ) == pytest.approx((0.58, 63.0))
+    assert distance_spring.world.get_rigid_body_distance_spring_parameters(
+        "stiff_distance_spring"
+    ) == pytest.approx((0.58, 245.0))
+    assert distance_spring.world.get_rigid_body_distance_spring_parameters(
+        "offset_distance_spring"
+    ) == pytest.approx((0.58, 145.0))
     assert set(distance_spring._last_metrics) == {
         "free",
         "soft",
@@ -5465,7 +5487,7 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
     assert capture_metrics["held_fixed"] == {
         "executor": controller._executor_label(),
         "payload_mass": pytest.approx(1.0),
-        "rest_length_m": pytest.approx(0.45),
+        "rest_length_m": pytest.approx(controller.rest_length),
         "solver": "Sequential impulse + AVBD distance springs",
         "time_step_ms": pytest.approx(capture_metrics["time_step_ms"]),
     }
@@ -5474,6 +5496,18 @@ def test_rigid_distance_spring_reduces_stretch_and_spins_offset_anchor() -> None
     )
     assert capture_metrics["controls"]["gravity_scale"] == pytest.approx(
         controller.gravity_scale
+    )
+    assert capture_metrics["controls"]["rest_length"] == pytest.approx(
+        controller.rest_length
+    )
+    assert capture_metrics["controls"]["soft_stiffness"] == pytest.approx(
+        controller.soft_stiffness
+    )
+    assert capture_metrics["controls"]["stiff_stiffness"] == pytest.approx(
+        controller.stiff_stiffness
+    )
+    assert capture_metrics["controls"]["offset_stiffness"] == pytest.approx(
+        controller.offset_stiffness
     )
     assert capture_metrics["lane_order"] == [lane.key for lane in controller.lanes]
     assert capture_metrics["spring_lanes"] == [

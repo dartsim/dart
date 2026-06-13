@@ -667,13 +667,15 @@ The **`rigid_distance_spring`** scene shows the public
 move to one-DOF joints. It keeps the solver scope explicit: distance springs
 are AVBD-backed rows in the sequential rigid-body World path, while IPC and
 multibody Worlds reject this API. The panel compares an unsprung baseline,
-soft and stiff center springs, and an off-center anchor lane with stretch,
-payload speed, angular speed, and step timing. The panel and capture metrics
-label the distance-spring response-family comparison axis, the held-fixed
-executor/rest-length/payload/time-step context, lane order, and top-level
-review signals for free, soft, stiff, and offset absolute stretch plus
-off-center angular speed. The shared Replay panel uses maximum spring stretch
-as its value track and marks high-stretch or off-center spin frames.
+soft and stiff center springs, and an off-center anchor lane with editable
+rest length and per-lane stiffness controls, stretch, payload speed, angular
+speed, and step timing. The panel, replay state, and capture metrics label the
+distance-spring response-family comparison axis, the held-fixed
+executor/rest-length/payload/time-step context, lane order, public spring
+parameters, and top-level review signals for free, soft, stiff, and offset
+absolute stretch plus off-center angular speed. The shared Replay panel uses
+maximum spring stretch as its value track and marks high-stretch or off-center
+spin frames.
 
 The **`rigid_limited_joints`** scene verifies the public revolute and prismatic
 rigid-body joint rows without making motor or limit claims. The hinge lane

@@ -1266,6 +1266,10 @@ def test_rigid_comparison_panels_label_the_compared_axis() -> None:
         (
             rigid_distance_spring,
             (
+                "slider:Rest length:0.25:0.75",
+                "slider:Soft stiffness:10.0:100.0",
+                "slider:Stiff stiffness:80.0:320.0",
+                "slider:Offset stiffness:40.0:220.0",
                 "text:comparison axis: distance-spring response family",
                 "text:held fixed: executor Sequential | sequential impulse + AVBD springs | rest length 0.45 m | payload mass 1.0 | time step 4.0 ms",
             ),
@@ -2169,6 +2173,46 @@ def test_rigid_joint_breakage_panel_edits_break_force_threshold() -> None:
     assert capture_metrics["controls"]["break_force"] == pytest.approx(100.0)
     assert capture_metrics["controls"]["break_force_log10"] == pytest.approx(2.0)
     assert capture_metrics["metrics"]["break_force_log10"] == pytest.approx(2.0)
+
+
+def test_rigid_distance_spring_panel_edits_public_spring_parameters() -> None:
+    _require_simulation_symbols("World")
+
+    setup = rigid_distance_spring.build()
+    controller = setup.info["rigid_distance_spring_controller"]
+
+    builder = _ScriptedPanelBuilder(
+        slider_values={
+            "Rest length": 0.62,
+            "Soft stiffness": 72.0,
+            "Stiff stiffness": 280.0,
+            "Offset stiffness": 160.0,
+        },
+    )
+    setup.panels[0].build(builder, object())
+
+    assert "slider:Rest length:0.25:0.75" in builder.events
+    assert "slider:Soft stiffness:10.0:100.0" in builder.events
+    assert "slider:Stiff stiffness:80.0:320.0" in builder.events
+    assert "slider:Offset stiffness:40.0:220.0" in builder.events
+    assert controller.rest_length == pytest.approx(0.62)
+    assert controller.soft_stiffness == pytest.approx(72.0)
+    assert controller.stiff_stiffness == pytest.approx(280.0)
+    assert controller.offset_stiffness == pytest.approx(160.0)
+    assert controller.world.get_rigid_body_distance_spring_parameters(
+        "soft_distance_spring"
+    ) == pytest.approx((0.62, 72.0))
+    assert controller.world.get_rigid_body_distance_spring_parameters(
+        "stiff_distance_spring"
+    ) == pytest.approx((0.62, 280.0))
+    assert controller.world.get_rigid_body_distance_spring_parameters(
+        "offset_distance_spring"
+    ) == pytest.approx((0.62, 160.0))
+    capture_metrics = setup.info["capture_metrics"]()
+    assert capture_metrics["controls"]["rest_length"] == pytest.approx(0.62)
+    assert capture_metrics["controls"]["soft_stiffness"] == pytest.approx(72.0)
+    assert capture_metrics["controls"]["stiff_stiffness"] == pytest.approx(280.0)
+    assert capture_metrics["controls"]["offset_stiffness"] == pytest.approx(160.0)
 
 
 def test_rigid_joint_passive_parameters_panel_edits_drive_forces() -> None:
