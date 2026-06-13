@@ -1359,6 +1359,14 @@ Eigen::Matrix3d inverseWorldInertia(
 }
 
 //==============================================================================
+bool needsContactInverseInertia(
+    const Eigen::Vector3d& normalArmCross, const double friction)
+{
+  return friction > 0.0 || normalArmCross.x() != 0.0
+         || normalArmCross.y() != 0.0 || normalArmCross.z() != 0.0;
+}
+
+//==============================================================================
 double restitutionOf(const detail::WorldRegistry& registry, entt::entity entity)
 {
   if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
@@ -9792,13 +9800,19 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     constraint.staticB = staticB;
     constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
     constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
-    constraint.invInertiaA = staticA ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massA, transformA);
-    constraint.invInertiaB = staticB ? Eigen::Matrix3d::Zero()
-                                     : inverseWorldInertia(massB, transformB);
+    constraint.friction = std::sqrt(
+        frictionOf(registry, entityA) * frictionOf(registry, entityB));
 
     const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
     const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
+    constraint.invInertiaA
+        = !staticA && needsContactInverseInertia(crossA, constraint.friction)
+              ? inverseWorldInertia(massA, transformA)
+              : Eigen::Matrix3d::Zero();
+    constraint.invInertiaB
+        = !staticB && needsContactInverseInertia(crossB, constraint.friction)
+              ? inverseWorldInertia(massB, transformB)
+              : Eigen::Matrix3d::Zero();
     constraint.normalLinearDeltaA = -constraint.invMassA * constraint.normal;
     constraint.normalLinearDeltaB = constraint.invMassB * constraint.normal;
     constraint.normalAngularDeltaA = -constraint.invInertiaA * crossA;
@@ -9837,8 +9851,6 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 
     constraint.tangentImpulse1 = 0.0;
     constraint.tangentImpulse2 = 0.0;
-    constraint.friction = std::sqrt(
-        frictionOf(registry, entityA) * frictionOf(registry, entityB));
     if (constraint.friction > 0.0) {
       // Two tangent directions spanning the contact plane, plus their effective
       // masses, for a friction-pyramid (box) Coulomb model.

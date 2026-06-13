@@ -9,6 +9,16 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the default sequential-impulse rigid
+  contact path now skips inverse world-inertia factorization for centered,
+  frictionless normal contacts whose angular contact Jacobian is exactly zero.
+  This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0` source-shaped row,
+  where 11 zero-friction boxes contact the ground through centered normal rows.
+  Focused contact behavior and baked allocator tests passed, and a `/0`
+  benchmark smoke recorded a 7.42 us median CPU step under load average
+  `3.64, 4.33, 6.29` with CPU scaling enabled. This is local path evidence
+  only; it does not refresh the tracked friction-sweep packet, close the
+  frictionless source-row CPU gap, or claim GPU parity.
 - Latest resumed checkpoint (2026-06-12): `RigidBodyContactStage::prepare()`
   now sizes ordinary and AVBD contact scratch from the conservative
   collision-shape capacity estimate and prewarms collision-query cache storage

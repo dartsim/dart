@@ -12,15 +12,51 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
-Latest local slice: `RigidBodyContactStage::prepare()` now sizes ordinary and
-AVBD contact scratch from the conservative collision-shape capacity estimate and
-prewarms collision-query cache storage without generating prepare-time contacts.
-`execute()` remains the only path that assembles contact rows for the actual
-solve. This removes duplicate bake-time contact generation only; it does not
-refresh the tracked friction-sweep packet, close the frictionless source-row CPU
-gap, or claim GPU parity.
+Latest local slice: the default sequential-impulse rigid contact path now skips
+inverse world-inertia factorization for centered, frictionless normal contacts
+whose angular contact Jacobian is exactly zero. Frictional contacts and
+off-center normal contacts still compute inverse world inertia through the
+existing path. This targets the `BM_AvbdDemo2dFrictionCoefficientSweep/0`
+source-shaped row, where the 11 zero-friction boxes contact the ground through
+centered normal rows. This does not refresh the tracked friction-sweep packet,
+close the frictionless source-row CPU gap, or claim GPU parity.
 
 Validation for the latest local slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_world bm_avbd_rigid_fixed_joint -j 8`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_world --gtest_filter='World.RigidBodyContactZeroFrictionPreservesSlidingVelocity:World.RigidBodyContactFrictionDeceleratesSlidingBody:World.RigidBodyContactFrictionRollsSlidingSphere:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap:World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap' --gtest_brief=1`
+  passed, 5 tests.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-frictionless-current-profile-baseline.json --benchmark_out_format=json'`
+  passed before the edit. It recorded an 8.34 us median CPU step under load
+  average `4.48, 5.04, 7.18` with CPU scaling enabled.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter="BM_AvbdDemo2dFrictionCoefficientSweep/0$" --benchmark_min_time=0.5s --benchmark_repetitions=5 --benchmark_out=/tmp/avbd-frictionless-sweep-row-after-central-inertia-skip.json --benchmark_out_format=json'`
+  passed after the edit. It recorded a 7.42 us median CPU step under load
+  average `3.64, 4.33, 6.29` with CPU scaling enabled. This is local path smoke
+  only because same-source native timing and visual captures were not rerun.
+- A text `WorldStepProfile` snapshot on the Python
+  `avbd_demo2d_dynamic_friction` scene with max friction 0 recorded
+  `rigid_body_contact` at 0.027 ms after the edit; a pre-edit snapshot in the
+  same session recorded 0.060 ms. Profiling overhead and host load make this
+  diagnostic path evidence, not tracked packet evidence.
+- `pixi run -e cuda test-all` passed on the visible NVIDIA RTX 5000 Ada host.
+  The documentation stage emitted four existing autodoc warnings about the
+  generated `dartpy._world_render_bridge` stub import, but the command passed.
+
+Next preferred bounded work: continue the per-step frictionless max-friction-0
+CPU audit under cleaner host load, or switch to GPU parity preparation if the
+CPU path has no safe bounded next cut.
+
+Previous local checkpoint: commit `b1e7402d1fa` records simulation-bake cache
+prewarming without prepare-time contact row generation. `RigidBodyContactStage`
+sizes ordinary and AVBD contact scratch from the conservative collision-shape
+capacity estimate and prewarms collision-query cache storage without generating
+prepare-time contacts; `execute()` remains the only path that assembles contact
+rows for the actual solve. This removes duplicate bake-time contact generation
+only; it does not refresh the tracked friction-sweep packet, close the
+frictionless source-row CPU gap, or claim GPU parity.
+
+Validation for commit `b1e7402d1fa`:
 
 - `pixi run -- cmake --build build/default/cpp/Release --target test_world -j 8`
   passed.
@@ -44,10 +80,6 @@ Validation for the latest local slice:
   `12.97, 10.30, 8.72` with CPU scaling enabled. This is path smoke only
   because the edit affects simulation bake, not the steady-state per-step
   contact solve.
-
-Next preferred bounded work: return to the per-step frictionless max-friction-0
-CPU audit/optimization under cleaner host load, or switch to GPU parity
-preparation if the CPU path has no safe bounded next cut.
 
 Previous local checkpoint: commit `4c2cc43073b` records the
 friction-coefficient sweep owner row matching the tracked packet evidence. The
