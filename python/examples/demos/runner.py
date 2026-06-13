@@ -879,6 +879,60 @@ _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
 }
 
 
+@dataclass(frozen=True)
+class _DeferredWorkflowSearch:
+    aliases: tuple[str, ...]
+    note: str
+
+
+_RIGID_VISUAL_WORKFLOW_DEFERRED_API_SEARCHES: Mapping[
+    str, tuple[_DeferredWorkflowSearch, ...]
+] = {
+    "rigid_body_modes": (
+        _DeferredWorkflowSearch(
+            aliases=(
+                "activation state",
+                "body activation",
+                "body deactivation",
+                "deactivation",
+                "island activation",
+                "sleep",
+                "sleep state",
+                "sleep wake",
+                "sleeping body",
+                "wake",
+            ),
+            note=(
+                "No public sleep/wake/island activation API is exposed yet; "
+                "this row only verifies body-mode semantics."
+            ),
+        ),
+    ),
+    "rigid_loop_closure": (
+        _DeferredWorkflowSearch(
+            aliases=(
+                "closure compliance",
+                "closure damping",
+                "closure stiffness",
+                "compliance",
+                "compliant loop closure",
+                "compliant constraints",
+                "constraint damping",
+                "constraint stiffness",
+                "loop closure compliance",
+                "loop closure damping",
+                "loop closure stiffness",
+                "loop compliance",
+            ),
+            note=(
+                "No public loop-closure compliance/stiffness/damping API is "
+                "exposed yet; this row compares closure families and policies."
+            ),
+        ),
+    ),
+}
+
+
 def _rigid_workflow_capture_command(
     scene_id: str,
     frames: int,
@@ -2132,6 +2186,19 @@ def _workflow_search_phrase(text: str) -> str:
     return " ".join(_workflow_search_words(text))
 
 
+def _workflow_deferred_api_note(
+    guide: RigidWorkflowGuide, tokens: tuple[str, ...]
+) -> str:
+    for deferred_search in _RIGID_VISUAL_WORKFLOW_DEFERRED_API_SEARCHES.get(
+        guide.scene_id, ()
+    ):
+        if any(
+            _workflow_text_matches(alias, tokens) for alias in deferred_search.aliases
+        ):
+            return deferred_search.note
+    return ""
+
+
 def _workflow_search_word_variants(words: Iterable[str]) -> set[str]:
     variants = set(words)
     for word in words:
@@ -2215,6 +2282,8 @@ def _workflow_search_match_reason(
         return "scene id"
     if query_text == _workflow_search_phrase(guide.label):
         return "row label"
+    if _workflow_deferred_api_note(guide, tokens):
+        return "deferred API caveat"
     if query_text in {_workflow_search_phrase(alias) for alias in aliases}:
         return "maintained alias"
     if len(tokens) > 1 and any(
@@ -2350,6 +2419,9 @@ def _workflow_search_rows(
                 f"{tooltip} Related evidence match: {related_notes}. "
                 f"Click opens {related_matches[0].scene_id}."
             )
+        deferred_api_note = _workflow_deferred_api_note(match, tokens)
+        if deferred_api_note:
+            tooltip = f"{tooltip} Deferred API caveat: {deferred_api_note}"
         if reason:
             tooltip = f"{tooltip} Search match: {reason}."
         builder.item_tooltip(tooltip)

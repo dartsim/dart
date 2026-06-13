@@ -2140,6 +2140,57 @@ def test_rigid_workflow_panel_explains_workflow_phase_search_matches() -> None:
     assert context.scene_switch_requests == ["rigid_solver_compare"]
 
 
+def test_rigid_workflow_panel_explains_deferred_api_search_matches() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow deferred API search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "02/36 Body modes - rigid_body_modes"
+        "##rigid_workflow_find_rigid_body_modes"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "sleep wake"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "02/36 Body modes - rigid_body_modes"
+        "##rigid_workflow_find_rigid_body_modes:False"
+    ) in builder.events
+    assert any(
+        event.startswith("tooltip:Which body mode should I choose?")
+        and "Deferred API caveat: No public sleep/wake/island activation API "
+        "is exposed yet; this row only verifies body-mode semantics." in event
+        and event.endswith("Search match: deferred API caveat.")
+        for event in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_body_modes"]
+
+    closure_builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "loop closure compliance"}
+    )
+    workflow_panel.build(closure_builder, _FakePanelContext())
+    assert any(
+        event.startswith("tooltip:Which loop-closure family should I use?")
+        and "Deferred API caveat: No public loop-closure "
+        "compliance/stiffness/damping API is exposed yet; this row compares "
+        "closure families and policies." in event
+        and event.endswith("Search match: deferred API caveat.")
+        for event in closure_builder.events
+    )
+
+
 def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
     contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
     solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]

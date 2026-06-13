@@ -13,7 +13,15 @@ commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
 threads, or mutate any other GitHub state without explicit maintainer/user
 approval.
 
-Latest local continuation: workflow manifests now record
+Latest local continuation: deferred public-API searches now explain themselves
+at the point of selection. `sleep wake` and `island activation` still route to
+the body-mode semantics row, while `loop closure compliance` still routes to
+the loop-closure family row, but their result tooltips now show a `Deferred API
+caveat` note before opening the closest current verifier row. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_deferred_api_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `5 passed`. This slice is local and unpushed.
+
+Previous local continuation: workflow manifests now record
 `workflow_phase_summary` for selected numbered rows, and `review_index.html`
 shows a top-level `Workflow Phase Map` with row ranges, phase counts,
 per-phase status, focus axes, and scene ids before the per-row cards. This

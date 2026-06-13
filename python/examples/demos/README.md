@@ -176,6 +176,9 @@ same rows as their documented snake_case or singular forms.
 Search-result tooltips name the match source, such as maintained alias, row
 number, user question, workflow phase, focus axis, related evidence, or scope
 caveat, so users can see why the navigator chose a row before switching scenes.
+Deferred public-API searches such as `sleep wake`, `island activation`, and
+`loop closure compliance` also show a deferred API caveat in the tooltip before
+opening the closest current verifier row.
 Broad queries keep the list compact by showing the top six ranked rows, but the
 panel also states the full match count so users can tell when a term like
 `contact` or `solver` has more rows than are visible.

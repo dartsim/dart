@@ -2022,6 +2022,7 @@ def test_rigid_visual_verification_deferred_api_gaps_are_documented() -> None:
         assert "sleep wake" in path_text
         assert "island activation" in path_text
         assert "loop closure compliance" in path_text
+        assert "deferred API caveat" in path_text
 
 
 def test_rigid_visual_verification_readme_matches_sidecar_order() -> None:
