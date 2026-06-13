@@ -340,6 +340,20 @@ def parse_demo_benchmark_packet_rows() -> list[dict[str, str]]:
     return list(_literal_assignment(module, "_BENCHMARK_PACKET_ROWS"))
 
 
+def parse_demo_performance_profile_rows() -> list[dict[str, str]]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    env = {
+        "_PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT": _literal_assignment(
+            module, "_PERFORMANCE_PROFILE_EVIDENCE_ARTIFACT"
+        )
+    }
+    rows = _evaluate_demo_expression(
+        _assignment_value(module, "_PERFORMANCE_PROFILE_ROWS"),
+        env,
+    )
+    return list(rows)
+
+
 def parse_demo_standalone_problem_suite_label() -> str:
     module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
     return str(_literal_assignment(module, "_STANDALONE_PROBLEM_SUITE_LABEL"))
@@ -882,6 +896,120 @@ def check_demo_advanced_solver_parameters(manifest: list[SolverEntry]) -> None:
     if errors:
         raise AssertionError(
             "lcp_physics advanced solver parameter rows are out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
+
+
+def _parse_demo_problem_sizes(value: str) -> tuple[list[int], list[str]]:
+    sizes: list[int] = []
+    invalid: list[str] = []
+    for item in _split_demo_reference_list(value):
+        try:
+            size = int(item)
+        except ValueError:
+            invalid.append(item)
+            continue
+        if size <= 0:
+            invalid.append(item)
+            continue
+        sizes.append(size)
+    return sizes, invalid
+
+
+def _performance_profile_evidence_problem_sizes_by_category() -> dict[str, set[int]]:
+    problem_sizes: dict[str, set[int]] = {
+        category: set() for category in PROFILE_KEY_BY_CATEGORY
+    }
+    with LCP_PROFILE_EVIDENCE_CSV_PATH.open(newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            category = row.get("category", "")
+            if category not in problem_sizes:
+                continue
+            size = _csv_counter_as_int(row, "problem_size")
+            if size is not None and size > 0:
+                problem_sizes[category].add(size)
+    return problem_sizes
+
+
+def check_demo_performance_profiles() -> None:
+    rows = parse_demo_performance_profile_rows()
+    required_fields = (
+        "surface",
+        "artifact",
+        "evidence_artifact",
+        "problem_sizes",
+        "current_leaders",
+        "current_laggards",
+        "takeaway",
+    )
+    expected_artifacts = {
+        surface: _display_path(LCP_PROFILE_CSV_PATHS[profile_key])
+        for surface, profile_key in PROFILE_KEY_BY_CATEGORY.items()
+    }
+    expected_evidence_artifact = _display_path(LCP_PROFILE_EVIDENCE_CSV_PATH)
+    expected_problem_sizes = _performance_profile_evidence_problem_sizes_by_category()
+
+    errors: list[str] = []
+    if not rows:
+        errors.append("no performance profile rows")
+
+    surfaces = [str(row.get("surface", "")) for row in rows]
+    duplicate_surfaces = [
+        surface
+        for index, surface in enumerate(surfaces)
+        if surface and surface in surfaces[:index]
+    ]
+    if duplicate_surfaces:
+        errors.append(f"duplicate performance profile rows {duplicate_surfaces}")
+
+    for index, row in enumerate(rows, start=1):
+        surface = str(row.get("surface", f"row {index}"))
+        missing_fields = [
+            field for field in required_fields if not str(row.get(field, "")).strip()
+        ]
+        if missing_fields:
+            errors.append(f"{surface}: missing fields {missing_fields}")
+
+        if surface not in PROFILE_KEY_BY_CATEGORY:
+            errors.append(f"{surface}: unknown profile surface")
+            continue
+
+        artifact = str(row.get("artifact", ""))
+        expected_artifact = expected_artifacts[surface]
+        if artifact != expected_artifact:
+            errors.append(
+                f"{surface}: artifact {artifact!r} does not match "
+                f"{expected_artifact!r}"
+            )
+
+        evidence_artifact = str(row.get("evidence_artifact", ""))
+        if evidence_artifact != expected_evidence_artifact:
+            errors.append(
+                f"{surface}: evidence_artifact {evidence_artifact!r} does "
+                f"not match {expected_evidence_artifact!r}"
+            )
+
+        problem_sizes, invalid_problem_sizes = _parse_demo_problem_sizes(
+            str(row.get("problem_sizes", ""))
+        )
+        if invalid_problem_sizes:
+            errors.append(f"{surface}: invalid problem_sizes {invalid_problem_sizes}")
+        expected_sizes = sorted(expected_problem_sizes[surface])
+        if problem_sizes != expected_sizes:
+            errors.append(
+                f"{surface}: problem_sizes {problem_sizes} do not match "
+                f"evidence {expected_sizes}"
+            )
+
+    missing_surfaces = [
+        surface for surface in PROFILE_KEY_BY_CATEGORY if surface not in set(surfaces)
+    ]
+    if missing_surfaces:
+        errors.append(f"missing performance profile surfaces {missing_surfaces}")
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics performance profile rows are out of sync:\n  - "
             + "\n  - ".join(errors)
         )
 
@@ -1488,6 +1616,7 @@ def check_roster() -> None:
     check_demo_standalone_problem_cases()
     check_demo_solver_guidance(manifest)
     check_demo_advanced_solver_parameters(manifest)
+    check_demo_performance_profiles()
     check_demo_profile_evidence_required_columns()
     manifest_names = [entry.name for entry in manifest]
     manifest_classes = [entry.class_name for entry in manifest]

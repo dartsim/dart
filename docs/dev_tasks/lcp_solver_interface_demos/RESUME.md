@@ -1,5 +1,95 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Performance Profile Row Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `051451dd2ab Guard LCP live packet metadata`; if this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   performance-profile row guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch before this checkpoint commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `051451dd2ab Guard LCP live packet metadata`
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by sixty-seven commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now parses the LCP demo performance
+  profile overview table and runs that guard in the main roster check before
+  the profile evidence schema guard.
+- The guard rejects empty profile tables, duplicate or missing surfaces,
+  unknown surfaces, missing row fields, stale profile CSV paths, stale evidence
+  artifact paths, invalid problem sizes, and problem-size lists that drift from
+  `docs/background/lcp/figures/performance_profile_evidence.csv`.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers the valid parser
+  path and stale duplicate, missing-field, stale artifact, stale evidence, bad
+  problem-size, unknown-surface, and missing-surface failures.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed in this continuation:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'performance_profile or profile_evidence or demo_profile_schema'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+git diff --check
+pixi run build
+nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused performance-profile and adjacent roster tests: passed with 12 tests.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full LCP roster unit file: passed with 44 tests.
+- `pixi run lint`: passed, including the LCP solver roster check and AI command
+  sync.
+- `git diff --check`: passed.
+- `pixi run build`: passed.
+- NVIDIA query: reported
+  `NVIDIA RTX 5000 Ada Generation Laptop GPU, 8.9`.
+- `pixi run -e cuda test-all`: passed end-to-end on that GPU. Its report
+  showed linting, build, C++ unit tests, simulation tests, Python tests,
+  documentation, and CUDA C++ tests plus benchmark smoke all passed. The
+  simulation phase included `test_rigid_ipc_paper_experiments`, `test_world`,
+  and `test_lcp_jacobi_batch_cuda`; documentation emitted the known four
+  `dartpy._world_render_bridge` autodoc warnings.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, roster check, `pixi run lint`, `git diff --check`, and
+any broader gate warranted by the final diff. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Live Packet Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

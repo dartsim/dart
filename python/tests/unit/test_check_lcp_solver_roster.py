@@ -102,6 +102,82 @@ def test_lcp_solver_roster_rejects_demo_profile_schema_drift(
         module.check_demo_profile_evidence_required_columns()
 
 
+def test_lcp_solver_roster_reads_demo_performance_profile_rows() -> None:
+    module = _load_module()
+
+    rows_by_surface = {
+        row["surface"]: row for row in module.parse_demo_performance_profile_rows()
+    }
+
+    assert set(rows_by_surface) == {"Standard", "Boxed", "FrictionIndex"}
+    assert rows_by_surface["Standard"]["artifact"] == (
+        "docs/background/lcp/figures/performance_profile_standard.csv"
+    )
+    assert rows_by_surface["Boxed"]["problem_sizes"] == "12, 24, 48"
+    assert rows_by_surface["FrictionIndex"]["problem_sizes"] == "4, 16, 64"
+    assert rows_by_surface["Standard"]["evidence_artifact"] == (
+        "docs/background/lcp/figures/performance_profile_evidence.csv"
+    )
+    module.check_demo_performance_profiles()
+
+
+def test_lcp_solver_roster_rejects_stale_performance_profile_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_rows = [
+        {
+            "surface": "Standard",
+            "artifact": "docs/background/lcp/figures/missing_standard.csv",
+            "evidence_artifact": "docs/background/lcp/figures/stale_evidence.csv",
+            "problem_sizes": "12, 999",
+            "current_leaders": "leaders",
+            "current_laggards": "",
+            "takeaway": "takeaway",
+        },
+        {
+            "surface": "Standard",
+            "artifact": "docs/background/lcp/figures/performance_profile_standard.csv",
+            "evidence_artifact": (
+                "docs/background/lcp/figures/performance_profile_evidence.csv"
+            ),
+            "problem_sizes": "12",
+            "current_leaders": "leaders",
+            "current_laggards": "laggards",
+            "takeaway": "takeaway",
+        },
+        {
+            "surface": "Unknown",
+            "artifact": "docs/background/lcp/figures/performance_profile_unknown.csv",
+            "evidence_artifact": (
+                "docs/background/lcp/figures/performance_profile_evidence.csv"
+            ),
+            "problem_sizes": "bad",
+            "current_leaders": "leaders",
+            "current_laggards": "laggards",
+            "takeaway": "takeaway",
+        },
+    ]
+    monkeypatch.setattr(
+        module, "parse_demo_performance_profile_rows", lambda: stale_rows
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="performance profile rows are out of sync",
+    ) as exc_info:
+        module.check_demo_performance_profiles()
+
+    message = str(exc_info.value)
+    assert "duplicate performance profile rows ['Standard']" in message
+    assert "Standard: missing fields ['current_laggards']" in message
+    assert "missing_standard.csv" in message
+    assert "stale_evidence.csv" in message
+    assert "Standard: problem_sizes [12, 999] do not match evidence" in message
+    assert "Unknown: unknown profile surface" in message
+    assert "missing performance profile surfaces ['Boxed', 'FrictionIndex']" in message
+
+
 def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
     module = _load_module()
 
