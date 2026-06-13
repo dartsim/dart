@@ -146,6 +146,10 @@ raw manifest JSON. Contact-query and collision-cast cards also promote
 selected contact/depth, query-filter, ignored-pair, ray hit, swept-probe,
 time-of-impact, and cast-margin values into `latest signals`, so reviewers can
 scan the query rows without opening raw manifests.
+The early body-mode, frame-hierarchy, external-load, and link point-load cards
+also promote their defining physical signals into `latest signals`, so the
+static packet shows mode semantics, transform residuals, acceleration scaling,
+and lever-arm yaw response before a reviewer opens per-row manifests.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,

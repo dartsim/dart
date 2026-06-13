@@ -2,14 +2,29 @@
 
 ## Current Handoff (2026-06-13)
 
-Current branch snapshot after this slice:
+Current branch snapshot before this slice:
 `feature/rigid-body-gui-visual-verification` matched
-`origin/feature/rigid-body-gui-visual-verification` at `9536e56fd55` before the
-current artifact-refresh/command-alignment slice. After this slice is
-committed, expect one local commit ahead of origin until a maintainer approves
-another push. There is still no PR for this branch. Do not push, create a PR,
-set a milestone, rerun CI, comment on reviews, resolve threads, or mutate any
-other GitHub state without explicit maintainer/user approval.
+`origin/feature/rigid-body-gui-visual-verification` at `b187cc2bd8d`. After
+this slice is committed, expect one local commit ahead of origin until a
+maintainer approves another push. There is still no PR for this branch. Do not
+push, create a PR, set a milestone, rerun CI, comment on reviews, resolve
+threads, or mutate any other GitHub state without explicit maintainer/user
+approval.
+
+Latest local continuation: workflow review-card `latest signals` now promote
+the first core body/frame/load rows that a reviewer scans after the baseline.
+Row 2 surfaces dynamic displacement/height/speed, kinematic path error/x, and
+static drift; row 4 surfaces world/relative/orientation transform residuals,
+sensor position, and parent; row 5 surfaces force- and inertia-scaled
+acceleration plus static drift; row 6 surfaces centered/doubled/local-frame
+acceleration, off-center yaw acceleration, and pulse count. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_body_frame_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_load_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_card_summarizes_link_point_load_signals python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_parameter_budget_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_restitution_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_material_response_values -q`
+reported `6 passed`. Fresh rows 2-6 workflow evidence:
+`build/captures/rigid_workflow_core_signal_highlights_1781337019` completed
+with `status=complete`, `capture_count=5`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new row-specific latest signals.
 
 Latest local continuation: the full numbered rows 01-36 workflow packet was
 regenerated after the backend-diagnostics and contact-query review-card

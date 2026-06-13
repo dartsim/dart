@@ -21,6 +21,20 @@ review audit checked 181 local `href`/`src` targets in `review_index.html` with
 durable docs at `/tmp/dart_capture_rigid_workflow_resilient`.
 
 Latest local implementation slice: workflow review-card `latest signals` now
+surface the core body/frame/load values needed for static review of rows 2 and
+4-6. Row 2 promotes dynamic displacement/height/speed, kinematic path error/x,
+and static drift; row 4 promotes transform residuals, sensor position, and
+parent frame; row 5 promotes force- and inertia-scaled acceleration plus static
+drift; and row 6 promotes centered/doubled/local-frame acceleration,
+off-center yaw acceleration, and pulse count. Focused capture-helper guards
+reported `6 passed`. Fresh rows 2-6 workflow evidence lives at
+`build/captures/rigid_workflow_core_signal_highlights_1781337019`: the packet
+completed with `status=complete`, `capture_count=5`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new row-specific latest signals.
+
+Latest local implementation slice: workflow review-card `latest signals` now
 surface the contact-query and collision-cast values needed for static review of
 rows 12-14. The cards promote selected/total contact counts, selected depth,
 selected pair and shape indices, query-filter active/baseline/filtered counts,
@@ -210,11 +224,11 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The branch matched
-`origin/feature/rigid-body-gui-visual-verification` at `9536e56fd55` before the
-current artifact-refresh/command-alignment slice. After this slice is
-committed, expect one local commit ahead of origin until a maintainer approves
-another push. Fresh `gh pr list --head "$(git branch --show-current)"` still
-reported no PR for the branch. The latest pre-push
+`origin/feature/rigid-body-gui-visual-verification` at `b187cc2bd8d` before the
+current core-signal review-card slice. After this slice is committed, expect
+one local commit ahead of origin until a maintainer approves another push.
+Fresh `gh pr list --head "$(git branch --show-current)"` still reported no PR
+for the branch. The latest pre-push
 `git fetch origin main && git merge --no-edit origin/main` reported
 `Already up to date`, so the branch remained aligned with the PR #2986 DART 7
 architecture/work-packet harness at publication time. The approved push did

@@ -1417,6 +1417,160 @@ def test_rigid_workflow_review_warns_when_solver_identity_is_missing(
     assert "scenes/01_rigid_body/manifest.json" in review_html
 
 
+def test_rigid_workflow_latest_signals_prioritize_body_frame_values() -> None:
+    body_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "dynamic_displacement_x": 0.34,
+            "dynamic_height": 1.27,
+            "dynamic_speed": 0.82,
+            "executor": "Sequential",
+            "kinematic_error": 0.001,
+            "kinematic_x": 0.33,
+            "solver": "Sequential impulse",
+            "static_drift": 0.0,
+        }
+    )
+    frame_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "orientation_error": 0.0002,
+            "parent": "rigid_link",
+            "relative_error": 0.0003,
+            "sensor_x": 0.11,
+            "sensor_y": 0.22,
+            "sensor_z": 0.33,
+            "solver": "Sequential impulse",
+            "world_error": 0.0004,
+        }
+    )
+
+    assert body_highlights[:6] == [
+        "dynamic displacement x: 0.34",
+        "dynamic height: 1.27",
+        "dynamic speed: 0.82",
+        "kinematic error: 0.001",
+        "kinematic x: 0.33",
+        "static drift: 0",
+    ]
+    assert frame_highlights[:7] == [
+        "world error: 0.0004",
+        "relative error: 0.0003",
+        "orientation error: 0.0002",
+        "sensor x: 0.11",
+        "sensor y: 0.22",
+        "sensor z: 0.33",
+        "parent: rigid_link",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_load_values() -> None:
+    load_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "executor": "Sequential",
+            "heavy_force_accel_x": 0.18,
+            "high_inertia_angular_accel_z": 0.07,
+            "light_force_accel_x": 0.72,
+            "low_inertia_angular_accel_z": 0.41,
+            "solver": "Sequential impulse",
+            "static_drift": 0.0001,
+        }
+    )
+    point_load_highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "center_world_accel_x": 0.54,
+            "double_world_accel_x": 1.08,
+            "executor": "Sequential",
+            "local_frame_world_accel_y": 0.31,
+            "offcenter_yaw_accel": 0.23,
+            "pulse_applied_count": 12,
+            "solver": "Sequential impulse",
+        }
+    )
+
+    assert load_highlights[:5] == [
+        "light force accel x: 0.72",
+        "heavy force accel x: 0.18",
+        "low inertia angular accel z: 0.41",
+        "high inertia angular accel z: 0.07",
+        "static drift: 0.0001",
+    ]
+    assert point_load_highlights[:5] == [
+        "center world accel x: 0.54",
+        "double world accel x: 1.08",
+        "local frame world accel y: 0.31",
+        "offcenter yaw accel: 0.23",
+        "pulse applied count: 12",
+    ]
+
+
+def test_rigid_workflow_review_card_summarizes_link_point_load_signals(
+    tmp_path: pathlib.Path,
+) -> None:
+    output = tmp_path / "rigid_workflow"
+    scene_dir = output / "scenes" / "06_rigid_link_point_loads"
+    scene_dir.mkdir(parents=True)
+    screenshot = scene_dir / "rigid_link_point_loads.png"
+    screenshot.write_bytes(b"fake-png")
+    manifest = scene_dir / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "artifacts": {
+                    "screenshot": str(screenshot),
+                },
+                "scene_metrics": {
+                    "latest": {
+                        "metrics": {
+                            "center_world_accel_x": 0.54,
+                            "double_world_accel_x": 1.08,
+                            "executor": "Sequential",
+                            "local_frame_world_accel_y": 0.31,
+                            "offcenter_yaw_accel": 0.23,
+                            "pulse_applied_count": 12,
+                            "row": "rigid_link_point_loads",
+                            "solver": "Sequential impulse",
+                        }
+                    },
+                    "metric_key_counts": {
+                        "center_world_accel_x": 1,
+                        "double_world_accel_x": 1,
+                        "executor": 1,
+                        "local_frame_world_accel_y": 1,
+                        "offcenter_yaw_accel": 1,
+                        "pulse_applied_count": 1,
+                        "row": 1,
+                        "solver": 1,
+                    },
+                },
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+    review_html = capture_py_demo._workflow_review_card(
+        {
+            "command": "pixi run py-demo-capture -- --scene rigid_link_point_loads",
+            "count": 36,
+            "frames": 72,
+            "height": 540,
+            "manifest": str(manifest),
+            "order": 6,
+            "scene": "rigid_link_point_loads",
+            "show_ui": True,
+            "status": "captured",
+            "width": 960,
+            "workflow_group": "numbered",
+            "workflow_label": "Link point loads",
+        },
+        output,
+    )
+
+    assert "<dt>latest signals</dt>" in review_html
+    assert "center world accel x: 0.54" in review_html
+    assert "offcenter yaw accel: 0.23" in review_html
+
+
 def test_rigid_workflow_latest_signals_prioritize_parameter_budget_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {
