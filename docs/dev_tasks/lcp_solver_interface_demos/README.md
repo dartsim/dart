@@ -1,9 +1,71 @@
 # LCP Solver Interface And Demos — Dev Task
 
-## 2026-06-12 Current Continuation - SAP Matvec Reuse Verification
+## 2026-06-12 Current Continuation - Profile Evidence Native Row Validation
 
 This is the latest hand-off state. Sections below are historical checkpoints
 and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `5d493f4ac68c Update LCP SAP verification handoff` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `5d493f4ac68c Update LCP SAP verification handoff`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by one commit before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Profile-evidence native-row status:
+
+- `scripts/check_lcp_solver_roster.py` now rejects performance-profile
+  evidence rows whose solver/category pair is not native-supported. This closes
+  the gap where an unsupported row could satisfy the manifest-derived
+  `solver_supports_problem=0` expectation even though profile evidence is meant
+  to contain native benchmark rows only.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers that regression
+  with a boxed `Lemke` evidence row.
+- No benchmark registrations, solver predicates, checked profile CSVs, public
+  APIs, or performance timings were intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py python/tests/unit/test_lcp_performance_profile.py -q`
+  passed with 15 tests.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun
+   `pixi run lint` and `git diff --check`, then commit the focused
+   checker/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+4. Avoid a full performance-profile refresh while the host is under unrelated
+   heavy build load unless the user explicitly asks for it.
+
+## 2026-06-12 Current Continuation - SAP Matvec Reuse Verification
+
+Historical checkpoint section. It was the latest hand-off before the
+profile-evidence native-row validation continuation.
 
 Fresh AI session priority:
 

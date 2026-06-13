@@ -453,11 +453,18 @@ def check_performance_profile_evidence(
                     f"for {solver_name}"
                 )
 
+            native_category_supported = _solver_support(entry, category)
+            if not native_category_supported:
+                errors.append(
+                    f"row {row_number}: {solver_name}/{category} is not "
+                    "native-supported and should not appear in profile evidence"
+                )
+
             expected_support = {
                 "solver_supports_standard": entry.standard,
                 "solver_supports_boxed": entry.boxed,
                 "solver_supports_friction_index": entry.findex,
-                "solver_supports_problem": _solver_support(entry, category),
+                "solver_supports_problem": native_category_supported,
             }
             for key, expected in expected_support.items():
                 expected_value = 1 if expected else 0

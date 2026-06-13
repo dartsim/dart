@@ -109,6 +109,35 @@ def test_lcp_profile_evidence_rejects_solver_family_mismatch(
         module.check_performance_profile_evidence(manifest, path)
 
 
+def test_lcp_profile_evidence_rejects_unsupported_solver_category(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=module.REQUIRED_EVIDENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerow(
+            _valid_evidence_row()
+            | {
+                "category": "Boxed",
+                "solver": "Lemke",
+                "solver_manifest_index": "2",
+                "solver_supports_standard": "1",
+                "solver_supports_boxed": "0",
+                "solver_supports_friction_index": "0",
+                "solver_supports_problem": "0",
+                "problem_type_standard": "0",
+                "problem_type_boxed": "1",
+            }
+        )
+
+    with pytest.raises(AssertionError, match="not native-supported"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
 def test_lcp_profile_evidence_rejects_problem_dimension_mismatch(
     tmp_path: Path,
 ) -> None:
