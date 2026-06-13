@@ -343,7 +343,11 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
     for contact/joint/spring row ordinals instead of per-step tree maps, and
     append paths seed the body-index cache when they fall back to an existing
     snapshot entity scan. The rigid row driver skips per-body row-index scratch
-    setup for row families absent from a solve.
+    setup for row families absent from a solve. Rigid AVBD contact manifolds
+    with no active Coulomb friction capacity now clear their friction row
+    inventory and return after normal-row construction, avoiding tangent-row
+    warm-start lookup and construction work for frictionless manifolds while
+    preserving normal rows.
     The
     `avbd-demo2d` Joint Grid row has a tracked
     visual/DART-benchmark/native-reference timing packet and records DART about

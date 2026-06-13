@@ -12,12 +12,49 @@ claims narrow. Do not claim a paper/source-demo CPU win, GPU parity, broad
 breakable-wall/fracture corpus, same-hardware paper-number match, or
 all-coefficient friction win unless the tracked artifacts directly prove it.
 
+Current resumed slice: `buildAvbdRigidContactManifoldRows()` now clears/syncs
+an empty friction descriptor span and returns immediately after building normal
+rows when every active contact has zero Coulomb friction-force limit. This
+keeps the existing zero-limit row skip, but avoids the previous-friction
+direction lookup/sort and tangent-row construction loop for frictionless
+manifolds. Positive or mixed-force manifolds keep the existing two-descriptor
+per-contact layout. The focused regression now covers both the zero-friction
+coefficient path and an active positive-coefficient contact whose normal force
+limit is zero.
+
+Validation for this slice:
+
+- `pixi run -- cmake --build build/default/cpp/Release --target test_avbd_rigid_block`
+  passed.
+- `pixi run -- build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_filter='AvbdRigidBlock.RigidContactManifoldBuilderSkipsZeroLimitFrictionRows:AvbdRigidBlock.RigidContactManifoldBuilderCreatesWarmStartedRows:AvbdRigidBlock.RigidContactManifoldFrictionProjectsWarmStartedDualAcrossTangentBasis' --gtest_brief=1`
+  passed, 3 tests, before and after lint/build.
+- `pixi run -- cmake --build build/default/cpp/Release --target bm_avbd_rigid_fixed_joint`
+  passed.
+- `pixi run -- bash -lc 'build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdDemo2dFrictionCoefficientSweep --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=/tmp/avbd-friction-coefficient-sweep-current.json --benchmark_out_format=json'`
+  passed. The run recorded DART median CPU step times of 6.87 us, 8.41 us,
+  18.60 us, 11.25 us, and 9.18 us for max friction 0, 0.5, 1.0, 2.5, and 5.0
+  respectively, under host load average `5.35, 10.14, 6.18`.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `pixi run -- build/default/cpp/Release/bin/test_avbd_rigid_block --gtest_brief=1`
+  passed, 97 tests.
+- `git diff --check` passed.
+
+Evidence caveat: this is a local benchmark-only source-row overhead slice. It
+does not regenerate the tracked friction-coefficient packet because the
+same-source native timing and visual capture artifacts were not rerun, and it
+does not close the frictionless max-friction-0 CPU gap, all-coefficient CPU-win
+gate, GPU parity, source-demo parity, or paper-number gates. The next preferred
+local gap remains a higher-level audit or optimization for the frictionless
+source-row CPU gap, or GPU parity preparation if the CPU path has no safe
+bounded next cut.
+
 ## Fresh Codex Goal Prompt
 
 Copy/paste this as the first user prompt for a new Codex session:
 
 ```text
-Resume PLAN-104 AVBD solver work in /home/jeongseok/dev/jslee02/dartsim/dart/task_4.
+Resume PLAN-104 AVBD solver work in /home/js/dev/dartsim/dart/task_3.
 
 Goal: continue from the single consolidated non-main branch
 avbd/source-row-extraction-precheck. This branch contains the ongoing AVBD work,
@@ -47,15 +84,19 @@ Keep claims narrow. Do not claim a source-demo CPU win, GPU parity,
 same-hardware paper-number match, broad fracture/breakable-wall coverage, or
 all-coefficient friction win unless tracked artifacts directly prove it.
 
-Current evidence: the zero-limit Coulomb contact-friction row skip is landed on
-this branch. The refreshed friction-coefficient packet records DART faster than
-the native source runner for max friction 0.5, 1.0, 2.5, and 5.0, but still
-slower for the frictionless max friction 0 case. GPU parity remains open.
+Current evidence: the zero-limit Coulomb contact-friction row skip and the
+empty-friction-descriptor early return are landed on this branch. The refreshed
+friction-coefficient packet still records DART faster than the native source
+runner for max friction 0.5, 1.0, 2.5, and 5.0, but slower for the frictionless
+max friction 0 case. The latest local benchmark-only rerun after the early
+return recorded 6.87 us at max friction 0, so the frictionless CPU gap and GPU
+parity remain open.
 
 Preferred next bounded work: choose one evidence-backed PLAN-104 gap, ideally
-the frictionless max-friction-0 CPU gap or GPU parity preparation, and make a
-surgical change with focused validation. If the best next step is only an audit,
-keep it read-only and update the handoff docs with the evidence.
+a higher-level frictionless max-friction-0 CPU optimization/audit or GPU parity
+preparation, and make a surgical change with focused validation. If the best
+next step is only an audit, keep it read-only and update the handoff docs with
+the evidence.
 
 Rules:
 - Use pixi run tasks.
@@ -69,10 +110,12 @@ Rules:
 ```
 
 Current slice: skip Coulomb tangent-row inventory creation when every active
-contact in a rigid contact manifold has a zero friction-force limit. This keeps
-normal rows alive, removes useless zero-limit friction rows for frictionless
-manifolds, and preserves the existing descriptor layout whenever any contact in
-the manifold can carry positive friction.
+contact in a rigid contact manifold has a zero friction-force limit, and return
+early from the empty-friction descriptor path after normal rows are built. This
+keeps normal rows alive, removes useless zero-limit friction rows for
+frictionless manifolds, avoids stale warm-start lookup/sort work for that empty
+path, and preserves the existing descriptor layout whenever any contact in the
+manifold can carry positive friction.
 
 Current branch-consolidation snapshot:
 

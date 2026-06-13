@@ -2081,14 +2081,42 @@ inline void buildAvbdRigidContactManifoldRows(
                     contact.row);
           }
         }
+        const std::span<const AvbdScalarRowDescriptor>
+            activeFrictionDescriptors{
+                frictionDescriptors.data(), frictionDescriptorCount};
+
+        normalRows.clear();
+        normalRows.reserve(normalInventory.size());
+        for (std::size_t i = 0;
+             i < activeContacts.size() && i < normalInventory.size();
+             ++i) {
+          const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
+          const AvbdScalarRowRecord& record = normalInventory[i];
+          const auto& localPoints = contactLocalPoints[i];
+          AvbdRigidBodyPointPairRow indexedRow;
+          indexedRow.bodyA = contact.bodyA;
+          indexedRow.bodyB = contact.bodyB;
+          indexedRow.row = makeAvbdRigidContactNormalRow(
+              localPoints.first,
+              localPoints.second,
+              -contact.normalFromAtoB,
+              contact.depth,
+              record.state,
+              contact.depth);
+          normalRows.push_back(indexedRow);
+        }
+
+        if (activeFrictionDescriptors.empty()) {
+          frictionInventory.syncActiveRows(
+              activeFrictionDescriptors, warmStartOptions);
+          frictionRows.clear();
+          return;
+        }
 
         std::span<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
             previousFrictionDirections;
         if (!previousFrictionDirectionStorage.empty()) {
           std::size_t previousFrictionDirectionCount = 0u;
-          const std::span<const AvbdScalarRowDescriptor>
-              activeFrictionDescriptors{
-                  frictionDescriptors.data(), frictionDescriptorCount};
           for (const AvbdScalarRowDescriptor& descriptor :
                activeFrictionDescriptors) {
             for (const AvbdScalarRowRecord& record :
@@ -2147,30 +2175,7 @@ inline void buildAvbdRigidContactManifoldRows(
 
         frictionInventory.reserve(frictionDescriptorCount);
         frictionInventory.syncActiveRows(
-            std::span<const AvbdScalarRowDescriptor>{
-                frictionDescriptors.data(), frictionDescriptorCount},
-            warmStartOptions);
-
-        normalRows.clear();
-        normalRows.reserve(normalInventory.size());
-        for (std::size_t i = 0;
-             i < activeContacts.size() && i < normalInventory.size();
-             ++i) {
-          const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
-          const AvbdScalarRowRecord& record = normalInventory[i];
-          const auto& localPoints = contactLocalPoints[i];
-          AvbdRigidBodyPointPairRow indexedRow;
-          indexedRow.bodyA = contact.bodyA;
-          indexedRow.bodyB = contact.bodyB;
-          indexedRow.row = makeAvbdRigidContactNormalRow(
-              localPoints.first,
-              localPoints.second,
-              -contact.normalFromAtoB,
-              contact.depth,
-              record.state,
-              contact.depth);
-          normalRows.push_back(indexedRow);
-        }
+            activeFrictionDescriptors, warmStartOptions);
 
         frictionRows.clear();
         frictionRows.reserve(activeContacts.size());

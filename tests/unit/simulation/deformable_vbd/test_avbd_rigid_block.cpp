@@ -1204,6 +1204,35 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
   ASSERT_EQ(frictionInventory.size(), 2u);
   ASSERT_EQ(frictionRows.size(), 1u);
 
+  normalInventory[0].state.lambda = 0.0;
+  contacts[0].startStiffness = 0.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(normalRows.size(), 1u);
+  EXPECT_TRUE(frictionInventory.records().empty());
+  EXPECT_TRUE(frictionRows.empty());
+
+  normalInventory[0].state.lambda = 8.0;
+  contacts[0].startStiffness = 80.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      warmStart);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+
   contacts[0].frictionCoefficient = 0.0;
   vbd::buildAvbdRigidContactManifoldRows(
       states,

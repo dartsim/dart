@@ -9,6 +9,24 @@ Corpus matrix:
 
 ## Current Status
 
+- Latest resumed checkpoint (2026-06-12): the contact-manifold row builder now
+  short-circuits the empty Coulomb friction descriptor path after normal rows
+  are built. When every active contact has zero friction-force limit, the
+  builder clears/syncs stale friction inventory and returns before previous
+  friction-direction lookup/sort and tangent-row construction. The focused
+  regression now covers both the zero-friction-coefficient case and an active
+  positive-coefficient contact with zero normal force. A fresh local
+  `BM_AvbdDemo2dFrictionCoefficientSweep` run recorded DART median CPU step
+  times of 6.87 us, 8.41 us, 18.60 us, 11.25 us, and 9.18 us for max friction
+  0, 0.5, 1.0, 2.5, and 5.0 respectively. This run is benchmark-only local
+  evidence and does not regenerate the tracked packet because the same-source
+  native timing and capture artifacts were not rerun; it also does not close
+  the frictionless CPU gap, all-coefficient CPU-win gate, GPU parity, or
+  paper-number gates. Local validation passed the focused target build,
+  focused three-test contact-manifold filter, benchmark target build,
+  five-row friction-coefficient benchmark, `pixi run lint`, `pixi run build`,
+  the focused three-test filter again, full `test_avbd_rigid_block` (97 tests),
+  and `git diff --check`.
 - Latest resumed checkpoint (2026-06-12): local session branch consolidation is
   complete. The single non-main local resume branch is
   `avbd/source-row-extraction-precheck`; it contains the PR #2977
