@@ -1,6 +1,6 @@
 # Hierarchical Memory Manager — Dev Task
 
-## Hard Stop Handoff (2026-06-13, Multibody Link-Jacobian Scratch Helper)
+## Hard Stop Handoff (2026-06-13, Multibody Dynamics-Terms Scratch Helper)
 
 Resume from exactly one branch:
 `pr/hmm-phase45-replay-snapshot-allocators`, tracking
@@ -8,41 +8,40 @@ Resume from exactly one branch:
 HMM handoff entry point unless a maintainer explicitly redirects the work.
 The branch currently has no open PR.
 
-Latest local slice: direct multibody link-Jacobian callers can now reuse
-caller-owned dynamics-tree and per-link body-Jacobian scratch plus
-caller-retained output matrix capacity. `MultibodyLinkJacobianScratch` owns the
-allocator-backed storage, `reserveMultibodyLinkJacobianScratch(...)` prewarms it
-for the current multibody shape, and the new
-`computeMultibodyLinkJacobianInto(...)` /
-`computeMultibodyLinkWorldJacobianInto(...)` helpers overwrite retained output
-matrices.
+Latest local slice: direct multibody dynamics-terms callers can now reuse
+caller-owned dynamics-tree, velocity, mass/bias, and RNEA scratch plus
+caller-retained result capacity. `MultibodyDynamicsTermsScratch` owns the
+allocator-backed storage, `reserveMultibodyDynamicsTermsScratch(...)` prewarms
+it for the current multibody shape, and
+`computeMultibodyDynamicsTermsInto(...)` overwrites a retained
+`MultibodyDynamicsTerms` result.
 
 The fix has these parts:
 
-- `MultibodyLinkJacobianScratch` exposes allocator-backed reuse for the
-  existing internal `MultibodyDynamicsScratch` body-Jacobian storage;
-- the return-by-value `computeMultibodyLinkJacobian(...)` and
-  `computeMultibodyLinkWorldJacobian(...)` helpers remain source-compatible and
-  delegate through the same implementation;
-- `World.MultibodyLinkJacobianScratchUsesProvidedAllocator` verifies first-use
+- `MultibodyDynamicsTermsScratch` exposes allocator-backed reuse for the
+  existing internal `MultibodyDynamicsScratch` tree, velocity, mass/bias, and
+  RNEA storage;
+- the return-by-value `computeMultibodyDynamicsTerms(...)` helper remains
+  source-compatible and delegates through the same implementation;
+- `World.MultibodyDynamicsTermsScratchUsesProvidedAllocator` verifies first-use
   scratch allocation through the provided allocator, equivalence with the
-  existing `Multibody` accessors, and zero global heap allocation on warmed
-  same-shape body/world Jacobian calls.
+  return-by-value helper, and zero global heap allocation on warmed same-shape
+  dynamics-terms calls.
 
 This still does not claim that arbitrary user-provided
 `VariationalContactHook` callbacks avoid return-by-value forces, that every
 Eigen dynamic result payload borrows a DART allocator, or that the
-return-by-value `Multibody::getJacobian()` / `getWorldJacobian()` convenience
-accessors are allocation-free. The closed gap is the direct compute-layer
-link-Jacobian diagnostic path's reusable DART-owned tree/body-Jacobian scratch
-and caller-retained matrix capacity.
+return-by-value `Multibody::getMassMatrix()` / `getCoriolisForces()` /
+`getGravityForces()` convenience accessors are allocation-free. The closed gap
+is the direct compute-layer dynamics-terms diagnostic path's reusable
+DART-owned tree/RNEA/mass-bias scratch and caller-retained result capacity.
 
 Validation for this slice:
 
 ```bash
 pixi run cmake --build build/default/cpp/Release --target test_world -j 8
 build/default/cpp/Release/bin/test_world \
-  --gtest_filter='World.MultibodyLinkJacobian*:World.MultibodyLinkWorldJacobian'
+  --gtest_filter='World.MultibodyDynamicsTermsScratchUsesProvidedAllocator:World.MultibodyEquationOfMotionConsistency:World.MultibodyInverseDynamicsRoundTrip'
 pixi run lint
 pixi run build
 pixi run test-unit

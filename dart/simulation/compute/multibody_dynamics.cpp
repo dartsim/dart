@@ -548,17 +548,6 @@ void buildDynamicsTreeInto(
   }
 }
 
-DynamicsTree buildDynamicsTree(
-    const detail::WorldRegistry& registry,
-    const comps::MultibodyStructure& structure)
-{
-  DynamicsTree tree;
-  std::vector<std::pair<entt::entity, std::size_t>> indexOf;
-  Subspace jointFrameSubspace;
-  buildDynamicsTreeInto(registry, structure, tree, indexOf, jointFrameSubspace);
-  return tree;
-}
-
 //==============================================================================
 // Body-frame spatial Jacobian of every link via the recursion
 // J_i = X_i J_parent, with the link's own joint columns set to its motion
@@ -791,36 +780,6 @@ void computeMassAndBiasInto(
   if (armature.size() == static_cast<Eigen::Index>(dofCount)) {
     result.massMatrix.diagonal() += armature;
   }
-}
-
-MassAndBias computeMassAndBias(
-    std::span<const LinkDynamics> links,
-    std::size_t dofCount,
-    const Eigen::Vector3d& gravity,
-    const Eigen::VectorXd& qdot,
-    const Eigen::VectorXd& armature)
-{
-  MassAndBias result;
-  Eigen::VectorXd zero;
-  Eigen::VectorXd unit;
-  Eigen::VectorXd response;
-  std::vector<Vector6> rneaVelocity;
-  std::vector<Vector6> rneaAcceleration;
-  std::vector<Vector6> rneaForce;
-  computeMassAndBiasInto(
-      links,
-      dofCount,
-      gravity,
-      qdot,
-      armature,
-      result,
-      zero,
-      unit,
-      response,
-      rneaVelocity,
-      rneaAcceleration,
-      rneaForce);
-  return result;
 }
 
 //==============================================================================
@@ -2333,6 +2292,14 @@ struct MultibodyLinkContactAssemblyScratch::Impl
 };
 
 //==============================================================================
+struct MultibodyDynamicsTermsScratch::Impl
+{
+  explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
+
+  MultibodyDynamicsScratch scratch;
+};
+
+//==============================================================================
 struct MultibodyLinkJacobianScratch::Impl
 {
   explicit Impl(common::MemoryAllocator& allocator) : scratch(allocator) {}
@@ -2347,6 +2314,63 @@ struct MultibodyInverseDynamicsScratch::Impl
 
   MultibodyDynamicsScratch scratch;
 };
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch()
+  : MultibodyDynamicsTermsScratch(common::MemoryAllocator::GetDefault())
+{
+}
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch(
+    common::MemoryAllocator& allocator)
+  : m_allocator(&allocator), m_impl(nullptr, ImplDeleter{&allocator})
+{
+}
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::~MultibodyDynamicsTermsScratch() = default;
+
+//==============================================================================
+MultibodyDynamicsTermsScratch::MultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch&&) noexcept = default;
+
+//==============================================================================
+MultibodyDynamicsTermsScratch& MultibodyDynamicsTermsScratch::operator=(
+    MultibodyDynamicsTermsScratch&&) noexcept = default;
+
+//==============================================================================
+void MultibodyDynamicsTermsScratch::ImplDeleter::operator()(
+    Impl* impl) const noexcept
+{
+  if (impl == nullptr) {
+    return;
+  }
+  auto& targetAllocator = allocator != nullptr
+                              ? *allocator
+                              : common::MemoryAllocator::GetDefault();
+  targetAllocator.destroy(impl);
+}
+
+//==============================================================================
+void MultibodyDynamicsTermsScratch::setAllocator(
+    common::MemoryAllocator& allocator)
+{
+  if (m_allocator == &allocator) {
+    return;
+  }
+  m_impl.reset();
+  m_allocator = &allocator;
+  m_impl.get_deleter().allocator = &allocator;
+}
+
+//==============================================================================
+const common::MemoryAllocator& MultibodyDynamicsTermsScratch::getAllocator()
+    const noexcept
+{
+  return m_allocator != nullptr ? *m_allocator
+                                : common::MemoryAllocator::GetDefault();
+}
 
 //==============================================================================
 MultibodyLinkJacobianScratch::MultibodyLinkJacobianScratch()
@@ -2635,37 +2659,105 @@ bool assembleMultibodyLinkContactProblemInto(
 }
 
 //==============================================================================
+void reserveMultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure)
+{
+  if (scratch.m_impl == nullptr) {
+    auto& allocator = scratch.m_allocator != nullptr
+                          ? *scratch.m_allocator
+                          : common::MemoryAllocator::GetDefault();
+    auto* impl
+        = allocator.construct<MultibodyDynamicsTermsScratch::Impl>(allocator);
+    if (impl == nullptr) {
+      throw std::bad_alloc();
+    }
+    scratch.m_impl.reset(impl);
+  }
+
+  auto& storage = scratch.m_impl->scratch;
+  buildDynamicsTreeInto(
+      registry,
+      structure,
+      storage.tree,
+      storage.linkIndexOf,
+      storage.jointFrameSubspace);
+
+  const auto linkCount = storage.tree.links.size();
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  storage.qdot.resize(dof);
+  storage.zero.resize(dof);
+  storage.unitAcceleration.resize(dof);
+  storage.rneaResponse.resize(dof);
+  storage.massAndBias.massMatrix.resize(dof, dof);
+  storage.massAndBias.bias.resize(dof);
+  storage.massAndBias.gravityOnly.resize(dof);
+  storage.rneaVelocity.resize(linkCount);
+  storage.rneaAcceleration.resize(linkCount);
+  storage.rneaForce.resize(linkCount);
+}
+
+//==============================================================================
+void computeMultibodyDynamicsTermsInto(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyDynamicsTerms& result)
+{
+  if (structure.links.empty()) {
+    result.massMatrix.resize(0, 0);
+    result.coriolisForces.resize(0);
+    result.gravityForces.resize(0);
+    return;
+  }
+
+  reserveMultibodyDynamicsTermsScratch(scratch, registry, structure);
+
+  auto& storage = scratch.m_impl->scratch;
+  if (storage.tree.dofCount == 0) {
+    result.massMatrix.resize(0, 0);
+    result.coriolisForces.resize(0);
+    result.gravityForces.resize(0);
+    return;
+  }
+
+  gatherMultibodyVelocityInto(registry, storage.tree, storage.qdot);
+  computeMassAndBiasInto(
+      linkSpan(storage.tree),
+      storage.tree.dofCount,
+      gravity,
+      storage.qdot,
+      storage.tree.armature,
+      storage.massAndBias,
+      storage.zero,
+      storage.unitAcceleration,
+      storage.rneaResponse,
+      storage.rneaVelocity,
+      storage.rneaAcceleration,
+      storage.rneaForce);
+
+  const auto dof = static_cast<Eigen::Index>(storage.tree.dofCount);
+  result.massMatrix.resize(dof, dof);
+  result.massMatrix = storage.massAndBias.massMatrix;
+  result.gravityForces.resize(dof);
+  result.gravityForces = storage.massAndBias.gravityOnly;
+  result.coriolisForces.resize(dof);
+  result.coriolisForces = storage.massAndBias.bias;
+  result.coriolisForces -= storage.massAndBias.gravityOnly;
+}
+
+//==============================================================================
 MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
+  MultibodyDynamicsTermsScratch scratch;
   MultibodyDynamicsTerms terms;
-  if (structure.links.empty()) {
-    return terms;
-  }
-
-  const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  if (tree.dofCount == 0) {
-    return terms;
-  }
-
-  Eigen::VectorXd qdot
-      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    if (tree.links[i].dof == 0) {
-      continue;
-    }
-    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
-  }
-
-  const MassAndBias mb = computeMassAndBias(
-      linkSpan(tree), tree.dofCount, gravity, qdot, tree.armature);
-
-  terms.massMatrix = mb.massMatrix;
-  terms.gravityForces = mb.gravityOnly;
-  terms.coriolisForces = mb.bias - mb.gravityOnly;
+  computeMultibodyDynamicsTermsInto(
+      scratch, registry, structure, gravity, terms);
   return terms;
 }
 

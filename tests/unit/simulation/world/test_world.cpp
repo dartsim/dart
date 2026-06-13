@@ -10461,6 +10461,89 @@ TEST(World, MultibodyInverseDynamicsDerivativeScratchUsesProvidedAllocator)
          "scratch capacity";
 }
 
+TEST(World, MultibodyDynamicsTermsScratchUsesProvidedAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::World world;
+
+  auto robot = world.addMultibody("dynamics_terms_allocator_chain");
+  auto parent = robot.addLink("base");
+  constexpr std::size_t kJointCount = 48u;
+  for (std::size_t i = 0; i < kJointCount; ++i) {
+    Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+    offset.translation() = Eigen::Vector3d(0.05, 0.0, 0.0);
+
+    sx::JointSpec spec;
+    spec.name = std::format("hinge_{:02}", i);
+    spec.type = sx::JointType::Revolute;
+    spec.axis = Eigen::Vector3d::UnitY();
+    spec.transformFromParent = offset;
+    auto link = robot.addLink(std::format("link_{:02}", i), parent, spec);
+    link.setMass(1.0);
+    link.setInertia(Eigen::Vector3d(0.05, 0.06, 0.07).asDiagonal());
+
+    auto joint = link.getParentJoint();
+    joint.setPosition(Eigen::VectorXd::Constant(1, 0.001 * (i + 1u)));
+    joint.setVelocity(Eigen::VectorXd::Constant(1, 0.02 * (i + 1u)));
+    parent = link;
+  }
+
+  world.enterSimulationMode();
+
+  auto& registry = sx::detail::registryOf(world);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  const sx::comps::MultibodyStructure* structure = nullptr;
+  std::size_t structureCount = 0;
+  for (const auto entity : structures) {
+    structure = &structures.get<sx::comps::MultibodyStructure>(entity);
+    ++structureCount;
+  }
+  ASSERT_EQ(structureCount, 1u);
+  ASSERT_NE(structure, nullptr);
+
+  sx::compute::MultibodyDynamicsTermsScratch scratch(allocator);
+  sx::compute::MultibodyDynamicsTerms terms;
+
+  const auto allocationsBeforeFirstCall = allocator.allocationCount;
+  sx::compute::computeMultibodyDynamicsTermsInto(
+      scratch, registry, *structure, world.getGravity(), terms);
+
+  EXPECT_GT(allocator.allocationCount, allocationsBeforeFirstCall)
+      << "dynamics-terms scratch should allocate through the provided "
+         "allocator on the first direct helper call";
+  ASSERT_EQ(terms.massMatrix.rows(), static_cast<Eigen::Index>(kJointCount));
+  ASSERT_EQ(terms.massMatrix.cols(), static_cast<Eigen::Index>(kJointCount));
+  ASSERT_EQ(
+      terms.coriolisForces.size(), static_cast<Eigen::Index>(kJointCount));
+  ASSERT_EQ(terms.gravityForces.size(), static_cast<Eigen::Index>(kJointCount));
+
+  const sx::compute::MultibodyDynamicsTerms reference
+      = sx::compute::computeMultibodyDynamicsTerms(
+          registry, *structure, world.getGravity());
+  EXPECT_TRUE(terms.massMatrix.isApprox(reference.massMatrix, 1e-12));
+  EXPECT_TRUE(terms.coriolisForces.isApprox(reference.coriolisForces, 1e-12));
+  EXPECT_TRUE(terms.gravityForces.isApprox(reference.gravityForces, 1e-12));
+
+  const auto allocationsAfterFirstCall = allocator.allocationCount;
+  ScopedHeapAllocationCounter heapCounter;
+  sx::compute::computeMultibodyDynamicsTermsInto(
+      scratch, registry, *structure, world.getGravity(), terms);
+  heapCounter.stop();
+
+  EXPECT_TRUE(terms.massMatrix.isApprox(reference.massMatrix, 1e-12));
+  EXPECT_TRUE(terms.coriolisForces.isApprox(reference.coriolisForces, 1e-12));
+  EXPECT_TRUE(terms.gravityForces.isApprox(reference.gravityForces, 1e-12));
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterFirstCall)
+      << "same-shape dynamics-terms diagnostics should reuse retained tree, "
+         "RNEA, and output scratch capacity";
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "same-shape dynamics-terms diagnostics should not fall back to global "
+         "heap allocation after scratch and output warmup";
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+}
+
 TEST(World, MultibodyLinkJacobianScratchUsesProvidedAllocator)
 {
   namespace sx = dart::simulation;

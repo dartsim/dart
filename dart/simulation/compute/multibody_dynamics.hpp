@@ -76,6 +76,55 @@ struct MultibodyDynamicsTerms
   Eigen::VectorXd gravityForces;  ///< g(q), size dof
 };
 
+/// Reusable storage for generalized-coordinate dynamics-term evaluation.
+///
+/// The return-by-value wrapper below remains convenient for one-shot callers.
+/// Repeated diagnostics or stage-loop callers should retain this scratch and
+/// pass caller-owned result storage to `computeMultibodyDynamicsTermsInto()` so
+/// dynamics-tree, RNEA, and output capacity can be reused across same-shape
+/// calls without exposing private dynamics-tree types.
+class DART_SIMULATION_API MultibodyDynamicsTermsScratch final
+{
+public:
+  MultibodyDynamicsTermsScratch();
+  explicit MultibodyDynamicsTermsScratch(common::MemoryAllocator& allocator);
+  ~MultibodyDynamicsTermsScratch();
+
+  MultibodyDynamicsTermsScratch(const MultibodyDynamicsTermsScratch&) = delete;
+  MultibodyDynamicsTermsScratch& operator=(const MultibodyDynamicsTermsScratch&)
+      = delete;
+  MultibodyDynamicsTermsScratch(MultibodyDynamicsTermsScratch&&) noexcept;
+  MultibodyDynamicsTermsScratch& operator=(
+      MultibodyDynamicsTermsScratch&&) noexcept;
+
+  void setAllocator(common::MemoryAllocator& allocator);
+  [[nodiscard]] const common::MemoryAllocator& getAllocator() const noexcept;
+
+private:
+  struct Impl;
+  struct ImplDeleter
+  {
+    common::MemoryAllocator* allocator = nullptr;
+
+    void operator()(Impl* impl) const noexcept;
+  };
+
+  common::MemoryAllocator* m_allocator = nullptr;
+  std::unique_ptr<Impl, ImplDeleter> m_impl;
+
+  friend DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
+      MultibodyDynamicsTermsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure);
+
+  friend DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
+      MultibodyDynamicsTermsScratch& scratch,
+      detail::WorldRegistry& registry,
+      const comps::MultibodyStructure& structure,
+      const Eigen::Vector3d& gravity,
+      MultibodyDynamicsTerms& result);
+};
+
 struct InverseDynamicsDerivatives;
 
 /// Compute the joint-space mass matrix and bias (Coriolis/centrifugal and
@@ -92,6 +141,23 @@ computeMultibodyDynamicsTerms(
     detail::WorldRegistry& registry,
     const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
+
+/// Reserve dynamics-terms scratch for the current multibody shape.
+DART_SIMULATION_API void reserveMultibodyDynamicsTermsScratch(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure);
+
+/// Compute joint-space dynamics terms into reusable caller-owned storage.
+///
+/// `result` is resized and overwritten. For a multibody with no movable
+/// degrees of freedom, the matrix and vectors are empty.
+DART_SIMULATION_API void computeMultibodyDynamicsTermsInto(
+    MultibodyDynamicsTermsScratch& scratch,
+    detail::WorldRegistry& registry,
+    const comps::MultibodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    MultibodyDynamicsTerms& result);
 
 /// Compute the generalized joint forces required to produce a desired
 /// generalized acceleration at the multibody's current configuration and
