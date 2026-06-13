@@ -2331,7 +2331,7 @@ config = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
+DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 17 2022}
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -2477,7 +2477,7 @@ config-py = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
+DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 17 2022}
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -2646,7 +2646,7 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
-DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
+DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 17 2022}
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -2695,7 +2695,7 @@ if [ -x "${DART_TRACY_BIN}" ] \
   exit 0
 fi
 rm -rf "${DART_TRACY_BUILD_DIR}"
-DART_WINDOWS_CMAKE_GENERATOR=$(python scripts/select_windows_cmake_generator.py)
+DART_WINDOWS_CMAKE_GENERATOR=${DART_WINDOWS_CMAKE_GENERATOR:-Visual Studio 17 2022}
 cmake \
   -S "${DART_TRACY_SRC_DIR}" \
   -B "${DART_TRACY_BUILD_DIR}" \

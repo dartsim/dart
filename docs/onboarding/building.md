@@ -155,6 +155,16 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    DART_FETCH_FILAMENT_OVERRIDE=ON pixi run config
    ```
 
+   On Windows, Pixi configure tasks use the Visual Studio multi-config
+   generator and default to `Visual Studio 17 2022`, matching DART's current
+   Visual Studio 2022 17.10+ compiler floor enforced by CMake. CI or local
+   machines that only install a newer Visual Studio generator can override the
+   generator without changing DART's minimum compiler requirement:
+
+   ```bash
+   DART_WINDOWS_CMAKE_GENERATOR="Visual Studio 18 2026" pixi run config
+   ```
+
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
    `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
    Pixi GUI build is enabled on Linux x86_64 where the pinned Filament archive
@@ -331,8 +341,8 @@ and Raylib smoke path are no longer buildable renderer options.
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio (multi-config; selects the newest installed VS generator)
-cmake .. -G "$(python ../scripts/select_windows_cmake_generator.py)"
+# Visual Studio 2022 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 17 2022" -A x64
 
 # Xcode (multi-config; pick configuration at build-time)
 cmake .. -G "Xcode"
