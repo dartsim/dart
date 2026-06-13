@@ -2334,7 +2334,6 @@ set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G 'Visual Studio 17 2022' \
         -DBUILD_SHARED_LIBS=ON \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -2479,7 +2478,6 @@ set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G 'Visual Studio 17 2022' \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
@@ -2647,7 +2645,6 @@ set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
-        -G 'Visual Studio 17 2022' \
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
@@ -2695,7 +2692,6 @@ rm -rf "${DART_TRACY_BUILD_DIR}"
 cmake \
   -S "${DART_TRACY_SRC_DIR}" \
   -B "${DART_TRACY_BUILD_DIR}" \
-  -G 'Visual Studio 17 2022' \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DNO_PARALLEL_STL=ON \
   -DNO_ISA_EXTENSIONS=ON
