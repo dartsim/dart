@@ -359,6 +359,33 @@ def test_lcp_profile_headers_reject_non_native_solver(
         module.check_performance_profile_headers(manifest)
 
 
+@pytest.mark.parametrize(
+    ("csv_text", "expected_error"),
+    [
+        ("tau,Dantzig\n0,1.0\n", "invalid tau"),
+        ("tau,Dantzig\n1,1.0\n1,1.0\n", "non-increasing tau"),
+        ("tau,Dantzig\n1,1.1\n", "invalid profile value"),
+        ("tau,Dantzig\n1\n", "columns; expected 2"),
+    ],
+)
+def test_lcp_profile_headers_reject_invalid_profile_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    csv_text: str,
+    expected_error: str,
+) -> None:
+    module = _load_module()
+    manifest = [
+        module.SolverEntry("Dantzig", "Pivoting", True, False, False, "DantzigSolver"),
+    ]
+    path = tmp_path / "performance_profile_standard.csv"
+    path.write_text(csv_text, encoding="utf-8")
+    monkeypatch.setattr(module, "LCP_PROFILE_CSV_PATHS", {"standard": path})
+
+    with pytest.raises(AssertionError, match=expected_error):
+        module.check_performance_profile_headers(manifest)
+
+
 def test_lcp_profile_evidence_rejects_missing_native_solver(
     tmp_path: Path,
 ) -> None:

@@ -1,5 +1,67 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-13 Current Continuation - Profile CSV Row Guard
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Fresh AI session priority:
+
+1. Start from the current checkout, not from older WIP wording. Read
+   `AGENTS.md`, `docs/ai/principles.md`, this file, and `RESUME.md`.
+2. Treat `79f213659ac Guard LCP evidence duplicate rows` as the latest
+   completed local tip before this checkpoint. If this section is committed,
+   inspect `git log --oneline --decorate -8` for the new exact tip.
+3. Continue the broader LCP solver/interface/demo audit from one concrete gap
+   at a time. Do not retire this dev-task folder yet.
+4. Do not push, open a PR, retry CI, or mutate GitHub state without explicit
+   maintainer/user approval.
+
+Current branch state before this checkpoint commit:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- Current local tip before this edit:
+  `79f213659ac Guard LCP evidence duplicate rows`.
+- Current relationship:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by twenty-six commits before this edit.
+- This branch has no associated PR. Do not push, open a PR, or mutate GitHub
+  state without explicit maintainer/user approval.
+
+Profile CSV row status:
+
+- `scripts/check_lcp_solver_roster.py` now validates
+  `performance_profile_standard.csv`, `performance_profile_boxed.csv`, and
+  `performance_profile_frictionindex.csv` data rows, not only their solver
+  headers.
+- The checker rejects empty profile CSVs, malformed row widths, invalid or
+  non-increasing tau values, and solver profile values outside `[0, 1]`.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers invalid profile
+  row shapes, tau values, monotonicity, and profile values.
+- Generated profile/evidence CSVs, bindings, stubs, solver predicates, public
+  APIs, and Python demo code were not intentionally changed.
+
+Verification completed in this continuation:
+
+- `PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q`
+  passed.
+- `PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py`
+  passed with 24 solvers, 23 standard, 15 boxed, and 16 findex.
+- `pixi run lint` passed, including `lint-lcp-solver-roster` and
+  `sync-ai-commands`.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Run `git status -sb` and inspect this top section before relying on older
+   handoff sections.
+2. If this checkpoint is still uncommitted and files change again, rerun
+   `python/tests/unit/test_check_lcp_solver_roster.py`,
+   `scripts/check_lcp_solver_roster.py`, `pixi run lint`, and
+   `git diff --check`, then commit the focused checker/test/docs change.
+3. Continue the broader LCP interface/demo audit from the next concrete gap.
+   Do not treat the broad LCP objective as complete.
+
 ## 2026-06-13 Current Continuation - Duplicate Evidence Row Guard
 
 This is the latest hand-off state. Sections below are historical checkpoints

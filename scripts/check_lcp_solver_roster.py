@@ -530,6 +530,16 @@ def _duplicate_values(values: list[str]) -> list[str]:
     return duplicates
 
 
+def _csv_finite_number(value: str) -> float | None:
+    try:
+        numeric = float(value)
+    except ValueError:
+        return None
+    if not math.isfinite(numeric):
+        return None
+    return numeric
+
+
 def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
     manifest_by_name = {entry.name: entry for entry in manifest}
     supported_by_profile = {
@@ -546,7 +556,8 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
     errors: list[str] = []
     for profile, path in LCP_PROFILE_CSV_PATHS.items():
         with path.open(newline="", encoding="utf-8") as f:
-            header = next(csv.reader(f))
+            rows = list(csv.reader(f))
+        header = rows[0] if rows else []
         if not header or header[0] != "tau":
             errors.append(f"{_display_path(path)} has invalid header {header!r}")
             continue
@@ -573,6 +584,36 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
                 f"{_display_path(path)} contains non-native {profile} solvers: "
                 f"{unsupported}"
             )
+        if len(rows) == 1:
+            errors.append(f"{_display_path(path)} has no profile rows")
+        previous_tau: float | None = None
+        for row_number, row in enumerate(rows[1:], start=2):
+            if len(row) != len(header):
+                errors.append(
+                    f"{_display_path(path)} row {row_number} has {len(row)} "
+                    f"columns; expected {len(header)}"
+                )
+                continue
+            tau = _csv_finite_number(row[0])
+            if tau is None or tau < 1.0:
+                errors.append(
+                    f"{_display_path(path)} row {row_number} has invalid tau "
+                    f"{row[0]!r}"
+                )
+            elif previous_tau is not None and tau <= previous_tau:
+                errors.append(
+                    f"{_display_path(path)} row {row_number} has non-increasing "
+                    f"tau {row[0]!r}"
+                )
+            else:
+                previous_tau = tau
+            for solver, value_text in zip(solvers, row[1:], strict=True):
+                value = _csv_finite_number(value_text)
+                if value is None or value < 0.0 or value > 1.0:
+                    errors.append(
+                        f"{_display_path(path)} row {row_number} has invalid "
+                        f"profile value {value_text!r} for {solver}"
+                    )
 
     if errors:
         raise AssertionError(
