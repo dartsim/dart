@@ -2883,6 +2883,30 @@ void configureRigidAvbdFixedJointRowsScene(dart::simulation::World& world)
   link.setTransform(driftedPose);
 }
 
+void configureRigidAvbdDistanceSpringRowsScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.005);
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("rigid_avbd_spring_base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.position = 2.0 * Eigen::Vector3d::UnitX();
+  auto link = world.addRigidBody("rigid_avbd_spring_link", linkOptions);
+  link.setMass(1.0);
+
+  world.addRigidBodyDistanceSpring(
+      "rigid_avbd_distance_spring",
+      base,
+      link,
+      /*restLength=*/1.0,
+      /*stiffness=*/200.0);
+}
+
 } // namespace
 
 // Test World construction
@@ -4699,6 +4723,7 @@ void expectRigidAvbdRegistryStorageRebuildsAfterClear(
     ConfigureScene&& configureScene,
     bool expectContactConfig,
     bool expectPointJointConfig,
+    bool expectDistanceSpringConfig,
     bool requireInitialContact)
 {
   namespace common = dart::common;
@@ -4751,6 +4776,23 @@ void expectRigidAvbdRegistryStorageRebuildsAfterClear(
       EXPECT_NE(pointJointStorage, nullptr);
       if (pointJointStorage != nullptr) {
         EXPECT_GE(pointJointStorage->size(), 1u);
+      }
+    }
+
+    if (expectDistanceSpringConfig) {
+      const auto distanceSpringStorageId
+          = entt::type_hash<dvbd::AvbdRigidWorldDistanceSpringConfig>::value();
+      const auto distanceSpringCapacity
+          = capacities.find(distanceSpringStorageId);
+      EXPECT_NE(distanceSpringCapacity, capacities.end());
+      if (distanceSpringCapacity != capacities.end()) {
+        EXPECT_GE(distanceSpringCapacity->second, 1u);
+      }
+      const auto* distanceSpringStorage
+          = registry.storage<dvbd::AvbdRigidWorldDistanceSpringConfig>();
+      EXPECT_NE(distanceSpringStorage, nullptr);
+      if (distanceSpringStorage != nullptr) {
+        EXPECT_GE(distanceSpringStorage->size(), 1u);
       }
     }
 
@@ -4807,10 +4849,19 @@ TEST(World, RigidAvbdRegistryStorageRebuildsAfterClear)
       configureRigidAvbdContactRowsScene,
       true,
       false,
+      false,
       true);
   expectRigidAvbdRegistryStorageRebuildsAfterClear(
       "rigid AVBD fixed-joint rows",
       configureRigidAvbdFixedJointRowsScene,
+      false,
+      true,
+      false,
+      false);
+  expectRigidAvbdRegistryStorageRebuildsAfterClear(
+      "rigid AVBD distance-spring rows",
+      configureRigidAvbdDistanceSpringRowsScene,
+      false,
       false,
       true,
       false);
@@ -6195,6 +6246,9 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "rigid AVBD distance-spring rows",
+      configureRigidAvbdDistanceSpringRowsScene);
 
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "multibody variational scratch", [](sx::World& world) {
@@ -7448,6 +7502,24 @@ TEST(World, RigidAvbdFixedJointRowsAreActiveWithoutContacts)
   EXPECT_LT(link->getLinearVelocity().x(), 0.0);
 }
 
+TEST(World, RigidAvbdDistanceSpringRowsAreActiveWithoutContacts)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configureRigidAvbdDistanceSpringRowsScene(world);
+  auto link = world.getRigidBody("rigid_avbd_spring_link");
+  ASSERT_TRUE(link.has_value());
+  const Eigen::Vector3d initialPosition = link->getTranslation();
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+  world.step();
+
+  EXPECT_LT(link->getTranslation().x(), initialPosition.x());
+  EXPECT_LT(link->getLinearVelocity().x(), 0.0);
+}
+
 TEST(World, BakedKinematicIpcStepsDoNotAllocateGlobalHeap)
 {
   namespace sx = dart::simulation;
@@ -7533,6 +7605,9 @@ TEST(World, BakedRigidBodyContactStepsDoNotAllocateGlobalHeap)
       "rigid AVBD contact rows", configureRigidAvbdContactRowsScene, true);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
       "rigid AVBD fixed-joint rows", configureRigidAvbdFixedJointRowsScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "rigid AVBD distance-spring rows",
+      configureRigidAvbdDistanceSpringRowsScene);
 }
 
 TEST(World, BakedArticulatedContactStepsDoNotAllocateGlobalHeap)

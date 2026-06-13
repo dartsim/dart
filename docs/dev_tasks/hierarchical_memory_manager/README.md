@@ -1,5 +1,57 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, Rigid AVBD Distance-Spring Gates)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: the baked rigid AVBD allocator regressions now cover the
+distance-spring row path as a peer of contact rows and fixed-joint rows. The
+production rigid AVBD stage already owns allocator-backed `distanceSprings`,
+distance-spring inventory, build scratch, and solve scratch; this slice closes
+the missing evidence by driving that path through active behavior, registry
+storage rebuild, World-base no-growth, and global-heap no-allocation gates.
+
+The fix has these parts:
+
+- `configureRigidAvbdDistanceSpringRowsScene(...)` creates a contact-free rigid
+  distance-spring scene that exercises the built-in rigid AVBD projection path;
+- `World.RigidAvbdDistanceSpringRowsAreActiveWithoutContacts` verifies the
+  distance-spring rows move the stretched body without contacts;
+- `World.RigidAvbdRegistryStorageRebuildsAfterClear` now checks
+  `AvbdRigidWorldDistanceSpringConfig` storage capacity across clear/rebuild
+  cycles;
+- the baked World-base no-growth and global-heap no-allocation suites now
+  include `"rigid AVBD distance-spring rows"`.
+
+This still does not claim that the public owning AVBD helper overloads avoid
+default-allocator vectors, that every AVBD direct helper call is
+allocator-backed, or that unrelated public return-by-value APIs are allocation
+free. The closed gap is the built-in `World::step()` rigid AVBD distance-spring
+row path and its registry storage coverage.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_world -j 8
+./build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.RigidAvbdDistanceSpringRowsAreActiveWithoutContacts:World.RigidAvbdRegistryStorageRebuildsAfterClear:World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths:World.BakedRigidBodyContactStepsDoNotAllocateGlobalHeap' \
+  --gtest_color=no
+```
+
+Before publishing or opening a PR from this branch, rerun the relevant
+lint/build/test gates from a clean source state and get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Mechanical-Energy Velocity Scratch)
 
 Resume from exactly one branch:
@@ -52,12 +104,6 @@ pixi run cmake --build build/default/cpp/Release \
 Before publishing or opening a PR from this branch, rerun the relevant
 lint/build/test gates from a clean source state and get explicit maintainer
 approval before pushing.
-
-## Historical Slices Below
-
-The sections below are retained as chronological evidence for previous HMM
-slices. They are not current instructions. A fresh agent should use the top
-hard-stop section as the authoritative handoff surface.
 
 ## Hard Stop Handoff (2026-06-13, Contact-Free Coordinate Scratch)
 
