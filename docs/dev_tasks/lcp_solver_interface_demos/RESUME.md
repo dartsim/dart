@@ -1,9 +1,106 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 Stop Handoff: SAP Matvec Reuse WIP
+
+This is the latest hand-off. The user explicitly stopped further code work and
+asked to keep the hand-off docs current. Older sections below are historical
+checkpoints and may retain their original "latest" wording from the time they
+were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat the repository state as handoff-first, not implementation-first. The
+   active user intent at this handoff was to preserve context safely for a new
+   AI session.
+3. Inspect the dirty worktree before doing anything else. The SAP source edit
+   is unverified WIP, not a completed change.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- Current tip before this stop handoff:
+  `5e47facbfbe Extend boxed projection exact paths`
+- Latest `origin/main` known here:
+  `bb851f45360 Add DART 7 architecture assessment, PLAN-091 hardening plan, and work-packet harness (#2986)`;
+  the latest merge of `origin/main` into this branch reported
+  `Already up to date`.
+- Current relationship before this handoff:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+Uncommitted worktree state:
+
+- `dart/math/lcp/other/sap_solver.cpp` contains an unverified WIP source edit:
+  `SapSolver::solve(...)` now has `ax` and `axNew` scratch vectors so the
+  current iteration can reuse `A * x` for both quadratic cost and gradient, and
+  line search can reuse `A * xNew` when evaluating candidate cost.
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md` and this `RESUME.md`
+  were updated to record the stop handoff.
+- No post-edit commit or push has been made.
+
+Evidence gathered before the source edit:
+
+```bash
+build/default/cpp/Release/bin/BM_LCP_COMPARE --benchmark_filter='^BM_LcpCompare/(Boxed|FrictionIndex)/Sap/(12|24|48|4|16|64)$' --benchmark_format=json --benchmark_min_time=0.005s
+```
+
+Result:
+
+- Boxed `Sap/12`: about `1136.7 ns`, `iterations=0`, `contract_ok=1`.
+- Boxed `Sap/24`: about `3255.9 ns`, `iterations=0`, `contract_ok=1`.
+- Boxed `Sap/48`: about `13481.8 ns`, `iterations=0`, `contract_ok=1`.
+- FrictionIndex `Sap/4`: about `1412.4 ns`, `iterations=2`,
+  `contract_ok=1`.
+- FrictionIndex `Sap/16`: about `11802.4 ns`, `iterations=2`,
+  `contract_ok=1`.
+- FrictionIndex `Sap/64`: about `266911.0 ns`, `iterations=2`,
+  `contract_ok=1`.
+
+Verification status:
+
+- No completed post-edit verification exists for the SAP WIP source edit.
+- A combined build command failed because `scripts/cmake_build.py` accepts only
+  one `--target` per invocation:
+
+```bash
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target UNIT_math_lcp_math_lcp_lcp_validation_and_solvers BM_LCP_COMPARE
+```
+
+- A follow-up build for
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers` was interrupted by the
+  user. The lingering `python scripts/cmake_build.py --target tests` and
+  `ninja` processes were found and stopped.
+- `pixi run lint`, `git diff --check`, focused C++ tests, and post-edit SAP
+  benchmark comparisons have not been run after the WIP source edit.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git diff -- dart/math/lcp/other/sap_solver.cpp docs/dev_tasks/lcp_solver_interface_demos/README.md docs/dev_tasks/lcp_solver_interface_demos/RESUME.md
+```
+
+Then decide whether to keep and verify the SAP matvec-reuse WIP or revert it
+before adding further solver work. If keeping it, build one target per
+`scripts/cmake_build.py --target ...` invocation, run focused SAP tests and
+benchmarks, then run `pixi run lint` and `git diff --check` before committing.
+Do not retry the earlier rejected SAP FrictionIndex exact shortcut or
+ShockPropagation exact-path probe without a materially different hypothesis.
+
 ## Current Reality - 2026-06-13 Boxed Projection Exact Paths
 
-This is the latest hand-off. Older sections below are historical checkpoints
-and may retain their original "latest" wording from the time they were written.
+Historical checkpoint section. It was the latest hand-off before the SAP
+matvec-reuse WIP stop handoff.
+
+This was the latest hand-off before the SAP matvec-reuse WIP stop handoff.
+Older sections below are historical checkpoints and may retain their original
+"latest" wording from the time they were written.
 
 Current branch:
 

@@ -261,7 +261,9 @@ LcpResult SapSolver::solve(
   Eigen::VectorXd grad(n);
   Eigen::VectorXd diagAdd(n);
   Eigen::VectorXd dx(n);
+  Eigen::VectorXd ax(n);
   Eigen::VectorXd xNew(n);
+  Eigen::VectorXd axNew(n);
 
   int iterationsUsed = 0;
   bool converged = false;
@@ -277,13 +279,15 @@ LcpResult SapSolver::solve(
       }
     }
 
+    ax.noalias() = A * x;
+
     // Cost: L(x) = 0.5*x'*A*x - b'*x + barrier(x)
-    const double quadCost = 0.5 * x.dot(A * x) - b.dot(x);
+    const double quadCost = 0.5 * x.dot(ax) - b.dot(x);
     const double barrierCost = computeBarrierCost(x, loEff, hiEff, reg);
     const double cost = quadCost + barrierCost;
 
     // Gradient: grad = A*x - b + barrier_grad
-    grad = A * x - b;
+    grad = ax - b;
     computeBarrierGradient(x, loEff, hiEff, reg, grad);
 
     const double gradNorm = grad.lpNorm<Eigen::Infinity>();
@@ -322,7 +326,8 @@ LcpResult SapSolver::solve(
         }
       }
 
-      const double newQuadCost = 0.5 * xNew.dot(A * xNew) - b.dot(xNew);
+      axNew.noalias() = A * xNew;
+      const double newQuadCost = 0.5 * xNew.dot(axNew) - b.dot(xNew);
       const double newBarrierCost = computeBarrierCost(xNew, loEff, hiEff, reg);
       const double newCost = newQuadCost + newBarrierCost;
 
