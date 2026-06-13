@@ -171,10 +171,7 @@ void BoxedLcpContactScratch::reserve(
   dantzig.lcp.p.reserve(vectorSize);
   dantzig.lcp.C.reserve(vectorSize);
   dantzig.lcp.rowPointers.reserve(vectorSize);
-  if (dantzig.lcp.stateCapacity < vectorSize) {
-    dantzig.lcp.state = std::make_unique<bool[]>(vectorSize);
-    dantzig.lcp.stateCapacity = vectorSize;
-  }
+  dantzig.lcp.reserveState(vectorSize);
 }
 
 //==============================================================================

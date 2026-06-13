@@ -242,7 +242,8 @@ struct DART_SIMULATION_API UnifiedConstraintSolveScratch
   UnifiedConstraintSolveScratch() = default;
 
   explicit UnifiedConstraintSolveScratch(common::MemoryAllocator& allocator)
-    : islandRows(IndexAllocator{allocator}),
+    : dantzig(allocator),
+      islandRows(IndexAllocator{allocator}),
       islandOffsets(IndexAllocator{allocator}),
       visitedRows(CharAllocator{allocator}),
       rowStack(IndexAllocator{allocator}),

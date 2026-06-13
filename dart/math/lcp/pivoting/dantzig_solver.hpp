@@ -35,6 +35,8 @@
 #include <dart/math/lcp/lcp_solver.hpp>
 #include <dart/math/lcp/pivoting/dantzig/lcp.hpp>
 
+#include <dart/common/stl_allocator.hpp>
+
 #include <vector>
 
 namespace dart::math {
@@ -47,13 +49,30 @@ public:
   /// Reusable work storage for repeated same-shape Dantzig solves.
   struct DART_API Scratch
   {
-    std::vector<double> Adata;
-    std::vector<double> xdata;
-    std::vector<double> wdata;
-    std::vector<double> bdata;
-    std::vector<double> loData;
-    std::vector<double> hiData;
-    std::vector<int> findexData;
+    using DoubleAllocator = dart::common::StlAllocator<double>;
+    using IntAllocator = dart::common::StlAllocator<int>;
+
+    Scratch() = default;
+
+    explicit Scratch(dart::common::MemoryAllocator& allocator)
+      : Adata(DoubleAllocator{allocator}),
+        xdata(DoubleAllocator{allocator}),
+        wdata(DoubleAllocator{allocator}),
+        bdata(DoubleAllocator{allocator}),
+        loData(DoubleAllocator{allocator}),
+        hiData(DoubleAllocator{allocator}),
+        findexData(IntAllocator{allocator}),
+        lcp(allocator)
+    {
+    }
+
+    std::vector<double, DoubleAllocator> Adata;
+    std::vector<double, DoubleAllocator> xdata;
+    std::vector<double, DoubleAllocator> wdata;
+    std::vector<double, DoubleAllocator> bdata;
+    std::vector<double, DoubleAllocator> loData;
+    std::vector<double, DoubleAllocator> hiData;
+    std::vector<int, IntAllocator> findexData;
     Eigen::VectorXd w;
     Eigen::VectorXd loEff;
     Eigen::VectorXd hiEff;

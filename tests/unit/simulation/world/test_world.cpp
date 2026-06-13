@@ -58,6 +58,7 @@
 #include <dart/simulation/compute/world_kinematics_graph.hpp>
 #include <dart/simulation/compute/world_step_stage.hpp>
 #include <dart/simulation/constraint/loop_closure_spec.hpp>
+#include <dart/simulation/detail/boxed_lcp_contact.hpp>
 #include <dart/simulation/detail/deformable_vbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/smooth_jacobians.hpp>
@@ -4287,6 +4288,30 @@ TEST(World, UnifiedConstraintStageScratchUsesProvidedAllocator)
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
+}
+
+TEST(World, BoxedLcpContactScratchDantzigUsesProvidedAllocator)
+{
+  namespace common = dart::common;
+  namespace sxdetail = dart::simulation::detail;
+
+  common::MemoryManager memoryManager;
+  auto& freeList = memoryManager.getFreeListAllocator();
+  const auto allocationsBeforeScratch = freeList.getAllocationCount();
+
+  {
+    sxdetail::BoxedLcpContactScratch scratch(memoryManager.getFreeAllocator());
+    const auto allocationsAfterScratch = freeList.getAllocationCount();
+
+    scratch.reserve(/*contactCapacity=*/2u, /*bodyCapacity=*/2u);
+
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterScratch + 12u)
+        << "allocator-aware boxed-LCP contact scratch should reserve nested "
+           "Dantzig work arrays and state storage from the provided free "
+           "allocator";
+  }
+
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeScratch);
 }
 
 TEST(World, RigidBodyContactAvbdStageScratchUsesProvidedAllocator)

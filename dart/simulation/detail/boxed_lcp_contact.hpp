@@ -161,7 +161,8 @@ struct DART_SIMULATION_API BoxedLcpContactScratch
           0u,
           std::hash<entt::entity>{},
           std::equal_to<entt::entity>{},
-          BodyColumnAllocator{allocator})
+          BodyColumnAllocator{allocator}),
+      dantzig(allocator)
   {
   }
 

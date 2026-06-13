@@ -1,5 +1,66 @@
 # Resume: Hierarchical Memory Manager
 
+## Hard Stop Handoff (2026-06-13, Dantzig Boxed-LCP Scratch Allocator)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR.
+
+Latest local slice: reusable Dantzig boxed-LCP scratch can now borrow the
+provided DART allocator for the solver's STL work arrays and low-level pivot
+state buffer. `DantzigSolver::Scratch` and `DantzigLcpScratch` expose allocator
+constructors, and the World boxed-LCP/unified-constraint scratch bundles pass
+their stage allocator into the nested Dantzig scratch.
+
+The fix has these parts:
+
+- `DantzigLcpScratch` stores its pivot work arrays in
+  `common::StlAllocator`-backed vectors and replaces the old `new[]` bool state
+  with an allocator-backed reusable state buffer;
+- `DantzigSolver::Scratch` forwards a provided `MemoryAllocator` to its Dantzig
+  arrays and nested low-level LCP scratch;
+- `BoxedLcpContactScratch` and `UnifiedConstraintSolveScratch` construct nested
+  Dantzig scratch from the same allocator used by their stage-owned scratch;
+- `DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers` verifies
+  allocator-backed Dantzig reuse and release, while
+  `World.BoxedLcpContactScratchDantzigUsesProvidedAllocator` verifies boxed-LCP
+  contact scratch reserves the nested Dantzig arrays/state from the provided
+  free allocator.
+
+This still does not claim that Eigen dynamic payloads inside boxed-LCP snapshots,
+`DantzigSolver::Scratch::w`/`loEff`/`hiEff`, arbitrary one-shot LCP solve APIs,
+or return-by-value contact snapshot helpers are allocation-free or
+allocator-backed. The closed gap is the retained STL work-array and pivot-state
+storage owned by reusable Dantzig scratch when a caller supplies DART scratch
+storage.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target UNIT_math_lcp_math_lcp_dantzig_solver test_world -j 8
+build/default/cpp/Release/bin/UNIT_math_lcp_math_lcp_dantzig_solver \
+  --gtest_filter='DantzigSolver.ScratchUsesProvidedAllocatorForDantzigWorkBuffers:DantzigSolver.ReusedScratchAvoidsHeapAllocationForSameShapeSolve'
+build/default/cpp/Release/bin/test_world \
+  --gtest_filter='World.BoxedLcpContactScratchDantzigUsesProvidedAllocator:World.BakedBoxedLcpFallbackContactStepsDoNotAllocateGlobalHeap:World.UnifiedConstraintStageScratchUsesProvidedAllocator'
+pixi run lint
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+The CUDA `test-all` run passed with the existing no-GUI
+`dartpy._world_render_bridge` autodoc warnings during documentation generation.
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Contact-Free Derivative Dynamics-Terms Scratch)
 
 Resume from exactly one branch:
