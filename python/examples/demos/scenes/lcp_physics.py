@@ -2636,6 +2636,8 @@ def build() -> SceneSetup:
                     "Challenge",
                     "Native",
                     "Delegated",
+                    "Max error",
+                    "Max comp",
                     "Max residual",
                     "Fastest",
                     "Fastest native",
@@ -2659,6 +2661,8 @@ def build() -> SceneSetup:
                             f"{row['delegated_solver_count']}"
                         ),
                     )
+                    _write_table_cell(builder, f"{row['max_solution_error']:.2e}")
+                    _write_table_cell(builder, f"{row['max_complementarity']:.2e}")
                     _write_table_cell(builder, f"{row['max_residual']:.2e}")
                     _write_table_cell(
                         builder,
