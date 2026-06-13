@@ -164,6 +164,9 @@ CamelCase, compact API tokens, and simple plurals, so queries such as
 `RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`,
 `ray-cast`, `shape-cast`, `body kind filters`, or `resting contacts` find the
 same rows as their documented snake_case or singular forms.
+Search-result tooltips name the match source, such as maintained alias, row
+number, user question, related evidence, or scope caveat, so users can see why
+the navigator chose a row before switching scenes.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Scope caveats

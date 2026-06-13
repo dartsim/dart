@@ -176,6 +176,9 @@ CamelCase, compact API tokens, and simple plurals, so
 `RigidBody.applyLinearImpulse`, `Multibody.computeImpulseResponse`, `ray-cast`,
 `shape-cast`, `body kind filters`, and `resting contacts` route like the
 documented snake_case or singular terms.
+Search-result tooltips name the match source, such as maintained alias, row
+number, user question, related evidence, or scope caveat, so the navigator is
+auditable before the user switches scenes.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Direct impulse queries route to the public

@@ -2118,6 +2118,43 @@ def _workflow_core_search_score(
     return positive_score
 
 
+def _workflow_search_match_reason(
+    guide: RigidWorkflowGuide, tokens: tuple[str, ...]
+) -> str:
+    if not tokens:
+        return ""
+
+    query_text = " ".join(tokens)
+    aliases = _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES.get(guide.scene_id, ())
+    if query_text == _workflow_search_phrase(guide.scene_id):
+        return "scene id"
+    if query_text == _workflow_search_phrase(guide.label):
+        return "row label"
+    if query_text in {_workflow_search_phrase(alias) for alias in aliases}:
+        return "maintained alias"
+    if len(tokens) > 1 and any(
+        _workflow_text_matches(alias, tokens) for alias in aliases
+    ):
+        return "maintained alias terms"
+
+    positive_fields = (
+        ("row number", _workflow_search_row_id_text(guide)),
+        ("user question", guide.question),
+        ("try-first action", guide.try_first),
+        ("inspect signal", " ".join(guide.inspect)),
+        ("healthy signal", guide.healthy_signal),
+    )
+    for reason, text in positive_fields:
+        if _workflow_text_matches(text, tokens):
+            return reason
+
+    if _workflow_related_evidence_matches(guide, tokens):
+        return "related evidence"
+    if _workflow_text_matches(guide.scope, tokens):
+        return "scope caveat"
+    return "workflow text"
+
+
 def _workflow_related_evidence_matches(
     guide: RigidWorkflowGuide, tokens: tuple[str, ...]
 ) -> tuple[RigidWorkflowRelatedEvidence, ...]:
@@ -2197,6 +2234,7 @@ def _workflow_search_rows(
                 _request_workflow_replay(context, match.scene_id)
             else:
                 _request_workflow_scene(context, match.scene_id)
+        reason = _workflow_search_match_reason(match, tokens)
         tooltip = match.question
         if related_matches:
             related_notes = "; ".join(
@@ -2207,10 +2245,15 @@ def _workflow_search_rows(
                 f"{tooltip} Related evidence match: {related_notes}. "
                 f"Click opens {related_matches[0].scene_id}."
             )
+        if reason:
+            tooltip = f"{tooltip} Search match: {reason}."
         builder.item_tooltip(tooltip)
 
     if query.strip() and not matches:
-        builder.text("No matching workflow rows")
+        builder.text(
+            "No matching workflow rows; try a row number, scene id, solver, "
+            "contact, backend, or API name."
+        )
 
     return query
 

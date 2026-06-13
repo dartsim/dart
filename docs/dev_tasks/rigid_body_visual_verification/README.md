@@ -3,19 +3,16 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-`origin/feature/rigid-body-gui-visual-verification` is at pushed commit
-`cb5deee7bfd` after the review-prep/search-alias commits. The latest
-user-approved push first fetched origin and merged `origin/main`; the merge
-reported `Already up to date`, so the branch contains the PR #2986 DART 7
-architecture/work-packet harness. This session may have local follow-up
-search-discovery updates above that pushed checkpoint; fresh sessions should
-verify the exact ahead count with `git status -sb` and
-`git log -5 --oneline`. There is still no PR for this branch. Do not push new
-commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
-threads, or mutate any other GitHub state without explicit maintainer/user
-approval.
+The active branch is `feature/rigid-body-gui-visual-verification`. This
+handoff covers the latest search-discovery commits above pushed checkpoint
+`cb5deee7bfd`; this turn has explicit user approval to publish them to
+`origin` after merging latest `origin/main`. Fresh sessions should verify the
+exact remote state with `git status -sb` and `git log -5 --oneline`. There is
+still no PR for this branch. Do not push new commits, create a PR, set a
+milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
+GitHub state without explicit maintainer/user approval.
 
-Latest local continuation: rigid workflow search now covers more terms users
+Latest branch continuation: rigid workflow search now covers more terms users
 type while diagnosing performance, contact/material parameters, collision
 queries, dynamics terms, impulses, stack behavior, and closed chains.
 `throughput` routes to `rigid_contact_scale_budget`; `latency` and
@@ -36,9 +33,12 @@ underscores, hyphens, dotted API names, CamelCase, compact API tokens, and
 simple plurals, so `RigidBody.applyLinearImpulse`,
 `Multibody.computeImpulseResponse`, `ray-cast`, `shape-cast`,
 `body kind filters`, and `resting contacts` route like their documented
-snake_case or singular forms. Focused guard:
-`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `7 passed`. This local slice is not pushed yet.
+snake_case or singular forms. Search-result tooltips now name whether the row
+matched by maintained alias, row number, user question, related evidence, or
+scope caveat, and no-result feedback suggests row numbers, scene ids, solver,
+contact, backend, or API names. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_empty_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `11 passed`.
 
 Latest pushed continuation: rigid workflow search now routes GPU/CUDA shorthand
 (`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,

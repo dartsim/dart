@@ -2028,7 +2028,11 @@ def test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch
         "19/36 Friction threshold - rigid_friction_threshold"
         "##rigid_workflow_find_rigid_friction_threshold:False"
     ) in builder.events
-    assert "tooltip:Where is the inclined-ramp stick/slip boundary?" in builder.events
+    assert any(
+        event.startswith("tooltip:Where is the inclined-ramp stick/slip boundary?")
+        and event.endswith("Search match: maintained alias.")
+        for event in builder.events
+    )
     assert context.scene_switch_requests == ["rigid_friction_threshold"]
 
 
@@ -2346,11 +2350,37 @@ def test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch()
         "15/36 Solver family - rigid_solver_compare"
         "##rigid_workflow_find_rigid_solver_compare:False"
     ) in builder.events
-    assert (
-        f"tooltip:{RIGID_VISUAL_WORKFLOW_GUIDES['rigid_solver_compare'].question}"
-        in builder.events
+    assert any(
+        event.startswith(
+            f"tooltip:{RIGID_VISUAL_WORKFLOW_GUIDES['rigid_solver_compare'].question}"
+        )
+        and event.endswith("Search match: row number.")
+        for event in builder.events
     )
     assert context.scene_switch_requests == ["rigid_solver_compare"]
+
+
+def test_rigid_workflow_panel_explains_empty_search_results() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow empty search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    builder = _ScriptedPanelBuilder(text_input_values={"Find row": "zzzzzzzz"})
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "text:No matching workflow rows; try a row number, scene id, solver, "
+        "contact, backend, or API name."
+    ) in builder.events
+    assert context.scene_switch_requests == []
 
 
 def test_rigid_workflow_panel_opens_related_evidence_search_matches() -> None:
