@@ -36,6 +36,7 @@
 #include "dart/simulation/comps/dynamics.hpp"
 #include "dart/simulation/comps/name.hpp"
 #include "dart/simulation/comps/rigid_body.hpp"
+#include "dart/simulation/compute/rigid_body_batch_ops.hpp"
 #include "dart/simulation/compute/rigid_body_integration_kernel.hpp"
 #include "dart/simulation/detail/world_registry_access.hpp"
 #include "dart/simulation/world.hpp"
@@ -95,8 +96,8 @@ std::vector<std::string> rigidBodyNames(const World& world)
 // non-positive-definite system. Reads the pre-update orientation, so it must
 // run before the orientation step.
 void integrateAngularVelocitiesFromTorque(
-    RigidBodyStateBatch& state,
-    const RigidBodyModelBatch& model,
+    rigid_body_batch_ops::MutableRigidBodyStateBatchView state,
+    rigid_body_batch_ops::RigidBodyModelBatchView model,
     std::span<const double> torque,
     double timeStep)
 {
@@ -246,6 +247,129 @@ void integrateOrientationsBatch(
 }
 
 } // namespace
+
+namespace rigid_body_batch_ops {
+
+//==============================================================================
+void integrateRigidBodyStateBatchLinear(
+    MutableRigidBodyStateBatchView state,
+    std::span<const double> force,
+    std::span<const double> inverseMass,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      state.position.size() != 3 * bodies
+          || state.linearVelocity.size() != 3 * bodies
+          || force.size() != 3 * bodies || inverseMass.size() != bodies,
+      InvalidArgumentException,
+      "integrateRigidBodyStateBatchLinear arrays are inconsistent with "
+      "worldCount {} and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  integrateVelocitiesSemiImplicit(
+      state.linearVelocity.data(),
+      force.data(),
+      inverseMass.data(),
+      timeStep,
+      bodies);
+  integratePositionsSemiImplicit(
+      state.position.data(),
+      state.linearVelocity.data(),
+      timeStep,
+      state.position.size());
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatchLinear(
+    MutableRigidBodyStateBatchView state,
+    RigidBodyModelBatchView model,
+    std::span<const double> force,
+    double timeStep)
+{
+  DART_SIMULATION_THROW_T_IF(
+      model.worldCount != state.worldCount
+          || model.bodyCount != state.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
+      model.worldCount,
+      model.bodyCount,
+      state.worldCount,
+      state.bodyCount);
+
+  integrateRigidBodyStateBatchLinear(state, force, model.inverseMass, timeStep);
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatch(
+    MutableRigidBodyStateBatchView state,
+    RigidBodyModelBatchView model,
+    std::span<const double> force,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      state.orientation.size() != 4 * bodies
+          || state.angularVelocity.size() != 3 * bodies,
+      InvalidArgumentException,
+      "RigidBodyStateBatch orientation/angular-velocity arrays are "
+      "inconsistent "
+      "with worldCount {} and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  DART_SIMULATION_THROW_T_IF(
+      model.worldCount != state.worldCount
+          || model.bodyCount != state.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
+      model.worldCount,
+      model.bodyCount,
+      state.worldCount,
+      state.bodyCount);
+
+  integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
+  integrateOrientationsBatch(
+      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatch(
+    MutableRigidBodyStateBatchView state,
+    RigidBodyModelBatchView model,
+    std::span<const double> force,
+    std::span<const double> torque,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_SIMULATION_THROW_T_IF(
+      state.orientation.size() != 4 * bodies
+          || state.angularVelocity.size() != 3 * bodies
+          || torque.size() != 3 * bodies || model.inertia.size() != 9 * bodies,
+      InvalidArgumentException,
+      "integrateRigidBodyStateBatch (torque) arrays are inconsistent with "
+      "worldCount {} and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  DART_SIMULATION_THROW_T_IF(
+      model.worldCount != state.worldCount
+          || model.bodyCount != state.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
+      model.worldCount,
+      model.bodyCount,
+      state.worldCount,
+      state.bodyCount);
+
+  integrateRigidBodyStateBatchLinear(state, force, model.inverseMass, timeStep);
+  integrateAngularVelocitiesFromTorque(state, model, torque, timeStep);
+  integrateOrientationsBatch(
+      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+}
+
+} // namespace rigid_body_batch_ops
 
 //==============================================================================
 RigidBodyStateBatch extractRigidBodyState(const World& world)
@@ -506,28 +630,11 @@ void integrateRigidBodyStateBatchLinear(
     std::span<const double> inverseMass,
     double timeStep)
 {
-  const auto bodies = state.worldCount * state.bodyCount;
-  DART_SIMULATION_THROW_T_IF(
-      state.position.size() != 3 * bodies
-          || state.linearVelocity.size() != 3 * bodies
-          || force.size() != 3 * bodies || inverseMass.size() != bodies,
-      InvalidArgumentException,
-      "integrateRigidBodyStateBatchLinear arrays are inconsistent with "
-      "worldCount {} and bodyCount {}",
-      state.worldCount,
-      state.bodyCount);
-
-  integrateVelocitiesSemiImplicit(
-      state.linearVelocity.data(),
-      force.data(),
-      inverseMass.data(),
-      timeStep,
-      bodies);
-  integratePositionsSemiImplicit(
-      state.position.data(),
-      state.linearVelocity.data(),
-      timeStep,
-      state.position.size());
+  rigid_body_batch_ops::integrateRigidBodyStateBatchLinear(
+      rigid_body_batch_ops::mutableStateBatchView(state),
+      force,
+      inverseMass,
+      timeStep);
 }
 
 //==============================================================================
@@ -565,17 +672,11 @@ void integrateRigidBodyStateBatchLinear(
     std::span<const double> force,
     double timeStep)
 {
-  DART_SIMULATION_THROW_T_IF(
-      model.worldCount != state.worldCount
-          || model.bodyCount != state.bodyCount,
-      InvalidArgumentException,
-      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
-      model.worldCount,
-      model.bodyCount,
-      state.worldCount,
-      state.bodyCount);
-
-  integrateRigidBodyStateBatchLinear(state, force, model.inverseMass, timeStep);
+  rigid_body_batch_ops::integrateRigidBodyStateBatchLinear(
+      rigid_body_batch_ops::mutableStateBatchView(state),
+      rigid_body_batch_ops::modelBatchView(model),
+      force,
+      timeStep);
 }
 
 //==============================================================================
@@ -585,22 +686,11 @@ void integrateRigidBodyStateBatch(
     std::span<const double> force,
     double timeStep)
 {
-  const auto bodies = state.worldCount * state.bodyCount;
-  DART_SIMULATION_THROW_T_IF(
-      state.orientation.size() != 4 * bodies
-          || state.angularVelocity.size() != 3 * bodies,
-      InvalidArgumentException,
-      "RigidBodyStateBatch orientation/angular-velocity arrays are "
-      "inconsistent "
-      "with worldCount {} and bodyCount {}",
-      state.worldCount,
-      state.bodyCount);
-
-  // Linear step (validates model, force, and the 3-component arrays), then the
-  // orientation step from the batch angular velocity.
-  integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
-  integrateOrientationsBatch(
-      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+  rigid_body_batch_ops::integrateRigidBodyStateBatch(
+      rigid_body_batch_ops::mutableStateBatchView(state),
+      rigid_body_batch_ops::modelBatchView(model),
+      force,
+      timeStep);
 }
 
 //==============================================================================
@@ -611,25 +701,12 @@ void integrateRigidBodyStateBatch(
     std::span<const double> torque,
     double timeStep)
 {
-  const auto bodies = state.worldCount * state.bodyCount;
-  DART_SIMULATION_THROW_T_IF(
-      state.orientation.size() != 4 * bodies
-          || state.angularVelocity.size() != 3 * bodies
-          || torque.size() != 3 * bodies || model.inertia.size() != 9 * bodies,
-      InvalidArgumentException,
-      "integrateRigidBodyStateBatch (torque) arrays are inconsistent with "
-      "worldCount {} and bodyCount {}",
-      state.worldCount,
-      state.bodyCount);
-
-  // Match the per-entity order: linear velocity and position (the linear helper
-  // validates model, force, and the 3-component arrays), then angular velocity
-  // from torque using the pre-update orientation, then orientation from the
-  // updated angular velocity.
-  integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
-  integrateAngularVelocitiesFromTorque(state, model, torque, timeStep);
-  integrateOrientationsBatch(
-      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+  rigid_body_batch_ops::integrateRigidBodyStateBatch(
+      rigid_body_batch_ops::mutableStateBatchView(state),
+      rigid_body_batch_ops::modelBatchView(model),
+      force,
+      torque,
+      timeStep);
 }
 
 //==============================================================================

@@ -14,7 +14,7 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 489
+- C++ public headers scanned: 490
 - C++ headers with exposed implementation debt: 120
 - C++ headers with compatibility signals: 50
 - dartpy binding sources scanned: 160
@@ -35,7 +35,7 @@ documented downstream migration or removal condition is satisfied.
 | optimizer  | 8       | 3         | 5             | 0            | 0            |
 | sensor     | 3       | 3         | 0             | 0            | 0            |
 | simd       | 16      | 11        | 0             | 0            | 5            |
-| simulation | 92      | 74        | 1             | 0            | 17           |
+| simulation | 93      | 75        | 1             | 0            | 17           |
 | top-level  | 3       | 2         | 1             | 0            | 0            |
 | utils      | 17      | 8         | 7             | 0            | 2            |
 

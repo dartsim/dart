@@ -44,6 +44,7 @@
 #include "dart/simulation/compute/compute_executor.hpp"
 #include "dart/simulation/compute/compute_graph.hpp"
 #include "dart/simulation/compute/detail/deformable_avbd_replay_state.hpp"
+#include "dart/simulation/compute/rigid_body_batch_ops.hpp"
 #include "dart/simulation/compute/rigid_body_constraint.hpp"
 #include "dart/simulation/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/compute/world_kinematics_graph.hpp"
@@ -1485,6 +1486,53 @@ using AllocatorAwareRigidBodyForceBatch = BasicRigidBodyForceBatch<
     common::StlAllocator<entt::entity>,
     common::StlAllocator<double>>;
 
+template <typename ScalarAllocator>
+struct BasicRigidBodyStateScratchBatch
+{
+  using ScalarVector = std::vector<double, ScalarAllocator>;
+
+  BasicRigidBodyStateScratchBatch() = default;
+
+  explicit BasicRigidBodyStateScratchBatch(const ScalarAllocator& allocator)
+    : position(allocator),
+      orientation(allocator),
+      linearVelocity(allocator),
+      angularVelocity(allocator)
+  {
+  }
+
+  std::size_t worldCount = 1;
+  std::size_t bodyCount = 0;
+  ScalarVector position;
+  ScalarVector orientation;
+  ScalarVector linearVelocity;
+  ScalarVector angularVelocity;
+};
+
+template <typename ScalarAllocator>
+struct BasicRigidBodyModelScratchBatch
+{
+  using ScalarVector = std::vector<double, ScalarAllocator>;
+
+  BasicRigidBodyModelScratchBatch() = default;
+
+  explicit BasicRigidBodyModelScratchBatch(const ScalarAllocator& allocator)
+    : inverseMass(allocator), inertia(allocator)
+  {
+  }
+
+  std::size_t worldCount = 1;
+  std::size_t bodyCount = 0;
+  ScalarVector inverseMass;
+  ScalarVector inertia;
+};
+
+using RigidBodyBatchScalarAllocator = common::StlAllocator<double>;
+using AllocatorAwareRigidBodyStateBatch
+    = BasicRigidBodyStateScratchBatch<RigidBodyBatchScalarAllocator>;
+using AllocatorAwareRigidBodyModelBatch
+    = BasicRigidBodyModelScratchBatch<RigidBodyBatchScalarAllocator>;
+
 enum class RigidBodyForceAssemblyMode
 {
   AllBodies,
@@ -1539,7 +1587,8 @@ void assembleRigidBodyForces(
 }
 
 //==============================================================================
-void extractRigidBodyStateInto(const World& world, RigidBodyStateBatch& batch)
+template <typename StateBatch>
+void extractRigidBodyStateInto(const World& world, StateBatch& batch)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view
@@ -1584,8 +1633,8 @@ void extractRigidBodyStateInto(const World& world, RigidBodyStateBatch& batch)
 }
 
 //==============================================================================
-void extractRigidBodyModelBatchInto(
-    const World& world, RigidBodyModelBatch& model)
+template <typename ModelBatch>
+void extractRigidBodyModelBatchInto(const World& world, ModelBatch& model)
 {
   const auto& registry = dart::simulation::detail::registryOf(world);
   auto view
@@ -1617,8 +1666,9 @@ void extractRigidBodyModelBatchInto(
 }
 
 //==============================================================================
+template <typename SourceStateBatch, typename TargetStateBatch>
 void copyRigidBodyStateBatch(
-    const RigidBodyStateBatch& source, RigidBodyStateBatch& target)
+    const SourceStateBatch& source, TargetStateBatch& target)
 {
   target.worldCount = source.worldCount;
   target.bodyCount = source.bodyCount;
@@ -1632,8 +1682,8 @@ void copyRigidBodyStateBatch(
 void restorePrescribedRigidBodyState(
     const detail::WorldRegistry& registry,
     std::span<const entt::entity> entities,
-    const RigidBodyStateBatch& source,
-    RigidBodyStateBatch& target)
+    const auto& source,
+    auto& target)
 {
   DART_SIMULATION_THROW_T_IF(
       source.bodyCount != entities.size()
@@ -1653,6 +1703,69 @@ void restorePrescribedRigidBodyState(
         &source.angularVelocity[3 * i], 3, &target.angularVelocity[3 * i]);
     std::copy_n(&source.orientation[4 * i], 4, &target.orientation[4 * i]);
   }
+}
+
+//==============================================================================
+void applyRigidBodyStateFromBatch(World& world, const auto& state)
+{
+  DART_SIMULATION_THROW_T_IF(
+      state.worldCount != 1,
+      InvalidArgumentException,
+      "applyRigidBodyStateFromBatch supports single-world batches only, got "
+      "worldCount {}",
+      state.worldCount);
+
+  DART_SIMULATION_THROW_T_IF(
+      state.position.size() != 3 * state.bodyCount
+          || state.linearVelocity.size() != 3 * state.bodyCount
+          || state.angularVelocity.size() != 3 * state.bodyCount
+          || state.orientation.size() != 4 * state.bodyCount,
+      InvalidArgumentException,
+      "Rigid-body state scratch arrays are inconsistent with bodyCount {}",
+      state.bodyCount);
+
+  auto& registry = dart::simulation::detail::registryOf(world);
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  std::size_t index = 0;
+  for (const auto entity : view) {
+    DART_SIMULATION_THROW_T_IF(
+        index >= state.bodyCount,
+        InvalidArgumentException,
+        "Rigid-body state scratch has fewer bodies ({}) than the world",
+        state.bodyCount);
+
+    auto& transform = view.get<comps::Transform>(entity);
+    auto& velocity = view.get<comps::Velocity>(entity);
+
+    transform.position = Eigen::Vector3d(
+        state.position[3 * index + 0],
+        state.position[3 * index + 1],
+        state.position[3 * index + 2]);
+    transform.orientation = Eigen::Quaterniond(
+        state.orientation[4 * index + 0],
+        state.orientation[4 * index + 1],
+        state.orientation[4 * index + 2],
+        state.orientation[4 * index + 3]);
+    velocity.linear = Eigen::Vector3d(
+        state.linearVelocity[3 * index + 0],
+        state.linearVelocity[3 * index + 1],
+        state.linearVelocity[3 * index + 2]);
+    velocity.angular = Eigen::Vector3d(
+        state.angularVelocity[3 * index + 0],
+        state.angularVelocity[3 * index + 1],
+        state.angularVelocity[3 * index + 2]);
+
+    ++index;
+  }
+
+  DART_SIMULATION_THROW_T_IF(
+      index != state.bodyCount,
+      InvalidArgumentException,
+      "Rigid-body state scratch body count ({}) does not match the world ({})",
+      state.bodyCount,
+      index);
 }
 
 //==============================================================================
@@ -9868,15 +9981,18 @@ struct BatchedRigidBodyIntegrationStage::Scratch
 
   explicit Scratch(common::MemoryAllocator& allocator)
     : forces(allocator),
+      state(RigidBodyBatchScalarAllocator{allocator}),
+      initialState(RigidBodyBatchScalarAllocator{allocator}),
+      model(RigidBodyBatchScalarAllocator{allocator}),
       frameUpdateOrder(common::StlAllocator<entt::entity>{allocator}),
       visitState(common::StlAllocator<int>{allocator})
   {
   }
 
   AllocatorAwareRigidBodyForceBatch forces;
-  RigidBodyStateBatch state;
-  RigidBodyStateBatch initialState;
-  RigidBodyModelBatch model;
+  AllocatorAwareRigidBodyStateBatch state;
+  AllocatorAwareRigidBodyStateBatch initialState;
+  AllocatorAwareRigidBodyModelBatch model;
   std::vector<entt::entity, common::StlAllocator<entt::entity>>
       frameUpdateOrder;
   std::vector<int, common::StlAllocator<int>> visitState;
@@ -11923,12 +12039,16 @@ void BatchedRigidBodyIntegrationStage::execute(
   extractRigidBodyModelBatchInto(world, scratch.model);
   const auto timeStep = world.getTimeStep();
 
-  integrateRigidBodyStateBatch(
-      scratch.state, scratch.model, forces.force, forces.torque, timeStep);
+  rigid_body_batch_ops::integrateRigidBodyStateBatch(
+      rigid_body_batch_ops::mutableStateBatchView(scratch.state),
+      rigid_body_batch_ops::modelBatchView(scratch.model),
+      forces.force,
+      forces.torque,
+      timeStep);
 
   restorePrescribedRigidBodyState(
       registry, entities, scratch.initialState, scratch.state);
-  applyRigidBodyState(world, scratch.state);
+  applyRigidBodyStateFromBatch(world, scratch.state);
 
   // Restore frame-cache consistency the same way the per-entity integrator
   // does, now that the world-space Transform has been written back. The SoA

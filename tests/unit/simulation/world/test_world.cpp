@@ -4269,10 +4269,10 @@ TEST(World, BatchedRigidBodyIntegrationStageScratchUsesProvidedAllocator)
 
     stage.execute(world, executor);
 
-    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 5u)
+    EXPECT_GE(freeList.getAllocationCount(), allocationsAfterStage + 15u)
         << "allocator-aware batched rigid integration scratch should reserve "
-           "force, torque, entity, frame-order, and visit-state vectors from "
-           "the provided free allocator";
+           "state, initial-state, model, force, torque, entity, frame-order, "
+           "and visit-state vectors from the provided free allocator";
   }
 
   EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeStage);
