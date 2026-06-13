@@ -3,18 +3,16 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-At the start of this continuation,
-`feature/rigid-body-gui-visual-verification` was clean and synced with
-`origin/feature/rigid-body-gui-visual-verification` at `4a08e34f748`. The
-latest user-approved push advanced the remote branch from `7829d9b0487` to
-`4a08e34f748`; `git fetch origin main` plus `git merge --no-edit origin/main`
-reported `Already up to date`, and `origin/main` is an ancestor of `HEAD`.
-This handoff/harness-audit refresh is local-only until the next explicit push
-approval, so a fresh session should verify whether the branch is clean, dirty,
-or ahead with `git status -sb`. There is still no PR for this branch. Do not
-push new commits, create a PR, set a milestone, rerun CI, comment on reviews,
-resolve threads, or mutate any other GitHub state without explicit
-maintainer/user approval.
+`feature/rigid-body-gui-visual-verification` is clean and synced with
+`origin/feature/rigid-body-gui-visual-verification` at pushed commit
+`fbbd5de0005`. The latest user-approved push after the row-5 direct-impulse
+slice reported `Everything up-to-date`; `git fetch origin` plus
+`git merge --no-edit origin/main` reported `Already up to date`, and
+`git rev-list --left-right --count HEAD...origin/main` reports `191 0`, so the
+branch contains the PR #2986 DART 7 architecture/work-packet harness. There is
+still no PR for this branch. Do not push new commits, create a PR, set a
+milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
+GitHub state without explicit maintainer/user approval.
 
 Latest local continuation: row 5, `rigid_external_loads`, now covers public
 direct rigid-body impulse behavior instead of documenting it as a deferred API
@@ -35,8 +33,8 @@ solver identity (`solver=sequential_impulse`, `executor=Sequential`), and
 latest metrics with `scope=external_load_and_direct_impulse_response`,
 `linear_impulse_momentum_x=0.8`, `linear_impulse_speed=0.8`,
 `angular_impulse_momentum_z=0.09`, `angular_impulse_speed=2.0`, and
-`static_drift=0.0`. This slice is local-only until pushed with explicit
-approval.
+`static_drift=0.0`. This slice has been pushed at `fbbd5de0005` and covered by
+the default and CUDA wrapper validations recorded below.
 
 Latest local continuation: a fresh DART 7 work-packet dry-run checked the
 current 53-row rigid workflow harness shape without rendering:
@@ -153,17 +151,14 @@ reported `2 passed`. No new visual packet was generated in this slice.
 
 Latest broad validation recorded for this task state: after a local
 `origin/main` merge check reported `Already up to date`, pushed commit
-`7829d9b0487` passed both wrapper suites with the DART safe parallelism cap:
+`fbbd5de0005` passed both wrapper suites with the DART safe parallelism cap:
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 passed all six default wrapper gates, and
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
 passed all seven CUDA wrapper gates on an `NVIDIA GeForce RTX 4080 Laptop GPU`
-host. The default CTest log records `test_world` at `00:02:24` and
-`test_rigid_ipc_paper_experiments` at `00:04:52`; the CUDA CTest log records
-`test_lcp_jacobi_batch_cuda` at `00:03:48`. This docs-only evidence refresh
-postdates those broad wrapper runs, so rerun broad default and CUDA validation
-only if maintainers require proof that includes this exact documentation
-commit.
+host, including the CUDA smoke tests and benchmark smoke. Documentation built
+with the known generated-stub warnings for `dartpy._world_render_bridge`, and
+both wrappers ended green.
 
 Latest artifact refresh: after the backend/executor search-routing,
 backend-diagnostics, contact-query review-card, and optional-signal slices, the
@@ -399,33 +394,28 @@ contains Testing, Breaking Changes, Related Issues / PRs, milestone, and
 completion-audit references.
 
 Latest deferred-API audit: runtime `dartpy.simulation` symbol introspection and
-targeted binding/stub reads still find only `RigidBody.apply_force()`,
-`RigidBody.apply_torque()`, force/torque properties, rigid-body
-linear/angular-momentum accessors, `Link.apply_force(...)`, and
-`Multibody.compute_impulse_response(...)` for the relevant public surfaces.
-No public `RigidBody` or `World` symbol exposes a direct rigid-body impulse,
-sleep/wake, island activation, or loop-closure compliance/stiffness/damping
-control, so the current workflow should keep those queries routed to caveated
-nearest rows instead of adding speculative numbered rows.
+targeted binding/stub reads now find public
+`RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
+surfaces, so direct rigid-body impulse is covered by row 5
+`rigid_external_loads`. The same audit still finds no public sleep/wake,
+island activation, or loop-closure compliance/stiffness/damping control, so
+those queries remain routed to caveated nearest rows instead of adding
+speculative numbered rows.
 
 Fresh focused guard for that audit:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
 reported `6 passed`.
 
 Latest validation follow-up: after merging latest `origin/main` (`Already up
-to date`), broad default validation was rerun at pushed commit `7829d9b0487`
+to date`), broad default validation was rerun at pushed commit `fbbd5de0005`
 with the DART safe parallelism cap (`DART_SAFE_JOBS=5`). Default
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed with all six wrapper gates passing: linting, build, unit tests,
 simulation tests, Python tests, and documentation, ending with
-`All tests passed`. The default CTest log recorded the two long simulation
-tests as green: `test_world` in `00:02:24` and
-`test_rigid_ipc_paper_experiments` in `00:04:52`. A later CUDA follow-up on a
-visible RTX 4080 Laptop GPU ran `pixi run -e cuda test-all` and passed all
-seven wrapper gates; its final CUDA-labeled CTest log recorded
-`test_lcp_jacobi_batch_cuda` in `00:03:48`. These broad wrapper runs cover the
-current implementation state at `7829d9b0487`; this docs-only evidence refresh
-postdates them.
+`All tests passed`. A later CUDA follow-up on a visible RTX 4080 Laptop GPU
+ran `pixi run -e cuda test-all` and passed all seven wrapper gates, including
+the CUDA runtime smoke path and benchmark smoke. These broad wrapper runs cover
+the current pushed implementation state at `fbbd5de0005`.
 
 Historical publication state before the later approved pushes: after the
 validation-evidence commit `84897c2fde5 Record rigid workflow validation
@@ -1464,8 +1454,10 @@ are easy to inspect, cycle, capture, and regression-test.
 
 - Do not start a broad public API expansion unless the missing API is first
   confirmed and scoped.
-- Do not implement direct rigid-body impulse, sleep/wake, island activation, or
-  loop-compliance rows until public `dartpy` APIs exist for them.
+- Direct rigid-body impulse is now covered by row 5 through public
+  `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`;
+  do not add sleep/wake, island activation, or loop-compliance rows until
+  public `dartpy` APIs exist for them.
 - Do not add new C++ demos for this task unless a future plan explicitly calls
   for it.
 
@@ -1479,13 +1471,12 @@ removes this working folder in the same change.
 
 Evidence supporting readiness:
 
-- The latest local checkpoint is
-  `08f710b793b Record regenerated rigid workflow evidence`, which records the
-  current-HEAD packet refresh and review-index link audit. At the latest recon,
-  the branch was clean, had no associated pull request, and was 38 commits
-  ahead of
-  `origin/feature/rigid-body-gui-visual-verification`; a `gh pr list` query for
-  the current branch reported no pull request.
+- The latest pushed checkpoint is
+  `fbbd5de0005 Expose rigid body impulses in visual workflow`, which records
+  the row-5 public direct-impulse slice and broad validation evidence. At the
+  latest recon, the branch was clean, synced with
+  `origin/feature/rigid-body-gui-visual-verification`, and had no associated
+  pull request.
 - The durable sidecar
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md` owns the
   curated 36-row workflow, optional related/IPC-shelf/packet rows, public
@@ -1530,11 +1521,12 @@ Evidence supporting readiness:
   manifest fields.
 - The current API-gap guard
   `test_rigid_visual_verification_deferred_api_gaps_are_documented` passed, and
-  live `dartpy` introspection still finds direct rigid-body impulse,
-  sleep/wake, island activation, and loop-closure compliance rows blocked by
-  missing public surfaces. Point-force, joint-space impulse response,
-  energy/momentum, breakage, and spring/compliance-like rows are already covered
-  or intentionally scoped by existing rows.
+  live `dartpy` introspection now finds direct rigid-body impulse APIs while
+  sleep/wake, island activation, and loop-closure compliance rows remain
+  blocked by missing public surfaces. Point-force, joint-space impulse
+  response, direct impulse, energy/momentum, breakage, and
+  spring/compliance-like rows are already covered or intentionally scoped by
+  existing rows.
 
 Remaining before retirement:
 
@@ -1548,10 +1540,9 @@ Remaining before retirement:
 - If accepted, do the cleanup in the completing PR: add only a short durable
   close-out note if the sidecar or Python README still lacks it, then
   `git rm -r docs/dev_tasks/rigid_body_visual_verification`.
-- Keep direct rigid-body impulse, sleep/wake, island activation, and
-  loop-closure compliance rows as durable PLAN-103 follow-ups until public
-  `dartpy` APIs exist; those deferrals are not blockers to retiring the current
-  scoped GUI workflow.
+- Keep sleep/wake, island activation, and loop-closure compliance rows as
+  durable PLAN-103 follow-ups until public `dartpy` APIs exist; direct
+  rigid-body impulse is now covered by row 5 and is not a deferred follow-up.
 - Run the repository-mandated `pixi run lint` before the cleanup commit, then
   run the strongest relevant docs/Python gates for the final PR.
 
@@ -1570,10 +1561,10 @@ Acceptance decision packet:
 ## Branch Snapshot
 
 - Branch: `feature/rigid-body-gui-visual-verification`
-- Latest committed local checkpoint is
-  `08f710b793b Record regenerated rigid workflow evidence`; the branch had no
-  associated pull request and was 38 commits ahead of
-  `origin/feature/rigid-body-gui-visual-verification`.
+- Latest pushed checkpoint is
+  `fbbd5de0005 Expose rigid body impulses in visual workflow`; the branch is
+  synced with `origin/feature/rigid-body-gui-visual-verification` and has no
+  associated pull request in the latest local checks.
 - Earlier branch snapshots below are historical archaeology from the
   multi-session implementation and should not override the current handoff,
   readiness audit, or `git status -sb`.
@@ -2229,9 +2220,9 @@ Observed results:
   `docs/plans/103-examples-strategy/rigid-body-visual-verification.md`.
 - The sidecar already records the rigid visualization scope, API-gap audit, and
   36 workflow rows.
-- The latest API-gap audit in that sidecar says public `dartpy` currently lacks
-  direct rigid-body impulse, sleep/wake/island activation, and loop-compliance
-  APIs, so those rows should remain deferred unless that changes.
+- The latest API-gap audit in that sidecar says public `dartpy` now exposes
+  direct rigid-body impulse APIs covered by row 5, while sleep/wake,
+  island-activation, and loop-compliance APIs remain unavailable and deferred.
 - Two read-only explorer subagents informed the latest work:
   one recommended a single rigid workflow capture mode, and one recommended
   additional solver/backend/contact-policy search aliases.

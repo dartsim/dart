@@ -14,9 +14,9 @@ current evidence-to-requirement map and remaining external gates.
 - Adds the maintained World Rigid Body sequence, comparison-focused panels,
   replay/debug metadata, capture packet generation, and review-index artifacts
   for visual inspection.
-- Keeps unsupported direct rigid-body impulse, sleep/wake or island activation,
-  and loop-closure compliance rows explicitly deferred until public `dartpy`
-  APIs exist.
+- Covers public direct rigid-body impulse behavior in row 5 while keeping
+  unsupported sleep/wake, island activation, and loop-closure compliance rows
+  explicitly deferred until public `dartpy` APIs exist.
 
 ## Motivation / Problem
 
@@ -55,6 +55,10 @@ rigid-body visual verification surface for the current cycle.
 - Tightens the row-2 body-mode verifier so the first early workflow comparison
   row now publishes the same `comparison_axis` and held-fixed context pattern
   used by later rigid workflow rows.
+- Covers public direct rigid-body impulse behavior in `rigid_external_loads`
+  via C++/dartpy `RigidBody.apply_linear_impulse()` and
+  `RigidBody.apply_angular_impulse()` APIs, GUI sliders, capture metrics, and
+  workflow search routing for `direct rigid body impulse`.
 - Promotes rows 1 and 3 first-screen baseline/free-flight metrics into
   workflow review-card latest signals, so the default front door and
   contact-free initial-state row show speed, height, energy, contact,
@@ -247,18 +251,15 @@ rigid-body visual verification surface for the current cycle.
   with default `rest_length=0.45`, `soft_stiffness=45.0`,
   `stiff_stiffness=220.0`, and `offset_stiffness=120.0` controls in latest
   scene metrics.
-- Latest broad default validation for pushed commit `7829d9b0487`:
+- Latest broad default validation for pushed commit `fbbd5de0005`:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,
-  Python tests, and documentation. The default CTest log recorded `test_world`
-  at `00:02:24` and `test_rigid_ipc_paper_experiments` at `00:04:52`.
-- Latest branch-level CUDA validation for pushed commit `7829d9b0487`, on a
+  Python tests, and documentation.
+- Latest branch-level CUDA validation for pushed commit `fbbd5de0005`, on a
   visible `NVIDIA GeForce RTX 4080 Laptop GPU` host:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-  passed all seven wrapper gates. The final CUDA CTest log recorded
-  `test_lcp_jacobi_batch_cuda` at `00:03:48`. Rerun broad default and CUDA
-  validation only if maintainers require proof that includes the final
-  docs-only evidence refresh commit.
+  passed all seven wrapper gates, including CUDA runtime smoke tests and
+  benchmark smoke.
 - Focused docs/API drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_sidecar_matches_registry_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented -q`
 - Focused scene-metrics/docs guard:
