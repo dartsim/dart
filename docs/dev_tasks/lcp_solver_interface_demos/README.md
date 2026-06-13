@@ -1,5 +1,87 @@
 # LCP Solver Interface And Demos — Dev Task
 
+## 2026-06-12 Current Continuation - LcpProblem Contact Metadata
+
+This is the latest hand-off state. Sections below are historical checkpoints
+and may describe their own local "current" state.
+
+Current branch state:
+
+- Branch: `feature/lcp-solver-interface-demos`.
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable:
+  `git fetch https://github.com/dartsim/dart.git main`.
+- `git merge --no-edit FETCH_HEAD` reported `Already up to date`, so the
+  branch remains current with the PR #2986 DART 7 work-packet harness on
+  `main` (`bb851f453606`).
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 89]`.
+- Last committed checkpoint:
+  `71bfc925863 Expose LCP representative requirement coverage`.
+- Checkpoint target:
+  `Expose LCP problem contact metadata`.
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 90 commits.
+- This branch has not been pushed in this continuation. No PR is associated
+  with this branch yet.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+DART 7 harness alignment:
+
+- `dart::math::LcpProblem` now exposes
+  `getFrictionIndexRowCount()` and `getFrictionIndexContactCount()` so
+  DART 7 LCP evidence can derive contact-structure metadata from the problem
+  representation itself rather than repeating per-benchmark assumptions.
+- dartpy exposes matching
+  `LcpProblem.get_friction_index_row_count()` and
+  `LcpProblem.get_friction_index_contact_count()` helpers.
+- The Python `lcp_physics` representative solver suite now records and renders
+  LCP row dimension plus FrictionIndex contact count in its summary table.
+- The LCP comparison benchmark path now fills `contact_count` centrally for
+  FrictionIndex problems solved through the shared benchmark runner.
+- `python/tests/unit/math/test_lcp.py` now accepts any valid solution for a
+  degenerate indefinite Baraff fallback case, because that problem has multiple
+  valid LCP solutions and the previous exact-vector assertion was brittle.
+
+Current dirty files before commit:
+
+- `CHANGELOG.md`
+- `dart/math/lcp/lcp_types.hpp`
+- `python/dartpy/math/lcp.cpp`
+- `python/examples/demos/scenes/lcp_physics.py`
+- `python/tests/unit/math/test_lcp.py`
+- `python/tests/unit/test_py_demo_panels.py`
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp`
+- `tests/unit/math/lcp/test_lcp_types.cpp`
+- `docs/dev_tasks/lcp_solver_interface_demos/README.md`
+- `docs/dev_tasks/lcp_solver_interface_demos/RESUME.md`
+
+Verification completed for this checkpoint:
+
+- `pixi run run-cpp-target UNIT_math_lcp_math_lcp_lcp_types` passed with
+  `15 tests` passed.
+- `pixi run build-py-dev` passed and rebuilt dartpy with the new bindings.
+- `PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/math/test_lcp.py python/tests/unit/test_py_demo_panels.py -q`
+  passed with `122 passed`.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCPSOLVER`
+  passed, compiling the touched LCP benchmark target without running the full
+  benchmark.
+- `pixi run lint` passed.
+- `git diff --check` passed.
+
+Immediate resume guidance:
+
+1. Start with `git status -sb` and `git log --oneline --decorate -8`.
+2. If this slice is still uncommitted and no files changed after the
+   verification above, commit it with `Expose LCP problem contact metadata`.
+   If files changed, rerun `pixi run lint` and `git diff --check` first.
+3. Continue from a new bounded DART 7 LCP interface/demo gap; do not retry the
+   rejected SAP FrictionIndex exact shortcut or ShockPropagation exact-path
+   probe without a materially different hypothesis.
+4. Do not push without explicit maintainer/user approval.
+
 ## 2026-06-12 Current Continuation - Representative Requirement Coverage
 
 This is the latest hand-off state. Sections below are historical checkpoints

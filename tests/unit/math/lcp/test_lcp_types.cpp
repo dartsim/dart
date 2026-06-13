@@ -105,6 +105,8 @@ TEST(LcpTypesTest, StandardProblemConstructorSetsCanonicalBounds)
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 0);
   EXPECT_EQ(problem.getType(), LcpProblemType::Standard);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
@@ -124,6 +126,8 @@ TEST(LcpTypesTest, EmptyStandardProblemIsCanonical)
   EXPECT_TRUE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 0);
   EXPECT_EQ(problem.getType(), LcpProblemType::Standard);
   EXPECT_EQ(problem.lo.size(), 0);
   EXPECT_EQ(problem.hi.size(), 0);
@@ -146,6 +150,8 @@ TEST(LcpTypesTest, BoxedProblemConstructorSetsNoFrictionIndex)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_TRUE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 0);
   EXPECT_EQ(problem.getType(), LcpProblemType::Boxed);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
@@ -170,6 +176,8 @@ TEST(LcpTypesTest, FrictionIndexProblemConstructorPreservesFindex)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_TRUE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 2);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 1);
   EXPECT_EQ(problem.getType(), LcpProblemType::FrictionIndex);
   EXPECT_TRUE(problem.A.isApprox(A));
   EXPECT_TRUE(problem.b.isApprox(b));
@@ -195,6 +203,26 @@ TEST(LcpTypesTest, StandardClassificationHonorsTolerance)
   EXPECT_EQ(problem.getType(1e-8), LcpProblemType::Standard);
 }
 
+TEST(LcpTypesTest, FrictionIndexMetadataCountsUniqueReferencedNormalRows)
+{
+  Eigen::MatrixXd A = Eigen::MatrixXd::Identity(6, 6);
+  Eigen::VectorXd b = Eigen::VectorXd::Ones(6);
+  Eigen::VectorXd lo(6);
+  lo << 0.0, -0.5, -0.5, 0.0, -0.3, -0.3;
+  Eigen::VectorXd hi(6);
+  hi << std::numeric_limits<double>::infinity(), 0.5, 0.5,
+      std::numeric_limits<double>::infinity(), 0.3, 0.3;
+  Eigen::VectorXi findex(6);
+  findex << -1, 0, 0, -1, 3, 3;
+
+  const LcpProblem problem(A, b, lo, hi, findex);
+
+  EXPECT_TRUE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getType(), LcpProblemType::FrictionIndex);
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 4);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 2);
+}
+
 TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
 {
   const LcpProblem problem(
@@ -207,6 +235,8 @@ TEST(LcpTypesTest, StandardClassificationRejectsInvalidVectorDimensions)
   EXPECT_FALSE(problem.isStandardLcp());
   EXPECT_FALSE(problem.isBoxedLcp());
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 0);
   EXPECT_FALSE(problem.isValid());
   EXPECT_EQ(
       problem.getValidationMessage(), "Matrix/vector dimensions inconsistent");
@@ -347,6 +377,8 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
       Eigen::Vector2i(-1, 2));
 
   EXPECT_FALSE(outOfRangeProblem.hasFrictionIndex());
+  EXPECT_EQ(outOfRangeProblem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(outOfRangeProblem.getFrictionIndexContactCount(), 0);
   EXPECT_FALSE(outOfRangeProblem.isValid());
   EXPECT_EQ(
       outOfRangeProblem.getValidationMessage(),
@@ -361,6 +393,8 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsInvalidReferences)
       Eigen::Vector2i(-1, 1));
 
   EXPECT_FALSE(selfReferenceProblem.hasFrictionIndex());
+  EXPECT_EQ(selfReferenceProblem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(selfReferenceProblem.getFrictionIndexContactCount(), 0);
   EXPECT_FALSE(selfReferenceProblem.isValid());
   EXPECT_EQ(
       selfReferenceProblem.getValidationMessage(),
@@ -383,6 +417,8 @@ TEST(LcpTypesTest, FrictionIndexClassificationRejectsNegativeCoefficient)
       Eigen::Vector2i(-1, 0));
 
   EXPECT_FALSE(problem.hasFrictionIndex());
+  EXPECT_EQ(problem.getFrictionIndexRowCount(), 0);
+  EXPECT_EQ(problem.getFrictionIndexContactCount(), 0);
   EXPECT_FALSE(problem.isValid());
   EXPECT_EQ(
       problem.getValidationMessage(),

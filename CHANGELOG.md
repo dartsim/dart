@@ -1419,6 +1419,10 @@ py-demos` now builds a CUDA-enabled dartpy + Filament GUI and offloads the
   - Exposed `LcpProblem::isValid()` / `getValidationMessage()` and Python
     `LcpProblem.is_valid()` / `get_validation_message()` so LCP demos and tests
     can report shared problem-invariant diagnostics before solver dispatch.
+  - Exposed friction-index row and contact-count metadata on `LcpProblem` and
+    dartpy, and used it in the Python LCP representative solver suite so DART 7
+    LCP evidence surfaces report dimensions and contact structure from the
+    problem representation itself.
   - Rejected negative `hi` coefficients on friction-index LCP rows in shared
     problem validation and effective-bound construction, keeping the public
     DART 7 problem interface aligned with the documented `hi = +mu`

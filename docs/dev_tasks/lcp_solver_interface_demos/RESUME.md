@@ -1,5 +1,88 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-12 LcpProblem Contact Metadata
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Current branch:
+
+- `feature/lcp-solver-interface-demos`
+- `origin/main` was refreshed over HTTPS in this continuation because SSH to
+  `github.com:22` was not reachable:
+  `git fetch https://github.com/dartsim/dart.git main`
+- `git merge --no-edit FETCH_HEAD` reported `Already up to date`, so the
+  branch remains current with the PR #2986 DART 7 work-packet harness on
+  `main` (`bb851f453606`).
+- Local branch relationship before this checkpoint:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos [ahead 89]`
+- Last committed checkpoint:
+  `71bfc925863 Expose LCP representative requirement coverage`
+- Checkpoint target:
+  `Expose LCP problem contact metadata`
+- Pre-commit state: this slice is uncommitted. After this checkpoint is
+  committed, the branch should be ahead of
+  `origin/feature/lcp-solver-interface-demos` by 90 commits.
+- There is no associated PR yet.
+- This slice has not been pushed.
+- Do not push, open a PR, or mutate GitHub state without explicit
+  maintainer/user approval.
+
+What this slice changes:
+
+- `dart/math/lcp/lcp_types.hpp` adds
+  `LcpProblem::getFrictionIndexRowCount()` and
+  `LcpProblem::getFrictionIndexContactCount()`.
+- `python/dartpy/math/lcp.cpp` exposes those methods as
+  `get_friction_index_row_count()` and
+  `get_friction_index_contact_count()`.
+- `python/examples/demos/scenes/lcp_physics.py` records LCP dimension,
+  FrictionIndex row count, and FrictionIndex contact count in the
+  representative solver suite, and displays dimension/contact count in the
+  summary table.
+- `tests/benchmark/lcpsolver/bm_lcp_compare.cpp` now emits `contact_count`
+  from `LcpProblem` itself for FrictionIndex runs through the shared benchmark
+  runner.
+- `python/tests/unit/math/test_lcp.py` replaces one brittle exact-vector
+  assertion for a degenerate indefinite Baraff fallback with a direct LCP
+  complementarity check, because the problem has multiple valid solutions.
+
+Verification completed:
+
+```bash
+pixi run run-cpp-target UNIT_math_lcp_math_lcp_lcp_types
+pixi run build-py-dev
+PYTHONPATH=build/default/cpp/Release/python:python pixi run python -m pytest python/tests/unit/math/test_lcp.py python/tests/unit/test_py_demo_panels.py -q
+CMAKE_BUILD_DIR=build/default/cpp/Release pixi run python scripts/cmake_build.py --target BM_LCPSOLVER
+pixi run lint
+git diff --check
+```
+
+Results:
+
+- C++ LCP type test: `15 tests` passed.
+- dartpy rebuild: passed.
+- Focused Python LCP and py-demo panel tests: `122 passed`.
+- LCP benchmark target compile: passed.
+- `pixi run lint`: passed.
+- `git diff --check`: passed.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this slice is still uncommitted and no files changed after the verification
+above, commit it with `Expose LCP problem contact metadata`. If files changed,
+rerun `pixi run lint` and `git diff --check` first. Continue from a fresh
+bounded DART 7 LCP interface/demo gap; avoid retrying the rejected SAP
+FrictionIndex exact shortcut or ShockPropagation exact-path probe without a
+materially different hypothesis. Do not push without explicit maintainer/user
+approval.
+
 ## Current Reality - 2026-06-12 Representative Requirement Coverage
 
 This is the latest hand-off. Older sections below are historical checkpoints

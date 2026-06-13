@@ -82,6 +82,8 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
     assert standard.is_standard_lcp()
     assert standard.is_boxed_lcp()
     assert not standard.has_friction_index()
+    assert standard.get_friction_index_row_count() == 0
+    assert standard.get_friction_index_contact_count() == 0
     np.testing.assert_allclose(standard.lo, [0.0, 0.0])
     assert np.isinf(standard.hi).all()
     np.testing.assert_array_equal(standard.findex, [-1, -1])
@@ -91,6 +93,8 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
     assert not boxed.is_standard_lcp()
     assert boxed.is_boxed_lcp()
     assert not boxed.has_friction_index()
+    assert boxed.get_friction_index_row_count() == 0
+    assert boxed.get_friction_index_contact_count() == 0
 
     findex = dart.LcpProblem(
         A,
@@ -103,7 +107,23 @@ def test_lcp_problem_constructors_classify_standard_boxed_and_findex() -> None:
     assert not findex.is_standard_lcp()
     assert not findex.is_boxed_lcp()
     assert findex.has_friction_index()
+    assert findex.get_friction_index_row_count() == 1
+    assert findex.get_friction_index_contact_count() == 1
     assert dart.lcp_problem_type_to_string(dart.LcpProblemType.FRICTION_INDEX)
+
+
+def test_lcp_problem_exposes_findex_contact_metadata() -> None:
+    findex = dart.LcpProblem(
+        np.eye(6),
+        np.ones(6),
+        np.array([0.0, -1.0, -1.0, 0.0, -0.5, -0.5]),
+        np.array([np.inf, 1.0, 1.0, np.inf, 0.5, 0.5]),
+        np.array([-1, 0, 0, -1, 3, 3], dtype=np.int32),
+    )
+
+    assert findex.get_type() == dart.LcpProblemType.FRICTION_INDEX
+    assert findex.get_friction_index_row_count() == 4
+    assert findex.get_friction_index_contact_count() == 2
 
 
 def test_lcp_problem_rejects_findex_with_invalid_bound_dimensions() -> None:
@@ -121,6 +141,8 @@ def test_lcp_problem_rejects_findex_with_invalid_bound_dimensions() -> None:
     assert not problem.is_standard_lcp()
     assert not problem.is_boxed_lcp()
     assert not problem.has_friction_index()
+    assert problem.get_friction_index_row_count() == 0
+    assert problem.get_friction_index_contact_count() == 0
     assert not dart.DantzigSolver().supports_problem(problem)
 
 
@@ -760,7 +782,10 @@ def test_baraff_solver_reports_only_psd_standard_problems_as_native() -> None:
 
     result, solution = solver.solve(indefinite)
     assert result.status == dart.LcpSolverStatus.SUCCESS
-    np.testing.assert_allclose(solution, np.array([1.0, 0.0]), atol=1e-8)
+    w = indefinite.A @ solution - indefinite.b
+    assert np.all(solution >= -1e-8)
+    assert np.all(w >= -1e-8)
+    assert np.linalg.norm(solution * w, ord=np.inf) <= 1e-8
 
 
 def test_lcp_solver_rejects_wrong_initial_guess_size() -> None:

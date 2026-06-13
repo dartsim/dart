@@ -40,8 +40,10 @@
 #include <limits>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart {
 namespace math {
@@ -370,6 +372,50 @@ struct DART_API LcpProblem
     }
 
     return hasCoupling;
+  }
+
+  /// Returns the number of rows whose bounds depend on a friction index.
+  ///
+  /// Invalid problems and standard/boxed problems without friction-index rows
+  /// return zero, so callers can use this as packet metadata after the shared
+  /// problem validator has classified the form.
+  Eigen::Index getFrictionIndexRowCount() const
+  {
+    if (!hasFrictionIndex()) {
+      return 0;
+    }
+
+    return (findex.array() >= 0).count();
+  }
+
+  /// Returns the number of unique normal rows referenced by friction rows.
+  ///
+  /// This is the contact-count convention used by DART 7 LCP evidence packets
+  /// for the ODE-style findex representation: each contact contributes one
+  /// normal row, and tangential rows reference that normal row.
+  Eigen::Index getFrictionIndexContactCount() const
+  {
+    if (!hasFrictionIndex()) {
+      return 0;
+    }
+
+    const Eigen::Index n = size();
+    std::vector<bool> referencedNormalRows(static_cast<std::size_t>(n), false);
+    Eigen::Index count = 0;
+    for (Eigen::Index i = 0; i < n; ++i) {
+      const int ref = findex[i];
+      if (ref < 0) {
+        continue;
+      }
+
+      const auto refIndex = static_cast<std::size_t>(ref);
+      if (!referencedNormalRows[refIndex]) {
+        referencedNormalRows[refIndex] = true;
+        ++count;
+      }
+    }
+
+    return count;
   }
 
   /// Returns a single prioritized classification for this problem form.

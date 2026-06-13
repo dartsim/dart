@@ -1536,6 +1536,9 @@ def _run_standalone_problem_suite() -> list[dict[str, Any]]:
     for problem_case in _STANDALONE_PROBLEM_CASES:
         problem, expected = problem_case.make_problem()
         problem_type = dart.lcp_problem_type_to_string(problem.get_type())
+        lcp_dimension = int(problem.size())
+        findex_row_count = int(problem.get_friction_index_row_count())
+        findex_contact_count = int(problem.get_friction_index_contact_count())
         for support_row in _SOLVER_SUPPORT_ROWS:
             solver_type = getattr(dart, _SOLVER_CLASS_NAMES[support_row["name"]])
             solver = solver_type()
@@ -1551,6 +1554,9 @@ def _run_standalone_problem_suite() -> list[dict[str, Any]]:
                     "label": problem_case.label,
                     "surface": problem_case.surface,
                     "problem_type": problem_type,
+                    "lcp_dimension": lcp_dimension,
+                    "findex_row_count": findex_row_count,
+                    "findex_contact_count": findex_contact_count,
                     "challenge": problem_case.challenge,
                     "solver": support_row["name"],
                     "family": support_row["family"],
@@ -1595,6 +1601,15 @@ def _summarize_standalone_problem_suite(
                 "label": problem_case.label,
                 "surface": problem_case.surface,
                 "problem_type": case_rows[0]["problem_type"] if case_rows else "",
+                "lcp_dimension": (
+                    int(case_rows[0]["lcp_dimension"]) if case_rows else 0
+                ),
+                "findex_row_count": (
+                    int(case_rows[0]["findex_row_count"]) if case_rows else 0
+                ),
+                "findex_contact_count": (
+                    int(case_rows[0]["findex_contact_count"]) if case_rows else 0
+                ),
                 "challenge": problem_case.challenge,
                 "solver_count": len(case_rows),
                 "native_solver_count": len(native_rows),
@@ -2180,6 +2195,8 @@ def build() -> SceneSetup:
                 [
                     "Problem",
                     "Type",
+                    "Rows",
+                    "FI contacts",
                     "Challenge",
                     "Native",
                     "Delegated",
@@ -2191,6 +2208,8 @@ def build() -> SceneSetup:
                     builder.table_next_row()
                     _write_table_cell(builder, row["label"])
                     _write_table_cell(builder, row["problem_type"])
+                    _write_table_cell(builder, str(row["lcp_dimension"]))
+                    _write_table_cell(builder, str(row["findex_contact_count"]))
                     _write_table_cell(builder, row["challenge"])
                     _write_table_cell(
                         builder,

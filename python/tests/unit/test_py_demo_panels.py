@@ -818,6 +818,39 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "active_friction_index_contact": "FrictionIndex",
         "moderate_scale_standard": "Standard",
     }
+    expected_problem_dimensions = {
+        "standard_spd": 3,
+        "ill_conditioned_standard": 3,
+        "near_singular_standard": 4,
+        "boxed_active_bounds": 3,
+        "mass_ratio_boxed": 8,
+        "singular_degenerate_boxed": 4,
+        "friction_index_contact": 3,
+        "active_friction_index_contact": 6,
+        "moderate_scale_standard": 12,
+    }
+    expected_findex_row_counts = {
+        "standard_spd": 0,
+        "ill_conditioned_standard": 0,
+        "near_singular_standard": 0,
+        "boxed_active_bounds": 0,
+        "mass_ratio_boxed": 0,
+        "singular_degenerate_boxed": 0,
+        "friction_index_contact": 2,
+        "active_friction_index_contact": 4,
+        "moderate_scale_standard": 0,
+    }
+    expected_findex_contact_counts = {
+        "standard_spd": 0,
+        "ill_conditioned_standard": 0,
+        "near_singular_standard": 0,
+        "boxed_active_bounds": 0,
+        "mass_ratio_boxed": 0,
+        "singular_degenerate_boxed": 0,
+        "friction_index_contact": 1,
+        "active_friction_index_contact": 2,
+        "moderate_scale_standard": 0,
+    }
     expected_case_tolerances = {
         "mass_ratio_boxed": 5e-4,
     }
@@ -899,9 +932,31 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         summary_row = problem_summary_by_case[case_name]
         assert summary_row["solver_count"] == expected_count
         assert summary_row["problem_type"] == expected_problem_types[case_name]
+        assert summary_row["lcp_dimension"] == expected_problem_dimensions[case_name]
+        assert (
+            summary_row["findex_row_count"]
+            == expected_findex_row_counts[case_name]
+        )
+        assert (
+            summary_row["findex_contact_count"]
+            == expected_findex_contact_counts[case_name]
+        )
         assert {
             row["problem_type"] for row in problem_rows if row["case"] == case_name
         } == {expected_problem_types[case_name]}
+        assert {
+            row["lcp_dimension"] for row in problem_rows if row["case"] == case_name
+        } == {expected_problem_dimensions[case_name]}
+        assert {
+            row["findex_row_count"]
+            for row in problem_rows
+            if row["case"] == case_name
+        } == {expected_findex_row_counts[case_name]}
+        assert {
+            row["findex_contact_count"]
+            for row in problem_rows
+            if row["case"] == case_name
+        } == {expected_findex_contact_counts[case_name]}
         assert summary_row["native_solver_count"] == expected_native_problem_counts[
             case_name
         ]
@@ -1401,8 +1456,8 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     assert any("text:90/90" == event for event in builder.events)
     assert any("text:48/48" == event for event in builder.events)
     assert (
-        "table:lcp_representative_solver_suite:Problem,Type,Challenge,Native,"
-        "Delegated,Max residual,Fastest native"
+        "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
+        "Challenge,Native,Delegated,Max residual,Fastest native"
         in builder.events
     )
     for challenge in (

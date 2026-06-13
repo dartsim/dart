@@ -510,7 +510,12 @@ void defLcp(nb::module_& m)
           &LcpProblem::isStandardLcp,
           nb::arg("tolerance") = 0.0)
       .def("is_boxed_lcp", &LcpProblem::isBoxedLcp)
-      .def("has_friction_index", &LcpProblem::hasFrictionIndex);
+      .def("has_friction_index", &LcpProblem::hasFrictionIndex)
+      .def(
+          "get_friction_index_row_count", &LcpProblem::getFrictionIndexRowCount)
+      .def(
+          "get_friction_index_contact_count",
+          &LcpProblem::getFrictionIndexContactCount);
 
   nb::class_<LcpSolver>(m, "LcpSolver")
       .def(

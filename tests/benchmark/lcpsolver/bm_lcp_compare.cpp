@@ -3234,6 +3234,11 @@ void RunBenchmarkWithSolver(
   state.counters["bound_violation"] = check.boundViolation;
   state.counters["contract_ok"] = check.ok ? 1.0 : 0.0;
   state.counters["problem_size"] = problem.b.size();
+  const auto frictionIndexContactCount = problem.getFrictionIndexContactCount();
+  if (frictionIndexContactCount > 0) {
+    state.counters["contact_count"]
+        = static_cast<double>(frictionIndexContactCount);
+  }
   AddSolverProblemSupportCounters(state, solver, problem);
   AddBackendBuildCounters(state);
   state.SetLabel(label);
