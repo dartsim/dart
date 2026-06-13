@@ -1,5 +1,43 @@
 # Unified Newton-Barrier Handoff
 
+## Candy Static-Rigid Surface CCD CPU Packet Checkpoint (2026-06-13)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint upgrades the reduced `unb-fig-22` Candy CPU benchmark row from
+self-surface-only CCD evidence to a reduced static-rigid surface CCD witness
+inside `BM_Plan083CpuScene_candy_reduced_world_step`. The packet now steps the
+reduced deformable cloth/static shell scene plus one isolated static CCD
+witness box and one one-node deformable witness through deformable IPC
+`World::step`, and `scripts/write_plan083_cpu_scene_packet.py` requires
+positive static-rigid candidate, point-triangle CCD check, hit, and
+limited-step counters for `scene=candy`. The latest median packet records 3
+self-surface candidate builds, 64 point-triangle CCD checks, 207 edge-edge CCD
+checks, plus 36 static-rigid surface CCD candidate builds, 72 point-triangle
+checks, 72 hits, and one limited step with `failed_steps=0`.
+
+This is still a reduced CPU benchmark packet only. It does not prove affine
+body packing, twisted shell geometry, cloth self-contact parity, paper-scale
+Candy, production runtime scene filtering, analytic curved CCD, GPU
+`World::step`, full runtime affine/FEM coupling, accepted reference timings, or
+any speedup gate.
+
+Current validation passed:
+
+- `pixi run bm-plan083-cpu-candy-packet`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py -q`
+- `pixi run python scripts/check_plan083_cpu_scene_corpus.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `pixi run python -m pytest tests/test_plan083_cpu_scene_packet.py tests/test_plan083_cpu_scene_corpus.py tests/test_plan083_completion_audit.py -q`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run build`
+- `pixi run -e cuda test-all`
+
 ## Lying-Flat Inter-Body/Static/Moving-Rigid Surface CCD CPU Packet Checkpoint (2026-06-13)
 
 Work continued locally on
@@ -64,10 +102,10 @@ records 33/68/76 hits with `failed_steps=0`.
 This is a reduced CPU diagnostic packet only. It does not prove paper-scale
 external contact, production runtime scene filtering, analytic curved CCD, GPU
 `World::step`, full runtime affine/FEM coupling, or any speedup gate. The
-later lying-flat inter-body/static/moving-rigid witnesses are the only broader
-figure row with nonzero external candidate/check/hit counters so far; other
-figure/demo rows still have zero external candidate/check/hit counts in their
-mixed fixtures.
+later lying-flat inter-body/static/moving-rigid witnesses and Candy
+static-rigid witness are the only broader figure rows with nonzero external
+candidate/check/hit counters so far; other figure/demo rows still have zero
+external candidate/check/hit counts in their mixed fixtures.
 
 ## CPU Scene External Surface-Contact Packet Counters Checkpoint (2026-06-13)
 

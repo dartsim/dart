@@ -171,9 +171,9 @@ def _candy_packet(**overrides):
         "real_time": 10.0,
         "cpu_time": 10.0,
         "time_unit": "ms",
-        "rigid_obstacle_count": 1,
-        "deformable_body_count": 1,
-        "deformable_node_count": 25,
+        "rigid_obstacle_count": 2,
+        "deformable_body_count": 2,
+        "deformable_node_count": 26,
         "deformable_edge_count": 72,
         "surface_triangle_count": 32,
         "solver_iterations": 6,
@@ -184,6 +184,28 @@ def _candy_packet(**overrides):
         "cloth_span_x_m": 0.22,
         "failed_steps": 0,
         **_surface_contact_counters(),
+        "line_search_trials": 36,
+        "surface_contact_candidate_builds": 3,
+        "surface_contact_point_triangle_candidates": 64,
+        "surface_contact_edge_edge_candidates": 207,
+        "surface_contact_ccd_point_triangle_checks": 64,
+        "surface_contact_ccd_edge_edge_checks": 207,
+        "surface_contact_ccd_hits": 0,
+        "surface_contact_ccd_limited_steps": 0,
+        "static_rigid_surface_ccd_snapshot_builds": 1,
+        "static_rigid_surface_ccd_box_count": 1,
+        "static_rigid_surface_ccd_sphere_count": 0,
+        "static_rigid_surface_ccd_triangle_count": 12,
+        "static_rigid_surface_ccd_edge_count": 12,
+        "static_rigid_surface_ccd_candidate_builds": 36,
+        "static_rigid_surface_ccd_point_triangle_candidates": 72,
+        "static_rigid_surface_ccd_edge_edge_candidates": 0,
+        "static_rigid_surface_ccd_point_triangle_checks": 72,
+        "static_rigid_surface_ccd_edge_edge_checks": 0,
+        "static_rigid_surface_ccd_hits": 72,
+        "static_rigid_surface_ccd_limited_steps": 1,
+        "static_rigid_surface_ccd_zero_step_count": 96,
+        "moving_rigid_surface_ccd_snapshot_builds": 1,
     }
     row.update(overrides)
     return {"benchmarks": [row]}
@@ -729,18 +751,23 @@ def test_plan083_cpu_scene_packet_accepts_reduced_candy() -> None:
     assert row["row_id"] == "unb-fig-22"
     assert row["scene_id"] == "plan083_candy"
     assert row["paper_scale"] is False
-    assert row["rigid_obstacle_count"] == 1
-    assert row["deformable_body_count"] == 1
-    assert row["deformable_node_count"] == 25
+    assert row["rigid_obstacle_count"] == 2
+    assert row["deformable_body_count"] == 2
+    assert row["deformable_node_count"] == 26
     assert row["surface_triangle_count"] == 32
-    assert row["line_search_trials"] == 6
-    assert row["surface_contact_candidate_builds"] == 6
-    assert row["surface_contact_point_triangle_candidates"] == 4
-    assert row["surface_contact_edge_edge_candidates"] == 2
-    assert row["surface_contact_ccd_hits"] == 1
-    assert row["surface_contact_ccd_limited_steps"] == 1
+    assert row["line_search_trials"] == 36
+    assert row["surface_contact_candidate_builds"] == 3
+    assert row["surface_contact_point_triangle_candidates"] == 64
+    assert row["surface_contact_edge_edge_candidates"] == 207
+    assert row["surface_contact_ccd_hits"] == 0
+    assert row["surface_contact_ccd_limited_steps"] == 0
     assert row["inter_body_surface_contact_candidate_builds"] == 0
-    assert row["static_rigid_surface_ccd_candidate_builds"] == 0
+    assert row["static_rigid_surface_ccd_box_count"] == 1
+    assert row["static_rigid_surface_ccd_candidate_builds"] == 36
+    assert row["static_rigid_surface_ccd_point_triangle_candidates"] == 72
+    assert row["static_rigid_surface_ccd_point_triangle_checks"] == 72
+    assert row["static_rigid_surface_ccd_hits"] == 72
+    assert row["static_rigid_surface_ccd_limited_steps"] == 1
     assert row["moving_rigid_surface_ccd_candidate_builds"] == 0
     assert row["wall_time_ns"] == 10.0e6
 
@@ -1208,8 +1235,8 @@ def test_plan083_cpu_scene_packet_accepts_reduced_timing_breakdown() -> None:
     assert row["scene_id"] == "plan083_reduced_timing_breakdown"
     assert row["paper_scale"] is False
     assert row["scene_count"] == 10
-    assert row["total_body_count"] == 46
-    assert row["total_dynamic_body_count"] == 30
+    assert row["total_body_count"] == 48
+    assert row["total_dynamic_body_count"] == 31
     assert row["total_wall_time_ns"] == 65.0e6
     assert row["available_timing_fields"] == ["wall_time_ns"]
     assert "linear_solve" in row["missing_paper_timing_fields"]
@@ -1241,8 +1268,8 @@ def test_plan083_cpu_scene_packet_accepts_reduced_table2() -> None:
         "unb-fig-23",
     ]
     assert row["missing_paper_rows"] == []
-    assert row["total_body_count"] == 44
-    assert row["total_dynamic_body_count"] == 29
+    assert row["total_body_count"] == 46
+    assert row["total_dynamic_body_count"] == 30
     assert row["total_wall_time_ns"] == 62.0e6
 
 
@@ -1322,6 +1349,20 @@ def test_plan083_cpu_scene_packet_rejects_candy_penetration() -> None:
     with pytest.raises(module.Plan083CpuScenePacketError, match="penetrated"):
         module.make_packet(
             _candy_packet(min_cloth_height_m=-1e-3),
+            max_equality_residual=1e-8,
+            scene="candy",
+        )
+
+
+def test_plan083_cpu_scene_packet_rejects_candy_without_static_ccd_witness() -> None:
+    module = _load_module()
+
+    with pytest.raises(
+        module.Plan083CpuScenePacketError,
+        match="positive static-rigid surface CCD witness counter",
+    ):
+        module.make_packet(
+            _candy_packet(static_rigid_surface_ccd_hits=0),
             max_equality_residual=1e-8,
             scene="candy",
         )

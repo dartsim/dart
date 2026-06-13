@@ -378,8 +378,9 @@ its own line so status updates remain git-history friendly.
   external surface CCD CPU diagnostic packet with nonzero inter-body/static-rigid/
   moving-rigid counters, including one mixed reduced `World::step` witness that
   activates all three external families, plus reduced lying-flat
-  inter-body/static-rigid/moving-rigid surface CCD witness rows. Other broader
-  figure/demo scene rows still have zero external candidate/check/hit counts.
+  inter-body/static-rigid/moving-rigid surface CCD witness rows and one reduced
+  Candy static-rigid surface CCD witness row. Other broader figure/demo scene
+  rows still have zero external candidate/check/hit counts.
   It still keeps
   production runtime scene filtering, analytic curved CCD, production
   scene-level line search inside

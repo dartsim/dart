@@ -202,9 +202,9 @@
       "visual_evidence_artifact": ".benchmark_results/plan083/visual/candy/manifest.json",
       "benchmark_command": "pixi run bm-plan083-cpu-candy-packet",
       "benchmark_profile_artifact": ".benchmark_results/plan083/cpu_scene_corpus/candy.json",
-      "expected_invariant": "Reduced deformable cloth patch and static shell obstacle stay finite while stepping through the deformable IPC World path, with built-in self-surface candidate/CCD counters recorded from the last step diagnostics.",
-      "limitation_status": "Reduced deformable-cloth/static-shell smoke packet only; affine body packing, twisted shell, and cloth self-contact parity remain planned.",
-      "notes_or_gap": "The py-demo now runs a reduced candy scene through World::step, and bm-plan083-cpu-candy-packet validates the reduced benchmark packet. The packet now records 3 self-surface candidate builds, 64 point-triangle CCD checks, and 207 edge-edge CCD checks from built-in deformable World::step diagnostics on the median row. ABD primitive/oracle rows exist, but affine packing and paper-scale cloth self-contact remain planned."
+      "expected_invariant": "Reduced deformable cloth patch, static shell obstacle, and a reduced static-rigid surface CCD witness stay finite while stepping through the deformable IPC World path, with built-in self-surface and static-rigid surface CCD counters recorded from the last step diagnostics.",
+      "limitation_status": "Reduced deformable-cloth/static-shell packet with a static-rigid surface CCD witness only; affine body packing, twisted shell, cloth self-contact parity, and paper scale remain planned.",
+      "notes_or_gap": "The py-demo now runs a reduced candy scene through World::step, and bm-plan083-cpu-candy-packet validates the reduced benchmark packet. The packet now records 3 self-surface candidate builds, 64 point-triangle CCD checks, 207 edge-edge CCD checks, plus one reduced static-rigid surface CCD witness with 36 candidate builds, 72 point-triangle checks, 72 hits, and one limited step on the median row. ABD primitive/oracle rows exist, but affine packing and paper-scale cloth self-contact remain planned."
     },
     {
       "row_id": "unb-fig-23",

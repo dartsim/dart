@@ -92,6 +92,7 @@ constexpr std::size_t kLyingFlatGridColumns = 6;
 constexpr std::size_t kLyingFlatGridRows = 4;
 constexpr double kLyingFlatGridSpacing = 0.055;
 const Eigen::Vector3d kCandyShellHalfExtents(0.24, 0.16, 0.025);
+const Eigen::Vector3d kCandyStaticCcdWitnessHalfExtents(0.010, 0.040, 0.040);
 constexpr std::size_t kCandyGridColumns = 5;
 constexpr std::size_t kCandyGridRows = 5;
 constexpr double kCandyGridSpacing = 0.055;
@@ -908,6 +909,19 @@ struct CandyFixture
     cloth.emplace(world.addDeformableBody(
         "plan083_candy_deformable_cloth", clothOptions));
 
+    staticCcdWitness.emplace(addPlan083StaticSurfaceCcdBox(
+        world,
+        "plan083_candy_static_ccd_witness",
+        Eigen::Vector3d(0.0, 0.36, 0.075),
+        kCandyStaticCcdWitnessHalfExtents));
+
+    staticCcdPointInitialPosition = Eigen::Vector3d(-0.030, 0.36, 0.075);
+    staticCcdPointInitialVelocity = Eigen::Vector3d(20.0, 0.0, 0.0);
+    staticCcdPoint.emplace(world.addDeformableBody(
+        "plan083_candy_static_ccd_point",
+        makePlan083SingleNodeBodyOptions(
+            staticCcdPointInitialPosition, staticCcdPointInitialVelocity)));
+
     world.enterSimulationMode();
   }
 
@@ -918,6 +932,8 @@ struct CandyFixture
       cloth->setPosition(node, initialPositions[node]);
       cloth->setVelocity(node, initialVelocities[node]);
     }
+    staticCcdPoint->setPosition(0, staticCcdPointInitialPosition);
+    staticCcdPoint->setVelocity(0, staticCcdPointInitialVelocity);
   }
 
   double minClothHeight() const
@@ -943,7 +959,11 @@ struct CandyFixture
 
   sx::World world;
   std::optional<sx::RigidBody> shell;
+  std::optional<sx::RigidBody> staticCcdWitness;
   std::optional<sx::DeformableBody> cloth;
+  std::optional<sx::DeformableBody> staticCcdPoint;
+  Eigen::Vector3d staticCcdPointInitialPosition = Eigen::Vector3d::Zero();
+  Eigen::Vector3d staticCcdPointInitialVelocity = Eigen::Vector3d::Zero();
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
 };
@@ -2360,7 +2380,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
     fixture.world.step(executor);
     lastDiagnostics = fixture.world.getLastDeformableSolverDiagnostics();
-    if (lastDiagnostics.bodyCount != 1u || lastDiagnostics.nodeCount == 0u
+    if (lastDiagnostics.bodyCount != 2u || lastDiagnostics.nodeCount != 26u
         || !std::isfinite(fixture.minClothHeight())) {
       ++failedSteps;
     }
@@ -2374,7 +2394,7 @@ static void BM_Plan083CpuScene_candy_reduced_world_step(benchmark::State& state)
 
   state.counters["row_unb_fig_22"] = 1.0;
   state.counters["paper_scale"] = 0.0;
-  state.counters["rigid_obstacle_count"] = 1.0;
+  state.counters["rigid_obstacle_count"] = 2.0;
   state.counters["deformable_body_count"]
       = static_cast<double>(lastDiagnostics.bodyCount);
   state.counters["deformable_node_count"]
