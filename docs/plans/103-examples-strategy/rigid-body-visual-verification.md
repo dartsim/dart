@@ -83,10 +83,14 @@ use navigator titles with their workflow position and role, for example
 `01/36 Baseline: World Rigid Body` and
 `15/36 Solver family: Rigid Solver Compare`. The CLI `--list` output keeps the
 stable scene titles and ids for scripts. These rows also receive a runner-owned
-`Rigid Workflow` panel with the row's maintained user question, what to try
-first, the main signals to inspect, the known scope/limitation, and the
-previous/next numbered route, restart command, direct row selector, and
-ranked row filter as scene-switch rows. The panel also shows the exact
+`Rigid Workflow` panel with the row's maintained user question, workflow phase,
+focus axis, what to try first, the main signals to inspect, the known
+scope/limitation, and the previous/next numbered route, restart command,
+direct row selector, and ranked row filter as scene-switch rows. Workflow
+phases group the numbered rows into foundations, diagnostics,
+contact/material/query basics, the solver decision path, contact behavior
+cases, rigid constraints/joint mechanics, and multibody
+dynamics/kinematics. The panel also shows the exact
 per-row live `pixi run py-demos -- --scene ...` open command and paired
 `pixi run py-demo-capture` command, with frame count, resolution, and
 docked-UI mode so users can jump from the workflow row into the live viewer or
@@ -154,7 +158,8 @@ contact-free path/momentum residuals, mode semantics, transform residuals,
 acceleration scaling, and lever-arm yaw response before a reviewer opens
 per-row manifests.
 The filter prioritizes row ids, scene
-ids, labels, questions, positive signals, and explicit aliases such as
+ids, labels, questions, workflow phases, focus axes, positive signals, and
+explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
 `contact solver policy`, `worker count`, `accelerated backend`,
 `compute backend`, `CUDA`, `GPU`, `CUDA backend`, `GPU backend`,
@@ -177,8 +182,8 @@ CamelCase, compact API tokens, and simple plurals, so
 `shape-cast`, `body kind filters`, and `resting contacts` route like the
 documented snake_case or singular terms.
 Search-result tooltips name the match source, such as maintained alias, row
-number, user question, related evidence, or scope caveat, so the navigator is
-auditable before the user switches scenes.
+number, user question, workflow phase, focus axis, related evidence, or scope
+caveat, so the navigator is auditable before the user switches scenes.
 Backend-status terms route to
 `rigid_step_diagnostics`, while executor terms route to the same-solver
 `rigid_executor_equivalence` row. Direct impulse queries route to the public
@@ -956,6 +961,15 @@ workflow rows` line before the selectable results. This keeps the navigator
   text participates in search ranking and tooltip reasons. The focused
   panel/search guard reported `6 passed`; after docs updates, the broader
   panel/search/docs-order guard reported `15 passed`.
+- Latest workflow phase follow-up: every numbered `Rigid Workflow` row now
+  exposes a `Workflow phase` before the focus axis and try/inspect checklist.
+  The phases group rows into foundations, diagnostics, contact/material/query
+  basics, the solver decision path, contact behavior cases, rigid
+  constraints/joint mechanics, and multibody dynamics/kinematics. Multi-token
+  phase searches route to the first row in the matching phase and report
+  `Search match: workflow phase` without changing broad single-token ordering.
+  The focused phase guard reported `4 passed`, and the broader
+  panel/search/docs-order guard reported `17 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure

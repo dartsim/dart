@@ -154,6 +154,7 @@ class RigidWorkflowGuide:
     count: int
     label: str
     question: str
+    workflow_phase: str
     focus_axis: str
     try_first: str
     inspect: tuple[str, ...]
@@ -553,6 +554,45 @@ _RIGID_VISUAL_WORKFLOW_FOCUS_AXIS: Mapping[str, str] = {
     "rigid_loop_closure": "loop-closure family and solve policy",
 }
 
+_RIGID_VISUAL_WORKFLOW_PHASE: Mapping[str, str] = {
+    "rigid_body": "1. Foundations: state, frames, and loads",
+    "rigid_body_modes": "1. Foundations: state, frames, and loads",
+    "rigid_free_flight": "1. Foundations: state, frames, and loads",
+    "rigid_frame_hierarchy": "1. Foundations: state, frames, and loads",
+    "rigid_external_loads": "1. Foundations: state, frames, and loads",
+    "rigid_link_point_loads": "1. Foundations: state, frames, and loads",
+    "rigid_timestep_sensitivity": "2. Diagnostics: time step, profile, and budget",
+    "rigid_step_diagnostics": "2. Diagnostics: time step, profile, and budget",
+    "rigid_contact_scale_budget": "2. Diagnostics: time step, profile, and budget",
+    "rigid_restitution_ladder": "3. Contact/material/query basics",
+    "rigid_material_mixing": "3. Contact/material/query basics",
+    "rigid_contact_inspector": "3. Contact/material/query basics",
+    "rigid_collision_query_options": "3. Contact/material/query basics",
+    "rigid_collision_casts": "3. Contact/material/query basics",
+    "rigid_solver_compare": "4. Solver decision path",
+    "rigid_executor_equivalence": "4. Solver decision path",
+    "rigid_contact_solver_compare": "4. Solver decision path",
+    "contact": "5. Contact behavior cases",
+    "rigid_friction_threshold": "5. Contact behavior cases",
+    "rigid_spin_roll_coupling": "5. Contact behavior cases",
+    "rigid_stack_stability": "5. Contact behavior cases",
+    "rigid_contact_manipulation": "5. Contact behavior cases",
+    "rigid_kinematic_driver": "5. Contact behavior cases",
+    "rigid_kinematic_normal_push": "5. Contact behavior cases",
+    "rigid_fixed_joint": "6. Rigid constraints and joint mechanics",
+    "rigid_joint_breakage": "6. Rigid constraints and joint mechanics",
+    "rigid_distance_spring": "6. Rigid constraints and joint mechanics",
+    "rigid_limited_joints": "6. Rigid constraints and joint mechanics",
+    "rigid_joint_motor_limits": "6. Rigid constraints and joint mechanics",
+    "rigid_joint_passive_parameters": "6. Rigid constraints and joint mechanics",
+    "rigid_screw_joint_pitch": "7. Multibody dynamics and kinematics",
+    "rigid_multibody_dynamics_terms": "7. Multibody dynamics and kinematics",
+    "rigid_link_center_of_mass": "7. Multibody dynamics and kinematics",
+    "rigid_link_jacobian": "7. Multibody dynamics and kinematics",
+    "rigid_multibody_solver_family": "7. Multibody dynamics and kinematics",
+    "rigid_loop_closure": "7. Multibody dynamics and kinematics",
+}
+
 _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
     "rigid_body_modes": (
         "activation state",
@@ -933,6 +973,7 @@ def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
             count=count,
             label=label,
             question=question,
+            workflow_phase=_RIGID_VISUAL_WORKFLOW_PHASE[scene_id],
             focus_axis=_RIGID_VISUAL_WORKFLOW_FOCUS_AXIS[scene_id],
             try_first=try_first,
             inspect=inspect,
@@ -2153,6 +2194,8 @@ def _workflow_core_search_score(
         _workflow_text_matches(alias, tokens) for alias in aliases
     ):
         positive_score += 700
+    if len(tokens) > 1 and _workflow_text_matches(guide.workflow_phase, tokens):
+        positive_score += 450
     for weight, text in positive_fields:
         if _workflow_text_matches(text, tokens):
             positive_score += weight
@@ -2178,6 +2221,8 @@ def _workflow_search_match_reason(
         _workflow_text_matches(alias, tokens) for alias in aliases
     ):
         return "maintained alias terms"
+    if len(tokens) > 1 and _workflow_text_matches(guide.workflow_phase, tokens):
+        return "workflow phase"
 
     positive_fields = (
         ("row number", _workflow_search_row_id_text(guide)),
@@ -2335,6 +2380,9 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.separator()
         builder.text("Question")
         builder.text(guide.question)
+        builder.separator()
+        builder.text("Workflow phase")
+        builder.text(guide.workflow_phase)
         builder.separator()
         builder.text("Focus axis")
         builder.text(guide.focus_axis)

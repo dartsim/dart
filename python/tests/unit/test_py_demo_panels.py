@@ -1659,6 +1659,8 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert f"text:{guide.index:02d}/{guide.count:02d} {guide.label}" in events
         assert "text:Question" in events
         assert f"text:{guide.question}" in events
+        assert "text:Workflow phase" in events
+        assert f"text:{guide.workflow_phase}" in events
         assert "text:Focus axis" in events
         assert f"text:{guide.focus_axis}" in events
         assert "text:Try first" in events
@@ -2102,6 +2104,42 @@ def test_rigid_workflow_panel_explains_focus_axis_search_matches() -> None:
     assert context.scene_switch_requests == ["rigid_step_diagnostics"]
 
 
+def test_rigid_workflow_panel_explains_workflow_phase_search_matches() -> None:
+    scene = PythonDemoScene(
+        id="rigid_contact_inspector",
+        title="Test rigid_contact_inspector",
+        category="World Rigid Body",
+        summary="Workflow phase search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "15/36 Solver family - rigid_solver_compare"
+        "##rigid_workflow_find_rigid_solver_compare"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "solver decision path"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "15/36 Solver family - rigid_solver_compare"
+        "##rigid_workflow_find_rigid_solver_compare:False"
+    ) in builder.events
+    assert any(
+        event.startswith("tooltip:How do the rigid method families differ visually?")
+        and event.endswith("Search match: workflow phase.")
+        for event in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_solver_compare"]
+
+
 def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
     contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
     solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]
@@ -2256,6 +2294,23 @@ def test_rigid_workflow_search_finds_focus_axis_terms() -> None:
         ("passive joint parameter family", "rigid_joint_passive_parameters"),
         ("rigid-body solver family under stack load", "rigid_stack_stability"),
         ("loop-closure family and solve policy", "rigid_loop_closure"),
+    )
+
+    for query, expected_scene_id in route_cases:
+        assert [
+            guide.scene_id for guide in _workflow_matching_guides(query)
+        ][:1] == [expected_scene_id]
+
+
+def test_rigid_workflow_search_finds_workflow_phase_terms() -> None:
+    route_cases = (
+        ("foundations state frames loads", "rigid_body"),
+        ("diagnostics profile budget", "rigid_timestep_sensitivity"),
+        ("contact material query basics", "rigid_restitution_ladder"),
+        ("solver decision path", "rigid_solver_compare"),
+        ("contact behavior cases", "contact"),
+        ("rigid constraints joint mechanics", "rigid_fixed_joint"),
+        ("multibody dynamics kinematics", "rigid_screw_joint_pitch"),
     )
 
     for query, expected_scene_id in route_cases:

@@ -8,6 +8,19 @@ locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
 Latest implementation slice: every numbered `Rigid Workflow` row now exposes a
+front-door `Workflow phase` before the focus axis and try/inspect checklist.
+The phase text groups rows into foundations, diagnostics,
+contact/material/query basics, solver decision path, contact behavior cases,
+rigid constraints/joint mechanics, and multibody dynamics/kinematics.
+Multi-token phase searches route to the first row of the matching phase and
+tooltip reasons report `Search match: workflow phase` without changing broad
+single-token query ordering. Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_workflow_phase_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_workflow_phase_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
+reported `4 passed`; the broader panel/search/docs-order guard across workflow
+phase, focus-axis, capped search, existing aliases, deferred API routes,
+related evidence, and README sidecar order reported `17 passed`.
+
+Previous implementation slice: every numbered `Rigid Workflow` row now exposes a
 front-door `Focus axis` before the try/inspect checklist. The axis names the
 main comparison or debugging dimension, such as solver family, executor-only
 behavior, contact solver method, workload shape/backend profile, passive joint

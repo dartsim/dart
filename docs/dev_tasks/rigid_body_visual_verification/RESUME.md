@@ -5,15 +5,28 @@
 Current branch snapshot:
 The active branch is `feature/rigid-body-gui-visual-verification`. This
 handoff starts from pushed checkpoint
-`02a84363313 Explain rigid workflow search matches` and adds a local
-search-result-count follow-up plus a local focus-axis follow-up. Fresh sessions
-should verify the exact local and remote state with `git status -sb` and
-`git log -5 --oneline`. There is still no PR for this branch. Do not push new
-commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
-threads, or mutate any other GitHub state without explicit maintainer/user
-approval.
+`8f589fc1c99 Show rigid workflow focus axes` and adds a local workflow-phase
+follow-up. Fresh sessions should verify the exact local and remote state with
+`git status -sb` and `git log -5 --oneline`. There is still no PR for this
+branch. Do not push new commits, create a PR, set a milestone, rerun CI,
+comment on reviews, resolve threads, or mutate any other GitHub state without
+explicit maintainer/user approval.
 
 Latest local continuation: every numbered `Rigid Workflow` row now exposes a
+front-door `Workflow phase` before the focus axis and try/inspect checklist.
+The phase text groups rows into foundations, diagnostics,
+contact/material/query basics, solver decision path, contact behavior cases,
+rigid constraints/joint mechanics, and multibody dynamics/kinematics.
+Multi-token phase searches route to the first row of the matching phase and
+tooltip reasons report `Search match: workflow phase` without changing broad
+single-token query ordering. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_workflow_phase_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_workflow_phase_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
+reported `4 passed`; the broader panel/search/docs-order guard across workflow
+phase, focus-axis, capped search, existing aliases, deferred API routes,
+related evidence, and README sidecar order reported `17 passed`. This local
+slice is not pushed yet.
+
+Latest pushed continuation: every numbered `Rigid Workflow` row now exposes a
 front-door `Focus axis` before the try/inspect checklist. The axis names the
 main comparison or debugging dimension, such as solver family, executor-only
 behavior, contact solver method, workload shape/backend profile, passive joint
@@ -21,16 +34,16 @@ parameter family, or loop-closure family, and focus-axis text participates in
 search ranking and tooltip reasons. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_focus_axis_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_focus_axis_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_summarizes_limited_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases -q`
 reported `6 passed`; after docs updates, the broader panel/search/docs-order
-guard reported `15 passed`. This local slice is not pushed yet.
+guard reported `15 passed`. This slice has been pushed at `8f589fc1c99`.
 
-Previous local continuation: the in-viewer `Rigid Workflow` filter now counts
+Previous pushed continuation: the in-viewer `Rigid Workflow` filter now counts
 the full ranked result set while still showing only the top six rows, so broad
 queries such as `contact` display an explicit `Showing 6 of N matching workflow
 rows` line before the selectable results. Search-result tooltips still name the
 match source, and empty-result feedback still suggests row numbers, scene ids,
 solver, contact, backend, or API names. Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_summarizes_limited_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_question_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_filters_rows_by_row_id_and_requests_scene_switch python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_empty_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_opens_related_evidence_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_related_evidence_targets python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `12 passed`. This local slice is not pushed yet.
+reported `12 passed`. This slice has been pushed at `8801dc28ee1`.
 
 Latest pushed search-discovery continuation: rigid workflow search now covers more terms users
 type while diagnosing performance, contact/material parameters, collision

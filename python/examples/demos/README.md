@@ -142,16 +142,20 @@ cases such as edge-drops, piles, no-tunneling, and capture-first stack packets.
 
 In the interactive viewer, every numbered **World Rigid Body** row also gets a
 compact `Rigid Workflow` panel. It mirrors the maintained PLAN-103 question for
-the current row as a small checklist: the row's focus axis, what to try first,
-what to look for, and what not to infer from that row. The focus axis names the
-main comparison or debugging dimension, such as solver family, executor,
-contact-policy, workload size, passive joint parameters, backend/profile
-diagnostics, or loop-closure family, before the user opens a scene. The panel
-also has selectable previous/next numbered rows, a restart command, a direct row
-selector, a per-row
+the current row as a small checklist: the workflow phase, the row's focus axis,
+what to try first, what to look for, and what not to infer from that row. The
+workflow phases group rows into foundations; diagnostics; contact, material,
+and query basics; the solver decision path; contact behavior cases; rigid
+constraints and joint mechanics; and multibody dynamics and kinematics. The
+focus axis names the main comparison or debugging dimension, such as solver
+family, executor, contact-policy, workload size, passive joint parameters,
+backend/profile diagnostics, or loop-closure family, before the user opens a
+scene. The panel also has selectable previous/next numbered rows, a restart
+command, a direct row selector, a per-row
 live `py-demos --scene` open command, a paired `py-demo-capture` command with
 frame/resolution/UI settings, and a ranked text filter over row ids, scene ids,
-labels, questions, focus axes, signals, and explicit aliases such as
+labels, questions, workflow phases, focus axes, signals, and explicit aliases
+such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`, `worker count`,
 `accelerated backend`, `compute backend`, `CUDA`, `GPU`, `CUDA backend`,
 `GPU backend`, `backend comparison`, `Taskflow executor`,
@@ -169,8 +173,8 @@ CamelCase, compact API tokens, and simple plurals, so queries such as
 `ray-cast`, `shape-cast`, `body kind filters`, or `resting contacts` find the
 same rows as their documented snake_case or singular forms.
 Search-result tooltips name the match source, such as maintained alias, row
-number, user question, focus axis, related evidence, or scope caveat, so users
-can see why the navigator chose a row before switching scenes.
+number, user question, workflow phase, focus axis, related evidence, or scope
+caveat, so users can see why the navigator chose a row before switching scenes.
 Broad queries keep the list compact by showing the top six ranked rows, but the
 panel also states the full match count so users can tell when a term like
 `contact` or `solver` has more rows than are visible.

@@ -63,8 +63,10 @@
     `RigidBodySolver`, `ContactSolverMethod`, `Taskflow executor`, and
     backend/executor aliases, while broad searches now show the full ranked
     match count when the compact panel caps the visible result list. The
-    in-viewer workflow panel also names each row's focus axis so users can
-    distinguish solver-family, executor-only, contact-policy, backend/profile,
+    in-viewer workflow panel also names each row's workflow phase and focus
+    axis, so users can distinguish foundations, diagnostics, contact/material
+    basics, solver decisions, contact behavior, rigid constraints, multibody
+    kinematics, solver-family, executor-only, contact-policy, backend/profile,
     workload, and parameter-family rows before opening the scene. Adjacent
     comparison/parameter rows now label their comparison axis and held-fixed
     controls in both the panel and capture metrics. Add `--include-related` and
