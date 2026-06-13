@@ -84,22 +84,17 @@ Fresh focused guard for that audit:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
 reported `6 passed`.
 
-Latest validation follow-up: after the earlier stop-only handoff left the
-branch clean and pushed at `802b5d282b8`, broad validation was rerun from the
-then-current `HEAD` using the DART safe parallelism cap (`DART_SAFE_JOBS=5`).
-That broad validation predates the latest pre-contact surrogate and
-docs/evidence continuation commits, so treat it as branch-level broad evidence
-rather than exact current-head broad validation. Default
+Latest validation follow-up: after merging latest `origin/main` (`Already up
+to date`), broad default validation was rerun with the DART safe parallelism
+cap (`DART_SAFE_JOBS=5`). Default
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed with all six wrapper gates passing: linting, build, unit tests,
 simulation tests, Python tests, and documentation, ending with
-`All tests passed`. The host exposes `GPU 0: NVIDIA GeForce RTX 4080 Laptop
-GPU`, so CUDA validation was also run with the same cap:
-`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-exited successfully. The default run reported the two long simulation tests as
-green: `test_world` in 141.77 seconds and `test_rigid_ipc_paper_experiments`
-in 304.21 seconds. The only local diff after validation was markdown formatter
-cleanup in this dev-task audit, followed by this evidence refresh.
+`All tests passed`. The default run reported the two long simulation tests as
+green: `test_world` in 147.17 seconds and `test_rigid_ipc_paper_experiments`
+in 298.43 seconds. The same wrapper detected a CUDA runtime and warned to run
+`pixi run -e cuda test-all`; current-head CUDA validation is still pending
+until that command is rerun after this evidence refresh.
 
 Historical publication state before the later approved pushes: after the
 validation-evidence commit `84897c2fde5 Record rigid workflow validation
@@ -142,15 +137,15 @@ original file-size limit before screenshots and frames are written. The failed
 `build/captures/rigid_workflow_rows_01_36_1781311276` packet and earlier
 `/tmp` reproducers remain failure evidence only.
 
-Latest local follow-up: after the headless engine-creation fix, the DART 7
-harness identity-complete packets now regenerate successfully. The full
-numbered packet
-`build/captures/rigid_workflow_rows_01_36_1781312968` mirrors the original
-`/dev/shm/dart_rigid_workflow_rows_01_36_1781312968` run and completed with
+Latest local follow-up: after the headless engine-creation fix and the DART 7
+harness scene-metrics contract update, the full numbered packet was
+regenerated at
+`build/captures/rigid_workflow_rows_01_36_1781323428` and completed with
 `status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `workflow_row_start=1`,
 `workflow_row_end=36`, `guidance_complete=true`,
-`guidance_missing_count=0`, `resolved_solver_identity_complete=true`,
+`guidance_missing_count=0`, `scene_metrics_complete=true`,
+`scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
 `resolved_solver_identity_count=36`, `resolved_solver_identity_missing_count=0`,
 `failed_rows=[]`, and 2388 frame PNGs. The current optional rows 37-53 packet
 `build/captures/rigid_workflow_optional_rows_37_53_1781321474` completed with
@@ -604,13 +599,12 @@ the final workflow manifest and process exit code still fail when any selected
 row failed. The in-viewer `Rigid Workflow` panel exposes the resilient
 extended-packet command, and README/PLAN-103 describe the same user path.
 
-Previous checkpoint: the public packet row-range rerun examples were refreshed
-after the capture-first heavy stack packet expansion. The README and PLAN-103
-sidecar now tell users to rerun rows 47-48 when they request
+Previous checkpoint, updated after the pre-contact surrogate related route
+expanded the optional packet: the public packet row-range rerun examples now
+tell users to rerun rows 48-49 when they request
 `--include-related --include-packets`, so both `rigid_ipc_stack_packet` and
 `rigid_ipc_heavy_stack_packet` are included. The drift guard scopes the public
-rerun example and prevents it from regressing to the old row-47-only packet
-command.
+rerun example and prevents it from regressing to a single packet-row command.
 
 Previous checkpoint: the capture-first heavier Rigid IPC stack packet slice
 completed. The existing four-box `rigid_ipc_stack_packet` now shares a
@@ -1119,7 +1113,7 @@ Expected repository state for that earlier checkpoint:
       an extended dry-run planned rows 51-52 / 52 with complete guidance, and a
       real row-52 docked workflow capture completed with finite heavy-stack
       metrics.
-- [x] Public row-range packet rerun examples now target rows 47-48 for the
+- [x] Public row-range packet rerun examples now target rows 48-49 for the
       `--include-related --include-packets` packet shape, and a focused guard
       keeps README/PLAN-103 from drifting back to the old row-47-only command.
 - [x] Workflow packets now support `--continue-on-failure`, preserving
@@ -2635,15 +2629,15 @@ passed and `git diff --check` was clean.
 ## Immediate Next Steps
 
 1. Resume from `git status -sb` and `git log -5 --oneline`.
-2. Expect the current local checkpoint to be
-   `08f710b793b Record regenerated rigid workflow evidence`, with no PR for
-   `feature/rigid-body-gui-visual-verification` unless one was created after
-   this handoff.
+2. Expect the branch to be
+   `feature/rigid-body-gui-visual-verification`, with no PR unless one was
+   created after this handoff.
 3. Use
-   `build/captures/rigid_workflow_rows_01_36_1781309127/review_index.html` and
-   `build/captures/rigid_workflow_optional_rows_37_52_1781309448/review_index.html`
-   as the current static review artifacts; both were regenerated from current
-   HEAD and passed local asset-link audits.
+   `build/captures/rigid_workflow_rows_01_36_1781323428/review_index.html` and
+   `build/captures/rigid_workflow_optional_rows_37_53_1781321474/review_index.html`
+   as the current static review artifacts; both passed local asset-link audits,
+   and their manifests report complete scene metrics plus complete resolved
+   solver identity.
 4. Use `docs/dev_tasks/rigid_body_visual_verification/PR_DRAFT.md` as the PR
    body seed once push/PR creation is explicitly approved.
 5. Check `docs/dev_tasks/rigid_body_visual_verification/COMPLETION_AUDIT.md`

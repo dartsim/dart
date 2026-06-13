@@ -413,13 +413,13 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 --width 960 --hei
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 47-48 are the two
+`--include-related --include-packets`, rows 48-49 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 51-52.
+packet rows become 52-53.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow --workflow-start-row 15 --workflow-end-row 17 --dry-run
-pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 47 --workflow-end-row 48 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
+pixi run py-demo-capture -- --rigid-workflow --include-related --include-packets --workflow-start-row 48 --workflow-end-row 49 --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 
 When a row range selects only part of a larger packet, the top-level manifest
@@ -560,15 +560,17 @@ Evidence recorded for this slice:
   reported `1 passed`. The guard asserts that generated workflow review cards
   render exactly one screenshot thumbnail for each captured row.
 
-- Latest full numbered workflow packet evidence: after the row-36
-  loop-closure implementation commit, the current-HEAD workflow packet
-  `build/captures/rigid_workflow_rows_01_36_1781312968` captured rows 01-36
+- Latest full numbered workflow packet evidence: after the DART 7 harness
+  scene-metrics contract update, the current workflow packet
+  `build/captures/rigid_workflow_rows_01_36_1781323428` captured rows 01-36
   with `status=complete`, `capture_count=36`, `completed_count=36`,
   `failed_count=0`, `workflow_total_count=36`, `guidance_complete=true`,
-  `guidance_missing_count=0`, and `failed_rows=[]`. The packet wrote
+  `guidance_missing_count=0`, `scene_metrics_complete=true`,
+  `scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
+  `resolved_solver_identity_count=36`, and `failed_rows=[]`. The packet wrote
   `manifest.json`, `review_index.html`, 36 docked row screenshots, and 2388
-  frame PNGs; the first row was `rigid_body` and the last row was
-  `rigid_loop_closure`.
+  frame PNGs; a read-only review-index asset audit checked 181 local
+  `href`/`src` targets with 0 missing links.
 
 - Historical optional extended workflow packet evidence: the pre-surrogate workflow
   packet `build/captures/rigid_workflow_optional_rows_37_52_1781309448`

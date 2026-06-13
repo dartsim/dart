@@ -2224,6 +2224,19 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
 
     capture_py_demo = _capture_py_demo_module()
     assert list(capture_py_demo.rigid_workflow_packet_capture_specs()) == expected_specs
+    related_packet_start = (
+        len(RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS)
+        + len(capture_py_demo.rigid_workflow_related_capture_specs())
+        + 1
+    )
+    related_packet_end = related_packet_start + len(expected_specs) - 1
+    full_packet_start = (
+        len(RIGID_VISUAL_WORKFLOW_CAPTURE_SPECS)
+        + len(capture_py_demo.rigid_workflow_related_capture_specs())
+        + len(capture_py_demo.rigid_workflow_ipc_shelf_capture_specs())
+        + 1
+    )
+    full_packet_end = full_packet_start + len(expected_specs) - 1
 
     row_range_marker = (
         "For targeted reruns after a failed or manually inspected row"
@@ -2235,10 +2248,20 @@ def test_rigid_visual_capture_first_packets_are_documented() -> None:
         row_range_intro, row_range_rest = row_range_tail.split("```bash", 1)
         row_range_block = row_range_rest.split("```", 1)[0]
         row_range_section = row_range_intro + row_range_block
-        assert "--workflow-start-row 47 --workflow-end-row 48" in row_range_section
-        assert "--workflow-start-row 47 --workflow-end-row 47" not in row_range_section
+        expected_range = (
+            f"--workflow-start-row {related_packet_start} "
+            f"--workflow-end-row {related_packet_end}"
+        )
+        assert expected_range in row_range_section
         row_range_words = " ".join(row_range_section.split())
-        assert "rows 47-48 are the two capture-first stack packets" in row_range_words
+        assert (
+            f"rows {related_packet_start}-{related_packet_end} are the two "
+            "capture-first stack packets"
+        ) in row_range_words
+        assert (
+            f"packet rows become {full_packet_start}-{full_packet_end}"
+            in row_range_words
+        )
 
 
 def test_rigid_visual_direct_ipc_shelf_captures_are_documented() -> None:

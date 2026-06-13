@@ -922,15 +922,15 @@ pixi run py-demo-capture -- --scene rigid_ipc_pile --frames 72 \
 For targeted reruns after a failed or manually inspected row, keep the same
 workflow packet but bound the row range. Row numbers stay absolute, so row 37
 still writes under `scenes/37_<scene>` when related evidence is included. With
-`--include-related --include-packets`, rows 47-48 are the two
+`--include-related --include-packets`, rows 48-49 are the two
 capture-first stack packets. If `--include-ipc-shelf` is also requested, those
-packet rows become 51-52.
+packet rows become 52-53.
 
 ```bash
 pixi run py-demo-capture -- --rigid-workflow \
     --workflow-start-row 15 --workflow-end-row 17 --dry-run
 pixi run py-demo-capture -- --rigid-workflow --include-related \
-    --include-packets --workflow-start-row 47 --workflow-end-row 48 \
+    --include-packets --workflow-start-row 48 --workflow-end-row 49 \
     --output-dir /tmp/dart_capture_rigid_workflow_packet_rerun
 ```
 

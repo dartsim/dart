@@ -66,12 +66,10 @@ rigid-body visual verification surface for the current cycle.
 - Current-head focused docs/capture drift guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_writes_capture_plan python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_dry_run_can_include_related_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_full_extended_plan_has_complete_guidance python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks -q`
   reported `6 passed`.
-- Earlier branch-level broad default validation:
+- Current-head broad default validation:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
   passed all wrapper gates: linting, build, unit tests, simulation tests,
-  Python tests, and documentation. This predates the latest docs/evidence and
-  pre-contact surrogate continuation commits; rerun before publication if exact
-  current-head broad evidence is required.
+  Python tests, and documentation.
 - Earlier branch-level CUDA validation on a visible
   `NVIDIA GeForce RTX 4080 Laptop GPU` host:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
@@ -98,9 +96,10 @@ rigid-body visual verification surface for the current cycle.
   optional workflow packets below regenerated with complete solver identity.
   The failed `1781311276` refresh path is not included in the evidence below.
 - Full numbered workflow packet:
-  `build/captures/rigid_workflow_rows_01_36_1781312968`
+  `build/captures/rigid_workflow_rows_01_36_1781323428`
   (`status=complete`, `capture_count=36`, `failed_count=0`,
-  `guidance_complete=true`, `resolved_solver_identity_complete=true`,
+  `guidance_complete=true`, `scene_metrics_complete=true`,
+  `scene_metrics_count=36`, `resolved_solver_identity_complete=true`,
   `resolved_solver_identity_count=36`, 2388 PNG frames).
 - Current optional rows 37-53 packet after `diff_pre_contact_surrogate` was
   added:

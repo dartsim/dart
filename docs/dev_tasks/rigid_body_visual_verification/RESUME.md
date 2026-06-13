@@ -84,19 +84,19 @@ Fresh focused guard for that audit:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
 reported `6 passed`.
 
-Latest validation follow-up: the latest broad validation evidence predates the
-current local `HEAD` (`72a0d24ad39 Record optional rigid workflow packet
-evidence`) and the pre-contact surrogate continuation, so treat it as
-branch-level broad evidence rather than exact current-head broad validation.
-From branch `feature/rigid-body-gui-visual-verification`, with
-`DART_SAFE_JOBS=5`, the default command
+Latest validation follow-up: after merging latest `origin/main` (`Already up
+to date`), broad default validation was rerun from branch
+`feature/rigid-body-gui-visual-verification` with `DART_SAFE_JOBS=5`. The
+default command
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run test-all`
 completed successfully: linting, build, unit tests, simulation tests, Python
-tests, and documentation all passed. Because `nvidia-smi -L` reported
-`GPU 0: NVIDIA GeForce RTX 4080 Laptop GPU`, the CUDA command
-`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 timeout 7200s pixi run -e cuda test-all`
-was also run and exited successfully. The previous stopped validation attempt
-remains useful archaeology only; do not report it as the latest state.
+tests, and documentation all passed. The default run reported
+`test_world` in 147.17 seconds and `test_rigid_ipc_paper_experiments` in
+298.43 seconds. The same wrapper detected a CUDA runtime and warned to run
+`pixi run -e cuda test-all`; current-head CUDA validation is still pending
+until that command is rerun after this evidence refresh. The previous stopped
+validation attempt remains useful archaeology only; do not report it as the
+latest state.
 
 Historical publication state before the later approved pushes: after committing
 `84897c2fde5 Record rigid workflow validation evidence`, the local branch was
@@ -144,13 +144,13 @@ screenshot/frame output. Treat
 `build/captures/rigid_workflow_rows_01_36_1781311276` and the earlier `/tmp`
 reproducers as failure evidence only.
 
-Latest local follow-up: after the headless engine-creation fix, both DART 7
-harness packets regenerated with complete solver identity. The full numbered
-packet `build/captures/rigid_workflow_rows_01_36_1781312968` mirrors the
-original `/dev/shm/dart_rigid_workflow_rows_01_36_1781312968` run and completed
-with `status=complete`, `capture_count=36`, `completed_count=36`,
+Latest local follow-up: after the headless engine-creation fix and the DART 7
+harness scene-metrics contract update, the full numbered packet regenerated at
+`build/captures/rigid_workflow_rows_01_36_1781323428` and completed with
+`status=complete`, `capture_count=36`, `completed_count=36`,
 `failed_count=0`, `workflow_total_count=36`, `workflow_row_start=1`,
 `workflow_row_end=36`, `guidance_complete=true`, `guidance_missing_count=0`,
+`scene_metrics_complete=true`, `scene_metrics_count=36`,
 `resolved_solver_identity_complete=true`, `resolved_solver_identity_count=36`,
 `resolved_solver_identity_missing_count=0`, `failed_rows=[]`, and 2388 frame
 PNGs. The current optional rows 37-53 packet
@@ -253,7 +253,7 @@ Resume from this state:
   `6bafd605907 Add pre-contact surrogate visual demo`.
 - Do not push newer local commits without explicit approval in the session that
   performs the push.
-- Use `build/captures/rigid_workflow_rows_01_36_1781312968/review_index.html`
+- Use `build/captures/rigid_workflow_rows_01_36_1781323428/review_index.html`
   and
   `build/captures/rigid_workflow_optional_rows_37_53_1781321474/review_index.html`
   as the current identity-complete review-index scan artifacts. Treat older
@@ -685,13 +685,12 @@ the final workflow manifest and process exit code still fail when any selected
 row failed. The in-viewer `Rigid Workflow` panel exposes the resilient
 extended-packet command, and README/PLAN-103 describe the same user path.
 
-Previous checkpoint: the public packet row-range rerun examples were refreshed
-after the capture-first heavy stack packet expansion. The README and PLAN-103
-sidecar now tell users to rerun rows 47-48 when they request
+Previous checkpoint, updated after the pre-contact surrogate related route
+expanded the optional packet: the public packet row-range rerun examples now
+tell users to rerun rows 48-49 when they request
 `--include-related --include-packets`, so both `rigid_ipc_stack_packet` and
 `rigid_ipc_heavy_stack_packet` are included. The drift guard scopes the public
-rerun example and prevents it from regressing to the old row-47-only packet
-command.
+rerun example and prevents it from regressing to a single packet-row command.
 
 Previous checkpoint: the capture-first heavier Rigid IPC stack packet slice
 completed. The existing four-box `rigid_ipc_stack_packet` now shares a
@@ -1084,7 +1083,7 @@ workflow, and appears only in the optional packet group after
 `rigid_ipc_stack_packet`. Syntax checks, focused pytest, a rows 51-52 extended
 dry-run, a real row-52 docked workflow capture, lint, and diff checks passed.
 The current continuation then refreshed the public row-range rerun examples so
-the related-plus-packets command covers rows 47-48 instead of only the original
+the related-plus-packets command covers rows 48-49 instead of only the original
 row 47 packet, and added focused drift coverage for that public command.
 The newest continuation adds `--continue-on-failure` to workflow packets,
 surfaces a resilient extended-packet command in the live `Rigid Workflow`
