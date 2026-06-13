@@ -102,6 +102,16 @@ struct NewtonSparseJacobiSolveTiming
   double deviceToHostNs = 0.0;
 };
 
+struct NewtonSparseCgSolveTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double assemblyKernelNs = 0.0;
+  double iterationKernelNs = 0.0;
+  double finalResidualKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
 struct NewtonAssemblySolveResult
 {
   std::vector<double> assembledDiagonal;
@@ -163,6 +173,30 @@ struct NewtonSparseJacobiSolveResult
   double residualNorm = 0.0;
   double maxResidualAbs = 0.0;
   NewtonSparseJacobiSolveTiming timing;
+};
+
+struct NewtonSparseCgSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t maxIterationCount = 0;
+  std::size_t completedIterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double residualTolerance = 0.0;
+  double initialResidualNorm = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  bool converged = false;
+  NewtonSparseCgSolveTiming timing;
 };
 
 struct NewtonEqualityReducedSolveResult
@@ -240,6 +274,23 @@ void evaluateNewtonSparseJacobiSolveCuda(
     std::size_t iterationCount,
     double regularization,
     NewtonSparseJacobiSolveResult& result);
+
+/// Evaluate a private capped-iteration sparse CG solve packet.
+///
+/// The packet assembles full-space diagonal rows and applies symmetric 6x6
+/// sparse blocks while running a deterministic capped Conjugate Gradient solve
+/// for the reduced sparse system. It intentionally does not cover sparse graph
+/// construction, direct factorization, nonlinear equality constraints, runtime
+/// scene assembly, convergence policy for production solves, or a public GPU
+/// solver backend.
+void evaluateNewtonSparseCgSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    std::size_t maxIterationCount,
+    double residualTolerance,
+    double regularization,
+    NewtonSparseCgSolveResult& result);
 
 /// Evaluate a private reduced equality-projected diagonal solve packet.
 ///

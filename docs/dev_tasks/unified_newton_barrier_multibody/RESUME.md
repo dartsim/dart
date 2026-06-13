@@ -2,6 +2,43 @@
 
 ## Current Reality (2026-06-12)
 
+Latest sparse CG solve checkpoint (2026-06-12): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a capped
+sparse Conjugate Gradient solve row. The CUDA path assembles full-space
+diagonal rows, applies symmetric 6x6 sparse off-diagonal body blocks in each
+matrix-vector product, runs a bounded CG loop, and recomputes the final sparse
+residual.
+
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 dofs, 8,192
+sparse blocks, 294,912 block entries, 32 maximum iterations, 14 completed
+iterations, and 49,152 active dofs with `residual_tolerance=1e-12`,
+`initial_residual_norm=66.04823994627199`,
+`max_result_abs_error=1.7763568394002505e-15`,
+`residual_norm=9.935597225004938e-14`,
+`max_residual_abs=5.011832962531493e-15`,
+`step_norm=10.694462363332692`, and `speedup=1.965091295559266x` for the
+sparse CG row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=9.935597225004938e-14`, and
+`speedup=0.3014575923899792x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest local gates:
+
+- focused assembly/solve packet pytest
+- PLAN-083 GPU parity/completion-audit validators
+- focused PLAN-083 packet pytest trio
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- `pixi run lint`
+
 Latest sparse Jacobi solve checkpoint (2026-06-12): work continued locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
 PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
@@ -551,10 +588,11 @@ contact-candidate packet speedup was `0.35669978298935295x`.
 
 Fresh-session next step: inspect `HANDOFF.md`, `git status -sb`, and the local
 diff. Continue with sweep broad-phase/runtime compacted candidate lists,
-global sparse factorization, nonlinear equality constraints, runtime scene
-rows, or speedup-gate work only as honest `in-progress` evidence. Before any
-future push to #2978, merge latest `origin/main` into the published branch, run
-required gates, and push only with explicit maintainer approval.
+runtime sparse Hessian assembly, direct/global sparse factorization, nonlinear
+equality constraints, runtime scene rows, or speedup-gate work only as honest
+`in-progress` evidence. Before any future push to #2978, merge latest
+`origin/main` into the published branch, run required gates, and push only with
+explicit maintainer approval.
 
 PR granularity: default to one branch and PR per implementation-roadmap phase,
 but consolidate adjacent small internal phases into one PR when that keeps
@@ -1138,14 +1176,14 @@ point-triangle/point-point/point-edge/edge-edge primitive barrier-Hessian PSD-pr
 parity, reduced scene-owned point-triangle, point-edge, point-point, and
 edge-edge barrier-Hessian runtime rows,
 reduced assembly/solve parity including sparse block residual and sparse
-equality-reduced diagonal solve rows, reduced scene state-batch parity, and reduced
-ABD complex-geometry/FEM coupling evidence. Keep rows `in-progress` unless
-their full row policy is satisfied: additional runtime contact rows, GPU
-sweep-and-prune broad-phase construction, rigid curved trajectories, full
-runtime scene filtering/line search, GPU `World::step` contact candidate
-construction, global sparse factorization and solving, nonlinear equality
-constraints, paper-scale assets, and accepted reference timings remain future
-evidence.
+Jacobi, sparse CG, and sparse equality-reduced diagonal solve rows, reduced
+scene state-batch parity, and reduced ABD complex-geometry/FEM coupling
+evidence. Keep rows `in-progress` unless their full row policy is satisfied:
+additional runtime contact rows, GPU sweep-and-prune broad-phase construction,
+rigid curved trajectories, full runtime scene filtering/line search, GPU
+`World::step` contact candidate construction, runtime sparse Hessian assembly,
+direct/global sparse factorization, nonlinear equality constraints,
+paper-scale assets, and accepted reference timings remain future evidence.
 
 ## Immediate Next Step
 
@@ -1154,10 +1192,10 @@ remaining PLAN-083 follow-up work on the same consolidated branch/PR instead of
 reviving former stacked branches. The next contact-candidate packet gaps are
 runtime scene filtering and speedup-gate work; the next barrier/friction packet
 gaps are additional runtime contact rows, runtime sparse Hessian assembly, and
-speedup-gate work; the next assembly/solve gaps are runtime scene rows, global
-sparse factorization, nonlinear equality constraints, and speedup-gate work. Do
-not mark these rows measured until the top-level speed
-gate and runtime evidence are proven. Keep the dev-task folder active because
+speedup-gate work; the next assembly/solve gaps are runtime scene rows, runtime
+sparse Hessian assembly, direct/global sparse factorization, nonlinear equality
+constraints, and speedup-gate work. Do not mark these rows measured until the
+top-level speed gate and runtime evidence are proven. Keep the dev-task folder active because
 PLAN-083 acceptance criteria are still unmet. If the task later moves out of
 this folder, get maintainer direction before deleting it and keep the remaining
 planned manifest plus in-progress CPU/GPU/scene limitations in durable

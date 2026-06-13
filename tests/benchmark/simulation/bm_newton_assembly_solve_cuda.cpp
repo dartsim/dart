@@ -46,6 +46,8 @@ namespace {
 
 constexpr double kRegularization = 0.25;
 constexpr std::size_t kSparseJacobiIterations = 16;
+constexpr std::size_t kSparseCgMaxIterations = 32;
+constexpr double kSparseCgResidualTolerance = 1e-12;
 
 struct CpuAssemblySolveResult
 {
@@ -135,6 +137,37 @@ struct SparseJacobiSolveFixture
   std::vector<cuda::NewtonSparseBlockEntry> blocks;
   std::size_t bodyCount = 0;
   CpuSparseJacobiSolveResult cpu;
+};
+
+struct CpuSparseCgSolveResult
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t bodyCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t maxIterationCount = 0;
+  std::size_t completedIterationCount = 0;
+  std::size_t activeDofCount = 0;
+  double residualTolerance = 0.0;
+  double initialResidualNorm = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double stepNorm = 0.0;
+  double residualNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  bool converged = false;
+};
+
+struct SparseCgSolveFixture
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::size_t bodyCount = 0;
+  CpuSparseCgSolveResult cpu;
 };
 
 struct CpuEqualityReducedSolveResult
@@ -471,6 +504,47 @@ std::vector<double> computeSparseResidualFromAssembled(
   return residual;
 }
 
+std::vector<double> computeSparseMatrixVectorFromAssembled(
+    const std::vector<double>& assembledDiagonal,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& step)
+{
+  std::vector<double> product(step.size(), 0.0);
+  for (std::size_t dof = 0; dof < product.size(); ++dof) {
+    product[dof] = (assembledDiagonal[dof] + kRegularization) * step[dof];
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      product[rowDof] += block.hessianBlock[entry] * step[columnDof];
+      product[columnDof] += block.hessianBlock[entry] * step[rowDof];
+    }
+  }
+  return product;
+}
+
+double dotVectors(
+    const std::vector<double>& lhs, const std::vector<double>& rhs)
+{
+  double dot = 0.0;
+  for (std::size_t dof = 0; dof < lhs.size(); ++dof) {
+    dot += lhs[dof] * rhs[dof];
+  }
+  return dot;
+}
+
 void evaluateCpuSparseJacobiSolve(
     const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
     const std::size_t bodyCount,
@@ -522,6 +596,96 @@ void evaluateCpuSparseJacobiSolve(
   }
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+void evaluateCpuSparseCgSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    CpuSparseCgSolveResult& result)
+{
+  CpuAssemblySolveResult diagonal;
+  evaluateCpu(rows, bodyCount, diagonal);
+
+  result = CpuSparseCgSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = blocks.size();
+  result.maxIterationCount = kSparseCgMaxIterations;
+  result.residualTolerance = kSparseCgResidualTolerance;
+  result.assembledDiagonal = diagonal.assembledDiagonal;
+  result.assembledGradient = diagonal.assembledGradient;
+  result.step.assign(result.dofCount, 0.0);
+
+  std::vector<double> residual(result.dofCount, 0.0);
+  std::vector<double> direction(result.dofCount, 0.0);
+  for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+    residual[dof] = -result.assembledGradient[dof];
+    direction[dof] = residual[dof];
+  }
+
+  double residualSquared = std::max(0.0, dotVectors(residual, residual));
+  result.initialResidualNorm = std::sqrt(residualSquared);
+  const double toleranceSquared
+      = result.residualTolerance * result.residualTolerance;
+
+  for (std::size_t iteration = 0; iteration < result.maxIterationCount;
+       ++iteration) {
+    if (residualSquared <= toleranceSquared) {
+      break;
+    }
+
+    const auto matrixDirection = computeSparseMatrixVectorFromAssembled(
+        result.assembledDiagonal, blocks, direction);
+    const double directionMatrixDirection
+        = dotVectors(direction, matrixDirection);
+    if (!std::isfinite(directionMatrixDirection)
+        || std::abs(directionMatrixDirection) <= 1e-30) {
+      break;
+    }
+
+    const double alpha = residualSquared / directionMatrixDirection;
+    for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+      result.step[dof] += alpha * direction[dof];
+      residual[dof] -= alpha * matrixDirection[dof];
+    }
+
+    double nextResidualSquared = std::max(0.0, dotVectors(residual, residual));
+    ++result.completedIterationCount;
+    if (nextResidualSquared <= toleranceSquared) {
+      residualSquared = nextResidualSquared;
+      break;
+    }
+
+    const double beta = nextResidualSquared / residualSquared;
+    for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+      direction[dof] = residual[dof] + beta * direction[dof];
+    }
+    residualSquared = nextResidualSquared;
+  }
+
+  result.residual = computeSparseResidualFromAssembled(
+      result.assembledDiagonal, result.assembledGradient, blocks, result.step);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < result.dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + kRegularization > 1e-14) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+  result.converged = result.residualNorm <= result.residualTolerance;
 }
 
 AssemblySolveFixture makeFixture(const int rowCount)
@@ -597,6 +761,28 @@ SparseJacobiSolveFixture makeSparseJacobiSolveFixture(const int rowCount)
         makeSparseBlock(static_cast<int>(block), fixture.bodyCount));
   }
   evaluateCpuSparseJacobiSolve(
+      fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
+  return fixture;
+}
+
+SparseCgSolveFixture makeSparseCgSolveFixture(const int rowCount)
+{
+  SparseCgSolveFixture fixture;
+  fixture.bodyCount
+      = std::max<std::size_t>(2, static_cast<std::size_t>(rowCount) / 8);
+  fixture.rows.reserve(static_cast<std::size_t>(rowCount));
+  for (int row = 0; row < rowCount; ++row) {
+    fixture.rows.push_back(makeRow(row, fixture.bodyCount));
+  }
+
+  const std::size_t blockCount
+      = std::max<std::size_t>(1, static_cast<std::size_t>(rowCount) / 8);
+  fixture.blocks.reserve(blockCount);
+  for (std::size_t block = 0; block < blockCount; ++block) {
+    fixture.blocks.push_back(
+        makeSparseBlock(static_cast<int>(block), fixture.bodyCount));
+  }
+  evaluateCpuSparseCgSolve(
       fixture.rows, fixture.bodyCount, fixture.blocks, fixture.cpu);
   return fixture;
 }
@@ -680,6 +866,23 @@ double maxSparseResidualOutputError(
 double maxSparseJacobiSolveOutputError(
     const CpuSparseJacobiSolveResult& expected,
     const cuda::NewtonSparseJacobiSolveResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledDiagonal, actual.assembledDiagonal));
+  maxError = std::max(
+      maxError,
+      maxAbsDifference(expected.assembledGradient, actual.assembledGradient));
+  maxError = std::max(maxError, maxAbsDifference(expected.step, actual.step));
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.residual, actual.residual));
+  return maxError;
+}
+
+double maxSparseCgSolveOutputError(
+    const CpuSparseCgSolveResult& expected,
+    const cuda::NewtonSparseCgSolveResult& actual)
 {
   double maxError = 0.0;
   maxError = std::max(
@@ -795,6 +998,36 @@ void recordSparseJacobiSolveCounters(
       = static_cast<double>(fixture.cpu.iterationCount);
   state.counters["active_dofs"]
       = static_cast<double>(fixture.cpu.activeDofCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["step_norm"] = fixture.cpu.stepNorm;
+  state.counters["residual_norm"] = fixture.cpu.residualNorm;
+  state.counters["max_residual_abs"] = fixture.cpu.maxResidualAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(state.iterations() * fixture.rows.size()));
+}
+
+void recordSparseCgSolveCounters(
+    benchmark::State& state,
+    const SparseCgSolveFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.rows.size());
+  state.counters["bodies"] = static_cast<double>(fixture.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.dofCount);
+  state.counters["blocks"] = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["block_entries"] = static_cast<double>(
+      fixture.cpu.blockCount * cuda::kNewtonAssemblySolveBlockEntries);
+  state.counters["max_iterations"]
+      = static_cast<double>(fixture.cpu.maxIterationCount);
+  state.counters["completed_iterations"]
+      = static_cast<double>(fixture.cpu.completedIterationCount);
+  state.counters["active_dofs"]
+      = static_cast<double>(fixture.cpu.activeDofCount);
+  state.counters["converged"] = fixture.cpu.converged ? 1.0 : 0.0;
+  state.counters["residual_tolerance"] = fixture.cpu.residualTolerance;
+  state.counters["initial_residual_norm"] = fixture.cpu.initialResidualNorm;
   state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
   state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
   state.counters["step_norm"] = fixture.cpu.stepNorm;
@@ -1051,6 +1284,75 @@ static void BM_NewtonSparseJacobiSolveCuda(benchmark::State& state)
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSparseJacobiSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSparseCgSolveCpu(benchmark::State& state)
+{
+  const auto fixture
+      = makeSparseCgSolveFixture(static_cast<int>(state.range(0)));
+  CpuSparseCgSolveResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSparseCgSolve(
+        fixture.rows, fixture.bodyCount, fixture.blocks, result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSparseCgSolveCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSparseCgSolveCpu)->Arg(4096)->Arg(65536)->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSparseCgSolveCuda(benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture
+      = makeSparseCgSolveFixture(static_cast<int>(state.range(0)));
+  cuda::NewtonSparseCgSolveResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSparseCgSolveCuda(
+        fixture.rows,
+        fixture.bodyCount,
+        fixture.blocks,
+        kSparseCgMaxIterations,
+        kSparseCgResidualTolerance,
+        kRegularization,
+        result);
+    benchmark::DoNotOptimize(result.step.data());
+  }
+
+  recordSparseCgSolveCounters(
+      state, fixture, maxSparseCgSolveOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_max_iterations"]
+      = static_cast<double>(result.maxIterationCount);
+  state.counters["gpu_completed_iterations"]
+      = static_cast<double>(result.completedIterationCount);
+  state.counters["gpu_active_dofs"]
+      = static_cast<double>(result.activeDofCount);
+  state.counters["gpu_converged"] = result.converged ? 1.0 : 0.0;
+  state.counters["gpu_residual_tolerance"] = result.residualTolerance;
+  state.counters["gpu_initial_residual_norm"] = result.initialResidualNorm;
+  state.counters["gpu_step_norm"] = result.stepNorm;
+  state.counters["gpu_residual_norm"] = result.residualNorm;
+  state.counters["gpu_max_residual_abs"] = result.maxResidualAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["assembly_kernel_ns"] = result.timing.assemblyKernelNs;
+  state.counters["iteration_kernel_ns"] = result.timing.iterationKernelNs;
+  state.counters["final_residual_kernel_ns"]
+      = result.timing.finalResidualKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSparseCgSolveCuda)->Arg(4096)->Arg(65536)->UseRealTime();
 
 //==============================================================================
 static void BM_NewtonEqualityReducedSolveCpu(benchmark::State& state)

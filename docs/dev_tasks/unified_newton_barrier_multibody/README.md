@@ -2,6 +2,43 @@
 
 ## Current Status
 
+Latest sparse CG solve checkpoint (2026-06-12): work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a capped
+sparse Conjugate Gradient solve row. The CUDA path assembles full-space
+diagonal rows, applies symmetric 6x6 sparse off-diagonal body blocks in each
+matrix-vector product, runs a bounded CG loop, and recomputes the final sparse
+residual.
+
+Fresh packet evidence records 65,536 rows, 8,192 bodies, 49,152 dofs, 8,192
+sparse blocks, 294,912 block entries, 32 maximum iterations, 14 completed
+iterations, and 49,152 active dofs with `residual_tolerance=1e-12`,
+`initial_residual_norm=66.04823994627199`,
+`max_result_abs_error=1.7763568394002505e-15`,
+`residual_norm=9.935597225004938e-14`,
+`max_residual_abs=5.011832962531493e-15`,
+`step_norm=10.694462363332692`, and `speedup=1.965091295559266x` for the
+sparse CG row. The top-level assembly/solve packet records
+`max_result_abs_error=3.552713678800501e-15`,
+`residual_norm=9.935597225004938e-14`, and
+`speedup=0.3014575923899792x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest validation passed:
+
+- focused assembly/solve packet pytest
+- PLAN-083 GPU parity/completion-audit validators
+- focused PLAN-083 packet pytest trio
+- `git diff --check`
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- `pixi run lint`
+
 Latest sparse Jacobi solve checkpoint (2026-06-12): work continued locally on
 `simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
 PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
@@ -779,11 +816,12 @@ speedup-gate work on the same PR. Do not open another PLAN-083 PR.
         additional runtime contact rows, full GPU `World::step`, and runtime
         speedup remain unproven.
   - [x] Add private reduced diagonal assembly/solve, pair-slot off-diagonal
-        sparse-block assembly, sparse block residual matvec, and sparse
+        sparse-block assembly, sparse block residual matvec, fixed-iteration
+        sparse Jacobi solve, capped sparse CG solve, and sparse
         equality-reduced diagonal solve packets with exact CPU/GPU local-output
         parity; keep the row in-progress because runtime sparse assembly,
-        global sparse factorization, nonlinear equality constraints, runtime
-        scene rows, and speedup remain unproven.
+        direct/global sparse factorization, nonlinear equality constraints,
+        runtime scene rows, and speedup remain unproven.
   - [x] Add a private reduced scene state-batch parity packet with exact
         CPU/GPU rollout parity and speedup; keep the row in-progress because
         GPU `World::step`, contact candidate construction, CCD,
@@ -931,11 +969,12 @@ storage, or backend resources as public API.
    first, check hosted #2978 CI/review state for actionable failures, then
    continue runtime scene filtering, speedup-gate work, downstream
    additional primitive-family/runtime contact evidence, runtime sparse
-   Hessian assembly, or global sparse factorization evidence on the same PR.
+   Hessian assembly, or direct/global sparse factorization evidence on the same
+   PR.
 2. Keep private GPU scene-level parity limited to reduced scene state-batch
    rollout parity; do not mark the row measured until GPU `World::step`,
    contact candidate construction, CCD, barrier/friction assembly, sparse
-   global sparse factorization, and global Newton solving have concrete
+   direct/global sparse factorization, and global Newton solving have concrete
    evidence.
 3. Use the reduced ABD runtime-step, ABD/FEM coupled micro-solve, and GPU
    contact-stencil packets only as internal runtime evidence; broader ABD CPU

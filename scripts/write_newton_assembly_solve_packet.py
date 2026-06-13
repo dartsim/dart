@@ -62,6 +62,7 @@ SPARSE_JACOBI_TIMING_KEYS = {
     "device_to_host",
     "readback",
 }
+SPARSE_CG_TIMING_KEYS = SPARSE_JACOBI_TIMING_KEYS
 
 
 class NewtonAssemblySolvePacketError(RuntimeError):
@@ -134,7 +135,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
     args.benchmark_json.parent.mkdir(parents=True, exist_ok=True)
     filter_expr = (
         "^BM_Newton(AssemblySolve|OffDiagonalAssembly|SparseResidual|"
-        "SparseJacobiSolve|EqualityReducedSolve)(Cpu|Cuda)"
+        "SparseJacobiSolve|SparseCgSolve|EqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
     )
     command = [
@@ -201,6 +202,8 @@ def _representative_rows(
         "sparse_residual_gpu": f"BM_NewtonSparseResidualCuda/{row_count}",
         "sparse_jacobi_cpu": f"BM_NewtonSparseJacobiSolveCpu/{row_count}",
         "sparse_jacobi_gpu": f"BM_NewtonSparseJacobiSolveCuda/{row_count}",
+        "sparse_cg_cpu": f"BM_NewtonSparseCgSolveCpu/{row_count}",
+        "sparse_cg_gpu": f"BM_NewtonSparseCgSolveCuda/{row_count}",
         "equality_cpu": f"BM_NewtonEqualityReducedSolveCpu/{row_count}",
         "equality_gpu": f"BM_NewtonEqualityReducedSolveCuda/{row_count}",
     }
@@ -270,6 +273,8 @@ def make_packet(
     sparse_residual_gpu_row = representative_rows["sparse_residual_gpu"]
     sparse_jacobi_cpu_row = representative_rows["sparse_jacobi_cpu"]
     sparse_jacobi_gpu_row = representative_rows["sparse_jacobi_gpu"]
+    sparse_cg_cpu_row = representative_rows["sparse_cg_cpu"]
+    sparse_cg_gpu_row = representative_rows["sparse_cg_gpu"]
     equality_cpu_row = representative_rows["equality_cpu"]
     equality_gpu_row = representative_rows["equality_gpu"]
     cpu_ns = benchmark_timing_ns(cpu_row)
@@ -280,6 +285,8 @@ def make_packet(
     sparse_residual_gpu_ns = benchmark_timing_ns(sparse_residual_gpu_row)
     sparse_jacobi_cpu_ns = benchmark_timing_ns(sparse_jacobi_cpu_row)
     sparse_jacobi_gpu_ns = benchmark_timing_ns(sparse_jacobi_gpu_row)
+    sparse_cg_cpu_ns = benchmark_timing_ns(sparse_cg_cpu_row)
+    sparse_cg_gpu_ns = benchmark_timing_ns(sparse_cg_gpu_row)
     equality_cpu_ns = benchmark_timing_ns(equality_cpu_row)
     equality_gpu_ns = benchmark_timing_ns(equality_gpu_row)
     if not math.isfinite(cpu_ns) or cpu_ns <= 0.0:
@@ -310,6 +317,14 @@ def make_packet(
         raise NewtonAssemblySolvePacketError(
             "sparse Jacobi GPU benchmark timing is not positive"
         )
+    if not math.isfinite(sparse_cg_cpu_ns) or sparse_cg_cpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "sparse CG CPU benchmark timing is not positive"
+        )
+    if not math.isfinite(sparse_cg_gpu_ns) or sparse_cg_gpu_ns <= 0.0:
+        raise NewtonAssemblySolvePacketError(
+            "sparse CG GPU benchmark timing is not positive"
+        )
     if not math.isfinite(equality_cpu_ns) or equality_cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
             "equality-reduced CPU benchmark timing is not positive"
@@ -325,12 +340,14 @@ def make_packet(
         sparse_residual_gpu_row, "max_result_abs_error"
     )
     sparse_jacobi_max_error = _counter(sparse_jacobi_gpu_row, "max_result_abs_error")
+    sparse_cg_max_error = _counter(sparse_cg_gpu_row, "max_result_abs_error")
     equality_max_error = _counter(equality_gpu_row, "max_result_abs_error")
     max_error = max(
         diagonal_max_error,
         off_diagonal_max_error,
         sparse_residual_max_error,
         sparse_jacobi_max_error,
+        sparse_cg_max_error,
         equality_max_error,
     )
     if max_error > tolerance:
@@ -340,9 +357,13 @@ def make_packet(
 
     residual_norm = _counter(gpu_row, "gpu_residual_norm")
     sparse_jacobi_residual_norm = _counter(sparse_jacobi_gpu_row, "gpu_residual_norm")
+    sparse_cg_residual_norm = _counter(sparse_cg_gpu_row, "gpu_residual_norm")
     equality_residual_norm = _counter(equality_gpu_row, "gpu_residual_norm")
     max_residual_norm = max(
-        residual_norm, sparse_jacobi_residual_norm, equality_residual_norm
+        residual_norm,
+        sparse_jacobi_residual_norm,
+        sparse_cg_residual_norm,
+        equality_residual_norm,
     )
     if max_residual_norm > residual_tolerance:
         raise NewtonAssemblySolvePacketError(
@@ -453,6 +474,61 @@ def make_packet(
     sparse_jacobi_max_residual_abs = _counter(
         sparse_jacobi_gpu_row, "gpu_max_residual_abs"
     )
+    sparse_cg_rows = _matching_int_counter(
+        sparse_cg_cpu_row, sparse_cg_gpu_row, "rows", "gpu_rows"
+    )
+    if sparse_cg_rows != row_count:
+        raise NewtonAssemblySolvePacketError(
+            f"expected {row_count} sparse CG rows, got {sparse_cg_rows}"
+        )
+    sparse_cg_bodies = _matching_int_counter(
+        sparse_cg_cpu_row,
+        sparse_cg_gpu_row,
+        "bodies",
+        "gpu_bodies",
+    )
+    sparse_cg_dofs = _matching_int_counter(
+        sparse_cg_cpu_row, sparse_cg_gpu_row, "dofs", "gpu_dofs"
+    )
+    sparse_cg_blocks = _matching_int_counter(
+        sparse_cg_cpu_row,
+        sparse_cg_gpu_row,
+        "blocks",
+        "gpu_blocks",
+    )
+    sparse_cg_max_iterations = _matching_int_counter(
+        sparse_cg_cpu_row,
+        sparse_cg_gpu_row,
+        "max_iterations",
+        "gpu_max_iterations",
+    )
+    sparse_cg_completed_iterations = _matching_int_counter(
+        sparse_cg_cpu_row,
+        sparse_cg_gpu_row,
+        "completed_iterations",
+        "gpu_completed_iterations",
+    )
+    sparse_cg_active_dofs = _matching_int_counter(
+        sparse_cg_cpu_row,
+        sparse_cg_gpu_row,
+        "active_dofs",
+        "gpu_active_dofs",
+    )
+    sparse_cg_block_entries = int(_counter(sparse_cg_cpu_row, "block_entries"))
+    sparse_cg_converged = int(_counter(sparse_cg_gpu_row, "gpu_converged"))
+    if sparse_cg_converged != 1:
+        raise NewtonAssemblySolvePacketError("sparse CG GPU row did not converge")
+    sparse_cg_residual_tolerance = _counter(sparse_cg_gpu_row, "gpu_residual_tolerance")
+    if sparse_cg_residual_norm > sparse_cg_residual_tolerance:
+        raise NewtonAssemblySolvePacketError(
+            f"sparse CG residual norm {sparse_cg_residual_norm:.3g} exceeds "
+            f"{sparse_cg_residual_tolerance:.3g}"
+        )
+    sparse_cg_initial_residual_norm = _counter(
+        sparse_cg_gpu_row, "gpu_initial_residual_norm"
+    )
+    sparse_cg_step_norm = _counter(sparse_cg_gpu_row, "gpu_step_norm")
+    sparse_cg_max_residual_abs = _counter(sparse_cg_gpu_row, "gpu_max_residual_abs")
     equality_rows = _matching_int_counter(
         equality_cpu_row, equality_gpu_row, "rows", "gpu_rows"
     )
@@ -486,12 +562,14 @@ def make_packet(
     diagonal_speedup = cpu_ns / gpu_ns
     sparse_residual_speedup = sparse_residual_cpu_ns / sparse_residual_gpu_ns
     sparse_jacobi_speedup = sparse_jacobi_cpu_ns / sparse_jacobi_gpu_ns
+    sparse_cg_speedup = sparse_cg_cpu_ns / sparse_cg_gpu_ns
     equality_speedup = equality_cpu_ns / equality_gpu_ns
     speedup = min(
         diagonal_speedup,
         off_diagonal_speedup,
         sparse_residual_speedup,
         sparse_jacobi_speedup,
+        sparse_cg_speedup,
         equality_speedup,
     )
     timing_ns = {
@@ -548,6 +626,20 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"sparse Jacobi packet timing is missing {sorted(missing)}"
+        )
+    sparse_cg_timing_ns = {
+        "setup": _counter(sparse_cg_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(sparse_cg_gpu_row, "host_to_device_ns"),
+        "kernel": _counter(sparse_cg_gpu_row, "assembly_kernel_ns"),
+        "iterations": _counter(sparse_cg_gpu_row, "iteration_kernel_ns"),
+        "final_residual": _counter(sparse_cg_gpu_row, "final_residual_kernel_ns"),
+        "device_to_host": _counter(sparse_cg_gpu_row, "device_to_host_ns"),
+        "readback": 0.0,
+    }
+    missing = SPARSE_CG_TIMING_KEYS - sparse_cg_timing_ns.keys()
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            f"sparse CG packet timing is missing {sorted(missing)}"
         )
     equality_timing_ns = {
         "setup": _counter(equality_gpu_row, "host_setup_ns"),
@@ -644,6 +736,28 @@ def make_packet(
                 "timing_ns": sparse_jacobi_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(sparse_jacobi_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(sparse_jacobi_gpu_row),
+            },
+            "sparse_block_cg_solve": {
+                "row_count": row_count,
+                "body_count": sparse_cg_bodies,
+                "dof_count": sparse_cg_dofs,
+                "block_count": sparse_cg_blocks,
+                "block_entry_count": sparse_cg_block_entries,
+                "max_iteration_count": sparse_cg_max_iterations,
+                "completed_iteration_count": sparse_cg_completed_iterations,
+                "active_dof_count": sparse_cg_active_dofs,
+                "converged": bool(sparse_cg_converged),
+                "residual_tolerance": sparse_cg_residual_tolerance,
+                "initial_residual_norm": sparse_cg_initial_residual_norm,
+                "max_result_abs_error": sparse_cg_max_error,
+                "residual_norm": sparse_cg_residual_norm,
+                "max_residual_abs": sparse_cg_max_residual_abs,
+                "step_norm": sparse_cg_step_norm,
+                "speedup": sparse_cg_speedup,
+                "meets_speedup_gate": sparse_cg_speedup >= speedup_gate,
+                "timing_ns": sparse_cg_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(sparse_cg_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(sparse_cg_gpu_row),
             },
             "equality_reduced_diagonal_solve": {
                 "row_count": row_count,

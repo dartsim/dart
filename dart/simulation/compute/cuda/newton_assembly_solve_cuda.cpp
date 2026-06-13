@@ -87,6 +87,30 @@ cudaError_t launchNewtonSparseJacobiUpdateKernel(
     double regularization,
     double epsilonForDivision);
 
+cudaError_t launchNewtonSparseCgSeedKernel(
+    const double* assembledGradient,
+    double* step,
+    double* residual,
+    double* direction,
+    std::size_t dofCount);
+
+cudaError_t launchNewtonVectorDotKernel(
+    const double* lhs, const double* rhs, double* output, std::size_t dofCount);
+
+cudaError_t launchNewtonSparseCgStepKernel(
+    double* step,
+    double* residual,
+    const double* direction,
+    const double* matrixDirection,
+    std::size_t dofCount,
+    double alpha);
+
+cudaError_t launchNewtonSparseCgDirectionKernel(
+    const double* residual,
+    double* direction,
+    std::size_t dofCount,
+    double beta);
+
 cudaError_t launchNewtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -265,6 +289,15 @@ void validateIterationCount(
       caller);
 }
 
+void validateResidualTolerance(const double tolerance, const char* caller)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(tolerance) || tolerance < 0.0,
+      sx::InvalidArgumentException,
+      "{} residual tolerance must be non-negative",
+      caller);
+}
+
 void validateEqualityReduction(
     const std::vector<NewtonEqualityReductionEntry>& entries,
     const std::size_t fullDofCount,
@@ -301,6 +334,25 @@ void validateEqualityReduction(
         "basis value",
         row);
   }
+}
+
+double dotDeviceVectors(
+    const double* lhs,
+    const double* rhs,
+    const std::size_t dofCount,
+    DeviceBuffer<double>& deviceDot,
+    std::vector<double>& hostDot,
+    const char* operation)
+{
+  hostDot[0] = 0.0;
+  throwIfCudaError(
+      cudaMemset(deviceDot.data(), 0, deviceDot.byteSize()),
+      "newton sparse CG dot zero");
+  throwIfCudaError(
+      detail::launchNewtonVectorDotKernel(lhs, rhs, deviceDot.data(), dofCount),
+      operation);
+  deviceDot.copyFromDevice(hostDot, "newton sparse CG dot copy");
+  return hostDot[0];
 }
 
 } // namespace
@@ -781,6 +833,248 @@ void evaluateNewtonSparseJacobiSolveCuda(
   }
   result.stepNorm = std::sqrt(stepNormSquared);
   result.residualNorm = std::sqrt(residualNormSquared);
+}
+
+//==============================================================================
+void evaluateNewtonSparseCgSolveCuda(
+    const std::vector<NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<NewtonSparseBlockEntry>& blocks,
+    const std::size_t maxIterationCount,
+    const double residualTolerance,
+    const double regularization,
+    NewtonSparseCgSolveResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateRows(rows, bodyCount, regularization);
+  validateSparseBlocks(blocks, bodyCount);
+  validateIterationCount(maxIterationCount, "evaluateNewtonSparseCgSolveCuda");
+  validateResidualTolerance(
+      residualTolerance, "evaluateNewtonSparseCgSolveCuda");
+  const std::size_t dofCount = bodyCount * kNewtonAssemblySolveDofsPerBody;
+
+  result = NewtonSparseCgSolveResult{};
+  result.bodyCount = bodyCount;
+  result.rowCount = rows.size();
+  result.dofCount = dofCount;
+  result.blockCount = blocks.size();
+  result.maxIterationCount = maxIterationCount;
+  result.residualTolerance = residualTolerance;
+  result.assembledDiagonal.assign(dofCount, 0.0);
+  result.assembledGradient.assign(dofCount, 0.0);
+  result.step.assign(dofCount, 0.0);
+  result.residual.assign(dofCount, 0.0);
+
+  if (dofCount == 0) {
+    result.converged = true;
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(rows.size());
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(blocks.size());
+  DeviceBuffer<double> deviceDiagonal(dofCount);
+  DeviceBuffer<double> deviceGradient(dofCount);
+  DeviceBuffer<double> deviceStep(dofCount);
+  DeviceBuffer<double> deviceResidual(dofCount);
+  DeviceBuffer<double> deviceDirection(dofCount);
+  DeviceBuffer<double> deviceMatrixDirection(dofCount);
+  DeviceBuffer<double> deviceDot(1);
+  std::vector<double> hostDot(1, 0.0);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceRows.copyToDevice(rows, "newton sparse CG rows copy");
+  deviceBlocks.copyToDevice(blocks, "newton sparse CG blocks copy");
+  throwIfCudaError(
+      cudaMemset(deviceDiagonal.data(), 0, deviceDiagonal.byteSize()),
+      "newton sparse CG diagonal zero");
+  throwIfCudaError(
+      cudaMemset(deviceGradient.data(), 0, deviceGradient.byteSize()),
+      "newton sparse CG gradient zero");
+  throwIfCudaError(
+      cudaMemset(deviceStep.data(), 0, deviceStep.byteSize()),
+      "newton sparse CG step zero");
+  throwIfCudaError(
+      cudaMemset(deviceResidual.data(), 0, deviceResidual.byteSize()),
+      "newton sparse CG residual zero");
+  throwIfCudaError(
+      cudaMemset(deviceDirection.data(), 0, deviceDirection.byteSize()),
+      "newton sparse CG direction zero");
+  throwIfCudaError(
+      cudaMemset(
+          deviceMatrixDirection.data(), 0, deviceMatrixDirection.byteSize()),
+      "newton sparse CG matrix direction zero");
+  const auto h2dEnd = Clock::now();
+
+  const auto assemblyStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonAssemblyRowsKernel(
+          deviceRows.data(),
+          deviceDiagonal.data(),
+          deviceGradient.data(),
+          rows.size()),
+      "newton sparse CG assembly rows kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse CG assembly synchronize");
+  const auto assemblyEnd = Clock::now();
+
+  const auto iterationStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSparseCgSeedKernel(
+          deviceGradient.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          deviceDirection.data(),
+          dofCount),
+      "newton sparse CG seed kernel");
+  double residualSquared = dotDeviceVectors(
+      deviceResidual.data(),
+      deviceResidual.data(),
+      dofCount,
+      deviceDot,
+      hostDot,
+      "newton sparse CG initial residual dot kernel");
+  residualSquared = std::max(0.0, residualSquared);
+  result.initialResidualNorm = std::sqrt(std::max(0.0, residualSquared));
+  const double toleranceSquared = residualTolerance * residualTolerance;
+
+  for (std::size_t iteration = 0; iteration < maxIterationCount; ++iteration) {
+    if (residualSquared <= toleranceSquared) {
+      break;
+    }
+
+    throwIfCudaError(
+        cudaMemset(
+            deviceMatrixDirection.data(), 0, deviceMatrixDirection.byteSize()),
+        "newton sparse CG matrix direction zero");
+    throwIfCudaError(
+        detail::launchNewtonSparseDiagonalResidualKernel(
+            deviceDiagonal.data(),
+            deviceDirection.data(),
+            deviceMatrixDirection.data(),
+            dofCount,
+            regularization),
+        "newton sparse CG diagonal matvec kernel");
+    throwIfCudaError(
+        detail::launchNewtonSparseBlockResidualKernel(
+            deviceBlocks.data(),
+            deviceDirection.data(),
+            deviceMatrixDirection.data(),
+            blocks.size()),
+        "newton sparse CG block matvec kernel");
+
+    const double directionMatrixDirection = dotDeviceVectors(
+        deviceDirection.data(),
+        deviceMatrixDirection.data(),
+        dofCount,
+        deviceDot,
+        hostDot,
+        "newton sparse CG direction dot kernel");
+    if (!std::isfinite(directionMatrixDirection)
+        || std::abs(directionMatrixDirection) <= 1e-30) {
+      break;
+    }
+
+    const double alpha = residualSquared / directionMatrixDirection;
+    throwIfCudaError(
+        detail::launchNewtonSparseCgStepKernel(
+            deviceStep.data(),
+            deviceResidual.data(),
+            deviceDirection.data(),
+            deviceMatrixDirection.data(),
+            dofCount,
+            alpha),
+        "newton sparse CG step kernel");
+    double nextResidualSquared = dotDeviceVectors(
+        deviceResidual.data(),
+        deviceResidual.data(),
+        dofCount,
+        deviceDot,
+        hostDot,
+        "newton sparse CG residual dot kernel");
+    nextResidualSquared = std::max(0.0, nextResidualSquared);
+    ++result.completedIterationCount;
+    if (nextResidualSquared <= toleranceSquared) {
+      residualSquared = nextResidualSquared;
+      break;
+    }
+
+    const double beta = nextResidualSquared / residualSquared;
+    throwIfCudaError(
+        detail::launchNewtonSparseCgDirectionKernel(
+            deviceResidual.data(), deviceDirection.data(), dofCount, beta),
+        "newton sparse CG direction kernel");
+    residualSquared = nextResidualSquared;
+  }
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse CG iteration synchronize");
+  const auto iterationEnd = Clock::now();
+
+  const auto finalResidualStart = Clock::now();
+  throwIfCudaError(
+      cudaMemcpy(
+          deviceResidual.data(),
+          deviceGradient.data(),
+          deviceResidual.byteSize(),
+          cudaMemcpyDeviceToDevice),
+      "newton sparse CG final residual seed");
+  throwIfCudaError(
+      detail::launchNewtonSparseDiagonalResidualKernel(
+          deviceDiagonal.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          dofCount,
+          regularization),
+      "newton sparse CG final diagonal residual kernel");
+  throwIfCudaError(
+      detail::launchNewtonSparseBlockResidualKernel(
+          deviceBlocks.data(),
+          deviceStep.data(),
+          deviceResidual.data(),
+          blocks.size()),
+      "newton sparse CG final block residual kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "newton sparse CG final residual synchronize");
+  const auto finalResidualEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceDiagonal.copyFromDevice(
+      result.assembledDiagonal, "newton sparse CG diagonal copy");
+  deviceGradient.copyFromDevice(
+      result.assembledGradient, "newton sparse CG gradient copy");
+  deviceStep.copyFromDevice(result.step, "newton sparse CG step copy");
+  deviceResidual.copyFromDevice(
+      result.residual, "newton sparse CG residual copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.assemblyKernelNs = elapsedNs(assemblyStart, assemblyEnd);
+  result.timing.iterationKernelNs = elapsedNs(iterationStart, iterationEnd);
+  result.timing.finalResidualKernelNs
+      = elapsedNs(finalResidualStart, finalResidualEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    result.maxDiagonal
+        = std::max(result.maxDiagonal, result.assembledDiagonal[dof]);
+    result.maxGradientAbs = std::max(
+        result.maxGradientAbs, std::abs(result.assembledGradient[dof]));
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    if (result.assembledDiagonal[dof] + regularization > 1e-14) {
+      ++result.activeDofCount;
+    }
+    stepNormSquared += result.step[dof] * result.step[dof];
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+  result.converged = result.residualNorm <= residualTolerance;
 }
 
 //==============================================================================

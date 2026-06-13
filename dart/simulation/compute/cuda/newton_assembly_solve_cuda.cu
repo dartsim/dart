@@ -176,6 +176,73 @@ __global__ void newtonSparseJacobiUpdateKernel(
   }
 }
 
+__global__ void newtonSparseCgSeedKernel(
+    const double* assembledGradient,
+    double* step,
+    double* residual,
+    double* direction,
+    const std::size_t dofCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  const double value = -assembledGradient[index];
+  step[index] = 0.0;
+  residual[index] = value;
+  direction[index] = value;
+}
+
+__global__ void newtonVectorDotKernel(
+    const double* lhs,
+    const double* rhs,
+    double* output,
+    const std::size_t dofCount)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  atomicAdd(output, lhs[index] * rhs[index]);
+}
+
+__global__ void newtonSparseCgStepKernel(
+    double* step,
+    double* residual,
+    const double* direction,
+    const double* matrixDirection,
+    const std::size_t dofCount,
+    const double alpha)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  step[index] += alpha * direction[index];
+  residual[index] -= alpha * matrixDirection[index];
+}
+
+__global__ void newtonSparseCgDirectionKernel(
+    const double* residual,
+    double* direction,
+    const std::size_t dofCount,
+    const double beta)
+{
+  const auto index
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (index >= dofCount) {
+    return;
+  }
+
+  direction[index] = residual[index] + beta * direction[index];
+}
+
 __global__ void newtonDiagonalSolveKernel(
     const double* assembledDiagonal,
     const double* assembledGradient,
@@ -344,6 +411,80 @@ cudaError_t launchNewtonSparseJacobiUpdateKernel(
       dofCount,
       regularization,
       epsilonForDivision);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseCgSeedKernel(
+    const double* assembledGradient,
+    double* step,
+    double* residual,
+    double* direction,
+    const std::size_t dofCount)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonSparseCgSeedKernel<<<gridSize, blockSize>>>(
+      assembledGradient, step, residual, direction, dofCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonVectorDotKernel(
+    const double* lhs,
+    const double* rhs,
+    double* output,
+    const std::size_t dofCount)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonVectorDotKernel<<<gridSize, blockSize>>>(lhs, rhs, output, dofCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseCgStepKernel(
+    double* step,
+    double* residual,
+    const double* direction,
+    const double* matrixDirection,
+    const std::size_t dofCount,
+    const double alpha)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonSparseCgStepKernel<<<gridSize, blockSize>>>(
+      step, residual, direction, matrixDirection, dofCount, alpha);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSparseCgDirectionKernel(
+    const double* residual,
+    double* direction,
+    const std::size_t dofCount,
+    const double beta)
+{
+  if (dofCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(dofCount, blockSize);
+  newtonSparseCgDirectionKernel<<<gridSize, blockSize>>>(
+      residual, direction, dofCount, beta);
   return cudaGetLastError();
 }
 

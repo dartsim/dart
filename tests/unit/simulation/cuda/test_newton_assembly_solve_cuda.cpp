@@ -36,12 +36,29 @@
 #include <dart/simulation/compute/cuda/newton_assembly_solve_cuda.cuh>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <limits>
 #include <vector>
+
+#include <cmath>
 
 namespace cuda = dart::simulation::compute::cuda;
 
 namespace {
+
+struct ExpectedSparseCgSolve
+{
+  std::vector<double> assembledDiagonal;
+  std::vector<double> assembledGradient;
+  std::vector<double> step;
+  std::vector<double> residual;
+  std::size_t completedIterationCount = 0;
+  double initialResidualNorm = 0.0;
+  double residualNorm = 0.0;
+  double stepNorm = 0.0;
+  double maxResidualAbs = 0.0;
+  bool converged = false;
+};
 
 cuda::NewtonAssemblySolveRowInput makeRow(
     const std::uint32_t body,
@@ -211,6 +228,139 @@ void evaluateExpectedSparseResidual(
       residual[columnDof] += block.hessianBlock[entry] * step[rowDof];
     }
   }
+}
+
+std::vector<double> evaluateExpectedSparseMatrixVector(
+    const std::vector<double>& diagonal,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::vector<double>& vector,
+    const double regularization)
+{
+  std::vector<double> product(vector.size(), 0.0);
+  for (std::size_t dof = 0; dof < product.size(); ++dof) {
+    product[dof] = (diagonal[dof] + regularization) * vector[dof];
+  }
+
+  for (const auto& block : blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      const std::size_t localRow
+          = entry / cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t localColumn
+          = entry - localRow * cuda::kNewtonAssemblySolveDofsPerBody;
+      const std::size_t rowDof = static_cast<std::size_t>(block.rowBodyIndex)
+                                     * cuda::kNewtonAssemblySolveDofsPerBody
+                                 + localRow;
+      const std::size_t columnDof
+          = static_cast<std::size_t>(block.columnBodyIndex)
+                * cuda::kNewtonAssemblySolveDofsPerBody
+            + localColumn;
+      product[rowDof] += block.hessianBlock[entry] * vector[columnDof];
+      product[columnDof] += block.hessianBlock[entry] * vector[rowDof];
+    }
+  }
+  return product;
+}
+
+double dotVectors(
+    const std::vector<double>& lhs, const std::vector<double>& rhs)
+{
+  double dot = 0.0;
+  for (std::size_t dof = 0; dof < lhs.size(); ++dof) {
+    dot += lhs[dof] * rhs[dof];
+  }
+  return dot;
+}
+
+ExpectedSparseCgSolve evaluateExpectedSparseCgSolve(
+    const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    const std::size_t bodyCount,
+    const std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    const std::size_t maxIterationCount,
+    const double residualTolerance,
+    const double regularization)
+{
+  ExpectedSparseCgSolve result;
+  std::vector<double> ignoredStep;
+  evaluateExpected(
+      rows,
+      bodyCount,
+      regularization,
+      result.assembledDiagonal,
+      result.assembledGradient,
+      ignoredStep);
+
+  const std::size_t dofCount
+      = bodyCount * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.step.assign(dofCount, 0.0);
+  std::vector<double> searchDirection(dofCount, 0.0);
+  std::vector<double> cgResidual(dofCount, 0.0);
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    cgResidual[dof] = -result.assembledGradient[dof];
+    searchDirection[dof] = cgResidual[dof];
+  }
+
+  double residualSquared = std::max(0.0, dotVectors(cgResidual, cgResidual));
+  result.initialResidualNorm = std::sqrt(residualSquared);
+  const double toleranceSquared = residualTolerance * residualTolerance;
+
+  for (std::size_t iteration = 0; iteration < maxIterationCount; ++iteration) {
+    if (residualSquared <= toleranceSquared) {
+      break;
+    }
+
+    const auto matrixDirection = evaluateExpectedSparseMatrixVector(
+        result.assembledDiagonal, blocks, searchDirection, regularization);
+    const double directionMatrixDirection
+        = dotVectors(searchDirection, matrixDirection);
+    if (!std::isfinite(directionMatrixDirection)
+        || std::abs(directionMatrixDirection) <= 1e-30) {
+      break;
+    }
+
+    const double alpha = residualSquared / directionMatrixDirection;
+    for (std::size_t dof = 0; dof < dofCount; ++dof) {
+      result.step[dof] += alpha * searchDirection[dof];
+      cgResidual[dof] -= alpha * matrixDirection[dof];
+    }
+
+    double nextResidualSquared
+        = std::max(0.0, dotVectors(cgResidual, cgResidual));
+    ++result.completedIterationCount;
+    if (nextResidualSquared <= toleranceSquared) {
+      residualSquared = nextResidualSquared;
+      break;
+    }
+
+    const double beta = nextResidualSquared / residualSquared;
+    for (std::size_t dof = 0; dof < dofCount; ++dof) {
+      searchDirection[dof] = cgResidual[dof] + beta * searchDirection[dof];
+    }
+    residualSquared = nextResidualSquared;
+  }
+
+  evaluateExpectedSparseResidual(
+      rows,
+      bodyCount,
+      blocks,
+      result.step,
+      regularization,
+      result.assembledDiagonal,
+      result.assembledGradient,
+      result.residual);
+
+  double stepNormSquared = 0.0;
+  double residualNormSquared = 0.0;
+  for (std::size_t dof = 0; dof < dofCount; ++dof) {
+    stepNormSquared += result.step[dof] * result.step[dof];
+    const double residualAbs = std::abs(result.residual[dof]);
+    result.maxResidualAbs = std::max(result.maxResidualAbs, residualAbs);
+    residualNormSquared += result.residual[dof] * result.residual[dof];
+  }
+  result.stepNorm = std::sqrt(stepNormSquared);
+  result.residualNorm = std::sqrt(residualNormSquared);
+  result.converged = result.residualNorm <= residualTolerance;
+  return result;
 }
 
 void evaluateExpectedSparseJacobiSolve(
@@ -575,6 +725,118 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseJacobiSolveInputs)
   EXPECT_THROW(
       cuda::evaluateNewtonSparseJacobiSolveCuda(
           rows, bodyCount, blocks, 0, regularization, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSparseCgSolve)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {
+      makeRow(0, 4.0, -0.5),
+      makeRow(1, 5.0, 0.25),
+      makeRow(0, 2.5, 0.75),
+  };
+  constexpr std::size_t bodyCount = 2;
+  constexpr std::size_t maxIterationCount = 16;
+  constexpr double residualTolerance = 1e-12;
+  constexpr double regularization = 0.75;
+  const std::vector blocks = {
+      makeSparseBlock(0, 1, 0.025),
+      makeSparseBlock(0, 1, -0.01),
+  };
+
+  cuda::NewtonSparseCgSolveResult result;
+  cuda::evaluateNewtonSparseCgSolveCuda(
+      rows,
+      bodyCount,
+      blocks,
+      maxIterationCount,
+      residualTolerance,
+      regularization,
+      result);
+
+  const ExpectedSparseCgSolve expected = evaluateExpectedSparseCgSolve(
+      rows,
+      bodyCount,
+      blocks,
+      maxIterationCount,
+      residualTolerance,
+      regularization);
+
+  ASSERT_EQ(result.assembledDiagonal.size(), expected.assembledDiagonal.size());
+  ASSERT_EQ(result.assembledGradient.size(), expected.assembledGradient.size());
+  ASSERT_EQ(result.step.size(), expected.step.size());
+  ASSERT_EQ(result.residual.size(), expected.residual.size());
+  EXPECT_EQ(result.bodyCount, bodyCount);
+  EXPECT_EQ(result.rowCount, rows.size());
+  EXPECT_EQ(result.dofCount, expected.step.size());
+  EXPECT_EQ(result.blockCount, blocks.size());
+  EXPECT_EQ(result.maxIterationCount, maxIterationCount);
+  EXPECT_EQ(result.completedIterationCount, expected.completedIterationCount);
+  EXPECT_EQ(result.activeDofCount, expected.step.size());
+  EXPECT_DOUBLE_EQ(result.residualTolerance, residualTolerance);
+  EXPECT_EQ(result.converged, expected.converged);
+  EXPECT_NEAR(result.initialResidualNorm, expected.initialResidualNorm, 1e-12);
+  EXPECT_NEAR(result.stepNorm, expected.stepNorm, 1e-10);
+  EXPECT_NEAR(result.residualNorm, expected.residualNorm, 1e-10);
+  EXPECT_NEAR(result.maxResidualAbs, expected.maxResidualAbs, 1e-10);
+  EXPECT_LT(result.residualNorm, 1e-10);
+
+  for (std::size_t dof = 0; dof < expected.step.size(); ++dof) {
+    EXPECT_NEAR(
+        result.assembledDiagonal[dof], expected.assembledDiagonal[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(
+        result.assembledGradient[dof], expected.assembledGradient[dof], 1e-12)
+        << dof;
+    EXPECT_NEAR(result.step[dof], expected.step[dof], 1e-10) << dof;
+    EXPECT_NEAR(result.residual[dof], expected.residual[dof], 1e-10) << dof;
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidSparseCgSolveInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector rows = {makeRow(0, 1.0, 0.0)};
+  constexpr std::size_t bodyCount = 2;
+  constexpr double regularization = 0.1;
+  constexpr double residualTolerance = 1e-12;
+  const std::vector blocks = {makeSparseBlock(0, 1, 0.125)};
+  cuda::NewtonSparseCgSolveResult result;
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseCgSolveCuda(
+          rows,
+          bodyCount,
+          blocks,
+          0,
+          residualTolerance,
+          regularization,
+          result),
+      dart::simulation::InvalidArgumentException);
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseCgSolveCuda(
+          rows, bodyCount, blocks, 8, -1.0, regularization, result),
+      dart::simulation::InvalidArgumentException);
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonSparseCgSolveCuda(
+          rows,
+          bodyCount,
+          blocks,
+          8,
+          std::numeric_limits<double>::quiet_NaN(),
+          regularization,
+          result),
       dart::simulation::InvalidArgumentException);
 }
 

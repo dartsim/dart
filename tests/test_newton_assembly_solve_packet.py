@@ -177,6 +177,61 @@ def _benchmark_data(**overrides):
         final_residual_kernel_ns=5.0,
         device_to_host_ns=6.0,
     )
+    sparse_cg_cpu = _row(
+        "BM_NewtonSparseCgSolveCpu/1024",
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        max_iterations=32,
+        completed_iterations=12,
+        active_dofs=768,
+        converged=1,
+        residual_tolerance=1e-12,
+        initial_residual_norm=14.0,
+        max_diagonal=10.0,
+        max_gradient_abs=1.0,
+        step_norm=0.5,
+        residual_norm=2e-14,
+        max_residual_abs=8e-15,
+        max_result_abs_error=0.0,
+    )
+    sparse_cg_gpu = _row(
+        "BM_NewtonSparseCgSolveCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=1024,
+        bodies=128,
+        dofs=768,
+        blocks=128,
+        block_entries=4608,
+        max_iterations=32,
+        completed_iterations=12,
+        active_dofs=768,
+        converged=1,
+        residual_tolerance=1e-12,
+        gpu_rows=1024,
+        gpu_bodies=128,
+        gpu_dofs=768,
+        gpu_blocks=128,
+        gpu_max_iterations=32,
+        gpu_completed_iterations=12,
+        gpu_active_dofs=768,
+        gpu_converged=1,
+        gpu_residual_tolerance=1e-12,
+        gpu_initial_residual_norm=14.0,
+        gpu_step_norm=0.5,
+        gpu_residual_norm=2e-14,
+        gpu_max_residual_abs=8e-15,
+        max_result_abs_error=5e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        assembly_kernel_ns=3.0,
+        iteration_kernel_ns=4.0,
+        final_residual_kernel_ns=5.0,
+        device_to_host_ns=6.0,
+    )
     equality_cpu = _row(
         "BM_NewtonEqualityReducedSolveCpu/1024",
         rows=1024,
@@ -229,6 +284,8 @@ def _benchmark_data(**overrides):
             sparse_residual_gpu,
             sparse_jacobi_cpu,
             sparse_jacobi_gpu,
+            sparse_cg_cpu,
+            sparse_cg_gpu,
             equality_cpu,
             equality_gpu,
         ]
@@ -253,7 +310,7 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 4e-12
+    assert row["max_result_abs_error"] == 5e-12
     assert row["residual_norm"] == 3e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
@@ -283,6 +340,23 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert jacobi["step_norm"] == 0.5
     assert jacobi["timing_ns"]["iterations"] == 4.0
     assert jacobi["timing_ns"]["final_residual"] == 5.0
+    cg = row["sparse_block_cg_solve"]
+    assert cg["body_count"] == 128
+    assert cg["dof_count"] == 768
+    assert cg["block_count"] == 128
+    assert cg["block_entry_count"] == 4608
+    assert cg["max_iteration_count"] == 32
+    assert cg["completed_iteration_count"] == 12
+    assert cg["active_dof_count"] == 768
+    assert cg["converged"] is True
+    assert cg["residual_tolerance"] == 1e-12
+    assert cg["initial_residual_norm"] == 14.0
+    assert cg["max_result_abs_error"] == 5e-12
+    assert cg["residual_norm"] == 2e-14
+    assert cg["max_residual_abs"] == 8e-15
+    assert cg["step_norm"] == 0.5
+    assert cg["timing_ns"]["iterations"] == 4.0
+    assert cg["timing_ns"]["final_residual"] == 5.0
     equality = row["equality_reduced_diagonal_solve"]
     assert equality["body_count"] == 128
     assert equality["full_dof_count"] == 768
