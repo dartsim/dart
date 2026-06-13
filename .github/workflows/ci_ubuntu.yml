@@ -340,6 +340,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # The Debug build keeps full debug info for every test executable. Recent
+      # full-CI runs can exhaust the GitHub-hosted runner before the final test
+      # links complete, so reclaim large preinstalled toolchains we do not use.
+      - name: Free up disk space
+        run: |
+          set -x
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup \
+            /usr/local/lib/android /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
         with:
