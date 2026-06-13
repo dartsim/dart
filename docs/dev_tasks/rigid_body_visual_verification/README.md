@@ -3,20 +3,39 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-`origin/feature/rigid-body-gui-visual-verification` remains at pushed commit
-`fbbd5de0005`. The local branch now has unpushed review-prep/search-alias
-commits above that checkpoint; fresh sessions should verify the exact ahead
-count with `git status -sb` and `git log -5 --oneline`. The latest
-user-approved push after the row-5 direct-impulse slice reported
-`Everything up-to-date`; `git fetch origin` plus
-`git merge --no-edit origin/main` reported `Already up to date`, so the branch
-contains the PR #2986 DART 7 architecture/work-packet harness. There is still
-no PR for this branch. Do not push new commits, create a PR, set a milestone,
-rerun CI,
-comment on reviews, resolve threads, or mutate any other GitHub state without
-explicit maintainer/user approval.
+`origin/feature/rigid-body-gui-visual-verification` is at pushed commit
+`cb5deee7bfd` after the review-prep/search-alias commits. The latest
+user-approved push first fetched origin and merged `origin/main`; the merge
+reported `Already up to date`, so the branch contains the PR #2986 DART 7
+architecture/work-packet harness. This session may have local follow-up
+search-discovery updates above that pushed checkpoint; fresh sessions should
+verify the exact ahead count with `git status -sb` and
+`git log -5 --oneline`. There is still no PR for this branch. Do not push new
+commits, create a PR, set a milestone, rerun CI, comment on reviews, resolve
+threads, or mutate any other GitHub state without explicit maintainer/user
+approval.
 
-Latest local continuation: rigid workflow search now routes GPU/CUDA shorthand
+Latest local continuation: rigid workflow search now covers more terms users
+type while diagnosing performance, contact/material parameters, collision
+queries, dynamics terms, impulses, stack behavior, and closed chains.
+`throughput` routes to `rigid_contact_scale_budget`; `latency` and
+`wall time` route to `rigid_step_diagnostics`; `dt`, `substeps`, and
+`gravity tuning` route to `rigid_timestep_sensitivity`; friction and
+restitution coefficient terms route to the material/restitution rows;
+`raycast`, `swept sphere`, and related sweep terms route to
+`rigid_collision_casts`; `CollisionQueryOptions` and collision-filter terms
+route to `rigid_collision_query_options`; static-friction terms route to
+`rigid_friction_threshold`; kinetic/dynamic-friction terms route to
+`rigid_spin_roll_coupling`; `generalized force`, `coriolis`, `mass_matrix`,
+`compute_inverse_dynamics`, `compute_impulse_response`, and `impulse response`
+route to `rigid_multibody_dynamics_terms`; direct `RigidBody` impulse/load API
+terms route to the public load/impulse row; `stack jitter` and resting-stack
+terms route to `rigid_stack_stability`; and `closed chain` / `closed loop`
+terms route to `rigid_loop_closure`. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `5 passed`. This local slice is not pushed yet.
+
+Latest pushed continuation: rigid workflow search now routes GPU/CUDA shorthand
 (`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,
 `CUDA acceleration`) to `rigid_step_diagnostics`, where users can inspect
 backend status and fallback without implying a separate rigid CUDA solver row.
@@ -26,7 +45,7 @@ passive-joint parameter terms (`joint damping`, `joint friction`,
 `joint stiffness`, `joint armature`) to `rigid_joint_passive_parameters`.
 Focused guard:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `3 passed`. This local slice is not pushed yet.
+reported `3 passed`. This slice was pushed at `cb5deee7bfd`.
 
 Latest local continuation: row 5, `rigid_external_loads`, now covers public
 direct rigid-body impulse behavior instead of documenting it as a deferred API
@@ -429,7 +448,9 @@ simulation tests, Python tests, and documentation, ending with
 `All tests passed`. A later CUDA follow-up on a visible RTX 4080 Laptop GPU
 ran `pixi run -e cuda test-all` and passed all seven wrapper gates, including
 the CUDA runtime smoke path and benchmark smoke. These broad wrapper runs cover
-the current pushed implementation state at `fbbd5de0005`.
+the row-5 direct-impulse implementation state at `fbbd5de0005`; later
+review-prep/search-discovery commits have focused guards but have not rerun the
+full default/CUDA wrappers.
 
 Historical publication state before the later approved pushes: after the
 validation-evidence commit `84897c2fde5 Record rigid workflow validation
@@ -1576,9 +1597,10 @@ Acceptance decision packet:
 
 - Branch: `feature/rigid-body-gui-visual-verification`
 - Latest pushed checkpoint is
-  `fbbd5de0005 Expose rigid body impulses in visual workflow`; the branch is
-  synced with `origin/feature/rigid-body-gui-visual-verification` and has no
-  associated pull request in the latest local checks.
+  `cb5deee7bfd Improve rigid workflow search discovery`; this session may have
+  a local search-discovery follow-up above that checkpoint. Use
+  `git status -sb` as the source of truth before resuming, and do not push
+  without explicit approval.
 - Earlier branch snapshots below are historical archaeology from the
   multi-session implementation and should not override the current handoff,
   readiness audit, or `git status -sb`.

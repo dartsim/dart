@@ -2180,6 +2180,60 @@ def test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases() -
     ][:1] == ["rigid_joint_passive_parameters"]
 
 
+def test_rigid_workflow_search_finds_user_terminology_aliases() -> None:
+    route_cases = (
+        ("throughput", "rigid_contact_scale_budget"),
+        ("perf", "rigid_contact_scale_budget"),
+        ("fps", "rigid_contact_scale_budget"),
+        ("contact count", "rigid_contact_scale_budget"),
+        ("latency", "rigid_step_diagnostics"),
+        ("wall time", "rigid_step_diagnostics"),
+        ("step time", "rigid_step_diagnostics"),
+        ("step timing", "rigid_step_diagnostics"),
+        ("worker threads", "rigid_step_diagnostics"),
+        ("dt", "rigid_timestep_sensitivity"),
+        ("substeps", "rigid_timestep_sensitivity"),
+        ("gravity tuning", "rigid_timestep_sensitivity"),
+        ("friction coefficient", "rigid_material_mixing"),
+        ("friction mixing", "rigid_material_mixing"),
+        ("contact material", "rigid_material_mixing"),
+        ("coefficient of restitution", "rigid_restitution_ladder"),
+        ("elasticity", "rigid_restitution_ladder"),
+        ("raycast", "rigid_collision_casts"),
+        ("swept sphere", "rigid_collision_casts"),
+        ("time-of-impact", "rigid_collision_casts"),
+        ("shape cast", "rigid_collision_casts"),
+        ("CollisionQueryOptions", "rigid_collision_query_options"),
+        ("collision filter", "rigid_collision_query_options"),
+        ("body type filter", "rigid_collision_query_options"),
+        ("static friction", "rigid_friction_threshold"),
+        ("kinetic friction", "rigid_spin_roll_coupling"),
+        ("generalized force", "rigid_multibody_dynamics_terms"),
+        ("generalized forces", "rigid_multibody_dynamics_terms"),
+        ("coriolis", "rigid_multibody_dynamics_terms"),
+        ("mass_matrix", "rigid_multibody_dynamics_terms"),
+        ("compute_inverse_dynamics", "rigid_multibody_dynamics_terms"),
+        ("compute_impulse_response", "rigid_multibody_dynamics_terms"),
+        ("impulse response", "rigid_multibody_dynamics_terms"),
+        ("RigidBody.apply_linear_impulse", "rigid_external_loads"),
+        ("apply_angular_impulse", "rigid_external_loads"),
+        ("force accumulator", "rigid_external_loads"),
+        ("linear momentum", "rigid_external_loads"),
+        ("stack jitter", "rigid_stack_stability"),
+        ("stacking", "rigid_stack_stability"),
+        ("resting contact", "rigid_stack_stability"),
+        ("closed chain", "rigid_loop_closure"),
+        ("closed loop", "rigid_loop_closure"),
+        ("four-bar linkage", "rigid_loop_closure"),
+        ("point constraint", "rigid_loop_closure"),
+        ("compliance", "rigid_loop_closure"),
+    )
+    for query, expected_scene_id in route_cases:
+        assert [
+            guide.scene_id for guide in _workflow_matching_guides(query)
+        ][:1] == [expected_scene_id]
+
+
 def test_rigid_workflow_search_routes_deferred_api_terms() -> None:
     assert [
         guide.scene_id for guide in _workflow_matching_guides("direct rigid body impulse")

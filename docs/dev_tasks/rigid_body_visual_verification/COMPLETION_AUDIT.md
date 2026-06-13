@@ -7,7 +7,27 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
-Latest local implementation slice: rigid workflow search now routes GPU/CUDA
+Latest local implementation slice: rigid workflow search now covers more terms
+users type while diagnosing performance, contact/material parameters,
+collision queries, dynamics terms, impulses, stack behavior, and closed
+chains. `throughput`/`perf`/`fps` route to `rigid_contact_scale_budget`;
+`latency`, `wall time`, `step timing`, and `worker threads` route to
+`rigid_step_diagnostics`; `dt`, `substeps`, and `gravity tuning` route to
+`rigid_timestep_sensitivity`; friction and restitution coefficient terms route
+to the material/restitution rows; ray/sweep/time-of-impact terms route to
+`rigid_collision_casts`; `CollisionQueryOptions` and collision-filter terms
+route to `rigid_collision_query_options`; static-friction terms route to
+`rigid_friction_threshold`; kinetic/dynamic-friction terms route to
+`rigid_spin_roll_coupling`; `compute_impulse_response`, `impulse response`,
+`generalized force`, `coriolis`, and `mass_matrix` route to
+`rigid_multibody_dynamics_terms`; direct `RigidBody` impulse/load API terms
+route to `rigid_external_loads`; stack-jitter/resting-stack terms route to
+`rigid_stack_stability`; and closed-chain/closed-loop terms route to
+`rigid_loop_closure`. Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_user_terminology_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `5 passed`. This local slice is not pushed yet.
+
+Latest pushed implementation slice: rigid workflow search now routes GPU/CUDA
 shorthand (`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,
 `CUDA acceleration`) to `rigid_step_diagnostics`, where users can inspect
 backend status and fallback without implying a separate rigid CUDA solver row.
@@ -17,7 +37,7 @@ passive-joint parameter terms (`joint damping`, `joint friction`,
 `joint stiffness`, `joint armature`) to `rigid_joint_passive_parameters`.
 Focused validation:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
-reported `3 passed`. This local slice is not pushed yet.
+reported `3 passed`. This slice was pushed at `cb5deee7bfd`.
 
 Latest local implementation slice: row 5, `rigid_external_loads`, now covers
 public direct rigid-body impulse behavior. The C++ `RigidBody` API and dartpy
@@ -271,8 +291,9 @@ tests, Python tests, and documentation. The follow-up CUDA command
 ran on a visible `NVIDIA GeForce RTX 4080 Laptop GPU` host and passed all seven
 CUDA wrapper gates: linting, build, unit tests, simulation tests, Python tests,
 documentation, CUDA tests, and benchmark smoke. These broad wrapper runs cover
-the current pushed implementation state at `fbbd5de0005`. After the
-search-routing,
+the row-5 direct-impulse implementation state at `fbbd5de0005`; later
+review-prep/search-discovery commits have focused guards but have not rerun the
+full default/CUDA wrappers. After the backend/executor search-routing,
 backend-diagnostics, contact-query review-card, and optional-signal slices, the
 full rows 01-36 packet remains current at
 `build/captures/rigid_workflow_rows_01_36_1781335894`, and the optional rows
@@ -284,14 +305,15 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The latest user-approved push advanced
-`origin/feature/rigid-body-gui-visual-verification` to `fbbd5de0005`; local
-review-prep/search-alias commits currently put the branch ahead of that remote
-checkpoint until the next explicit push approval. No PR exists for this branch
-in the latest local checks. `git fetch origin` plus
-`git merge --no-edit origin/main` reported `Already up to date`, and
-the branch contains the PR #2986 DART 7 architecture/work-packet harness. The
-approved push did not approve PR creation, milestone mutation, CI reruns,
-review comments, thread resolution, or other GitHub review-state changes.
+`origin/feature/rigid-body-gui-visual-verification` to `cb5deee7bfd` after a
+fresh `git fetch origin` and `git merge --no-edit origin/main` reported
+`Already up to date`. The branch contains the PR #2986 DART 7
+architecture/work-packet harness. This session may have local
+search-discovery follow-up commits above that remote checkpoint until the next
+explicit push approval. No PR exists for this branch in the latest local
+checks. The approved push did not approve PR creation, milestone mutation, CI
+reruns, review comments, thread resolution, or other GitHub review-state
+changes.
 
 Latest local artifact audit: a read-only audit rechecked both current review
 packet manifests and static review indexes. The rows 01-36 packet still reports
@@ -338,16 +360,16 @@ Fresh focused guard for that audit:
 `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_routes_deferred_api_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_deferred_api_gaps_are_documented python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_docs_use_current_navigator_count python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
 reported `6 passed`.
 
-Latest stop/push handoff: the current session was redirected to stop code
-changes and stop further verification, update only this handoff state, merge
-latest `origin/main`, push to `origin`, and stop. `git fetch origin main &&
-git merge --no-edit origin/main` reported `Already up to date`. The running
-`test-all` wrapper was terminated by request during the simulation-labeled ctest
-stage; it is not a completed validation pass. Visible progress before
-termination included a successful direct `pixi run build-tests ON Release`
-re-run, 219/219 C++ unit tests passed, and simulation output through 52/65
-visible tests. CUDA validation was not run. The handoff docs refresh therefore
-intentionally records no new green validation after the user stop instruction.
+Historical stopped-validation handoff: an earlier session was redirected to
+stop code changes and stop further verification, update only the handoff
+state, merge latest `origin/main`, push to `origin`, and stop. `git fetch
+origin main && git merge --no-edit origin/main` reported `Already up to date`.
+The running `test-all` wrapper was terminated by request during the
+simulation-labeled ctest stage; it is not a completed validation pass. Visible
+progress before termination included a successful direct `pixi run build-tests
+ON Release` re-run, 219/219 C++ unit tests passed, and simulation output
+through 52/65 visible tests. CUDA validation was not run. This remains
+historical context only and is superseded by the current evidence above.
 
 ## Objective Requirements
 
@@ -373,10 +395,11 @@ intentionally records no new green validation after the user stop instruction.
 - Latest merge check: `git fetch origin && git merge origin/main --no-edit`
   reported `Already up to date`, and `origin/main` is an ancestor of `HEAD`.
 - Current remote publication state: `git status -sb` shows
-  `feature/rigid-body-gui-visual-verification` ahead of
-  `origin/feature/rigid-body-gui-visual-verification`, which remains at pushed
-  commit `fbbd5de0005`. No PR for this branch from the latest recorded
-  `gh pr list --head "$(git branch --show-current)"` or `gh pr status` checks.
+  whether the local branch has follow-up commits above
+  `origin/feature/rigid-body-gui-visual-verification`, whose latest approved
+  pushed checkpoint is `cb5deee7bfd`. No PR for this branch from the latest
+  recorded `gh pr list --head "$(git branch --show-current)"` or
+  `gh pr status` checks.
 - Latest broad default validation for pushed commit `fbbd5de0005`:
   `pixi run test-all` passed all six wrapper gates with `DART_SAFE_JOBS=5`;
   documentation built with the known generated-stub warnings for
