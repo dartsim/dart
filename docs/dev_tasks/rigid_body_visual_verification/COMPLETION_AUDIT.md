@@ -7,6 +7,18 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: rigid workflow search now routes GPU/CUDA
+shorthand (`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,
+`CUDA acceleration`) to `rigid_step_diagnostics`, where users can inspect
+backend status and fallback without implying a separate rigid CUDA solver row.
+It also routes multibody solver-family terms (`semi implicit`,
+`semi-implicit`, `variational solver`) to `rigid_multibody_solver_family`, and
+passive-joint parameter terms (`joint damping`, `joint friction`,
+`joint stiffness`, `joint armature`) to `rigid_joint_passive_parameters`.
+Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `3 passed`. This local slice is not pushed yet.
+
 Latest local implementation slice: row 5, `rigid_external_loads`, now covers
 public direct rigid-body impulse behavior. The C++ `RigidBody` API and dartpy
 bindings expose `apply_linear_impulse()` and `apply_angular_impulse()`;
@@ -272,11 +284,11 @@ below as historical context, not as current verification state.
 
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The latest user-approved push advanced
-`origin/feature/rigid-body-gui-visual-verification` to `fbbd5de0005`, and the
-current branch is clean and synced with that remote. No PR exists for this
-branch in the latest local checks. `git fetch origin` plus
+`origin/feature/rigid-body-gui-visual-verification` to `fbbd5de0005`; local
+review-prep/search-alias commits currently put the branch ahead of that remote
+checkpoint until the next explicit push approval. No PR exists for this branch
+in the latest local checks. `git fetch origin` plus
 `git merge --no-edit origin/main` reported `Already up to date`, and
-`git rev-list --left-right --count HEAD...origin/main` reported `191 0`, so
 the branch contains the PR #2986 DART 7 architecture/work-packet harness. The
 approved push did not approve PR creation, milestone mutation, CI reruns,
 review comments, thread resolution, or other GitHub review-state changes.
@@ -361,9 +373,9 @@ intentionally records no new green validation after the user stop instruction.
 - Latest merge check: `git fetch origin && git merge origin/main --no-edit`
   reported `Already up to date`, and `origin/main` is an ancestor of `HEAD`.
 - Current remote publication state: `git status -sb` shows
-  `feature/rigid-body-gui-visual-verification` clean and synced to
-  `origin/feature/rigid-body-gui-visual-verification` at `fbbd5de0005`. No PR
-  for this branch from the latest recorded
+  `feature/rigid-body-gui-visual-verification` ahead of
+  `origin/feature/rigid-body-gui-visual-verification`, which remains at pushed
+  commit `fbbd5de0005`. No PR for this branch from the latest recorded
   `gh pr list --head "$(git branch --show-current)"` or `gh pr status` checks.
 - Latest broad default validation for pushed commit `fbbd5de0005`:
   `pixi run test-all` passed all six wrapper gates with `DART_SAFE_JOBS=5`;
@@ -373,8 +385,9 @@ intentionally records no new green validation after the user stop instruction.
   `pixi run -e cuda test-all` passed all seven wrapper gates with
   `DART_SAFE_JOBS=5` on a visible `NVIDIA GeForce RTX 4080 Laptop GPU`,
   including CUDA runtime smoke tests and benchmark smoke.
-- Latest focused validation for this slice: the optional latest-signal guard
-  reported `9 passed`.
+- Latest focused validation for this slice: the workflow search/docs guard
+  reported `3 passed`; the prior optional latest-signal guard reported
+  `9 passed`.
 - Latest harness dry-run: the full requested 53-row packet shape completed in
   plan mode with `guidance_complete=true` and no missing guidance rows.
 - Current packet evidence: the full rows 01-36 packet and optional rows 37-53

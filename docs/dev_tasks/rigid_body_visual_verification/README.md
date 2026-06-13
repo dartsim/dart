@@ -3,16 +3,30 @@
 ## Current Handoff (2026-06-13)
 
 Current branch snapshot:
-`feature/rigid-body-gui-visual-verification` is clean and synced with
-`origin/feature/rigid-body-gui-visual-verification` at pushed commit
-`fbbd5de0005`. The latest user-approved push after the row-5 direct-impulse
-slice reported `Everything up-to-date`; `git fetch origin` plus
-`git merge --no-edit origin/main` reported `Already up to date`, and
-`git rev-list --left-right --count HEAD...origin/main` reports `191 0`, so the
-branch contains the PR #2986 DART 7 architecture/work-packet harness. There is
-still no PR for this branch. Do not push new commits, create a PR, set a
-milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
-GitHub state without explicit maintainer/user approval.
+`origin/feature/rigid-body-gui-visual-verification` remains at pushed commit
+`fbbd5de0005`. The local branch now has unpushed review-prep/search-alias
+commits above that checkpoint; fresh sessions should verify the exact ahead
+count with `git status -sb` and `git log -5 --oneline`. The latest
+user-approved push after the row-5 direct-impulse slice reported
+`Everything up-to-date`; `git fetch origin` plus
+`git merge --no-edit origin/main` reported `Already up to date`, so the branch
+contains the PR #2986 DART 7 architecture/work-packet harness. There is still
+no PR for this branch. Do not push new commits, create a PR, set a milestone,
+rerun CI,
+comment on reviews, resolve threads, or mutate any other GitHub state without
+explicit maintainer/user approval.
+
+Latest local continuation: rigid workflow search now routes GPU/CUDA shorthand
+(`GPU`, `CUDA`, `GPU backend`, `CUDA backend`, `GPU acceleration`,
+`CUDA acceleration`) to `rigid_step_diagnostics`, where users can inspect
+backend status and fallback without implying a separate rigid CUDA solver row.
+It also routes multibody solver-family terms (`semi implicit`,
+`semi-implicit`, `variational solver`) to `rigid_multibody_solver_family`, and
+passive-joint parameter terms (`joint damping`, `joint friction`,
+`joint stiffness`, `joint armature`) to `rigid_joint_passive_parameters`.
+Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+reported `3 passed`. This local slice is not pushed yet.
 
 Latest local continuation: row 5, `rigid_external_loads`, now covers public
 direct rigid-body impulse behavior instead of documenting it as a deferred API

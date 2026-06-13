@@ -2101,6 +2101,24 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
         guide.scene_id for guide in _workflow_matching_guides("compute backend")
     ][:1] == ["rigid_step_diagnostics"]
     assert [
+        guide.scene_id for guide in _workflow_matching_guides("gpu")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("cuda")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("gpu backend")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("cuda backend")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("gpu acceleration")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("cuda acceleration")
+    ][:1] == ["rigid_step_diagnostics"]
+    assert [
         guide.scene_id for guide in _workflow_matching_guides("backend/executor")
     ][:1] == ["rigid_step_diagnostics"]
     assert [
@@ -2136,6 +2154,30 @@ def test_rigid_workflow_search_finds_backend_and_profile_aliases() -> None:
     assert [
         guide.scene_id for guide in _workflow_matching_guides("contact model")
     ][:1] == ["rigid_contact_solver_compare"]
+
+
+def test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases() -> None:
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("semi implicit")
+    ][:1] == ["rigid_multibody_solver_family"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("semi-implicit")
+    ][:1] == ["rigid_multibody_solver_family"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("variational solver")
+    ][:1] == ["rigid_multibody_solver_family"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("joint damping")
+    ][:1] == ["rigid_joint_passive_parameters"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("joint friction")
+    ][:1] == ["rigid_joint_passive_parameters"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("joint stiffness")
+    ][:1] == ["rigid_joint_passive_parameters"]
+    assert [
+        guide.scene_id for guide in _workflow_matching_guides("joint armature")
+    ][:1] == ["rigid_joint_passive_parameters"]
 
 
 def test_rigid_workflow_search_routes_deferred_api_terms() -> None:

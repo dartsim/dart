@@ -98,9 +98,15 @@ rigid-body visual verification surface for the current cycle.
   state.
 - Separates backend-status workflow search from executor-equivalence search:
   backend terms such as `compute backend`, `backend comparison`, and
-  `parallel backend` route to `rigid_step_diagnostics`, while executor terms
-  such as `compute executor`, `executor comparison`, and `Taskflow executor`
-  route to the same-solver `rigid_executor_equivalence` row.
+  `parallel backend`, plus GPU/CUDA shorthand, route to
+  `rigid_step_diagnostics`, while executor terms such as `compute executor`,
+  `executor comparison`, and `Taskflow executor` route to the same-solver
+  `rigid_executor_equivalence` row.
+- Adds workflow-search aliases for practical multibody and parameter wording:
+  `semi implicit` / `semi-implicit` / `variational solver` route to
+  `rigid_multibody_solver_family`, while `joint damping`, `joint friction`,
+  `joint stiffness`, and `joint armature` route to
+  `rigid_joint_passive_parameters`.
 - Promotes row-8 nested step-profile lane metrics into workflow review cards as
   `backend diagnostics`, so backend activity, accelerated-stage counts, worker
   counts, top stages, and stage timings are visible from the static review
@@ -148,6 +154,10 @@ rigid-body visual verification surface for the current cycle.
 - Focused backend/executor workflow-search guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats -q`
   reported `2 passed`.
+- Focused search-alias/docs guard for GPU/CUDA backend, multibody solver, and
+  passive-joint parameter wording:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
+  reported `3 passed`.
 - Focused backend-diagnostics review-card guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_summarizes_backend_diagnostics python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
   reported `2 passed`.

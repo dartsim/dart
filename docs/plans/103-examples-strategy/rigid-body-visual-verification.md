@@ -157,15 +157,18 @@ The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
 `contact solver policy`, `worker count`, `accelerated backend`,
-`compute backend`, `backend comparison`, `Taskflow executor`,
-`executor comparison`, `direct rigid body impulse`, `sleep wake`,
-`island activation`, and `loop closure compliance` before scope caveats, so
-intent searches such as `contact`, `solver`, `step profile`,
-`backend comparison`, `executor comparison`, or `sequential impulse` surface
-the relevant debugging rows instead of early rows that only say what not to
-infer. Backend-status terms route to `rigid_step_diagnostics`, while executor
-terms route to the same-solver `rigid_executor_equivalence` row. Direct impulse
-queries route to the public `rigid_external_loads` row, while deferred
+`compute backend`, `CUDA`, `GPU`, `CUDA backend`, `GPU backend`,
+`backend comparison`, `Taskflow executor`, `executor comparison`,
+`semi-implicit`, `variational solver`, `joint damping`, `joint friction`,
+`direct rigid body impulse`, `sleep wake`, `island activation`, and
+`loop closure compliance` before scope caveats, so intent searches such as
+`contact`, `solver`, `step profile`, `backend comparison`, `GPU backend`,
+`variational solver`, `joint damping`, `executor comparison`, or
+`sequential impulse` surface the relevant debugging rows instead of early rows
+that only say what not to infer. Backend-status terms route to
+`rigid_step_diagnostics`, while executor terms route to the same-solver
+`rigid_executor_equivalence` row. Direct impulse queries route to the public
+`rigid_external_loads` row, while deferred
 activation and compliance queries route to the closest current row while
 preserving the row's caveat, so the workflow remains searchable without
 claiming unsupported activation or compliance behavior.
