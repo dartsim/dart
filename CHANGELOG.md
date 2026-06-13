@@ -3404,7 +3404,10 @@ Capsule Rod (IPC)` py-demos scene (a cloth draping over a horizontal rod,
     overlay (so hosts no longer re-implement overlay wiring per example); new
     `makeJointAxisDebugLines`/`makeVelocityDebugLines` helpers usable from the
     provider; and built-in panel toggles plus numeric tuning sliders for the
-    debug overlays. See `docs/design/renderer_fidelity_and_debug_visuals.md`.
+    debug overlays. dartpy now exposes the `DebugScene` descriptor bundle, and
+    `pixi run py-demos -- --scene gui_fidelity_debug_visuals` provides a focused
+    manual PBR/debug-provider verification scene. See
+    `docs/design/renderer_fidelity_and_debug_visuals.md`.
     ([#2984](https://github.com/dartsim/dart/pull/2984))
   - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
     descriptors, bounded/headless smoke support,

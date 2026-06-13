@@ -557,6 +557,9 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "rigid_body",
             "rigid_limited_joints",
         },
+        "Renderer & Debug": {
+            "gui_fidelity_debug_visuals",
+        },
         "AVBD Rigid Constraints (sx)": {
             "avbd_empty_baseline",
             "avbd_demo2d_ground",
@@ -671,6 +674,32 @@ def test_world_scenes_use_solver_focused_categories() -> None:
 
     assert not any(scene.category == "Experimental" for scene in scenes)
     assert not any(scene.id.startswith("sx_") for scene in scenes)
+
+
+def test_gui_fidelity_debug_visuals_scene_exposes_pbr_and_debug_provider() -> None:
+    if not _gui_run_demos_available():
+        pytest.skip("dartpy.gui.run_demos unavailable (GUI not built)")
+    import dartpy as dart
+
+    if not hasattr(dart.gui, "DebugScene"):
+        pytest.skip("dartpy.gui.DebugScene unavailable")
+
+    from examples.demos.scenes.gui_fidelity_debug_visuals import build
+
+    setup = build()
+
+    renderables = setup.world.renderable_provider()
+    by_name = {renderable.shape_frame_name: renderable for renderable in renderables}
+    assert by_name["brushed_metal_box"].material.metallic == pytest.approx(0.95)
+    assert by_name["brushed_metal_box"].material.roughness == pytest.approx(0.24)
+    assert by_name["glossy_debug_bar"].material.reflectance == pytest.approx(0.88)
+
+    assert setup.debug_provider is not None
+    debug_scene = setup.debug_provider()
+    labels = {line.label for line in debug_scene.lines}
+    assert "hinge.joint_axis" in labels
+    assert "hinge.vel_angular" in labels
+    assert "free.vel_linear" in labels
 
 
 def test_avbd_empty_baseline_demo_steps_empty_world() -> None:

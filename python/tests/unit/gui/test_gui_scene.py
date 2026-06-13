@@ -108,6 +108,22 @@ def test_gui_extract_renderables_from_world():
     assert material.reflectance == pytest.approx(0.45)
     material.metallic = None
     assert material.metallic is None
+    line = dart.gui.DebugLineDescriptor()
+    line.thickness = 3.0
+    assert line.thickness == pytest.approx(3.0)
+    triangle = dart.gui.DebugTriangleDescriptor()
+    triangle.b = np.array([1.0, 0.0, 0.0])
+    assert np.allclose(triangle.b, [1.0, 0.0, 0.0])
+    label = dart.gui.DebugLabelDescriptor()
+    label.text = "debug label"
+    assert label.text == "debug label"
+    debug_scene = dart.gui.DebugScene()
+    debug_scene.lines = [line]
+    debug_scene.triangles = [triangle]
+    debug_scene.labels = [label]
+    assert len(debug_scene.lines) == 1
+    assert len(debug_scene.triangles) == 1
+    assert len(debug_scene.labels) == 1
     active_state = dart.gui.ActiveRenderableState()
     assert hasattr(active_state, "shape_version")
     assert hasattr(active_state, "render_resource_version")

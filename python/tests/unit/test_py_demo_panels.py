@@ -103,7 +103,24 @@ def test_make_world_factory_returns_panels_tuple() -> None:
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    assert result == (None, None, [panel], None)
+    assert result == (None, None, [panel], None, None)
+
+
+def test_make_world_factory_returns_debug_provider() -> None:
+    def debug_provider() -> object:
+        return object()
+
+    scene = PythonDemoScene(
+        id="debug_provider_scene",
+        title="Debug Provider Scene",
+        category="Tests",
+        summary="Has a custom debug provider.",
+        build=lambda: SceneSetup(world=object(), debug_provider=debug_provider),
+    )
+
+    result = _make_world_factory(scene)()
+
+    assert result == (None, None, None, None, debug_provider)
 
 
 def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> None:
@@ -132,8 +149,9 @@ def test_make_world_factory_injects_shared_replay_panel_for_world_scenes() -> No
     result = _make_world_factory(scene)()
 
     assert isinstance(result, tuple)
-    pre_step, force_drag, panels, renderable_provider = result
+    pre_step, force_drag, panels, renderable_provider, debug_provider = result
     assert renderable_provider is None
+    assert debug_provider is None
     assert force_drag is None
     assert [panel.title for panel in panels] == ["Replay"]
     assert replay_world.replay_recording_enabled is True

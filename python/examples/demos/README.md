@@ -10,6 +10,7 @@ Filament viewer. This is the Python-first World demo surface from PLAN-103; C++
 pixi run py-demos                                # default: open replay timeline
 pixi run py-demos -- --scene replay_scrubber     # open the replay timeline
 pixi run py-demos -- --scene articulated         # select a scene by id
+pixi run py-demos -- --scene gui_fidelity_debug_visuals
 pixi run py-demos -- --cycle-scenes --frames 4   # cycle through every scene
 pixi run py-demos -- --list                      # print the scene catalog
 ```

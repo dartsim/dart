@@ -296,7 +296,28 @@ void defGuiDescriptors(nb::module_& m)
       .def_rw("from_point", &gui::DebugLineDescriptor::from)
       .def_rw("to_point", &gui::DebugLineDescriptor::to)
       .def_rw("rgba", &gui::DebugLineDescriptor::rgba)
+      .def_rw("thickness", &gui::DebugLineDescriptor::thickness)
       .def_rw("label", &gui::DebugLineDescriptor::label);
+
+  nb::class_<gui::DebugTriangleDescriptor>(m, "DebugTriangleDescriptor")
+      .def(nb::init<>())
+      .def_rw("a", &gui::DebugTriangleDescriptor::a)
+      .def_rw("b", &gui::DebugTriangleDescriptor::b)
+      .def_rw("c", &gui::DebugTriangleDescriptor::c)
+      .def_rw("rgba", &gui::DebugTriangleDescriptor::rgba)
+      .def_rw("label", &gui::DebugTriangleDescriptor::label);
+
+  nb::class_<gui::DebugLabelDescriptor>(m, "DebugLabelDescriptor")
+      .def(nb::init<>())
+      .def_rw("position", &gui::DebugLabelDescriptor::position)
+      .def_rw("rgba", &gui::DebugLabelDescriptor::rgba)
+      .def_rw("text", &gui::DebugLabelDescriptor::text);
+
+  nb::class_<gui::DebugScene>(m, "DebugScene")
+      .def(nb::init<>())
+      .def_rw("lines", &gui::DebugScene::lines)
+      .def_rw("triangles", &gui::DebugScene::triangles)
+      .def_rw("labels", &gui::DebugScene::labels);
 
   nb::class_<gui::DebugDrawOptions>(m, "DebugDrawOptions")
       .def(nb::init<>())
