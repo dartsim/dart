@@ -36,7 +36,21 @@ PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
     "Boxed": "problem_type_boxed",
     "FrictionIndex": "problem_type_friction_index",
 }
+PROFILE_CATEGORIES = tuple(PROFILE_KEY_BY_CATEGORY)
+FORM_SUPPORT_COUNTER_BY_CATEGORY = {
+    "Standard": "solver_supports_standard",
+    "Boxed": "solver_supports_boxed",
+    "FrictionIndex": "solver_supports_friction_index",
+}
+FORM_SUPPORT_COUNTERS = tuple(FORM_SUPPORT_COUNTER_BY_CATEGORY.values())
+PROBLEM_TYPE_COUNTERS = tuple(PROBLEM_TYPE_COUNTER_BY_CATEGORY.values()) + (
+    "problem_type_invalid",
+)
 SOLVER_IDENTITY_SCHEMA_VERSION = 1
+SOLVER_IDENTITY_COUNTERS = (
+    "solver_identity_schema_version",
+    "solver_manifest_index",
+)
 SOLVER_FAMILY_COUNTER_BY_FAMILY = {
     "Pivoting": "solver_family_pivoting",
     "Projection": "solver_family_projection",
@@ -50,8 +64,7 @@ REQUIRED_EVIDENCE_COLUMNS = (
     "problem_size",
     "lcp_dimension",
     "contact_count",
-    "solver_identity_schema_version",
-    "solver_manifest_index",
+    *SOLVER_IDENTITY_COUNTERS,
     *SOLVER_FAMILY_COUNTERS,
     "time_ns",
     "contract_ok",
@@ -59,14 +72,9 @@ REQUIRED_EVIDENCE_COLUMNS = (
     "residual",
     "complementarity",
     "bound_violation",
-    "solver_supports_standard",
-    "solver_supports_boxed",
-    "solver_supports_friction_index",
+    *FORM_SUPPORT_COUNTERS,
     "solver_supports_problem",
-    "problem_type_standard",
-    "problem_type_boxed",
-    "problem_type_friction_index",
-    "problem_type_invalid",
+    *PROBLEM_TYPE_COUNTERS,
 )
 DARTPY_BINDING_PATH = ROOT / "python/dartpy/math/lcp.cpp"
 DARTPY_MATH_STUB_PATH = ROOT / "python/stubs/dartpy/math.pyi"
@@ -565,11 +573,10 @@ def check_performance_profile_evidence(
                 observed_native_solvers_by_category[category].add(solver_name)
 
             expected_support = {
-                "solver_supports_standard": entry.standard,
-                "solver_supports_boxed": entry.boxed,
-                "solver_supports_friction_index": entry.findex,
-                "solver_supports_problem": native_category_supported,
+                counter: _solver_support(entry, support_category)
+                for support_category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items()
             }
+            expected_support["solver_supports_problem"] = native_category_supported
             for key, expected in expected_support.items():
                 expected_value = 1 if expected else 0
                 actual = _csv_counter_as_int(row, key)
@@ -579,12 +586,7 @@ def check_performance_profile_evidence(
                         f"{expected_value} for {solver_name}/{category}"
                     )
 
-            expected_problem_type = {
-                "problem_type_standard": 0,
-                "problem_type_boxed": 0,
-                "problem_type_friction_index": 0,
-                "problem_type_invalid": 0,
-            }
+            expected_problem_type = {key: 0 for key in PROBLEM_TYPE_COUNTERS}
             expected_problem_type[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] = 1
             for key, expected_value in expected_problem_type.items():
                 actual = _csv_counter_as_int(row, key)

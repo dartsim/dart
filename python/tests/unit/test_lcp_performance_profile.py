@@ -373,6 +373,30 @@ def test_lcp_profile_coverage_rejects_solver_family_mismatches() -> None:
         )
 
 
+def test_lcp_profile_evidence_constants_match_roster_schema() -> None:
+    module = _load_module()
+    roster = sys.modules["check_lcp_solver_roster"]
+
+    assert module.PROFILE_CATEGORIES == roster.PROFILE_CATEGORIES
+    assert module.SOLVER_IDENTITY_SCHEMA_VERSION == (
+        roster.SOLVER_IDENTITY_SCHEMA_VERSION
+    )
+    assert module.SOLVER_IDENTITY_COUNTERS == roster.SOLVER_IDENTITY_COUNTERS
+    assert module.SOLVER_FAMILY_COUNTER_BY_FAMILY == (
+        roster.SOLVER_FAMILY_COUNTER_BY_FAMILY
+    )
+    assert module.SOLVER_FAMILY_COUNTERS == roster.SOLVER_FAMILY_COUNTERS
+    assert module.FORM_SUPPORT_COUNTER_BY_CATEGORY == (
+        roster.FORM_SUPPORT_COUNTER_BY_CATEGORY
+    )
+    assert module.FORM_SUPPORT_COUNTERS == roster.FORM_SUPPORT_COUNTERS
+    assert module.PROBLEM_TYPE_COUNTER_BY_CATEGORY == (
+        roster.PROBLEM_TYPE_COUNTER_BY_CATEGORY
+    )
+    assert module.PROBLEM_TYPE_COUNTERS == roster.PROBLEM_TYPE_COUNTERS
+    assert module.REQUIRED_EVIDENCE_COLUMNS == roster.REQUIRED_EVIDENCE_COLUMNS
+
+
 def test_lcp_profile_evidence_csv_header_matches_roster_schema(
     tmp_path: Path,
 ) -> None:

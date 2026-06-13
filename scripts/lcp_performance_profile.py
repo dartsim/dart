@@ -32,7 +32,19 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from check_lcp_solver_roster import REQUIRED_EVIDENCE_COLUMNS, parse_cpp_manifest
+from check_lcp_solver_roster import (
+    FORM_SUPPORT_COUNTER_BY_CATEGORY,
+    FORM_SUPPORT_COUNTERS,
+    PROBLEM_TYPE_COUNTER_BY_CATEGORY,
+    PROBLEM_TYPE_COUNTERS,
+    PROFILE_CATEGORIES,
+    REQUIRED_EVIDENCE_COLUMNS,
+    SOLVER_FAMILY_COUNTER_BY_FAMILY,
+    SOLVER_FAMILY_COUNTERS,
+    SOLVER_IDENTITY_COUNTERS,
+    SOLVER_IDENTITY_SCHEMA_VERSION,
+    parse_cpp_manifest,
+)
 
 try:
     import matplotlib.pyplot as plt
@@ -45,33 +57,6 @@ _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 _MANIFEST_NAME_BY_ID: dict[int, str] | None = None
 _MANIFEST_FAMILY_BY_NAME: dict[str, str] | None = None
 
-PROFILE_CATEGORIES = ("Standard", "Boxed", "FrictionIndex")
-SOLVER_IDENTITY_SCHEMA_VERSION = 1
-SOLVER_FAMILY_COUNTER_BY_FAMILY = {
-    "Pivoting": "solver_family_pivoting",
-    "Projection": "solver_family_projection",
-    "Newton": "solver_family_newton",
-    "Other": "solver_family_other",
-}
-SOLVER_FAMILY_COUNTERS = tuple(SOLVER_FAMILY_COUNTER_BY_FAMILY.values())
-SOLVER_IDENTITY_COUNTERS = (
-    "solver_identity_schema_version",
-    "solver_manifest_index",
-)
-FORM_SUPPORT_COUNTER_BY_CATEGORY = {
-    "Standard": "solver_supports_standard",
-    "Boxed": "solver_supports_boxed",
-    "FrictionIndex": "solver_supports_friction_index",
-}
-PROBLEM_TYPE_COUNTER_BY_CATEGORY = {
-    "Standard": "problem_type_standard",
-    "Boxed": "problem_type_boxed",
-    "FrictionIndex": "problem_type_friction_index",
-}
-FORM_SUPPORT_COUNTERS = tuple(FORM_SUPPORT_COUNTER_BY_CATEGORY.values())
-PROBLEM_TYPE_COUNTERS = tuple(PROBLEM_TYPE_COUNTER_BY_CATEGORY.values()) + (
-    "problem_type_invalid",
-)
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
 PROFILE_EVIDENCE_CSV_NAME = "performance_profile_evidence.csv"
