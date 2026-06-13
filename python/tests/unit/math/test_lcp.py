@@ -721,6 +721,49 @@ def test_lcp_solver_supports_problem_uses_default_standard_tolerance() -> None:
     assert solver.supports_problem(near_standard, standard_tolerance=1e-8)
 
 
+def test_lcp_solver_default_options_round_trip_and_drive_default_calls() -> None:
+    near_standard = dart.LcpProblem(
+        np.eye(2),
+        np.array([1.0, 2.0]),
+        np.array([5e-5, 0.0]),
+        np.array([np.inf, np.inf]),
+    )
+
+    solver = dart.LemkeSolver()
+    assert near_standard.get_type() == dart.LcpProblemType.BOXED
+    assert near_standard.get_type(1e-4) == dart.LcpProblemType.STANDARD
+    assert not solver.supports_problem(near_standard)
+
+    options = solver.default_options
+    options.absolute_tolerance = 1e-4
+    options.max_iterations = 17
+    options.validate_solution = False
+    solver.default_options = options
+
+    round_trip = solver.default_options
+    assert round_trip.absolute_tolerance == pytest.approx(1e-4)
+    assert round_trip.max_iterations == 17
+    assert not round_trip.validate_solution
+    assert solver.supports_problem(near_standard)
+    assert not solver.supports_problem(near_standard, standard_tolerance=0.0)
+
+    empty = dart.LcpProblem(np.empty((0, 0)), np.empty(0))
+    pgs = dart.PgsSolver()
+    result, solution = pgs.solve(empty)
+    assert result.status == dart.LcpSolverStatus.SUCCESS
+    assert result.validated
+    assert solution.shape == (0,)
+
+    pgs_options = pgs.default_options
+    pgs_options.validate_solution = False
+    pgs.default_options = pgs_options
+
+    result, solution = pgs.solve(empty)
+    assert result.status == dart.LcpSolverStatus.SUCCESS
+    assert not result.validated
+    assert solution.shape == (0,)
+
+
 def test_direct_solver_reports_only_tiny_standard_problems_as_native() -> None:
     small = dart.LcpProblem(np.eye(3), np.array([1.0, 2.0, 3.0]))
     large = dart.LcpProblem(np.eye(4), np.array([1.0, 2.0, 3.0, 4.0]))
