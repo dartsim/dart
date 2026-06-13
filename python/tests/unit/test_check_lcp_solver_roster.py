@@ -111,6 +111,9 @@ def test_lcp_solver_roster_reads_demo_benchmark_filter_tokens() -> None:
     assert "BM_LcpJacobiSolverThreading" in tokens
     assert "BM_LcpRedBlackGaussSeidelSolverThreadingBanded" in tokens
     assert "BM_LcpBlockedJacobiSolverThreadingBanded" in tokens
+    assert "BM_LcpMildIllConditioned" in tokens
+    assert "BM_LcpMildIllConditionedBatchSerial" in tokens
+    assert "BM_LcpMildIllConditionedBatchParallel" in tokens
     assert "BM_LcpWorldBilliardsStep_BoxedLcp" in tokens
     assert "BM_LcpArticulatedUnifiedContact" in tokens
 

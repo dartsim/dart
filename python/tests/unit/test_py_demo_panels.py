@@ -1542,6 +1542,7 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "singular_degenerate",
         "singular_degenerate_scale",
         "near_singular",
+        "mild_ill_conditioned",
         "world_stack",
         "world_billiards",
         "world_card_pile",
@@ -1889,6 +1890,11 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
         "BM_LcpSingularDegenerateFrictionIndexBatchParallel|"
         "BM_LcpSingularDegenerateStandardBoxedBatchSerial|"
         "BM_LcpSingularDegenerateStandardBoxedBatchParallel"
+    )
+    assert benchmark_by_packet["mild_ill_conditioned"]["benchmark_filter"] == (
+        "BM_LcpMildIllConditioned|"
+        "BM_LcpMildIllConditionedBatchSerial|"
+        "BM_LcpMildIllConditionedBatchParallel"
     )
     assert benchmark_by_packet["solver_parameter_sweeps"][
         "benchmark_filter"

@@ -175,6 +175,16 @@ _BENCHMARK_PACKET_ROWS: tuple[dict[str, str], ...] = (
         "coverage": "conditioning and regularization pressure",
     },
     {
+        "packet": "mild_ill_conditioned",
+        "surface": "standard/boxed/findex",
+        "benchmark_filter": (
+            "BM_LcpMildIllConditioned|"
+            "BM_LcpMildIllConditionedBatchSerial|"
+            "BM_LcpMildIllConditionedBatchParallel"
+        ),
+        "coverage": "mild conditioning, coupling, and batch conditioning pressure",
+    },
+    {
         "packet": "batch_scale",
         "surface": "standard/boxed/findex",
         "benchmark_filter": "BM_LcpBatch|BM_LcpGroupedBatch",
