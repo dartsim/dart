@@ -260,6 +260,9 @@ def test_all_lcp_solvers_are_available_from_dartpy_math(solver_type: type) -> No
     options = dart.LcpOptions.high_accuracy()
     options.max_iterations = 1000
 
+    assert getattr(dart_math, solver_type.__name__) is solver_type
+    assert issubclass(solver_type, dart_math.LcpSolver)
+
     solver = solver_type()
     supports_boxed = solver_type in BOXED_SOLVERS
     supports_findex = solver_type in FINDEX_SOLVERS
@@ -536,6 +539,9 @@ def test_parameterized_lcp_solvers_expose_dartpy_parameters() -> None:
     )
 
     for solver_type, params_type, defaults, updated in cases:
+        assert getattr(dart_math, solver_type.__name__) is solver_type
+        assert getattr(dart_math, params_type.__name__) is params_type
+
         solver = solver_type()
         params = params_type()
         assert isinstance(solver.parameters, params_type)
