@@ -39,8 +39,8 @@ def _valid_current_schema_benchmark(**overrides):
         "solver_family_newton": 0.0,
         "solver_family_other": 0.0,
         "solver_supports_standard": 1.0,
-        "solver_supports_boxed": 0.0,
-        "solver_supports_friction_index": 0.0,
+        "solver_supports_boxed": 1.0,
+        "solver_supports_friction_index": 1.0,
         "solver_supports_problem": 1.0,
         "problem_type_standard": 1.0,
         "problem_type_boxed": 0.0,
@@ -796,6 +796,40 @@ def test_lcp_profile_evidence_csv_rejects_invalid_current_schema_values(
     module = _load_module()
     results = module.parse_benchmark_results(
         {"benchmarks": [_valid_current_schema_benchmark(**{field: value})]}
+    )
+
+    with pytest.raises(RuntimeError, match=message):
+        module.save_profile_evidence_csv(results, tmp_path / "profile_evidence.csv")
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        (
+            {"solver_identity_schema_version": 99.0},
+            "invalid solver identity counters",
+        ),
+        ({"solver_manifest_index": 2.0}, "invalid solver identity counters"),
+        (
+            {"solver_family_pivoting": 0.0, "solver_family_projection": 1.0},
+            "invalid solver family counters",
+        ),
+        ({"solver_supports_problem": 0.0}, "invalid solver support counters"),
+        ({"solver_supports_boxed": 0.0}, "invalid solver support counters"),
+        (
+            {"problem_type_standard": 0.0, "problem_type_boxed": 1.0},
+            "invalid problem type counters",
+        ),
+    ],
+)
+def test_lcp_profile_evidence_csv_rejects_invalid_current_schema_counters(
+    tmp_path: Path,
+    overrides: dict[str, float],
+    message: str,
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {"benchmarks": [_valid_current_schema_benchmark(**overrides)]}
     )
 
     with pytest.raises(RuntimeError, match=message):

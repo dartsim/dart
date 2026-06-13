@@ -57,6 +57,7 @@ except ImportError:
 _MANIFEST_NAME_BY_LOWER: dict[str, str] | None = None
 _MANIFEST_NAME_BY_ID: dict[int, str] | None = None
 _MANIFEST_FAMILY_BY_NAME: dict[str, str] | None = None
+_NATIVE_SUPPORT_BY_CATEGORY: dict[str, set[str]] | None = None
 
 DEFAULT_BENCHMARK_FILTER = "BM_LcpCompare/"
 DEFAULT_BENCHMARK_TIMEOUT_SECONDS = 600
@@ -236,6 +237,13 @@ def load_native_support_by_category() -> dict[str, set[str]]:
         "Boxed": {entry.name for entry in manifest if entry.boxed},
         "FrictionIndex": {entry.name for entry in manifest if entry.findex},
     }
+
+
+def native_support_by_category() -> dict[str, set[str]]:
+    global _NATIVE_SUPPORT_BY_CATEGORY
+    if _NATIVE_SUPPORT_BY_CATEGORY is None:
+        _NATIVE_SUPPORT_BY_CATEGORY = load_native_support_by_category()
+    return _NATIVE_SUPPORT_BY_CATEGORY
 
 
 def _counter_to_int(value) -> int | None:
@@ -686,6 +694,70 @@ def _validate_profile_evidence_csv_row(
             "Cannot write LCP performance profile evidence with invalid "
             f"quality metrics for {category}/{solver}/{problem_size}: "
             f"{invalid_quality_metrics}"
+        )
+
+    if solver not in manifest_name_by_id().values():
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with unknown "
+            f"solver for {category}/{solver}/{problem_size}"
+        )
+
+    if (
+        _counter_to_int(data.get("solver_identity_schema_version"))
+        != SOLVER_IDENTITY_SCHEMA_VERSION
+        or manifest_name_by_id().get(_counter_to_int(data.get("solver_manifest_index")))
+        != solver
+    ):
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"solver identity counters for {category}/{solver}/{problem_size}"
+        )
+
+    expected_family_counters = expected_solver_family_counters(solver)
+    actual_family_sum = 0
+    family_mismatch = False
+    for key in SOLVER_FAMILY_COUNTERS:
+        actual = _counter_to_int(data.get(key))
+        expected = _counter_to_int(expected_family_counters[key])
+        actual_family_sum += 1 if actual == 1 else 0
+        if actual != expected:
+            family_mismatch = True
+    if family_mismatch or actual_family_sum != 1:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"solver family counters for {category}/{solver}/{problem_size}"
+        )
+
+    native_support = native_support_by_category()
+    if solver not in native_support[category]:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with non-native "
+            f"solver for {category}/{solver}/{problem_size}"
+        )
+    for support_category, counter in FORM_SUPPORT_COUNTER_BY_CATEGORY.items():
+        expected = 1 if solver in native_support[support_category] else 0
+        if _counter_to_int(data.get(counter)) != expected:
+            raise RuntimeError(
+                "Cannot write LCP performance profile evidence with invalid "
+                f"solver support counters for {category}/{solver}/{problem_size}"
+            )
+    if _counter_to_int(data.get("solver_supports_problem")) != 1:
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"solver support counters for {category}/{solver}/{problem_size}"
+        )
+
+    problem_type_values = {
+        key: _counter_to_int(data.get(key)) for key in PROBLEM_TYPE_COUNTERS
+    }
+    if (
+        problem_type_values[PROBLEM_TYPE_COUNTER_BY_CATEGORY[category]] != 1
+        or sum(1 for value in problem_type_values.values() if value == 1) != 1
+        or any(value not in (0, 1) for value in problem_type_values.values())
+    ):
+        raise RuntimeError(
+            "Cannot write LCP performance profile evidence with invalid "
+            f"problem type counters for {category}/{solver}/{problem_size}"
         )
 
 
