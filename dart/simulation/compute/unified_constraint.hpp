@@ -102,6 +102,7 @@ struct UnifiedMultibodyContact
 struct UnifiedMultibodyBlock
 {
   using RowAllocator = common::StlAllocator<MultibodyLinkContactRow>;
+  using RowVector = std::vector<MultibodyLinkContactRow, RowAllocator>;
 
   UnifiedMultibodyBlock() = default;
 
@@ -114,7 +115,7 @@ struct UnifiedMultibodyBlock
   /// Global row index of this block's first row.
   Eigen::Index blockBase = 0;
   /// Compacted active rows, in their original (stable) order.
-  std::vector<MultibodyLinkContactRow, RowAllocator> rows;
+  RowVector rows;
   /// Joint-space inverse mass `M_k^-1`, the operator link impulses act through.
   Eigen::MatrixXd inverseMass;
 };
@@ -136,6 +137,11 @@ struct UnifiedConstraintProblem
   using RigidConstraintAllocator
       = common::StlAllocator<RigidBodyContactConstraint>;
   using MultibodyBlockAllocator = common::StlAllocator<UnifiedMultibodyBlock>;
+  using RowOwnerVector = std::vector<UnifiedRowOwner, RowOwnerAllocator>;
+  using RigidConstraintVector
+      = std::vector<RigidBodyContactConstraint, RigidConstraintAllocator>;
+  using MultibodyBlockVector
+      = std::vector<UnifiedMultibodyBlock, MultibodyBlockAllocator>;
 
   UnifiedConstraintProblem() = default;
 
@@ -165,15 +171,14 @@ struct UnifiedConstraintProblem
   Eigen::VectorXd lo;
   Eigen::VectorXd hi;
   Eigen::VectorXi findex;
-  std::vector<UnifiedRowOwner, RowOwnerAllocator> rowOwners;
+  RowOwnerVector rowOwners;
   /// Verbatim copy of the rigid problem's accepted constraints (post
   /// effective-mass filter, same order), retained for impulse application and
   /// the rigid positional projection.
-  std::vector<RigidBodyContactConstraint, RigidConstraintAllocator>
-      rigidConstraints;
+  RigidConstraintVector rigidConstraints;
   /// Per-multibody compacted link blocks, retained for impulse application and
   /// the generalized fallback.
-  std::vector<UnifiedMultibodyBlock, MultibodyBlockAllocator> multibodyBlocks;
+  MultibodyBlockVector multibodyBlocks;
 };
 
 /// Assemble the unified contact-space boxed-LCP from an already-assembled rigid
