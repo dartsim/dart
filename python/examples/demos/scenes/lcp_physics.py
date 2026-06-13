@@ -664,6 +664,18 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
         _validate_finite_nonnegative_evidence_float(row, surface, solver, metric)
 
 
+def _duplicate_values(values: list[str]) -> list[str]:
+    duplicates: list[str] = []
+    seen: set[str] = set()
+    seen_duplicates: set[str] = set()
+    for value in values:
+        if value in seen and value not in seen_duplicates:
+            duplicates.append(value)
+            seen_duplicates.add(value)
+        seen.add(value)
+    return duplicates
+
+
 def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
     if not _PERFORMANCE_PROFILE_EVIDENCE_PATH.is_file():
         return (
@@ -685,6 +697,12 @@ def _performance_profile_evidence_summary_rows() -> tuple[dict[str, str], ...]:
     with _PERFORMANCE_PROFILE_EVIDENCE_PATH.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
+        duplicate_columns = _duplicate_values(header)
+        if duplicate_columns:
+            raise RuntimeError(
+                "LCP performance profile evidence contains duplicate "
+                f"columns: {duplicate_columns}"
+            )
         missing_columns = [
             column
             for column in _PERFORMANCE_PROFILE_EVIDENCE_REQUIRED_COLUMNS

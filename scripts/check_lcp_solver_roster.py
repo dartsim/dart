@@ -518,6 +518,18 @@ def check_documented_lcp_paths() -> None:
         )
 
 
+def _duplicate_values(values: list[str]) -> list[str]:
+    duplicates: list[str] = []
+    seen: set[str] = set()
+    seen_duplicates: set[str] = set()
+    for value in values:
+        if value in seen and value not in seen_duplicates:
+            duplicates.append(value)
+            seen_duplicates.add(value)
+        seen.add(value)
+    return duplicates
+
+
 def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
     manifest_by_name = {entry.name: entry for entry in manifest}
     supported_by_profile = {
@@ -540,14 +552,7 @@ def check_performance_profile_headers(manifest: list[SolverEntry]) -> None:
             continue
 
         solvers = header[1:]
-        duplicate_solvers: list[str] = []
-        seen_solvers: set[str] = set()
-        seen_duplicates: set[str] = set()
-        for solver in solvers:
-            if solver in seen_solvers and solver not in seen_duplicates:
-                duplicate_solvers.append(solver)
-                seen_duplicates.add(solver)
-            seen_solvers.add(solver)
+        duplicate_solvers = _duplicate_values(solvers)
         unknown = sorted(set(solvers) - set(manifest_by_name))
         missing = sorted(supported_by_profile[profile] - set(solvers))
         unsupported = sorted(set(solvers) & unsupported_by_profile[profile])
@@ -629,6 +634,12 @@ def check_performance_profile_evidence(
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         header = reader.fieldnames or []
+        duplicate_columns = _duplicate_values(header)
+        if duplicate_columns:
+            raise AssertionError(
+                f"{_display_path(path)} contains duplicate evidence columns: "
+                f"{duplicate_columns}"
+            )
         missing_columns = [
             column for column in REQUIRED_EVIDENCE_COLUMNS if column not in header
         ]

@@ -384,6 +384,23 @@ def test_lcp_profile_evidence_rejects_missing_native_solver(
         module.check_performance_profile_evidence(manifest, path)
 
 
+def test_lcp_profile_evidence_rejects_duplicate_column(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    manifest = module.parse_cpp_manifest()
+    path = tmp_path / "performance_profile_evidence.csv"
+    fieldnames = (*module.REQUIRED_EVIDENCE_COLUMNS, "time_ns")
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(_valid_evidence_row())
+
+    with pytest.raises(AssertionError, match="contains duplicate evidence columns"):
+        module.check_performance_profile_evidence(manifest, path)
+
+
 def test_lcp_profile_evidence_rejects_invalid_metric(
     tmp_path: Path,
 ) -> None:
