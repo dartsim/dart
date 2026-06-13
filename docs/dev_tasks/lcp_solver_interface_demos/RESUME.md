@@ -1,5 +1,102 @@
 # Resume: LCP Solver Interface And Demos
 
+## Current Reality - 2026-06-13 Demo Command Metadata Guard
+
+This is the latest hand-off. Older sections below are historical checkpoints
+and may retain their original "latest" wording from the time they were written.
+
+Fresh AI session start here:
+
+1. Read `AGENTS.md`, `docs/ai/principles.md`, this `RESUME.md`, and
+   `docs/dev_tasks/lcp_solver_interface_demos/README.md`.
+2. Treat current repository state as authoritative. The latest completed local
+   tip before this checkpoint was
+   `a137ebb67a6 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`;
+   if this section is committed, inspect `git log --oneline --decorate -8` for
+   the new exact tip.
+3. Continue the broader LCP interface/demo audit from a fresh bounded gap; this
+   demo command metadata guard does not complete the broad objective.
+4. Do not push, open a PR, retry CI, or mutate GitHub state unless the user
+   explicitly asks in the new session.
+
+Current branch after the local `origin/main` merge and before this checkpoint
+commit:
+
+- `feature/lcp-solver-interface-demos`
+- Current local tip before this edit:
+  `a137ebb67a6 Merge remote-tracking branch 'origin/main' into feature/lcp-solver-interface-demos`
+- `origin/main` was fetched at `a122e8e0f3e` and merged locally. The only merge
+  conflict was in `pixi.toml`; it was resolved by keeping both the LCP roster
+  and AVBD packet lint/check tasks.
+- Current relationship before this edit:
+  `feature/lcp-solver-interface-demos...origin/feature/lcp-solver-interface-demos`
+  with the local branch ahead by seventy-three commits.
+- There is no associated PR. Do not push, open a PR, or mutate GitHub state
+  without explicit maintainer/user approval.
+
+What this checkpoint changes:
+
+- `scripts/check_lcp_solver_roster.py` now statically evaluates the LCP demo's
+  benchmark/profile command constants, including the demo f-strings and
+  representative benchmark-filter union.
+- The guard rejects stale benchmark smoke commands, representative benchmark
+  filters or commands, full profile refresh commands, and partial profile smoke
+  commands.
+- `python/tests/unit/test_check_lcp_solver_roster.py` covers the valid command
+  metadata path plus stale command and representative-filter drift failures.
+- This checkpoint does not intentionally change solver implementations,
+  benchmark registration code, generated profile/evidence CSVs, bindings,
+  stubs, public APIs, or demo runtime behavior.
+
+Verification completed for this checkpoint after the `origin/main` merge:
+
+```bash
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q -k 'command_metadata or benchmark_filter'
+PYTHONPATH=python pixi run python scripts/check_lcp_solver_roster.py
+PYTHONPATH=python pixi run python -m pytest python/tests/unit/test_check_lcp_solver_roster.py -q
+pixi run lint
+pixi run build
+git diff --check
+pixi run -e cuda test-all
+```
+
+Result:
+
+- Focused command metadata and benchmark-filter roster tests: passed with 4
+  tests before the merge; the full roster file below covers the same tests
+  after the merge.
+- LCP solver roster check: passed with 24 solvers, 23 standard, 15 boxed, and
+  16 findex.
+- Full LCP roster unit file: passed with 48 tests.
+- `pixi run lint` passed on the merged checkpoint, including both
+  `lint-lcp-solver-roster` and `lint-avbd-packets`.
+- `pixi run build` passed on the merged checkpoint.
+- `git diff --check` passed on the merged checkpoint.
+- `pixi run -e cuda test-all` passed all 7 phases after the `origin/main`
+  merge: lint, build, C++ unit tests, simulation tests, Python tests,
+  documentation, and CUDA tests. The documentation phase still emitted the
+  known four `_world_render_bridge` autodoc warnings, then passed.
+
+Superseded validation note:
+
+- A pre-merge `pixi run -e cuda test-all` run was interrupted after the user
+  asked to merge `origin/main`. It had already passed lint, Release build,
+  Release test build, Debug build, C++ unit tests, and part of simulation
+  testing. The post-merge CUDA gate above supersedes it.
+
+How to resume:
+
+```bash
+git checkout feature/lcp-solver-interface-demos
+git status -sb
+git log --oneline --decorate -8
+```
+
+If this checkpoint is still uncommitted and files change again, rerun the
+focused roster tests, roster check, `pixi run lint`, `git diff --check`, and
+any broader gate warranted by the final diff. Then continue the broader LCP
+interface/demo audit from the next concrete gap.
+
 ## Current Reality - 2026-06-13 Profile Evidence Schema Row Guard
 
 This is the latest hand-off. Older sections below are historical checkpoints

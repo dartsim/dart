@@ -7,6 +7,7 @@ import ast
 import csv
 import math
 import re
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -184,9 +185,34 @@ def _literal_assignment(module: ast.Module, name: str) -> Any:
     return ast.literal_eval(_assignment_value(module, name))
 
 
+def _demo_benchmark_filter_union(
+    rows: list[dict[str, str]] | tuple[dict[str, str], ...],
+) -> str:
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for token in str(row["benchmark_filter"]).split("|"):
+            if token and token not in seen:
+                seen.add(token)
+                tokens.append(token)
+    return "|".join(tokens)
+
+
 def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
     if isinstance(node, ast.Constant):
         return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts: list[str] = []
+        for value in node.values:
+            if isinstance(value, ast.Constant):
+                parts.append(str(value.value))
+            elif isinstance(value, ast.FormattedValue):
+                parts.append(str(_evaluate_demo_expression(value.value, env)))
+            else:
+                raise AssertionError(
+                    f"cannot evaluate demo f-string part: {ast.dump(value)}"
+                )
+        return "".join(parts)
     if isinstance(node, ast.Tuple):
         values: list[Any] = []
         for element in node.elts:
@@ -221,6 +247,13 @@ def _evaluate_demo_expression(node: ast.AST, env: dict[str, Any]) -> Any:
     if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
         if node.func.id == "tuple" and len(node.args) == 1 and not node.keywords:
             return tuple(_evaluate_demo_expression(node.args[0], env))
+        if (
+            node.func.id == "_benchmark_filter_union"
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            rows = _evaluate_demo_expression(node.args[0], env)
+            return _demo_benchmark_filter_union(rows)
     if (
         isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
@@ -303,6 +336,50 @@ def parse_demo_profile_evidence_schema_rows() -> list[dict[str, str]]:
     )
 
 
+def parse_demo_command_metadata() -> dict[str, Any]:
+    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
+    targets = {
+        "_BENCHMARK_SMOKE_FILTER",
+        "_BENCHMARK_COMMAND",
+        "_BENCHMARK_PACKET_ROWS",
+        "_REPRESENTATIVE_BENCHMARK_FILTER",
+        "_REPRESENTATIVE_BENCHMARK_COMMAND",
+        "_PERFORMANCE_PROFILE_REFRESH_COMMAND",
+        "_PERFORMANCE_PROFILE_SMOKE_COMMAND",
+    }
+    env: dict[str, Any] = {}
+    for node in module.body:
+        target_name: str | None = None
+        value: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            target_names = [
+                target.id
+                for target in node.targets
+                if isinstance(target, ast.Name) and target.id in targets
+            ]
+            if target_names:
+                target_name = target_names[0]
+                value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id in targets
+            and node.value is not None
+        ):
+            target_name = node.target.id
+            value = node.value
+
+        if target_name is not None and value is not None:
+            env[target_name] = _evaluate_demo_expression(value, env)
+
+    missing = sorted(targets - set(env))
+    if missing:
+        raise AssertionError(
+            f"{LCP_DEMO_PATH} is missing demo command assignments: {missing}"
+        )
+    return env
+
+
 def _benchmark_filter_base(token: str) -> str | None:
     match = re.search(r"\b(?:BM_LCP_[A-Za-z0-9_]+|BM_Lcp[A-Za-z0-9_]*)\b", token)
     return match.group(0) if match else None
@@ -313,12 +390,10 @@ def _split_benchmark_filter_tokens(filter_text: str) -> list[str]:
 
 
 def parse_demo_benchmark_filter_tokens() -> list[str]:
-    module = ast.parse(_read(LCP_DEMO_PATH), filename=str(LCP_DEMO_PATH))
-    packet_rows = list(_literal_assignment(module, "_BENCHMARK_PACKET_ROWS"))
-    smoke_filter = str(_literal_assignment(module, "_BENCHMARK_SMOKE_FILTER"))
-    profile_smoke_command = str(
-        _literal_assignment(module, "_PERFORMANCE_PROFILE_SMOKE_COMMAND")
-    )
+    command_metadata = parse_demo_command_metadata()
+    packet_rows = list(command_metadata["_BENCHMARK_PACKET_ROWS"])
+    smoke_filter = str(command_metadata["_BENCHMARK_SMOKE_FILTER"])
+    profile_smoke_command = str(command_metadata["_PERFORMANCE_PROFILE_SMOKE_COMMAND"])
 
     tokens = [smoke_filter]
     for row in packet_rows:
@@ -335,6 +410,67 @@ def parse_demo_benchmark_filter_tokens() -> list[str]:
         )
     tokens.extend(_split_benchmark_filter_tokens(profile_filter_match.group("filter")))
     return tokens
+
+
+def check_demo_command_metadata() -> None:
+    command_metadata = parse_demo_command_metadata()
+    benchmark_rows = list(command_metadata["_BENCHMARK_PACKET_ROWS"])
+    smoke_filter = str(command_metadata["_BENCHMARK_SMOKE_FILTER"])
+    representative_filter = _demo_benchmark_filter_union(benchmark_rows)
+    expected_benchmark_command = (
+        "pixi run bm lcp_compare -- " f"--benchmark_filter={smoke_filter}"
+    )
+    expected_representative_command = (
+        "pixi run bm lcp_compare -- --benchmark_filter=" f"'{representative_filter}'"
+    )
+    expected_profile_refresh_command = (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--cache build/lcp_profile_full.json "
+        "--output docs/background/lcp/figures "
+        "--benchmark-timeout 900"
+    )
+    expected_profile_smoke_command = (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--allow-partial "
+        "--benchmark-filter BM_LcpCompare/Standard/Dantzig/12 "
+        "--benchmark-min-time 0.01 "
+        "--cache build/lcp_profile_smoke.json "
+        "--output build/lcp_profile_smoke "
+        "--benchmark-timeout 120"
+    )
+    expected = {
+        "_BENCHMARK_COMMAND": expected_benchmark_command,
+        "_REPRESENTATIVE_BENCHMARK_FILTER": representative_filter,
+        "_REPRESENTATIVE_BENCHMARK_COMMAND": expected_representative_command,
+        "_PERFORMANCE_PROFILE_REFRESH_COMMAND": expected_profile_refresh_command,
+        "_PERFORMANCE_PROFILE_SMOKE_COMMAND": expected_profile_smoke_command,
+    }
+
+    errors: list[str] = []
+    for name, expected_value in expected.items():
+        actual_value = str(command_metadata[name])
+        if actual_value != expected_value:
+            errors.append(
+                f"{name} is stale: expected {expected_value!r}, got "
+                f"{actual_value!r}"
+            )
+
+    for name in (
+        "_BENCHMARK_COMMAND",
+        "_REPRESENTATIVE_BENCHMARK_COMMAND",
+        "_PERFORMANCE_PROFILE_REFRESH_COMMAND",
+        "_PERFORMANCE_PROFILE_SMOKE_COMMAND",
+    ):
+        try:
+            shlex.split(str(command_metadata[name]))
+        except ValueError as exc:
+            errors.append(f"{name} is not shell-parseable: {exc}")
+
+    if errors:
+        raise AssertionError(
+            "lcp_physics demo command metadata is out of sync:\n  - "
+            + "\n  - ".join(errors)
+        )
 
 
 def parse_demo_live_packet_rows() -> list[dict[str, str]]:
@@ -1657,6 +1793,7 @@ def check_roster() -> None:
     manifest = parse_cpp_manifest()
     check_performance_profile_headers(manifest)
     check_performance_profile_evidence(manifest)
+    check_demo_command_metadata()
     check_demo_benchmark_filters()
     check_demo_live_packets()
     check_demo_representative_requirements()

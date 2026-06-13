@@ -143,6 +143,98 @@ def test_lcp_solver_roster_rejects_stale_profile_evidence_schema_rows(
     assert "time_ns" in message
 
 
+def test_lcp_solver_roster_reads_demo_command_metadata() -> None:
+    module = _load_module()
+
+    command_metadata = module.parse_demo_command_metadata()
+    benchmark_rows = list(command_metadata["_BENCHMARK_PACKET_ROWS"])
+    representative_filter = module._demo_benchmark_filter_union(benchmark_rows)
+
+    assert command_metadata["_BENCHMARK_COMMAND"] == (
+        "pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE"
+    )
+    assert command_metadata["_REPRESENTATIVE_BENCHMARK_FILTER"] == (
+        representative_filter
+    )
+    assert command_metadata["_REPRESENTATIVE_BENCHMARK_COMMAND"] == (
+        "pixi run bm lcp_compare -- --benchmark_filter="
+        f"'{representative_filter}'"
+    )
+    assert command_metadata["_PERFORMANCE_PROFILE_REFRESH_COMMAND"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--cache build/lcp_profile_full.json "
+        "--output docs/background/lcp/figures "
+        "--benchmark-timeout 900"
+    )
+    assert command_metadata["_PERFORMANCE_PROFILE_SMOKE_COMMAND"] == (
+        "pixi run python scripts/lcp_performance_profile.py --run "
+        "--allow-partial "
+        "--benchmark-filter BM_LcpCompare/Standard/Dantzig/12 "
+        "--benchmark-min-time 0.01 "
+        "--cache build/lcp_profile_smoke.json "
+        "--output build/lcp_profile_smoke "
+        "--benchmark-timeout 120"
+    )
+    module.check_demo_command_metadata()
+
+
+def test_lcp_solver_roster_rejects_stale_demo_command_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    stale_metadata = {
+        "_BENCHMARK_SMOKE_FILTER": "BM_LCP_COMPARE_SMOKE",
+        "_BENCHMARK_COMMAND": (
+            "pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_STALE"
+        ),
+        "_BENCHMARK_PACKET_ROWS": [
+            {
+                "packet": "standard_spd_smoke",
+                "benchmark_filter": "BM_LcpCompare/Standard",
+            },
+            {
+                "packet": "batch_scale",
+                "benchmark_filter": "BM_LcpBatch|BM_LcpGroupedBatch",
+            },
+        ],
+        "_REPRESENTATIVE_BENCHMARK_FILTER": "BM_LcpCompare/Standard",
+        "_REPRESENTATIVE_BENCHMARK_COMMAND": (
+            "pixi run bm lcp_compare -- "
+            "--benchmark_filter='BM_LcpCompare/Standard'"
+        ),
+        "_PERFORMANCE_PROFILE_REFRESH_COMMAND": (
+            "pixi run python scripts/lcp_performance_profile.py --run "
+            "--cache build/stale.json --output build/stale --benchmark-timeout 1"
+        ),
+        "_PERFORMANCE_PROFILE_SMOKE_COMMAND": (
+            "pixi run python scripts/lcp_performance_profile.py --run "
+            "--benchmark-filter BM_LcpMissing --benchmark-min-time 0.01 "
+            "--cache build/lcp_profile_smoke.json "
+            "--output build/lcp_profile_smoke --benchmark-timeout 120"
+        ),
+    }
+    monkeypatch.setattr(
+        module,
+        "parse_demo_command_metadata",
+        lambda: stale_metadata,
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="demo command metadata is out of sync",
+    ) as exc_info:
+        module.check_demo_command_metadata()
+
+    message = str(exc_info.value)
+    assert "_BENCHMARK_COMMAND is stale" in message
+    assert "_REPRESENTATIVE_BENCHMARK_FILTER is stale" in message
+    assert "BM_LcpBatch|BM_LcpGroupedBatch" in message
+    assert "_REPRESENTATIVE_BENCHMARK_COMMAND is stale" in message
+    assert "_PERFORMANCE_PROFILE_REFRESH_COMMAND is stale" in message
+    assert "_PERFORMANCE_PROFILE_SMOKE_COMMAND is stale" in message
+    assert "--allow-partial" in message
+
+
 def test_lcp_solver_roster_reads_demo_performance_profile_rows() -> None:
     module = _load_module()
 
