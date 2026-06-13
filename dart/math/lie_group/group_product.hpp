@@ -117,6 +117,12 @@ public:
   using ConstComponentMap = typename Base::template ConstComponentMap<Index>;
 
   // LieGroup common
+  static constexpr int Dim = ::Eigen::internal::traits<GroupProduct>::Dim;
+  static constexpr int DoF = ::Eigen::internal::traits<GroupProduct>::DoF;
+  static constexpr int MatrixRepDim
+      = ::Eigen::internal::traits<GroupProduct>::MatrixRepDim;
+  static constexpr int ParamSize
+      = ::Eigen::internal::traits<GroupProduct>::ParamSize;
   using LieGroup = typename Base::LieGroup;
   using MatrixType = typename Base::MatrixType;
   using Params = typename Base::Params;
