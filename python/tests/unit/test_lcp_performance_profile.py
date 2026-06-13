@@ -194,6 +194,43 @@ def test_lcp_profile_coverage_rejects_invalid_timing_rows(cpu_time: float) -> No
 
 
 @pytest.mark.parametrize(
+    ("benchmark_name", "lcp_dimension"),
+    [
+        ("BM_LcpCompare/Standard/Dantzig/0", 0.0),
+        ("BM_LcpCompare/Standard/Dantzig/-12", -12.0),
+        ("BM_LcpCompare_Dantzig_Standard/-12", -12.0),
+    ],
+)
+def test_lcp_profile_coverage_rejects_invalid_problem_sizes(
+    benchmark_name: str, lcp_dimension: float
+) -> None:
+    module = _load_module()
+    results = module.parse_benchmark_results(
+        {
+            "benchmarks": [
+                {
+                    "name": benchmark_name,
+                    "run_type": "iteration",
+                    "cpu_time": 10.0,
+                    "contract_ok": 1.0,
+                    "problem_size": lcp_dimension,
+                }
+            ]
+        }
+    )
+
+    with pytest.raises(RuntimeError, match="invalid problem sizes"):
+        module.check_native_profile_coverage(
+            results,
+            {
+                "Standard": {"Dantzig"},
+                "Boxed": set(),
+                "FrictionIndex": set(),
+            },
+        )
+
+
+@pytest.mark.parametrize(
     ("field", "value", "message"),
     [
         ("iterations", -1.0, "invalid iterations"),

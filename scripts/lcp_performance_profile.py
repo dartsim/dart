@@ -285,6 +285,11 @@ def check_native_profile_coverage(
             for (solver, problem_size), _ in results.get(category, {}).items()
             if solver in manifest_names and solver not in expected
         )
+        invalid_problem_size_rows = sorted(
+            f"{solver}/{problem_size}"
+            for (solver, problem_size), _ in results.get(category, {}).items()
+            if problem_size <= 0
+        )
         failed_contract_rows = sorted(
             f"{solver}/{problem_size}"
             for (solver, problem_size), data in results.get(category, {}).items()
@@ -395,6 +400,11 @@ def check_native_profile_coverage(
             evidence_errors.append(
                 f"{category}: benchmark JSON contains non-native rows "
                 f"{non_native_rows}"
+            )
+        if invalid_problem_size_rows:
+            evidence_errors.append(
+                f"{category}: benchmark JSON has invalid problem sizes for "
+                f"{invalid_problem_size_rows}"
             )
         if failed_contract_rows:
             evidence_errors.append(
