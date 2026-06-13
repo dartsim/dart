@@ -2124,7 +2124,13 @@ def test_lcp_physics_exposes_solver_manifest_and_benchmark_metadata() -> None:
     )
     assert (
         "table:lcp_representative_solver_suite:Problem,Type,Rows,FI contacts,"
-        "Challenge,Native,Delegated,Max residual,Fastest native"
+        "Challenge,Native,Delegated,Max residual,Fastest,Fastest native"
+        in builder.events
+    )
+    standard_spd_summary = problem_summary_by_case["standard_spd"]
+    assert (
+        f"text:{standard_spd_summary['fastest_solver']} "
+        f"({standard_spd_summary['fastest_elapsed_us']:.1f} us)"
         in builder.events
     )
     for challenge in (

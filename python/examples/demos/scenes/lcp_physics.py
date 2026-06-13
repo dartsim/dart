@@ -2637,6 +2637,7 @@ def build() -> SceneSetup:
                     "Native",
                     "Delegated",
                     "Max residual",
+                    "Fastest",
                     "Fastest native",
                 ],
             ):
@@ -2659,6 +2660,13 @@ def build() -> SceneSetup:
                         ),
                     )
                     _write_table_cell(builder, f"{row['max_residual']:.2e}")
+                    _write_table_cell(
+                        builder,
+                        (
+                            f"{row['fastest_solver']} "
+                            f"({row['fastest_elapsed_us']:.1f} us)"
+                        ),
+                    )
                     _write_table_cell(
                         builder,
                         (
