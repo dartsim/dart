@@ -7,6 +7,20 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
+Latest local implementation slice: workflow review-card `latest signals` now
+surface the contact-query and collision-cast values needed for static review of
+rows 12-14. The cards promote selected/total contact counts, selected depth,
+selected pair and shape indices, query-filter active/baseline/filtered counts,
+ignored-pair state, ray hit count/fraction, swept sphere/capsule hit counts,
+time of impact, and cast margins instead of showing only solver/executor
+metadata. Focused capture-helper guards reported `2 passed`. Fresh rows 12-14
+workflow evidence lives at
+`build/captures/rigid_workflow_query_signal_highlights_1781335507`: the packet
+completed with `status=complete`, `capture_count=3`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new row-specific latest signals.
+
 Latest local implementation slice: workflow review cards now summarize nested
 `rigid_step_diagnostics` lane profile data as `backend diagnostics`. The static
 row-8 card now names each workload lane's profile status, accelerated-backend
@@ -183,9 +197,10 @@ below as historical context, not as current verification state.
 Latest remote publication state: use `git status -sb` as the source of truth
 for local/remote parity. The branch matched
 `origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before the
-local backend-diagnostics review-card slice; after this slice is committed,
-expect one local commit ahead of origin until a maintainer approves another
-push. Fresh
+local backend-diagnostics review-card slice, and was one local commit ahead at
+`6be90afe6d1` before the contact-query review-card slice; after this slice is
+committed, expect two local commits ahead of origin until a maintainer approves
+another push. Fresh
 `gh pr list --head "$(git branch --show-current)"` still reported no PR for
 the branch. The latest pre-push `git fetch origin main && git merge --no-ff
 origin/main` reported `Already up to date`, so the branch remained aligned with

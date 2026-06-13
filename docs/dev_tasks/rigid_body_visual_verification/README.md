@@ -5,11 +5,27 @@
 Current branch snapshot after this slice:
 `feature/rigid-body-gui-visual-verification` matched
 `origin/feature/rigid-body-gui-visual-verification` at `ca0f7cc70f4` before
-the backend-diagnostics review-card slice. After this slice is committed,
-expect one local commit ahead of origin until a maintainer approves another
-push. There is still no PR for this branch. Do not push, create a PR, set a
-milestone, rerun CI, comment on reviews, resolve threads, or mutate any other
-GitHub state without explicit maintainer/user approval.
+the backend-diagnostics review-card slice; it was one local commit ahead at
+`6be90afe6d1` before the contact-query review-card slice. After this slice is
+committed, expect two local commits ahead of origin until a maintainer approves
+another push. There is still no PR for this branch. Do not push, create a PR,
+set a milestone, rerun CI, comment on reviews, resolve threads, or mutate any
+other GitHub state without explicit maintainer/user approval.
+
+Latest local continuation: workflow review-card `latest signals` now promote
+the contact-query and collision-cast values that users need while scanning the
+static packet. Rows 12-14 now surface selected/total contact counts, selected
+depth, selected pair and shape indices, query-filter active/baseline/filtered
+counts, ignored-pair state, ray hit count/fraction, swept sphere/capsule hit
+counts, time of impact, and cast margins instead of only solver/executor
+metadata. Focused guard:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values -q`
+reported `2 passed`. Fresh rows 12-14 workflow evidence:
+`build/captures/rigid_workflow_query_signal_highlights_1781335507` completed
+with `status=complete`, `capture_count=3`, `failed_count=0`,
+`guidance_complete=true`, `scene_metrics_complete=true`,
+`resolved_solver_identity_complete=true`, and `review_index.html` showing the
+new row-specific latest signals.
 
 Latest local continuation: workflow review cards now promote nested
 `rigid_step_diagnostics` lane profile data into a compact

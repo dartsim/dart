@@ -142,7 +142,10 @@ rows alongside missing guidance or failed-row summaries. Review cards also
 promote nested step-diagnostics lane metrics into a compact
 backend-diagnostics line, so backend activity, accelerated-stage counts,
 worker counts, top stages, and stage timings are visible without opening the
-raw manifest JSON.
+raw manifest JSON. Contact-query and collision-cast cards also promote
+selected contact/depth, query-filter, ignored-pair, ray hit, swept-probe,
+time-of-impact, and cast-margin values into `latest signals`, so reviewers can
+scan the query rows without opening raw manifests.
 The filter prioritizes row ids, scene
 ids, labels, questions, positive signals, and explicit aliases such as
 `RigidBodySolver`, `SI`, `boxed LCP`, `ContactSolverMethod`,
@@ -560,6 +563,15 @@ Evidence recorded for this slice:
   with `status=complete`, `scene_metrics_complete=true`,
   `resolved_solver_identity_complete=true`, and a review card containing the
   backend/fallback/timing summary.
+
+- Latest contact-query/cast review-card slice: workflow review cards now
+  promote row 12-14 query metrics into `latest signals`. Focused
+  capture-helper guards reported `2 passed`, and the real rows 12-14 packet
+  `build/captures/rigid_workflow_query_signal_highlights_1781335507`
+  completed with `status=complete`, `scene_metrics_complete=true`,
+  `resolved_solver_identity_complete=true`, and review cards showing selected
+  contact counts/depths, query-filter counts, ignored-pair state, ray hit
+  fractions, swept-probe times of impact, and cast margins.
 
 - Latest review-index provenance/link guard: the workflow manifest and
   `review_index.html` now record the exact top-level workflow packet command,

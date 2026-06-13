@@ -1417,6 +1417,66 @@ def test_rigid_workflow_review_warns_when_solver_identity_is_missing(
     assert "scenes/01_rigid_body/manifest.json" in review_html
 
 
+def test_rigid_workflow_latest_signals_prioritize_collision_query_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "active_contact_count": 3,
+            "baseline_contact_count": 4,
+            "filtered_contact_count": 1,
+            "first_pair": "sphere_probe -> box_target",
+            "first_shape_indices": [0, 1],
+            "ignored_contact_count": 2,
+            "ignored_pair_key": "rigid_link",
+            "max_depth": 0.08,
+            "option_contact_count": 3,
+            "option_filtered_contact_count": 1,
+            "selected_contact_count": 1,
+            "selected_max_depth": 0.045,
+            "solver": "collision_query",
+            "total_contact_count": 21,
+        }
+    )
+
+    assert highlights[:8] == [
+        "selected contact count: 1",
+        "total contact count: 21",
+        "selected max depth: 0.045",
+        "first pair: sphere_probe -> box_target",
+        "first shape indices: 0 / 1",
+        "max depth: 0.08",
+        "active contact count: 3",
+        "baseline contact count: 4",
+    ]
+
+
+def test_rigid_workflow_latest_signals_prioritize_collision_cast_values() -> None:
+    highlights = capture_py_demo._workflow_metric_highlights(
+        {
+            "capsule_first_toi": 0.266,
+            "capsule_hit_count": 2,
+            "capsule_margin": 0.05,
+            "executor": "not_applicable_collision_query",
+            "ray_first_fraction": 0.259,
+            "ray_hit_count": 2,
+            "solver": "collision_query",
+            "sphere_first_toi": 0.261,
+            "sphere_hit_count": 2,
+            "sphere_margin": 0.03,
+        }
+    )
+
+    assert highlights[:8] == [
+        "ray hit count: 2",
+        "ray first fraction: 0.259",
+        "sphere hit count: 2",
+        "sphere first toi: 0.261",
+        "capsule hit count: 2",
+        "capsule first toi: 0.266",
+        "sphere margin: 0.03",
+        "capsule margin: 0.05",
+    ]
+
+
 def test_rigid_workflow_latest_signals_prioritize_normal_push_values() -> None:
     highlights = capture_py_demo._workflow_metric_highlights(
         {

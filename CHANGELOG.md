@@ -97,8 +97,10 @@
     and solver context, and fail non-dry-run workflow packets when captured rows
     miss latest scene metrics or valid solver identity. Review cards now also
     summarize nested step-diagnostics backend lanes, including backend activity,
-    accelerated-stage counts, worker counts, top stages, and stage timings. The
-    in-viewer panel and generated review cards now also separate live
+    accelerated-stage counts, worker counts, top stages, and stage timings, and
+    contact query/cast cards now show selected contact/depth, query-filter,
+    ignored-pair, ray hit, swept-probe, time-of-impact, and cast-margin signals.
+    The in-viewer panel and generated review cards now also separate live
     `py-demos --scene` open commands from reproducible `py-demo-capture`
     commands, so users can jump from a packet row back into interactive
     debugging without reconstructing the scene command by hand. Per-scene

@@ -93,6 +93,10 @@ rigid-body visual verification surface for the current cycle.
   `backend diagnostics`, so backend activity, accelerated-stage counts, worker
   counts, top stages, and stage timings are visible from the static review
   packet.
+- Promotes rows 12-14 contact-query/cast metrics into workflow review-card
+  latest signals, so selected contact counts/depths, query-filter counts,
+  ignored-pair state, ray hit fractions, swept-probe times of impact, and cast
+  margins are visible from the static review packet.
 - Extends the workflow panel and capture helper with open-live commands,
   row-range packet commands, video packet commands, guidance completeness,
   failure summaries, scene-metrics completeness enforcement, validated
@@ -130,6 +134,9 @@ rigid-body visual verification surface for the current cycle.
   reported `2 passed`.
 - Focused backend-diagnostics review-card guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_review_summarizes_backend_diagnostics python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests -q`
+  reported `2 passed`.
+- Focused contact-query/cast latest-signal guard:
+  `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_query_values python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_latest_signals_prioritize_collision_cast_values -q`
   reported `2 passed`.
 - Adjacent executor-switch panel/replay/docs guard:
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_comparison_panels_label_the_compared_axis python/tests/unit/test_py_demo_panels.py::test_rigid_executor_panel_edits_reset_visual_runs python/tests/integration/test_demos_cycle.py::test_rigid_verifier_replay_snapshots_restore_controls python/tests/integration/test_demos_cycle.py::test_rigid_visual_workflow_capture_metric_docs_match_hooks python/tests/integration/test_demos_cycle.py::test_rigid_visual_verification_readme_matches_sidecar_order -q`
@@ -176,6 +183,12 @@ rigid-body visual verification surface for the current cycle.
   `rigid_step_diagnostics.png`, reported `scene_metrics_complete=true` and
   `resolved_solver_identity_complete=true`, and generated a review card with
   the new `backend diagnostics` field.
+- Fresh rows 12-14 workflow evidence:
+  `build/captures/rigid_workflow_query_signal_highlights_1781335507`
+  captured `rigid_contact_inspector`, `rigid_collision_query_options`, and
+  `rigid_collision_casts`, reported `status=complete`,
+  `scene_metrics_complete=true`, `resolved_solver_identity_complete=true`, and
+  generated review cards with the promoted contact-query/cast latest signals.
 - Fresh row-2 single-scene visual evidence:
   `build/captures/rigid_body_modes_comparison_axis_1781325323` captured
   `rigid_body_modes` at 72 requested UI frames, wrote 71 PNG frames plus

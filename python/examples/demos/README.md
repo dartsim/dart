@@ -189,8 +189,11 @@ review index highlights those rows before a reviewer treats the packet as
 complete. Review cards also promote nested step-diagnostics lane metrics into
 a compact backend-diagnostics line, so backend activity, accelerated-stage
 counts, worker counts, top stages, and stage timings are visible without
-opening the raw manifest JSON. The panel also includes a current-row motion
-packet command; workflow
+opening the raw manifest JSON. Contact-query and collision-cast review cards
+also promote selected contact/depth, query-filter, ignored-pair, ray hit, swept
+probe, time-of-impact, and cast-margin values into `latest signals`, so
+reviewers can scan the query rows without opening raw manifests. The panel also
+includes a current-row motion packet command; workflow
 packets pass `--video --fps` through to the selected row captures and the review
 index links MP4 artifacts when `ffmpeg` is available.
 Extended workflow packets also keep optional related-evidence, direct Rigid IPC
