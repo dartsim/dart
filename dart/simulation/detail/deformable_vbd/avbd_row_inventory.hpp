@@ -43,6 +43,7 @@
 #include <limits>
 #include <span>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include <cstddef>
@@ -211,6 +212,18 @@ public:
 
   //==============================================================================
   explicit AvbdScalarRowInventory(::dart::common::MemoryAllocator& allocator)
+    : mRecords(RecordAllocator{allocator}),
+      mPreviousRecords(RecordAllocator{allocator}),
+      mDescriptorScratch(DescriptorAllocator{allocator})
+  {
+  }
+
+  //==============================================================================
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<RecordAllocator, Allocator>>>
+  explicit AvbdScalarRowInventory(const Allocator& allocator)
     : mRecords(RecordAllocator{allocator}),
       mPreviousRecords(RecordAllocator{allocator}),
       mDescriptorScratch(DescriptorAllocator{allocator})

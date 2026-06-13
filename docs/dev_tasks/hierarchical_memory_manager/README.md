@@ -1,5 +1,84 @@
 # Hierarchical Memory Manager — Dev Task
 
+## Hard Stop Handoff (2026-06-13, AVBD Rigid-World Step Fallback Scratch)
+
+Resume from exactly one branch:
+`pr/hmm-phase45-replay-snapshot-allocators`, tracking
+`origin/pr/hmm-phase45-replay-snapshot-allocators`. This remains the single
+HMM handoff entry point unless a maintainer explicitly redirects the work.
+The branch currently has no open PR. It includes `origin/main` at
+`a122e8e0f3e` via local merge commit `57c8b1cd608`.
+
+Latest local slice: AVBD rigid-world no-scratch step/solve fallback helpers now
+derive their internally owned snapshot, row-build scratch, solve scratch,
+registry-extracted point-joint and distance-spring inputs, and internally
+created row inventories from the allocator already attached to the caller's
+normal-row inventory. This keeps registry-based AVBD fallback step storage on
+the caller-provided DART allocator when the caller supplied allocator-backed
+row inventories.
+
+The fix has these parts:
+
+- `AvbdScalarRowInventory` can be constructed from a converted
+  `StlAllocator`, so overload-created inventories can borrow an existing row
+  inventory allocator;
+- AVBD rigid row-index, contact-manifold, point-joint, motor, and
+  distance-spring scratch objects accept converted `StlAllocator`s for their
+  local vectors;
+- `AvbdRigidWorldContactSnapshot`,
+  `AvbdRigidWorldContactBuildScratch`, and
+  `AvbdRigidWorldContactSolveScratch` accept converted `StlAllocator`s for
+  their allocator-backed containers;
+- no-scratch `solveAvbdRigidWorldContactSnapshot(...)` overloads construct
+  internal solve scratch and missing row inventories from
+  `normalInventory.records().get_allocator()`;
+- registry-based no-scratch `runAvbdRigidWorldContactStep(...)` overloads
+  construct extracted point-joint inputs, extracted distance-spring inputs,
+  internal row inventories, the contact snapshot, and solve scratch from the
+  same caller inventory allocator;
+- `AvbdRigidBlock.RigidWorldContactStepFallbackUsesInventoryAllocator`
+  pre-reserves the caller-visible row inventories and verifies the fallback
+  step helper still routes internal allocations through that inventory
+  allocator.
+
+This still does not claim that return-by-value AVBD registry extractors are
+allocation-free, that default-constructed inventories use anything other than
+the default allocator, that explicit caller-provided input vectors changed
+behavior, that Eigen internals are allocator-backed, or that the whole AVBD
+step path is globally allocation-free. The closed gap is allocator provenance
+for registry-based no-scratch AVBD rigid-world fallback helpers when a caller
+already provided allocator-backed row inventories.
+
+Validation for this slice:
+
+```bash
+pixi run cmake --build build/default/cpp/Release --target test_avbd_rigid_block -j 8
+pixi run build/default/cpp/Release/bin/test_avbd_rigid_block \
+  --gtest_filter=AvbdRigidBlock.RigidWorldContactStepFallbackUsesInventoryAllocator
+pixi run build/default/cpp/Release/bin/test_avbd_rigid_block
+pixi run lint
+git diff --check
+pixi run build
+pixi run test-unit
+pixi run -e cuda test-all
+```
+
+The fresh merged-tree CUDA `test-all` run passed with the existing no-GUI
+`dartpy._world_render_bridge` autodoc warnings during documentation generation
+and CPU-scaling warnings during CUDA benchmark smoke. The long CUDA simulation
+tests completed successfully (`test_rigid_ipc_paper_experiments`,
+`test_world`, and `test_lcp_jacobi_batch_cuda` were the slow tests in this
+run).
+
+Before publishing or opening a PR from this branch, get explicit maintainer
+approval before pushing.
+
+## Historical Slices Below
+
+The sections below are retained as chronological evidence for previous HMM
+slices. They are not current instructions. A fresh agent should use the top
+hard-stop section as the authoritative handoff surface.
+
 ## Hard Stop Handoff (2026-06-13, Contact Candidate Sweep Fallback Scratch)
 
 Resume from exactly one branch:

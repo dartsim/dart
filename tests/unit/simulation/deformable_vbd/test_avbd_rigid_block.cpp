@@ -4604,6 +4604,73 @@ TEST(AvbdRigidBlock, RigidWorldRevoluteVelocityActuatorBuildsMotorRows)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldContactStepFallbackUsesInventoryAllocator)
+{
+  sx::World world;
+  world.setGravity(Vec3::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("base", baseOptions);
+
+  sx::RigidBodyOptions linkOptions;
+  linkOptions.mass = 1.0;
+  linkOptions.position = Vec3::UnitX();
+  auto link = world.addRigidBody("link", linkOptions);
+
+  auto joint = world.addRigidBodyRevoluteJoint(
+      "motorized_hinge", base, link, Vec3::UnitZ());
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.75));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -500.0),
+      Eigen::VectorXd::Constant(1, 500.0));
+
+  vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.descent.iterations = 8;
+  stepOptions.solve.descent.regularization = 1e-12;
+  stepOptions.solve.row.beta = 1000.0;
+  stepOptions.solve.row.maxStiffness = 1000.0;
+
+  CountingMemoryAllocator allocator;
+  vbd::AvbdScalarRowInventory normalInventory(allocator);
+  vbd::AvbdScalarRowInventory frictionInventory(allocator);
+  vbd::AvbdScalarRowInventory jointLinearInventory(allocator);
+  vbd::AvbdScalarRowInventory jointAngularInventory(allocator);
+  vbd::AvbdScalarRowInventory motorInventory(allocator);
+  normalInventory.reserve(0u);
+  frictionInventory.reserve(0u);
+  jointLinearInventory.reserve(3u);
+  jointAngularInventory.reserve(2u);
+  motorInventory.reserve(1u);
+
+  const std::size_t allocationsBeforeStep = allocator.allocations;
+  const vbd::AvbdRigidWorldContactStepResult result
+      = vbd::runAvbdRigidWorldContactStep(
+          dart::simulation::detail::registryOf(world),
+          std::span<const sx::Contact>(),
+          normalInventory,
+          frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          /*timeStep=*/0.25,
+          stepOptions);
+
+  EXPECT_GT(allocator.allocations, allocationsBeforeStep)
+      << "registry no-scratch AVBD step fallback should borrow the row "
+         "inventory allocator for local joint inputs, snapshot, and solve "
+         "scratch";
+  EXPECT_EQ(result.contacts, 0u);
+  EXPECT_EQ(result.joints, 1u);
+  EXPECT_EQ(result.motors, 1u);
+  EXPECT_EQ(result.solve.jointLinearRows, 3u);
+  EXPECT_EQ(result.solve.jointAngularRows, 2u);
+  EXPECT_EQ(result.solve.motorRows, 1u);
+  EXPECT_EQ(result.apply.bodies, 1u);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldPrismaticVelocityActuatorBuildsLinearMotorRows)
 {
   sx::World world;

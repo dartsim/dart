@@ -46,6 +46,7 @@
 #include <array>
 #include <limits>
 #include <span>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -328,6 +329,34 @@ struct AvbdRigidBodyRowIndexScratch
 
   explicit AvbdRigidBodyRowIndexScratch(
       ::dart::common::MemoryAllocator& allocator)
+    : attachmentRowOffsets(SizeAllocator{allocator}),
+      attachmentRowIndices(SizeAllocator{allocator}),
+      attachmentRowCursor(SizeAllocator{allocator}),
+      attachmentRowBodyKeys(KeyAllocator{allocator}),
+      pointPairRowOffsets(SizeAllocator{allocator}),
+      pointPairRowIndices(SizeAllocator{allocator}),
+      pointPairRowCursor(SizeAllocator{allocator}),
+      pointPairRowBodyKeys(KeyAllocator{allocator}),
+      distanceSpringRowOffsets(SizeAllocator{allocator}),
+      distanceSpringRowIndices(SizeAllocator{allocator}),
+      distanceSpringRowCursor(SizeAllocator{allocator}),
+      distanceSpringRowBodyKeys(KeyAllocator{allocator}),
+      angularPairRowOffsets(SizeAllocator{allocator}),
+      angularPairRowIndices(SizeAllocator{allocator}),
+      angularPairRowCursor(SizeAllocator{allocator}),
+      angularPairRowBodyKeys(KeyAllocator{allocator}),
+      frictionPairRowOffsets(SizeAllocator{allocator}),
+      frictionPairRowIndices(SizeAllocator{allocator}),
+      frictionPairRowCursor(SizeAllocator{allocator}),
+      frictionPairRowBodyKeys(KeyAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<SizeAllocator, Allocator>>>
+  explicit AvbdRigidBodyRowIndexScratch(const Allocator& allocator)
     : attachmentRowOffsets(SizeAllocator{allocator}),
       attachmentRowIndices(SizeAllocator{allocator}),
       attachmentRowCursor(SizeAllocator{allocator}),
@@ -1997,6 +2026,18 @@ struct AvbdRigidContactManifoldRowScratch
   {
   }
 
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<ContactAllocator, Allocator>>>
+  explicit AvbdRigidContactManifoldRowScratch(const Allocator& allocator)
+    : activeContacts(ContactAllocator{allocator}),
+      normalDescriptors(DescriptorAllocator{allocator}),
+      frictionDescriptors(DescriptorAllocator{allocator}),
+      previousFrictionDirections(FrictionDirectionAllocator{allocator})
+  {
+  }
+
   std::vector<AvbdRigidContactManifoldPoint, ContactAllocator> activeContacts;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> normalDescriptors;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> frictionDescriptors;
@@ -2028,6 +2069,16 @@ struct AvbdRigidPointJointRowScratch
   {
   }
 
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<ActiveAxisAllocator, Allocator>>>
+  explicit AvbdRigidPointJointRowScratch(const Allocator& allocator)
+    : activeRows(ActiveAxisAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
   std::vector<AvbdRigidPointJointActiveAxis, ActiveAxisAllocator> activeRows;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> descriptors;
 };
@@ -2047,6 +2098,16 @@ struct AvbdRigidAngularMotorRowScratch
   {
   }
 
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<MotorAllocator, Allocator>>>
+  explicit AvbdRigidAngularMotorRowScratch(const Allocator& allocator)
+    : activeRows(MotorAllocator{allocator}),
+      descriptors(DescriptorAllocator{allocator})
+  {
+  }
+
   std::vector<AvbdRigidAngularMotor, MotorAllocator> activeRows;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> descriptors;
 };
@@ -2061,6 +2122,16 @@ struct AvbdRigidMotorRowScratch
   AvbdRigidMotorRowScratch() = default;
 
   explicit AvbdRigidMotorRowScratch(::dart::common::MemoryAllocator& allocator)
+    : activeLinearRows(LinearMotorPointerAllocator{allocator}),
+      activeAngularRows(AngularMotorPointerAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<LinearMotorPointerAllocator, Allocator>>>
+  explicit AvbdRigidMotorRowScratch(const Allocator& allocator)
     : activeLinearRows(LinearMotorPointerAllocator{allocator}),
       activeAngularRows(AngularMotorPointerAllocator{allocator})
   {
@@ -2087,6 +2158,15 @@ struct AvbdRigidDistanceSpringRowScratch
 
   explicit AvbdRigidDistanceSpringRowScratch(
       ::dart::common::MemoryAllocator& allocator)
+    : activeRows(DistanceSpringPointerAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<DistanceSpringPointerAllocator, Allocator>>>
+  explicit AvbdRigidDistanceSpringRowScratch(const Allocator& allocator)
     : activeRows(DistanceSpringPointerAllocator{allocator})
   {
   }

@@ -54,6 +54,7 @@
 #include <iterator>
 #include <limits>
 #include <span>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -191,8 +192,21 @@ struct AvbdRigidWorldContactSnapshot
   using LinearMotorAllocator
       = ::dart::common::StlAllocator<AvbdRigidLinearMotor>;
   using MotorAllocator = ::dart::common::StlAllocator<AvbdRigidAngularMotor>;
+  using DistanceSpringRow = AvbdRigidBodyPointPairDistanceSpringRow;
   using DistanceSpringAllocator
-      = ::dart::common::StlAllocator<AvbdRigidBodyPointPairDistanceSpringRow>;
+      = ::dart::common::StlAllocator<DistanceSpringRow>;
+  using BodyStateVector = std::vector<AvbdRigidBodyState, BodyStateAllocator>;
+  using DoubleVector = std::vector<double, DoubleAllocator>;
+  using MatrixVector = std::vector<Eigen::Matrix3d, MatrixAllocator>;
+  using ByteVector = std::vector<std::uint8_t, ByteAllocator>;
+  using ContactVector
+      = std::vector<AvbdRigidContactManifoldPoint, ContactAllocator>;
+  using JointVector = std::vector<AvbdRigidPointJoint, JointAllocator>;
+  using LinearMotorVector
+      = std::vector<AvbdRigidLinearMotor, LinearMotorAllocator>;
+  using MotorVector = std::vector<AvbdRigidAngularMotor, MotorAllocator>;
+  using DistanceSpringVector
+      = std::vector<DistanceSpringRow, DistanceSpringAllocator>;
 
   AvbdRigidWorldContactSnapshot() = default;
 
@@ -220,20 +234,46 @@ struct AvbdRigidWorldContactSnapshot
   {
   }
 
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<EntityAllocator, Allocator>>>
+  explicit AvbdRigidWorldContactSnapshot(const Allocator& allocator)
+    : entities(EntityAllocator{allocator}),
+      entityBodyIndices(
+          0u,
+          std::hash<entt::entity>{},
+          std::equal_to<entt::entity>{},
+          EntityBodyIndexAllocator{allocator}),
+      states(BodyStateAllocator{allocator}),
+      inertialTargets(BodyStateAllocator{allocator}),
+      masses(DoubleAllocator{allocator}),
+      bodyInertias(MatrixAllocator{allocator}),
+      fixed(ByteAllocator{allocator}),
+      contacts(ContactAllocator{allocator}),
+      joints(JointAllocator{allocator}),
+      jointEntities(EntityAllocator{allocator}),
+      linearMotors(LinearMotorAllocator{allocator}),
+      motors(MotorAllocator{allocator}),
+      distanceSprings(DistanceSpringAllocator{allocator}),
+      distanceSpringEntities(EntityAllocator{allocator}),
+      frameDirtyStack(EntityAllocator{allocator})
+  {
+  }
+
   EntityVector entities;
   EntityBodyIndexMap entityBodyIndices;
-  std::vector<AvbdRigidBodyState, BodyStateAllocator> states;
-  std::vector<AvbdRigidBodyState, BodyStateAllocator> inertialTargets;
-  std::vector<double, DoubleAllocator> masses;
-  std::vector<Eigen::Matrix3d, MatrixAllocator> bodyInertias;
-  std::vector<std::uint8_t, ByteAllocator> fixed;
-  std::vector<AvbdRigidContactManifoldPoint, ContactAllocator> contacts;
-  std::vector<AvbdRigidPointJoint, JointAllocator> joints;
+  BodyStateVector states;
+  BodyStateVector inertialTargets;
+  DoubleVector masses;
+  MatrixVector bodyInertias;
+  ByteVector fixed;
+  ContactVector contacts;
+  JointVector joints;
   EntityVector jointEntities;
-  std::vector<AvbdRigidLinearMotor, LinearMotorAllocator> linearMotors;
-  std::vector<AvbdRigidAngularMotor, MotorAllocator> motors;
-  std::vector<AvbdRigidBodyPointPairDistanceSpringRow, DistanceSpringAllocator>
-      distanceSprings;
+  LinearMotorVector linearMotors;
+  MotorVector motors;
+  DistanceSpringVector distanceSprings;
   EntityVector distanceSpringEntities;
   EntityVector frameDirtyStack;
 };
@@ -339,6 +379,16 @@ struct AvbdRigidWorldContactBuildScratch
   {
   }
 
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<RowCounterAllocator, Allocator>>>
+  explicit AvbdRigidWorldContactBuildScratch(const Allocator& allocator)
+    : rowCounters(RowCounterAllocator{allocator}),
+      contactRowOrder(RowOrderAllocator{allocator})
+  {
+  }
+
   RowCounterVector rowCounters;
   RowOrderVector contactRowOrder;
 };
@@ -361,6 +411,31 @@ struct AvbdRigidWorldContactSolveScratch
 
   explicit AvbdRigidWorldContactSolveScratch(
       ::dart::common::MemoryAllocator& allocator)
+    : contactRows(allocator),
+      jointLinearRowsScratch(allocator),
+      jointAngularRowsScratch(allocator),
+      motorRowsScratch(allocator),
+      distanceSpringRowsScratch(allocator),
+      normalRows(PointPairAllocator{allocator}),
+      frictionRows(FrictionPairAllocator{allocator}),
+      jointLinearRows(PointPairAllocator{allocator}),
+      jointAngularRows(AngularPairAllocator{allocator}),
+      linearMotorRows(PointPairAllocator{allocator}),
+      motorRows(AngularPairAllocator{allocator}),
+      distanceSpringRows(DistanceSpringAllocator{allocator}),
+      pointPairRows(PointPairAllocator{allocator}),
+      angularRows(AngularPairAllocator{allocator}),
+      attachmentRows(AttachmentAllocator{allocator}),
+      fallbackInertialTargets(BodyStateAllocator{allocator}),
+      rowIndexScratch(allocator)
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename = std::enable_if_t<
+          std::is_constructible_v<PointPairAllocator, Allocator>>>
+  explicit AvbdRigidWorldContactSolveScratch(const Allocator& allocator)
     : contactRows(allocator),
       jointLinearRowsScratch(allocator),
       jointAngularRowsScratch(allocator),
@@ -2503,7 +2578,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSolveScratch& scratch,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdScalarRowInventory distanceSpringInventory;
+  AvbdScalarRowInventory distanceSpringInventory(
+      normalInventory.records().get_allocator());
   return solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
@@ -2528,8 +2604,9 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdRigidWorldContactSolveScratch scratch;
-  AvbdScalarRowInventory distanceSpringInventory;
+  const auto allocator = normalInventory.records().get_allocator();
+  AvbdRigidWorldContactSolveScratch scratch(allocator);
+  AvbdScalarRowInventory distanceSpringInventory(allocator);
   return solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
@@ -2553,7 +2630,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdScalarRowInventory motorInventory;
+  AvbdScalarRowInventory motorInventory(
+      normalInventory.records().get_allocator());
   return solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
@@ -2573,9 +2651,10 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     double timeStep,
     const AvbdRigidWorldContactSolveOptions& options = {})
 {
-  AvbdScalarRowInventory jointLinearInventory;
-  AvbdScalarRowInventory jointAngularInventory;
-  AvbdScalarRowInventory motorInventory;
+  const auto allocator = normalInventory.records().get_allocator();
+  AvbdScalarRowInventory jointLinearInventory(allocator);
+  AvbdScalarRowInventory jointAngularInventory(allocator);
+  AvbdScalarRowInventory motorInventory(allocator);
   return solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
@@ -2775,8 +2854,12 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     const AvbdRigidWorldContactStepOptions& options = {})
 {
   AvbdRigidWorldContactStepResult result;
-  AvbdRigidWorldContactSnapshot snapshot
-      = buildAvbdRigidWorldContactSnapshot(registry, contacts, options.contact);
+  const auto allocator = normalInventory.records().get_allocator();
+  AvbdRigidWorldContactSnapshot snapshot(allocator);
+  AvbdRigidWorldContactBuildScratch buildScratch(
+      snapshot.contacts.get_allocator());
+  buildAvbdRigidWorldContactSnapshot(
+      registry, contacts, snapshot, buildScratch, options.contact);
   result.joints = appendAvbdRigidWorldPointJoints(registry, joints, snapshot);
   result.distanceSprings = appendAvbdRigidWorldDistanceSprings(
       registry, distanceSprings, snapshot);
@@ -2793,7 +2876,7 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     predictAvbdRigidWorldContactInertialTargets(registry, snapshot, timeStep);
   }
 
-  AvbdRigidWorldContactSolveScratch scratch;
+  AvbdRigidWorldContactSolveScratch scratch(allocator);
   result.solve = solveAvbdRigidWorldContactSnapshot(
       snapshot,
       normalInventory,
@@ -2832,7 +2915,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
-  AvbdScalarRowInventory distanceSpringInventory;
+  AvbdScalarRowInventory distanceSpringInventory(
+      normalInventory.records().get_allocator());
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
@@ -2860,7 +2944,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
-  AvbdScalarRowInventory motorInventory;
+  AvbdScalarRowInventory motorInventory(
+      normalInventory.records().get_allocator());
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
@@ -3137,13 +3222,24 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
-  std::vector<AvbdRigidWorldPointJointInput> joints;
+  using PointJointInputAllocator
+      = ::dart::common::StlAllocator<AvbdRigidWorldPointJointInput>;
+  using DistanceSpringInputAllocator
+      = ::dart::common::StlAllocator<AvbdRigidWorldDistanceSpringInput>;
+  using PointJointInputVector
+      = std::vector<AvbdRigidWorldPointJointInput, PointJointInputAllocator>;
+  using DistanceSpringInputVector = std::
+      vector<AvbdRigidWorldDistanceSpringInput, DistanceSpringInputAllocator>;
+
+  const auto allocator = normalInventory.records().get_allocator();
+  PointJointInputVector joints(PointJointInputAllocator{allocator});
   extractAvbdRigidWorldPointJointInputsInto(
       registry, joints, /*includeWorldAnchors=*/false);
-  std::vector<AvbdRigidWorldDistanceSpringInput> distanceSprings;
+  DistanceSpringInputVector distanceSprings(
+      DistanceSpringInputAllocator{allocator});
   extractAvbdRigidWorldDistanceSpringInputsInto(
       registry, distanceSprings, /*includeWorldAnchors=*/false);
-  AvbdScalarRowInventory distanceSpringInventory;
+  AvbdScalarRowInventory distanceSpringInventory(allocator);
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
@@ -3172,7 +3268,8 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
-  AvbdScalarRowInventory motorInventory;
+  AvbdScalarRowInventory motorInventory(
+      normalInventory.records().get_allocator());
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
@@ -3194,9 +3291,10 @@ inline AvbdRigidWorldContactStepResult runAvbdRigidWorldContactStep(
     double timeStep,
     const AvbdRigidWorldContactStepOptions& options = {})
 {
-  AvbdScalarRowInventory jointLinearInventory;
-  AvbdScalarRowInventory jointAngularInventory;
-  AvbdScalarRowInventory motorInventory;
+  const auto allocator = normalInventory.records().get_allocator();
+  AvbdScalarRowInventory jointLinearInventory(allocator);
+  AvbdScalarRowInventory jointAngularInventory(allocator);
+  AvbdScalarRowInventory motorInventory(allocator);
   return runAvbdRigidWorldContactStep(
       registry,
       contacts,
