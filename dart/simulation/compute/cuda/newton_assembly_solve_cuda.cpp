@@ -75,6 +75,14 @@ cudaError_t launchNewtonSceneSparseBlocksKernel(
     NewtonSparseBlockEntry* blocks,
     std::size_t triangleCount);
 
+cudaError_t launchNewtonSceneNonlinearEqualityAssemblyKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    NewtonAssemblySolveRowInput* rows,
+    NewtonSparseBlockEntry* blocks,
+    double* residuals,
+    std::size_t constraintCount);
+
 cudaError_t launchNewtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -282,6 +290,65 @@ void validateSceneSparseGraphInputs(
         "evaluateNewtonSceneSparseGraphAssemblyCuda triangle {} has duplicate "
         "node indices",
         triangle);
+  }
+}
+
+void validateSceneNonlinearEqualityInputs(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints)
+{
+  DART_SIMULATION_THROW_T_IF(
+      nodes.empty() && !constraints.empty(),
+      sx::InvalidArgumentException,
+      "evaluateNewtonSceneNonlinearEqualityAssemblyCuda requires nodes for "
+      "constraints");
+
+  for (std::size_t node = 0; node < nodes.size(); ++node) {
+    const auto& input = nodes[node];
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(input.mass) || input.mass <= 0.0,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneNonlinearEqualityAssemblyCuda node {} has invalid "
+        "mass",
+        node);
+    for (std::size_t axis = 0; axis < 3u; ++axis) {
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(input.position[axis])
+              || !std::isfinite(input.velocity[axis]),
+          sx::InvalidArgumentException,
+          "evaluateNewtonSceneNonlinearEqualityAssemblyCuda node {} axis {} is "
+          "invalid",
+          node,
+          axis);
+    }
+  }
+
+  for (std::size_t constraint = 0; constraint < constraints.size();
+       ++constraint) {
+    const auto& input = constraints[constraint];
+    DART_SIMULATION_THROW_T_IF(
+        input.nodeA >= nodes.size() || input.nodeB >= nodes.size(),
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneNonlinearEqualityAssemblyCuda constraint {} "
+        "references nodes ({}, {}) outside {} nodes",
+        constraint,
+        input.nodeA,
+        input.nodeB,
+        nodes.size());
+    DART_SIMULATION_THROW_T_IF(
+        input.nodeA == input.nodeB,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneNonlinearEqualityAssemblyCuda constraint {} has "
+        "duplicate node indices",
+        constraint);
+    DART_SIMULATION_THROW_T_IF(
+        !std::isfinite(input.restLength) || input.restLength < 0.0
+            || !std::isfinite(input.stiffness) || input.stiffness <= 0.0
+            || !std::isfinite(input.damping) || input.damping < 0.0,
+        sx::InvalidArgumentException,
+        "evaluateNewtonSceneNonlinearEqualityAssemblyCuda constraint {} has "
+        "invalid parameters",
+        constraint);
   }
 }
 
@@ -701,6 +768,97 @@ void evaluateNewtonSceneSparseGraphAssemblyCuda(
     }
   }
 
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+}
+
+//==============================================================================
+void evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    NewtonSceneNonlinearEqualityAssemblyResult& result)
+{
+  const auto setupStart = Clock::now();
+  validateSceneNonlinearEqualityInputs(nodes, constraints);
+
+  result = NewtonSceneNonlinearEqualityAssemblyResult{};
+  result.nodeCount = nodes.size();
+  result.constraintCount = constraints.size();
+  result.rowCount = 2u * constraints.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = constraints.size();
+  result.blockEntryCount = result.blockCount * kNewtonAssemblySolveBlockEntries;
+  result.rows.assign(result.rowCount, {});
+  result.blocks.assign(result.blockCount, {});
+  result.residuals.assign(result.constraintCount, 0.0);
+
+  if (nodes.empty() || constraints.empty()) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceBuffer<NewtonSceneNodeInput> deviceNodes(nodes.size());
+  DeviceBuffer<NewtonSceneDistanceEqualityConstraintInput> deviceConstraints(
+      constraints.size());
+  DeviceBuffer<NewtonAssemblySolveRowInput> deviceRows(result.rowCount);
+  DeviceBuffer<NewtonSparseBlockEntry> deviceBlocks(result.blockCount);
+  DeviceBuffer<double> deviceResiduals(result.constraintCount);
+  const auto setupEnd = Clock::now();
+
+  const auto h2dStart = Clock::now();
+  deviceNodes.copyToDevice(nodes, "newton scene nonlinear equality nodes copy");
+  deviceConstraints.copyToDevice(
+      constraints, "newton scene nonlinear equality constraints copy");
+  const auto h2dEnd = Clock::now();
+
+  const auto constraintStart = Clock::now();
+  throwIfCudaError(
+      detail::launchNewtonSceneNonlinearEqualityAssemblyKernel(
+          deviceNodes.data(),
+          deviceConstraints.data(),
+          deviceRows.data(),
+          deviceBlocks.data(),
+          deviceResiduals.data(),
+          constraints.size()),
+      "newton scene nonlinear equality assembly kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(),
+      "newton scene nonlinear equality assembly synchronize");
+  const auto constraintEnd = Clock::now();
+
+  const auto d2hStart = Clock::now();
+  deviceRows.copyFromDevice(
+      result.rows, "newton scene nonlinear equality rows copy");
+  deviceBlocks.copyFromDevice(
+      result.blocks, "newton scene nonlinear equality blocks copy");
+  deviceResiduals.copyFromDevice(
+      result.residuals, "newton scene nonlinear equality residuals copy");
+  const auto d2hEnd = Clock::now();
+
+  result.timing.setupNs = elapsedNs(setupStart, setupEnd);
+  result.timing.hostToDeviceNs = elapsedNs(h2dStart, h2dEnd);
+  result.timing.constraintKernelNs = elapsedNs(constraintStart, constraintEnd);
+  result.timing.deviceToHostNs = elapsedNs(d2hStart, d2hEnd);
+
+  for (const auto residual : result.residuals) {
+    result.maxConstraintResidualAbs
+        = std::max(result.maxConstraintResidualAbs, std::abs(residual));
+  }
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
   for (const auto& block : result.blocks) {
     for (std::size_t entry = 0; entry < kNewtonAssemblySolveBlockEntries;
          ++entry) {

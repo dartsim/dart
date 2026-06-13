@@ -222,6 +222,109 @@ __global__ void newtonSceneSparseBlocksKernel(
   blocks[edge] = makeSceneSparseBlockEntry(nodes, nodeA, nodeB);
 }
 
+__device__ void makeSceneDistanceEqualityBasis(
+    const NewtonSceneNodeInput& node,
+    const double normal[3],
+    const double translationalSign,
+    double basis[kNewtonAssemblySolveDofsPerBody])
+{
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis] = translationalSign * normal[axis];
+  }
+
+  const double rotationalBasis[3] = {
+      node.position[1] * normal[2] - node.position[2] * normal[1],
+      node.position[2] * normal[0] - node.position[0] * normal[2],
+      node.position[0] * normal[1] - node.position[1] * normal[0],
+  };
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis + 3u] = 0.10 * translationalSign * rotationalBasis[axis];
+  }
+}
+
+__global__ void newtonSceneNonlinearEqualityAssemblyKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    NewtonAssemblySolveRowInput* rows,
+    NewtonSparseBlockEntry* blocks,
+    double* residuals,
+    const std::size_t constraintCount)
+{
+  const auto constraintIndex
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (constraintIndex >= constraintCount) {
+    return;
+  }
+
+  const NewtonSceneDistanceEqualityConstraintInput constraint
+      = constraints[constraintIndex];
+  const NewtonSceneNodeInput nodeA = nodes[constraint.nodeA];
+  const NewtonSceneNodeInput nodeB = nodes[constraint.nodeB];
+
+  double delta[3] = {};
+  double velocityDelta[3] = {};
+  double lengthSquared = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    delta[axis] = nodeB.position[axis] - nodeA.position[axis];
+    velocityDelta[axis] = nodeB.velocity[axis] - nodeA.velocity[axis];
+    lengthSquared += delta[axis] * delta[axis];
+  }
+
+  const double length = fmax(sqrt(lengthSquared), 1e-9);
+  double normal[3] = {};
+  double normalVelocity = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    normal[axis] = delta[axis] / length;
+    normalVelocity += normal[axis] * velocityDelta[axis];
+  }
+
+  const double residual = length - constraint.restLength;
+  const double scalarGradient
+      = constraint.stiffness * residual + constraint.damping * normalVelocity;
+  residuals[constraintIndex] = residual;
+
+  double basisA[kNewtonAssemblySolveDofsPerBody] = {};
+  double basisB[kNewtonAssemblySolveDofsPerBody] = {};
+  makeSceneDistanceEqualityBasis(nodeA, normal, -1.0, basisA);
+  makeSceneDistanceEqualityBasis(nodeB, normal, 1.0, basisB);
+
+  NewtonAssemblySolveRowInput rowA;
+  NewtonAssemblySolveRowInput rowB;
+  rowA.bodyIndex = constraint.nodeA;
+  rowB.bodyIndex = constraint.nodeB;
+  NewtonSparseBlockEntry block;
+  block.rowBodyIndex = constraint.nodeA;
+  block.columnBodyIndex = constraint.nodeB;
+
+  for (std::size_t dof = 0; dof < kNewtonAssemblySolveDofsPerBody; ++dof) {
+    const double dampingBias
+        = 0.001 * constraint.damping * static_cast<double>(dof + 1u);
+    rowA.hessianDiagonal[dof]
+        = constraint.stiffness * basisA[dof] * basisA[dof] + dampingBias;
+    rowB.hessianDiagonal[dof]
+        = constraint.stiffness * basisB[dof] * basisB[dof] + dampingBias;
+    rowA.gradient[dof] = scalarGradient * basisA[dof];
+    rowB.gradient[dof] = scalarGradient * basisB[dof];
+  }
+
+  for (std::size_t localRow = 0; localRow < kNewtonAssemblySolveDofsPerBody;
+       ++localRow) {
+    for (std::size_t localColumn = 0;
+         localColumn < kNewtonAssemblySolveDofsPerBody;
+         ++localColumn) {
+      const std::size_t entry
+          = localRow * kNewtonAssemblySolveDofsPerBody + localColumn;
+      block.hessianBlock[entry]
+          = constraint.stiffness * basisA[localRow] * basisB[localColumn];
+    }
+  }
+
+  const std::size_t rowOffset = 2u * constraintIndex;
+  rows[rowOffset] = rowA;
+  rows[rowOffset + 1u] = rowB;
+  blocks[constraintIndex] = block;
+}
+
 __global__ void newtonEqualityReductionKernel(
     const NewtonEqualityReductionEntry* entries,
     const double* assembledDiagonal,
@@ -513,6 +616,26 @@ cudaError_t launchNewtonSceneSparseBlocksKernel(
   const unsigned int gridSize = launchGrid1D(3u * triangleCount, blockSize);
   newtonSceneSparseBlocksKernel<<<gridSize, blockSize>>>(
       nodes, triangles, blocks, triangleCount);
+  return cudaGetLastError();
+}
+
+//==============================================================================
+cudaError_t launchNewtonSceneNonlinearEqualityAssemblyKernel(
+    const NewtonSceneNodeInput* nodes,
+    const NewtonSceneDistanceEqualityConstraintInput* constraints,
+    NewtonAssemblySolveRowInput* rows,
+    NewtonSparseBlockEntry* blocks,
+    double* residuals,
+    const std::size_t constraintCount)
+{
+  if (constraintCount == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr unsigned int blockSize = 256;
+  const unsigned int gridSize = launchGrid1D(constraintCount, blockSize);
+  newtonSceneNonlinearEqualityAssemblyKernel<<<gridSize, blockSize>>>(
+      nodes, constraints, rows, blocks, residuals, constraintCount);
   return cudaGetLastError();
 }
 

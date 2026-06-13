@@ -136,6 +136,34 @@ struct SceneRuntimeSparseGraphAssemblyFixture
   CpuSceneSparseGraphAssemblyResult cpu;
 };
 
+struct CpuSceneNonlinearEqualityAssemblyResult
+{
+  std::vector<cuda::NewtonAssemblySolveRowInput> rows;
+  std::vector<cuda::NewtonSparseBlockEntry> blocks;
+  std::vector<double> residuals;
+  std::size_t nodeCount = 0;
+  std::size_t constraintCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  double maxConstraintResidualAbs = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+};
+
+struct SceneRuntimeNonlinearEqualityAssemblyFixture
+{
+  std::vector<cuda::NewtonSceneNodeInput> nodes;
+  std::vector<cuda::NewtonSceneDistanceEqualityConstraintInput> constraints;
+  std::size_t sceneBodyCount = 0;
+  std::size_t sceneTriangleCount = 0;
+  std::size_t sceneEdgePairCount = 0;
+  CpuSceneNonlinearEqualityAssemblyResult cpu;
+};
+
 struct CpuSparseResidualResult
 {
   std::vector<double> assembledDiagonal;
@@ -406,6 +434,32 @@ cuda::NewtonSceneSurfaceTriangleInput makeSceneRuntimeTriangleInput(
   };
 }
 
+cuda::NewtonSceneDistanceEqualityConstraintInput
+makeSceneRuntimeDistanceEqualityConstraint(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::size_t nodeA,
+    const std::size_t nodeB,
+    const std::size_t constraintIndex)
+{
+  double lengthSquared = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    const double delta
+        = nodes[nodeB].position[axis] - nodes[nodeA].position[axis];
+    lengthSquared += delta * delta;
+  }
+  const double length = std::max(std::sqrt(lengthSquared), 1e-9);
+
+  cuda::NewtonSceneDistanceEqualityConstraintInput constraint;
+  constraint.nodeA = static_cast<std::uint32_t>(nodeA);
+  constraint.nodeB = static_cast<std::uint32_t>(nodeB);
+  constraint.restLength
+      = length * (0.985 + 0.001 * static_cast<double>(constraintIndex % 5u));
+  constraint.stiffness
+      = 1.25 + 0.05 * static_cast<double>(constraintIndex % 7u);
+  constraint.damping = 0.10 + 0.02 * static_cast<double>(constraintIndex % 3u);
+  return constraint;
+}
+
 cuda::NewtonAssemblySolveRowInput makeSceneRuntimeAssemblyRow(
     const cuda::NewtonSceneNodeInput& node,
     const std::size_t nodeIndex,
@@ -488,6 +542,99 @@ cuda::NewtonSparseBlockEntry makeSceneRuntimeSparseBlock(
   return block;
 }
 
+void makeSceneRuntimeDistanceEqualityBasis(
+    const cuda::NewtonSceneNodeInput& node,
+    const double normal[3],
+    const double translationalSign,
+    double basis[cuda::kNewtonAssemblySolveDofsPerBody])
+{
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis] = translationalSign * normal[axis];
+  }
+
+  const double rotationalBasis[3] = {
+      node.position[1] * normal[2] - node.position[2] * normal[1],
+      node.position[2] * normal[0] - node.position[0] * normal[2],
+      node.position[0] * normal[1] - node.position[1] * normal[0],
+  };
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis + 3u] = 0.10 * translationalSign * rotationalBasis[axis];
+  }
+}
+
+void appendSceneRuntimeDistanceEqualityContribution(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const cuda::NewtonSceneDistanceEqualityConstraintInput& constraint,
+    CpuSceneNonlinearEqualityAssemblyResult& result)
+{
+  const auto& nodeA = nodes[constraint.nodeA];
+  const auto& nodeB = nodes[constraint.nodeB];
+
+  double delta[3] = {};
+  double velocityDelta[3] = {};
+  double lengthSquared = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    delta[axis] = nodeB.position[axis] - nodeA.position[axis];
+    velocityDelta[axis] = nodeB.velocity[axis] - nodeA.velocity[axis];
+    lengthSquared += delta[axis] * delta[axis];
+  }
+
+  const double length = std::max(std::sqrt(lengthSquared), 1e-9);
+  double normal[3] = {};
+  double normalVelocity = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    normal[axis] = delta[axis] / length;
+    normalVelocity += normal[axis] * velocityDelta[axis];
+  }
+
+  const double residual = length - constraint.restLength;
+  const double scalarGradient
+      = constraint.stiffness * residual + constraint.damping * normalVelocity;
+  result.residuals.push_back(residual);
+
+  double basisA[cuda::kNewtonAssemblySolveDofsPerBody] = {};
+  double basisB[cuda::kNewtonAssemblySolveDofsPerBody] = {};
+  makeSceneRuntimeDistanceEqualityBasis(nodeA, normal, -1.0, basisA);
+  makeSceneRuntimeDistanceEqualityBasis(nodeB, normal, 1.0, basisB);
+
+  cuda::NewtonAssemblySolveRowInput rowA;
+  cuda::NewtonAssemblySolveRowInput rowB;
+  rowA.bodyIndex = constraint.nodeA;
+  rowB.bodyIndex = constraint.nodeB;
+  cuda::NewtonSparseBlockEntry block;
+  block.rowBodyIndex = constraint.nodeA;
+  block.columnBodyIndex = constraint.nodeB;
+
+  for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++dof) {
+    const double dampingBias
+        = 0.001 * constraint.damping * static_cast<double>(dof + 1u);
+    rowA.hessianDiagonal[dof]
+        = constraint.stiffness * basisA[dof] * basisA[dof] + dampingBias;
+    rowB.hessianDiagonal[dof]
+        = constraint.stiffness * basisB[dof] * basisB[dof] + dampingBias;
+    rowA.gradient[dof] = scalarGradient * basisA[dof];
+    rowB.gradient[dof] = scalarGradient * basisB[dof];
+  }
+
+  for (std::size_t localRow = 0;
+       localRow < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++localRow) {
+    for (std::size_t localColumn = 0;
+         localColumn < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++localColumn) {
+      const std::size_t entry
+          = localRow * cuda::kNewtonAssemblySolveDofsPerBody + localColumn;
+      block.hessianBlock[entry]
+          = constraint.stiffness * basisA[localRow] * basisB[localColumn];
+    }
+  }
+
+  result.rows.push_back(rowA);
+  result.rows.push_back(rowB);
+  result.blocks.push_back(block);
+}
+
 std::vector<double> makeSparseStep(const std::size_t dofCount)
 {
   std::vector<double> step(dofCount, 0.0);
@@ -558,6 +705,51 @@ void evaluateCpuSceneSparseGraphAssembly(
         makeSceneRuntimeSparseBlock(nodes, triangle.nodeC, triangle.nodeA));
   }
 
+  for (const auto& row : result.rows) {
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      result.maxDiagonal
+          = std::max(result.maxDiagonal, row.hessianDiagonal[dof]);
+      result.maxGradientAbs
+          = std::max(result.maxGradientAbs, std::abs(row.gradient[dof]));
+    }
+  }
+  for (const auto& block : result.blocks) {
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      result.maxBlockAbs
+          = std::max(result.maxBlockAbs, std::abs(block.hessianBlock[entry]));
+    }
+  }
+}
+
+void evaluateCpuSceneNonlinearEqualityAssembly(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::vector<cuda::NewtonSceneDistanceEqualityConstraintInput>&
+        constraints,
+    CpuSceneNonlinearEqualityAssemblyResult& result)
+{
+  result = CpuSceneNonlinearEqualityAssemblyResult{};
+  result.nodeCount = nodes.size();
+  result.constraintCount = constraints.size();
+  result.rowCount = 2u * constraints.size();
+  result.bodyCount = nodes.size();
+  result.dofCount = nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody;
+  result.blockCount = constraints.size();
+  result.blockEntryCount
+      = result.blockCount * cuda::kNewtonAssemblySolveBlockEntries;
+  result.rows.reserve(result.rowCount);
+  result.blocks.reserve(result.blockCount);
+  result.residuals.reserve(result.constraintCount);
+
+  for (const auto& constraint : constraints) {
+    appendSceneRuntimeDistanceEqualityContribution(nodes, constraint, result);
+  }
+
+  for (const auto residual : result.residuals) {
+    result.maxConstraintResidualAbs
+        = std::max(result.maxConstraintResidualAbs, std::abs(residual));
+  }
   for (const auto& row : result.rows) {
     for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
          ++dof) {
@@ -1242,6 +1434,44 @@ makeSceneRuntimeSparseGraphAssemblyFixture(const int rowCount)
   return fixture;
 }
 
+SceneRuntimeNonlinearEqualityAssemblyFixture
+makeSceneRuntimeNonlinearEqualityAssemblyFixture(const int rowCount)
+{
+  sx::World world;
+  world.setTimeStep(kSceneRuntimeAssemblyTimeStep);
+  const sx::DeformableBody body = world.addDeformableBody(
+      "plan083_scene_runtime_nonlinear_equality_assembly",
+      makeSceneRuntimeAssemblyBodyOptions(rowCount));
+
+  SceneRuntimeNonlinearEqualityAssemblyFixture fixture;
+  fixture.sceneBodyCount = world.getDeformableBodyCount();
+  fixture.sceneTriangleCount = body.getSurfaceTriangleCount();
+  fixture.nodes.reserve(body.getNodeCount());
+  for (std::size_t node = 0; node < body.getNodeCount(); ++node) {
+    fixture.nodes.push_back(makeSceneRuntimeNodeInput(body, node));
+  }
+
+  const auto appendConstraint
+      = [&fixture](const std::size_t nodeA, const std::size_t nodeB) {
+          fixture.constraints.push_back(
+              makeSceneRuntimeDistanceEqualityConstraint(
+                  fixture.nodes, nodeA, nodeB, fixture.constraints.size()));
+          ++fixture.sceneEdgePairCount;
+        };
+  fixture.constraints.reserve(3u * body.getSurfaceTriangleCount());
+  for (std::size_t triangle = 0; triangle < body.getSurfaceTriangleCount();
+       ++triangle) {
+    const auto surfaceTriangle = body.getSurfaceTriangle(triangle);
+    appendConstraint(surfaceTriangle.nodeA, surfaceTriangle.nodeB);
+    appendConstraint(surfaceTriangle.nodeB, surfaceTriangle.nodeC);
+    appendConstraint(surfaceTriangle.nodeC, surfaceTriangle.nodeA);
+  }
+
+  evaluateCpuSceneNonlinearEqualityAssembly(
+      fixture.nodes, fixture.constraints, fixture.cpu);
+  return fixture;
+}
+
 SparseResidualFixture makeSparseResidualFixture(const int rowCount)
 {
   SparseResidualFixture fixture;
@@ -1477,6 +1707,58 @@ double maxSceneSparseGraphAssemblyOutputError(
   return maxError;
 }
 
+double maxSceneNonlinearEqualityAssemblyOutputError(
+    const CpuSceneNonlinearEqualityAssemblyResult& expected,
+    const cuda::NewtonSceneNonlinearEqualityAssemblyResult& actual)
+{
+  double maxError = 0.0;
+  maxError = std::max(
+      maxError, maxAbsDifference(expected.residuals, actual.residuals));
+
+  for (std::size_t row = 0; row < expected.rows.size(); ++row) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.rows[row].bodyIndex)
+            - static_cast<double>(actual.rows[row].bodyIndex)));
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.rows[row].hessianDiagonal[dof]
+              - actual.rows[row].hessianDiagonal[dof]));
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.rows[row].gradient[dof]
+              - actual.rows[row].gradient[dof]));
+    }
+  }
+
+  for (std::size_t block = 0; block < expected.blocks.size(); ++block) {
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.blocks[block].rowBodyIndex)
+            - static_cast<double>(actual.blocks[block].rowBodyIndex)));
+    maxError = std::max(
+        maxError,
+        std::abs(
+            static_cast<double>(expected.blocks[block].columnBodyIndex)
+            - static_cast<double>(actual.blocks[block].columnBodyIndex)));
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      maxError = std::max(
+          maxError,
+          std::abs(
+              expected.blocks[block].hessianBlock[entry]
+              - actual.blocks[block].hessianBlock[entry]));
+    }
+  }
+  return maxError;
+}
+
 double maxSparseResidualOutputError(
     const CpuSparseResidualResult& expected,
     const cuda::NewtonSparseResidualResult& actual)
@@ -1646,6 +1928,37 @@ void recordSceneRuntimeSparseGraphAssemblyCounters(
       = static_cast<double>(fixture.cpu.triangleCount);
   state.counters["scene_edge_pairs"]
       = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
+  state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
+  state.counters["max_block_abs"] = fixture.cpu.maxBlockAbs;
+  state.counters["max_result_abs_error"] = maxError;
+  state.SetItemsProcessed(
+      static_cast<std::int64_t>(
+          state.iterations()
+          * (fixture.cpu.rowCount + fixture.cpu.blockCount)));
+}
+
+void recordSceneRuntimeNonlinearEqualityAssemblyCounters(
+    benchmark::State& state,
+    const SceneRuntimeNonlinearEqualityAssemblyFixture& fixture,
+    const double maxError)
+{
+  state.counters["rows"] = static_cast<double>(fixture.cpu.rowCount);
+  state.counters["bodies"] = static_cast<double>(fixture.cpu.bodyCount);
+  state.counters["dofs"] = static_cast<double>(fixture.cpu.dofCount);
+  state.counters["constraints"]
+      = static_cast<double>(fixture.cpu.constraintCount);
+  state.counters["blocks"] = static_cast<double>(fixture.cpu.blockCount);
+  state.counters["block_entries"]
+      = static_cast<double>(fixture.cpu.blockEntryCount);
+  state.counters["scene_bodies"] = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["scene_nodes"] = static_cast<double>(fixture.cpu.nodeCount);
+  state.counters["scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+  state.counters["max_constraint_residual_abs"]
+      = fixture.cpu.maxConstraintResidualAbs;
   state.counters["max_diagonal"] = fixture.cpu.maxDiagonal;
   state.counters["max_gradient_abs"] = fixture.cpu.maxGradientAbs;
   state.counters["max_block_abs"] = fixture.cpu.maxBlockAbs;
@@ -2097,6 +2410,82 @@ static void BM_NewtonSceneRuntimeSparseGraphAssemblyCuda(
   state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
 }
 BENCHMARK(BM_NewtonSceneRuntimeSparseGraphAssemblyCuda)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu(
+    benchmark::State& state)
+{
+  const auto fixture = makeSceneRuntimeNonlinearEqualityAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  CpuSceneNonlinearEqualityAssemblyResult result;
+
+  for (auto _ : state) {
+    evaluateCpuSceneNonlinearEqualityAssembly(
+        fixture.nodes, fixture.constraints, result);
+    benchmark::DoNotOptimize(result.rows.data());
+    benchmark::DoNotOptimize(result.blocks.data());
+  }
+
+  recordSceneRuntimeNonlinearEqualityAssemblyCounters(state, fixture, 0.0);
+}
+BENCHMARK(BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu)
+    ->Arg(4096)
+    ->Arg(65536)
+    ->UseRealTime();
+
+//==============================================================================
+static void BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCuda(
+    benchmark::State& state)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    state.SkipWithError("CUDA runtime has no available device");
+    return;
+  }
+
+  const auto fixture = makeSceneRuntimeNonlinearEqualityAssemblyFixture(
+      static_cast<int>(state.range(0)));
+  cuda::NewtonSceneNonlinearEqualityAssemblyResult result;
+
+  for (auto _ : state) {
+    cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+        fixture.nodes, fixture.constraints, result);
+    benchmark::DoNotOptimize(result.rows.data());
+    benchmark::DoNotOptimize(result.blocks.data());
+  }
+
+  recordSceneRuntimeNonlinearEqualityAssemblyCounters(
+      state,
+      fixture,
+      maxSceneNonlinearEqualityAssemblyOutputError(fixture.cpu, result));
+  state.counters["gpu_rows"] = static_cast<double>(result.rowCount);
+  state.counters["gpu_bodies"] = static_cast<double>(result.bodyCount);
+  state.counters["gpu_dofs"] = static_cast<double>(result.dofCount);
+  state.counters["gpu_constraints"]
+      = static_cast<double>(result.constraintCount);
+  state.counters["gpu_blocks"] = static_cast<double>(result.blockCount);
+  state.counters["gpu_block_entries"]
+      = static_cast<double>(result.blockEntryCount);
+  state.counters["gpu_scene_bodies"]
+      = static_cast<double>(fixture.sceneBodyCount);
+  state.counters["gpu_scene_nodes"] = static_cast<double>(result.nodeCount);
+  state.counters["gpu_scene_triangles"]
+      = static_cast<double>(fixture.sceneTriangleCount);
+  state.counters["gpu_scene_edge_pairs"]
+      = static_cast<double>(fixture.sceneEdgePairCount);
+  state.counters["gpu_max_constraint_residual_abs"]
+      = result.maxConstraintResidualAbs;
+  state.counters["gpu_max_diagonal"] = result.maxDiagonal;
+  state.counters["gpu_max_gradient_abs"] = result.maxGradientAbs;
+  state.counters["gpu_max_block_abs"] = result.maxBlockAbs;
+  state.counters["host_setup_ns"] = result.timing.setupNs;
+  state.counters["host_to_device_ns"] = result.timing.hostToDeviceNs;
+  state.counters["constraint_kernel_ns"] = result.timing.constraintKernelNs;
+  state.counters["device_to_host_ns"] = result.timing.deviceToHostNs;
+}
+BENCHMARK(BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCuda)
     ->Arg(4096)
     ->Arg(65536)
     ->UseRealTime();

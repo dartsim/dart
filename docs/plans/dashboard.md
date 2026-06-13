@@ -352,9 +352,10 @@ its own line so status updates remain git-history friendly.
   rows, reduced diagonal assembly/solve plus
   pair-slot off-diagonal sparse-block assembly plus a reduced scene-owned
   sparse off-diagonal surface-edge assembly row plus a reduced scene-owned
-  sparse graph construction/assembly row plus sparse block residual matvec
-  plus a reduced scene-owned sparse residual row plus fixed-iteration sparse
-  Jacobi solve plus a reduced scene-owned sparse Jacobi row plus capped sparse
+  sparse graph construction/assembly row plus a reduced scene-owned nonlinear
+  distance-equality assembly row plus sparse block residual matvec plus a
+  reduced scene-owned sparse residual row plus fixed-iteration sparse Jacobi
+  solve plus a reduced scene-owned sparse Jacobi row plus capped sparse
   CG solve plus a reduced scene-owned sparse CG row plus sparse
   equality-reduced diagonal solve parity plus a reduced scene-owned
   diagonal assembly/solve row, reduced hanging-bridge scene state-batch CPU/GPU
@@ -362,8 +363,8 @@ its own line so status updates remain git-history friendly.
   and an ABD/FEM coupled micro-solve packet. It still keeps additional runtime
   contact rows, runtime scene filtering, analytic curved CCD, full scene-level
   line search, full runtime sparse Hessian graph construction and assembly,
-  direct/global sparse factorization, nonlinear equality constraints, GPU
-  `World::step`, paper-scale assets, full runtime
+  direct/global sparse factorization, nonlinear equality constraint solving,
+  GPU `World::step`, paper-scale assets, full runtime
   affine/FEM coupling, and accepted reference timings as future evidence. The
   completion audit still records PLAN-083 as incomplete while in-progress
   CPU/GPU/scene limitations remain, so dev-task retirement needs maintainer

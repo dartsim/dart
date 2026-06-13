@@ -62,6 +62,13 @@ SCENE_SPARSE_GRAPH_TIMING_KEYS = {
     "device_to_host",
     "readback",
 }
+SCENE_NONLINEAR_EQUALITY_TIMING_KEYS = {
+    "setup",
+    "host_to_device",
+    "constraints",
+    "device_to_host",
+    "readback",
+}
 SPARSE_JACOBI_TIMING_KEYS = {
     "setup",
     "host_to_device",
@@ -145,7 +152,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
     filter_expr = (
         "^BM_Newton(AssemblySolve|SceneRuntimeAssemblySolve|"
         "OffDiagonalAssembly|SceneRuntimeOffDiagonalAssembly|"
-        "SceneRuntimeSparseGraphAssembly|SparseResidual|"
+        "SceneRuntimeSparseGraphAssembly|"
+        "SceneRuntimeNonlinearEqualityAssembly|SparseResidual|"
         "SceneRuntimeSparseResidual|SparseJacobiSolve|SceneRuntimeSparseJacobiSolve|"
         "SparseCgSolve|SceneRuntimeSparseCgSolve|EqualityReducedSolve)(Cpu|Cuda)"
         f"/{args.row_count}(/real_time)?$"
@@ -223,6 +231,12 @@ def _representative_rows(
         ),
         "scene_sparse_graph_gpu": (
             f"BM_NewtonSceneRuntimeSparseGraphAssemblyCuda/{row_count}"
+        ),
+        "scene_nonlinear_equality_cpu": (
+            f"BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu/{row_count}"
+        ),
+        "scene_nonlinear_equality_gpu": (
+            f"BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCuda/{row_count}"
         ),
         "sparse_residual_cpu": f"BM_NewtonSparseResidualCpu/{row_count}",
         "sparse_residual_gpu": f"BM_NewtonSparseResidualCuda/{row_count}",
@@ -315,6 +329,12 @@ def make_packet(
     scene_off_diagonal_gpu_row = representative_rows["scene_off_diagonal_gpu"]
     scene_sparse_graph_cpu_row = representative_rows["scene_sparse_graph_cpu"]
     scene_sparse_graph_gpu_row = representative_rows["scene_sparse_graph_gpu"]
+    scene_nonlinear_equality_cpu_row = representative_rows[
+        "scene_nonlinear_equality_cpu"
+    ]
+    scene_nonlinear_equality_gpu_row = representative_rows[
+        "scene_nonlinear_equality_gpu"
+    ]
     sparse_residual_cpu_row = representative_rows["sparse_residual_cpu"]
     sparse_residual_gpu_row = representative_rows["sparse_residual_gpu"]
     scene_sparse_residual_cpu_row = representative_rows["scene_sparse_residual_cpu"]
@@ -339,6 +359,12 @@ def make_packet(
     scene_off_diagonal_gpu_ns = benchmark_timing_ns(scene_off_diagonal_gpu_row)
     scene_sparse_graph_cpu_ns = benchmark_timing_ns(scene_sparse_graph_cpu_row)
     scene_sparse_graph_gpu_ns = benchmark_timing_ns(scene_sparse_graph_gpu_row)
+    scene_nonlinear_equality_cpu_ns = benchmark_timing_ns(
+        scene_nonlinear_equality_cpu_row
+    )
+    scene_nonlinear_equality_gpu_ns = benchmark_timing_ns(
+        scene_nonlinear_equality_gpu_row
+    )
     sparse_residual_cpu_ns = benchmark_timing_ns(sparse_residual_cpu_row)
     sparse_residual_gpu_ns = benchmark_timing_ns(sparse_residual_gpu_row)
     scene_sparse_residual_cpu_ns = benchmark_timing_ns(scene_sparse_residual_cpu_row)
@@ -388,6 +414,20 @@ def make_packet(
     if not math.isfinite(scene_sparse_graph_gpu_ns) or scene_sparse_graph_gpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
             "scene runtime sparse graph GPU benchmark timing is not positive"
+        )
+    if (
+        not math.isfinite(scene_nonlinear_equality_cpu_ns)
+        or scene_nonlinear_equality_cpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality CPU benchmark timing is not positive"
+        )
+    if (
+        not math.isfinite(scene_nonlinear_equality_gpu_ns)
+        or scene_nonlinear_equality_gpu_ns <= 0.0
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality GPU benchmark timing is not positive"
         )
     if not math.isfinite(sparse_residual_cpu_ns) or sparse_residual_cpu_ns <= 0.0:
         raise NewtonAssemblySolvePacketError(
@@ -467,6 +507,9 @@ def make_packet(
     scene_sparse_graph_max_error = _counter(
         scene_sparse_graph_gpu_row, "max_result_abs_error"
     )
+    scene_nonlinear_equality_max_error = _counter(
+        scene_nonlinear_equality_gpu_row, "max_result_abs_error"
+    )
     sparse_residual_max_error = _counter(
         sparse_residual_gpu_row, "max_result_abs_error"
     )
@@ -488,6 +531,7 @@ def make_packet(
         off_diagonal_max_error,
         scene_off_diagonal_max_error,
         scene_sparse_graph_max_error,
+        scene_nonlinear_equality_max_error,
         sparse_residual_max_error,
         scene_sparse_residual_max_error,
         sparse_jacobi_max_error,
@@ -733,6 +777,116 @@ def make_packet(
     )
     scene_sparse_graph_max_block_abs = _counter(
         scene_sparse_graph_gpu_row, "gpu_max_block_abs"
+    )
+    scene_nonlinear_equality_rows = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "rows",
+        "gpu_rows",
+    )
+    if scene_nonlinear_equality_rows <= 0:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality row count is zero"
+        )
+    scene_nonlinear_equality_bodies = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "bodies",
+        "gpu_bodies",
+    )
+    scene_nonlinear_equality_dofs = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "dofs",
+        "gpu_dofs",
+    )
+    scene_nonlinear_equality_constraints = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "constraints",
+        "gpu_constraints",
+    )
+    scene_nonlinear_equality_blocks = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "blocks",
+        "gpu_blocks",
+    )
+    scene_nonlinear_equality_block_entries = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "block_entries",
+        "gpu_block_entries",
+    )
+    scene_nonlinear_equality_scene_bodies = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "scene_bodies",
+        "gpu_scene_bodies",
+    )
+    scene_nonlinear_equality_scene_nodes = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "scene_nodes",
+        "gpu_scene_nodes",
+    )
+    scene_nonlinear_equality_scene_triangles = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "scene_triangles",
+        "gpu_scene_triangles",
+    )
+    scene_nonlinear_equality_scene_edge_pairs = _matching_int_counter(
+        scene_nonlinear_equality_cpu_row,
+        scene_nonlinear_equality_gpu_row,
+        "scene_edge_pairs",
+        "gpu_scene_edge_pairs",
+    )
+    if scene_nonlinear_equality_scene_nodes != scene_nonlinear_equality_bodies:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality node count "
+            f"{scene_nonlinear_equality_scene_nodes} != bodies "
+            f"{scene_nonlinear_equality_bodies}"
+        )
+    if (
+        scene_nonlinear_equality_scene_edge_pairs
+        != scene_nonlinear_equality_constraints
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality edge-pair count "
+            f"{scene_nonlinear_equality_scene_edge_pairs} != constraints "
+            f"{scene_nonlinear_equality_constraints}"
+        )
+    if scene_nonlinear_equality_constraints != scene_nonlinear_equality_blocks:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality constraint count "
+            f"{scene_nonlinear_equality_constraints} != blocks "
+            f"{scene_nonlinear_equality_blocks}"
+        )
+    if 2 * scene_nonlinear_equality_constraints != scene_nonlinear_equality_rows:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality rows do not match two rows per "
+            "constraint"
+        )
+    if (
+        scene_nonlinear_equality_scene_triangles * 3
+        != scene_nonlinear_equality_scene_edge_pairs
+    ):
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality edge pairs do not match three "
+            "oriented edges per triangle"
+        )
+    scene_nonlinear_equality_max_constraint_residual_abs = _counter(
+        scene_nonlinear_equality_gpu_row, "gpu_max_constraint_residual_abs"
+    )
+    scene_nonlinear_equality_max_diagonal = _counter(
+        scene_nonlinear_equality_gpu_row, "gpu_max_diagonal"
+    )
+    scene_nonlinear_equality_max_gradient_abs = _counter(
+        scene_nonlinear_equality_gpu_row, "gpu_max_gradient_abs"
+    )
+    scene_nonlinear_equality_max_block_abs = _counter(
+        scene_nonlinear_equality_gpu_row, "gpu_max_block_abs"
     )
     sparse_residual_rows = _matching_int_counter(
         sparse_residual_cpu_row, sparse_residual_gpu_row, "rows", "gpu_rows"
@@ -1164,6 +1318,9 @@ def make_packet(
     off_diagonal_speedup = off_diagonal_cpu_ns / off_diagonal_gpu_ns
     scene_off_diagonal_speedup = scene_off_diagonal_cpu_ns / scene_off_diagonal_gpu_ns
     scene_sparse_graph_speedup = scene_sparse_graph_cpu_ns / scene_sparse_graph_gpu_ns
+    scene_nonlinear_equality_speedup = (
+        scene_nonlinear_equality_cpu_ns / scene_nonlinear_equality_gpu_ns
+    )
     diagonal_speedup = cpu_ns / gpu_ns
     scene_assembly_speedup = scene_assembly_cpu_ns / scene_assembly_gpu_ns
     sparse_residual_speedup = sparse_residual_cpu_ns / sparse_residual_gpu_ns
@@ -1183,6 +1340,7 @@ def make_packet(
         off_diagonal_speedup,
         scene_off_diagonal_speedup,
         scene_sparse_graph_speedup,
+        scene_nonlinear_equality_speedup,
         sparse_residual_speedup,
         scene_sparse_residual_speedup,
         sparse_jacobi_speedup,
@@ -1256,6 +1414,27 @@ def make_packet(
     if missing:
         raise NewtonAssemblySolvePacketError(
             f"scene runtime sparse graph packet timing is missing {sorted(missing)}"
+        )
+    scene_nonlinear_equality_timing_ns = {
+        "setup": _counter(scene_nonlinear_equality_gpu_row, "host_setup_ns"),
+        "host_to_device": _counter(
+            scene_nonlinear_equality_gpu_row, "host_to_device_ns"
+        ),
+        "constraints": _counter(
+            scene_nonlinear_equality_gpu_row, "constraint_kernel_ns"
+        ),
+        "device_to_host": _counter(
+            scene_nonlinear_equality_gpu_row, "device_to_host_ns"
+        ),
+        "readback": 0.0,
+    }
+    missing = (
+        SCENE_NONLINEAR_EQUALITY_TIMING_KEYS - scene_nonlinear_equality_timing_ns.keys()
+    )
+    if missing:
+        raise NewtonAssemblySolvePacketError(
+            "scene runtime nonlinear equality packet timing is missing "
+            f"{sorted(missing)}"
         )
     sparse_residual_timing_ns = {
         "setup": _counter(sparse_residual_gpu_row, "host_setup_ns"),
@@ -1467,6 +1646,33 @@ def make_packet(
                 "timing_ns": scene_sparse_graph_timing_ns,
                 "cpu_benchmark_row": _packet_row_name(scene_sparse_graph_cpu_row),
                 "gpu_benchmark_row": _packet_row_name(scene_sparse_graph_gpu_row),
+            },
+            "scene_runtime_nonlinear_equality_assembly": {
+                "row_count": scene_nonlinear_equality_rows,
+                "nominal_row_count": row_count,
+                "scene_body_count": scene_nonlinear_equality_scene_bodies,
+                "scene_node_count": scene_nonlinear_equality_scene_nodes,
+                "scene_triangle_count": scene_nonlinear_equality_scene_triangles,
+                "scene_edge_pair_count": scene_nonlinear_equality_scene_edge_pairs,
+                "body_count": scene_nonlinear_equality_bodies,
+                "dof_count": scene_nonlinear_equality_dofs,
+                "constraint_count": scene_nonlinear_equality_constraints,
+                "block_count": scene_nonlinear_equality_blocks,
+                "block_entry_count": scene_nonlinear_equality_block_entries,
+                "max_constraint_residual_abs": (
+                    scene_nonlinear_equality_max_constraint_residual_abs
+                ),
+                "max_diagonal": scene_nonlinear_equality_max_diagonal,
+                "max_gradient_abs": scene_nonlinear_equality_max_gradient_abs,
+                "max_block_abs": scene_nonlinear_equality_max_block_abs,
+                "max_result_abs_error": scene_nonlinear_equality_max_error,
+                "speedup": scene_nonlinear_equality_speedup,
+                "meets_speedup_gate": (
+                    scene_nonlinear_equality_speedup >= speedup_gate
+                ),
+                "timing_ns": scene_nonlinear_equality_timing_ns,
+                "cpu_benchmark_row": _packet_row_name(scene_nonlinear_equality_cpu_row),
+                "gpu_benchmark_row": _packet_row_name(scene_nonlinear_equality_gpu_row),
             },
             "sparse_block_residual": {
                 "row_count": row_count,

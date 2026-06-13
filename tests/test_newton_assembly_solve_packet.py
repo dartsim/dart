@@ -224,6 +224,58 @@ def _benchmark_data(**overrides):
         sparse_block_kernel_ns=5.0,
         device_to_host_ns=6.0,
     )
+    scene_nonlinear_equality_cpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCpu/1024",
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        max_constraint_residual_abs=0.05,
+        max_diagonal=9.0,
+        max_gradient_abs=1.5,
+        max_block_abs=0.5,
+        max_result_abs_error=0.0,
+    )
+    scene_nonlinear_equality_gpu = _row(
+        "BM_NewtonSceneRuntimeNonlinearEqualityAssemblyCuda/1024",
+        real_time=4.0,
+        cpu_time=4.0,
+        rows=576,
+        bodies=320,
+        dofs=1920,
+        constraints=288,
+        blocks=288,
+        block_entries=10368,
+        scene_bodies=1,
+        scene_nodes=320,
+        scene_triangles=96,
+        scene_edge_pairs=288,
+        gpu_rows=576,
+        gpu_bodies=320,
+        gpu_dofs=1920,
+        gpu_constraints=288,
+        gpu_blocks=288,
+        gpu_block_entries=10368,
+        gpu_scene_bodies=1,
+        gpu_scene_nodes=320,
+        gpu_scene_triangles=96,
+        gpu_scene_edge_pairs=288,
+        gpu_max_constraint_residual_abs=0.05,
+        gpu_max_diagonal=9.0,
+        gpu_max_gradient_abs=1.5,
+        gpu_max_block_abs=0.5,
+        max_result_abs_error=9e-12,
+        host_setup_ns=1.0,
+        host_to_device_ns=2.0,
+        constraint_kernel_ns=3.0,
+        device_to_host_ns=4.0,
+    )
     sparse_residual_cpu = _row(
         "BM_NewtonSparseResidualCpu/1024",
         rows=1024,
@@ -592,6 +644,8 @@ def _benchmark_data(**overrides):
             scene_off_diagonal_gpu,
             scene_sparse_graph_cpu,
             scene_sparse_graph_gpu,
+            scene_nonlinear_equality_cpu,
+            scene_nonlinear_equality_gpu,
             sparse_residual_cpu,
             sparse_residual_gpu,
             scene_sparse_residual_cpu,
@@ -628,7 +682,7 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert row["body_count"] == 128
     assert row["dof_count"] == 768
     assert row["active_dof_count"] == 768
-    assert row["max_result_abs_error"] == 8e-12
+    assert row["max_result_abs_error"] == 9e-12
     assert row["residual_norm"] == 4e-14
     assert row["meets_speedup_gate"] is True
     assert row["diagonal_assembly_solve"]["body_count"] == 128
@@ -675,6 +729,24 @@ def test_newton_assembly_solve_packet_accepts_parity_rows() -> None:
     assert scene_sparse_graph["timing_ns"]["incidence"] == 3.0
     assert scene_sparse_graph["timing_ns"]["diagonal"] == 4.0
     assert scene_sparse_graph["timing_ns"]["sparse_blocks"] == 5.0
+    scene_nonlinear_equality = row["scene_runtime_nonlinear_equality_assembly"]
+    assert scene_nonlinear_equality["row_count"] == 576
+    assert scene_nonlinear_equality["nominal_row_count"] == 1024
+    assert scene_nonlinear_equality["scene_body_count"] == 1
+    assert scene_nonlinear_equality["scene_node_count"] == 320
+    assert scene_nonlinear_equality["scene_triangle_count"] == 96
+    assert scene_nonlinear_equality["scene_edge_pair_count"] == 288
+    assert scene_nonlinear_equality["body_count"] == 320
+    assert scene_nonlinear_equality["dof_count"] == 1920
+    assert scene_nonlinear_equality["constraint_count"] == 288
+    assert scene_nonlinear_equality["block_count"] == 288
+    assert scene_nonlinear_equality["block_entry_count"] == 10368
+    assert scene_nonlinear_equality["max_constraint_residual_abs"] == 0.05
+    assert scene_nonlinear_equality["max_result_abs_error"] == 9e-12
+    assert scene_nonlinear_equality["max_diagonal"] == 9.0
+    assert scene_nonlinear_equality["max_gradient_abs"] == 1.5
+    assert scene_nonlinear_equality["max_block_abs"] == 0.5
+    assert scene_nonlinear_equality["timing_ns"]["constraints"] == 3.0
     sparse = row["sparse_block_residual"]
     assert sparse["body_count"] == 128
     assert sparse["dof_count"] == 768

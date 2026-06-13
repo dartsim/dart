@@ -84,6 +84,15 @@ struct NewtonSceneSurfaceTriangleInput
   std::uint32_t nodeC = 0;
 };
 
+struct NewtonSceneDistanceEqualityConstraintInput
+{
+  std::uint32_t nodeA = 0;
+  std::uint32_t nodeB = 0;
+  double restLength = 0.0;
+  double stiffness = 0.0;
+  double damping = 0.0;
+};
+
 struct NewtonAssemblySolveTiming
 {
   double setupNs = 0.0;
@@ -102,6 +111,14 @@ struct NewtonSceneSparseGraphAssemblyTiming
   double incidenceKernelNs = 0.0;
   double diagonalKernelNs = 0.0;
   double sparseBlockKernelNs = 0.0;
+  double deviceToHostNs = 0.0;
+};
+
+struct NewtonSceneNonlinearEqualityAssemblyTiming
+{
+  double setupNs = 0.0;
+  double hostToDeviceNs = 0.0;
+  double constraintKernelNs = 0.0;
   double deviceToHostNs = 0.0;
 };
 
@@ -177,6 +194,25 @@ struct NewtonSceneSparseGraphAssemblyResult
   double maxGradientAbs = 0.0;
   double maxBlockAbs = 0.0;
   NewtonSceneSparseGraphAssemblyTiming timing;
+};
+
+struct NewtonSceneNonlinearEqualityAssemblyResult
+{
+  std::vector<NewtonAssemblySolveRowInput> rows;
+  std::vector<NewtonSparseBlockEntry> blocks;
+  std::vector<double> residuals;
+  std::size_t nodeCount = 0;
+  std::size_t constraintCount = 0;
+  std::size_t rowCount = 0;
+  std::size_t bodyCount = 0;
+  std::size_t dofCount = 0;
+  std::size_t blockCount = 0;
+  std::size_t blockEntryCount = 0;
+  double maxConstraintResidualAbs = 0.0;
+  double maxDiagonal = 0.0;
+  double maxGradientAbs = 0.0;
+  double maxBlockAbs = 0.0;
+  NewtonSceneNonlinearEqualityAssemblyTiming timing;
 };
 
 struct NewtonSparseResidualResult
@@ -298,6 +334,19 @@ void evaluateNewtonSceneSparseGraphAssemblyCuda(
     const std::vector<NewtonSceneNodeInput>& nodes,
     const std::vector<NewtonSceneSurfaceTriangleInput>& triangles,
     NewtonSceneSparseGraphAssemblyResult& result);
+
+/// Evaluate a private reduced scene nonlinear equality assembly packet.
+///
+/// The packet consumes scene-owned node state and reduced distance-equality
+/// constraints, linearizes each constraint at the current state, emits two
+/// local Newton rows and one 6x6 sparse block per constraint. It intentionally
+/// does not cover nonlinear constraint solving, production constraint graph
+/// ownership, global sparse factorization, runtime World::step integration, or
+/// a public GPU solver backend.
+void evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+    const std::vector<NewtonSceneNodeInput>& nodes,
+    const std::vector<NewtonSceneDistanceEqualityConstraintInput>& constraints,
+    NewtonSceneNonlinearEqualityAssemblyResult& result);
 
 /// Evaluate a private sparse block residual packet.
 ///

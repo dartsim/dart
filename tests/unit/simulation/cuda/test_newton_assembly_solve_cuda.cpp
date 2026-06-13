@@ -327,6 +327,137 @@ void evaluateExpectedSceneSparseGraphAssembly(
   }
 }
 
+cuda::NewtonSceneDistanceEqualityConstraintInput makeDistanceEqualityConstraint(
+    const std::uint32_t nodeA,
+    const std::uint32_t nodeB,
+    const double restLength,
+    const double stiffness,
+    const double damping)
+{
+  cuda::NewtonSceneDistanceEqualityConstraintInput constraint;
+  constraint.nodeA = nodeA;
+  constraint.nodeB = nodeB;
+  constraint.restLength = restLength;
+  constraint.stiffness = stiffness;
+  constraint.damping = damping;
+  return constraint;
+}
+
+void makeExpectedDistanceEqualityBasis(
+    const cuda::NewtonSceneNodeInput& node,
+    const double normal[3],
+    const double translationalSign,
+    double basis[cuda::kNewtonAssemblySolveDofsPerBody])
+{
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis] = translationalSign * normal[axis];
+  }
+
+  const double rotationalBasis[3] = {
+      node.position[1] * normal[2] - node.position[2] * normal[1],
+      node.position[2] * normal[0] - node.position[0] * normal[2],
+      node.position[0] * normal[1] - node.position[1] * normal[0],
+  };
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    basis[axis + 3u] = 0.10 * translationalSign * rotationalBasis[axis];
+  }
+}
+
+void appendExpectedDistanceEqualityContribution(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const cuda::NewtonSceneDistanceEqualityConstraintInput& constraint,
+    std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    std::vector<double>& residuals)
+{
+  const auto& nodeA = nodes[constraint.nodeA];
+  const auto& nodeB = nodes[constraint.nodeB];
+
+  double delta[3] = {};
+  double velocityDelta[3] = {};
+  double lengthSquared = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    delta[axis] = nodeB.position[axis] - nodeA.position[axis];
+    velocityDelta[axis] = nodeB.velocity[axis] - nodeA.velocity[axis];
+    lengthSquared += delta[axis] * delta[axis];
+  }
+
+  const double length = std::max(std::sqrt(lengthSquared), 1e-9);
+  double normal[3] = {};
+  double normalVelocity = 0.0;
+  for (std::size_t axis = 0; axis < 3u; ++axis) {
+    normal[axis] = delta[axis] / length;
+    normalVelocity += normal[axis] * velocityDelta[axis];
+  }
+
+  const double residual = length - constraint.restLength;
+  const double scalarGradient
+      = constraint.stiffness * residual + constraint.damping * normalVelocity;
+  residuals.push_back(residual);
+
+  double basisA[cuda::kNewtonAssemblySolveDofsPerBody] = {};
+  double basisB[cuda::kNewtonAssemblySolveDofsPerBody] = {};
+  makeExpectedDistanceEqualityBasis(nodeA, normal, -1.0, basisA);
+  makeExpectedDistanceEqualityBasis(nodeB, normal, 1.0, basisB);
+
+  cuda::NewtonAssemblySolveRowInput rowA;
+  cuda::NewtonAssemblySolveRowInput rowB;
+  rowA.bodyIndex = constraint.nodeA;
+  rowB.bodyIndex = constraint.nodeB;
+  cuda::NewtonSparseBlockEntry block;
+  block.rowBodyIndex = constraint.nodeA;
+  block.columnBodyIndex = constraint.nodeB;
+
+  for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++dof) {
+    const double dampingBias
+        = 0.001 * constraint.damping * static_cast<double>(dof + 1u);
+    rowA.hessianDiagonal[dof]
+        = constraint.stiffness * basisA[dof] * basisA[dof] + dampingBias;
+    rowB.hessianDiagonal[dof]
+        = constraint.stiffness * basisB[dof] * basisB[dof] + dampingBias;
+    rowA.gradient[dof] = scalarGradient * basisA[dof];
+    rowB.gradient[dof] = scalarGradient * basisB[dof];
+  }
+
+  for (std::size_t localRow = 0;
+       localRow < cuda::kNewtonAssemblySolveDofsPerBody;
+       ++localRow) {
+    for (std::size_t localColumn = 0;
+         localColumn < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++localColumn) {
+      const std::size_t entry
+          = localRow * cuda::kNewtonAssemblySolveDofsPerBody + localColumn;
+      block.hessianBlock[entry]
+          = constraint.stiffness * basisA[localRow] * basisB[localColumn];
+    }
+  }
+
+  rows.push_back(rowA);
+  rows.push_back(rowB);
+  blocks.push_back(block);
+}
+
+void evaluateExpectedSceneNonlinearEqualityAssembly(
+    const std::vector<cuda::NewtonSceneNodeInput>& nodes,
+    const std::vector<cuda::NewtonSceneDistanceEqualityConstraintInput>&
+        constraints,
+    std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
+    std::vector<cuda::NewtonSparseBlockEntry>& blocks,
+    std::vector<double>& residuals)
+{
+  rows.clear();
+  blocks.clear();
+  residuals.clear();
+  rows.reserve(2u * constraints.size());
+  blocks.reserve(constraints.size());
+  residuals.reserve(constraints.size());
+  for (const auto& constraint : constraints) {
+    appendExpectedDistanceEqualityContribution(
+        nodes, constraint, rows, blocks, residuals);
+  }
+}
+
 void evaluateExpectedSparseResidual(
     const std::vector<cuda::NewtonAssemblySolveRowInput>& rows,
     const std::size_t bodyCount,
@@ -768,6 +899,127 @@ TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneSparseGraphInputs)
   EXPECT_THROW(
       cuda::evaluateNewtonSceneSparseGraphAssemblyCuda(
           nodes, {{0, 1, 2}}, result),
+      dart::simulation::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, MatchesCpuSceneNonlinearEqualityAssembly)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  const std::vector nodes = {
+      makeSceneNode(0.0, 0.0, 0.0, 0.10, -0.20, 0.30, 1.0),
+      makeSceneNode(1.0, 0.2, 0.1, -0.10, 0.40, -0.15, 1.5),
+      makeSceneNode(0.1, 1.1, -0.2, 0.20, 0.05, -0.25, 2.0),
+  };
+  const std::vector constraints = {
+      makeDistanceEqualityConstraint(0, 1, 0.95, 2.5, 0.2),
+      makeDistanceEqualityConstraint(1, 2, 1.15, 1.75, 0.35),
+  };
+
+  cuda::NewtonSceneNonlinearEqualityAssemblyResult result;
+  cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+      nodes, constraints, result);
+
+  std::vector<cuda::NewtonAssemblySolveRowInput> expectedRows;
+  std::vector<cuda::NewtonSparseBlockEntry> expectedBlocks;
+  std::vector<double> expectedResiduals;
+  evaluateExpectedSceneNonlinearEqualityAssembly(
+      nodes, constraints, expectedRows, expectedBlocks, expectedResiduals);
+
+  EXPECT_EQ(result.nodeCount, nodes.size());
+  EXPECT_EQ(result.constraintCount, constraints.size());
+  EXPECT_EQ(result.rowCount, expectedRows.size());
+  EXPECT_EQ(result.bodyCount, nodes.size());
+  EXPECT_EQ(
+      result.dofCount, nodes.size() * cuda::kNewtonAssemblySolveDofsPerBody);
+  EXPECT_EQ(result.blockCount, expectedBlocks.size());
+  EXPECT_EQ(
+      result.blockEntryCount,
+      expectedBlocks.size() * cuda::kNewtonAssemblySolveBlockEntries);
+  ASSERT_EQ(result.rows.size(), expectedRows.size());
+  ASSERT_EQ(result.blocks.size(), expectedBlocks.size());
+  ASSERT_EQ(result.residuals.size(), expectedResiduals.size());
+
+  for (std::size_t constraint = 0; constraint < expectedResiduals.size();
+       ++constraint) {
+    EXPECT_NEAR(
+        result.residuals[constraint], expectedResiduals[constraint], 1e-12)
+        << constraint;
+  }
+
+  for (std::size_t row = 0; row < expectedRows.size(); ++row) {
+    EXPECT_EQ(result.rows[row].bodyIndex, expectedRows[row].bodyIndex);
+    for (std::size_t dof = 0; dof < cuda::kNewtonAssemblySolveDofsPerBody;
+         ++dof) {
+      EXPECT_NEAR(
+          result.rows[row].hessianDiagonal[dof],
+          expectedRows[row].hessianDiagonal[dof],
+          1e-12)
+          << row << "/" << dof;
+      EXPECT_NEAR(
+          result.rows[row].gradient[dof],
+          expectedRows[row].gradient[dof],
+          1e-12)
+          << row << "/" << dof;
+    }
+  }
+
+  for (std::size_t block = 0; block < expectedBlocks.size(); ++block) {
+    EXPECT_EQ(
+        result.blocks[block].rowBodyIndex, expectedBlocks[block].rowBodyIndex);
+    EXPECT_EQ(
+        result.blocks[block].columnBodyIndex,
+        expectedBlocks[block].columnBodyIndex);
+    for (std::size_t entry = 0; entry < cuda::kNewtonAssemblySolveBlockEntries;
+         ++entry) {
+      EXPECT_NEAR(
+          result.blocks[block].hessianBlock[entry],
+          expectedBlocks[block].hessianBlock[entry],
+          1e-12)
+          << block << "/" << entry;
+    }
+  }
+}
+
+//==============================================================================
+TEST(NewtonAssemblySolveCuda, RejectsInvalidSceneNonlinearEqualityInputs)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  std::vector nodes = {
+      makeSceneNode(0.0, 0.0, 0.0, 0.10, -0.20, 0.30, 1.0),
+      makeSceneNode(1.0, 0.2, 0.1, -0.10, 0.40, -0.15, 1.5),
+  };
+  cuda::NewtonSceneNonlinearEqualityAssemblyResult result;
+
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+          nodes, {makeDistanceEqualityConstraint(0, 2, 1.0, 2.0, 0.1)}, result),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+          nodes, {makeDistanceEqualityConstraint(0, 0, 1.0, 2.0, 0.1)}, result),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+          nodes,
+          {makeDistanceEqualityConstraint(0, 1, -1.0, 2.0, 0.1)},
+          result),
+      dart::simulation::InvalidArgumentException);
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+          nodes, {makeDistanceEqualityConstraint(0, 1, 1.0, 0.0, 0.1)}, result),
+      dart::simulation::InvalidArgumentException);
+
+  nodes.front().velocity[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(
+      cuda::evaluateNewtonSceneNonlinearEqualityAssemblyCuda(
+          nodes, {makeDistanceEqualityConstraint(0, 1, 1.0, 2.0, 0.1)}, result),
       dart::simulation::InvalidArgumentException);
 }
 

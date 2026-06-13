@@ -92,14 +92,15 @@ moves entirely into durable plan sidecars.
   preallocated 6x6 off-diagonal pair slots, reduced scene-owned sparse
   off-diagonal surface-edge assembly rows, reduced scene-owned sparse graph
   construction/assembly rows, one symmetric sparse residual matvec, a reduced
-  scene-owned sparse residual matvec, fixed-iteration sparse Jacobi solves, a
+  scene-owned sparse residual matvec, reduced scene-owned nonlinear
+  distance-equality assembly rows, fixed-iteration sparse Jacobi solves, a
   reduced scene-owned sparse Jacobi solve, capped sparse CG solves, a reduced
   scene-owned sparse CG solve, and sparse
   equality-reduced diagonal solves only, but full runtime
   sparse Hessian
   graph construction and assembly, direct/global sparse factorization,
-  nonlinear equality constraints, GPU `World::step` assembly/solve integration,
-  and speedup remain unproven.
+  nonlinear equality constraint solving, GPU `World::step` assembly/solve
+  integration, and speedup remain unproven.
   The reduced
   scene parity/speed packet is in-progress because
   parity and speedup exist only for DART scene state extraction plus private

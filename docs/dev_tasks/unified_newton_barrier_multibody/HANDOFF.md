@@ -1,5 +1,53 @@
 # Unified Newton-Barrier Handoff
 
+## Scene-Owned Nonlinear Equality Assembly Packet Checkpoint (2026-06-12)
+
+Work continued locally on
+`simx/plan083-gpu-contact-candidate-packet`, PR #2978. Keep all remaining
+PLAN-083 follow-up work consolidated there; do not push, PR-comment, resolve
+review threads, trigger CI, open or close PRs, delete branches, or claim
+unrelated PLAN-091 packets without explicit maintainer approval.
+
+This checkpoint extends the private Newton assembly/solve packet with a reduced
+scene-owned nonlinear distance-equality assembly row. The benchmark builds one
+DART `World` with a deformable surface, extracts scene-owned nodes and surface
+triangles, creates one distance-equality constraint per oriented surface-edge
+slot, linearizes each constraint on the GPU, and emits two local Newton rows
+plus one 6x6 sparse block per constraint. This is reduced packet evidence only;
+it does not prove nonlinear equality constraint solving, production constraint
+graph ownership, direct/global sparse factorization, full runtime sparse
+Hessian construction/assembly, GPU `World::step` assembly/solve integration,
+or a speedup claim.
+
+Fresh packet evidence records 2,560 scene nodes, 768 surface triangles, 2,304
+surface-edge equality constraints, 4,608 local constraint rows, 2,304 sparse
+blocks, 82,944 6x6 block entries, and 15,360 dofs. The scene-owned nonlinear
+equality assembly row records
+`max_constraint_residual_abs=0.023006792475267046`,
+`max_result_abs_error=2.8421709430404007e-13`,
+`max_diagonal=1001.9679687500002`,
+`max_gradient_abs=1.2260273625132818`,
+`max_block_abs=1001.9674687500002`, and
+`speedup=0.22726251818725615x`. The top-level assembly/solve packet records
+`max_result_abs_error=2.8421709430404007e-13`,
+`residual_norm=3.7066695891578494e-13`, and
+`speedup=0.0223711040576239x` (`meets_speedup_gate=false`), so the durable GPU
+packet row remains `in-progress`.
+
+Latest local gates:
+
+- `pixi run python -m py_compile scripts/write_newton_assembly_solve_packet.py`
+- `pixi run python -m pytest tests/test_newton_assembly_solve_packet.py tests/test_plan083_gpu_parity_packet.py tests/test_plan083_completion_audit.py -q`
+- `pixi run python scripts/check_plan083_gpu_parity_packet.py`
+- `pixi run python scripts/check_plan083_completion_audit.py`
+- `git diff --check`
+- `pixi run lint`
+- `pixi run -e cuda build-cuda Release`
+- focused `test_newton_assembly_solve_cuda` CTest
+- `pixi run -e cuda bm-newton-assembly-solve-packet`
+- `pixi run build`
+- `pixi run test-unit`
+
 ## Scene-Owned Sparse Graph Assembly Packet Checkpoint (2026-06-12)
 
 Work continued locally on
