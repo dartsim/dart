@@ -61,8 +61,12 @@ rigid-body visual verification surface for the current cycle.
   `PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_capture_py_demo.py::test_visual_capture_manifest_records_image_evidence python/tests/unit/test_capture_py_demo.py::test_rigid_workflow_run_aggregates_scene_manifests python/tests/integration/test_demos_cycle.py::test_rigid_visual_routes_publish_self_describing_capture_metrics python/tests/integration/test_demos_cycle.py::test_rigid_collision_query_options_filter_body_kinds -q`
   reported `4 passed`. A full GUI packet regeneration attempt at
   `build/captures/rigid_workflow_rows_01_36_1781311276` failed on row 1 with
-  `return_code=-7` before scene metrics were written, so it is not included in
-  the evidence below.
+  `return_code=-7` before scene metrics were written. Direct Python and C++
+  GUI reproducers now both die with `SIGBUS`; gdb shows the Python path
+  failing in `filament::backend::CircularBuffer::alloc` during
+  `filament::FEngine::create` from `createFilamentRenderContext`, with
+  `rdx=0x7fff371fd000` at the crashing `memset`. The failed refresh path is
+  not included in the evidence below.
 - Full numbered workflow packet:
   `build/captures/rigid_workflow_rows_01_36_1781309127`
   (`status=complete`, `capture_count=36`, `failed_count=0`,
