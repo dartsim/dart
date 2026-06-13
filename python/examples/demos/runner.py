@@ -154,6 +154,7 @@ class RigidWorkflowGuide:
     count: int
     label: str
     question: str
+    focus_axis: str
     try_first: str
     inspect: tuple[str, ...]
     healthy_signal: str
@@ -511,6 +512,45 @@ _RIGID_VISUAL_WORKFLOW_CHECKLIST_TEXT: Mapping[str, tuple[str, str]] = {
         "Change gravity scale and compare POINT, DISTANCE, and RIGID families.",
         "Healthy: each closure family reduces its matching residual in solved lanes.",
     ),
+}
+
+_RIGID_VISUAL_WORKFLOW_FOCUS_AXIS: Mapping[str, str] = {
+    "rigid_body": "DART 7 World rigid-body baseline",
+    "rigid_body_modes": "rigid-body mode semantics",
+    "rigid_free_flight": "initial velocity, gravity, and spin evolution",
+    "rigid_frame_hierarchy": "local/world frame transform semantics",
+    "rigid_external_loads": "external force, torque, and direct impulse response",
+    "rigid_link_point_loads": "point-force lever-arm torque response",
+    "rigid_timestep_sensitivity": "time-step multiplier",
+    "rigid_step_diagnostics": "workload shape and backend/profile diagnostics",
+    "rigid_contact_scale_budget": "contact workload size",
+    "rigid_restitution_ladder": "restitution coefficient ladder",
+    "rigid_material_mixing": "friction/restitution material ownership",
+    "rigid_contact_inspector": "contact point and normal inspection",
+    "rigid_collision_query_options": "collision query filtering",
+    "rigid_collision_casts": "ray and shape cast query semantics",
+    "rigid_solver_compare": "rigid-body solver family",
+    "rigid_executor_equivalence": "executor only",
+    "rigid_contact_solver_compare": "contact solver method",
+    "contact": "link contact response modes",
+    "rigid_friction_threshold": "friction relative to static threshold",
+    "rigid_spin_roll_coupling": "spin/roll initial condition",
+    "rigid_stack_stability": "rigid-body solver family under stack load",
+    "rigid_contact_manipulation": "rigid pusher contact response",
+    "rigid_kinematic_driver": "prescribed tangential contact response",
+    "rigid_kinematic_normal_push": "prescribed normal contact response",
+    "rigid_fixed_joint": "fixed relative transform recovery",
+    "rigid_joint_breakage": "fixed break-force lifecycle",
+    "rigid_distance_spring": "distance-spring response family",
+    "rigid_limited_joints": "one-DOF joint constraint family",
+    "rigid_joint_motor_limits": "World multibody actuator/limit family",
+    "rigid_joint_passive_parameters": "passive joint parameter family",
+    "rigid_screw_joint_pitch": "screw pitch coupling family",
+    "rigid_multibody_dynamics_terms": "joint-space dynamics term family",
+    "rigid_link_center_of_mass": "link center-of-mass offset family",
+    "rigid_link_jacobian": "link-origin Jacobian mapping family",
+    "rigid_multibody_solver_family": "multibody integration solve-policy family",
+    "rigid_loop_closure": "loop-closure family and solve policy",
 }
 
 _RIGID_VISUAL_WORKFLOW_SEARCH_ALIASES: Mapping[str, tuple[str, ...]] = {
@@ -893,6 +933,7 @@ def _make_rigid_workflow_guides() -> dict[str, RigidWorkflowGuide]:
             count=count,
             label=label,
             question=question,
+            focus_axis=_RIGID_VISUAL_WORKFLOW_FOCUS_AXIS[scene_id],
             try_first=try_first,
             inspect=inspect,
             healthy_signal=healthy_signal,
@@ -2095,6 +2136,7 @@ def _workflow_core_search_score(
         (900, guide.scene_id),
         (800, guide.label),
         (600, guide.question),
+        (500, guide.focus_axis),
         (350, guide.try_first),
         (300, " ".join(guide.inspect)),
         (250, guide.healthy_signal),
@@ -2140,6 +2182,7 @@ def _workflow_search_match_reason(
     positive_fields = (
         ("row number", _workflow_search_row_id_text(guide)),
         ("user question", guide.question),
+        ("focus axis", guide.focus_axis),
         ("try-first action", guide.try_first),
         ("inspect signal", " ".join(guide.inspect)),
         ("healthy signal", guide.healthy_signal),
@@ -2292,6 +2335,9 @@ def _make_rigid_workflow_panel(scene: PythonDemoScene) -> ScenePanel | None:
         builder.separator()
         builder.text("Question")
         builder.text(guide.question)
+        builder.separator()
+        builder.text("Focus axis")
+        builder.text(guide.focus_axis)
         builder.separator()
         builder.text("Try first")
         builder.text(guide.try_first)

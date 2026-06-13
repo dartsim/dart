@@ -7,7 +7,17 @@ current repository evidence. It is intentionally conservative: the dev task is
 locally review-ready, but not complete until maintainer acceptance and the
 completion PR cleanup happen.
 
-Latest implementation slice: the in-viewer `Rigid Workflow` filter now counts
+Latest implementation slice: every numbered `Rigid Workflow` row now exposes a
+front-door `Focus axis` before the try/inspect checklist. The axis names the
+main comparison or debugging dimension, such as solver family, executor-only
+behavior, contact solver method, workload shape/backend profile, passive joint
+parameter family, or loop-closure family, and focus-axis text participates in
+search ranking and tooltip reasons. Focused validation:
+`PYTHONPATH=build/default/cpp/Release/python:build/default/cpp/Release/python/dartpy:python DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run python -m pytest python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_renders_guidance_for_numbered_rows python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_explains_focus_axis_search_matches python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_focus_axis_terms python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_panel_summarizes_limited_search_results python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_backend_and_profile_aliases python/tests/unit/test_py_demo_panels.py::test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases -q`
+reported `6 passed`; after docs updates, the broader panel/search/docs-order
+guard reported `15 passed`.
+
+Previous implementation slice: the in-viewer `Rigid Workflow` filter now counts
 the full ranked result set while still showing only the top six rows, so broad
 queries such as `contact` display an explicit `Showing 6 of N matching workflow
 rows` line before the selectable results. This preserves the compact navigator

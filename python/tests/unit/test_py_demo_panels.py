@@ -1659,6 +1659,8 @@ def test_rigid_workflow_panel_renders_guidance_for_numbered_rows() -> None:
         assert f"text:{guide.index:02d}/{guide.count:02d} {guide.label}" in events
         assert "text:Question" in events
         assert f"text:{guide.question}" in events
+        assert "text:Focus axis" in events
+        assert f"text:{guide.focus_axis}" in events
         assert "text:Try first" in events
         assert f"text:{guide.try_first}" in events
         assert "text:Look for" in events
@@ -2064,6 +2066,42 @@ def test_rigid_workflow_panel_summarizes_limited_search_results() -> None:
     assert context.scene_switch_requests == []
 
 
+def test_rigid_workflow_panel_explains_focus_axis_search_matches() -> None:
+    scene = PythonDemoScene(
+        id="rigid_solver_compare",
+        title="Test rigid_solver_compare",
+        category="World Rigid Body",
+        summary="Workflow focus-axis search test.",
+        build=lambda: SceneSetup(),
+    )
+    _pre_step, _force_drag, panels, _provider = _make_world_factory(scene)()
+    assert panels is not None
+    workflow_panel = [panel for panel in panels if panel.title == "Rigid Workflow"][0]
+    context = _FakePanelContext()
+    target_label = (
+        "08/36 Step diagnostics - rigid_step_diagnostics"
+        "##rigid_workflow_find_rigid_step_diagnostics"
+    )
+    builder = _ScriptedPanelBuilder(
+        text_input_values={"Find row": "workload shape"},
+        selected_items={target_label},
+    )
+
+    workflow_panel.build(builder, context)
+
+    assert (
+        "selectable:"
+        "08/36 Step diagnostics - rigid_step_diagnostics"
+        "##rigid_workflow_find_rigid_step_diagnostics:False"
+    ) in builder.events
+    assert any(
+        event.startswith("tooltip:Where does a World step spend time and memory?")
+        and event.endswith("Search match: focus axis.")
+        for event in builder.events
+    )
+    assert context.scene_switch_requests == ["rigid_step_diagnostics"]
+
+
 def test_rigid_workflow_search_prioritizes_user_intent_over_scope_caveats() -> None:
     contact_ids = [guide.scene_id for guide in _workflow_matching_guides("contact")]
     solver_ids = [guide.scene_id for guide in _workflow_matching_guides("solver")]
@@ -2210,6 +2248,20 @@ def test_rigid_workflow_search_finds_multibody_and_passive_parameter_aliases() -
     assert [
         guide.scene_id for guide in _workflow_matching_guides("joint armature")
     ][:1] == ["rigid_joint_passive_parameters"]
+
+
+def test_rigid_workflow_search_finds_focus_axis_terms() -> None:
+    route_cases = (
+        ("workload shape", "rigid_step_diagnostics"),
+        ("passive joint parameter family", "rigid_joint_passive_parameters"),
+        ("rigid-body solver family under stack load", "rigid_stack_stability"),
+        ("loop-closure family and solve policy", "rigid_loop_closure"),
+    )
+
+    for query, expected_scene_id in route_cases:
+        assert [
+            guide.scene_id for guide in _workflow_matching_guides(query)
+        ][:1] == [expected_scene_id]
 
 
 def test_rigid_workflow_search_finds_user_terminology_aliases() -> None:

@@ -948,6 +948,14 @@ Evidence recorded for this slice:
 workflow rows` line before the selectable results. This keeps the navigator
   compact while making capped result sets visible. The focused panel/search and
   README-order guard reported `12 passed`.
+- Latest workflow focus-axis follow-up: every numbered `Rigid Workflow` row now
+  exposes a front-door `Focus axis` before the try/inspect checklist. The axis
+  names the main comparison or debugging dimension, such as solver family,
+  executor-only behavior, contact solver method, workload shape/backend
+  profile, passive joint parameter family, or loop-closure family, and the axis
+  text participates in search ranking and tooltip reasons. The focused
+  panel/search guard reported `6 passed`; after docs updates, the broader
+  panel/search/docs-order guard reported `15 passed`.
 - Latest API search follow-up: public dartpy now exposes direct
   `RigidBody.apply_linear_impulse()` and `RigidBody.apply_angular_impulse()`
   surfaces, while sleep/wake or island activation and loop-closure
