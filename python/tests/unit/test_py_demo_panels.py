@@ -720,6 +720,73 @@ def test_high_value_world_scenes_expose_custom_panels() -> None:
         assert "checkbox:Enable external force" in builder.events
 
 
+_LCP_PROFILE_EVIDENCE_COLUMNS = (
+    "category",
+    "solver",
+    "problem_size",
+    "lcp_dimension",
+    "contact_count",
+    "solver_identity_schema_version",
+    "solver_manifest_index",
+    "solver_family_pivoting",
+    "solver_family_projection",
+    "solver_family_newton",
+    "solver_family_other",
+    "time_ns",
+    "contract_ok",
+    "iterations",
+    "residual",
+    "complementarity",
+    "bound_violation",
+    "solver_supports_standard",
+    "solver_supports_boxed",
+    "solver_supports_friction_index",
+    "solver_supports_problem",
+    "problem_type_standard",
+    "problem_type_boxed",
+    "problem_type_friction_index",
+    "problem_type_invalid",
+)
+
+
+def _write_lcp_profile_evidence(evidence_path, **overrides: str) -> None:
+    row = {
+        "category": "Standard",
+        "solver": "Dantzig",
+        "problem_size": "12",
+        "lcp_dimension": "12",
+        "contact_count": "",
+        "solver_identity_schema_version": "1",
+        "solver_manifest_index": "1",
+        "solver_family_pivoting": "1",
+        "solver_family_projection": "0",
+        "solver_family_newton": "0",
+        "solver_family_other": "0",
+        "time_ns": "1",
+        "contract_ok": "1",
+        "iterations": "0",
+        "residual": "0",
+        "complementarity": "0",
+        "bound_violation": "0",
+        "solver_supports_standard": "1",
+        "solver_supports_boxed": "1",
+        "solver_supports_friction_index": "1",
+        "solver_supports_problem": "1",
+        "problem_type_standard": "1",
+        "problem_type_boxed": "0",
+        "problem_type_friction_index": "0",
+        "problem_type_invalid": "0",
+    }
+    row.update(overrides)
+    evidence_path.write_text(
+        ",".join(_LCP_PROFILE_EVIDENCE_COLUMNS)
+        + "\n"
+        + ",".join(row[column] for column in _LCP_PROFILE_EVIDENCE_COLUMNS)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 @pytest.mark.parametrize(
     ("solver_supports_boxed", "solver_supports_problem", "expected_error"),
     [
@@ -743,23 +810,15 @@ def test_lcp_physics_profile_summary_rejects_non_native_evidence_rows(
     expected_error: str,
 ) -> None:
     evidence_path = tmp_path / "performance_profile_evidence.csv"
-    evidence_path.write_text(
-        "\n".join(
-            [
-                (
-                    "category,solver,lcp_dimension,contact_count,contract_ok,"
-                    "iterations,residual,complementarity,bound_violation,"
-                    "solver_supports_boxed,solver_supports_problem,"
-                    "problem_type_standard,problem_type_boxed,"
-                    "problem_type_friction_index,problem_type_invalid"
-                ),
-                (
-                    "Boxed,Lemke,12,,1,0,0,0,0,"
-                    f"{solver_supports_boxed},{solver_supports_problem},0,1,0,0"
-                ),
-            ]
-        ),
-        encoding="utf-8",
+    _write_lcp_profile_evidence(
+        evidence_path,
+        category="Boxed",
+        solver="Lemke",
+        solver_manifest_index="2",
+        solver_supports_boxed=solver_supports_boxed,
+        solver_supports_problem=solver_supports_problem,
+        problem_type_standard="0",
+        problem_type_boxed="1",
     )
     monkeypatch.setattr(
         lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
@@ -799,25 +858,63 @@ def test_lcp_physics_profile_summary_rejects_mismatched_problem_type_rows(
     expected_error: str,
 ) -> None:
     evidence_path = tmp_path / "performance_profile_evidence.csv"
-    evidence_path.write_text(
-        "\n".join(
-            [
-                (
-                    "category,solver,lcp_dimension,contact_count,contract_ok,"
-                    "iterations,residual,complementarity,bound_violation,"
-                    "solver_supports_standard,solver_supports_boxed,"
-                    "solver_supports_friction_index,solver_supports_problem,"
-                    "problem_type_standard,problem_type_boxed,"
-                    "problem_type_friction_index,problem_type_invalid"
-                ),
-                (
-                    f"{category},Dantzig,12,,1,0,0,0,0,1,1,1,1,"
-                    f"{problem_type_counters}"
-                ),
-            ]
-        ),
-        encoding="utf-8",
+    (
+        problem_type_standard,
+        problem_type_boxed,
+        problem_type_friction_index,
+        problem_type_invalid,
+    ) = problem_type_counters.split(",")
+    _write_lcp_profile_evidence(
+        evidence_path,
+        category=category,
+        problem_type_standard=problem_type_standard,
+        problem_type_boxed=problem_type_boxed,
+        problem_type_friction_index=problem_type_friction_index,
+        problem_type_invalid=problem_type_invalid,
     )
+    monkeypatch.setattr(
+        lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
+    )
+
+    with pytest.raises(RuntimeError, match=expected_error):
+        lcp_physics._performance_profile_evidence_summary_rows()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "expected_error"),
+    [
+        (
+            {"solver_identity_schema_version": "2"},
+            "Standard/Dantzig has solver_identity_schema_version=2; expected 1",
+        ),
+        (
+            {"solver_manifest_index": "2"},
+            "Standard/Dantzig has solver_manifest_index=2; expected 1",
+        ),
+        (
+            {"solver_family_pivoting": "0"},
+            "Standard/Dantzig has solver_family_pivoting=0; "
+            "expected 1 for Pivoting",
+        ),
+        (
+            {"solver_family_projection": "1"},
+            "Standard/Dantzig has solver_family_projection=1; "
+            "expected 0 for Pivoting",
+        ),
+        (
+            {"solver": "MissingSolver"},
+            "unknown LCP performance profile evidence solver: 'MissingSolver'",
+        ),
+    ],
+)
+def test_lcp_physics_profile_summary_rejects_stale_solver_identity_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    overrides: dict[str, str],
+    expected_error: str,
+) -> None:
+    evidence_path = tmp_path / "performance_profile_evidence.csv"
+    _write_lcp_profile_evidence(evidence_path, **overrides)
     monkeypatch.setattr(
         lcp_physics, "_PERFORMANCE_PROFILE_EVIDENCE_PATH", evidence_path
     )

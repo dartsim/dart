@@ -399,6 +399,16 @@ _PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS = {
 _PROFILE_PROBLEM_TYPE_FIELDS = tuple(_PROFILE_CATEGORY_PROBLEM_TYPE_FIELDS.values()) + (
     "problem_type_invalid",
 )
+_SOLVER_IDENTITY_SCHEMA_VERSION = 1
+_PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY = {
+    "Pivoting": "solver_family_pivoting",
+    "Projection": "solver_family_projection",
+    "Newton": "solver_family_newton",
+    "Other": "solver_family_other",
+}
+_PROFILE_SOLVER_FAMILY_COUNTER_FIELDS = tuple(
+    _PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY.values()
+)
 
 
 def _format_evidence_int_values(values: set[int]) -> str:
@@ -430,6 +440,57 @@ def _validate_performance_profile_evidence_row(row: dict[str, str]) -> None:
         raise RuntimeError(
             "unknown LCP performance profile evidence category: "
             f"{surface!r}"
+        )
+    solver_support_rows_by_name = {row["name"]: row for row in _SOLVER_SUPPORT_ROWS}
+    solver_support_row = solver_support_rows_by_name.get(solver)
+    if solver_support_row is None:
+        raise RuntimeError(
+            "unknown LCP performance profile evidence solver: "
+            f"{solver!r}"
+        )
+    solver_manifest_index_by_name = {
+        row["name"]: index for index, row in enumerate(_SOLVER_SUPPORT_ROWS, start=1)
+    }
+    identity_version = _as_int_counter(row, "solver_identity_schema_version")
+    if identity_version != _SOLVER_IDENTITY_SCHEMA_VERSION:
+        raise RuntimeError(
+            "mismatched LCP performance profile evidence row: "
+            f"{surface}/{solver} has solver_identity_schema_version="
+            f"{identity_version}; expected {_SOLVER_IDENTITY_SCHEMA_VERSION}"
+        )
+    manifest_index = _as_int_counter(row, "solver_manifest_index")
+    expected_manifest_index = solver_manifest_index_by_name[solver]
+    if manifest_index != expected_manifest_index:
+        raise RuntimeError(
+            "mismatched LCP performance profile evidence row: "
+            f"{surface}/{solver} has solver_manifest_index={manifest_index}; "
+            f"expected {expected_manifest_index}"
+        )
+    solver_family = solver_support_row["family"]
+    expected_family_counter = _PROFILE_SOLVER_FAMILY_COUNTER_BY_FAMILY.get(
+        solver_family
+    )
+    if expected_family_counter is None:
+        raise RuntimeError(
+            "unknown LCP solver family in demo manifest: "
+            f"{solver}/{solver_family}"
+        )
+    family_counter_sum = 0
+    for field in _PROFILE_SOLVER_FAMILY_COUNTER_FIELDS:
+        value = _as_int_counter(row, field)
+        expected = 1 if field == expected_family_counter else 0
+        if value == 1:
+            family_counter_sum += 1
+        if value != expected:
+            raise RuntimeError(
+                "mismatched LCP performance profile evidence row: "
+                f"{surface}/{solver} has {field}={value}; expected "
+                f"{expected} for {solver_family}"
+            )
+    if family_counter_sum != 1:
+        raise RuntimeError(
+            "mismatched LCP performance profile evidence row: "
+            f"{surface}/{solver} solver family counters are not one-hot"
         )
     if _as_int_counter(row, support_field) != 1:
         raise RuntimeError(
